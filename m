@@ -1,81 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759297Ab2EXVAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:00:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65081 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757869Ab2EXU76 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:59:58 -0400
-Date: Thu, 24 May 2012 13:59:52 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [git pull] Input updates for 3.5-rc0
-Message-ID: <20120524205952.GA16621@core.coreip.homeip.net>
-References: <20120524083216.GD10562@core.coreip.homeip.net>
- <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
- <20120524180154.GA15036@core.coreip.homeip.net>
- <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
- <20120524195851.GA15306@core.coreip.homeip.net>
- <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
- <20120524203647.GA16024@core.coreip.homeip.net>
- <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
+	id S1759320Ab2EXVBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:01:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9413 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755382Ab2EXVBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 17:01:41 -0400
+Message-ID: <4FBEA18F.1040607@redhat.com>
+Date: Thu, 24 May 2012 17:01:03 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
+        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
+        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
+        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
+        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        bhelgaas@google.com
+Subject: Re: [PATCH v2 03/13] iommu: IOMMU groups for VT-d and AMD-Vi
+References: <20120522043607.5871.11340.stgit@bling.home> <20120522050454.5871.67086.stgit@bling.home>
+In-Reply-To: <20120522050454.5871.67086.stgit@bling.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:48:57PM -0700, Linus Torvalds wrote:
-> On Thu, May 24, 2012 at 1:36 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> > Hmm, I guess we are better now with cleaning and turning devices into
-> > zombies waiting to be reaped.
-> 
-> No, that wasn't the silly part of your statement.
-> 
-> The silly part is that
-> 
->   dev_set_name(&dev->dev, "input-%s", dev_name(dev->dev.parent));
-> 
-> works perfectly fine if the parent goes away, for a damn simple
-> reason: it generates the string *once*, and doesn't care one *whit*
-> about the parent pointer ever again afterwards.
+On 05/22/2012 01:04 AM, Alex Williamson wrote:
+> Add back group support for AMD&  Intel.  amd_iommu already tracks
+> devices and has init and uninit routines to manage groups.
+> intel-iommu does this on the fly, so we make use of the notifier
+> support built into iommu groups to create and remove groups.
+>
+> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
+> ---
+>
+>   drivers/iommu/amd_iommu.c   |   28 +++++++++++++++++++++++++-
+>   drivers/iommu/intel-iommu.c |   46 +++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 73 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index 32c00cd..b7e5ddf 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -256,9 +256,11 @@ static bool check_device(struct device *dev)
+>
+>   static int iommu_init_device(struct device *dev)
+>   {
+> -	struct pci_dev *pdev = to_pci_dev(dev);
+> +	struct pci_dev *dma_pdev, *pdev = to_pci_dev(dev);
+>   	struct iommu_dev_data *dev_data;
+> +	struct iommu_group *group;
+>   	u16 alias;
+> +	int ret;
+>
+>   	if (dev->archdata.iommu)
+>   		return 0;
+> @@ -279,8 +281,30 @@ static int iommu_init_device(struct device *dev)
+>   			return -ENOTSUPP;
+>   		}
+>   		dev_data->alias_data = alias_data;
+> +
+> +		dma_pdev = pci_get_bus_and_slot(alias>>  8, alias&  0xff);
+> +	} else
+> +		dma_pdev = pdev;
+> +
+> +	if (!pdev->is_virtfn&&  PCI_FUNC(pdev->devfn)&&  iommu_group_mf&&
+> +	    pdev->hdr_type == PCI_HEADER_TYPE_NORMAL)
+> +		dma_pdev = pci_get_slot(pdev->bus,
+> +					PCI_DEVFN(PCI_SLOT(pdev->devfn), 0));
+> +
+> +	group = iommu_group_get(&dma_pdev->dev);
+> +	if (!group) {
+> +		group = iommu_group_alloc();
+> +		if (IS_ERR(group))
+> +			return PTR_ERR(group);
+>   	}
+>
+> +	ret = iommu_group_add_device(group, dev);
+> +
+> +	iommu_group_put(group);
+> +
+do you want to do a put if there is a failure in the iommu_group_add_device()?
+> +	if (ret)
+> +		return ret;
+> +
+>   	if (pci_iommuv2_capable(pdev)) {
+>   		struct amd_iommu *iommu;
+>
+> @@ -309,6 +333,8 @@ static void iommu_ignore_device(struct device *dev)
+>
+>   static void iommu_uninit_device(struct device *dev)
+>   {
+> +	iommu_group_remove_device(dev);
+> +
+>   	/*
+>   	 * Nothing to do here - we keep dev_data around for unplugged devices
+>   	 * and reuse it when the device is re-plugged - not doing so would
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index d4a0ff7..e63b33b 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -4087,6 +4087,50 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
+>   	return 0;
+>   }
+>
+> +static int intel_iommu_add_device(struct device *dev)
+> +{
+> +	struct pci_dev *pdev = to_pci_dev(dev);
+> +	struct pci_dev *bridge, *dma_pdev = pdev;
+> +	struct iommu_group *group;
+> +	int ret;
+> +
+> +	if (!device_to_iommu(pci_domain_nr(pdev->bus),
+> +			     pdev->bus->number, pdev->devfn))
+> +		return -ENODEV;
+> +
+> +	bridge = pci_find_upstream_pcie_bridge(pdev);
+> +	if (bridge) {
+> +		if (pci_is_pcie(bridge))
+> +			dma_pdev = pci_get_domain_bus_and_slot(
+> +						pci_domain_nr(pdev->bus),
+> +						bridge->subordinate->number, 0);
+> +		else
+> +			dma_pdev = bridge;
+> +	}
+> +
+> +	if (!pdev->is_virtfn&&  PCI_FUNC(pdev->devfn)&&  iommu_group_mf&&
+> +	    pdev->hdr_type == PCI_HEADER_TYPE_NORMAL)
+> +		dma_pdev = pci_get_slot(pdev->bus,
+> +					PCI_DEVFN(PCI_SLOT(pdev->devfn), 0));
+> +
+> +	group = iommu_group_get(&dma_pdev->dev);
+> +	if (!group) {
+> +		group = iommu_group_alloc();
+> +		if (IS_ERR(group))
+> +			return PTR_ERR(group);
+> +	}
+> +
+> +	ret = iommu_group_add_device(group, dev);
+> +
+ditto.
+> +	iommu_group_put(group);
+> +	return ret;
+> +}
+> +
+> +static void intel_iommu_remove_device(struct device *dev)
+> +{
+> +	iommu_group_remove_device(dev);
+> +}
+> +
+>   static struct iommu_ops intel_iommu_ops = {
+>   	.domain_init	= intel_iommu_domain_init,
+>   	.domain_destroy = intel_iommu_domain_destroy,
+> @@ -4096,6 +4140,8 @@ static struct iommu_ops intel_iommu_ops = {
+>   	.unmap		= intel_iommu_unmap,
+>   	.iova_to_phys	= intel_iommu_iova_to_phys,
+>   	.domain_has_cap = intel_iommu_domain_has_cap,
+> +	.add_device	= intel_iommu_add_device,
+> +	.remove_device	= intel_iommu_remove_device,
+>   	.pgsize_bitmap	= INTEL_IOMMU_PGSIZES,
+>   };
+>
+>
 
-I was concerned about the _next_ device (the one that will be created
-the moment I plug in the tablet back into the same port) having exact
-same name as the one that is half dead and clashing in sysfs and
-elsewhere. We used to have issues with this.
-
-> 
-> For exactly the same that your current
-> 
->   dev_set_name(&dev->dev, "input%d", atomic_inc_return(&input_no) - 1);
-> 
-> doesn't care *at*all* about that "input_no" variable afterwards -
-> dev_set_name() will have turned it into a string, and "input_no" can
-> change as much as it wants, and that won't change the name of the
-> device.
-
-and it guarantees to make the name unique, that is all we need.
-
-> 
-> See? So no "refcounting parents" or "zombie devices" or any crap like
-> that. The name is just a string.
-> 
-> Anyway, I can't be bothered to argue. If you think "input1" is such a
-> great name, and then that results in nobody actually ever *using* it
-> because everybody agrees it useless and will use something else,
-> whatever.
-> 
->                 Linus
-
--- 
-Dmitry
