@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965483Ab2EXTX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:23:59 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:52161 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934108Ab2EXTPI (ORCPT
+	id S965698Ab2EXTY7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:24:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3089 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965510Ab2EXTY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:15:08 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 24 May 2012 21:14:55 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire updates post v3.4
-Message-ID: <20120524211455.6c3464cd@stein>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 24 May 2012 15:24:57 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=NUpDF50d_VZ6Gc1fbCUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337887495.13348.195.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Thu, 24 May 2012 15:24:55 -0400
+In-Reply-To: <20120524191147.GA13936@redhat.com>
+References: <20120524160146.GA6226@redhat.com>
+	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
+	 <20120524184728.GA13201@redhat.com>
+	 <1337885672.13348.194.camel@gandalf.stny.rr.com>
+	 <20120524191147.GA13936@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, 2012-05-24 at 15:11 -0400, Dave Jones wrote:
 
-please pull from the tag "firewire-updates" at
+>  > Also, how reproducible is it? When it triggered for me, it was constant.
+>  > Every boot and test failed. But after I did the make mrproper, I have
+>  > not been able to trigger it again. This is why I put it down as a bad
+>  > build.
+> 
+> happens every time for me so far.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-updates
+Did you also do a make mrproper and try again?
 
-to receive the following IEEE 1394 (FireWire) subsystem updates:
+-- Steve
 
-  - Fix mismatch between DMA mapping direction (was wrong) and DMA synchronization
-    direction (was correct) of isochronous reception buffers of userspace drivers
-    if vma-mapped for R/W access.  For example, libdc1394 was affected.
 
-  - more consistent retry stategy in device discovery/ rediscovery, and improved
-    failure diagnostics
-
-  - various small cleanups, e.g. use SCSI layer's DMA mapping API in firewire-sbp2
-
-The last few commits happened rather late for this pull request but I feel comfortable
-with them.  ALSA firewire-lib changes were written by Clemens, hence are implicitly ACKed.
-
-Axel Lin (1):
-      firewire: use module_pci_driver
-
-Clemens Ladisch (10):
-      firewire: core: wait for inaccessible devices after bus reset
-      firewire: core: improve reread_config_rom() interface
-      firewire: move rcode_string() to core
-      firewire: core: log error in case of failed bus manager lock
-      firewire: core: log config rom reading errors
-      firewire: core: fw_device_refresh(): clean up error handling
-      firewire: sbp2: give correct DMA device to scsi framework
-      firewire: sbp2: use scsi_dma_(un)map
-      firewire: sbp2: remove superfluous blk_queue_max_segment_size() call
-      firewire: sbp2: document the absence of alignment requirements
-
-Stefan Richter (4):
-      firewire: core: fix DMA mapping direction
-      firewire: ohci: correct signedness of a local variable
-      firewire: ohci: omit spinlock IRQ flags where possible
-      Merge tag 'v3.4' with SCSI updates, needed for subsequent firewire-sbp2 changes
-
- drivers/firewire/core-card.c        |    4 +-
- drivers/firewire/core-cdev.c        |   51 ++++++++++++---
- drivers/firewire/core-device.c      |  116 +++++++++++++++++------------------
- drivers/firewire/core-iso.c         |   80 +++++++++++++++---------
- drivers/firewire/core-transaction.c |   26 ++++++++
- drivers/firewire/core.h             |    7 ++-
- drivers/firewire/nosy.c             |   20 ++----
- drivers/firewire/ohci.c             |   42 +++++--------
- drivers/firewire/sbp2.c             |   28 ++++-----
- include/linux/firewire.h            |    2 +
- sound/firewire/cmp.c                |    2 +-
- sound/firewire/lib.c                |   28 +--------
- sound/firewire/lib.h                |    1 -
- 13 files changed, 218 insertions(+), 189 deletions(-)
-
-Thanks,
--- 
-Stefan Richter
--=====-===-- -=-= ==---
-http://arcgraph.de/sr/
