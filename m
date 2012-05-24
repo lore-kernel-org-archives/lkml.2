@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2EXIIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 04:08:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44166 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab2EXIH7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 04:07:59 -0400
-Subject: Re: [PATCH] perf, x86: Make cycles:p working on SNB
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CABPqkBQDpoQChAB_GmhuGStPEdjGUVkAg5cE=zH143L9u8pN-A@mail.gmail.com>
-References: <1337828525-1789-1-git-send-email-namhyung.kim@lge.com>
-	 <1337844471.9783.48.camel@laptop>
-	 <CABPqkBRcz1a738M7g484B0p-dJrKqP6GSLE7gpPN0H1w-72oWw@mail.gmail.com>
-	 <1337845936.9783.57.camel@laptop> <1337846272.9783.59.camel@laptop>
-	 <CABPqkBQDpoQChAB_GmhuGStPEdjGUVkAg5cE=zH143L9u8pN-A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 May 2012 10:07:53 +0200
-Message-ID: <1337846873.9783.66.camel@laptop>
+	id S1753816Ab2EXILk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 04:11:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:47726 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751588Ab2EXILg convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:17:1>);
+	Thu, 24 May 2012 04:11:36 -0400
+Message-Id: <4FBE09740200007800085B89@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Thu, 24 May 2012 09:12:04 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Alex Shi" <alex.shi@intel.com>
+Cc: <borislav.petkov@amd.com>, <arnd@arndb.de>, <a.p.zijlstra@chello.nl>,
+        <akinobu.mita@gmail.com>, <eric.dumazet@gmail.com>,
+        <fweisbec@gmail.com>, <rostedt@goodmis.org>, <hughd@google.com>,
+        <jeremy@goop.org>, <len.brown@intel.com>, <tony.luck@intel.com>,
+        <yongjie.ren@intel.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <seto.hidetoshi@jp.fujitsu.com>, <penberg@kernel.org>,
+        <yinghai@kernel.org>, <tglx@linutronix.de>,
+        <akpm@linux-foundation.org>, <ak@linux.intel.com>, <luto@mit.edu>,
+        <avi@redhat.com>, <dhowells@redhat.com>, <mingo@redhat.com>,
+        <riel@redhat.com>, <cpw@sgi.com>, <steiner@sgi.com>,
+        <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH v7 2/8] x86/flush_tlb: try flush_tlb_single one by
+ one in flush_tlb_range
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
+ <1337782555-8088-3-git-send-email-alex.shi@intel.com>
+ <4FBD157602000078000858F7@nat28.tlf.novell.com>
+ <4FBDD82C.4020003@intel.com>
+In-Reply-To: <4FBDD82C.4020003@intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 10:00 +0200, Stephane Eranian wrote:
-> On Thu, May 24, 2012 at 9:57 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Thu, 2012-05-24 at 09:52 +0200, Peter Zijlstra wrote:
-> >>
-> >> OK, so how about I queue the below and if the u-code updates gets
-> >> released before this hits Linus' tree we'll make it all go away ;-)
-> >>
-> > Also, I suspect the u-code update might make INST_RETIRED.ANY_P
-> > available on SNB again voiding the need to use a different encoding. But
-> > we'll cross that bridge when we'll get to it.
+>>> On 24.05.12 at 08:41, Alex Shi <alex.shi@intel.com> wrote:
+> On 05/23/2012 10:51 PM, Jan Beulich wrote:
+>> Unless there is an implicit assumption that 'start' and 'end' are on
+>> the same page (which I doubt, as then it would be pointless to
+>> add 'end' here), this one is definitely wrong - you'd either have
+>> to issue multiple MMUEXT_INVLPG_MULTI-s, or you'd have to
+>> also use MMUEXT_TLB_FLUSH_MULTI for the multi-page case.
 > 
-> The PREC_DIST is by design, it is not a work-around of any sort.
-> It is an attempt at getting a better distribution of samples when sampling
-> with inst_retired.
+> Thanks comments!
+> So, the following change should be more safe for PV?
+> 
+> -       if (va == TLB_FLUSH_ALL) {
+> -               args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
+> -       } else {
+> -               args->op.cmd = MMUEXT_INVLPG_MULTI;
+> -               args->op.arg1.linear_addr = va;
+> -       }
+> +       args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
 
-Oh completely agreed, note that my patch used UOPS_RETIRED.ALL. Only
-Namhyung used PREC_DIST, mostly I suspect because he's not stared at all
-these manuals for long yet ;-)
+This would be safe ...
+
+> +       if (start != TLB_FLUSH_ALL)
+> +               args->op.arg1.linear_addr = start;
+
+... and then this superfluous, but it'd result in an unconditional
+full TLB flush. When start and end (or perhaps end-1, assuming
+end is not inclusive) are on the same page, MMUEXT_INVLPG_MULTI
+should be used; MMUEXT_TLB_FLUSH_MULTI might need to be
+used in all other cases, unless you want to split multi-page, non-
+global invalidations into multiple MMUEXT_INVLPG_MULTI-s (which
+would appear to be what the whole patch aims at).
+
+Perhaps the abstraction layer needs to be changed instead:
+Have the low level routines (Xen, UV, native) just deal with
+single pages, and do the splitting in common code (using the
+TLB size metrics).
+
+But then again these metrics will become stale after a
+migration (not only on Xen, but in all virtualization scenarios), so
+some additional aspects will need to be taken care of anyway.
+
+> 
+>         MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
+> 
+> Do you know why the old patch is past the performance testing of Yongjie? 
+> https://lkml.org/lkml/2012/5/4/20 
+
+No - mere luck perhaps (possibly because the invalidation policy
+inside the hypervisor is strict enough to paper over the flaw
+here)?
+
+Jan
 
