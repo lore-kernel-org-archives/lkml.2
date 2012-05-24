@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024Ab2EXG5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 02:57:39 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:57227 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750721Ab2EXG5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 02:57:38 -0400
-Date: Thu, 24 May 2012 08:57:28 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai
- threshold
-Message-ID: <20120524065726.GB2180@netboy.at.omicron.at>
-References: <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com>
- <4FBA84EF.5040506@linaro.org>
- <20120521190815.GA19812@netboy.at.omicron.at>
- <20120522173953.GA4177@netboy.at.omicron.at>
- <4FBBD591.1000103@linaro.org>
- <20120523082916.GA15627@localhost.localdomain>
- <4FBD1545.4070408@linaro.org>
- <20120523191747.GA2348@netboy.at.omicron.at>
- <4FBD4613.7040003@linaro.org>
- <20120524064340.GA2180@netboy.at.omicron.at>
+	id S1752505Ab2EXHDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 03:03:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34903 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750948Ab2EXHDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 03:03:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="103667547"
+Date: Thu, 24 May 2012 09:03:15 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Fix build break of max77693 by adding REGMAP_I2C
+ option
+Message-ID: <20120524070315.GA5401@sortiz-mobl>
+References: <1337839738-18246-1-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120524064340.GA2180@netboy.at.omicron.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1337839738-18246-1-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 08:43:40AM +0200, Richard Cochran wrote:
-> BTW you can use the program I have been using to test this at
-> 
->    git://github.com/richardcochran/leap.git
+Hi Chanwoo,
 
-That program exposes another leap second bug, too, I think. It reads
-the time via adjtimex in a tight loop, optionally sleeping using
+On Thu, May 24, 2012 at 03:08:58PM +0900, Chanwoo Choi wrote:
+> This patch add REGMAP_I2C config option to fix build break
+> of max77693 mfd driver because max77693 use regmap interface
+> for i2c communication.
+Patch applied, thanks.
 
-	clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
+Cheers,
+Samuel.
 
-The program does not wake from this call during a leap second. It is
-my expectation that CLOCK_MONOTONIC should always work. Why doesn't
-it?
-
-Thanks,
-Richard
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
