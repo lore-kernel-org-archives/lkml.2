@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab2EXC3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 22:29:05 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:1522 "EHLO
+	id S1757893Ab2EXC3f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 22:29:35 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:1506 "EHLO
 	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772Ab2EXC3A (ORCPT
+	with ESMTP id S932962Ab2EXC25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 22:29:00 -0400
+	Wed, 23 May 2012 22:28:57 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: lenb@kernel.org, linux-acpi@vger.kernel.org
 Cc: bhelgaas@google.com, shuahkhan@gmail.com, liuj97@gmail.com,
         andi@firstfloor.org, linux-kernel@vger.kernel.org,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v4 6/6] ACPI: Set hotplug _OST support bit to _OSC
-Date: Wed, 23 May 2012 20:25:24 -0600
-Message-Id: <1337826324-16802-7-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v4 5/6] ACPI: Add _OST support for ACPI container hotplug
+Date: Wed, 23 May 2012 20:25:23 -0600
+Message-Id: <1337826324-16802-6-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
 References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
@@ -22,31 +22,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When ACPI_HOTPLUG_OST is defined, set hotplug _OST support bit
-OSC_SB_HOTPLUG_OST_SUPPORT to indicate that the OS supports hotplug
-_OST by calling the platform-wide ACPI Operating System Capabilities
-(_OSC).
+Changed container_notify_cb() to call ACPI _OST method when ACPI
+container hotplug operation has completed. Slightly restructured
+the code with the same logic. The function sets eject_pending bit
+for an eject request since it does not initiate hot-remove operation.
+This bit is checked by the sysfs eject handler to determine if the
+request is originated from an ACPI eject notification.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 ---
- drivers/acpi/bus.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/acpi/container.c |   43 ++++++++++++++++++++++++++++---------------
+ 1 files changed, 28 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
-index 3188da3..3d4fc7a 100644
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -548,6 +548,10 @@ static void acpi_bus_osc_support(void)
- 	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
- #endif
+diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+index 45cd03b..1f9f7d7 100644
+--- a/drivers/acpi/container.c
++++ b/drivers/acpi/container.c
+@@ -158,9 +158,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 	int result;
+ 	int present;
+ 	acpi_status status;
+-
+-
+-	present = is_device_present(handle);
++	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
  
-+#ifdef ACPI_HOTPLUG_OST
-+	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
-+#endif
+ 	switch (type) {
+ 	case ACPI_NOTIFY_BUS_CHECK:
+@@ -169,32 +167,47 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+ 		printk(KERN_WARNING "Container driver received %s event\n",
+ 		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+ 		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
 +
- 	if (!ghes_disable)
- 		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
- 	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
++		present = is_device_present(handle);
+ 		status = acpi_bus_get_device(handle, &device);
+-		if (present) {
+-			if (ACPI_FAILURE(status) || !device) {
+-				result = container_device_add(&device, handle);
+-				if (!result)
+-					kobject_uevent(&device->dev.kobj,
+-						       KOBJ_ONLINE);
+-				else
+-					printk(KERN_WARNING
+-					       "Failed to add container\n");
+-			}
+-		} else {
++		if (!present) {
+ 			if (ACPI_SUCCESS(status)) {
+ 				/* device exist and this is a remove request */
++				device->flags.eject_pending = 1;
+ 				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
++				return;
+ 			}
++			break;
++		}
++
++		if (!ACPI_FAILURE(status) || device)
++			break;
++
++		result = container_device_add(&device, handle);
++		if (result) {
++			printk(KERN_WARNING "Failed to add container\n");
++			break;
+ 		}
++
++		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
++		ost_code = ACPI_OST_SC_SUCCESS;
+ 		break;
++
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 		if (!acpi_bus_get_device(handle, &device) && device) {
++			device->flags.eject_pending = 1;
+ 			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
++			return;
+ 		}
+ 		break;
++
+ 	default:
+-		break;
++		/* non-hotplug event; possibly handled by other handler */
++		return;
+ 	}
++
++	/* Inform firmware that the hotplug operation has completed */
++	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+ 	return;
+ }
+ 
 -- 
 1.7.7.6
 
