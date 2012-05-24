@@ -1,78 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924Ab2EXNyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 09:54:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4215 "EHLO mga09.intel.com"
+	id S1755550Ab2EXOBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 10:01:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42811 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481Ab2EXNyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 09:54:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="144203435"
-Message-ID: <4FBE3D95.8030501@intel.com>
-Date: Thu, 24 May 2012 21:54:29 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Andrew Lutomirski <luto@mit.edu>,
-        Jan Beulich <JBeulich@suse.com>, borislav.petkov@amd.com,
-        arnd@arndb.de, akinobu.mita@gmail.com, eric.dumazet@gmail.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, hughd@google.com,
-        jeremy@goop.org, len.brown@intel.com, tony.luck@intel.com,
-        yongjie.ren@intel.com, kamezawa.hiroyu@jp.fujitsu.com,
-        seto.hidetoshi@jp.fujitsu.com, penberg@kernel.org, yinghai@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, ak@linux.intel.com,
-        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hpa@zytor.com
-Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
- of SMT
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>  <1337782555-8088-9-git-send-email-alex.shi@intel.com>  <4FBD18D20200007800085951@nat28.tlf.novell.com>  <1337792984.9783.37.camel@laptop> <1337793338.9783.38.camel@laptop>  <CAObL_7GEzHYV9RbinPmK5D3DkZLiV0Wbz6j8x-Agbi21BM_OgA@mail.gmail.com>  <1337845230.9783.51.camel@laptop>  <CAObL_7FK8Pb7Ahmr0SBaPg1BvPTspr=EKG8v_QfcpdmMyuE5dA@mail.gmail.com> <1337865811.9783.152.camel@laptop> <4FBE39FE.4050001@linux.intel.com>
-In-Reply-To: <4FBE39FE.4050001@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752258Ab2EXOBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 10:01:06 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <8762blyedn.fsf@rustcorp.com.au>
+References: <8762blyedn.fsf@rustcorp.com.au> <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <7474.1337782847@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+Date: Thu, 24 May 2012 15:00:51 +0100
+Message-ID: <5107.1337868051@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 09:39 PM, Arjan van de Ven wrote:
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-> On 5/24/2012 6:23 AM, Peter Zijlstra wrote:
->> On Thu, 2012-05-24 at 06:19 -0700, Andrew Lutomirski wrote:
->>>
->>> A decent heuristic might be to prefer idle SMT siblings for TLB
->>> invalidation.  I don't know what effect that would have on power
->>> consumption (it would be rather bad if idling one SMT thread while the
->>> other one is busy saves much power). 
+> (1) Your scheme signing looks something like this:
+>         gpg --sign $m > $m.sig
+>         MSIZE=`ls -l $m | awk '{ print $5 }'`
+>         SSIZE=`ls -l $m.sig | awk '{ print $5 }'`
+>         
+>         printf '@%-10i@%-10i@This Is A Crypto Signed Module' $MSIZE $SSIZE >> $m
+
+It doesn't really need the @ signs or the MSIZE; they can be dropped.
+
+		gpg --batch --no-greeting $(KEYFLAGS) -b $< && \
+		stat --printf %-5s $<.sig >$@.trailer && \
+		echo -n "This Is A Crypto Signed Module" >>$@.trailer && \
+		cat $< $<.sig $@.trailer >$@
+
+Further, the signature size field can be reduced to 5 decimal digits easily -
+if the signature is larger than 99999 bytes, there's very likely a problem
+somewhere.
+
+Oh, and I should use --printf, not -c with stat as the newline char is unneeded.
+
+That then adds 5 bytes to the magic string.  Is that really so bad?
+
+And if you object to generating a foo.ko.trailer file, then:
+
+		gpg --batch --no-greeting $(KEYFLAGS) -b $< && \
+		(cat $< $<.sig && \
+		 stat --printf %-5s $<.sig && \
+		 echo -n "This Is A Crypto Signed Module" && \
+		 ) >$@
+
+Note that this scheme does not preclude using multiple signatures as you
+desire, but since you have no record of the module length you'd either have to
+parse all the signature records first to find the end of the module, or include
+each preceding signature and marker in the digest for the next one (which
+shouldn't be a problem).  You should still check all signatures anyway and
+verify all for which you have the public key.
+
+You could even stick other types of record in with different magic strings
+terminating them, provided you include a length.
+
+> (2) Your verification scheme looks like this:
+
+A chunk of which can be discarded with the above reductions.
+
+> Now, the scheme I suggested looks like this:
+> ...
+>         for (i = size - modsign_magic;
+>              memcmp(data + i, modsign_magic, magic_size) != 0);
+>              i++) {
+>                 if (i == 0)
+>                         return 1;
+>         }
+
+Which will likely oops.  You need to decrement i, not increment it, but that's
+a minor detail.  You're also subtracting a pointer from a size.
+
+And no, I won't do this.  It's unnecessary and a potentially large overhead.
+Say you've got a module that's 7.7M in size (an unstripped, unsigned CIFS
+module for example)...  That's nearly eight *million* calls to memcmp() if
+there's no signature.  I suspect that's on the order of a tenth of a second or
+longer on most machines.
+
+Stripped, CIFS is still on the order of half a meg - which in itself translates
+to half a million calls to memcmp() if there's no signature.
+
+Furthermore, the data cache may be of limited utility as it can't do readahead
+as you're scanning backwards through the image.  You'd be much better off doing
+a memchr() or just open-coding a forward search for 'T', and then doing the
+memcmp() at each instance.  Better still, don't do the scan at all.
+
+Doing a SHA digest on some machines will be done with hardware assistance
+(s390, for example) - so this scan may take longer than the digest there.
+
+> > Why would you want multiple signatures?  That just complicates things.
 > 
-> we really really shouldn't do flushing of tlb's on only one half of SMT.
-> SMT sibblings have their own TLB pool at least on some of Intels chips.
+> The code above stays pretty simple; if the signature fails, you set size
+> to i, and loop again.  As I said, if you know exactly how you're going
+> to strip the modules, you can avoid storing the stripped module and
+> simply append both signatures.
 
+You still haven't justified it.  One of your arguments about rejecting the ELF
+parsing version was that it was too big for no useful extra value that I could
+justify.  Supporting multiple signatures adds extra size and complexity for no
+obvious value.
 
-That is also the biggest question I want to know. Actually, some
-documents, wiki said the SMT sibling just has process registers and
-interrupt part, no any tlb/l1 cache etc, (like intel's doc
-vol6iss1_hyper_threading_technology.pdf).  And the patch runs well on
-NHM EP/WSM EP/NHM EX/SNB EP CPUs.
+More importantly, a major problem with (multiple) signatures is that each
+signing event has to risk exposing the private key - so you really only want to
+sign once unless you cannot avoid it.  Further, in an automated system, the
+private key cannot be protected by a password as all the secrets have to be
+passed to the signer.
 
-But hard to get such clearly per cpu info of SMT/HT, so, what the
-detailed Intel chips has 'TLB pool' on SMT?
+Trying to automatically save a during-build generated private key or trying to
+get a private key into the build from within the RHEL and Fedora automated
+build systems risks having a key stolen or having someone substitute their own
+key - and also makes it more complicated to build a kernel outside of the build
+system.
 
-> 
-> Also, note that on anything sane, we flush the tlb's in software before
-> going to an Idle state, so that we don't have to wake idle cpus up to
-> flush their TLBs (except for "global tlbs", but those change very very
-> very rarely hopefully)
-> 
->>
->> Right, I've never really understood how C-states and SMT go together.
->> Arjan recently implied waking a thread sibling from C-state was
->> 'expensive' which on first thought seems daft, the core is running
->> already.
-> 
-> in order to wake *anything* you need to send an IPI to it, it has to
-> exit the idle loop etc etc. It's not expensive-expensive, but it
-> certainly is not free either.
+The way I handle the private key in these patches is with transience: A fresh
+key is generated during a build from a clean tree and then discarded when the
+build tree is deleted.  This key is then a one-off.  If it is stolen or
+cracked, it can only affect a single build of the kernel.
 
+Note that we _do_ allow extra public keys to be installed in the kernel as
+there's much less risk there, and further they have to be there to permit
+signature verification.
 
+David
