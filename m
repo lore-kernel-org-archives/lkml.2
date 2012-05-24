@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933904Ab2EXVLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:11:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42355 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933672Ab2EXVLF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:11:05 -0400
-Date: Thu, 24 May 2012 14:11:01 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
-        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V6 01/14] hugetlb: rename max_hstate to
- hugetlb_max_hstate
-In-Reply-To: <1334573091-18602-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1205241410490.24113@chino.kir.corp.google.com>
-References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1759274Ab2EXVP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:15:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51552 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754239Ab2EXVPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 17:15:25 -0400
+Date: Thu, 24 May 2012 17:15:20 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kbuild@vger.kernel.org
+Subject: Re: tracing ring_buffer_resize oops.
+Message-ID: <20120524211520.GA2800@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@redhat.com>, linux-kbuild@vger.kernel.org
+References: <1337876398.13348.178.camel@gandalf.stny.rr.com>
+ <20120524172223.GA10689@redhat.com>
+ <1337880914.13348.189.camel@gandalf.stny.rr.com>
+ <20120524184728.GA13201@redhat.com>
+ <1337885672.13348.194.camel@gandalf.stny.rr.com>
+ <20120524191147.GA13936@redhat.com>
+ <1337887495.13348.195.camel@gandalf.stny.rr.com>
+ <20120524200541.GA6552@redhat.com>
+ <1337890690.13348.199.camel@gandalf.stny.rr.com>
+ <1337891586.13348.202.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337891586.13348.202.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Apr 2012, Aneesh Kumar K.V wrote:
+On Thu, May 24, 2012 at 04:33:06PM -0400, Steven Rostedt wrote:
 
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> We will be using this from other subsystems like memcg
-> in later patches.
-> 
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: Hillf Danton <dhillf@gmail.com>
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+ > I'm kicking off the ktest that initially caused this issue hoping that
+ > it reproduces the bad tree again.
+ > 
+ > BTW, did you happen to upgrade gcc or anything? The ktest I run does
+ > test against different gcc's and I don't think I had it do a make clean
+ > between the switch. That may be the cause of this problem too :-?
 
-Acked-by: David Rientjes <rientjes@google.com>
+No gcc updates. It's a Fedora 17 box, so there's been hardly any updates this
+last week or so as things have been frozen leading into the release.
+
+	Dave
+
