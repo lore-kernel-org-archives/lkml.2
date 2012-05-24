@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab2EXWtp (ORCPT <rfc822;w@1wt.eu>);
+	id S1755240Ab2EXWtr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:49:47 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53881 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754411Ab2EXWtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 May 2012 18:49:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8063 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754124Ab2EXWtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:49:43 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=vlL1T_X9D0qvDJ_GPIoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337899781.13348.208.camel@gandalf.stny.rr.com>
-Subject: Re: tracing ring_buffer_resize oops.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Thu, 24 May 2012 18:49:41 -0400
-In-Reply-To: <20120524200541.GA6552@redhat.com>
-References: <20120524160146.GA6226@redhat.com>
-	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
-	 <20120524172223.GA10689@redhat.com>
-	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
-	 <20120524184728.GA13201@redhat.com>
-	 <1337885672.13348.194.camel@gandalf.stny.rr.com>
-	 <20120524191147.GA13936@redhat.com>
-	 <1337887495.13348.195.camel@gandalf.stny.rr.com>
-	 <20120524200541.GA6552@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Greg KH <gregkh@linuxfoundation.org>, Kay Sievers <kay@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH 1/3] printk: Use a non-printable ASCII KERN_<LEVEL> initiator
+Date: Thu, 24 May 2012 15:49:31 -0700
+Message-Id: <f176ab0dac8b64c9e953e4f938315bfc13445e56.1337899274.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
+In-Reply-To: <cover.1337899274.git.joe@perches.com>
+References: <cover.1337899274.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 16:05 -0400, Dave Jones wrote:
-> On Thu, May 24, 2012 at 03:24:55PM -0400, Steven Rostedt wrote:
->  > On Thu, 2012-05-24 at 15:11 -0400, Dave Jones wrote:
->  > 
->  > >  > Also, how reproducible is it? When it triggered for me, it was constant.
->  > >  > Every boot and test failed. But after I did the make mrproper, I have
->  > >  > not been able to trigger it again. This is why I put it down as a bad
->  > >  > build.
->  > > 
->  > > happens every time for me so far.
->  > 
->  > Did you also do a make mrproper and try again?
-> 
-> ok, that's nasty.  Works fine after a make clean.
-> 
+printk uses <.> to denote the message level.
+There are thousands of messages in default kernel.
 
-Hmm, I did two make mrproper builds and they both failed. So this isn't
-a build issue. Must just be some nasty race. I'm still leaning that this
-has to do with the breakpoint function tracing updates.
+Use ASCII SOH (hex: 01) with no terminator
+to save 1 byte per message.
 
-Looking deeper into it.
+This also means that KERN_CONT could be completely
+removed (#defined to "") as it is no longer serves
+any real purpose.
 
--- Steve
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/linux/printk.h |   23 +++++++++++++----------
+ kernel/printk.c        |    6 +++---
+ 2 files changed, 16 insertions(+), 13 deletions(-)
 
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..ad76855 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -6,23 +6,26 @@
+ extern const char linux_banner[];
+ extern const char linux_proc_banner[];
+ 
+-#define KERN_EMERG	"<0>"	/* system is unusable			*/
+-#define KERN_ALERT	"<1>"	/* action must be taken immediately	*/
+-#define KERN_CRIT	"<2>"	/* critical conditions			*/
+-#define KERN_ERR	"<3>"	/* error conditions			*/
+-#define KERN_WARNING	"<4>"	/* warning conditions			*/
+-#define KERN_NOTICE	"<5>"	/* normal but significant condition	*/
+-#define KERN_INFO	"<6>"	/* informational			*/
+-#define KERN_DEBUG	"<7>"	/* debug-level messages			*/
++#define KERN_SOH	"\001"		/* ASCII Start Of Header */
++#define KERN_SOH_ASCII	'\001'
++
++#define KERN_EMERG	KERN_SOH "0"	/* system is unusable */
++#define KERN_ALERT	KERN_SOH "1"	/* action must be taken immediately */
++#define KERN_CRIT	KERN_SOH "2"	/* critical conditions */
++#define KERN_ERR	KERN_SOH "3"	/* error conditions */
++#define KERN_WARNING	KERN_SOH "4"	/* warning conditions */
++#define KERN_NOTICE	KERN_SOH "5"	/* normal but significant condition */
++#define KERN_INFO	KERN_SOH "6"	/* informational */
++#define KERN_DEBUG	KERN_SOH "7"	/* debug-level messages */
+ 
+ /* Use the default kernel loglevel */
+-#define KERN_DEFAULT	"<d>"
++#define KERN_DEFAULT	KERN_SOH "d"
+ /*
+  * Annotation for a "continued" line of log printout (only done after a
+  * line that had no enclosing \n). Only to be used by core/arch code
+  * during early bootup (a continued line is not SMP-safe otherwise).
+  */
+-#define KERN_CONT	"<c>"
++#define KERN_CONT	KERN_SOH "c"
+ 
+ extern int console_printk[];
+ 
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..e96e733 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1329,7 +1329,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	}
+ 
+ 	/* strip syslog prefix and extract log level or control flags */
+-	if (text[0] == '<' && text[1] && text[2] == '>') {
++	if (text[0] == KERN_SOH_ASCII && text[1]) {
+ 		switch (text[1]) {
+ 		case '0' ... '7':
+ 			if (level == -1)
+@@ -1337,8 +1337,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		case 'd':	/* KERN_DEFAULT */
+ 			prefix = true;
+ 		case 'c':	/* KERN_CONT */
+-			text += 3;
+-			text_len -= 3;
++			text += 2;
++			text_len -= 2;
+ 		}
+ 	}
+ 
+-- 
+1.7.8.111.gad25c.dirty
 
