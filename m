@@ -1,64 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab2EXUtW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:49:22 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:45121 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2EXUtT (ORCPT
+	id S933616Ab2EXUwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:52:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59617 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933268Ab2EXUwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:49:19 -0400
+	Thu, 24 May 2012 16:52:47 -0400
+Date: Thu, 24 May 2012 13:52:34 -0700
+From: tip-bot for Ning Jiang <ning.n.jiang@gmail.com>
+Message-ID: <tip-23812b9d9e497580d38c62ebdc6f308733b0a32a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        ning.n.jiang@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        ning.n.jiang@gmail.com, tglx@linutronix.de
+In-Reply-To: <CAH3Oq6T905+3fkF43NAMMFvJvq7dsk_so6T2vQ8ZJrA5xiU3YA@mail.gmail.com>
+References: <CAH3Oq6T905+3fkF43NAMMFvJvq7dsk_so6T2vQ8ZJrA5xiU3YA@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/core] genirq: Add IRQS_PENDING for nested and simple irq
+Git-Commit-ID: 23812b9d9e497580d38c62ebdc6f308733b0a32a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20120524203647.GA16024@core.coreip.homeip.net>
-References: <20120524083216.GD10562@core.coreip.homeip.net>
- <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
- <20120524180154.GA15036@core.coreip.homeip.net> <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
- <20120524195851.GA15306@core.coreip.homeip.net> <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
- <20120524203647.GA16024@core.coreip.homeip.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 24 May 2012 13:48:57 -0700
-X-Google-Sender-Auth: ofds9IzlrT9UdIXtzhfvVOJN1eU
-Message-ID: <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.5-rc0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 13:52:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 1:36 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
->
-> Hmm, I guess we are better now with cleaning and turning devices into
-> zombies waiting to be reaped.
+Commit-ID:  23812b9d9e497580d38c62ebdc6f308733b0a32a
+Gitweb:     http://git.kernel.org/tip/23812b9d9e497580d38c62ebdc6f308733b0a32a
+Author:     Ning Jiang <ning.n.jiang@gmail.com>
+AuthorDate: Tue, 22 May 2012 00:19:20 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 24 May 2012 22:27:45 +0200
 
-No, that wasn't the silly part of your statement.
+genirq: Add IRQS_PENDING for nested and simple irq
 
-The silly part is that
+Every interrupt which is an active wakeup source needs the ability to
+abort suspend if there is a pending irq. Right now only edge and level
+irqs can do that.
 
-  dev_set_name(&dev->dev, "input-%s", dev_name(dev->dev.parent));
+            |
+       +---------+
+       |   INTC  |
+       +---------+
+               | GPIO_IRQ
+            +------------+
+            |  gpio-exp  |
+            +------------+
+              |        |
+         GPIO0_IRQ  GPIO1_IRQ
 
-works perfectly fine if the parent goes away, for a damn simple
-reason: it generates the string *once*, and doesn't care one *whit*
-about the parent pointer ever again afterwards.
+In the above diagram, gpio expander has irq number GPIO_IRQ, it is
+connected with two sub GPIO pins, GPIO0 and GPIO1.
 
-For exactly the same that your current
+During suspend, we set IRQF_NO_SUSPEND for GPIO_IRQ so that gpio
+expander driver can handle the sub irq GPIO0_IRQ and GPIO1_IRQ, and
+these two irqs themselves can further be handled by simple or nested
+irq in some drivers(typically gpio and mfd driver). If they are used
+as wakeup sources during suspend, we want them to be able to abort
+suspend too.
 
-  dev_set_name(&dev->dev, "input%d", atomic_inc_return(&input_no) - 1);
+Setting IRQS_PENDING flag in handle_nested_irq() and handle_simple_irq()
+when the irq is disabled allows check_wakeup_irqs() to identify such
+irqs as source for aborting suspend.
 
-doesn't care *at*all* about that "input_no" variable afterwards -
-dev_set_name() will have turned it into a string, and "input_no" can
-change as much as it wants, and that won't change the name of the
-device.
+Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
+Cc: rjw@sisk.pl
+Link: http://lkml.kernel.org/r/CAH3Oq6T905%2B3fkF43NAMMFvJvq7dsk_so6T2vQ8ZJrA5xiU3YA@mail.gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/chip.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-See? So no "refcounting parents" or "zombie devices" or any crap like
-that. The name is just a string.
-
-Anyway, I can't be bothered to argue. If you think "input1" is such a
-great name, and then that results in nobody actually ever *using* it
-because everybody agrees it useless and will use something else,
-whatever.
-
-                Linus
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index fc275e4..eebd6d5 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -275,8 +275,10 @@ void handle_nested_irq(unsigned int irq)
+ 	kstat_incr_irqs_this_cpu(irq, desc);
+ 
+ 	action = desc->action;
+-	if (unlikely(!action || irqd_irq_disabled(&desc->irq_data)))
++	if (unlikely(!action || irqd_irq_disabled(&desc->irq_data))) {
++		desc->istate |= IRQS_PENDING;
+ 		goto out_unlock;
++	}
+ 
+ 	irqd_set(&desc->irq_data, IRQD_IRQ_INPROGRESS);
+ 	raw_spin_unlock_irq(&desc->lock);
+@@ -324,8 +326,10 @@ handle_simple_irq(unsigned int irq, struct irq_desc *desc)
+ 	desc->istate &= ~(IRQS_REPLAY | IRQS_WAITING);
+ 	kstat_incr_irqs_this_cpu(irq, desc);
+ 
+-	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data)))
++	if (unlikely(!desc->action || irqd_irq_disabled(&desc->irq_data))) {
++		desc->istate |= IRQS_PENDING;
+ 		goto out_unlock;
++	}
+ 
+ 	handle_irq_event(desc);
+ 
