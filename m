@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab2EXUko (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:40:44 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35699 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab2EXUkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:40:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH] PCI / ACPI: Do not request control of ASPM if the BIOS has disabled it
-Date: Thu, 24 May 2012 22:45:45 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
-        Len Brown <lenb@kernel.org>, Wei Kong <wkong@novell.com>,
-        Jean Delvare <jdelvare@suse.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1758934Ab2EXUmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:42:55 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:11385 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab2EXUmy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 16:42:54 -0400
+Message-ID: <1337892003.16730.411.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 1/6] ACPI: Add an interface to evaluate _OST
+From: Toshi Kani <toshi.kani@hp.com>
+To: shuahkhan@gmail.com
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
+        liuj97@gmail.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
+Date: Thu, 24 May 2012 14:40:03 -0600
+In-Reply-To: <1337882980.2718.82.camel@lorien2>
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
+	 <1337826324-16802-2-git-send-email-toshi.kani@hp.com>
+	 <1337882980.2718.82.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205242245.45888.rjw@sisk.pl>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Thu, 2012-05-24 at 12:09 -0600, Shuah Khan wrote:
+> On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
+ :
+> ACPI_HOTPLUG_OST is defined when all relevant ACPI hotplug operations,
+> such as CPU, memory and container hotplug, are enabled. This assures
+> consistent behavior among the hotplug operations with regarding the
+> _OST support. When ACPI_HOTPLUG_OST is not defined, this function is
+> a no-op.
+> 
+> ACPI PCI hotplug is not enhanced to support _OST at this time since it
+> is a legacy method being replaced by PCIe native hotplug. _OST support
+> for ACPI PCI hotplug may be added in future if necessary.
+ :
+> > +
+> > +/* Enable _OST when all relevant hotplug operations are enabled */
+> > +#if defined(CONFIG_ACPI_HOTPLUG_CPU) &&			\
+> > +	(defined(CONFIG_ACPI_HOTPLUG_MEMORY) ||		\
+> > +	 defined(CONFIG_ACPI_HOTPLUG_MEMORY_MODULE)) &&	\
+> > +	(defined(CONFIG_ACPI_CONTAINER) ||		\
+> > +	 defined(CONFIG_ACPI_CONTAINER_MODULE))
+> > +#define ACPI_HOTPLUG_OST
+> > +#endif
+> 
+> Already covered in my general comments, but just in case:
+> 
+> This is restricted to a few of the possible cases _OST is intended for.
+> What happens when a kernel is configed with all of the above and PCI and
+> PCIe hotplug configs. _OST will only be evaluated in these cases,
+> shouldn't OS evaluate _OST in all cases once it tells firmware it
+> supports _OST in the case of Insertion/Ejection?
 
-We want to report that the kernel supports ASPM to the BIOS even if
-the BIOS signals us that it doesn't.  So, we need the flags to include
-(OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
-before calling acpi_pci_osc_support(root, flags) in
-acpi_pci_root_add() (unless there's a command line telling us that
-ASPM is not to be supported).
+PCIe native hotplug is a non-ACPI based hotplug, and is not supported by
+_OST.  ACPI PCI hotplug is being replaced by PCIe native hotplug, so it
+is not supported as described in the change log.  Please see the email
+below on this.
+http://marc.info/?l=linux-acpi&m=133669547631220&w=2
 
-However, knowing that the BIOS doesn't support ASPM, we shouldn't
-request the control of it, so we should remove
-(OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
-from the flags before calling acpi_pci_osc_control_set() in those
-cases.  Failing to do so causes the evaluation of _OSC for the PCI
-root bridge to return error codes on some systems where it should
-work correctly.
-
-Reported-and-tested-by: Wei Kong <wkong@novell.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
-
--stable material, I think.
 
 Thanks,
-Rafael
+-Toshi
 
----
- drivers/acpi/pci_root.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: linux/drivers/acpi/pci_root.c
-===================================================================
---- linux.orig/drivers/acpi/pci_root.c
-+++ linux/drivers/acpi/pci_root.c
-@@ -574,6 +574,10 @@ static int __devinit acpi_pci_root_add(s
- 	if (flags != base_flags)
- 		acpi_pci_osc_support(root, flags);
- 
-+	if (!pcie_aspm_enabled())
-+		flags &= ~(OSC_ACTIVE_STATE_PWR_SUPPORT |
-+			OSC_CLOCK_PWR_CAPABILITY_SUPPORT);
-+
- 	if (!pcie_ports_disabled
- 	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
- 		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
