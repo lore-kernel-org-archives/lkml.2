@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933677Ab2EXXmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:42:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59300 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab2EXXmV (ORCPT
+	id S933730Ab2EXXnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:43:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56124 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754126Ab2EXXnu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:42:21 -0400
-Date: Fri, 25 May 2012 01:42:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Magnus Damm <magnus.damm@gmail.com>
-cc: linux-kernel@vger.kernel.org, arnd@arndb.de, horms@verge.net.au,
-        linux-sh@vger.kernel.org, johnstul@us.ibm.com, rjw@sisk.pl,
-        lethal@linux-sh.org, gregkh@linuxfoundation.org, olof@lixom.net
-Subject: Re: [PATCH 02/03] clocksource: em_sti: Emma Mobile STI driver V2
-In-Reply-To: <20120509143942.27521.8595.sendpatchset@w520>
-Message-ID: <alpine.LFD.2.02.1205250135340.3231@ionos>
-References: <20120509143926.27521.20342.sendpatchset@w520> <20120509143942.27521.8595.sendpatchset@w520>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 24 May 2012 19:43:50 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org>
+References: <20120522173942.GJ11775@ZenIV.linux.org.uk> <1337875681-20717-1-git-send-email-wad@chromium.org>
+ <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 24 May 2012 16:43:29 -0700
+X-Google-Sender-Auth: 3OcU7x28o8eR3INTCZ-RAvjbf_A
+Message-ID: <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/3] move the secure_computing call
+To: James Morris <jmorris@namei.org>
+Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        mcgrathr@google.com, hpa@zytor.com, indan@nul.nu,
+        netdev@parisplace.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        serge.hallyn@canonical.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        viro@zeniv.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 May 2012, Magnus Damm wrote:
-> +static irqreturn_t em_sti_interrupt(int irq, void *dev_id)
-> +{
-> +	struct em_sti_priv *p = dev_id;
-> +
-> +	/* Always regprogram timer compare A */
-> +	if (p->ced.mode == CLOCK_EVT_MODE_PERIODIC)
-> +		em_sti_update(p);
+On Thu, May 24, 2012 at 4:40 PM, James Morris <jmorris@namei.org> wrote:
+> On Thu, 24 May 2012, Will Drewry wrote:
+>
+>> As is, the biggest benefit of this change is just setting consistent
+>> expectations in what the ptrace/seccomp interactions should be.  The
+>> current ability for ptrace to "bypass" secure computing (by remapping
+>> allowed system calls) is not necessarily a problem, but it is not
+>> necessarily intuitive behavior.
+>
+> Indeed -- while the purpose of seccomp is to reduce the attack surface of
+> the syscall interface, if a user allows ptrace, attackers will definitely
+> see that as an attack vector, if it allows them to increase that attack
+> surface.
+>
+> It at least needs to be well-documented.
 
-Why do you want to do that? The core code already handles timers which
-only support oneshot mode.
+IMO the behavior should change.  Alternatively, a post-ptrace syscall
+should have to pass the *tracer's* seccomp filter, but that seems
+overcomplicated and confusing.
 
-> +	spin_lock_irqsave(&p->lock, flags);
+OTOH, allowing ptrace in a seccomp filter is asking for trouble anyway
+-- if you can ptrace something outside the sandbox, you've escaped.
 
-Please make that a raw_spinlock.
-
-> +static void em_sti_clock_event_mode(enum clock_event_mode mode,
-> +				    struct clock_event_device *ced)
-> +{
-> +	struct em_sti_priv *p = ced_to_em_sti(ced);
-> +
-> +	/* deal with old setting first */
-> +	switch (ced->mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +	case CLOCK_EVT_MODE_ONESHOT:
-> +		em_sti_stop(p, USER_CLOCKEVENT);
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +
-> +	switch (mode) {
-> +	case CLOCK_EVT_MODE_PERIODIC:
-> +		dev_info(&p->pdev->dev, "used for periodic clock events\n");
-> +		em_sti_start(p, USER_CLOCKEVENT);
-> +		clockevents_config(&p->ced, p->rate);
-> +		p->delta = (p->rate + HZ/2) / HZ;
-> +		p->next = em_sti_count(p);
-> +		em_sti_update(p);
-> +		break;
-
-All that code in this case can go away.
-
-> +static void em_sti_register_clockevent(struct em_sti_priv *p)
-> +{
-> +	struct clock_event_device *ced = &p->ced;
-> +
-> +	memset(ced, 0, sizeof(*ced));
-> +	ced->name = dev_name(&p->pdev->dev);
-> +	ced->features = CLOCK_EVT_FEAT_PERIODIC;
-> +	ced->features |= CLOCK_EVT_FEAT_ONESHOT;
-
-If you make that:
-
-	ced->features = CLOCK_EVT_FEAT_ONESHOT;
-
-Thanks,
-
-	tglx
+--Andy
