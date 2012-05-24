@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759572Ab2EXWSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 18:18:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23505 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751916Ab2EXWSO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:18:14 -0400
-Message-ID: <1337897864.4714.57.camel@ul30vt>
-Subject: Re: [PATCH v2 12/13] pci: Misc pci_reg additions
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Don Dutile <ddutile@redhat.com>
-Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
-        agraf@suse.de, benve@cisco.com, aafabbri@cisco.com,
-        B08248@freescale.com, B07421@freescale.com, avi@redhat.com,
-        konrad.wilk@oracle.com, kvm@vger.kernel.org, qemu-devel@nongnu.org,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        bhelgaas@google.com
-Date: Thu, 24 May 2012 16:17:44 -0600
-In-Reply-To: <4FBEACE2.1050701@redhat.com>
-References: <20120522043607.5871.11340.stgit@bling.home>
-	 <20120522050557.5871.15364.stgit@bling.home> <4FBEACE2.1050701@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S965380Ab2EXWU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:20:59 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44824 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476Ab2EXWU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 18:20:58 -0400
+Date: Fri, 25 May 2012 08:20:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-next@vger.kernel.org
+Subject: linux-next: usual request
+Message-Id: <20120525082043.be9bc57173a3e24a3c145e81@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 17:49 -0400, Don Dutile wrote:
-> On 05/22/2012 01:05 AM, Alex Williamson wrote:
-> > Fill in many missing definitions and add sizeof fields for many
-> > sections allowing for more extensive config parsing.
-> >
-> > Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
-> > ---
-> >
-> overall, i'm very glad to see defines instead of hardcoded numbers in the code, but....
-> 
-> >   include/linux/pci_regs.h |  112 +++++++++++++++++++++++++++++++++++++++++-----
-> >   1 files changed, 100 insertions(+), 12 deletions(-)
-> >
-> > diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
-> > index 4b608f5..379be84 100644
-> > --- a/include/linux/pci_regs.h
-> > +++ b/include/linux/pci_regs.h
-> > @@ -26,6 +26,7 @@
-> >    * Under PCI, each device has 256 bytes of configuration address space,
-> >    * of which the first 64 bytes are standardized as follows:
-> >    */
-> > +#define PCI_STD_HEADER_SIZEOF	64
-> >   #define PCI_VENDOR_ID		0x00	/* 16 bits */
-> >   #define PCI_DEVICE_ID		0x02	/* 16 bits */
-> >   #define PCI_COMMAND		0x04	/* 16 bits */
-> > @@ -209,9 +210,12 @@
-> >   #define  PCI_CAP_ID_SHPC 	0x0C	/* PCI Standard Hot-Plug Controller */
-> >   #define  PCI_CAP_ID_SSVID	0x0D	/* Bridge subsystem vendor/device ID */
-> >   #define  PCI_CAP_ID_AGP3	0x0E	/* AGP Target PCI-PCI bridge */
-> > +#define  PCI_CAP_ID_SECDEV	0x0F	/* Secure Device */
-> >   #define  PCI_CAP_ID_EXP 	0x10	/* PCI Express */
-> >   #define  PCI_CAP_ID_MSIX	0x11	/* MSI-X */
-> > +#define  PCI_CAP_ID_SATA	0x12	/* SATA Data/Index Conf. */
-> >   #define  PCI_CAP_ID_AF		0x13	/* PCI Advanced Features */
-> > +#define  PCI_CAP_ID_MAX		PCI_CAP_ID_AF
-> >   #define PCI_CAP_LIST_NEXT	1	/* Next capability in the list */
-> >   #define PCI_CAP_FLAGS		2	/* Capability defined flags (16 bits) */
-> >   #define PCI_CAP_SIZEOF		4
-> > @@ -276,6 +280,7 @@
-> >   #define  PCI_VPD_ADDR_MASK	0x7fff	/* Address mask */
-> >   #define  PCI_VPD_ADDR_F		0x8000	/* Write 0, 1 indicates completion */
-> >   #define PCI_VPD_DATA		4	/* 32-bits of data returned here */
-> > +#define PCI_CAP_VPD_SIZEOF	8
-> >
-> >   /* Slot Identification */
-> >
-> > @@ -297,8 +302,10 @@
-> >   #define PCI_MSI_ADDRESS_HI	8	/* Upper 32 bits (if PCI_MSI_FLAGS_64BIT set) */
-> >   #define PCI_MSI_DATA_32		8	/* 16 bits of data for 32-bit devices */
-> >   #define PCI_MSI_MASK_32		12	/* Mask bits register for 32-bit devices */
-> > +#define PCI_MSI_PENDING_32	16	/* Pending intrs for 32-bit devices */
-> >   #define PCI_MSI_DATA_64		12	/* 16 bits of data for 64-bit devices */
-> >   #define PCI_MSI_MASK_64		16	/* Mask bits register for 64-bit devices */
-> > +#define PCI_MSI_PENDING_64	20	/* Pending intrs for 64-bit devices */
-> >
-> >   /* MSI-X registers */
-> >   #define PCI_MSIX_FLAGS		2
-> > @@ -308,6 +315,7 @@
-> >   #define PCI_MSIX_TABLE		4
-> >   #define PCI_MSIX_PBA		8
-> >   #define  PCI_MSIX_FLAGS_BIRMASK	(7<<  0)
-> > +#define PCI_CAP_MSIX_SIZEOF	12	/* size of MSIX registers */
-> >
-> >   /* MSI-X entry's format */
-> >   #define PCI_MSIX_ENTRY_SIZE		16
-> > @@ -338,6 +346,7 @@
-> >   #define  PCI_AF_CTRL_FLR	0x01
-> >   #define PCI_AF_STATUS		5
-> >   #define  PCI_AF_STATUS_TP	0x01
-> > +#define PCI_CAP_AF_SIZEOF	6	/* size of AF registers */
-> >
-> >   /* PCI-X registers */
-> >
-> > @@ -374,6 +383,9 @@
-> >   #define  PCI_X_STATUS_SPL_ERR	0x20000000	/* Rcvd Split Completion Error Msg */
-> >   #define  PCI_X_STATUS_266MHZ	0x40000000	/* 266 MHz capable */
-> >   #define  PCI_X_STATUS_533MHZ	0x80000000	/* 533 MHz capable */
-> > +#define PCI_X_ECC_CSR		8	/* ECC control and status */
-> > +#define PCI_CAP_PCIX_SIZEOF_V0	8	/* size of registers for Version 0 */
-> > +#define PCI_CAP_PCIX_SIZEOF_V12	24	/* size for Version 1&  2 */
-> ew!
-> unlikely that version 12 will ever exist, but why not:
-> #define PCI_CAP_PCIX_SIZEOF_V1	24
-> #define PCI_CAP_PCIX_SIZEOF_V2	PCI_CAP_PCIX_SIZEOF_V1
+--Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Works for me, will fix.  Thanks,
+Hi all,
 
-Alex
+Please do not add anything to your linux-next included trees that is
+intended for v3.6 until after v3.5-rc1 is released.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPvrQ7AAoJEECxmPOUX5FEHNkP/iHsKPAkT2nt855F459lJtKc
+Q59iY1AwSKnTjbJWFhTY+Tr4eGLCj5caZtxhbogHqSP353+hacZ5XLgAXFAKYpPx
+kM+/9o1RtOgNHD02TR8IdbX+TWGeYShntTqttKtXLSjcfP2E1dm3JtyiXjlLXV0U
+YTLROvAPNAtV882fFuJ5V+zUwp1Y6K6PJ3b1BgnUKRgoVBnium8OEorBIXFknY5z
+6TFzMqh2HHiQOVJKq/4YGgpdSmNLhdAKAQSpyHnZS8WdEeA27GWewVm7vnxD8EPc
+WN2CPK2hA2CAo/pjRDhJQZiNF6Jx11zWYC5QknpZiy4nV3iNnedDgf/BVNLLsG4+
+BA32aY0RKqzyENod6C62tg9Uji5cFayJz1BrFS3jwr6uS3vzSzyDKod4sGLfznsS
+XudYDzVsP0Q/7q/AS1AQ46BbRNWlg4w68cUqxLbWhr7Kfr6dZ3wfCRAni4jMRZeJ
+3zBDT2CRCIRQZjFMP7W3YINsBIWpQe/gOWUbyFLZ2Jd0Bbu+HZMpUuxx08I5GOb3
+Ta1yfiKV/5RUlTi3VVhBLiTWYu4omBr1YrdXb7LuyGgrHN5jgyI2FqensosvHxYM
+KRdteKHZL1cszIMq9981KGYvQAdy7Qli+fQcaZt7j02r/n+6z58dTPQPQeSOEyxk
+uH0JjpgtnhT0KRaAuyUy
+=Skjg
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN--
