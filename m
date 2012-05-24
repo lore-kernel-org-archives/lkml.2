@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab2EXPsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 11:48:39 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:62343 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756733Ab2EXPsh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 11:48:37 -0400
+	id S1757430Ab2EXPvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 11:51:32 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:51658 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754064Ab2EXPva convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 11:51:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FBE5456.5020408@zytor.com>
-References: <20120523113432.GA12142@gmail.com>
-	<CA+55aFzCDKK56CRXWXrPPtok84KJY4BbORcT3GfEH8xmOfgP6g@mail.gmail.com>
-	<4FBD1AC8.7020602@zytor.com>
-	<20120523174844.GA3373@gmail.com>
-	<CA+55aFwpja0NxBser2EXjoMRTf0xobcCURqGtqyRXi4daPW0gg@mail.gmail.com>
-	<4FBE5456.5020408@zytor.com>
-Date: Thu, 24 May 2012 23:48:37 +0800
-Message-ID: <CANQmPXj6oa_bFCS2tST8=GzanrFUnD7nKDROb04K-9iJC7tZQg@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/urgent fixes for v3.5
-From: Chen <hi3766691@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20120524010237.GC11860@linux-sh.org>
+References: <1337227884.2066.9.camel@pgaikwad-dt2> <20120517062131.GA9305@gmail.com>
+ <1337316517.22560.19.camel@pgaikwad-dt2> <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
+ <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com>
+ <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com> <4FBB5A72.2080101@codethink.co.uk>
+ <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com> <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
+ <20120524010237.GC11860@linux-sh.org>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 24 May 2012 08:51:03 -0700
+Message-ID: <CAJOA=zM1KsUKg=xcuF+Md=1UN9EsmB4vAWSK3gch2PKXK=zweQ@mail.gmail.com>
+Subject: Re: Clock register in early init
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 11:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/23/2012 10:57 AM, Linus Torvalds wrote:
->> On Wed, May 23, 2012 at 10:48 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>>
->>> Also, we can rebase the whole branch and get rid of this one and
->>> of the merge commit it has.
+On Wed, May 23, 2012 at 6:02 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> On Tue, May 22, 2012 at 10:37:15AM -0700, Turquette, Mike wrote:
+>> On Tue, May 22, 2012 at 5:08 AM, Peter De Schrijver
+>> <pdeschrijver@nvidia.com> wrote:
+>> >> We had at-least that on the older Samsung parts and they where still
+>> >> growing. I would suggest that in a multi-kernel image situation the
+>> >> more data that can be discarded after init-time the better.
+>> >>
+>> >> Also, __initdata gets gathered into one place so there's no possibility
+>> >> of page fragmentation there. If you mean fragmentation of the memory
+>> >> map, then allocate the size of all the clocks you know of at init time
+>> >> in one go.
+>> >>
+>> >
+>> > That would work, except that clocks are needed before kmalloc is available.
+>> >
 >>
->> I took it, but it was really unnecessary.
+>> Is static initialization the only way to solve this problem?  What
+>> about using the bootmem allocator for early init clocks?
 >>
->> There were printk() patches in the queue and being discussed that
->> needed this, but I wouldn't have pulled the end result if they hadn't
->> been fixed.
->>
->
-> Hi Linus,
->
-> Just for clarification - do you want the patch reverted?  My reading of
-> what you wrote (as well as of the patch) is that it was an unnecessary
-> (redundant) patch, but Ingo is worried that you are saying it is incorrect.
->
->        -hpa
->
-> --
-> H. Peter Anvin, Intel Open Source Technology Center
-> I work for Intel.  I don't speak on their behalf.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> This is what sh does for its asm/clkdev.h __clkdev_alloc(), which is
+> really the only difference over the ARM version. It always seemed a bit
+> silly to me to make early allocation an arch-specific property.
 
-Really redundant.The author is just re-implement the same
-things.(Seems he disnt know that this is already implement.)
+Good point.  clkdev will probably need to be bootmem-able as well as
+the common clk stuff.
+
+Regards,
+Mike
