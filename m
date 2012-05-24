@@ -1,41 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab2EXEb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 00:31:59 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:36579 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab2EXEb6 (ORCPT
+	id S1751605Ab2EXEll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 00:41:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:42808 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab2EXElj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 00:31:58 -0400
-Date: Thu, 24 May 2012 00:31:48 -0400 (EDT)
-Message-Id: <20120524.003148.700603156196416506.davem@davemloft.net>
-To: cmetcalf@tilera.com
-Cc: bhutchings@solarflare.com, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v7] tilegx network driver: initial support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>
-References: <201205201636.q4KGaoA3003845@farm-0027.internal.tilera.com>
-	<20120520.165546.1211013675964130504.davem@davemloft.net>
-	<201205240115.q4O1FwqG006336@lab-41.internal.tilera.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 23 May 2012 21:31:50 -0700 (PDT)
+	Thu, 24 May 2012 00:41:39 -0400
+Message-ID: <4FBDBBFF.2000000@parallels.com>
+Date: Thu, 24 May 2012 08:41:35 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] NFSd: fix locking in nfsd_forget_delegations()
+References: <20120522102444.6988.45434.stgit@localhost.localdomain> <20120523213158.GB13710@fieldses.org>
+In-Reply-To: <20120523213158.GB13710@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 23 May 2012 16:42:03 -0400
+24.05.2012 01:31, J. Bruce Fields написал:
+> On Tue, May 22, 2012 at 02:25:14PM +0400, Stanislav Kinsbursky wrote:
+>> This patch adds recall_lock hold to nfsd_forget_delegations() to protect
+>> nfsd_process_n_delegations() call.
+>> Also, looks like it would be better to collect delegations to some local
+>> on-stack list, and then unhash collected list. This split allows to simplify
+>> locking, because delegation traversing is protected by recall_lock, when
+>> delegation unhash is protected by client_mutex.
+> All this indirection is getting a little much.
+>
+> How about replacing nfsd_process_n_delegations by something that always
+> does the list-move?:
 
-> + * FIXME (bug 11489): add support for IPv6.
- ...
-> +	 * FIXME (bug# 11479): We should stop queues when they're full.
- ...
+Is it correct?
+List move is suitable for unhash delegations since we anyway remove 
+delegation from fi_delegations list.
+But seems we don't do this for delegations recall...
 
-Mentioning bug numbers in the driver source is not appropriate.
 
-This second problem looks extremely serious, rather than some minor
-issue to look into at some time in the future.
+> void nfsd_forget_delegations(u64 num)
+> {
+> 	unsigned int count;
+> 	list_head victims;
+>
+> 	nfs4_lock_state();
+> 	count = nfsd_get_n_delegations(num,&victims);
+> 	list_for_each_entry_safe(...,&victims, ...)
+> 		unhash_delegation();
+> 	unlock_state();
+> }
+>
+> ditto for recall_delegations, and take the recall_lock inside
+> nfsd_get_n_delegations?
+>
+> Or something like that.
+>
+> --b.
+>
+>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>> ---
+>>   fs/nfsd/nfs4state.c |   32 ++++++++++++++++++++++++--------
+>>   1 files changed, 24 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+>> index 21266c7..f004e61 100644
+>> --- a/fs/nfsd/nfs4state.c
+>> +++ b/fs/nfsd/nfs4state.c
+>> @@ -2597,7 +2597,7 @@ out:
+>>   	return ret;
+>>   }
+>>
+>> -static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
+>> +static void nfsd_break_one_deleg(struct nfs4_delegation *dp, void *data)
+>>   {
+>>   	/* We're assuming the state code never drops its reference
+>>   	 * without first removing the lease.  Since we're in this lease
+>> @@ -2633,7 +2633,7 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
+>>   	spin_lock(&recall_lock);
+>>   	fp->fi_had_conflict = true;
+>>   	list_for_each_entry(dp,&fp->fi_delegations, dl_perfile)
+>> -		nfsd_break_one_deleg(dp);
+>> +		nfsd_break_one_deleg(dp, NULL);
+>>   	spin_unlock(&recall_lock);
+>>   }
+>>
+>> @@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
+>>   	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
+>>   }
+>>
+>> -int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
+>> +int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *, void *), void *data)
+>>   {
+>>   	int i, count = 0;
+>>   	struct nfs4_file *fp, *fnext;
+>> @@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+>>   	for (i = 0; i<  FILE_HASH_SIZE; i++) {
+>>   		list_for_each_entry_safe(fp, fnext,&file_hashtbl[i], fi_hash) {
+>>   			list_for_each_entry_safe(dp, dnext,&fp->fi_delegations, dl_perfile) {
+>> -				deleg_func(dp);
+>> +				deleg_func(dp, data);
+>>   				if (++count == num)
+>>   					return count;
+>>   			}
+>> @@ -4713,15 +4713,31 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
+>>   	return count;
+>>   }
+>>
+>> +/* Called under the recall_lock spinlock. */
+>> +static void
+>> +collect_delegation(struct nfs4_delegation *dp, void *data)
+>> +{
+>> +	struct list_head *list = data;
+>> +
+>> +	list_move(&dp->dl_perfile, list);
+>> +}
+>> +
+>>   void nfsd_forget_delegations(u64 num)
+>>   {
+>>   	unsigned int count;
+>> +	struct nfs4_delegation *dp, *dnext;
+>> +	LIST_HEAD(unhash_list);
+>>
+>> -	nfs4_lock_state();
+>> -	count = nfsd_process_n_delegations(num, unhash_delegation);
+>> -	nfs4_unlock_state();
+>> +	spin_lock(&recall_lock);
+>> +	count = nfsd_process_n_delegations(num, collect_delegation,&unhash_list);
+>> +	spin_unlock(&recall_lock);
+>>
+>>   	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
+>> +
+>> +	nfs4_lock_state();
+>> +	list_for_each_entry_safe(dp, dnext,&unhash_list, dl_perfile)
+>> +		unhash_delegation(dp);
+>> +	nfs4_unlock_state();
+>>   }
+>>
+>>   void nfsd_recall_delegations(u64 num)
+>> @@ -4730,7 +4746,7 @@ void nfsd_recall_delegations(u64 num)
+>>
+>>   	nfs4_lock_state();
+>>   	spin_lock(&recall_lock);
+>> -	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
+>> +	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
+>>   	spin_unlock(&recall_lock);
+>>   	nfs4_unlock_state();
+>>
+>>
+
