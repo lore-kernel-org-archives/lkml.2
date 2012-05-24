@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757842Ab2EXQZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:25:36 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36609 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757441Ab2EXQZe (ORCPT
+	id S933611Ab2EXQ1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:27:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60825 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933360Ab2EXQ1u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:25:34 -0400
-Date: Thu, 24 May 2012 18:26:05 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (v2)
-Message-ID: <20120524162605.GK27063@aftab.osrc.amd.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
- <20120522092354.GB18578@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
- <20120524103023.GA27063@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+	Thu, 24 May 2012 12:27:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="148001369"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Chen Gong <gong.chen@linux.intel.com>, "bp@amd64.org" <bp@amd64.org>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: RE: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop
+ CMC storm
+Thread-Topic: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop
+ CMC storm
+Thread-Index: AQHNOIwYcjpXeEEfSUqwVYn22Q7zo5bXnJGA///5EsCAAJq/AP//onrQgAFcxQD///HsgA==
+Date: Thu, 24 May 2012 16:27:49 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F37C0@ORSMSX104.amr.corp.intel.com>
+References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
+ <alpine.LFD.2.02.1205230859190.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F2DD6@ORSMSX104.amr.corp.intel.com>
+ <alpine.LFD.2.02.1205232044150.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F30C0@ORSMSX104.amr.corp.intel.com>
+ <alpine.LFD.2.02.1205241033460.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205241033460.3231@ionos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 04:15:02PM +0000, Liu, Jinsong wrote:
-> The reason is, if we do so, it would be covered by native misc_register(&mce_chrdev_device) later when native kernel init (xen init first and then start native kernel).
-> Under such case, if linux running under xen platform, /dev/mcelog point to vcpu, that's pointless since it cannot get any mcelog from physical cpu (which owned by xen).
-> 
-> Yes, we can use another misc device like /dev/xen-mcelog, w/ another device minor like 226, but that's not good for userspace mcelog tools. As far as I know, Novell mcelog use unified /dev/mcelog interface for linux running under either bare metal or xen platform.
+> So can you please explain how this is better than having this strict
+> per cpu and avoid all the mess which comes with that patch? The
+> approach of letting global state be modified in a random manner is
+> just doomed.
 
-Maybe create a symlink in /dev/mcelog pointing to /dev/xen-mcelog?
+Well doomed sounds bad :-) ... and I think I now agree that we should
+get rid of global state and have polling vs. CMCI mode be per-cpu. It
+means that it will take fractionally longer to react to a storm, but
+on the plus side we'll naturally set storm mode on just the cpus
+that are seeing it on a multi-socket system without having to check
+topology data ... which should be better for the case where a noisy
+source of CMCI is plaguing one socket, while other sockets have some
+much lower rate of CMCI that we'd still like to log.
 
-That should solve it.
+Thanks for the review.
 
-> This patch just do redirection at xen code path, and that would not
-> hurt anything to native kernel.
-
-My concern is that if we remove /dev/mcelog one day, xen people will
-cry.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+-Tony
