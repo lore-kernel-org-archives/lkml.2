@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab2EXBrU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 21:47:20 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46378 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755052Ab2EXBrT (ORCPT
+	id S1756448Ab2EXCLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 22:11:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34059 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469Ab2EXCLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 21:47:19 -0400
+	Wed, 23 May 2012 22:11:13 -0400
+Date: Wed, 23 May 2012 19:11:02 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
+ code
+Message-ID: <20120524021102.GA12335@kroah.com>
+References: <201205231428.48061.hartleys@visionengravers.com>
+ <20120523214354.GQ4637@mwanda>
+ <ADE657CA350FB648AAC2C43247A983F0020698BACAD5@AUSP01VMBX24.collaborationhost.net>
+ <20120523220702.GR4637@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <1337793338.9783.38.camel@laptop>
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
- <1337782555-8088-9-git-send-email-alex.shi@intel.com> <4FBD18D20200007800085951@nat28.tlf.novell.com>
- <1337792984.9783.37.camel@laptop> <1337793338.9783.38.camel@laptop>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Wed, 23 May 2012 18:46:58 -0700
-X-Google-Sender-Auth: eS4jcqCsUOoauEdFeC5_tBfYltQ
-Message-ID: <CAObL_7GEzHYV9RbinPmK5D3DkZLiV0Wbz6j8x-Agbi21BM_OgA@mail.gmail.com>
-Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings of SMT
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jan Beulich <JBeulich@suse.com>, Alex Shi <alex.shi@intel.com>,
-        borislav.petkov@amd.com, arnd@arndb.de, akinobu.mita@gmail.com,
-        eric.dumazet@gmail.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        hughd@google.com, jeremy@goop.org, len.brown@intel.com,
-        tony.luck@intel.com, yongjie.ren@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
-        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, ak@linux.intel.com, avi@redhat.com,
-        dhowells@redhat.com, mingo@redhat.com, riel@redhat.com, cpw@sgi.com,
-        steiner@sgi.com, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        hpa@zytor.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120523220702.GR4637@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 10:15 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-05-23 at 19:09 +0200, Peter Zijlstra wrote:
->> > There is no comment or anything else indicating that this is
->> > suitable for dual-thread CPUs only - when there are more than
->> > 2 threads per core, the intended effect won't be achieved.
->>
->> Why would that be? Won't higher thread count still share the same
->> resources just more so?
->
-> Ah, I see, you're saying his code is buggy for >2 threads. Agreed.
->
+On Thu, May 24, 2012 at 01:07:02AM +0300, Dan Carpenter wrote:
+> On Wed, May 23, 2012 at 04:52:47PM -0500, H Hartley Sweeten wrote:
+> > On Wednesday, May 23, 2012 2:44 PM, Dan Carpenter wrote:
+> > > Hartley, you're doing a great job with all these patches, but it's
+> > > going to be weeks before the merge window closes.  We're going to
+> > > end up getting confused with all the patches floating around.
+> > 
+> > I guess I should wait until the merge window closes and Greg starts
+> > taking patches into the staging tree before continuing...
+> > 
+> 
+> Wait!  No no.  The first answer was the right one, where you
+> volunteered to do a bunch of work.
 
-An evil knob to statically choose which SMT sibling gets the interrupt
-would be nice.  Then my compute-intensive thread could be (mostly)
-unaffected by the other thread on a different core that calls munmap
-frequently.
+Yes, that's right, don't stop, I can queue these all up in my "to-apply"
+mailbox just fine and will start applying them when 3.5-rc1 is out, to
+my staging-next tree.  No need for you to take a break at all :)
 
---Andy
+thanks,
+
+greg k-h
