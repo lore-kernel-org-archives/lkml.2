@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab2EXJ31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:29:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33443 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752221Ab2EXJ3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:29:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="144117655"
-Message-ID: <4FBDFF11.7030105@intel.com>
-Date: Thu, 24 May 2012 17:27:45 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Jan Beulich <JBeulich@suse.com>, borislav.petkov@amd.com, arnd@arndb.de,
-        akinobu.mita@gmail.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, hughd@google.com, jeremy@goop.org,
-        len.brown@intel.com, tony.luck@intel.com, yongjie.ren@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
-        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
-        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hpa@zytor.com,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
- of SMT
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>  <1337782555-8088-9-git-send-email-alex.shi@intel.com>  <4FBD18D20200007800085951@nat28.tlf.novell.com>  <1337792984.9783.37.camel@laptop>  <4FBDF200.7060608@intel.com> <1337848970.9783.72.camel@laptop>
-In-Reply-To: <1337848970.9783.72.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+	id S1754545Ab2EXJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:34:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37782 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752221Ab2EXJeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 05:34:07 -0400
+Subject: Re: [PATCH 01/16] perf: Unified API to record selective sets of
+ arch registers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+In-Reply-To: <1337801535-12865-2-git-send-email-jolsa@redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	 <1337801535-12865-2-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 May 2012 11:33:53 +0200
+Message-ID: <1337852033.9783.80.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 04:42 PM, Peter Zijlstra wrote:
+On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
+> +enum perf_event_x86_32_regs {
+> +       PERF_X86_32_REG_EAX,
+> +       PERF_X86_32_REG_EBX,
+> +       PERF_X86_32_REG_ECX,
+> +       PERF_X86_32_REG_EDX,
+> +       PERF_X86_32_REG_ESI,
+> +       PERF_X86_32_REG_EDI,
+> +       PERF_X86_32_REG_EBP,
+> +       PERF_X86_32_REG_ESP,
+> +       PERF_X86_32_REG_EIP,
+> +       PERF_X86_32_REG_FLAGS,
+> +       PERF_X86_32_REG_CS,
+> +       PERF_X86_32_REG_DS,
+> +       PERF_X86_32_REG_ES,
+> +       PERF_X86_32_REG_FS,
+> +       PERF_X86_32_REG_GS,
+> +
+> +       /* Non ABI */
+> +       PERF_X86_32_REG_MAX,
+> +};
 
-> On Thu, 2012-05-24 at 16:32 +0800, Alex Shi wrote:
->> So, I use cpumask_t in stack.
-> 
-> cpumask_t is 512 bytes with NR_CPUS=4096, that's generally considered
-> too big to be on stack.
+> +enum perf_event_x86_64_regs {
+> +       PERF_X86_64_REG_RAX,
+> +       PERF_X86_64_REG_RBX,
+> +       PERF_X86_64_REG_RCX,
+> +       PERF_X86_64_REG_RDX,
+> +       PERF_X86_64_REG_RSI,
+> +       PERF_X86_64_REG_RDI,
+> +       PERF_X86_64_REG_R8,
+> +       PERF_X86_64_REG_R9,
+> +       PERF_X86_64_REG_R10,
+> +       PERF_X86_64_REG_R11,
+> +       PERF_X86_64_REG_R12,
+> +       PERF_X86_64_REG_R13,
+> +       PERF_X86_64_REG_R14,
+> +       PERF_X86_64_REG_R15,
+> +       PERF_X86_64_REG_RBP,
+> +       PERF_X86_64_REG_RSP,
+> +       PERF_X86_64_REG_RIP,
+> +       PERF_X86_64_REG_FLAGS,
+> +       PERF_X86_64_REG_CS,
+> +       PERF_X86_64_REG_SS,
+> +
+> +       /* Non ABI */
+> +       PERF_X86_64_REG_MAX,
+> +}; 
+
+So why bother with two different APIs? Why not have only the x86_64 one
+and maybe add a warning/error/fail whatever when x86_64 regs are
+selected on i386/compat tasks.
 
 
-I am not consistent with cpumask_t.
-I just want to know why it is too big on stack? Since if it causes
-trouble in using, that mean current kernel will fail to run on 4096 CPU
-system.
+
