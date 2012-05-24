@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab2EXJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:34:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37782 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221Ab2EXJeH (ORCPT
+	id S1755037Ab2EXJho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:37:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51241 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753198Ab2EXJhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:34:07 -0400
-Subject: Re: [PATCH 01/16] perf: Unified API to record selective sets of
- arch registers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
-        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
-        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
-        benjamin.redelings@nescent.org
-In-Reply-To: <1337801535-12865-2-git-send-email-jolsa@redhat.com>
-References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
-	 <1337801535-12865-2-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 May 2012 11:33:53 +0200
-Message-ID: <1337852033.9783.80.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 May 2012 05:37:43 -0400
+Date: Thu, 24 May 2012 10:37:40 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch -linus] regmap: REMAP_IRQ should select IRQ_DOMAIN itself
+Message-ID: <20120524093739.GF5361@opensource.wolfsonmicro.com>
+References: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au>
+ <4FBBAF1B.1070702@xenotime.net>
+ <alpine.DEB.2.00.1205222339030.9290@chino.kir.corp.google.com>
+ <20120523093208.GB4085@opensource.wolfsonmicro.com>
+ <CA+55aFynyjrHUCh48aXSQpZpboQM7MCCtMHvxBxCf+gDoCVWXg@mail.gmail.com>
+ <20120523173342.GB4064@opensource.wolfsonmicro.com>
+ <alpine.DEB.2.00.1205231735100.8785@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1205231810570.28167@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205231810570.28167@chino.kir.corp.google.com>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
-> +enum perf_event_x86_32_regs {
-> +       PERF_X86_32_REG_EAX,
-> +       PERF_X86_32_REG_EBX,
-> +       PERF_X86_32_REG_ECX,
-> +       PERF_X86_32_REG_EDX,
-> +       PERF_X86_32_REG_ESI,
-> +       PERF_X86_32_REG_EDI,
-> +       PERF_X86_32_REG_EBP,
-> +       PERF_X86_32_REG_ESP,
-> +       PERF_X86_32_REG_EIP,
-> +       PERF_X86_32_REG_FLAGS,
-> +       PERF_X86_32_REG_CS,
-> +       PERF_X86_32_REG_DS,
-> +       PERF_X86_32_REG_ES,
-> +       PERF_X86_32_REG_FS,
-> +       PERF_X86_32_REG_GS,
-> +
-> +       /* Non ABI */
-> +       PERF_X86_32_REG_MAX,
-> +};
+On Wed, May 23, 2012 at 06:12:18PM -0700, David Rientjes wrote:
 
-> +enum perf_event_x86_64_regs {
-> +       PERF_X86_64_REG_RAX,
-> +       PERF_X86_64_REG_RBX,
-> +       PERF_X86_64_REG_RCX,
-> +       PERF_X86_64_REG_RDX,
-> +       PERF_X86_64_REG_RSI,
-> +       PERF_X86_64_REG_RDI,
-> +       PERF_X86_64_REG_R8,
-> +       PERF_X86_64_REG_R9,
-> +       PERF_X86_64_REG_R10,
-> +       PERF_X86_64_REG_R11,
-> +       PERF_X86_64_REG_R12,
-> +       PERF_X86_64_REG_R13,
-> +       PERF_X86_64_REG_R14,
-> +       PERF_X86_64_REG_R15,
-> +       PERF_X86_64_REG_RBP,
-> +       PERF_X86_64_REG_RSP,
-> +       PERF_X86_64_REG_RIP,
-> +       PERF_X86_64_REG_FLAGS,
-> +       PERF_X86_64_REG_CS,
-> +       PERF_X86_64_REG_SS,
-> +
-> +       /* Non ABI */
-> +       PERF_X86_64_REG_MAX,
-> +}; 
+> you did it with a bogus commit message that insists this is only a 
+> randconfig issue when in reality you never tested enabling 
+> CONFIG_MFD_PALMAS without CONFIG_IRQ_DOMAIN when you merged 4af8be67fd99 
+> ("regmap: Convert regmap_irq to use irq_domain").
 
-So why bother with two different APIs? Why not have only the x86_64 one
-and maybe add a warning/error/fail whatever when x86_64 regs are
-selected on i386/compat tasks.
+JFTR all randconfig means is that it doesn't seem like a configuration a
+human is likely to generate for use on an actual system as opposed to
+build coverage - in this case the driver is for the PMIC for some new
+ARM SoCs so it's unlikely that someone would want to run the driver on a
+system that doesn't have DT (and hence IRQ domains) enabled.
 
-
-
+With this sort of dependency error failures are generally either in
+configurations you'd expect people to want to run (which obviously
+affect users), in allXconfig builds (which get run a lot for all sorts
+of reasons and so are urgent even if it's unlikely people will use them
+in production) or in randconfig builds (which should work and are
+potentially sensible configurations but can also turn up combinations
+that aren't that realistic).  All of these should be fixed if they
+break.
