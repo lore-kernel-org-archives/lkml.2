@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab2EXAVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 20:21:38 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:40404 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751255Ab2EXAVg (ORCPT
+	id S1752198Ab2EXA3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 20:29:16 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:14460
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751061Ab2EXA3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 20:21:36 -0400
-Date: Thu, 24 May 2012 10:21:26 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andreas Westin <andreas.westin@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: Crypto Update for 3.5
-Message-ID: <20120524002126.GA28104@gondor.apana.org.au>
-References: <20101024061625.GA23715@gondor.apana.org.au>
- <20110106000157.GA16089@gondor.apana.org.au>
- <20110315145940.GA15373@gondor.apana.org.au>
- <20110520235409.GA1722@gondor.apana.org.au>
- <20110724011752.GA14373@gondor.apana.org.au>
- <20111031040952.GA19659@gondor.apana.org.au>
- <20120106041250.GA7759@gondor.apana.org.au>
- <20120320032736.GA21367@gondor.apana.org.au>
- <20120523013528.GA20781@gondor.apana.org.au>
- <CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com>
+	Wed, 23 May 2012 20:29:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah)
+Date: Thu, 24 May 2012 08:48:52 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Fabio Estevam <festevam@gmail.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>, <marc@cpdesign.com.au>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Message-ID: <20120524004851.GB7843@S2100-06.ap.freescale.net>
+References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
+ <201205221053.21792.marc@cpdesign.com.au>
+ <CAOMZO5BCcFOktp9mqDCpnrVhbK6pwO1R3ZdiKPfawb=KLjzzWw@mail.gmail.com>
+ <CAOMZO5DKsrXJoSSacwYFoHUw6pPWLWQnC3gS=6=3k6nvf6tggw@mail.gmail.com>
+ <20120523084945.GA4085@opensource.wolfsonmicro.com>
+ <20120523164203.GA7843@S2100-06.ap.freescale.net>
+ <CAOMZO5AOsdHqZ2Rth_m_BLEvHyLrJGEeXzmZZX=HyfeQZ7WTYw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwR=wZfpXPTn9e+ZbEB4srVOHVZFz_STg9jxngmhJxT=w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAOMZO5AOsdHqZ2Rth_m_BLEvHyLrJGEeXzmZZX=HyfeQZ7WTYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 04:06:35PM -0700, Linus Torvalds wrote:
-> On Tue, May 22, 2012 at 6:35 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
-> >
-> > Here is the crypto update for 3.5:
+On Wed, May 23, 2012 at 01:34:32PM -0300, Fabio Estevam wrote:
+> On Wed, May 23, 2012 at 1:42 PM, Shawn Guo <shawn.guo@freescale.com> wrote:
 > 
-> I pulled this, but quite frankly, some of it looks like utter garbage.
+> > Removing that alone does not resolve the issue, but with additional
+> > .write_flag_mask setting it does for me.
 > 
-> There's a declaration for dbx500_add_platform_device_noirq() that does
-> not exist and is not used anywhere. Why? It was added in commit
-> 585d188f8072, and I see no rhyme or reason to it.
+> This is still not working for me on mx31pdk.
+> 
+> Still getting wrong SPI read data from the pmic.
+> 
+Interesting.
 
-I can't see why that was added there either.
+I'm booting my imx51 babbage with MC13892 with no problem now.  And
+reading the registers give me the same values as I do with u-boot.
 
-Adding Arnd/Linus Walleij to see if they can tell us whether
-it should go or stay.
+Regards,
+Shawn
 
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+root@linaro-developer:~# cat /sys/kernel/debug/regmap/spi32766.0/registers
+00: 005c80
+01: ffffff
+02: 195448
+03: 000081
+04: ffffff
+05: 00401c
+06: 000218
+07: 0045d0
+08: 000000
+09: 000000
+0a: 000001
+0b: 000000
+0c: 000000
+0d: 000040
+0e: 000000
+0f: 400000
+10: 000000
+11: 000000
+12: 000000
+13: 000000
+14: 0003af
+15: 01ffff
+16: 000000
+17: 007fff
+18: 454a54
+19: 45673a
+1a: 00631a
+1b: 80739c
+1c: 212048
+1d: 000808
+1e: 010fe0
+1f: 0001f4
+20: 049208
+21: 049249
+22: 200000
+23: 000000
+24: 000000
+25: 000000
+26: 000000
+27: 000000
+28: 000000
+29: 000000
+2a: 000000
+2b: 008000
+2c: 000000
+2d: 574574
+2e: 0001c0
+2f: 055055
+30: 60007b
+31: 000040
+32: 000008
+33: 000000
+34: 000000
+35: 000000
+36: 000000
+37: 000000
+38: 000000
+39: 000000
+3a: 000000
+3b: 000000
+3c: 000000
+3d: 000000
+3e: 000000
+3f: 000000
+
