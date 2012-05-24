@@ -1,151 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965603Ab2EXVdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:33:38 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52714 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933393Ab2EXVdf (ORCPT
+	id S965655Ab2EXVfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:35:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55290 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965639Ab2EXVfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:33:35 -0400
-From: Benjamin Poirier <bpoirier@suse.de>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Diego Beltrami <diego.beltrami@gmail.com>
-Subject: [PATCH v4] xfrm: take net hdr len into account for esp payload size calculation
-Date: Thu, 24 May 2012 17:32:38 -0400
-Message-Id: <1337895158-23521-1-git-send-email-bpoirier@suse.de>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <20120517.200509.2290282427866555176.davem@davemloft.net>
-References: <20120517.200509.2290282427866555176.davem@davemloft.net>
+	Thu, 24 May 2012 17:35:07 -0400
+Date: Thu, 24 May 2012 14:35:05 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, mgorman@suse.de, kamezawa.hiroyu@jp.fujitsu.com,
+        dhillf@gmail.com, aarcange@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V6 06/14] hugetlb: Simplify migrate_huge_page
+In-Reply-To: <1334573091-18602-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1205241432290.24113@chino.kir.corp.google.com>
+References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1334573091-18602-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrects the function that determines the esp payload size. The calculations
-done in esp{4,6}_get_mtu() lead to overlength frames in transport mode for
-certain mtu values and suboptimal frames for others.
+On Mon, 16 Apr 2012, Aneesh Kumar K.V wrote:
 
-According to what is done, mainly in esp{,6}_output() and tcp_mtu_to_mss(),
-net_header_len must be taken into account before doing the alignment
-calculation.
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index 97cc273..1f092db 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1414,7 +1414,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>  	int ret;
+>  	unsigned long pfn = page_to_pfn(page);
+>  	struct page *hpage = compound_head(page);
+> -	LIST_HEAD(pagelist);
+>  
+>  	ret = get_any_page(page, pfn, flags);
+>  	if (ret < 0)
+> @@ -1429,19 +1428,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
+>  	}
+>  
+>  	/* Keep page count to indicate a given hugepage is isolated. */
+> -
+> -	list_add(&hpage->lru, &pagelist);
+> -	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
+> -				true);
+> +	ret = migrate_huge_page(page, new_page, MPOL_MF_MOVE_ALL, 0, true);
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-
----
-Changes since v3:
-* also fix ipv6
-
-Changes since v2:
-* rename l3_adj to net_adj
-* fix indentation
-
-Changes since v1:
-* introduce l3_adj to preserve the same returned value as before for tunnel
-  mode
-
-For example:
-* on ipv4 with md5 AH and 3des ESP (transport mode):
-mtu = 1499 leads to FRAGFAILS
-mtu = 1500 the addition of padding in the esp header could be avoided
-* on ipv6 with md5 AH and twofish-sha1 ESP (transport mode):
-mtu = 1491 leads to Ip6FragFails
-mtu = 1499 padding can be avoided
-
-For details on how the formula is established, see
-https://lkml.org/lkml/2012/5/10/597
-
-Tested with
-* transport mode E
-* transport mode EA
-* transport mode E + ah
-* tunnel mode E
-
-Not tested with BEET, but it should be the same as transport mode
-	draft-nikander-esp-beet-mode-03.txt Section 5.2:
-	"The wire packet format is identical to the ESP transport mode"
----
- net/ipv4/esp4.c |   24 +++++++++---------------
- net/ipv6/esp6.c |   18 +++++++-----------
- 2 files changed, 16 insertions(+), 26 deletions(-)
-
-diff --git a/net/ipv4/esp4.c b/net/ipv4/esp4.c
-index 89a47b3..cb982a6 100644
---- a/net/ipv4/esp4.c
-+++ b/net/ipv4/esp4.c
-@@ -459,28 +459,22 @@ static u32 esp4_get_mtu(struct xfrm_state *x, int mtu)
- 	struct esp_data *esp = x->data;
- 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
- 	u32 align = max_t(u32, blksize, esp->padlen);
--	u32 rem;
--
--	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
--	rem = mtu & (align - 1);
--	mtu &= ~(align - 1);
-+	unsigned int net_adj;
- 
- 	switch (x->props.mode) {
--	case XFRM_MODE_TUNNEL:
--		break;
--	default:
- 	case XFRM_MODE_TRANSPORT:
--		/* The worst case */
--		mtu -= blksize - 4;
--		mtu += min_t(u32, blksize - 4, rem);
--		break;
- 	case XFRM_MODE_BEET:
--		/* The worst case. */
--		mtu += min_t(u32, IPV4_BEET_PHMAXLEN, rem);
-+		net_adj = sizeof(struct iphdr);
- 		break;
-+	case XFRM_MODE_TUNNEL:
-+		net_adj = 0;
-+		break;
-+	default:
-+		BUG();
- 	}
- 
--	return mtu - 2;
-+	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
-+		 net_adj) & ~(align - 1)) + (net_adj - 2);
- }
- 
- static void esp4_err(struct sk_buff *skb, u32 info)
-diff --git a/net/ipv6/esp6.c b/net/ipv6/esp6.c
-index 1e62b75..db1521f 100644
---- a/net/ipv6/esp6.c
-+++ b/net/ipv6/esp6.c
-@@ -413,19 +413,15 @@ static u32 esp6_get_mtu(struct xfrm_state *x, int mtu)
- 	struct esp_data *esp = x->data;
- 	u32 blksize = ALIGN(crypto_aead_blocksize(esp->aead), 4);
- 	u32 align = max_t(u32, blksize, esp->padlen);
--	u32 rem;
-+	unsigned int net_adj;
- 
--	mtu -= x->props.header_len + crypto_aead_authsize(esp->aead);
--	rem = mtu & (align - 1);
--	mtu &= ~(align - 1);
--
--	if (x->props.mode != XFRM_MODE_TUNNEL) {
--		u32 padsize = ((blksize - 1) & 7) + 1;
--		mtu -= blksize - padsize;
--		mtu += min_t(u32, blksize - padsize, rem);
--	}
-+	if (x->props.mode != XFRM_MODE_TUNNEL)
-+		net_adj = sizeof(struct ipv6hdr);
-+	else
-+		net_adj = 0;
- 
--	return mtu - 2;
-+	return ((mtu - x->props.header_len - crypto_aead_authsize(esp->aead) -
-+		 net_adj) & ~(align - 1)) + (net_adj - 2);
- }
- 
- static void esp6_err(struct sk_buff *skb, struct inet6_skb_parm *opt,
--- 
-1.7.7
-
+Was this tested?  Shouldn't this be migrate_huge_page(compound_head(page), 
+...)?
