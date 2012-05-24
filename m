@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab2EXLqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 07:46:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:56455 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab2EXLqu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 07:46:50 -0400
+	id S1754616Ab2EXLwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 07:52:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16593 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751964Ab2EXLwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 07:52:38 -0400
+Date: Thu, 24 May 2012 13:52:06 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+Subject: Re: [PATCH 02/16] perf: Add ability to attach registers dump to
+ sample
+Message-ID: <20120524115206.GB1775@m.brq.redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+ <1337801535-12865-3-git-send-email-jolsa@redhat.com>
+ <1337853048.9783.92.camel@laptop>
+ <CABPqkBR9hewjNUJf9ByD-jHc42e_qwQiKoP68RyL7BU8Q7BGgQ@mail.gmail.com>
+ <1337856142.9783.104.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <4FBA7D9D.6060202@ti.com>
-References: <marcus.folkesson@gmail.com>
-	<1336672352-23191-1-git-send-email-marcus.folkesson@gmail.com>
-	<4FBA7D9D.6060202@ti.com>
-Date: Thu, 24 May 2012 13:46:49 +0200
-Message-ID: <CAM8FrKJijXr1nJFhJZDSufHmfRQXL1RPwUA7OsSTVAiGPhECuA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: davinci: turn off DDR PHY when entering deep sleep
-From: Marcus Folkesson <marcus.folkesson@gmail.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337856142.9783.104.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+On Thu, May 24, 2012 at 12:42:22PM +0200, Peter Zijlstra wrote:
+> On Thu, 2012-05-24 at 12:06 +0200, Stephane Eranian wrote:
+> 
+> > > What are we doing here and why?
+> > >
+> > I think this is related to a discusion we had earlier about which
+> > machine state you want
+> > to sample.
+> > 
+> > There are 3 possible machine states:
+> >   1- user level (even when sample is in kernel AND assuming you did
+> > not hit a kernel only thread)
+> >   2- interrupted state (@ PMU interrupt)
+> >   3- precise state (state captured by PEBS on Intel, for instance)
+> > 
+> > Jiri is only interested in 1/. I am interested in the other two as well.
+> > 
+> > Question: is there a situation where we could need more than one machine
+> > state per sample?
+> 
+> Well, IIRC you always wanted both 2 and 3 at the same time to compute
+> skid, thus:
+> 
+> > If not, then a single bitmask is enough.
+> 
+> Indeed, so then we get to multiple bitmasks and unless you want to be
+> restricted to the same bitmap for all these types this setup won't
+> actually work.
 
-2012/5/21 Sekhar Nori <nsekhar@ti.com>:
-> Hi Marcus,
->
-> Thanks for the patch.
->
-> On 5/10/2012 11:22 PM, Marcus Folkesson wrote:
->> Deepsleep is the most power saving state on the davinci-platform.
->> The DDR PHY consumes about 25mW and should be turned off in this low
->> power state.
->>
->> Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
->> ---
->>  arch/arm/mach-davinci/include/mach/memory.h |    2 ++
->>  arch/arm/mach-davinci/sleep.S               |   10 ++++++++++
->>  2 files changed, 12 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/arm/mach-davinci/include/mach/memory.h b/arch/arm/mach-davinci/include/mach/memory.h
->> index 7873194..1b1b8ac 100644
->> --- a/arch/arm/mach-davinci/include/mach/memory.h
->> +++ b/arch/arm/mach-davinci/include/mach/memory.h
->
-> This is moved to arch/arm/mach-davinci/include/mach/ddr2.h in current
-> kernel.
->
->> @@ -36,6 +36,8 @@
->>  #define DDR2_MCLKSTOPEN_BIT  BIT(30)
->>  #define DDR2_LPMODEN_BIT     BIT(31)
->>
->> +#define DDR2_DRPHYC1R_OFFSET         0xe4
->> +#define DDR_PWRDNEN_BIT              BIT(6)
->>  /*
->>   * Increase size of DMA-consistent memory region
->>   */
->> diff --git a/arch/arm/mach-davinci/sleep.S b/arch/arm/mach-davinci/sleep.S
->> index 5f1e045..30713b2 100644
->> --- a/arch/arm/mach-davinci/sleep.S
->> +++ b/arch/arm/mach-davinci/sleep.S
->> @@ -57,6 +57,11 @@ ENTRY(davinci_cpu_suspend)
->>
->>       ldmia   r0, {r0-r4}
->>
->> +     /* Turn PHY off */
->> +     ldr     ip, [r0, #DDR2_DRPHYC1R_OFFSET]
->> +     orr     ip, ip, #DDR_PWRDNEN_BIT
->> +     str     ip, [r0, #DDR2_DRPHYC1R_OFFSET]
->
-> Current TRM (section 14.2.13.1) specifies that this bit be set during
-> DDR initialization sequence itself (done in UBL or U-Boot/SPL). I am
-> checking with folks from the TI design team on whether it can be done
-> later on as part of the DeepSleep sequence.
->
-> It looks like IOPWRDN bit in VTPIO_CTL also needs to be set for this
-> configuration take effect. You probably did not have to do it because
-> the bootloader you are using already has this set?
->
-> How much testing has this patch undergone? Have you tested it across
-> multiple suspend-resume cycles? How much does the power consumed by DDR
-> PHY go down by (and which type of DDR)?
+My intention was to make this general. I could just add
+bitmask for each type (user regs mask for now) but I wanted
+to be consistent with other SAMPLE_* stuff..
 
-You are right.
+So current patch adds PERF_SAMPLE_REGS sample_type bit.
+Once it is set, the 'sample_regs' value is checked for what
+type of registers you want for sample.
 
-I now see that it is possible to set all those bits in the bootloader
-and let the PHY automatically go down in idle.
-This patch is therefore unnecessary.
+Each type then has separate bitmask in case you want different
+registers for each type. Allowing whatever combination of regs dump
+being added to the sample, since it seems there's no firm
+decision on what combination might be needed.
 
-Thank you all for the attention!
-
-
-Best regards
-Marcus Folkesson
+Sure we can make the same with bitmasks for each regs type,
+and check the presence in sample by bitmask being not empty.
