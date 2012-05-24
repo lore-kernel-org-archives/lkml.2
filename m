@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab2EXKrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:47:52 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:29286 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab2EXKrv (ORCPT
+	id S932767Ab2EXKsC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:48:02 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:34809 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932361Ab2EXKsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:47:51 -0400
-X-IronPort-AV: E=Sophos;i="4.75,649,1330905600"; 
-   d="scan'208";a="12646403"
-Date: Thu, 24 May 2012 11:47:12 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/4] xen/hvc: Fix error cases around
- HVM_PARAM_CONSOLE_PFN
-In-Reply-To: <1337795222-29946-3-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.00.1205241145200.26786@kaball-desktop>
-References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com> <1337795222-29946-3-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 24 May 2012 06:48:00 -0400
+Date: Thu, 24 May 2012 12:48:30 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chen Gong <gong.chen@linux.intel.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop CMC
+ storm
+Message-ID: <20120524104830.GB27063@aftab.osrc.amd.com>
+References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com>
+ <alpine.LFD.2.02.1205230859190.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F2DD6@ORSMSX104.amr.corp.intel.com>
+ <alpine.LFD.2.02.1205232044150.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F30C0@ORSMSX104.amr.corp.intel.com>
+ <4FBD9BAA.7070902@linux.intel.com>
+ <20120524060016.GB25344@aftab.osrc.amd.com>
+ <alpine.LFD.2.02.1205241146100.3231@ionos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1205241146100.3231@ionos>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 May 2012, Konrad Rzeszutek Wilk wrote:
-> We weren't resetting the parameter to be passed in to a
-> known default. Nor were we checking the return value of
-> hvm_get_parameter.
+On Thu, May 24, 2012 at 12:01:13PM +0200, Thomas Gleixner wrote:
+> Aside of that machine_check_poll is called from other places as
+> well. So looking at mce_timer_start() which is surprisingly the timer
+> callback:
 > 
-> CC: stable@kernel.org
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->
->  drivers/tty/hvc/hvc_xen.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> index afc7fc2..3277f0e 100644
-> --- a/drivers/tty/hvc/hvc_xen.c
-> +++ b/drivers/tty/hvc/hvc_xen.c
-> @@ -219,7 +219,8 @@ static int xen_hvm_console_init(void)
->  	if (r < 0)
->  		goto err;
->  	info->evtchn = v;
-> -	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
-> +	v = 0;
-> +	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
->  	if (r < 0)
->  		goto err;
->  	mfn = v;
+> The poll timer rate is self adjusting to intervals down to HZ/100. So
+> when you get into a state where the timer rate becomes lower than HZ/5
+> we'll trigger that CMCI storm in software and queue work even on
+> machines which do not support CMCI or have it disabled. Brilliant,
+> isn't it?
 
-Is 0 the right default here?
-Maybe something invalid like (~0UL) would be better?
+Yes, I'm thrilled just by staring at this :-).
+
+> So that rate check belongs into intel_treshold_interrupt() and wants a
+> intel specific callback in mce_start_timer() to undo it.
+
+So AFAICT mce_start_timer() sets the polling rate of machine_check_poll,
+i.e. we normally poll the MCA registers for errors every 5 minutes. This
+is for correctable errors which don't raise #MC exception but only get
+logged.
+
+That's why, for example, when you boot your box you see
+
+"Machine check events logged."
+
+in dmesg at timestamp 299.xxx when the hw has either had an MCE causing
+it to reboot or has experienced a correctable error during boot.
+
+Oh, I see it now, this thing reconfigures the mce_timer which we use for
+the above.
+
+Ok, I'm no timer guy but can we use the same timer for two different
+things? This looks pretty fishy. I assumed the CMCI thing adds another,
+CMCI-only timer for its purposes.
+
+Thomas, what is the proper design here?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
