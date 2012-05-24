@@ -1,161 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757141Ab2EXBkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 21:40:25 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:44727 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751409Ab2EXBkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 21:40:22 -0400
-Date: Wed, 23 May 2012 20:40:19 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
- smp_irq_move_cleanup_interrupt
-Message-ID: <20120524014019.GA12196@sgi.com>
-References: <20120521164959.GE16454@sgi.com>
- <alpine.LFD.2.02.1205212304580.3231@ionos>
- <20120521211917.GA25567@sgi.com>
- <alpine.LFD.2.02.1205212324260.3231@ionos>
- <20120523181636.GA2032@sgi.com>
- <20120523190414.GA5263@sgi.com>
- <1337801086.1997.197.camel@sbsiddha-desk.sc.intel.com>
- <20120523200226.GA6936@sgi.com>
- <1337816970.1997.207.camel@sbsiddha-desk.sc.intel.com>
+	id S1756809Ab2EXBl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 21:41:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37054 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409Ab2EXBl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 21:41:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="156465401"
+Message-ID: <4FBD9161.3040206@intel.com>
+Date: Thu, 24 May 2012 09:39:45 +0800
+From: "kun.jiang" <kunx.jiang@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337816970.1997.207.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        YMZHANG <yanmin_zhang@linux.intel.com>, davem@davemloft.net,
+        eric.dumazet@gmail.com
+Subject: [PATCH V2] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 04:49:29PM -0700, Suresh Siddha wrote:
-> On Wed, 2012-05-23 at 15:02 -0500, Dimitri Sivanich wrote:
-> > OK.  Hopefully this covers it.
-> 
-> Sorry No. Now you will understand why Thomas wanted detailed changelog.
-> I found one more issue with the help of your new modification to the
-> changelog.
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
 
-> > A NULL pointer dereference can occur in smp_irq_move_cleanup_interrupt() if
-> > we haven't yet setup the irq_cfg pointer in the irq_desc.irq_data.chip_data.
-> > 
-> > In create_irq_nr() there is a window where we have set vector_irq in
-> > __assign_irq_vector(), but not yet called irq_set_chip_data() to set the
-> > irq_cfg pointer.
-> > 
-> > Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during this time,
-> > smp_irq_move_cleanup_interrupt() will attempt to process the aforementioned
-> > irq, but panic when accessing irq_cfg.
-> > 
-> > There is also a window in destroy_irq() where we've cleared the irq_cfg
-> > pointer in free_irq_cfg(), but have not yet called irq_free_desc().  Note
-> > that we have cleared vector_irq in __clear_irq_vector() prior to free_irq_cfg(),
-> > but smp_irq_move_cleanup_interrupt() might've already referenced the irq_desc.
-> 
-> So, what happens if the irq_desc gets freed by the destroy_irq() in the
-> sparse irq case? smp_irq_move_cleanup_interrupt() will refer to freed
-> irq desc memory! Right?
+We hit a kernel OOPS.
 
-I don't believe I ever hit that case, but yes, I see the possibility, so
-we have at least 3 holes here.
+<3>[23898.789643] BUG: sleeping function called from invalid context at
+/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
+<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
+Thread-6683
+<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
+3.0.8-137685-ge7742f9 #1
+<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
+to suspend...
+<4>[23899.904225] Call Trace:
+<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
+<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
+<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
+<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
+<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
+<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
+<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
+<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
+<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
+<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
+<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
+<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
+<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
+<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
+<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
+<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
 
-My test (other than repeated boots) was to repeatedly insert and remove a
-module that sets up irq's on every cpu.  Without my patch it panic'ed fairly
-quickly.  With the patch it never failed.
+Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
+fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
 
-> 
-> May we should really do something like the appended (untested patch)?
-> Can you please review and give this a try? Let me review a bit more to
-> see if this really fixes the issue.
+With the patch, we ran MTBF testing on Android mobile for 12 hours
+and didn't trigger the issue.
 
-I wonder how many instances of smp_irq_move_cleanup_interrupt() might
-run simultaneously on a large system?  Would there be any issue with lock
-pressure from holding the vector_lock through the entire loop?
+Thank Eric for very detailed review/checking the issue.
 
-I can probably test the code (after further review), but the only case I
-saw through testing was the create_irq_nr case.
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
+---
+ net/ipv4/fib_semantics.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-> 
-> Thanks.
-> ---
->  arch/x86/kernel/apic/io_apic.c |   19 +++++++++----------
->  1 files changed, 9 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index ffdc152..81f4cab 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -2295,6 +2295,8 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
->  	exit_idle();
->  
->  	me = smp_processor_id();
-> +
-> +	raw_spin_lock(&vector_lock);
->  	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
->  		unsigned int irq;
->  		unsigned int irr;
-> @@ -2310,17 +2312,16 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
->  			continue;
->  
->  		cfg = irq_cfg(irq);
-> -		raw_spin_lock(&desc->lock);
->  
->  		/*
->  		 * Check if the irq migration is in progress. If so, we
->  		 * haven't received the cleanup request yet for this irq.
->  		 */
->  		if (cfg->move_in_progress)
-> -			goto unlock;
-> +			continue;
->  
->  		if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
-> -			goto unlock;
-> +			continue;
->  
->  		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
->  		/*
-> @@ -2332,12 +2333,11 @@ asmlinkage void smp_irq_move_cleanup_interrupt(void)
->  		 */
->  		if (irr  & (1 << (vector % 32))) {
->  			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
-> -			goto unlock;
-> +			continue;
->  		}
->  		__this_cpu_write(vector_irq[vector], -1);
-> -unlock:
-> -		raw_spin_unlock(&desc->lock);
->  	}
-> +	raw_spin_unlock(&vector_lock);
->  
->  	irq_exit();
->  }
-> @@ -2986,17 +2986,16 @@ unsigned int create_irq_nr(unsigned int from, int node)
->  		return 0;
->  	}
->  
-> +	irq_set_chip_data(irq, cfg);
->  	raw_spin_lock_irqsave(&vector_lock, flags);
->  	if (!__assign_irq_vector(irq, cfg, apic->target_cpus()))
->  		ret = irq;
->  	raw_spin_unlock_irqrestore(&vector_lock, flags);
->  
-> -	if (ret) {
-> -		irq_set_chip_data(irq, cfg);
-> +	if (ret)
->  		irq_clear_status_flags(irq, IRQ_NOREQUEST);
-> -	} else {
-> +	else
->  		free_irq_at(irq, cfg);
-> -	}
->  	return ret;
->  }
->  
-> 
+diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
+index 5063fa3..8861f91 100644
+--- a/net/ipv4/fib_semantics.c
++++ b/net/ipv4/fib_semantics.c
+@@ -145,6 +145,12 @@ static void free_fib_info_rcu(struct rcu_head *head)
+ {
+ 	struct fib_info *fi = container_of(head, struct fib_info, rcu);
+ 
++	change_nexthops(fi) {
++		if (nexthop_nh->nh_dev)
++			dev_put(nexthop_nh->nh_dev);
++	} endfor_nexthops(fi);
++
++	release_net(fi->fib_net);
+ 	if (fi->fib_metrics != (u32 *) dst_default_metrics)
+ 		kfree(fi->fib_metrics);
+ 	kfree(fi);
+@@ -156,13 +162,7 @@ void free_fib_info(struct fib_info *fi)
+ 		pr_warn("Freeing alive fib_info %p\n", fi);
+ 		return;
+ 	}
+-	change_nexthops(fi) {
+-		if (nexthop_nh->nh_dev)
+-			dev_put(nexthop_nh->nh_dev);
+-		nexthop_nh->nh_dev = NULL;
+-	} endfor_nexthops(fi);
+ 	fib_info_cnt--;
+-	release_net(fi->fib_net);
+ 	call_rcu(&fi->rcu, free_fib_info_rcu);
+ }
+ 
+-- 
+1.7.1
