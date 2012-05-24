@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965380Ab2EXWU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 18:20:59 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44824 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752476Ab2EXWU6 (ORCPT
+	id S965482Ab2EXWVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:21:10 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35508 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965386Ab2EXWVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:20:58 -0400
-Date: Fri, 25 May 2012 08:20:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-next@vger.kernel.org
-Subject: linux-next: usual request
-Message-Id: <20120525082043.be9bc57173a3e24a3c145e81@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN"
+	Thu, 24 May 2012 18:21:06 -0400
+Date: Thu, 24 May 2012 23:21:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: philippe.retornaz@epfl.ch
+Cc: Fabio Estevam <festevam@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        marc@cpdesign.com.au, Shawn Guo <shawn.guo@freescale.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Message-ID: <20120524222102.GP5361@opensource.wolfsonmicro.com>
+References: <201205221053.21792.marc@cpdesign.com.au>
+ <CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com>
+ <201205242338.41420.marc@cpdesign.com.au>
+ <5844466.kI7qR0Os9A@laptop>
+ <20120524163604.GM5361@opensource.wolfsonmicro.com>
+ <20120524164101.GW3710@pengutronix.de>
+ <CAOMZO5CZbQ9cjh+5Lj8R5hbYhizP891D01LuqbaRq8WTQs8zkQ@mail.gmail.com>
+ <20120524180320.GO5361@opensource.wolfsonmicro.com>
+ <20120524214229.1038515zms1khf6t@webmail.epfl.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524214229.1038515zms1khf6t@webmail.epfl.ch>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 24, 2012 at 09:42:29PM +0200, philippe.retornaz@epfl.ch wrote:
 
-Hi all,
+> Sadly, after looking at the imx31 datasheet it seems it's a hardware
+> limitation. We could maybe workaround it by using DMA to access the
+> CSPI but even with dma, this would need a single transfer in order
+> to keep the CS signal asserted.
 
-Please do not add anything to your linux-next included trees that is
-intended for v3.6 until after v3.5-rc1 is released.
+Oh dear, though the DMA approach sounds like it might be doable...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Thus, we need to workaround this in the regmap-spi or mc13783-spi driver.
+> Either we find a way to have regmap-spi to use 32bits transfert or
+> we implement a custom bus inside mc13783-spi.
 
---Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN
-Content-Type: application/pgp-signature
+Like I said in my previous message the ideal thing would be that the SPI
+driver would handle this, that'll ensure that the fix gets propagated to
+the maximum possible set of users and is nicer from an abstraction point
+of view.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPvrQ7AAoJEECxmPOUX5FEHNkP/iHsKPAkT2nt855F459lJtKc
-Q59iY1AwSKnTjbJWFhTY+Tr4eGLCj5caZtxhbogHqSP353+hacZ5XLgAXFAKYpPx
-kM+/9o1RtOgNHD02TR8IdbX+TWGeYShntTqttKtXLSjcfP2E1dm3JtyiXjlLXV0U
-YTLROvAPNAtV882fFuJ5V+zUwp1Y6K6PJ3b1BgnUKRgoVBnium8OEorBIXFknY5z
-6TFzMqh2HHiQOVJKq/4YGgpdSmNLhdAKAQSpyHnZS8WdEeA27GWewVm7vnxD8EPc
-WN2CPK2hA2CAo/pjRDhJQZiNF6Jx11zWYC5QknpZiy4nV3iNnedDgf/BVNLLsG4+
-BA32aY0RKqzyENod6C62tg9Uji5cFayJz1BrFS3jwr6uS3vzSzyDKod4sGLfznsS
-XudYDzVsP0Q/7q/AS1AQ46BbRNWlg4w68cUqxLbWhr7Kfr6dZ3wfCRAni4jMRZeJ
-3zBDT2CRCIRQZjFMP7W3YINsBIWpQe/gOWUbyFLZ2Jd0Bbu+HZMpUuxx08I5GOb3
-Ta1yfiKV/5RUlTi3VVhBLiTWYu4omBr1YrdXb7LuyGgrHN5jgyI2FqensosvHxYM
-KRdteKHZL1cszIMq9981KGYvQAdy7Qli+fQcaZt7j02r/n+6z58dTPQPQeSOEyxk
-uH0JjpgtnhT0KRaAuyUy
-=Skjg
------END PGP SIGNATURE-----
-
---Signature=_Fri__25_May_2012_08_20_43_+1000_7SPOpFlFqoklpIBN--
+A regmap internal workaround can possibly use Stephen Warren's stuff for
+allowing buses to specify endianness stuff that was posted earlier today
+though there's a few more tricks needed since this combines reads and
+writes.  We may also need to extend the SPI bus to make the capabilities
+of the controller discoverable, right now I'm not sure that regmap can
+discover when it could activate any more complex stuff.  If we can make
+it cheap enough to decide it'd probably be a small performance win even
+where the controllers don't have issues.
