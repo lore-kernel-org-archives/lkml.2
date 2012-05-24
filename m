@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965349Ab2EXWFc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 18:05:32 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:49547 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab2EXWFb convert rfc822-to-8bit (ORCPT
+	id S1759543Ab2EXWG4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:06:56 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59017 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab2EXWGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:05:31 -0400
+	Thu, 24 May 2012 18:06:55 -0400
+Date: Fri, 25 May 2012 00:06:48 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Beulich <JBeulich@suse.com>
+cc: mingo@elte.hu, hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: clear HPET configuration registers on startup
+In-Reply-To: <4F79D0BB020000780007C02D@nat28.tlf.novell.com>
+Message-ID: <alpine.LFD.2.02.1205242352460.3231@ionos>
+References: <4F79D0BB020000780007C02D@nat28.tlf.novell.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20120524220105.GB18120@kroah.com>
-References: <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
- <20120524180154.GA15036@core.coreip.homeip.net> <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
- <20120524195851.GA15306@core.coreip.homeip.net> <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
- <20120524203647.GA16024@core.coreip.homeip.net> <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
- <20120524205952.GA16621@core.coreip.homeip.net> <CA+55aFybQDXjGaEK0k=60gS88bxwE8vC7XvOffaQAf3de9cCfg@mail.gmail.com>
- <CA+55aFzZm2aAhgZagWq=rsfKTt=2_2_mpVjXDN3LAqAJmWoZqw@mail.gmail.com> <20120524220105.GB18120@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 24 May 2012 15:05:09 -0700
-X-Google-Sender-Auth: iGvPektaATDeW3P0ymu91WivAiQ
-Message-ID: <CA+55aFxYQQRpw0CDJn8bRLQJ2EYNhxf4Ra6=Hd9hOw=1q11pXA@mail.gmail.com>
-Subject: Re: [git pull] Input updates for 3.5-rc0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 3:01 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
->
-> I'm open to ideas on what to change it to.  A full sysfs path?
+On Mon, 2 Apr 2012, Jan Beulich wrote:
 
-A full sysfs path really looks pretty ugly, partly because we'd have
-to really change all our naming (look at PCI devices now: they end up
-looking like
+Sorry for ignoring this for so long.
 
-    pci0000:00/0000:00:1a.0
+> +	cfg = hpet_readl(HPET_CFG);
+> +	hpet_boot_cfg = kmalloc((last + 2) * sizeof(*hpet_boot_cfg),
+> +				GFP_KERNEL);
+> +	if (hpet_boot_cfg)
+> +		*hpet_boot_cfg = cfg;
+> +	else
+> +		pr_warn("HPET initial state will not be saved\n");
+> +	cfg &= ~(HPET_CFG_ENABLE | HPET_CFG_LEGACY);
+> +	hpet_writel(cfg, HPET_Tn_CFG(i));
 
-where that "0000:00" is duplicated because we wanted to make
-dev_name() look nice).
+This wants to be  
 
-I think Dmitry's idea to stop when we hit the actual "physical" device
-might just work in practice. So we'd show the dev_name() of the actual
-piece of hardware, and then perhaps one or two "layering" details on
-top of it. And it wouldn't change anything for the current common case
-where people tend to pass in the physical device as-is.
+> +	hpet_writel(cfg, HPET_CFG);
 
-                     Linus
+Right ?
+
+You would have noticed if that code would have run on an AMD SB700
+based machine and i would have been != 0 :)
+
+> +	if (cfg)
+> +		pr_warn("HPET: Unrecognized bits %#x set in global cfg\n",
+> +			cfg);
+> +
+> +	for (i = 0; i <= last; ++i) {
+> +		cfg = hpet_readl(HPET_Tn_CFG(i));
+> +		if (hpet_boot_cfg)
+> +			hpet_boot_cfg[i + 1] = cfg;
+> +		cfg &= ~(HPET_TN_ENABLE | HPET_TN_LEVEL | HPET_TN_FSB);
+> +		hpet_writel(cfg, HPET_Tn_CFG(i));
+> +		cfg &= ~(HPET_TN_PERIODIC | HPET_TN_PERIODIC_CAP
+> +			 | HPET_TN_64BIT_CAP | HPET_TN_32BIT | HPET_TN_ROUTE
+> +			 | HPET_TN_FSB | HPET_TN_FSB_CAP);
+> +		if (cfg)
+> +			pr_warn("HPET: Unrecognized bits %#x set in cfg#%u\n",
+> +				cfg, i);
+> +	}
+> +	hpet_print_config();
+> +
+>  	if (hpet_clocksource_register())
+>  		goto out_nohpet;
+>  
+> @@ -923,14 +952,28 @@ fs_initcall(hpet_late_init);
+>  void hpet_disable(void)
+>  {
+>  	if (is_hpet_capable() && hpet_virt_address) {
+> -		unsigned int cfg = hpet_readl(HPET_CFG);
+> +		unsigned int cfg = hpet_readl(HPET_CFG), id, last;
+>  
+> -		if (hpet_legacy_int_enabled) {
+> +		if (hpet_boot_cfg)
+> +			cfg = *hpet_boot_cfg;
+
+That restores the setting which you recorded at init time. Why do you
+want to do that? There is no point to restore to an eventually borked
+state. If we shut down the thing, then we better leave it in a
+consistent state rather than something dubious, really.
+
+Thanks,
+
+	tglx
