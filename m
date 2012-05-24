@@ -1,44 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933273Ab2EXO71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 10:59:27 -0400
-Received: from linux-sh.org ([111.68.239.195]:39548 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422Ab2EXO70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 10:59:26 -0400
-Date: Thu, 24 May 2012 23:59:03 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Magnus Damm <magnus.damm@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drop superfluous setting of i2c_board_info.type
-Message-ID: <20120524145903.GF11860@linux-sh.org>
-References: <1337870303.22505.20.camel@x61.thuisdomein>
+	id S1755338Ab2EXPCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 11:02:38 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:65108 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab2EXPCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 11:02:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337870303.22505.20.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337779362-31259-2-git-send-email-b29396@freescale.com>
+References: <1337779362-31259-1-git-send-email-b29396@freescale.com>
+	<1337779362-31259-2-git-send-email-b29396@freescale.com>
+Date: Thu, 24 May 2012 17:02:34 +0200
+Message-ID: <CACRpkdbsWr73kGdLuHALWnLaAVLrwZg-eUXd8jAgrSxE_fKS4g@mail.gmail.com>
+Subject: Re: [PATCH RFC v3 2/3] pinctrl: add pinctrl_add_gpio_ranges function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, swarren@wwwdotorg.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 04:38:23PM +0200, Paul Bolle wrote:
-> Three instances of struct i2c_board_info have their "type" member set to
-> "tsc2007" twice. First through the I2C_BOARD_INFO macro and then
-> directly. Drop the superfluous second setting.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+On Wed, May 23, 2012 at 3:22 PM, Dong Aisheng <b29396@freescale.com> wrote:
+
+> From: Dong Aisheng <dong.aisheng@linaro.org>
+>
+> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
 > ---
-> 0) Entirely untested. I'm unsure what toolchain(s) is (are) needed to
-> compile this and I am certain that I don't have the hardware.
-> 
-> 1) This is apparently legal. Doesn't gcc issue a warning for this?
-> 
-That's a new one to me. Seems legal enough. Using this feature you can
-use macro initializion for the bulk of structure elements and then just
-overload the ones you disagree with to save time, neat yet revolting at
-the same time, there was definitely a committee involved in this.
+> ChangeLog v2->v3:
+> * remove pinctrl_remove_gpio_ranges function.
+
+Applied this v3 version of both patches as well.
+
+Yours,
+Linus Walleij
