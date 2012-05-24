@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964856Ab2EXRjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:39:07 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42635 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757835Ab2EXRjF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:39:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120524164101.GW3710@pengutronix.de>
-References: <201205221053.21792.marc@cpdesign.com.au>
-	<CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com>
-	<201205242338.41420.marc@cpdesign.com.au>
-	<5844466.kI7qR0Os9A@laptop>
-	<20120524163604.GM5361@opensource.wolfsonmicro.com>
-	<20120524164101.GW3710@pengutronix.de>
-Date: Thu, 24 May 2012 14:39:02 -0300
-Message-ID: <CAOMZO5CZbQ9cjh+5Lj8R5hbYhizP891D01LuqbaRq8WTQs8zkQ@mail.gmail.com>
-Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
-From: Fabio Estevam <festevam@gmail.com>
-To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
-        marc@cpdesign.com.au, Shawn Guo <shawn.guo@freescale.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S933368Ab2EXRkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:40:33 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41631 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757835Ab2EXRkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 13:40:31 -0400
+Message-ID: <1337881229.5070.29.camel@joe2Laptop>
+Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper
+ functions
+From: Joe Perches <joe@perches.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: T Makphaibulchoke <tmac@hp.com>, lethal@linux-sh.org, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, kaloz@openwrt.org,
+        matt.fleming@intel.com, lasse.collin@tukaani.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com
+Date: Thu, 24 May 2012 10:40:29 -0700
+In-Reply-To: <4FBE6FF6.5090904@zytor.com>
+References: <1337875436-27640-1-git-send-email-tmac@hp.com>
+	 <1337880371.5070.24.camel@joe2Laptop> <4FBE6FF6.5090904@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 1:41 PM, Uwe Kleine-König
-<u.kleine-koenig@pengutronix.de> wrote:
+On Thu, 2012-05-24 at 10:29 -0700, H. Peter Anvin wrote:
+> On 05/24/2012 10:26 AM, Joe Perches wrote:
+> > On Thu, 2012-05-24 at 10:03 -0600, T Makphaibulchoke wrote:
+> >> The patch cleans up the file lib/decompress_unxz.c by removing all memory
+> >> helper functions, e.g., memmove.  By doing so, any architecture's preboot
+> >> environment supporting the XZ decompression needs to define its own copy of
+> >> any of the missing memory helper functions.
+> > 
+> > Perhaps a silly question, but why not use
+> > the __builtin variants?
+> 
+> For a lot of cases the __builtin variants just generate a call to the
+> expected out-of-line function, so you need it anyway.
 
->> If this is actually the issue the usual fix for this if the SPI
->> controller hardware can't be persuaded to do the right thing is to put
->> the chip select pin in GPIO mode and manage it by hand, though looking
->> at the driver it appears it should be doingn that already.  If you
->> change to using the bitbanging SPI driver it should do the right thing
->> (but will obviously be hideously slow), that ought to be at least a good
->> reference for expected behaviour here.
-> The imx spi driver can do both (GPIO and hardware CS) because not all
-> pins that can do hardware CS are available as GPIO.
+While I'm not completely knowledgeable about gcc,
+aren't all the __builtin_mem<foo> functions always
+available in gcc 3+
 
-Right, unfortunately on mx31 the SPI CS pins cannot be used as GPIOs.
+http://gcc.gnu.org/onlinedocs/gcc-3.0.4/gcc_5.html#SEC114
 
-On mx51evk the SPI CS are used as GPIOs and that probably explains why
-it worked on mx51evk and fails on mx31pdk.
+It does say:
+
+Many of these functions are only optimized in certain cases; if not
+optimized in a particular case, a call to the library function will be
+emitted.
+
