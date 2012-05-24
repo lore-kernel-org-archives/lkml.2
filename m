@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab2EXJEB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:04:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29478 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752391Ab2EXJD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:03:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="170774395"
-Message-ID: <4FBDF91C.7050902@intel.com>
-Date: Thu, 24 May 2012 17:02:20 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S1754414Ab2EXJET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:04:19 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:44482 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab2EXJER (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 05:04:17 -0400
+Message-ID: <4FBDF97D.1080704@linux.vnet.ibm.com>
+Date: Thu, 24 May 2012 17:03:57 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: borislav.petkov@amd.com, arnd@arndb.de,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, akinobu.mita@gmail.com,
-        eric.dumazet@gmail.com, fweisbec@gmail.com, rostedt@goodmis.org,
-        hughd@google.com, jeremy@goop.org, len.brown@intel.com,
-        tony.luck@intel.com, yongjie.ren@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
-        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
-        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hpa@zytor.com
-Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
- of SMT
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com> <1337782555-8088-9-git-send-email-alex.shi@intel.com> <4FBD18D20200007800085951@nat28.tlf.novell.com> <1337792984.9783.37.camel@laptop> <4FBDF200.7060608@intel.com> <4FBE11EB0200007800085BD0@nat28.tlf.novell.com>
-In-Reply-To: <4FBE11EB0200007800085BD0@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 6/9] KVM: MMU: fast path of handling guest page fault
+References: <4FBCA4FB.8050501@linux.vnet.ibm.com> <4FBCA60F.5040701@linux.vnet.ibm.com> <4FBCCB38.9080302@redhat.com> <4FBDD48B.7020109@linux.vnet.ibm.com> <4FBDF079.4080601@redhat.com>
+In-Reply-To: <4FBDF079.4080601@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+x-cbid: 12052322-1396-0000-0000-000001490C5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/24/2012 04:25 PM, Avi Kivity wrote:
 
+> On 05/24/2012 09:26 AM, Xiao Guangrong wrote:
+>> On 05/23/2012 07:34 PM, Avi Kivity wrote:
 >>
->> I just measured the cost of this function on my Romely EP(32 LCPUs) with
->> cpumask_t and NR_CPUS = 32/256/512/4096, the cost are similar with
->> 256/512/4096 and that increased about 20% time cost from 32.
 >>
->> I also tried to use cpumask_var_t and alloc it in heap(use
->> CPUMASK_OFFSTACK), actually, it cost same time with cpumask_t in stack.
->> But, the allocation bring another big cost. So, I use cpumask_t in stack.
->> The performance gain data in commit log is getting with NR_CPUS = 256.
+>>>>  static bool spte_has_volatile_bits(u64 spte)
+>>>>  {
+>>>> +	/*
+>>>> +	 * Always atomicly update spte if it can be updated
+>>>> +	 * out of mmu-lock.
+>>>> +	 */
+>>>> +	if (spte_can_lockless_update(spte))
+>>>> +		return true;
+>>>
+>>>
+>>> This is a really subtle point, but is it really needed?
+>>>
+>>> Lockless spte updates should always set the dirty and accessed bits, so
+>>> we won't be overwriting any volatile bits there.
+>>>
+>>
+>>
+>> Avi,
+>>
+>> Currently, The spte update/clear paths in mmu-lock think the "Dirty bit" is
+>> not volatile if the spte is readonly. Then the "Dirty bit" caused by
+>> lockless update can be lost.
+>>
 > 
-> Perhaps using a per-CPU cpumask would be the better choice here
-
-
-See.
-
-> (I can't see how preemption could validly be enabled when this
-> code is utilized).
-
-
-Sorry, What's your meaning here?, the function is always in pre-empt
-safe mode.
-
+> Maybe it's better to change that.  In fact, changing
 > 
-> Jan
+> 	if ((spte & shadow_accessed_mask) &&
+> 	      (!is_writable_pte(spte) || (spte & shadow_dirty_mask)))
+> 		return false;
 > 
+> to
+> 
+> 	if (~spte & (shadow_accessed_mask | shadow_dirty_mask))
+> 		return false;
+> 
+
+
+Okay, i like this way.
+
+> is almost the same thing - we miss the case where the page is COW or
+> shadowed though.
+> 
+> If we release the page as dirty, as below, perhaps the whole thing
+> doesn't matter; the mm must drop spte.w (or spte.d) before it needs to
+> access spte.d again.
+> 
+> 
+>> And, for tlb flush:
+>>
+>> |        * If we overwrite a writable spte with a read-only one we
+>> |        * should flush remote TLBs. Otherwise rmap_write_protect
+>> |        * will find a read-only spte, even though the writable spte
+>> |        * might be cached on a CPU's TLB.
+>> |        */
+>> |       if (is_writable_pte(entry) && !is_writable_pte(*sptep))
+>> |                kvm_flush_remote_tlbs(vcpu->kvm);
+>>
+>> Atomically update spte can help us to get a stable is_writable_pte().
+> 
+> Why is it unstable? mmu_set_spte() before cleared SPTE_MMU_WRITEABLE, so
+> the lockless path will keep its hands off *spte.
+> 
+
+
+Since dirty-log path does not clear SPTE_MMU_WRITEABLE bit, so in the
+system, we have this kind of spte which is readonly but SPTE_MMU_WRITEABLE
+is set.
+
+In mmu_set_spte(), we may read a read-only spte (which indicates the TLb need
+not be flushed), but it can be marked writeable by fast page fault, then the
+TLB is dirty.
+
+If you do not like the way in this patch, we can change it to:
+
+       if (spte_can_be_wriable(entry) && !is_writable_pte(*sptep))
+                kvm_flush_remote_tlbs(vcpu->kvm);
+
+And actually, this kind of TLB flush can be delay until page table protection
+happen, we can simply mask tlb dirty after your patchset of "flush tlb out
+of mmu lock"
 
 
