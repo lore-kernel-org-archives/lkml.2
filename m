@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758622Ab2EXRhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:37:50 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:47254 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757379Ab2EXRht (ORCPT
+	id S964856Ab2EXRjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:39:07 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42635 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757835Ab2EXRjF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:37:49 -0400
-Date: Thu, 24 May 2012 13:31:10 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/4] xen/hvc: Fix error cases around
- HVM_PARAM_CONSOLE_PFN
-Message-ID: <20120524173110.GE24934@phenom.dumpdata.com>
-References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
- <1337795222-29946-3-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.00.1205241145200.26786@kaball-desktop>
+	Thu, 24 May 2012 13:39:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205241145200.26786@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20120524164101.GW3710@pengutronix.de>
+References: <201205221053.21792.marc@cpdesign.com.au>
+	<CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com>
+	<201205242338.41420.marc@cpdesign.com.au>
+	<5844466.kI7qR0Os9A@laptop>
+	<20120524163604.GM5361@opensource.wolfsonmicro.com>
+	<20120524164101.GW3710@pengutronix.de>
+Date: Thu, 24 May 2012 14:39:02 -0300
+Message-ID: <CAOMZO5CZbQ9cjh+5Lj8R5hbYhizP891D01LuqbaRq8WTQs8zkQ@mail.gmail.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+From: Fabio Estevam <festevam@gmail.com>
+To: =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        =?UTF-8?Q?Philippe_R=C3=A9tornaz?= <philippe.retornaz@epfl.ch>,
+        marc@cpdesign.com.au, Shawn Guo <shawn.guo@freescale.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 11:47:12AM +0100, Stefano Stabellini wrote:
-> On Wed, 23 May 2012, Konrad Rzeszutek Wilk wrote:
-> > We weren't resetting the parameter to be passed in to a
-> > known default. Nor were we checking the return value of
-> > hvm_get_parameter.
-> > 
-> > CC: stable@kernel.org
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> >
-> >  drivers/tty/hvc/hvc_xen.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
-> > index afc7fc2..3277f0e 100644
-> > --- a/drivers/tty/hvc/hvc_xen.c
-> > +++ b/drivers/tty/hvc/hvc_xen.c
-> > @@ -219,7 +219,8 @@ static int xen_hvm_console_init(void)
-> >  	if (r < 0)
-> >  		goto err;
-> >  	info->evtchn = v;
-> > -	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
-> > +	v = 0;
-> > +	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
-> >  	if (r < 0)
-> >  		goto err;
-> >  	mfn = v;
-> 
-> Is 0 the right default here?
-> Maybe something invalid like (~0UL) would be better?
+On Thu, May 24, 2012 at 1:41 PM, Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de> wrote:
 
-Perhaps both? The zero is the default non-initialized value. But
--0UL is also a good check value.
+>> If this is actually the issue the usual fix for this if the SPI
+>> controller hardware can't be persuaded to do the right thing is to put
+>> the chip select pin in GPIO mode and manage it by hand, though looking
+>> at the driver it appears it should be doingn that already.  If you
+>> change to using the bitbanging SPI driver it should do the right thing
+>> (but will obviously be hideously slow), that ought to be at least a good
+>> reference for expected behaviour here.
+> The imx spi driver can do both (GPIO and hardware CS) because not all
+> pins that can do hardware CS are available as GPIO.
 
+Right, unfortunately on mx31 the SPI CS pins cannot be used as GPIOs.
+
+On mx51evk the SPI CS are used as GPIOs and that probably explains why
+it worked on mx51evk and fails on mx31pdk.
