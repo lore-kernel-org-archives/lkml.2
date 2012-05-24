@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966248Ab2EXUAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:00:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37021 "EHLO
+	id S966257Ab2EXUBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:01:14 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56292 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966126Ab2EXUAQ (ORCPT
+	with ESMTP id S965811Ab2EXUBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:00:16 -0400
-Date: Thu, 24 May 2012 13:00:12 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, bharrosh@panasas.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v2 08/14] block: Kill bi_destructor
-Message-ID: <20120524200012.GB18624@google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
- <1337817771-25038-9-git-send-email-koverstreet@google.com>
- <20120524195202.GG27550@redhat.com>
+	Thu, 24 May 2012 16:01:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524195202.GG27550@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 24 May 2012 14:00:48 -0600
+X-Google-Sender-Auth: BtkH4ewirb7rW1kehhI9w6_4Oug
+Message-ID: <CACxGe6vc0aWuRuiwBqd-bed45EN3VWB2p9PWYLi_yP5onrtGTw@mail.gmail.com>
+Subject: [GIT PULL] spi changes for v3.5 merge window
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 03:52:02PM -0400, Vivek Goyal wrote:
-> On Wed, May 23, 2012 at 05:02:45PM -0700, Kent Overstreet wrote:
-> 
-> [..]
-> > @@ -234,6 +234,13 @@ void bio_free(struct bio *bio, struct bio_set *bs)
-> >  {
-> >  	void *p;
-> >  
-> > +	if (!bs) {
-> > +		if (bio_integrity(bio))
-> > +			bio_integrity_free(bio, fs_bio_set);
-> > +		kfree(bio);
-> > +		return;
-> > +	}
-> > +
-> 
-> Ok, this seems to be the code which will take care of freeing kmalloced
-> bio. I think putting little comment about the explicit assumption is not
-> a bad idea.
+Hi Linus,
 
-Yeah, it's changing the semantics of bio_free(). I'll document that.
+Description below; please pull.
 
-> Somehow we need to integrate two patches so that we don't have memory leak
-> in bisection and reading code becomes easier.
+Thanks,
+g.
 
-I don't think there's any memory leak issues with this patch... there
-are various annoyances with the dm code, though.
+The following changes since commit d48b97b403d23f6df0b990cee652bdf9a52337a3:
 
-> Also then what's the need of bio_reset() in previous patch. That seems to
-> be independent from getting rid of pkt_bio_destructor(). I would think
-> that keep we can split the patch and keep bio_reset() logic in a separate
-> patch. In fact I am not even sure that for one driver we should introduce
-> bio_reset() in generic block layer. So to me we should get rid of bio_reset()
-> and let all the gory details remain in driver.
+  Linux 3.4-rc6 (2012-05-06 15:07:32 -0700)
 
-Well, it would be possible to kill bi_destructor without introducing
-bio_reset() - but that'd mean the kill bi_destructor patch would have to
-muck around in the pktcdvd code. IMO introducing bio_reset() makes the
-rest of the patch series much cleaner.
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 tags/spi-for-linus
+
+for you to fetch changes up to 1e8a52e18cfb381bc9cc1f0b720540364d2a6edd:
+
+  spi: By default setup spi_masters with 1 chipselect and dynamics bus
+number (2012-05-19 23:42:08 -0600)
+
+----------------------------------------------------------------
+SPI changes for v3.5 merge window
+
+Bug fixes and new features for SPI device drivers.  Also move device
+tree support code out of drivers/of and into drivers/spi/spi.c where
+it makes more sense.
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      spi/topcliff: use correct __devexit_p annotation
+
+Axel Lin (1):
+      spi: use module_pci_driver
+
+Barry Song (1):
+      SPI: PRIMA2: use the newest APIs of PINCTRL to fix compiling errors
+
+Benoit Cousson (1):
+      spi/omap: Remove bus_num usage for instance index
+
+Felipe Balbi (2):
+      spi: omap2-mcspi: make it behave as a module
+      spi: omap2-mcspi: convert to module_platform_driver
+
+Grant Likely (4):
+      Merge branch 'spi' of git://gitorious.org/linus-tree/linus-tree
+into spi/next
+      spi/devicetree: Move devicetree support code into spi directory
+      Merge tag 'v3.4-rc6' into spi/next
+      spi: By default setup spi_masters with 1 chipselect and dynamics
+bus number
+
+Hannu Heikkinen (1):
+      spi/ep93xx: clean probe/remove routines
+
+Herton Ronaldo Krzesinski (1):
+      spi/spi-fsl-spi: reference correct pdata in fsl_spi_cs_control
+
+Shimoda, Yoshihiro (1):
+      spi/rspi: add dmaengine support
+
+Shubhrajyoti D (5):
+      OMAP : SPI : use devm_* functions
+      spi: omap2-mcspi: add support for pm_runtime autosuspend
+      spi/omap2-mcspi: Trivial optimisation
+      spi: Dont call prepare/unprepare transfer if not populated
+      spi/omap2-mcspi: convert to the pump message infrastructure
+
+Steven King (1):
+      spi: refactor spi-coldfire-qspi to use SPI queue framework.
+
+ drivers/of/Kconfig              |    6 -
+ drivers/of/Makefile             |    1 -
+ drivers/of/of_spi.c             |   99 -----------
+ drivers/spi/spi-ath79.c         |    3 -
+ drivers/spi/spi-coldfire-qspi.c |  255 ++++++++++++--------------
+ drivers/spi/spi-dw-pci.c        |   13 +-
+ drivers/spi/spi-ep93xx.c        |   37 ++--
+ drivers/spi/spi-fsl-espi.c      |    1 -
+ drivers/spi/spi-fsl-lib.c       |    2 +-
+ drivers/spi/spi-fsl-spi.c       |    2 +-
+ drivers/spi/spi-lm70llp.c       |    3 -
+ drivers/spi/spi-mpc52xx.c       |    3 -
+ drivers/spi/spi-omap2-mcspi.c   |  373 +++++++++++++++++----------------------
+ drivers/spi/spi-ppc4xx.c        |    4 -
+ drivers/spi/spi-pxa2xx-pci.c    |   12 +-
+ drivers/spi/spi-rspi.c          |  320 ++++++++++++++++++++++++++++++++-
+ drivers/spi/spi-sirf.c          |   20 +--
+ drivers/spi/spi-topcliff-pch.c  |    3 +-
+ drivers/spi/spi.c               |   98 +++++++++-
+ include/linux/of_spi.h          |   23 ---
+ include/linux/spi/rspi.h        |   31 ++++
+ 21 files changed, 736 insertions(+), 573 deletions(-)
+ delete mode 100644 drivers/of/of_spi.c
+ delete mode 100644 include/linux/of_spi.h
+ create mode 100644 include/linux/spi/rspi.h
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
