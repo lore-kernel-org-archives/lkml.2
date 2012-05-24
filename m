@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab2EXTKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:10:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50716 "EHLO mx1.redhat.com"
+	id S1756965Ab2EXTLy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:11:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64580 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab2EXTKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:10:11 -0400
-Message-ID: <4FBE8790.6000000@redhat.com>
-Date: Thu, 24 May 2012 21:10:08 +0200
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120425 Thunderbird/12.0
+	id S1752485Ab2EXTLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 15:11:53 -0400
+Date: Thu, 24 May 2012 15:11:47 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: tracing ring_buffer_resize oops.
+Message-ID: <20120524191147.GA13936@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@redhat.com>
+References: <20120524160146.GA6226@redhat.com>
+ <1337876398.13348.178.camel@gandalf.stny.rr.com>
+ <20120524172223.GA10689@redhat.com>
+ <1337880914.13348.189.camel@gandalf.stny.rr.com>
+ <20120524184728.GA13201@redhat.com>
+ <1337885672.13348.194.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org
-Subject: Re: pwc driver bugs
-References: <4FBE4DD5.50906@xs4all.nl> <20120524165638.0ade5a6f@pyramind.ukuu.org.uk>
-In-Reply-To: <20120524165638.0ade5a6f@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337885672.13348.194.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan,
+On Thu, May 24, 2012 at 02:54:32PM -0400, Steven Rostedt wrote:
+ > On Thu, 2012-05-24 at 14:47 -0400, Dave Jones wrote:
+ > > On Thu, May 24, 2012 at 01:35:14PM -0400, Steven Rostedt wrote:
+ > > 
+ > >  > Hmm, I wonder if this is the break point change :-/
+ > >  > 
+ > >  > Do you have NMIs enabled? I didn't have 'paranoid_exit' in my backtrace
+ > >  > when I saw the bug.
+ > > 
+ > > $ grep NMI .config
+ > > CONFIG_OPROFILE_NMI_TIMER=y
+ > > CONFIG_HAVE_PERF_EVENTS_NMI=y
+ > > CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+ > > CONFIG_HPWDT_NMI_DECODING=y
+ > > # CONFIG_DEBUG_NMI_SELFTEST is not set
+ > 
+ > Could you email your entire config. I haven't been able to trigger the
+ > bug again. Maybe your config might do it :-/
 
-Thanks for adding me to the CC on this. Udo, I've
-responded to your bugs in bugzilla.
+http://fpaste.org/BTN7/raw/
 
-Regards,
+ > Also, how reproducible is it? When it triggered for me, it was constant.
+ > Every boot and test failed. But after I did the make mrproper, I have
+ > not been able to trigger it again. This is why I put it down as a bad
+ > build.
 
-Hans
+happens every time for me so far.
 
-
-On 05/24/2012 05:56 PM, Alan Cox wrote:
-> On Thu, 24 May 2012 17:03:49 +0200
-> Udo van den Heuvel<udovdh@xs4all.nl>  wrote:
->
->> Hello,
->>
->> I discovered some issues in the pwc driver for certain USB webcams.
->> I opened some bugs[1].
->> I do think both issues might be related and the crash issue is quite
->> serious.
->>
->> Please have a look, I can assist by testing any patches with fixes. (for
->> ~3.3.7)
->
-> commit ceede9fa8939e40ad0ddb4ad1355f45c6f1d3478
->
-> looks rather relevant here.
->
-> commit ceede9fa8939e40ad0ddb4ad1355f45c6f1d3478
-> Author: Hans de Goede<hdegoede@redhat.com>
-> Date:   Wed May 9 04:43:12 2012 -0300
->
->      [media] pwc: Fix locking
->
->      My last locking rework for pwc mistakenly assumed that videbuf2 does
->      its own locking, but it does not! This patch fixes the missing
->      locking by moving over the the video_device lock, and introducing a
->      separate lock for the videobuf2_queue.
->
->      Signed-off-by: Hans de Goede<hdegoede@redhat.com>
->      Signed-off-by: Mauro Carvalho Chehab<mchehab@redhat.com>
+	Dave 
