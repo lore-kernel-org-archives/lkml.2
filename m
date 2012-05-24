@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab2EXXGp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:06:45 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59513 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773Ab2EXXGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:06:43 -0400
-Date: Fri, 25 May 2012 00:09:34 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Cc: Chuck Ebbert <cebbert@redhat.com>,
-        "Mario 'BitKoenig' Holbe" <Mario.Holbe@tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel BUG and freeze on cat /proc/tty/driver/serial
-Message-ID: <20120525000934.78136313@pyramind.ukuu.org.uk>
-In-Reply-To: <CAJJYPdnTMZiTi6OT2cqk_h_e8+m8iGZqVK_zazLM39eFWLf5xw@mail.gmail.com>
-References: <20110216161728.GA8431@darkside.kls.lan>
-	<20110310014952.38b7a6ef@redhat.com>
-	<CAJJYPdmmaDuW-yhLQbGj9ihfiJOp5K_C_Vn6dCTzmr0A_gaKjg@mail.gmail.com>
-	<CAJJYPdnTMZiTi6OT2cqk_h_e8+m8iGZqVK_zazLM39eFWLf5xw@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754930Ab2EXXMN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:12:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46115 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753525Ab2EXXML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 19:12:11 -0400
+Date: Fri, 25 May 2012 01:12:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: [PULL REQUEST] Ext2, ext3 and quota fixes
+Message-ID: <20120524231209.GA28842@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -       struct tty_ldisc *ld = tty_ldisc_ref(port->tty);
-> +       struct tty_ldisc *ld = port ? tty_ldisc_ref(port->tty) : NULL;
->         struct pps_event_time ts;
-> 
->         if (ld && ld->ops->dcd_change)
-> @@ -2465,7 +2465,7 @@ void uart_handle_dcd_change(struct uart_port
-> *uport, unsigned int status)
->                 hardpps();
->  #endif
-> 
-> -       if (port->flags & ASYNC_CHECK_CD) {
-> +       if (port && port->flags & ASYNC_CHECK_CD) {
->                 if (status)
->                         wake_up_interruptible(&port->open_wait);
->                 else if (port->tty)
+  Hello Linus,
 
-Probably should be using tty krefs for this
+  could you please pull from
 
-	tty = tty_port_tty_get( ..) /  tty_kref_put
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-etc, and yes the NULL check is needed. The reference is needed so the tty
-can't be freed under you.
+Interesting bits are:
+* removal of a special i_mutex locking subclass
+  (I_MUTEX_QUOTA) since quota code does not need i_mutex anymore in any
+  unusual way. 
+* backport (from ext4) of a fix of a checkpointing bug (missing cache
+  flush) that could lead to fs corruption on power failure
 
+The rest are just random small fixes & cleanups.
 
+Top of the tree is 0324876. The full shortlog is:
 
+Akira Fujita (1):
+      ext3: remove max_debt in find_group_orlov()
+
+Artem Bityutskiy (2):
+      ext2: write superblock only once on unmount
+      ext2: do not register write_super within VFS
+
+Eric Sandeen (1):
+      ext3: return 32/64-bit dir name hash according to usage type
+
+Jan Kara (12):
+      jbd: Refine commit writeout logic
+      ext2: Remove s_dirt handling
+      jbd: Split updating of journal superblock and marking journal empty
+      jbd: protect all log tail updates with j_checkpoint_mutex
+      jbd: Write journal superblock with WRITE_FUA after checkpointing
+      quota: Fix double lock in add_dquot_ref() with CONFIG_QUOTA_DEBUG
+      ext3: Remove i_mutex use from ext3_quota_write()
+      ext4: Remove i_mutex use from ext4_quota_write()
+      reiserfs: Remove i_mutex use from reiserfs_quota_write()
+      ext2: Remove i_mutex use from ext2_quota_write()
+      quota: Use precomputed value of sb_dqopt in dquot_quota_sync
+      quota: Get rid of nested I_MUTEX_QUOTA locking subclass
+
+Stefan Hajnoczi (1):
+      ext3: update documentation with barrier=1 default
+
+Wang Sheng-Hui (2):
+      ext2: remove the redundant comment for ext2_export_ops
+      ext2: trivial fix to comment for ext2_free_blocks
+
+The diffstat is
+
+ Documentation/filesystems/ext3.txt |    6 +-
+ fs/ext2/balloc.c                   |    4 +-
+ fs/ext2/ialloc.c                   |    2 -
+ fs/ext2/super.c                    |   18 +---
+ fs/ext2/xattr.c                    |    1 -
+ fs/ext3/dir.c                      |  167 +++++++++++++++++++++--------
+ fs/ext3/ext3.h                     |    6 +-
+ fs/ext3/hash.c                     |    4 +-
+ fs/ext3/ialloc.c                   |   20 +---
+ fs/ext3/super.c                    |    6 +-
+ fs/ext4/super.c                    |    6 +-
+ fs/jbd/checkpoint.c                |   23 ++---
+ fs/jbd/commit.c                    |   21 +++-
+ fs/jbd/journal.c                   |  206 +++++++++++++++++++++++------------
+ fs/jbd/transaction.c               |    2 -
+ fs/quota/dquot.c                   |   32 +++---
+ fs/reiserfs/super.c                |    6 +-
+ include/linux/jbd.h                |   18 ++--
+ include/trace/events/jbd.h         |   39 +++----
+ 19 files changed, 342 insertions(+), 245 deletions(-)
+
+							Thanks
+								Honza
