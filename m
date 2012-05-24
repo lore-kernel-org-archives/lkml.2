@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab2EXKTO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:19:14 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:53273
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755246Ab2EXKTK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:19:10 -0400
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -14
-X-BigFish: VPS-14(zz9371I1be0I1102I542M1432Nzz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah)
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        Anthony Olech <Anthony.Olech@diasemi.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: RE: [PATCH] Watchdog: Fix for settimeout issue
-Thread-Topic: [PATCH] Watchdog: Fix for settimeout issue
-Thread-Index: AQHNORLX2VYWsaLJqk2qZLD4N46J45bYuoAg
-Date: Thu, 24 May 2012 10:19:04 +0000
-Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED30402926@KCHJEXMB02.kpit.com>
-References: <1335768031.9546.20.camel@dhruva>
- <20120523183623.GN3074@spo001.leaseweb.com>
-In-Reply-To: <20120523183623.GN3074@spo001.leaseweb.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [94.185.165.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755718Ab2EXKTj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:19:39 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:64374 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932231Ab2EXKTh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 06:19:37 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+In-Reply-To: <CAF1ivSajZb_D9nOuA5gYeDgHgbvyqbCueV8+kDyy3DSBs1AumQ@mail.gmail.com>
+References: <CAF1ivSYmY3d8VonvsX0orsj0fLKXOXsLoG5jSwLs90MoP7=5Dw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1205211059510.1725-100000@iolanthe.rowland.org>
+	<CAF1ivSajZb_D9nOuA5gYeDgHgbvyqbCueV8+kDyy3DSBs1AumQ@mail.gmail.com>
+Date: Thu, 24 May 2012 18:19:36 +0800
+X-Google-Sender-Auth: zeIYm_r6gOZdvTmZYuZNqjOcIRE
+Message-ID: <CAF1ivSZBasH-Nvw7kvOynN+XQqiOLfeyOnV5HjNbz5dyZJfkoA@mail.gmail.com>
+Subject: Re: [RFC v2 PATCH 2/4] block: add queue runtime pm callbacks
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Moyer <jmoyer@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: wimvs@spo001.leaseweb.com [mailto:wimvs@spo001.leaseweb.com] On
-> Behalf Of Wim Van Sebroeck
-> Sent: Thursday, May 24, 2012 12:06 AM
-> To: Ashish Jangam
-> Cc: linux-kernel@vger.kernel.org; linux-watchdog@vger.kernel.org; Anthony
-> Olech; sameo@linux.intel.com
-> Subject: Re: [PATCH] Watchdog: Fix for settimeout issue
-> 
-> Hi Ashish,
-> 
-> > Some devices have a fixed minimum elapse time and a ping before this
-> > elapse time causes error condition. This patch fix this issue in the
-> > settimeout operation.
-> 
-> Won't add this patch. The driver needs to take care of the mdelay.
-> PS: for da9052_wdt: start (=set_timeout) + ping will also give you
-> the same problem.
+On Mon, May 21, 2012 at 11:14 PM, Lin Ming <ming.m.lin@intel.com> wrote:
+> On Mon, May 21, 2012 at 11:00 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> On Mon, 21 May 2012, Lin Ming wrote:
+>>
+>>> On Fri, May 18, 2012 at 2:29 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>>> [snip]
+>>> > I may have left some parts out from this brief description.  Hopefully
+>>> > you'll be able to figure out the general idea and get it to work.
+>>>
+>>> All journal threads and flusher thread of the disk need to be freezed
+>>> before suspend and thaw after resume.
+>>
+>> Why?  If any of those threads needs to write something to the disk
+>> while the disk is suspended, the disk will simply be resumed.
+>
+> When tested the patches, I found that kjournald and flusher thread
+> frequently resume the disk.
 
-Ok, re-sending the patch with this fix....Ashish
-> 
-> Kind regards,
-> Wim.
-> 
+Just found that it's because "printk".
 
+When disk is suspended, it prints out some message, for example,
+
+[  670.597103] sd 0:0:0:0: [sda] Synchronizing SCSI cache
+[  670.597827] sd 0:0:0:0: [sda] Stopping disk
+
+Then syslogd is waken up to write the log.
+So disk is resumed right after suspended.
+
+Lin Ming
+
+>
+> I'm not familiar with journal.
+> Are the journal threads still need to be in active state when the disk
+> is already suspended?
+>
+>>
+>> Alan Stern
