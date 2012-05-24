@@ -1,156 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605Ab2EXEll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 00:41:41 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42808 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab2EXElj convert rfc822-to-8bit (ORCPT
+	id S1751929Ab2EXEmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 00:42:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37300 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab2EXEmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 00:41:39 -0400
-Message-ID: <4FBDBBFF.2000000@parallels.com>
-Date: Thu, 24 May 2012 08:41:35 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+	Thu, 24 May 2012 00:42:21 -0400
+Message-ID: <4FBDBC2B.3090300@wwwdotorg.org>
+Date: Wed, 23 May 2012 22:42:19 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] NFSd: fix locking in nfsd_forget_delegations()
-References: <20120522102444.6988.45434.stgit@localhost.localdomain> <20120523213158.GB13710@fieldses.org>
-In-Reply-To: <20120523213158.GB13710@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Dong Aisheng <dongas86@gmail.com>
+CC: Dong Aisheng <b29396@freescale.com>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH RFC v3 3/3] pinctrl: add pinctrl gpio binding support
+References: <1337779362-31259-1-git-send-email-b29396@freescale.com> <1337779362-31259-3-git-send-email-b29396@freescale.com> <4FBD4C13.8080209@wwwdotorg.org> <CAA+hA=Rb1Qix67QBthPjo_4d5ATWjA7pePembZRwJkPMtQNpjg@mail.gmail.com>
+In-Reply-To: <CAA+hA=Rb1Qix67QBthPjo_4d5ATWjA7pePembZRwJkPMtQNpjg@mail.gmail.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-24.05.2012 01:31, J. Bruce Fields написал:
-> On Tue, May 22, 2012 at 02:25:14PM +0400, Stanislav Kinsbursky wrote:
->> This patch adds recall_lock hold to nfsd_forget_delegations() to protect
->> nfsd_process_n_delegations() call.
->> Also, looks like it would be better to collect delegations to some local
->> on-stack list, and then unhash collected list. This split allows to simplify
->> locking, because delegation traversing is protected by recall_lock, when
->> delegation unhash is protected by client_mutex.
-> All this indirection is getting a little much.
->
-> How about replacing nfsd_process_n_delegations by something that always
-> does the list-move?:
+On 05/23/2012 07:42 PM, Dong Aisheng wrote:
+> On Thu, May 24, 2012 at 4:44 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 05/23/2012 07:22 AM, Dong Aisheng wrote:
+>>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>>
+>>> This patch implements a standard common binding for pinctrl gpio ranges.
+>>> Each SoC can add gpio ranges through device tree by adding a gpio-maps property
+>>> under their pinctrl devices node with the format:
+>>> <&gpio $gpio_offset $pin_offset $npin>.
+>>>
+>>> Then the pinctrl driver can call pinctrl_dt_add_gpio_ranges(pctldev, node)
+>>> to parse and register the gpio ranges from device tree.
+>>>
+>>> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+>>
+>> This is mostly good. Just a few comments:
+>>
+>>> +gpio-maps: 4 integers array, each entry in the array represents a gpio
+>>> +range with the format: <&gpio $gpio_offset $pin_offset $count>
+>>> +- gpio: phandle pointing at gpio device node
+>>> +- gpio_offset: integer, the local offset of $gpio
+>>> +- pin_offset: integer, the pin offset or pin id
+>>> +- npins: integer, the gpio ranges starting from pin_offset
+>>
+>> This uses a single cell to represent a GPIO ID within a GPIO controller.
+>> The standard GPIO bindings use #gpio-cells, where that's a property in
+>> the GPIO controller's node. I wonder if we shouldn't do the same here,
+>> and call into the GPIO driver to parse #gpio-cells and give back the
+>> Linux GPIO ID, just like of_get_named_gpio_flags() does. This would also
+>> make this code able to cope with the GPIO of_xlate function returning a
+>> different GPIO chip, which Grant put in place for banked GPIO controllers.
+>>
+> I checked the code, the second cell only represents gpio flag in
+> of_gpio_simple_xlate which seems meaningless to pinctrl, so it looks
+> increase overhead to pinctrl gpio ranges map.
 
-Is it correct?
-List move is suitable for unhash delegations since we anyway remove 
-delegation from fi_delegations list.
-But seems we don't do this for delegations recall...
+With the simple translation function, yes it's just flags. However, not
+all GPIO controllers use the simple translation function; I think I
+recall the Exynos binding having 4 or 5 cells. In other words, the
+format is defined by each individual GPIO controller, even if many/most
+do happen to follow the same format.
 
+> However, it seems i may have to agree that we need keep align with the
+> exist of gpio design to use the standard way to get gpio number via
+> of_xlate function rather than do it privately in pinctrl driver.
+> 
+> One disadvantage is that i can not reuse of_get_named_gpio_flags due
+> to different format
+> for gpio-maps, i may have to write a slightly different one as
+> of_get_named_gpio_flags
+> for gpio-maps.
+> 
+>>> diff --git a/drivers/pinctrl/devicetree.c b/drivers/pinctrl/devicetree.c
+>>
+>>> +int pinctrl_dt_add_gpio_ranges(struct pinctrl_dev *pctldev,
+>>
+>> The locking I was talking about before is between the following line:
+>>
+>>> +             ranges[i].gc = of_node_to_gpiochip(np_gpio);
+>>
+>> and this code:
+>>
+>>> +             ranges[i].name = dev_name(pctldev->dev);
+>>> +             ranges[i].base = ranges[i].gc->base + gpio_offset;
+>>> +             ranges[i].pin_base = pin_offset;
+>>> +             ranges[i].npins = npins;
+>>
+>> If of_node_to_gpiochip() doesn't mark the GPIO chip as "in use", then
+>> the module that provides that device could be unloaded between the two
+>> blocks of code above.
+>>
+> Correct.
+> 
+>> Re: your locking comments in your other email: ranges[i].gc doesn't
+>> appear to be used anywhere else in pinctrl, so I think it's OK not to
+>> lock the GPIO chip for any more time than between the above two blocks
+>> of code.
+>>
+> So i will add lock between them like:
+> ranges[i].gc = of_node_to_gpiochip(np_gpio);
+> if (!try_module_get(ranges[i].gc->owner))
+>     err...
 
-> void nfsd_forget_delegations(u64 num)
-> {
-> 	unsigned int count;
-> 	list_head victims;
->
-> 	nfs4_lock_state();
-> 	count = nfsd_get_n_delegations(num,&victims);
-> 	list_for_each_entry_safe(...,&victims, ...)
-> 		unhash_delegation();
-> 	unlock_state();
-> }
->
-> ditto for recall_delegations, and take the recall_lock inside
-> nfsd_get_n_delegations?
->
-> Or something like that.
->
-> --b.
->
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->> ---
->>   fs/nfsd/nfs4state.c |   32 ++++++++++++++++++++++++--------
->>   1 files changed, 24 insertions(+), 8 deletions(-)
->>
->> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
->> index 21266c7..f004e61 100644
->> --- a/fs/nfsd/nfs4state.c
->> +++ b/fs/nfsd/nfs4state.c
->> @@ -2597,7 +2597,7 @@ out:
->>   	return ret;
->>   }
->>
->> -static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
->> +static void nfsd_break_one_deleg(struct nfs4_delegation *dp, void *data)
->>   {
->>   	/* We're assuming the state code never drops its reference
->>   	 * without first removing the lease.  Since we're in this lease
->> @@ -2633,7 +2633,7 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
->>   	spin_lock(&recall_lock);
->>   	fp->fi_had_conflict = true;
->>   	list_for_each_entry(dp,&fp->fi_delegations, dl_perfile)
->> -		nfsd_break_one_deleg(dp);
->> +		nfsd_break_one_deleg(dp, NULL);
->>   	spin_unlock(&recall_lock);
->>   }
->>
->> @@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
->>   	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
->>   }
->>
->> -int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
->> +int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *, void *), void *data)
->>   {
->>   	int i, count = 0;
->>   	struct nfs4_file *fp, *fnext;
->> @@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
->>   	for (i = 0; i<  FILE_HASH_SIZE; i++) {
->>   		list_for_each_entry_safe(fp, fnext,&file_hashtbl[i], fi_hash) {
->>   			list_for_each_entry_safe(dp, dnext,&fp->fi_delegations, dl_perfile) {
->> -				deleg_func(dp);
->> +				deleg_func(dp, data);
->>   				if (++count == num)
->>   					return count;
->>   			}
->> @@ -4713,15 +4713,31 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
->>   	return count;
->>   }
->>
->> +/* Called under the recall_lock spinlock. */
->> +static void
->> +collect_delegation(struct nfs4_delegation *dp, void *data)
->> +{
->> +	struct list_head *list = data;
->> +
->> +	list_move(&dp->dl_perfile, list);
->> +}
->> +
->>   void nfsd_forget_delegations(u64 num)
->>   {
->>   	unsigned int count;
->> +	struct nfs4_delegation *dp, *dnext;
->> +	LIST_HEAD(unhash_list);
->>
->> -	nfs4_lock_state();
->> -	count = nfsd_process_n_delegations(num, unhash_delegation);
->> -	nfs4_unlock_state();
->> +	spin_lock(&recall_lock);
->> +	count = nfsd_process_n_delegations(num, collect_delegation,&unhash_list);
->> +	spin_unlock(&recall_lock);
->>
->>   	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
->> +
->> +	nfs4_lock_state();
->> +	list_for_each_entry_safe(dp, dnext,&unhash_list, dl_perfile)
->> +		unhash_delegation(dp);
->> +	nfs4_unlock_state();
->>   }
->>
->>   void nfsd_recall_delegations(u64 num)
->> @@ -4730,7 +4746,7 @@ void nfsd_recall_delegations(u64 num)
->>
->>   	nfs4_lock_state();
->>   	spin_lock(&recall_lock);
->> -	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
->> +	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
->>   	spin_unlock(&recall_lock);
->>   	nfs4_unlock_state();
->>
->>
+I think that module_get() needs to happen inside of_node_to_gpiochip(),
+so that it executes inside any lock that function takes.
 
+> ranges[i].name = dev_name(pctldev->dev);
+> ranges[i].base = ranges[i].gc->base + gpio_offset;
+> ranges[i].pin_base = pin_offset;
+> ranges[i].npins = npins;
+> module_put(ranges[i].gc->owner)
+> If anything wrong please let me know.
+> 
+>> Finally, just a minor nit:
+>>
+>>> +             ranges[i].gc = of_node_to_gpiochip(np_gpio);
+>>> +             if (!ranges[i].gc) {
+>>> +                     dev_err(pctldev->dev,
+>>> +                             "can not find gpio chip of node(%s)\n",
+>>> +                             np_gpio->name);
+>>> +                     of_node_put(np_gpio);
+>>> +                     return -EPROBE_DEFER;
+>>> +             }
+>>> +
+>>> +             of_node_put(np_gpio);
+>>
+>> could be slightly simpler:
+>>
+>> +               ranges[i].gc = of_node_to_gpiochip(np_gpio);
+>> +               of_node_put(np_gpio); <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+>> +               if (!ranges[i].gc) {
+>> +                       dev_err(pctldev->dev,
+>> +                               "can not find gpio chip of node(%s)\n",
+>> +                               np_gpio->name);
+> Because here still uese np_gpio,  Can i still use it after of_node_put?
+
+Oh right, that makes sense, yes.
