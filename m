@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab2EXJ42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:56:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53340 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab2EXJ4Z (ORCPT
+	id S1755399Ab2EXJ50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:57:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52256 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab2EXJ5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:56:25 -0400
-Date: Thu, 24 May 2012 12:56:12 +0300
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: dedekind1@gmail.com
-Cc: Richard Weinberger <richard@nod.at>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com, tglx@linutronix.de
-Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
-Message-ID: <20120524125612.39d3e6aa@halley>
-In-Reply-To: <1337847472.15137.81.camel@sauron.fi.intel.com>
-References: <1337608916-49771-1-git-send-email-richard@nod.at>
-	<1337608916-49771-2-git-send-email-richard@nod.at>
-	<20120522180119.2c2a10a8@pixies.home.jungo.com>
-	<4FBBC4EE.4040802@nod.at>
-	<1337847472.15137.81.camel@sauron.fi.intel.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+	Thu, 24 May 2012 05:57:25 -0400
+Subject: Re: [PATCH 02/16] perf: Add ability to attach registers dump to
+ sample
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+In-Reply-To: <1337801535-12865-3-git-send-email-jolsa@redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	 <1337801535-12865-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 May 2012 11:57:20 +0200
+Message-ID: <1337853440.9783.96.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Artem,
+On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
 
-On Thu, 24 May 2012 11:17:52 +0300 Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Tue, 2012-05-22 at 18:55 +0200, Richard Weinberger wrote:
-> > >> +    e = find_early_wl_entry(&ubi->free, max_pnum);
-> > >
-> > > This picks the eb with the lowest pnum within 'ubi->free'.
-> > >
-> > > When called with INT_MAX (for the FM_DATA), why do you need to pick
-> > a
-> > > free eb with the minimal pnum? The FM_DATA EBs may reside everywhere
-> > (as
-> > > the FM_SB holds their location).
-> > > So why not pick the eb with a medium EC value (as done for standard
-> > > get_peb calls)? That might be better wear-leveling wise.
-> > 
-> > Fair point.
-> > I'll fix that.
-> > Artem, any comments on that?
-> 
-> The 'find_early_wl_entry()' function is used (currently) only at early
-> stages. At these stages the we do not have the PEBs sorted by EC. We
-> have just a list. This function should not be use after the WL subsystem
-> is initialized.
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -130,8 +130,9 @@ enum perf_event_sample_format {
+>  	PERF_SAMPLE_STREAM_ID			= 1U << 9,
+>  	PERF_SAMPLE_RAW				= 1U << 10,
+>  	PERF_SAMPLE_BRANCH_STACK		= 1U << 11,
+> +	PERF_SAMPLE_REGS			= 1U << 12,
+>  
+> -	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
+> +	PERF_SAMPLE_MAX = 1U << 13,		/* non-ABI */
+>  };
 
-'find_early_wl_entry' is only called from 'ubi_wl_get_fm_peb'.
+There's a comment update missing for PERF_RECORD_SAMPLE that describes
+the output this bit generates.
 
-'ubi_wl_get_fm_peb' is called twice from within 'ubi_update_fastmap':
-First call, to get the FM_SB, with 'max_pnum' set as UBI_FM_MAX_START.
-Second, to get FM_DATA pebs, with 'max_pnum' as -1, do indicate "no
-matter the location, give me pebs from the free pool".
+> @@ -4011,6 +4042,30 @@ void perf_output_sample(struct perf_output_handle *handle,
+>  			perf_output_put(handle, nr);
+>  		}
+>  	}
+> +
+> +	if (sample_type & PERF_SAMPLE_REGS) {
+> +		u64 mode = event->attr.sample_regs;
+> +
+> +		if (mode & PERF_SAMPLE_REGS_USER) {
+> +			u64 id = PERF_REGS_ABI_NONE;
+> +
+> +			/*
+> +			 * If there are no regs to dump, notice it through
+> +			 * PERF_REGS_ABI_NONE id.
+> +			 */
+> +			if (data->regs_user)
+> +				id = perf_reg_version();
 
-'ubi_update_fastmap' is called from 'ubi_volume_notify' and from
-'ubi_wl_get_peb' - at both points, I assume ubi->free rbtree is properly
-populated. Am I mistaken?
+OK, so I don't like this.. why does this exists at all? Why not use a
+length field instead?
 
-Regards,
-Shmulik
+> +			perf_output_put(handle, id);
+> +
+> +			if (id) {
+> +				u64 mask = event->attr.sample_regs_user;
+> +				perf_output_sample_regs(handle,
+> +							data->regs_user,
+> +							mask);
+> +			}
+> +		}
+> +	}
+>  }
+
+
+
+
