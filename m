@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759052Ab2EXUhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:37:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53666 "EHLO mx1.redhat.com"
+	id S1757895Ab2EXUko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:40:44 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:35699 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758930Ab2EXUhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:37:02 -0400
-Date: Thu, 24 May 2012 16:36:56 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: USB device PM oddity in 3.5
-Message-ID: <20120524203655.GK1143@zod.bos.redhat.com>
+	id S1752563Ab2EXUkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 16:40:43 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Subject: [PATCH] PCI / ACPI: Do not request control of ASPM if the BIOS has disabled it
+Date: Thu, 24 May 2012 22:45:45 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org,
+        Len Brown <lenb@kernel.org>, Wei Kong <wkong@novell.com>,
+        Jean Delvare <jdelvare@suse.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205242245.45888.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm testing Linus' tree as the merge window happens, and I've hit an
-issue with what I believe is USB device power management (or something)
-that is causing my mouse and keyboard to become unresponsive.  After a
-very short time of non-use, either device will cut out.  I can move the
-mouse around but it doesn't relay to the screen and I noticed this is
-because the laser is turned off.  If I click a button on it, it will
-turn back on and function again until a small period of non-use.  The
-keyboard exhibits similar behavior, "ignoring" the first few key strokes
-until it wakes back up.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-I found this thread:
+We want to report that the kernel supports ASPM to the BIOS even if
+the BIOS signals us that it doesn't.  So, we need the flags to include
+(OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
+before calling acpi_pci_osc_support(root, flags) in
+acpi_pci_root_add() (unless there's a command line telling us that
+ASPM is not to be supported).
 
-http://thread.gmane.org/gmane.linux.usb.general/64292
-and
-http://marc.info/?t=133552726500001&r=1&w=2
+However, knowing that the BIOS doesn't support ASPM, we shouldn't
+request the control of it, so we should remove
+(OSC_ACTIVE_STATE_PWR_SUPPORT | OSC_CLOCK_PWR_CAPABILITY_SUPPORT)
+from the flags before calling acpi_pci_osc_control_set() in those
+cases.  Failing to do so causes the evaluation of _OSC for the PCI
+root bridge to return error codes on some systems where it should
+work correctly.
 
-which have similar symptoms, but the kernels I'm using have the
-subsequent patches applied.  I'm doing a git bisect at the moment, with
-72c04af as the starting good commit and 61011677 as the first bad.  I'll
-let you know what comes of this, but I thought I'd mail about it now in
-case anyone has any ideas.
+Reported-and-tested-by: Wei Kong <wkong@novell.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
 
-josh
+-stable material, I think.
+
+Thanks,
+Rafael
+
+---
+ drivers/acpi/pci_root.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: linux/drivers/acpi/pci_root.c
+===================================================================
+--- linux.orig/drivers/acpi/pci_root.c
++++ linux/drivers/acpi/pci_root.c
+@@ -574,6 +574,10 @@ static int __devinit acpi_pci_root_add(s
+ 	if (flags != base_flags)
+ 		acpi_pci_osc_support(root, flags);
+ 
++	if (!pcie_aspm_enabled())
++		flags &= ~(OSC_ACTIVE_STATE_PWR_SUPPORT |
++			OSC_CLOCK_PWR_CAPABILITY_SUPPORT);
++
+ 	if (!pcie_ports_disabled
+ 	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
+ 		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
