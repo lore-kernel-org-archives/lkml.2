@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab2EXQkf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:40:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49183 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755145Ab2EXQkd (ORCPT
+	id S933535Ab2EXQlS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:41:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43554 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932758Ab2EXQlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:40:33 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
-        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 6/6] tools lib traceevent: Fix signature of create_arg_item()
-Date: Thu, 24 May 2012 13:40:13 -0300
-Message-Id: <1337877613-15133-7-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1337877613-15133-1-git-send-email-acme@infradead.org>
-References: <1337877613-15133-1-git-send-email-acme@infradead.org>
+	Thu, 24 May 2012 12:41:13 -0400
+Date: Thu, 24 May 2012 18:41:01 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        marc@cpdesign.com.au, Fabio Estevam <festevam@gmail.com>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Message-ID: <20120524164101.GW3710@pengutronix.de>
+References: <201205221053.21792.marc@cpdesign.com.au>
+ <CAOMZO5AYCSVT=s=rB3xPkz5SYEQQZ9q7f=rFbTbJkkVPk7Y7Vw@mail.gmail.com>
+ <201205242338.41420.marc@cpdesign.com.au>
+ <5844466.kI7qR0Os9A@laptop>
+ <20120524163604.GM5361@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-X-MIME-Error: demime acl condition: double headers (content-type, content-disposition or content-transfer-encoding)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20120524163604.GM5361@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Thu, May 24, 2012 at 05:36:05PM +0100, Mark Brown wrote:
+> On Thu, May 24, 2012 at 06:16:50PM +0200, Philippe R�tornaz wrote:
+> 
+> > Well, I think I found out why it's not working on mc13783.
+> > With regmap, each transfert is done with 8bits words. The SPI hardware assert 
+> > the SS signal only during 8 bits "register" transfert then deassert the SS. 
+> > Then the SS is asserted and 24bits (3 bytes) are transfered (datas).
+> > This clearly violate the datasheet which say SS must be asserted for the 
+> > *whole* transfert: register + data.
+> 
+> > This is why the old code used a 32bits word transfert, it ensured that the SPI 
+> > hardware was keeping SS asserted without interruptions.
+> 
+> > Is there any way to tell regmap to use 32bits transfert with the following 
+> > configuration (or doing it in a single shot 4x8bits):
+> 
+> I think this is just a plain bug in the SPI controller driver.  I think
+> I have seen it before in some FSL BSPs (I do remember having to fall
+> back to the bitbanging driver), it's surprising that it's also present
+> in the mainline driver so perhaps it's something different.  The driver
+> is deasserting chip select between transfers but it should only do so at
+> the end of the message unless told otherwise by the caller setting
+> cs_change.  regmap-spi uses spi_write_then_read() which does a single
+> spi_message for the write and read parts of the transfer.
+> 
+> If this is actually the issue the usual fix for this if the SPI
+> controller hardware can't be persuaded to do the right thing is to put
+> the chip select pin in GPIO mode and manage it by hand, though looking
+> at the driver it appears it should be doingn that already.  If you
+> change to using the bitbanging SPI driver it should do the right thing
+> (but will obviously be hideously slow), that ought to be at least a good
+> reference for expected behaviour here.
+The imx spi driver can do both (GPIO and hardware CS) because not all
+pins that can do hardware CS are available as GPIO.
 
-The @type should be a type of enum event_type not enum filter_arg_type.
+Best regards
+Uwe
 
-This fixes following warning:
-
- $ make
-  COMPILE FPIC           parse-events.o
-  COMPILE FPIC           parse-filter.o
-/home/namhyung/project/trace-cmd/parse-filter.c: In function ‘create_arg_item’:
-/home/namhyung/project/trace-cmd/parse-filter.c:343:9: warning: comparison between ‘enum filter_arg_type’ and ‘enum event_type’ [-Wenum-compare]
-/home/namhyung/project/trace-cmd/parse-filter.c:339:2: warning: case value ‘8’ not in enumerated type ‘enum filter_arg_type’ [-Wswitch]
-  BUILD STATIC LIB       libparsevent.a
-  BUILD STATIC LIB       libtracecmd.a
-  BUILD                  trace-cmd
-/usr/bin/make -C /home/namhyung/project/trace-cmd/Documentation all
-make[1]: Nothing to be done for `all'.
-Note: to build the gui, type "make gui"
-
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1337740619-27925-20-git-send-email-namhyung.kim@lge.com
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/lib/traceevent/parse-filter.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-index 2d40c5e..e08d21f 100644
---- a/tools/lib/traceevent/parse-filter.c
-+++ b/tools/lib/traceevent/parse-filter.c
-@@ -325,9 +325,8 @@ static void free_events(struct event_list *events)
- }
- 
- static struct filter_arg *
--create_arg_item(struct event_format *event,
--		const char *token, enum filter_arg_type type,
--		char **error_str)
-+create_arg_item(struct event_format *event, const char *token,
-+		enum event_type type, char **error_str)
- {
- 	struct format_field *field;
- 	struct filter_arg *arg;
 -- 
-1.7.9.2.358.g22243
-
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
