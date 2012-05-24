@@ -1,78 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751072Ab2EXG2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 02:28:45 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27695 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699Ab2EXG2o (ORCPT
+	id S1751235Ab2EXGbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 02:31:51 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:50297 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750856Ab2EXGbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 02:28:44 -0400
-Date: Thu, 24 May 2012 09:32:32 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
- code
-Message-ID: <20120524063232.GT4637@mwanda>
-References: <201205231428.48061.hartleys@visionengravers.com>
- <20120523214354.GQ4637@mwanda>
- <ADE657CA350FB648AAC2C43247A983F0020698BACACF@AUSP01VMBX24.collaborationhost.net>
+	Thu, 24 May 2012 02:31:48 -0400
+Message-ID: <4FBDD48B.7020109@linux.vnet.ibm.com>
+Date: Thu, 24 May 2012 14:26:19 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698BACACF@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 6/9] KVM: MMU: fast path of handling guest page fault
+References: <4FBCA4FB.8050501@linux.vnet.ibm.com> <4FBCA60F.5040701@linux.vnet.ibm.com> <4FBCCB38.9080302@redhat.com>
+In-Reply-To: <4FBCCB38.9080302@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052406-4790-0000-0000-000002EB57F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 04:43:34PM -0500, H Hartley Sweeten wrote:
-> On Wednesday, May 23, 2012 2:44 PM, Dan Carpenter wrote:
-> > Hartley, you're doing a great job with all these patches, but it's
-> > going to be weeks before the merge window closes.  We're going to
-> > end up getting confused with all the patches floating around.
-> >
-> > Do you think you could maybe put up a git tree with the current
-> > stuff so people know when they're stepping on each other's toes?
+On 05/23/2012 07:34 PM, Avi Kivity wrote:
+
+
+>>  static bool spte_has_volatile_bits(u64 spte)
+>>  {
+>> +	/*
+>> +	 * Always atomicly update spte if it can be updated
+>> +	 * out of mmu-lock.
+>> +	 */
+>> +	if (spte_can_lockless_update(spte))
+>> +		return true;
 > 
-> I would but really don't know how/were to put one.
+> 
+> This is a really subtle point, but is it really needed?
+> 
+> Lockless spte updates should always set the dirty and accessed bits, so
+> we won't be overwriting any volatile bits there.
 > 
 
-I can't speak for Greg but probably he'd still end up taking patches
-from the list, not from the git tree.  So that makes it less of a
-big deal where you put it, since we'd only use it to just track
-which patches are out there.
 
-So if someone submits a patch to comedi, we'd tell them, "Uh.  This
-conflicts with some previously submitted patches.  Please pull from
-Hartley's tree and modify it so it applies."
+Avi,
 
-There are several free git hosting projects out there.  I use
-http://repo.or.cz/ for Smatch.
+Currently, The spte update/clear paths in mmu-lock think the "Dirty bit" is
+not volatile if the spte is readonly. Then the "Dirty bit" caused by
+lockless update can be lost.
 
-> Also, I'm still a bit of a newbie with git. I would need some help
-> initially to make sure I didn't screw it up. ;-)
+And, for tlb flush:
 
-Register a project.
-Do a fork of http://repo.or.cz/w/linux-2.6.git
-Push Greg's stuff.
-Go through the email list and download all the comedi patches which
-Greg doesn't have (raw emails including headers and everything).
+|        * If we overwrite a writable spte with a read-only one we
+|        * should flush remote TLBs. Otherwise rmap_write_protect
+|        * will find a read-only spte, even though the writable spte
+|        * might be cached on a CPU's TLB.
+|        */
+|       if (is_writable_pte(entry) && !is_writable_pte(*sptep))
+|                kvm_flush_remote_tlbs(vcpu->kvm);
 
-cat email.txt | git am -s
+Atomically update spte can help us to get a stable is_writable_pte().
 
-If it doesn't apply complain to the submitter.  Don't fix anyone's
-patches or changelogs.  Just complain and make them do the work.
 
-Make sure when you apply a patch that the authorship information is
-preserved.
+>> +
+>>  	if (!shadow_accessed_mask)
+>>  		return false;
+>>
+>> @@ -498,13 +517,7 @@ static bool mmu_spte_update(u64 *sptep, u64 new_spte)
+>>  		return ret;
+>>  	}
+>>
+>> -	new_spte |= old_spte & shadow_dirty_mask;
+>> -
+>> -	mask = shadow_accessed_mask;
+>> -	if (is_writable_pte(old_spte))
+>> -		mask |= shadow_dirty_mask;
+>> -
+>> -	if (!spte_has_volatile_bits(old_spte) || (new_spte & mask) == mask)
+>> +	if (!spte_has_volatile_bits(old_spte))
+>>  		__update_clear_spte_fast(sptep, new_spte);
+>>  	else
+>>  		old_spte = __update_clear_spte_slow(sptep, new_spte);
+> 
+> 
+> It looks like the old code is bad.. why can we ignore volatile bits in
+> the old spte?  Suppose pfn is changing?
+> 
 
-git push ssh://yourname@repo.or.cz/srv/git/project.git master
 
-regards,
-dan carpenter
+/* Rules for using mmu_spte_update:
+ * Update the state bits, it means the mapped pfn is not changged.
+
+If pfn is changed, we should clear spte first, then set the spte to
+the new pfn, in kvm_set_pte_rmapp(), we have:
+
+| mmu_spte_clear_track_bits(sptep);
+| mmu_spte_set(sptep, new_spte);
+
+>> +
+>> +static bool
+>> +fast_pf_fix_indirect_spte(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>> +			  u64 *sptep, u64 spte, gfn_t gfn)
+>> +{
+>> +	pfn_t pfn;
+>> +	bool ret = false;
+>> +
+>> +	/*
+>> +	 * For the indirect spte, it is hard to get a stable gfn since
+>> +	 * we just use a cmpxchg to avoid all the races which is not
+>> +	 * enough to avoid the ABA problem: the host can arbitrarily
+>> +	 * change spte and the mapping from gfn to pfn.
+>> +	 *
+>> +	 * What we do is call gfn_to_pfn_atomic to bind the gfn and the
+>> +	 * pfn because after the call:
+>> +	 * - we have held the refcount of pfn that means the pfn can not
+>> +	 *   be freed and be reused for another gfn.
+>> +	 * - the pfn is writable that means it can not be shared by different
+>> +	 *   gfn.
+>> +	 */
+>> +	pfn = gfn_to_pfn_atomic(vcpu->kvm, gfn);
+>> +
+>> +	/* The host page is swapped out or merged. */
+>> +	if (mmu_invalid_pfn(pfn))
+>> +		goto exit;
+>> +
+>> +	ret = true;
+>> +
+>> +	if (pfn != spte_to_pfn(spte))
+>> +		goto exit;
+>> +
+>> +	if (cmpxchg64(sptep, spte, spte | PT_WRITABLE_MASK) == spte)
+>> +		mark_page_dirty(vcpu->kvm, gfn);
+> 
+> Isn't it better to kvm_release_pfn_dirty() here?
+> 
+
+
+Right, kvm_release_pfn_dirty is better.
+
+>> +
+>> +exit:
+>> +	kvm_release_pfn_clean(pfn);
+>> +	return ret;
+>> +}
+>> +
+>> +> +
+>> +/*
+>> + * Return value:
+>> + * - true: let the vcpu to access on the same address again.
+>> + * - false: let the real page fault path to fix it.
+>> + */
+>> +static bool fast_page_fault(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+>> +			    int level, u32 error_code)
+>> +{
+>> +	struct kvm_shadow_walk_iterator iterator;
+>> +	struct kvm_mmu_page *sp;
+>> +	bool ret = false;
+>> +	u64 spte = 0ull;
+>> +
+>> +	if (!page_fault_can_be_fast(vcpu, gfn, error_code))
+>> +		return false;
+>> +
+> 
+> No need to pass gfn here.
+
+
+Right, will fix it.
+
