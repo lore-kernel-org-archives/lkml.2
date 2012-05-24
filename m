@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab2EXILk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 04:11:40 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:47726 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab2EXILg convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:17:1>);
-	Thu, 24 May 2012 04:11:36 -0400
-Message-Id: <4FBE09740200007800085B89@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Thu, 24 May 2012 09:12:04 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Alex Shi" <alex.shi@intel.com>
-Cc: <borislav.petkov@amd.com>, <arnd@arndb.de>, <a.p.zijlstra@chello.nl>,
-        <akinobu.mita@gmail.com>, <eric.dumazet@gmail.com>,
-        <fweisbec@gmail.com>, <rostedt@goodmis.org>, <hughd@google.com>,
-        <jeremy@goop.org>, <len.brown@intel.com>, <tony.luck@intel.com>,
-        <yongjie.ren@intel.com>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <seto.hidetoshi@jp.fujitsu.com>, <penberg@kernel.org>,
-        <yinghai@kernel.org>, <tglx@linutronix.de>,
-        <akpm@linux-foundation.org>, <ak@linux.intel.com>, <luto@mit.edu>,
-        <avi@redhat.com>, <dhowells@redhat.com>, <mingo@redhat.com>,
-        <riel@redhat.com>, <cpw@sgi.com>, <steiner@sgi.com>,
-        <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH v7 2/8] x86/flush_tlb: try flush_tlb_single one by
- one in flush_tlb_range
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
- <1337782555-8088-3-git-send-email-alex.shi@intel.com>
- <4FBD157602000078000858F7@nat28.tlf.novell.com>
- <4FBDD82C.4020003@intel.com>
-In-Reply-To: <4FBDD82C.4020003@intel.com>
+	id S1753848Ab2EXIOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 04:14:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:52614 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752759Ab2EXIOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 04:14:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="170759533"
+Message-ID: <1337847472.15137.81.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Richard Weinberger <richard@nod.at>
+Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com, tglx@linutronix.de
+Date: Thu, 24 May 2012 11:17:52 +0300
+In-Reply-To: <4FBBC4EE.4040802@nod.at>
+References: <1337608916-49771-1-git-send-email-richard@nod.at>
+	 <1337608916-49771-2-git-send-email-richard@nod.at>
+	 <20120522180119.2c2a10a8@pixies.home.jungo.com> <4FBBC4EE.4040802@nod.at>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-p2HPywNjchkueQDc4we+"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 24.05.12 at 08:41, Alex Shi <alex.shi@intel.com> wrote:
-> On 05/23/2012 10:51 PM, Jan Beulich wrote:
->> Unless there is an implicit assumption that 'start' and 'end' are on
->> the same page (which I doubt, as then it would be pointless to
->> add 'end' here), this one is definitely wrong - you'd either have
->> to issue multiple MMUEXT_INVLPG_MULTI-s, or you'd have to
->> also use MMUEXT_TLB_FLUSH_MULTI for the multi-page case.
-> 
-> Thanks comments!
-> So, the following change should be more safe for PV?
-> 
-> -       if (va == TLB_FLUSH_ALL) {
-> -               args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
-> -       } else {
-> -               args->op.cmd = MMUEXT_INVLPG_MULTI;
-> -               args->op.arg1.linear_addr = va;
-> -       }
-> +       args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
 
-This would be safe ...
+--=-p2HPywNjchkueQDc4we+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> +       if (start != TLB_FLUSH_ALL)
-> +               args->op.arg1.linear_addr = start;
+On Tue, 2012-05-22 at 18:55 +0200, Richard Weinberger wrote:
+> >> +    e =3D find_early_wl_entry(&ubi->free, max_pnum);
+> >
+> > This picks the eb with the lowest pnum within 'ubi->free'.
+> >
+> > When called with INT_MAX (for the FM_DATA), why do you need to pick
+> a
+> > free eb with the minimal pnum? The FM_DATA EBs may reside everywhere
+> (as
+> > the FM_SB holds their location).
+> > So why not pick the eb with a medium EC value (as done for standard
+> > get_peb calls)? That might be better wear-leveling wise.
+>=20
+> Fair point.
+> I'll fix that.
+> Artem, any comments on that?
 
-... and then this superfluous, but it'd result in an unconditional
-full TLB flush. When start and end (or perhaps end-1, assuming
-end is not inclusive) are on the same page, MMUEXT_INVLPG_MULTI
-should be used; MMUEXT_TLB_FLUSH_MULTI might need to be
-used in all other cases, unless you want to split multi-page, non-
-global invalidations into multiple MMUEXT_INVLPG_MULTI-s (which
-would appear to be what the whole patch aims at).
+The 'find_early_wl_entry()' function is used (currently) only at early
+stages. At these stages the we do not have the PEBs sorted by EC. We
+have just a list. This function should not be use after the WL subsystem
+is initialized.
+>=20
+--=20
+Best Regards,
+Artem Bityutskiy
 
-Perhaps the abstraction layer needs to be changed instead:
-Have the low level routines (Xen, UV, native) just deal with
-single pages, and do the splitting in common code (using the
-TLB size metrics).
+--=-p2HPywNjchkueQDc4we+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-But then again these metrics will become stale after a
-migration (not only on Xen, but in all virtualization scenarios), so
-some additional aspects will need to be taken care of anyway.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
->         MULTI_mmuext_op(mcs.mc, &args->op, 1, NULL, DOMID_SELF);
-> 
-> Do you know why the old patch is past the performance testing of Yongjie? 
-> https://lkml.org/lkml/2012/5/4/20 
+iQIcBAABAgAGBQJPve6wAAoJECmIfjd9wqK08bsQALMJrcYQVWfSKXDcT2IPDIF/
+1qZKMG9Pi7bgesUEXQIC/N9uvUDUlYCmTpZg0CzqWJKh36hKF6v/9qkMkVbk/MSa
+Q0vR+HTe51ilNzAXBr6XNMo5FIL5Kx85Z1f1xbvjZlvl63yDkwVSGycY1CVM69sE
+lV2VZGNVjovi4GcIhzx0H3PNtJgJzndn4QseWbKn/5Zdv7enaojDdiwIS6PSoBYH
+FHufYl18bBuxZZSsRtXH9W7PV57lptV6PdPq4eu/mVeeQgMLu8mJuMdkfiOBUmns
+V3cyN6HDnT8uQGUXRcgjxEoYwdfPQANOEw0jrHo6+MJnaDBgVvU8GVT2ynoOGHnq
+P7TLkNHGF8Sh3lbyiRB+djtUkHbKqpe+tMCArCOHSKUTNgQgFpH5bYSMcZgmnWPA
+rsCH4EzN+a3CnyMbv2hHNFd+4xbOHfaEOgE9aKgAP9Qp9pYjo6oNNmwIZnKQ0W1+
+4WxoAa98CypRox+6X3OrijjCe/5M7BVebLE4RGrC68jjDnDwGxbgChFIx4vBl/Jr
+qh4KWKG8H/zrpof0cQXnrk0ONz8m09rjnwBtLqhTlSOvdld/G1mA3MoUX9M/4U5t
+WpEgdsxPydU0okQE2f4g46EzZkgojU8GPwG953Z31n6dtriI7Js6cD0HxZrndSj7
+v7hCDMsyhR5QwHVSUSmz
+=qvHp
+-----END PGP SIGNATURE-----
 
-No - mere luck perhaps (possibly because the invalidation policy
-inside the hypervisor is strict enough to paper over the flaw
-here)?
-
-Jan
+--=-p2HPywNjchkueQDc4we+--
 
