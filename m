@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758654Ab2EXRYW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:24:22 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:36698 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756965Ab2EXRYU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:24:20 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "J\, KEERTHY" <j-keerthy@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, greg@kroah.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        j-pihet@ti.com
-Subject: Re: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Organization: Texas Instruments, Inc.
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<87397by2h9.fsf@ti.com>
-	<CAJ6a13aJwesHw0frCV+EfvYaep09cZGcu_PopuHzye1HS2tgvg@mail.gmail.com>
-	<CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
-Date: Thu, 24 May 2012 10:24:15 -0700
-In-Reply-To: <CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
-	(KEERTHY J.'s message of "Wed, 23 May 2012 10:21:19 +0530")
-Message-ID: <87obpdv6f4.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S1756876Ab2EXR0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:26:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38600 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753741Ab2EXR0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 13:26:13 -0400
+Message-ID: <1337880371.5070.24.camel@joe2Laptop>
+Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper
+ functions
+From: Joe Perches <joe@perches.com>
+To: T Makphaibulchoke <tmac@hp.com>
+Cc: lethal@linux-sh.org, hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, kaloz@openwrt.org, matt.fleming@intel.com,
+        lasse.collin@tukaani.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux@arm.linux.org.uk,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, linux390@de.ibm.com
+Date: Thu, 24 May 2012 10:26:11 -0700
+In-Reply-To: <1337875436-27640-1-git-send-email-tmac@hp.com>
+References: <1337875436-27640-1-git-send-email-tmac@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"J, KEERTHY" <j-keerthy@ti.com> writes:
+On Thu, 2012-05-24 at 10:03 -0600, T Makphaibulchoke wrote:
+> The patch cleans up the file lib/decompress_unxz.c by removing all memory
+> helper functions, e.g., memmove.  By doing so, any architecture's preboot
+> environment supporting the XZ decompression needs to define its own copy of
+> any of the missing memory helper functions.
 
-> On Tue, May 15, 2012 at 11:16 AM, J, KEERTHY <j-keerthy@ti.com> wrote:
->> On Tue, May 8, 2012 at 5:21 AM, Kevin Hilman <khilman@ti.com> wrote:
->>> Rafael,
->>>
->>> Keerthy <j-keerthy@ti.com> writes:
->>>
->>>> From: J Keerthy <j-keerthy@ti.com>
->>>>
->>>> AVS(Adaptive Voltage Scaling) is a power management technique which
->>>> controls the operating voltage of a device in order to optimize (i.e. reduce)
->>>> its power consumption. The voltage is adapted depending on static factors
->>>> (chip manufacturing process) and dynamic factors (temperature
->>>> depending performance).
->>>> The TI AVS solution is named Smartreflex.
->>>>
->>>> To that end, create the AVS driver in drivers/power/avs and
->>>> move the OMAP SmartReflex code to the new directory. The
->>>> class driver is still retained in the mach-omap2 directory.
->>>
->>> How should we handle this for upstream?
->>>
->>> It does a bunch of cleanup under arch/arm then does the move to
->>> drivers/power the end.  To avoid conflicts with other OMAP core changes,
->>> I would suggest we take this through the OMAP tree.
->>>
->>> With your ack, I'd be glad to take it.
->>
->> Hello Rafael,
->>
->> A gentle ping on this series.
->
-> Hi Greg,
->
-> This series has Kevin's comments incorporated.
->
-> Kevin,
->
-> Can i have your Ack for this series?
->
+Perhaps a silly question, but why not use
+the __builtin variants?
 
-Well, as mentioned above, I'm waiting for Rafael's ack, then I will
-merge it.
-
-Because of all the arch/arm/mach-omap2/* changes, I would like to merge
-this via the OMAP tree to avoid conflicts with other stuff we have
-changing in arch/arm/mach-omap2/*
-
-Kevin
 
