@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab2EXK2e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:28:34 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49868 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab2EXK2d (ORCPT
+	id S932573Ab2EXK3j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:29:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36434 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754837Ab2EXK3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:28:33 -0400
-Date: Thu, 24 May 2012 12:28:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Paul Mundt <lethal@linux-sh.org>
-cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, horms@verge.net.au, linux-sh@vger.kernel.org,
-        johnstul@us.ibm.com, rjw@sisk.pl, gregkh@linuxfoundation.org,
-        olof@lixom.net
-Subject: Re: [PATCH 01/03] clockevents: Make clockevents_config() a global
- symbol
-In-Reply-To: <alpine.LFD.2.02.1205241225580.3231@ionos>
-Message-ID: <alpine.LFD.2.02.1205241227470.3231@ionos>
-References: <20120509143926.27521.20342.sendpatchset@w520> <20120509143934.27521.46553.sendpatchset@w520> <20120523063218.GB11860@linux-sh.org> <alpine.LFD.2.02.1205241225580.3231@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 24 May 2012 06:29:38 -0400
+Date: Thu, 24 May 2012 12:29:31 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 0/1] perf/core fix
+Message-ID: <20120524102931.GA3148@gmail.com>
+References: <1337821705-3941-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337821705-3941-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 May 2012, Thomas Gleixner wrote:
 
-> On Wed, 23 May 2012, Paul Mundt wrote:
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> > On Wed, May 09, 2012 at 11:39:34PM +0900, Magnus Damm wrote:
-> > > From: Magnus Damm <damm@opensource.se>
-> > > 
-> > > Make clockevents_config() into a global symbol to allow it
-> > > to be used by compiled-in clockevent drivers. This is needed
-> > > by drivers that want to update the timer frequency after
-> > > registration time.
-> > > 
-> > > Signed-off-by: Magnus Damm <damm@opensource.se>
-> > 
-> > Any update on this?
+> 	Please pull,
 > 
-> Ooops, I missed that. Can you take it through your tree with my
-> acked-by please?
+> - Arnaldo
+> 
+> The following changes since commit ab0cce560ef177bdc7a8f73e9962be9d829a7b2c:
+> 
+>   Revert "sched, perf: Use a single callback into the scheduler" (2012-05-23 17:40:51 +0200)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
+> 
+> for you to fetch changes up to a1d44b9acdf7b2820ef762846150b4d13b84e075:
+> 
+>   perf evlist: Explicititely initialize input_name (2012-05-23 21:47:51 -0300)
+> 
+> ----------------------------------------------------------------
+> Fix perf evlist uninitialized local variable
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       perf evlist: Explicititely initialize input_name
+> 
+>  tools/perf/builtin-evlist.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-Gah crap. I take the whole lot. Didn't notice that the driver is in
-drivers/clocksource.
+Pulled, thanks Arnaldo!
 
-Sorry for the confusion.
+	Ingo
