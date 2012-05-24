@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750934Ab2EXGTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 02:19:22 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:11054
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750696Ab2EXGTV (ORCPT
+	id S1751072Ab2EXG2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 02:28:45 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27695 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2EXG2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 02:19:21 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-Date: Thu, 24 May 2012 14:39:00 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Fabio Estevam <festevam@gmail.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>, <marc@cpdesign.com.au>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
-Message-ID: <20120524063859.GD7843@S2100-06.ap.freescale.net>
-References: <CAOMZO5A-05jTYpEEPfnJvWpby1YJ1M7=KPn=zahbQrQOgbjR4g@mail.gmail.com>
- <201205221053.21792.marc@cpdesign.com.au>
- <CAOMZO5BCcFOktp9mqDCpnrVhbK6pwO1R3ZdiKPfawb=KLjzzWw@mail.gmail.com>
- <CAOMZO5DKsrXJoSSacwYFoHUw6pPWLWQnC3gS=6=3k6nvf6tggw@mail.gmail.com>
- <20120523084945.GA4085@opensource.wolfsonmicro.com>
- <20120523164203.GA7843@S2100-06.ap.freescale.net>
- <CAOMZO5AOsdHqZ2Rth_m_BLEvHyLrJGEeXzmZZX=HyfeQZ7WTYw@mail.gmail.com>
- <20120524004851.GB7843@S2100-06.ap.freescale.net>
- <CAOMZO5A-LbgPFTbizK-NghboTs9rGWN2LnmQHEQEdo5Bhxtohg@mail.gmail.com>
+	Thu, 24 May 2012 02:28:44 -0400
+Date: Thu, 24 May 2012 09:32:32 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging: comedi: adl_pci7296: factor out the PCI device
+ code
+Message-ID: <20120524063232.GT4637@mwanda>
+References: <201205231428.48061.hartleys@visionengravers.com>
+ <20120523214354.GQ4637@mwanda>
+ <ADE657CA350FB648AAC2C43247A983F0020698BACACF@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOMZO5A-LbgPFTbizK-NghboTs9rGWN2LnmQHEQEdo5Bhxtohg@mail.gmail.com>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0020698BACACF@AUSP01VMBX24.collaborationhost.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:07:43AM -0300, Fabio Estevam wrote:
-> I am trying to understand why mx31pdk still fails.
+On Wed, May 23, 2012 at 04:43:34PM -0500, H Hartley Sweeten wrote:
+> On Wednesday, May 23, 2012 2:44 PM, Dan Carpenter wrote:
+> > Hartley, you're doing a great job with all these patches, but it's
+> > going to be weeks before the merge window closes.  We're going to
+> > end up getting confused with all the patches floating around.
+> >
+> > Do you think you could maybe put up a git tree with the current
+> > stuff so people know when they're stepping on each other's toes?
 > 
-So different from imx51-babbage which uses MC13892, mx31pdk uses
-MC13783?  But both chips should have the same regmap, right?
+> I would but really don't know how/were to put one.
+> 
 
--- 
-Regards,
-Shawn
+I can't speak for Greg but probably he'd still end up taking patches
+from the list, not from the git tree.  So that makes it less of a
+big deal where you put it, since we'd only use it to just track
+which patches are out there.
 
+So if someone submits a patch to comedi, we'd tell them, "Uh.  This
+conflicts with some previously submitted patches.  Please pull from
+Hartley's tree and modify it so it applies."
+
+There are several free git hosting projects out there.  I use
+http://repo.or.cz/ for Smatch.
+
+> Also, I'm still a bit of a newbie with git. I would need some help
+> initially to make sure I didn't screw it up. ;-)
+
+Register a project.
+Do a fork of http://repo.or.cz/w/linux-2.6.git
+Push Greg's stuff.
+Go through the email list and download all the comedi patches which
+Greg doesn't have (raw emails including headers and everything).
+
+cat email.txt | git am -s
+
+If it doesn't apply complain to the submitter.  Don't fix anyone's
+patches or changelogs.  Just complain and make them do the work.
+
+Make sure when you apply a patch that the authorship information is
+preserved.
+
+git push ssh://yourname@repo.or.cz/srv/git/project.git master
+
+regards,
+dan carpenter
