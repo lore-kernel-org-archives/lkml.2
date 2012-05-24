@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757927Ab2EXQka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:40:30 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:1628 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752591Ab2EXQk2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:40:28 -0400
-Message-ID: <1337877626.22505.30.camel@x61.thuisdomein>
-Subject: Re: [PATCH] Drop superfluous setting of i2c_board_info.type
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 May 2012 18:40:26 +0200
-In-Reply-To: <20120524162230.GU3710@pengutronix.de>
-References: <1337870303.22505.20.camel@x61.thuisdomein>
-	 <20120524162230.GU3710@pengutronix.de>
+	id S1758278Ab2EXQl4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:41:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44657 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab2EXQkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 12:40:31 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung.kim@lge.com>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 4/6] tools lib traceevent: Fix freeing arg on process_dynamic_array()
+Date: Thu, 24 May 2012 13:40:11 -0300
+Message-Id: <1337877613-15133-5-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1337877613-15133-1-git-send-email-acme@infradead.org>
+References: <1337877613-15133-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
-X-OriginalArrivalTime: 24 May 2012 16:40:26.0962 (UTC) FILETIME=[EC530320:01CD39CB]
-X-RcptDomain: vger.kernel.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 18:22 +0200, Uwe Kleine-König wrote:
-> On Thu, May 24, 2012 at 04:38:23PM +0200, Paul Bolle wrote:
-> > 1) This is apparently legal. Doesn't gcc issue a warning for this?
-> I wondered about that too, gcc doesn't even warn when the two values are
-> different. See for example commit
-> bd9e310dca15c9987256f67af19f9f42426e7493.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-In that case it were two strings ("rtc-pcf8563" versus "pcf8563"). Why
-should gcc care? Or is there something going on behind the scenes which
-somehow depends on the contents of the string?
+The @arg paremeter should not be freed inside of process_XXX(),
+because it'd be freed from the caller of process_arg(). We can
+free it only after it was reused for local usage.
+
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1337740619-27925-14-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/event-parse.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 445a43a..3559027 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2300,17 +2300,18 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
+ 	arg = alloc_arg();
+ 	type = process_arg(event, arg, &token);
+ 	if (type == EVENT_ERROR)
+-		goto out_free;
++		goto out_free_arg;
  
-> >  arch/arm/mach-imx/mach-cpuimx35.c     |    1 -
-> >  arch/arm/mach-imx/mach-cpuimx51sd.c   |    1 -
-> I already submitted a patch for the imx bits with Message id
-> 1335989287-10094-1-git-send-email-u.kleine-koenig@pengutronix.de.
-> (e.g.
-> http://mid.gmane.org/1335989287-10094-1-git-send-email-u.kleine-koenig@pengutronix.de)
-
-Thanks. I missed that one, obviously. Should I just drop that part of
-the patch and resend?
-
-By the way, together with my previous patch (Message-ID
-1337869829.22505.15.camel@x61.thuisdomein , probably not yet archived on
-the web) we have found all instances of this issue, haven't we?
-
-> Don't know if Sascha took it already. If he did, he didn't tell me.
-
-
-Paul Bolle
+ 	if (!test_type_token(type, token, EVENT_OP, "]"))
+-		goto out_free;
++		goto out_free_arg;
+ 
+ 	free_token(token);
+ 	type = read_token_item(tok);
+ 	return type;
+ 
++ out_free_arg:
++	free_arg(arg);
+  out_free:
+-	free(arg);
+ 	free_token(token);
+ 	*tok = NULL;
+ 	return EVENT_ERROR;
+-- 
+1.7.9.2.358.g22243
 
