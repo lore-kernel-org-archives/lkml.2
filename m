@@ -1,99 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231Ab2EXPcU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 11:32:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35892 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932934Ab2EXPcS (ORCPT
+	id S1757176Ab2EXPeW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 11:34:22 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:40019 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab2EXPeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 11:32:18 -0400
-Message-ID: <4FBE547A.5020900@gmail.com>
-Date: Thu, 24 May 2012 09:32:10 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 24 May 2012 11:34:20 -0400
+Date: Thu, 24 May 2012 17:34:13 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Russ Anderson <rja@sgi.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on
+ multi-processor systems
+Message-ID: <20120524153409.GM1663@somewhere>
+References: <20120524144229.GA27713@sgi.com>
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, acme@redhat.com
-CC: a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] perf, tool: Fix endianity trick for adds_features
- bitmask
-References: <1337151548-2396-1-git-send-email-jolsa@redhat.com> <1337151548-2396-7-git-send-email-jolsa@redhat.com> <4FBB1839.6000606@gmail.com> <20120522084153.GC2901@m.brq.redhat.com> <4FBBB539.5010805@gmail.com> <20120523175912.GA9213@m.brq.redhat.com>
-In-Reply-To: <20120523175912.GA9213@m.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524144229.GA27713@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/23/12 11:59 AM, Jiri Olsa wrote:
-> On Tue, May 22, 2012 at 09:48:09AM -0600, David Ahern wrote:
->> On 5/22/12 2:41 AM, Jiri Olsa wrote:
->>
->>> hm, any special details for the record? because I'm sure I tested this way..
->>>
->>> I'll retest, thanks
->>> jirka
->>
->>
->> The attached fixes it.
->
->> commit 1353676ca6551a0165df030784ada20ebea73f73
->> Author: David Ahern<dsahern@gmail.com>
->> Date:   Tue May 22 09:40:17 2012 -0600
->>
->>      perf, tool: Fix endianity swapping for adds_features bitmask
->>
->>      Based on Jiri's latest attempt:
->>      https://lkml.org/lkml/2012/5/16/61
->>
->>      Basically, adds_features should be byte swapped assuming unsigned
->>      longs are either 8-bytes (u64) or 4-bytes (u32).
->>
->>      Fixes 32-bit ppc dumping 64-bit x86 feature data:
->>       ========
->>       captured on: Sun May 20 19:23:23 2012
->>       hostname : nxos-vdc-dev3
->>       os release : 3.4.0-rc7+
->>       perf version : 3.4.rc4.137.g978da3
->>       arch : x86_64
->>       nrcpus online : 16
->>       nrcpus avail : 16
->>       cpudesc : Intel(R) Xeon(R) CPU E5540 @ 2.53GHz
->>       cpuid : GenuineIntel,6,26,5
->>       total memory : 24680324 kB
->>      ...
->>
->>      Verified 64-bit x86 can still dump feature data for 32-bit ppc.
->>
->>      Signed-off-by: David Ahern<dsahern@gmail.com>
->
-> I got the header properly displayed with this patch, but I'm getting
-> following diffs in the perf report output (ppc32 vs x86_64):
-> (after moving origin perf archive build-id cache to target system)
->
-> -     0.00%            perf  [ext4]               [k] 0x0005b318
-> +     0.00%            perf  [ext4]               [k] .cleanup_module
->
-> -     0.00%             yes  [kernel.kallsyms]    [k] .sys_write
-> +     0.00%             yes  [kernel.kallsyms]    [k] .SyS_write
->
->   ^^^ this one is particularly disturbing ;)
->
-> I guess it's unrelated to the header stuff which your patch fixes
-> properly I think, but I got small conflict rebasing this to current tip
->
-> Reviewed-by: Jiri Olsa<jolsa@redhat.com>
+On Thu, May 24, 2012 at 09:42:29AM -0500, Russ Anderson wrote:
+> When multiple cpus on a multi-processor system call dump_stack()
+> at the same time, the backtrace lines get intermixed, making 
+> the output worthless.  Add a lock so each cpu stack dump comes
+> out as a coherent set.
+> 
+> For example, when a multi-processor system is NMIed, all of the
+> cpus call dump_stack() at the same time, resulting in output for
+> all of cpus getting intermixed, making it impossible to tell what
+> any individual cpu was doing.  With this patch each cpu prints
+> its stack lines as a coherent set, so one can see what each cpu
+> was doing.
+> 
+> It has been tested on a 4069 cpu system.
+> 
+> Signed-off-by: Russ Anderson <rja@sgi.com>
 
-That is odd... and if you are getting that much you are ahead of me. 
-When I analyze an x86_64 file on ppc32 all symbols show as 
-kernel.kallsyms dso.
+I don't think this is a good idea. What if an interrupt comes
+and calls this at the same time? Sure you can mask irqs but NMIs
+can call that too. In this case I prefer to have a messy report
+rather than a deadlock on the debug path.
 
-The patch applies cleanly for me on latest acme/core:
-$ patch -p1 < perf-swap-features.patch
-patching file tools/perf/util/header.c
-patching file tools/perf/util/include/linux/bitops.h
-patching file tools/perf/util/session.c
-patching file tools/perf/util/session.h
+May be something like that:
 
-David
+static atomic_t dump_lock = ATOMIC_INIT(-1);
+
+static void dump_stack(void)
+{
+	int was_locked;
+	int old;
+	int cpu;
+
+	preempt_disable();
+retry:
+	cpu = smp_processor_id();
+	old = atomic_cmpxchg(&dump_lock, -1, cpu);
+	if (old == -1) {
+		was_locked = 0;
+	} else if (old == cpu) {
+		was_locked = 1;
+	} else {
+		cpu_relax();
+		goto retry;
+	}
+
+	__dump_trace();
+
+	if (!was_locked)
+		atomic_set(&dump_lock, -1);
+
+	preempt_enable();
+}
+
+You could also use a spinlock with irq disabled and test in_nmi()
+but we could have a dump_trace() in an NMI before the nmi count is
+incremented. So the above is perhaps more robust.
