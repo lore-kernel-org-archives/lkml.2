@@ -1,209 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2EXAr2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 20:47:28 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59652 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751171Ab2EXArZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 20:47:25 -0400
-Message-ID: <1337820443.1747.24.camel@joe2Laptop>
-Subject: Re: [PATCH v2 12/14] Closures
-From: Joe Perches <joe@perches.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, bharrosh@panasas.com, vgoyal@redhat.com,
-        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
-Date: Wed, 23 May 2012 17:47:23 -0700
-In-Reply-To: <1337817771-25038-13-git-send-email-koverstreet@google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
-	 <1337817771-25038-13-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753754Ab2EXA63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 20:58:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49900 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab2EXA61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 20:58:27 -0400
+Date: Wed, 23 May 2012 17:58:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, pjt@google.com,
+        cl@linux.com, riel@redhat.com, bharata.rao@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>, Lee.Schermerhorn@hp.com,
+        aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
+In-Reply-To: <1337788843.9783.14.camel@laptop>
+Message-ID: <alpine.DEB.2.00.1205231757140.28167@chino.kir.corp.google.com>
+References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org> <alpine.DEB.2.00.1205191922250.24674@chino.kir.corp.google.com> <20120521084046.GB31407@gmail.com> <alpine.DEB.2.00.1205211914100.13682@chino.kir.corp.google.com> <alpine.DEB.2.00.1205211932350.13682@chino.kir.corp.google.com>
+ <1337688268.9698.29.camel@twins>  <1337698830.9698.37.camel@twins> <1337788843.9783.14.camel@laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 17:02 -0700, Kent Overstreet wrote:
-> Asynchronous refcounty thingies;
+On Wed, 23 May 2012, Peter Zijlstra wrote:
 
-Hi again Kent.
+> On Tue, 2012-05-22 at 17:00 +0200, Peter Zijlstra wrote:
+> > /me goes kick his gray cells some more.
+> 
+> OK, does the below make your machine happy? If not, please share the
+> completely topology setup of that thing (lscpu or similar).
+> 
 
-Highly descriptive word choice you've employed there.
+Same divide by zero.  I'd be happy to run a debugging patch if you can 
+come up with one.
 
-> they embed a refcount and a work
-> struct. Extensive documentation follows in include/linux/closure.h
+$ grep -E 'processor|core|sibling|physical id|apicid|cpuid' /proc/cpuinfo | sed 's/processor/\nprocessor/'
+processor	: 0
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 4
+initial apicid	: 0
+cpuid level	: 5
 
-All trivia:
+processor	: 1
+physical id	: 0
+siblings	: 4
+core id		: 1
+cpu cores	: 4
+apicid		: 5
+initial apicid	: 1
+cpuid level	: 5
 
-> diff --git a/include/linux/closure.h b/include/linux/closure.h
-[]
-> +#define CLOSURE_REMAINING_MASK	(~(~0 << 20))
+processor	: 2
+physical id	: 0
+siblings	: 4
+core id		: 2
+cpu cores	: 4
+apicid		: 6
+initial apicid	: 2
+cpuid level	: 5
 
-More commonly used is ((1 << 20) - 1)
+processor	: 3
+physical id	: 0
+siblings	: 4
+core id		: 3
+cpu cores	: 4
+apicid		: 7
+initial apicid	: 3
+cpuid level	: 5
 
-> +#define CLOSURE_GUARD_MASK					\
-> +	((1 << 20)|(1 << 22)|(1 << 24)|(1 << 26)|(1 << 28)|(1 << 30))
+processor	: 4
+physical id	: 1
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 8
+initial apicid	: 4
+cpuid level	: 5
 
-Perhaps a poor choice of layout.
+processor	: 5
+physical id	: 1
+siblings	: 4
+core id		: 1
+cpu cores	: 4
+apicid		: 9
+initial apicid	: 5
+cpuid level	: 5
 
-Perhaps it'd be more sensible to define CLOSURE_<FOO>_GUARDs
-along with CLOSURE_<FOO>
+processor	: 6
+physical id	: 1
+siblings	: 4
+core id		: 2
+cpu cores	: 4
+apicid		: 10
+initial apicid	: 6
+cpuid level	: 5
 
-It might make more sense to use another macro with
-the somewhat magic number of 20 more explicitly defined.
+processor	: 7
+physical id	: 1
+siblings	: 4
+core id		: 3
+cpu cores	: 4
+apicid		: 11
+initial apicid	: 7
+cpuid level	: 5
 
-> +
-> +	/*
-> +	 * CLOSURE_RUNNING: Set when a closure is running (i.e. by
-> +	 * closure_init() and when closure_put() runs then next function), and
-> +	 * must be cleared before remaining hits 0. Primarily to help guard
-> +	 * against incorrect usage and accidently transferring references.
+processor	: 8
+physical id	: 2
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 12
+initial apicid	: 8
+cpuid level	: 5
 
-accidentally
+processor	: 9
+physical id	: 2
+siblings	: 4
+core id		: 1
+cpu cores	: 4
+apicid		: 13
+initial apicid	: 9
+cpuid level	: 5
 
-[]
-> +	 * CLOSURE_TIMER: Analagous to CLOSURE_WAITING, indicates that a closure
+processor	: 10
+physical id	: 2
+siblings	: 4
+core id		: 2
+cpu cores	: 4
+apicid		: 14
+initial apicid	: 10
+cpuid level	: 5
 
-analogous
+processor	: 11
+physical id	: 2
+siblings	: 4
+core id		: 3
+cpu cores	: 4
+apicid		: 15
+initial apicid	: 11
+cpuid level	: 5
 
-[]
+processor	: 12
+physical id	: 3
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 16
+initial apicid	: 12
+cpuid level	: 5
 
-> +#define TYPE_closure			0U
-> +#define TYPE_closure_with_waitlist	1U
-> +#define TYPE_closure_with_timer		2U
-> +#define TYPE_closure_with_waitlist_and_timer 3U
+processor	: 13
+physical id	: 3
+siblings	: 4
+core id		: 1
+cpu cores	: 4
+apicid		: 17
+initial apicid	: 13
+cpuid level	: 5
 
-UPPER_lower is generally frowned on.
-It'd be better to use CLOSURE_TYPE as all uses
-are obscured by macros.
+processor	: 14
+physical id	: 3
+siblings	: 4
+core id		: 2
+cpu cores	: 4
+apicid		: 18
+initial apicid	: 14
+cpuid level	: 5
 
-> +#define MAX_CLOSURE_TYPE		3U
-> +	unsigned		type;
-> +
-> +#ifdef CONFIG_DEBUG_CLOSURES
-> +#define CLOSURE_MAGIC_DEAD	0xc054dead
-> +#define CLOSURE_MAGIC_ALIVE	0xc054a11e
-> +
-> +	unsigned		magic;
-> +	struct list_head	all;
-> +	unsigned long		ip;
-> +	unsigned long		waiting_on;
-> +#endif
-> +};
-> +
-> +struct closure_with_waitlist {
-> +	struct closure	cl;
-> +	closure_list_t	wait;
-> +};
-> +
-> +struct closure_with_timer {
-> +	struct closure	cl;
-> +	struct timer_list timer;
-> +};
-> +
-> +struct closure_with_waitlist_and_timer {
-> +	struct closure	cl;
-> +	closure_list_t	wait;
-> +	struct timer_list timer;
-> +};
-> +
-> +extern unsigned invalid_closure_type(void);
-> +
-> +#define __CL_TYPE(cl, _t)						\
-> +	  __builtin_types_compatible_p(typeof(cl), struct _t)		\
-> +		? TYPE_ ## _t :						\
-
-Might as well use __CLOSURE_TYPE
-
-> +
-> +#define __closure_type(cl)						\
-> +(									\
-> +	__CL_TYPE(cl, closure)						\
-> +	__CL_TYPE(cl, closure_with_waitlist)				\
-> +	__CL_TYPE(cl, closure_with_timer)				\
-> +	__CL_TYPE(cl, closure_with_waitlist_and_timer)			\
-> +	invalid_closure_type()						\
-> +)
-
-outstandingly obscure. props.
-
-> diff --git a/lib/closure.c b/lib/closure.c
-
-[]
-> +#define CL_FIELD(type, field)					\
-> +	case TYPE_ ## type:					\
-> +	return &container_of(cl, struct type, cl)->field
-> +
-> +static closure_list_t *closure_waitlist(struct closure *cl)
-> +{
-> +	switch (cl->type) {
-> +		CL_FIELD(closure_with_waitlist, wait);
-> +		CL_FIELD(closure_with_waitlist_and_timer, wait);
-> +	}
-> +	return NULL;
-> +}
-> +
-> +static struct timer_list *closure_timer(struct closure *cl)
-> +{
-> +	switch (cl->type) {
-> +		CL_FIELD(closure_with_timer, timer);
-> +		CL_FIELD(closure_with_waitlist_and_timer, timer);
-> +	}
-> +	return NULL;
-> +}
-> +
-
-Another paragon of intelligibility.
-
-I think you should lose CL_FIELD and
-write normal switch/cases.
-
-[]
-
-> +static int debug_seq_show(struct seq_file *f, void *data)
-> +{
-> +	struct closure *cl;
-> +	spin_lock_irq(&closure_list_lock);
-> +
-> +	list_for_each_entry(cl, &closure_list, all) {
-> +		int r = atomic_read(&cl->remaining);
-> +
-> +		seq_printf(f, "%p: %pF -> %pf p %p r %i ",
-> +			   cl, (void *) cl->ip, cl->fn, cl->parent,
-> +			   r & CLOSURE_REMAINING_MASK);
-> +
-> +		if (test_bit(WORK_STRUCT_PENDING, work_data_bits(&cl->work)))
-> +			seq_printf(f, "Q");
-
-seq_putc or seq_puts
-
-> +
-> +		if (r & CLOSURE_RUNNING)
-> +			seq_printf(f, "R");
-> +
-> +		if (r & CLOSURE_BLOCKING)
-> +			seq_printf(f, "B");
-> +
-> +		if (r & CLOSURE_STACK)
-> +			seq_printf(f, "S");
-> +
-> +		if (r & CLOSURE_SLEEPING)
-> +			seq_printf(f, "Sl");
-> +
-> +		if (r & CLOSURE_TIMER)
-> +			seq_printf(f, "T");
-> +
-> +		if (r & CLOSURE_WAITING)
-> +			seq_printf(f, " W %pF\n",
-> +				   (void *) cl->waiting_on);
-> +
-> +		seq_printf(f, "\n");
-
-or maybe just bundle all this in a single seq_printf
-
-
-
+processor	: 15
+physical id	: 3
+siblings	: 4
+core id		: 3
+cpu cores	: 4
+apicid		: 19
+initial apicid	: 15
+cpuid level	: 5
