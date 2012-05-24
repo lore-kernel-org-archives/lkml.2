@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934047Ab2EXSLY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 14:11:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57042 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933192Ab2EXSLV (ORCPT
+	id S934056Ab2EXSST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 14:18:19 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57384 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458Ab2EXSSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 14:11:21 -0400
-Date: Thu, 24 May 2012 11:11:16 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, agk@redhat.com
-Subject: Re: [Bcache v13 12/16] bcache: Bset code (lookups within a btree
- node)
-Message-ID: <20120524181116.GF27983@google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
- <5b5998d7d09ec36377acdb5d15665d1e4e818521.1336619038.git.koverstreet@google.com>
- <20120522223932.GK14339@google.com>
- <20120523042114.GC607@dhcp-172-18-216-138.mtv.corp.google.com>
- <20120523175544.GC18143@google.com>
- <20120523204914.GC3933@htj.dyndns.org>
+	Thu, 24 May 2012 14:18:17 -0400
+Date: Thu, 24 May 2012 20:18:07 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+cc: Chen Gong <gong.chen@linux.intel.com>, "bp@amd64.org" <bp@amd64.org>,
+        "x86@kernel.org" <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: RE: [PATCH] x86: auto poll/interrupt mode switch for CMC to stop
+ CMC storm
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F37C0@ORSMSX104.amr.corp.intel.com>
+Message-ID: <alpine.LFD.2.02.1205242013490.3231@ionos>
+References: <1337740341-26711-1-git-send-email-gong.chen@linux.intel.com> <alpine.LFD.2.02.1205230859190.3231@ionos> <3908561D78D1C84285E8C5FCA982C28F192F2DD6@ORSMSX104.amr.corp.intel.com> <alpine.LFD.2.02.1205232044150.3231@ionos>
+ <3908561D78D1C84285E8C5FCA982C28F192F30C0@ORSMSX104.amr.corp.intel.com> <alpine.LFD.2.02.1205241033460.3231@ionos> <3908561D78D1C84285E8C5FCA982C28F192F37C0@ORSMSX104.amr.corp.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523204914.GC3933@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Kent.
+On Thu, 24 May 2012, Luck, Tony wrote:
 
-On Wed, May 23, 2012 at 01:49:14PM -0700, Tejun Heo wrote:
-> On Wed, May 23, 2012 at 10:55:44AM -0700, Tejun Heo wrote:
-> > How much benefit are we gaining by doing this float thing?  Any chance
-> > we can do something simpler?  As long as it's properly encapsulated,
-> > it shouldn't be too bad but I keep having the suspicion that a lot of
-> > complexity is added for unnecessary level of optimization.
+> > So can you please explain how this is better than having this strict
+> > per cpu and avoid all the mess which comes with that patch? The
+> > approach of letting global state be modified in a random manner is
+> > just doomed.
 > 
-> e.g. how much performance gain does it provide compared to just using
-> u64 in binary search tree combined with last search result hint for
-> sequential accesses?
+> Well doomed sounds bad :-) ... and I think I now agree that we should
+> get rid of global state and have polling vs. CMCI mode be per-cpu. It
+> means that it will take fractionally longer to react to a storm, but
+> on the plus side we'll naturally set storm mode on just the cpus
+> that are seeing it on a multi-socket system without having to check
+> topology data ... which should be better for the case where a noisy
+> source of CMCI is plaguing one socket, while other sockets have some
+> much lower rate of CMCI that we'd still like to log.
 
-I've been thinking a bit more about it last night and have one more
-question, so the use of floating numbers in binary search tree is to
-use less memory and thus lower cacheline overhead on lookups, and the
-tree is built between the min and max values of the bset so that
-cluster of large keys don't get lower resolution from high exponent.
+I thought more about it - see my patch. So I have a global state now
+as well, but it's only making sure that stuff stays in poll mode as
+long as others are in poll mode. That's good I think as you avoid the
+following:
 
-Assuming resolution of 512k - 2^19, 32bit can cover 2^41 - 2TiB.  If
-having compact search tree is so important (I kinda have hard time
-accepting that too tho), why not just use bin search tree of either
-u32 or u64 depending on the range?  In most cases u32 will be used and
-it's not like float can cover large areas well anyway.  It can
-degenerate into essentially linear search depending on key
-distribution (e.g. partition table read at sector 0 followed by bunch
-of high partition accesses) - u64 tree will show much better bound
-behavior in cases where key range becomes large.  Wouldn't that be
-*far* simpler and easier to understand and maintain without much
-downside?
+cmcis which affect siblings or a socket are delivered to all affected
+cores, but only one core might see the bank. So all others would
+reenable fast and then switch back to polling because the storm still
+persists. This would ping pong so, we probably want to avoid it.
 
-Thanks.
+Ideally the storm_on_cpus variable should be per socket and not system
+wide, but we can do that when it really becomes an issue.
 
--- 
-tejun
+Thanks,
+
+	tglx
