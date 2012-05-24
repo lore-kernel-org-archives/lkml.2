@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab2EXQcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:32:17 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36655 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab2EXQcQ (ORCPT
+	id S1757910Ab2EXQeA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:34:00 -0400
+Received: from latitanza.investici.org ([82.94.249.234]:49453 "EHLO
+	latitanza.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755926Ab2EXQd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:32:16 -0400
-Date: Thu, 24 May 2012 18:32:46 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: John Kacur <jkacur@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ftrace: Remove a superfluous check
-Message-ID: <20120524163246.GL27063@aftab.osrc.amd.com>
-References: <1333039463-24268-1-git-send-email-bp@amd64.org>
- <alpine.LFD.2.02.1203291902280.10113@tycho>
- <20120329171140.GE6409@aftab>
+	Thu, 24 May 2012 12:33:58 -0400
+X-Greylist: delayed 1632 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 May 2012 12:33:58 EDT
+X-DKIM: Sendmail DKIM Filter v2.8.2 latitanza.investici.org 475CE98A4C
+Date: Thu, 24 May 2012 18:07:16 +0200
+From: Antonio Quartulli <ordex@autistici.org>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: arp.c: external usage
+Message-ID: <20120524160715.GC6454@ritirata.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZwgA9U+XZDXt4+m+"
 Content-Disposition: inline
-In-Reply-To: <20120329171140.GE6409@aftab>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yo Steve,
 
-want to pick this one up? It still applies cleanly to current linus.
+--ZwgA9U+XZDXt4+m+
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+Hello,
 
-On Thu, Mar 29, 2012 at 07:11:40PM +0200, Borislav Petkov wrote:
-> On Thu, Mar 29, 2012 at 07:03:23PM +0200, John Kacur wrote:
-> > If you're going to do this, then you can drop the label too.
-> 
-> Jahaa... thanks.
-> 
-> Here's an updated patch:
-> 
-> --
-> From 135c25a609739bbdf1c33e62119517b47f0e1d07 Mon Sep 17 00:00:00 2001
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> Date: Thu, 29 Mar 2012 18:41:15 +0200
-> Subject: [PATCH] ftrace: Remove a superfluous check
-> 
-> register_ftrace_function() checks ftrace_disabled and calls
-> __register_ftrace_function which does it again.
-> 
-> Drop the first check and add the unlikely hint to the second one. Also,
-> drop the label as John correctly notices.
-> 
-> No functional change.
-> 
-> Cc: John Kacur <jkacur@redhat.com>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  kernel/trace/ftrace.c |    8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 867bd1dd2dd0..0df8f8088ffe 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -311,7 +311,7 @@ static int remove_ftrace_list_ops(struct ftrace_ops **list,
->  
->  static int __register_ftrace_function(struct ftrace_ops *ops)
->  {
-> -	if (ftrace_disabled)
-> +	if (unlikely(ftrace_disabled))
->  		return -ENODEV;
->  
->  	if (FTRACE_WARN_ON(ops == &global_ops))
-> @@ -4304,16 +4304,12 @@ int register_ftrace_function(struct ftrace_ops *ops)
->  
->  	mutex_lock(&ftrace_lock);
->  
-> -	if (unlikely(ftrace_disabled))
-> -		goto out_unlock;
-> -
->  	ret = __register_ftrace_function(ops);
->  	if (!ret)
->  		ret = ftrace_startup(ops, 0);
->  
-> -
-> - out_unlock:
->  	mutex_unlock(&ftrace_lock);
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(register_ftrace_function);
-> -- 
-> 1.7.9.3.362.g71319
+I'm writing here because we, as batman-adv developers, wanted to add a new
+feature called D.A.T. (Distributed ARP Table) to the batman-adv module, but=
+ we
+encountered some issues.
 
--- 
-Regards/Gruss,
-Boris.
+Going into the details, DAT is a DHT (Distributed Hash Table) based ARP cac=
+he and
+for its purposes it requires a local storage for classic ARP entries. In or=
+der
+to avoid code duplication, we decided to "consistently" use the local ARP t=
+able
+provided by the kernel.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+These are the operations we wanted to perform on the kernel ARP table:
+- Add a new entry
+- Check if an entry is present
+- Change the default entry timeouts
+
+The code we provided used the following functions provided by the ARP/neigh=
+bour
+layer API:
+
+- neigh_lookup()
+- neigh_release()
+- arp_create()
+
+Other than that the code was (necessarily) using "arp_tbl" and was modifyin=
+g the
+timeouts by directly accessing members of "(struct in_device)->arp_parms".
+
+The patches adding the feature has been rejected by David Miller because he
+stated that the ARP/neighbour code is going to be heavily modified and for =
+this
+reason he wanted to avoid to add other code depending on those components.
+
+You find the emails where David rejected our code here:
+https://lists.open-mesh.org/pipermail/b.a.t.m.a.n/2012-April/006921.html
+https://lists.open-mesh.org/pipermail/b.a.t.m.a.n/2012-May/006925.html
+
+
+The last email from David stated that we must not use ARP/neighbour layer
+internals, but all the functions we are using are correctly exported by the
+ARP/neigh layer and so are part of the API that we are using.
+
+At this point we are stuck and we don't know how to proceed.
+=46rom David's last
+email I personally got the impression that we should not use the ARP/neigh =
+layer
+at all and so we should implement our own ARP backend (which means duplicat=
+ing a
+lot of code). However this does not sound like a good solution.
+
+If changes for the ARP/neigh layer are already planned, is it possible to k=
+now
+whether we will be able to perform the aforementioned operations by means o=
+f the
+new API? Or, do you have any suggestion on how to perform the needed operat=
+ions
+without directly touching the ARP/neigh layer?
+
+
+Thank you in advance,
+	Best Regards
+
+
+
+--=20
+Antonio Quartulli
+
+=2E.each of us alone is worth nothing..
+Ernesto "Che" Guevara
+
+--ZwgA9U+XZDXt4+m+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPvlyzAAoJEFMQTLzJFOZFNugIALkRV/iXzD8phfpCDahgdnaq
+4OeG4ajtf/Qa4TJE4Y8w1YlV/za9pWCvgpkWq74zQQHhxDVg/I1IZI3HEm3jBrqd
+ALN8l+WPZMV6z0zFcrydGf05BcTJomC9ClJJkQgcsZM3Fp8t7sbY77EP5gFJqN0O
+to6xFtmcRgvN5Z9lA5ndHOKjCg8xfUfDz19qv7ICXa+iJjD9phUlQ0uDSVs9JcaG
+j9kizoe+saL4fcBA+MQ10eeX1u2eIgqujchiEPDA/JyT0APQCx06e9hjmbOTMGZZ
+dwgbCTJW16ifFVoGyIn2CeGaxwsU83k4hCpYPh7tCpnhABZdavqt+D/OpqEwOjU=
+=zaiC
+-----END PGP SIGNATURE-----
+
+--ZwgA9U+XZDXt4+m+--
