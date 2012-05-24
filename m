@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965296Ab2EWT5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 15:57:01 -0400
-Received: from plane.gmane.org ([80.91.229.3]:36116 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964930Ab2EWT47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 15:56:59 -0400
-X-Injected-Via-Gmane: http://gmane.org/
+	id S933960Ab2EWT5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 15:57:52 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:34148 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933873Ab2EWT5u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 15:57:50 -0400
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: linux-kernel@vger.kernel.org
-From: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
-Subject: Re: Linux 3.4 released
-Date: Wed, 23 May 2012 21:56:36 +0200
-Message-ID: <4FBD40F4.4090201@web.de>
-References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com> <4FBBB11D.7020904@web.de> <20120522155345.GC14339@google.com> <4FBBC461.4060008@web.de> <20120522170320.GD14339@google.com> <jpglns$1uj$1@dough.gmane.org> <CAOS58YPMh_hbJ4a49j4p9H68n8U1LzMUuaxmHx57gVTkmfxF6A@mail.gmail.com> <4FBBEDF2.8060803@web.de> <20120523182457.GD18143@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: 0@plane.gmane.org, 0@plane.gmane.org, 0@plane.gmane.org
-Cc: 0@plane.gmane.org, 0@plane.gmane.org, linux-kernel@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: p5b373b1f.dip.t-dialin.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
-In-Reply-To: <20120523182457.GD18143@google.com>
-Cc: 0@plane.gmane.org, 0@plane.gmane.org, linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk, Russ.Dill@ti.com, mporter@ti.com,
+        stable@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
+Date: Thu, 24 May 2012 19:50:24 +0000
+Message-Id: <1337889024-10416-1-git-send-email-panto@antoniou-consulting.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote, on 05/23/12 20:24:
-> Hello, Jörg-Volker.
-> 
-> Please always use reply-to-all.
-> 
-> On Tue, May 22, 2012 at 09:50:10PM +0200, Jörg-Volker Peetz wrote:
->> no, changing to  printk(KERN_CRIT "XXX: ...", ...)  in kernel/workqueue.c didn't
->> print anything I could read. Would it appear before the "panic screen"? But I'm
->> not able to scroll back.
->> The Panic screen starts with
-> 
-> It should appear right above BUG:.  Can you please try the following
-> instead?
-> 
-> Thanks.
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 5abf42f..57c33ef 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1096,10 +1096,18 @@ queue_work_on(int cpu, struct workqueue_struct *wq, struct work_struct *work)
->  }
->  EXPORT_SYMBOL_GPL(queue_work_on);
->  
-> +#include <linux/uaccess.h>
->  static void delayed_work_timer_fn(unsigned long __data)
->  {
->  	struct delayed_work *dwork = (struct delayed_work *)__data;
->  	struct cpu_workqueue_struct *cwq = get_work_cwq(&dwork->work);
-> +	unsigned long v;
-> +
-> +	if (probe_kernel_read(&v, &cwq->wq, sizeof(v))) {
-> +		printk(KERN_CRIT "XXX delayed_work_timer_fn: cwq %p, fn=%pf\n",
-> +		       cwq, dwork->work.func);
-> +		return;
-> +	}
->  
->  	__queue_work(smp_processor_id(), cwq->wq, &dwork->work);
->  }
+omap2plus_defconfig builds with SMP & SMP_ON_UP set.
+On beagle (which is UP) is_smp() returns false and we don't call
+smp_init_cpus which in turn does not initialize smp_cross_call which
+remains NULL.
 
-Hello Tejun,
+When issuing a reboot we OOPS with a NULL dereference on stop smp_call.
 
-thank you for bearing with me. I applied this patch. When starting "guvcvideo"
-now, the computer seems to work normally, i.e. this program shows the view from
-the built-in USB web-cam on the screen. In the kernel log file it says:
+Fixed by checking is_smp in smp_send_stop()
 
-May 23 21:32:33 hostname kernel: XXX delayed_work_timer_fn: cwq
-(null), fn=hdmi_repoll_eld
+Restarting system.
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = dda50000
+[00000000] *pgd=9e723831, *pte=00000000, *ppte=00000000
+Internal error: Oops: 80000007 [#1] SMP ARM
+Modules linked in:
+CPU: 0    Not tainted  (3.4.0-00001-gb15b046 #30)
+PC is at 0x0
+LR is at smp_send_stop+0x4c/0xe8
+pc : [<00000000>]    lr : [<c00188cc>]    psr: 60000013
+sp : de7b5e70  ip : 00000000  fp : 00000001
+r10: 00000000  r9 : de7b4000  r8 : c07263d0
+r7 : 00000000  r6 : c06e1294  r5 : 000f4240  r4 : de7b5e74
+r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : de7b5e74
+Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+Control: 10c5387d  Table: 9da50019  DAC: 00000015
+Process reboot (pid: 2229, stack limit = 0xde7b42f8)
+Stack: (0xde7b5e70 to 0xde7b6000)
+5e60:                                     00000000 00000000 00000000 01234567
+5e80: de7b4000 c001475c 4321fedc c0052570 0000003e 00000000 c081db78 0000003e
+5ea0: 00000001 00000002 00000002 c00891f0 00000002 dd5ba0ac 00000002 00000000
+5ec0: dd5ba0ac de7b4000 c009eef4 de7b4000 c00f44dc de7b4000 c00f44dc 00000000
+5ee0: c0c94d24 de7b4000 00000000 00000000 00000002 00000002 00000000 c00891f0
+5f00: 00000002 00000000 00000000 c011286c 00000000 dd5ba060 60000013 00000000
+5f20: dd688d8c 00000000 de7b4000 c06e20f8 dec14760 dec14750 de7b4000 c06e20f8
+5f40: 00011f10 c01128a0 00000002 00000000 c011286c c00fa014 dd8c3180 de7b4000
+5f60: c0013380 de508bc0 00000001 60000010 00000001 ef000000 00000001 c0089bfc
+5f80: 00000000 00000001 00000004 00000058 00000000 00000001 00000004 00000058
+5fa0: c0013428 c0013260 00000000 00000001 fee1dead 28121969 01234567 00000000
+5fc0: 00000000 00000001 00000004 00000058 00000001 00000001 00000000 00000001
+5fe0: b6e76200 beba4c90 00009210 b6e76218 60000010 fee1dead 00000000 00000000
+[<c00188cc>] (smp_send_stop+0x4c/0xe8) from [<c001475c>] (machine_restart+0xc/0x54)
+[<c001475c>] (machine_restart+0xc/0x54) from [<c0052570>] (sys_reboot+0x140/0x204)
+[<c0052570>] (sys_reboot+0x140/0x204) from [<c0013260>] (ret_fast_syscall+0x0/0x3c)
+Code: bad PC value
+---[ end trace f5035e8726d1f51b ]---
 
-(without line-break).
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: stable@vger.kernel.org
+---
+ arch/arm/kernel/smp.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-By the way, don't know if this is related, I have a phenomenon with a spurious
-interrupt with every linux version I've used before on this notebook. Half a
-minute after starting the system the computer produces approx. 220 lines like
-
-... kernel: hda-intel: spurious response 0x0:0x0, last cmd=0x170503
-
-Now with 3.4.0, I see an additional message right before (the minute before) the
-"XXX ..." line:
-
-...kernel: hda_intel: azx_get_response timeout, switching to single_cmd mode:
-last cmd=0x003f0900
-
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 8f46446..2a61335 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -588,6 +588,10 @@ void smp_send_stop(void)
+ 	unsigned long timeout;
+ 	struct cpumask mask;
+ 
++	/* make sure we don't bother if not SMP */
++	if (!is_smp())
++		return;
++
+ 	cpumask_copy(&mask, cpu_online_mask);
+ 	cpumask_clear_cpu(smp_processor_id(), &mask);
+ 	smp_cross_call(&mask, IPI_CPU_STOP);
 -- 
-Best regards,
-Jörg-Volker.
-
+1.7.1
 
