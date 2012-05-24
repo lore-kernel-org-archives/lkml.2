@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab2EXJKG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 05:10:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42944 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932242Ab2EXJKB (ORCPT
+	id S932487Ab2EXJLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 05:11:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38862 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753859Ab2EXJLr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 05:10:01 -0400
-Date: Thu, 24 May 2012 10:09:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch -linus] regmap: REMAP_IRQ should select IRQ_DOMAIN itself
-Message-ID: <20120524090957.GE5361@opensource.wolfsonmicro.com>
-References: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au>
- <4FBBAF1B.1070702@xenotime.net>
- <alpine.DEB.2.00.1205222339030.9290@chino.kir.corp.google.com>
- <20120523093208.GB4085@opensource.wolfsonmicro.com>
- <CA+55aFynyjrHUCh48aXSQpZpboQM7MCCtMHvxBxCf+gDoCVWXg@mail.gmail.com>
- <20120523173342.GB4064@opensource.wolfsonmicro.com>
- <alpine.DEB.2.00.1205231735100.8785@chino.kir.corp.google.com>
- <20120524011950.GD5361@opensource.wolfsonmicro.com>
- <alpine.DEB.2.00.1205232149230.10366@chino.kir.corp.google.com>
+	Thu, 24 May 2012 05:11:47 -0400
+From: Marc Reilly <marc@cpdesign.com.au>
+Reply-To: marc@cpdesign.com.au
+Organization: Creative Product Design
+To: Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Date: Thu, 24 May 2012 19:08:37 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        Fabio Estevam <festevam@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <201205221053.21792.marc@cpdesign.com.au> <20120524064635.GP3710@pengutronix.de> <20120524073315.GE7843@S2100-06.ap.freescale.net>
+In-Reply-To: <20120524073315.GE7843@S2100-06.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205232149230.10366@chino.kir.corp.google.com>
-X-Cookie: You will get what you deserve.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201205241908.38278.marc@cpdesign.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:53:21PM -0700, David Rientjes wrote:
+Hi,
 
-> Well pardon me for actually having a cluster of machines at Google 
-> dedicated to upstream build/boot/regression testing that verified my patch 
-> was correct and didn't result in any kind of "fragility", or what you have 
-> convinced yourself is "fragility."
+On Thursday, May 24, 2012 05:33:16 PM Shawn Guo wrote:
+> On Thu, May 24, 2012 at 08:46:35AM +0200, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Thu, May 24, 2012 at 02:39:00PM +0800, Shawn Guo wrote:
+> > > On Thu, May 24, 2012 at 01:07:43AM -0300, Fabio Estevam wrote:
+> > > > I am trying to understand why mx31pdk still fails.
+> > > 
+> > > So different from imx51-babbage which uses MC13892, mx31pdk uses
+> > > MC13783?  But both chips should have the same regmap, right?
+> > 
+> > They are similar. One difference is the protocol used. MC13783 only
+> > speaks spi, MC13892 can do both, spi and i2c. Does someone has a working
+> > MC13892 that uses spi?
+> 
+> I do.  With the following patch applied on top of linux-next, it works
+> on my imx51-babbage board.
+> 
+> Regards,
+> Shawn
+> 
+> diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
+> index 3fcdab3..5d1969f 100644
+> --- a/drivers/mfd/mc13xxx-spi.c
+> +++ b/drivers/mfd/mc13xxx-spi.c
+> @@ -49,6 +49,7 @@ static struct regmap_config mc13xxx_regmap_spi_config = {
+>         .reg_bits = 7,
+>         .pad_bits = 1,
+>         .val_bits = 24,
+> +       .write_flag_mask = 0x80,
 
-It working right now isn't the only thing I'm concerned about, though
-like I said further up the thread it's possible this is all just me
-having too long a memory.
+Should probably have .read_flag_mask = 0x00, here too. If either are non zero, 
+both are set.
 
-> When you propose your own version, drop all cc's (and this isn't the first 
-> time you've done that), and then send the git pull request less than 30 
+I guess this is the problem, regmap's default read_flag_mask for the spi bus 
+is 0x80, and the write mask defaults to 0. The mc13xxx works the opposite way 
+though! aarg. My bad for not noticing. So setting the write_flag_mask to 0x80 
+also sets the read mask to 0 correctly also.
 
-Sorry about that, I hadn't realised you were particularly attached to
-the issue.  I do generally drop people doing global stuff with no
-particular obvious interest in the specific topic on new patches since I
-know I sometimes get a bit fed up of being CCed on random things I was
-tangentially involved in at some point.
+ 
+>         .max_register = MC13XXX_NUMREGS,
+> 
+> @@ -73,7 +74,6 @@ static int mc13xxx_spi_probe(struct spi_device *spi)
+> 
+>         dev_set_drvdata(&spi->dev, mc13xxx);
+>         spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
+> -       spi->bits_per_word = 32;
 
-> minutes later, I don't really have the chance to review it.  Lesson 
-> learned, I simply won't bother to fix your code in the future.
+My bad here too. Because I had no hardware to test with I tried to preserve as 
+much of the old code as I could.
 
-I guess since I've offended you so much already there's not much harm in
-saying: it's always much better to send changes in a form that can be
-directly applied with tools like git am.  Appending a patch to the
-bottom of a mail requires something like hand editing the commit after
-it's been applied to extract the changelog.  Not sure it actually made a
-difference in this specific case but it can be the difference when
-you're not sure about the approach taken, especially for small patches
-where it's quick and simple to write and test the replacement.
+Sorry about the stuff ups. I owe each of you a beer (unfortunately I'll have 
+to exclude the list in general from that offer :) ).
+
+I'm wondering about regmap_init where the buf_size is set up. I think it will 
+only end up being 3 bytes. I think line 249 should be something like:
+
+	map->format.buf_size = (config->reg_bits 
+                          + config->val_bits 
+					         + (config->pad_bits % 8)) / 8;
+
+or perhaps better:
+	map->reg_shift = config->pad_bits % 8;
+	map->format.buf_size = (config->reg_bits 
+                          + config->val_bits 
+					         + map->reg_shift) / 8;
+
+Am I right here or just confused?
+
+Cheers,
+Marc
+
+
