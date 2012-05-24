@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab2EXBXe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 21:23:34 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:50544 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754750Ab2EXBXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 21:23:32 -0400
-Message-ID: <1337822611.4279.3.camel@joe2Laptop>
-Subject: Re: [PATCH v2 12/14] Closures
-From: Joe Perches <joe@perches.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, bharrosh@panasas.com, vgoyal@redhat.com,
-        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
-Date: Wed, 23 May 2012 18:23:31 -0700
-In-Reply-To: <20120524011654.GA28662@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
-	 <1337817771-25038-13-git-send-email-koverstreet@google.com>
-	 <1337820443.1747.24.camel@joe2Laptop>
-	 <20120524011654.GA28662@dhcp-172-18-216-138.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756592Ab2EXBZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 21:25:14 -0400
+Received: from szxga04-in.huawei.com ([58.251.152.67]:45000 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755056Ab2EXBZN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 21:25:13 -0400
+Date: Thu, 24 May 2012 09:24:48 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [RESEND,PATCH] DCA, x86: fix invalid memory access in DCA core
+In-reply-to: <436EC33EF05C3442BBF5497FC9483FF416274D2A@IRSMSX101.ger.corp.intel.com>
+X-Originating-IP: [10.107.208.49]
+To: "Sosnowski, Maciej" <maciej.sosnowski@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Keping Chen <chenkeping@huawei.com>
+Message-id: <4FBD8DE0.7070800@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222
+ Thunderbird/9.0.1
+X-CFilter-Loop: Reflected
+References: <1336406288-9479-1-git-send-email-jiang.liu@huawei.com>
+ <436EC33EF05C3442BBF5497FC9483FF41626EACA@IRSMSX101.ger.corp.intel.com>
+ <4FAB20FB.6070508@gmail.com>
+ <436EC33EF05C3442BBF5497FC9483FF4162732ED@IRSMSX101.ger.corp.intel.com>
+ <4FB65D0E.9060004@gmail.com>
+ <436EC33EF05C3442BBF5497FC9483FF416274D2A@IRSMSX101.ger.corp.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 21:16 -0400, Kent Overstreet wrote:
-> > or maybe just bundle all this in a single seq_printf
-> Do you mean something like this?
-> seq_printf(f, "%s%s%s%s%s\n",
-> 	   r & CLOSURE_RUNNING	? "R" : "",
-> 	   r & CLOSURE_BLOCKING ? "B" : "");
+Hi Maciej,
+	Thanks for your help. Could you also help to review the IOAT
+hotplug patch at http://www.spinics.net/lists/linux-pci/msg15287.html?
+It's to support Intel IOAT device hotplug.
+	Thanks!
+On 2012-5-23 23:11, Sosnowski, Maciej wrote:
+> On Fri, May 18, 2012 4:31 PM, Jiang Liu<liuj97@gmail.com>  wrote:
+>>
+>> On 05/18/2012 10:10 PM, Sosnowski, Maciej wrote:
+>>> On Thu, May 07, May 10, 2012 3:59 AM, Jiang Liu<liuj97@gmail.com>  wrote:
+>>>>
+>>>> Hi Maciej,
+>>>> 	I feel we may also need to tune the multiple IOH support in DCA.
+>>>> Multiple IOH support is disabled for CB3.0 devices, how about CB3.1
+>> devices
+>>>> in Ivrbridge or SandyBridge? Does the hardware limitation still exist? Or
+>>>> could we support multiple IOHs with IvyBridge and SandyBridge?
+>>>> 	If multiple IOH is supported, I think we should move the logic to
+>>>> disable multiple IOH support for CB3.0 from DCA core into ioatdma. I have
+>>>> also prepared two patches for that two.
+>>>> 	Thanks!
+>>>>
+>>>
+>>> At this point I do not think we would need to tune multiple IOH for DCA.
+>>> The limitation you mention applies only to CB3.0. I do not think DCA is
+>> supported
+>>> with Sandy Bridge / Ivy Bridge regardless of multi-IOH case but let me
+>> confirm it
+>>> yet.
+>> It seems that Intel introduces DDIO technology for IvyBridge. Does it replace
+>> DCA
+>> technology on new platforms?
+>> Thanks!
+>
+> Yes, in general DDIO is used instead of DCA on new platforms.
+> Note however that DDIO is supported in Xeon E5 only, not in Xeon E3.
+>
+> Thanks,
+> Maciej
+>
+>
 
-Yes.
-
-> Or do you have a better way of writing that in mind?
-
-No.
-
-cheers, Joe
 
