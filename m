@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525Ab2EXVGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:06:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59737 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754005Ab2EXVG3 (ORCPT
+	id S933583Ab2EXVHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:07:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35228 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754005Ab2EXVHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:06:29 -0400
-Date: Thu, 24 May 2012 14:05:20 -0700
-From: "tip-bot for Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Message-ID: <tip-4a70d2d9909b43ed88043b98cabe2c7fbd563021@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com
-In-Reply-To: <20120524151100.2549.66501.stgit@srivatsabhat.in.ibm.com>
-References: <20120524151100.2549.66501.stgit@srivatsabhat.in.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] smpboot, idle:
-  Fix comment mismatch over idle_threads_init()
-Git-Commit-ID: 4a70d2d9909b43ed88043b98cabe2c7fbd563021
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 24 May 2012 17:07:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 14:05:26 -0700 (PDT)
+In-Reply-To: <20120524205952.GA16621@core.coreip.homeip.net>
+References: <20120524083216.GD10562@core.coreip.homeip.net>
+ <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
+ <20120524180154.GA15036@core.coreip.homeip.net> <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
+ <20120524195851.GA15306@core.coreip.homeip.net> <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
+ <20120524203647.GA16024@core.coreip.homeip.net> <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
+ <20120524205952.GA16621@core.coreip.homeip.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 24 May 2012 14:07:29 -0700
+X-Google-Sender-Auth: hbyjogQh4XaZ5AB90sImiWDJKAA
+Message-ID: <CA+55aFybQDXjGaEK0k=60gS88bxwE8vC7XvOffaQAf3de9cCfg@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 3.5-rc0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4a70d2d9909b43ed88043b98cabe2c7fbd563021
-Gitweb:     http://git.kernel.org/tip/4a70d2d9909b43ed88043b98cabe2c7fbd563021
-Author:     Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-AuthorDate: Thu, 24 May 2012 20:41:00 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 24 May 2012 22:58:08 +0200
+On Thu, May 24, 2012 at 1:59 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+>
+> I was concerned about the _next_ device (the one that will be created
+> the moment I plug in the tablet back into the same port) having exact
+> same name as the one that is half dead and clashing in sysfs and
+> elsewhere. We used to have issues with this.
 
-smpboot, idle: Fix comment mismatch over idle_threads_init()
+Ok, that's certainly a valid concern.
 
-The comment over idle_threads_init() really talks about the functionality
-of idle_init(). Move that comment to idle_init(), and add a suitable
-comment over idle_threads_init().
+It's still - I think - really sad/wrong that the device name is then
+so useless than the drivers end up basically not using it.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: suresh.b.siddha@intel.com
-Cc: venki@google.com
-Cc: nikunj@linux.vnet.ibm.com
-Link: http://lkml.kernel.org/r/20120524151100.2549.66501.stgit@srivatsabhat.in.ibm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/smpboot.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-index 0f2162f..98f60c5 100644
---- a/kernel/smpboot.c
-+++ b/kernel/smpboot.c
-@@ -31,6 +31,12 @@ void __init idle_thread_set_boot_cpu(void)
- 	per_cpu(idle_threads, smp_processor_id()) = current;
- }
- 
-+/**
-+ * idle_init - Initialize the idle thread for a cpu
-+ * @cpu:	The cpu for which the idle thread should be initialized
-+ *
-+ * Creates the thread if it does not exist.
-+ */
- static inline void idle_init(unsigned int cpu)
- {
- 	struct task_struct *tsk = per_cpu(idle_threads, cpu);
-@@ -45,10 +51,7 @@ static inline void idle_init(unsigned int cpu)
- }
- 
- /**
-- * idle_thread_init - Initialize the idle thread for a cpu
-- * @cpu:	The cpu for which the idle thread should be initialized
-- *
-- * Creates the thread if it does not exist.
-+ * idle_threads_init - Initialize idle threads for all cpus
-  */
- void __init idle_threads_init(void)
- {
+                      Linus
