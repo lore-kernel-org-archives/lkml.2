@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab2EXLoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 07:44:16 -0400
+	id S1754712Ab2EXLom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 07:44:42 -0400
 Received: from mail-vb0-f46.google.com ([209.85.212.46]:51472 "EHLO
 	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2EXLoO convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752273Ab2EXLok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 07:44:14 -0400
+	Thu, 24 May 2012 07:44:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBDndFUaehVQjeOhKLAeYxboDqUxrpkFSBXAq9k619apWg@mail.gmail.com>
-References: <CAJd=RBDndFUaehVQjeOhKLAeYxboDqUxrpkFSBXAq9k619apWg@mail.gmail.com>
-Date: Thu, 24 May 2012 19:44:14 +0800
-Message-ID: <CAJd=RBAa4Kq=Ev72-mKfmG7OW6u7pOdZAaDvKLuZYjAX6JLWgw@mail.gmail.com>
-Subject: Re: [patch] BFS 420: remove for_each_flag_domain
+In-Reply-To: <CAJd=RBBSn7WfYgUPdDY8eTd2cy-R6uR_YKV39z4rLvu0-BkCfQ@mail.gmail.com>
+References: <CAJd=RBBSn7WfYgUPdDY8eTd2cy-R6uR_YKV39z4rLvu0-BkCfQ@mail.gmail.com>
+Date: Thu, 24 May 2012 19:44:39 +0800
+Message-ID: <CAJd=RBB1R5a_rtgFXMASX47_cD=4kKinX5WjAfYr1K_EDe=LEw@mail.gmail.com>
+Subject: Re: [patch] BFS 420: fix clear_sticky when breaking sole affinity
 From: Hillf Danton <dhillf@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4OBikYe031142
 
-On Wed, May 23, 2012 at 8:56 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> The macro, for_each_flag_domain, is no longer used, so remove.
+On Wed, May 23, 2012 at 8:55 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> The sticky bit is cleared after checking the task with the bit set for
+> given CPU.
 >
 > --- a/kernel/sched/bfs.c Â  Â  Â  Â Mon May 14 20:50:38 2012
-> +++ b/kernel/sched/bfs.c Â  Â  Â  Â Wed May 23 20:09:32 2012
-> @@ -4951,42 +4951,6 @@ void select_nohz_load_balancer(int stop_
+> +++ b/kernel/sched/bfs.c Â  Â  Â  Â Wed May 23 20:16:18 2012
+> @@ -5153,7 +5153,8 @@ static void break_sole_affinity(int src_
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  task_pid_nr(p), p->comm, src_cpu);
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â }
+> Â  Â  Â  Â  Â  Â  Â  Â }
+> - Â  Â  Â  Â  Â  Â  Â  clear_sticky(p);
+> + Â  Â  Â  Â  Â  Â  Â  if (task_sticky(p) && task_cpu(p) == src_cpu)
+> + Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  clear_sticky(p);
+> Â  Â  Â  Â } while_each_thread(t, p);
 > Â }
 >
-> Â void set_cpu_sd_state_idle(void) {}
-> -#if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-> -/**
-> - * lowest_flag_domain - Return lowest sched_domain containing flag.
-> - * @cpu: Â  Â  Â  The cpu whose lowest level of sched domain is to
-> - * Â  Â  Â  Â  Â  Â  be returned.
-> - * @flag: Â  Â  Â The flag to check for the lowest sched_domain
-> - * Â  Â  Â  Â  Â  Â  for the given cpu.
-> - *
-> - * Returns the lowest sched_domain of a cpu which contains the given flag.
-> - */
-> -static inline struct sched_domain *lowest_flag_domain(int cpu, int flag)
-> -{
-> - Â  Â  Â  struct sched_domain *sd;
-> -
-> - Â  Â  Â  for_each_domain(cpu, sd)
-> - Â  Â  Â  Â  Â  Â  Â  if (sd && (sd->flags & flag))
-> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  break;
-> -
-> - Â  Â  Â  return sd;
-> -}
-> -
-> -/**
-> - * for_each_flag_domain - Iterates over sched_domains containing the flag.
-> - * @cpu: Â  Â  Â  The cpu whose domains we're iterating over.
-> - * @sd: Â  Â  Â  Â  Â  Â  Â  Â variable holding the value of the power_savings_sd
-> - * Â  Â  Â  Â  Â  Â  for cpu.
-> - * @flag: Â  Â  Â The flag to filter the sched_domains to be iterated.
-> - *
-> - * Iterates over all the scheduler domains for a given cpu that has the 'flag'
-> - * set, starting from the lowest sched_domain to the highest.
-> - */
-> -#define for_each_flag_domain(cpu, sd, flag) \
-> - Â  Â  Â  for (sd = lowest_flag_domain(cpu, flag); \
-> - Â  Â  Â  Â  Â  Â  Â  (sd && (sd->flags & flag)); sd = sd->parent)
-> -
-> -#endif /* Â (CONFIG_SCHED_MC || CONFIG_SCHED_SMT) */
->
-> Â static inline void resched_cpu(int cpu)
-> Â {
 > --
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
