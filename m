@@ -1,167 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab2EXK4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 06:56:51 -0400
-Received: from fieldses.org ([174.143.236.118]:47136 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985Ab2EXK4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 06:56:49 -0400
-Date: Thu, 24 May 2012 06:56:48 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH] NFSd: fix locking in nfsd_forget_delegations()
-Message-ID: <20120524105648.GA19875@fieldses.org>
-References: <20120522102444.6988.45434.stgit@localhost.localdomain>
- <20120523213158.GB13710@fieldses.org>
- <4FBDBBFF.2000000@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FBDBBFF.2000000@parallels.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756251Ab2EXK54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 06:57:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44263 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab2EXK5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 06:57:55 -0400
+Subject: Re: [PATCH 05/16] perf: Add attribute to filter out user callchains
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com, eranian@google.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+In-Reply-To: <1337801535-12865-6-git-send-email-jolsa@redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	 <1337801535-12865-6-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 May 2012 12:57:48 +0200
+Message-ID: <1337857068.9783.113.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 08:41:35AM +0400, Stanislav Kinsbursky wrote:
-> 24.05.2012 01:31, J. Bruce Fields написал:
-> >On Tue, May 22, 2012 at 02:25:14PM +0400, Stanislav Kinsbursky wrote:
-> >>This patch adds recall_lock hold to nfsd_forget_delegations() to protect
-> >>nfsd_process_n_delegations() call.
-> >>Also, looks like it would be better to collect delegations to some local
-> >>on-stack list, and then unhash collected list. This split allows to simplify
-> >>locking, because delegation traversing is protected by recall_lock, when
-> >>delegation unhash is protected by client_mutex.
-> >All this indirection is getting a little much.
-> >
-> >How about replacing nfsd_process_n_delegations by something that always
-> >does the list-move?:
+On Wed, 2012-05-23 at 21:32 +0200, Jiri Olsa wrote:
+> Add the new exclude_user_callchain attribute to filter out
+> frame pointer based user callchains.
 > 
-> Is it correct?
-> List move is suitable for unhash delegations since we anyway remove
-> delegation from fi_delegations list.
-> But seems we don't do this for delegations recall...
-
-Oh, blah, you're right of course.
-
-Still, this seems a little tangled, and I'd prefer not to have to add
-the useless extra parameter to break_one_deleg().
-
---b.
-
+> This is something we want to select when we use the dwarf cfi
+> callchain mode, because frame pointer based user callchains are
+> useless in this mode.
 > 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  include/linux/perf_event.h |    4 +++-
+>  kernel/events/callchain.c  |    4 ++--
+>  kernel/events/core.c       |    3 ++-
+>  kernel/events/internal.h   |    3 ++-
+>  4 files changed, 9 insertions(+), 5 deletions(-)
 > 
-> >void nfsd_forget_delegations(u64 num)
-> >{
-> >	unsigned int count;
-> >	list_head victims;
-> >
-> >	nfs4_lock_state();
-> >	count = nfsd_get_n_delegations(num,&victims);
-> >	list_for_each_entry_safe(...,&victims, ...)
-> >		unhash_delegation();
-> >	unlock_state();
-> >}
-> >
-> >ditto for recall_delegations, and take the recall_lock inside
-> >nfsd_get_n_delegations?
-> >
-> >Or something like that.
-> >
-> >--b.
-> >
-> >>Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
-> >>---
-> >>  fs/nfsd/nfs4state.c |   32 ++++++++++++++++++++++++--------
-> >>  1 files changed, 24 insertions(+), 8 deletions(-)
-> >>
-> >>diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> >>index 21266c7..f004e61 100644
-> >>--- a/fs/nfsd/nfs4state.c
-> >>+++ b/fs/nfsd/nfs4state.c
-> >>@@ -2597,7 +2597,7 @@ out:
-> >>  	return ret;
-> >>  }
-> >>
-> >>-static void nfsd_break_one_deleg(struct nfs4_delegation *dp)
-> >>+static void nfsd_break_one_deleg(struct nfs4_delegation *dp, void *data)
-> >>  {
-> >>  	/* We're assuming the state code never drops its reference
-> >>  	 * without first removing the lease.  Since we're in this lease
-> >>@@ -2633,7 +2633,7 @@ static void nfsd_break_deleg_cb(struct file_lock *fl)
-> >>  	spin_lock(&recall_lock);
-> >>  	fp->fi_had_conflict = true;
-> >>  	list_for_each_entry(dp,&fp->fi_delegations, dl_perfile)
-> >>-		nfsd_break_one_deleg(dp);
-> >>+		nfsd_break_one_deleg(dp, NULL);
-> >>  	spin_unlock(&recall_lock);
-> >>  }
-> >>
-> >>@@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
-> >>  	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
-> >>  }
-> >>
-> >>-int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
-> >>+int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *, void *), void *data)
-> >>  {
-> >>  	int i, count = 0;
-> >>  	struct nfs4_file *fp, *fnext;
-> >>@@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
-> >>  	for (i = 0; i<  FILE_HASH_SIZE; i++) {
-> >>  		list_for_each_entry_safe(fp, fnext,&file_hashtbl[i], fi_hash) {
-> >>  			list_for_each_entry_safe(dp, dnext,&fp->fi_delegations, dl_perfile) {
-> >>-				deleg_func(dp);
-> >>+				deleg_func(dp, data);
-> >>  				if (++count == num)
-> >>  					return count;
-> >>  			}
-> >>@@ -4713,15 +4713,31 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
-> >>  	return count;
-> >>  }
-> >>
-> >>+/* Called under the recall_lock spinlock. */
-> >>+static void
-> >>+collect_delegation(struct nfs4_delegation *dp, void *data)
-> >>+{
-> >>+	struct list_head *list = data;
-> >>+
-> >>+	list_move(&dp->dl_perfile, list);
-> >>+}
-> >>+
-> >>  void nfsd_forget_delegations(u64 num)
-> >>  {
-> >>  	unsigned int count;
-> >>+	struct nfs4_delegation *dp, *dnext;
-> >>+	LIST_HEAD(unhash_list);
-> >>
-> >>-	nfs4_lock_state();
-> >>-	count = nfsd_process_n_delegations(num, unhash_delegation);
-> >>-	nfs4_unlock_state();
-> >>+	spin_lock(&recall_lock);
-> >>+	count = nfsd_process_n_delegations(num, collect_delegation,&unhash_list);
-> >>+	spin_unlock(&recall_lock);
-> >>
-> >>  	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
-> >>+
-> >>+	nfs4_lock_state();
-> >>+	list_for_each_entry_safe(dp, dnext,&unhash_list, dl_perfile)
-> >>+		unhash_delegation(dp);
-> >>+	nfs4_unlock_state();
-> >>  }
-> >>
-> >>  void nfsd_recall_delegations(u64 num)
-> >>@@ -4730,7 +4746,7 @@ void nfsd_recall_delegations(u64 num)
-> >>
-> >>  	nfs4_lock_state();
-> >>  	spin_lock(&recall_lock);
-> >>-	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
-> >>+	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg, NULL);
-> >>  	spin_unlock(&recall_lock);
-> >>  	nfs4_unlock_state();
-> >>
-> >>
-> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index dcdc97e..df6ba37 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -275,7 +275,9 @@ struct perf_event_attr {
+>  				exclude_host   :  1, /* don't count in host   */
+>  				exclude_guest  :  1, /* don't count in guest  */
+>  
+> -				__reserved_1   : 43;
+> +				exclude_user_callchain : 1, /* only record kernel callchains */
+
+*sigh* I guess if we're going to do this we might as well do a complete
+option set and also allow excluding kernel and possible hv if anybody
+actually implemented that.
+
