@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab2EXOac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 10:30:32 -0400
-Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:4847 "EHLO
-	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755306Ab2EXOab (ORCPT
+	id S932765Ab2EXOax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 10:30:53 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42621 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227Ab2EXOaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 10:30:31 -0400
-Message-ID: <1337869829.22505.15.camel@x61.thuisdomein>
-Subject: [PATCH] at91: set i2c_board_info.type to "ds1339" directly
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Thu, 24 May 2012 16:30:29 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Thu, 24 May 2012 10:30:52 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v6 4/4] cpusets: Remove/update outdated comments
+To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org
+Cc: rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
+        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Thu, 24 May 2012 19:47:03 +0530
+Message-ID: <20120524141700.3692.98192.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com>
+References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 24 May 2012 14:30:29.0947 (UTC) FILETIME=[C4F0F0B0:01CD39B9]
-X-RcptDomain: vger.kernel.org
+x-cbid: 12052414-5564-0000-0000-000002EF4DF9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The single element of the cpu9krea_i2c_devices array (of type struct
-i2c_board_info) has its "type" member set twice. First to "rtc-ds1307"
-(through the I2C_BOARD_INFO macro) and then directly to "ds1339". Just
-set it (once and) directly to "ds1339" instead.
+cpuset_track_online_cpus() is no longer present. So remove the
+outdated comment and replace it with reference to cpuset_update_active_cpus()
+which is its equivalent.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Also, we don't lack memory hot-unplug anymore. And David Rientjes pointed
+out how it is dealt with. So update that comment as well.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
-0) This is just something I stumbled upon while researching a different
-issue. (An unrelated board apparently uses a ds1307 compatible RTC but
-the kernel doesn't see it. I hope to submit a patch for that issue one
-of these days.)
 
-1) Entirely untested. I'm unsure what toolchain is needed to compile
-this and I am certain that I don't have this hardware.
+ kernel/cpuset.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-2) This is apparently legal. Doesn't gcc issue a warning for this?
-
- arch/arm/mach-at91/board-cpu9krea.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mach-at91/board-cpu9krea.c b/arch/arm/mach-at91/board-cpu9krea.c
-index 5f3680e..f680755 100644
---- a/arch/arm/mach-at91/board-cpu9krea.c
-+++ b/arch/arm/mach-at91/board-cpu9krea.c
-@@ -281,8 +281,7 @@ static struct gpio_led cpu9krea_leds[] = {
- 
- static struct i2c_board_info __initdata cpu9krea_i2c_devices[] = {
- 	{
--		I2C_BOARD_INFO("rtc-ds1307", 0x68),
--		.type	= "ds1339",
-+		I2C_BOARD_INFO("ds1339", 0x68),
- 	},
- };
- 
--- 
-1.7.7.6
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index ba0a4d7..f33c715 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2034,9 +2034,8 @@ static struct cpuset *cpuset_next(struct list_head *queue)
+  * before dropping down to the next.  It always processes a node before
+  * any of its children.
+  *
+- * For now, since we lack memory hot unplug, we'll never see a cpuset
+- * that has tasks along with an empty 'mems'.  But if we did see such
+- * a cpuset, we'd handle it just like we do if its 'cpus' was empty.
++ * In the case of memory hot-unplug, it will remove nodes from N_HIGH_MEMORY
++ * if all present pages from a node are offlined.
+  */
+ static void
+ scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
+@@ -2137,7 +2136,7 @@ void cpuset_update_active_cpus(bool cpu_online)
+ /*
+  * Keep top_cpuset.mems_allowed tracking node_states[N_HIGH_MEMORY].
+  * Call this routine anytime after node_states[N_HIGH_MEMORY] changes.
+- * See also the previous routine cpuset_track_online_cpus().
++ * See cpuset_update_active_cpus() for CPU hotplug handling.
+  */
+ static int cpuset_track_online_nodes(struct notifier_block *self,
+ 				unsigned long action, void *arg)
 
