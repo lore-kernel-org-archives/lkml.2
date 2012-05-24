@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab2EXBDN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 21:03:13 -0400
-Received: from linux-sh.org ([111.68.239.195]:48402 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab2EXBDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 21:03:12 -0400
-Date: Thu, 24 May 2012 10:02:37 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Clock register in early init
-Message-ID: <20120524010237.GC11860@linux-sh.org>
-References: <1337227884.2066.9.camel@pgaikwad-dt2>
- <20120517062131.GA9305@gmail.com>
- <1337316517.22560.19.camel@pgaikwad-dt2>
- <20120518112104.GL20304@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zM_o1Nqw55xxFvw6KssM50Q+7yyo41rUSH2Aoo1neTMjg@mail.gmail.com>
- <20120521084642.GV20304@tbergstrom-lnx.Nvidia.com>
- <4FBB5A72.2080101@codethink.co.uk>
- <20120522120851.GI8730@tbergstrom-lnx.Nvidia.com>
- <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
+	id S1754573Ab2EXBGb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 21:06:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41731 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab2EXBGa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 21:06:30 -0400
+Date: Wed, 23 May 2012 18:06:27 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regmap: Use select .. if to get IRQ_DOMAIN enabled
+In-Reply-To: <1337765513-16663-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Message-ID: <alpine.DEB.2.00.1205231805450.28167@chino.kir.corp.google.com>
+References: <1337765513-16663-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJOA=zNic19Eyq-RJpj_pM94wpqY7co0dtKu1O+27B-wZMm=MA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 10:37:15AM -0700, Turquette, Mike wrote:
-> On Tue, May 22, 2012 at 5:08 AM, Peter De Schrijver
-> <pdeschrijver@nvidia.com> wrote:
-> >> We had at-least that on the older Samsung parts and they where still
-> >> growing. I would suggest that in a multi-kernel image situation the
-> >> more data that can be discarded after init-time the better.
-> >>
-> >> Also, __initdata gets gathered into one place so there's no possibility
-> >> of page fragmentation there. If you mean fragmentation of the memory
-> >> map, then allocate the size of all the clocks you know of at init time
-> >> in one go.
-> >>
-> >
-> > That would work, except that clocks are needed before kmalloc is available.
-> >
+On Wed, 23 May 2012, Mark Brown wrote:
+
+> Ensure that we can't get randconfig breakage by doing the IRQ_DOMAIN
+> select automatically. Don't just do the select from REGMAP_IRQ to ensure
+> that the select actually gets noticed.
 > 
-> Is static initialization the only way to solve this problem?  What
-> about using the bootmem allocator for early init clocks?
+> Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/base/regmap/Kconfig |    1 +
+>  drivers/mfd/Kconfig         |    3 ---
+>  2 files changed, 1 insertion(+), 3 deletions(-)
 > 
-This is what sh does for its asm/clkdev.h __clkdev_alloc(), which is
-really the only difference over the ARM version. It always seemed a bit
-silly to me to make early allocation an arch-specific property.
+> diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
+> index 9ef0a53..6be390b 100644
+> --- a/drivers/base/regmap/Kconfig
+> +++ b/drivers/base/regmap/Kconfig
+> @@ -6,6 +6,7 @@ config REGMAP
+>  	default y if (REGMAP_I2C || REGMAP_SPI)
+>  	select LZO_COMPRESS
+>  	select LZO_DECOMPRESS
+> +	select IRQ_DOMAIN if REGMAP_IRQ
+>  	bool
+>  
+>  config REGMAP_I2C
+
+Just do the "select IRQ_DOMAIN" for REGMAP_IRQ like I did it in my patch 
+and stop dropping cc's.  Thanks.
