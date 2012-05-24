@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965454Ab2EXVw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:52:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53033 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965209Ab2EXVw5 (ORCPT
+	id S933700Ab2EXVyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:54:16 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:62350 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086Ab2EXVyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:52:57 -0400
-Date: Fri, 25 May 2012 06:52:49 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
-Message-ID: <20120524215249.GA17936@kroah.com>
-References: <20120426001529.GA14006@kroah.com>
- <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
- <20120426151242.GA14774@kroah.com>
- <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
+	Thu, 24 May 2012 17:54:14 -0400
+Message-ID: <4FBEAE01.7030905@gmail.com>
+Date: Thu, 24 May 2012 16:54:09 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Saravana Kannan <skannan@codeaurora.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] DT clk binding support
+References: <4FB80F32.5090309@gmail.com>    <20120520030653.GB5810@S2100-06.ap.freescale.net>    <4FB9A5E7.2070000@gmail.com>    <20120521064901.GE8140@S2101-09.ap.freescale.net>    <4FBA89E3.7010106@gmail.com>    <20120521232616.GF8140@S2101-09.ap.freescale.net>    <4FBAD545.7060803@gmail.com>    <20120522021535.GG8140@S2101-09.ap.freescale.net>    <4FBB134D.6050409@codeaurora.org> <4FBB9A08.2050803@gmail.com> <49cd509b59c8172c880b0c8a50c0f02c.squirrel@www.codeaurora.org> <4FBCED4D.1040908@gmail.com> <4FBEA540.1010409@codeaurora.org>
+In-Reply-To: <4FBEA540.1010409@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 11:55:16PM +0800, Jeff Chua wrote:
-> On Thu, Apr 26, 2012 at 11:12 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Thu, Apr 26, 2012 at 11:06:45AM -0400, Alan Stern wrote:
-> >> On Wed, 25 Apr 2012, Greg Kroah-Hartman wrote:
-> >>
-> >> > This option has been deprecated for many years now, and no userspace
-> >> > tools use it anymore, so it should be safe to finally remove it.
-> >> >
-> >> > Reported-by: Kay Sievers <kay@vrfy.org>
-> >> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> >
-> >> > Anyone object to me queuing this up for the 3.5 kernel release?
-> >>
-> >> I'm not sure about this.  There are a few systems still floating around
-> >> that don't use udev; on those systems /proc/bus/usb is the only way for
-> >> user programs to control USB devices.  Admittedly, I have no idea
-> >> whether any such systems will be using 3.5 or later kernels...
-> >
-> > They don't have to use udev, they can use devtmpfs (which is what the
-> > majority of embedded systems use today), or they can just use static
-> > device nodes to get access to these devices, the char node is still
-> > present, we aren't getting rid of them at all.
+On 05/24/2012 04:16 PM, Saravana Kannan wrote:
+> On 05/23/2012 06:59 AM, Rob Herring wrote:
+>> On 05/22/2012 08:38 PM, Saravana Kannan wrote:
+
+snip
+
+>>> If only the leaf nodes are defined in DT, then how is the clock platform
+>>> driver implementer supposed to instantiate the rest of the tree and
+>>> connect it up with the partial list of clocks in DT? So, they have to
+>>> switch back and forth between DT and the .c file which defines the rest
+>>> and make sure the parent<->child names match?
+>>>
+>>> To me it looks that it might better to decouple the description of the
+>>> clock HW from the mapping of a clock leaf to a consumer device. If we
+>>> just
+>>> use a string to identify the clock that's consumed by a device, we can
+>>> achieve this decoupling at a clean boundary -- clock consumers devices
+>>> (UART) vs clock producer devices (clock controller in the SoC, in a
+>>> PMIC,
+>>> audio codec, etc).
+>>>
+>>> With the decoupling, we don't have the inconsistency of having some
+>>> of the
+>>> clocks of a clock producer device incompletely defined in DT and the
+>>> rest
+>>> of the clocks of the same clock producer device hard coded in the
+>>> kernel.
+>>> So, you either put your entire clock tree in the SoC in the DT or put
+>>> all
+>>> of it in the kernel but you aren't forced to put just some of them in
+>>> the
+>>> DT just to get DT working. I see no benefit in defining only some of the
+>>> clocks in DT -- it just adds more confusion in the clock tree
+>>> definition.
+>>> What am I missing?
+>>
+>> I fail to see what would need changing in the binding itself. The
+>> binding just describes connections. Whether that is a connection to a
+>> clock controller node to a device or a clock gate/mux/divider node to a
+>> device is really beyond the clock binding. This is really just policy.
+>> You are free to put no clocks in DT, all clocks, or a nexus of clocks.
 > 
-> Looks like vmware is breaking. Can't find any usb devices. I'm not using udev.
+> With the current approach you are taking can you please give an example
+> of how a random device described in DT would hook itself up with a leaf
+> clock if that leaf clock is not described in DT? So that it can do a
+> call a DT version of clk_get() to get the clock it cares for.
 
-vmware doesn't use usbfs, otherwise how would it be working on all of
-the systems out there that haven't mounted usbfs for years?
+No, because that's impossible with any binding. The only way that would
+work is provide a string with a clock name and matching to the struct
+clk name string. That means putting linux clock names into the h/w
+description. That is the wrong direction and not how bindings work.
+Defining bindings should not get tangled up with how the OS
+implementation is done.
 
-What exactly broke?  What version of vmware are you using, and is the
-problem in the guest or host?
+> And no, there is a huge difference between binding a clock controller
+> node (by which I mean the block that provides many clocks) to a device
+> vs. binding a clock leaf to a device. The former is useless wrt to
+> clk_get() and similar functions. The latter is very useful to handle that.
 
-We delayed other usbfs changes for years due to vmware "issues", it
-wouldn't be the first time we've had to handle this :(
+The binding and clkdev changes support clk_get fully. Drivers don't have
+to change at all. There is not a DT version of clk_get that all drivers
+have to adopt. It's all handled within clk_get and should be transparent
+to drivers. The only thing that has to change is callers of clk_get_sys
+to use of_clk_get, but that's a small fraction of clocks.
 
-thanks,
-
-greg k-h
+Rob
