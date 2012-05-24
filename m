@@ -1,309 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933407Ab2EXQJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:09:01 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:42194 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708Ab2EXQIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:08:44 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: mcgrathr@google.com, hpa@zytor.com, indan@nul.nu, netdev@parisplace.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org,
-        Will Drewry <wad@chromium.org>
-Subject: [RFC PATCH 3/3] arch/*: move secure_computing after trace
-Date: Thu, 24 May 2012 11:08:01 -0500
-Message-Id: <1337875681-20717-4-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1337875681-20717-1-git-send-email-wad@chromium.org>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
- <1337875681-20717-1-git-send-email-wad@chromium.org>
+	id S933486Ab2EXQJM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:09:12 -0400
+Received: from fieldses.org ([174.143.236.118]:50501 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933424Ab2EXQJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 12:09:08 -0400
+Date: Thu, 24 May 2012 12:09:05 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH v2 01/12] NFS: pass net to nfs_callback_down()
+Message-ID: <20120524160905.GB21776@fieldses.org>
+References: <20120522073320.20602.87130.stgit@localhost.localdomain>
+ <20120522073555.20602.12874.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120522073555.20602.12874.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At present, any ptracer can bypass the seccomp system call
-policy by changing the system call after secure_computing has
-been called.  This change ensures that secure_computing
-occurs after all other userspace applications may have changed the
-system call value.
+I can see that you're passing net to nfs_callback_down().  Could you
+please remind me why?  What problem does this solve?
 
-(Note, ARM was the most affected in this patch as the call was moved
- into the syscall_trace path and reordering after ptrace was
- non-trivial.)
+--b.
 
-This change is wildly untested.
-
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- arch/arm/kernel/entry-common.S  |    7 +------
- arch/arm/kernel/ptrace.c        |   42 +++++++++++++++++++--------------------
- arch/microblaze/kernel/ptrace.c |    4 ++--
- arch/mips/kernel/ptrace.c       |   16 ++++++---------
- arch/powerpc/kernel/ptrace.c    |    5 +++--
- arch/s390/kernel/ptrace.c       |    6 +++---
- arch/sh/kernel/ptrace_32.c      |    5 +++--
- arch/sh/kernel/ptrace_64.c      |    5 +++--
- arch/sparc/kernel/ptrace_64.c   |    7 ++++---
- 9 files changed, 46 insertions(+), 51 deletions(-)
-
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index 7bd2d3c..57a5bde 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -416,12 +416,7 @@ ENTRY(vector_swi)
- 
- #ifdef CONFIG_SECCOMP
- 	tst	r10, #_TIF_SECCOMP
--	beq	1f
--	mov	r0, scno
--	bl	__secure_computing	
--	add	r0, sp, #S_R0 + S_OFF		@ pointer to regs
--	ldmia	r0, {r0 - r3}			@ have to reload r0 - r3
--1:
-+	bne	__sys_trace			@ are we in seccomp mode?
- #endif
- 
- 	tst	r10, #_TIF_SYSCALL_WORK		@ are we tracing syscalls?
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index 14e3826..1654071 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -909,32 +909,32 @@ long arch_ptrace(struct task_struct *child, long request,
- 
- asmlinkage int syscall_trace(int why, struct pt_regs *regs, int scno)
- {
--	unsigned long ip;
--
--	if (why)
--		audit_syscall_exit(regs);
--	else
--		audit_syscall_entry(AUDIT_ARCH_ARM, scno, regs->ARM_r0,
--				    regs->ARM_r1, regs->ARM_r2, regs->ARM_r3);
--
--	if (!test_thread_flag(TIF_SYSCALL_TRACE))
--		return scno;
--
--	current_thread_info()->syscall = scno;
--
- 	/*
- 	 * IP is used to denote syscall entry/exit:
- 	 * IP = 0 -> entry, =1 -> exit
- 	 */
--	ip = regs->ARM_ip;
--	regs->ARM_ip = why;
-+	unsigned long ip = regs->ARM_ip;
- 
--	if (why)
--		tracehook_report_syscall_exit(regs, 0);
--	else if (tracehook_report_syscall_entry(regs))
--		current_thread_info()->syscall = -1;
--
--	regs->ARM_ip = ip;
-+	current_thread_info()->syscall = scno;
-+	if (why) {	/* exit */
-+		if (test_thread_flag(TIF_SYSCALL_TRACE)) {
-+			regs->ARM_ip = why;
-+			tracehook_report_syscall_exit(regs, 0);
-+			regs->ARM_ip = ip;
-+		}
-+		audit_syscall_exit(regs);
-+	} else {	/* entry */
-+		if (test_thread_flag(TIF_SYSCALL_TRACE)) {
-+			regs->ARM_ip = why;
-+			if (tracehook_report_syscall_entry(regs))
-+				current_thread_info()->syscall = -1;
-+			regs->ARM_ip = ip;
-+		}
-+		/* Call secure_computing after any userspace changes are done */
-+		secure_computing_strict(current_thread_info()->syscall);
-+		audit_syscall_entry(AUDIT_ARCH_ARM, scno, regs->ARM_r0,
-+				    regs->ARM_r1, regs->ARM_r2, regs->ARM_r3);
-+	}
- 
- 	return current_thread_info()->syscall;
- }
-diff --git a/arch/microblaze/kernel/ptrace.c b/arch/microblaze/kernel/ptrace.c
-index ab1b9db..9a917a7 100644
---- a/arch/microblaze/kernel/ptrace.c
-+++ b/arch/microblaze/kernel/ptrace.c
-@@ -136,8 +136,6 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
--	secure_computing_strict(regs->r12);
--
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
- 	    tracehook_report_syscall_entry(regs))
- 		/*
-@@ -147,6 +145,8 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- 		 */
- 		ret = -1L;
- 
-+	secure_computing_strict(regs->r12);
-+
- 	audit_syscall_entry(EM_MICROBLAZE, regs->r12, regs->r5, regs->r6,
- 			    regs->r7, regs->r8);
- 
-diff --git a/arch/mips/kernel/ptrace.c b/arch/mips/kernel/ptrace.c
-index 4812c6d..2b1f5f3 100644
---- a/arch/mips/kernel/ptrace.c
-+++ b/arch/mips/kernel/ptrace.c
-@@ -534,19 +534,16 @@ static inline int audit_arch(void)
-  */
- asmlinkage void syscall_trace_enter(struct pt_regs *regs)
- {
--	/* do the secure computing check first */
--	secure_computing_strict(regs->regs[2]);
--
--	if (!(current->ptrace & PT_PTRACED))
--		goto out;
--
--	if (!test_thread_flag(TIF_SYSCALL_TRACE))
--		goto out;
--
-+	if ((current->ptrace & PT_PTRACED) &&
-+	    test_thread_flag(TIF_SYSCALL_TRACE)) {
- 	/* The 0x80 provides a way for the tracing parent to distinguish
- 	   between a syscall stop and SIGTRAP delivery */
- 	ptrace_notify(SIGTRAP | ((current->ptrace & PT_TRACESYSGOOD) ?
- 	                         0x80 : 0));
-+	}
-+
-+	/* do the secure computing check after the system calls are final. */
-+	secure_computing_strict(regs->regs[2]);
- 
- 	/*
- 	 * this isn't the same as continuing with a signal, but it will do
-@@ -558,7 +555,6 @@ asmlinkage void syscall_trace_enter(struct pt_regs *regs)
- 		current->exit_code = 0;
- 	}
- 
--out:
- 	audit_syscall_entry(audit_arch(), regs->regs[2],
- 			    regs->regs[4], regs->regs[5],
- 			    regs->regs[6], regs->regs[7]);
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index dd5e214..4b725ed 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -1710,8 +1710,6 @@ long do_syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
--	secure_computing_strict(regs->gpr[0]);
--
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
- 	    tracehook_report_syscall_entry(regs))
- 		/*
-@@ -1721,6 +1719,9 @@ long do_syscall_trace_enter(struct pt_regs *regs)
- 		 */
- 		ret = -1L;
- 
-+	if (!ret)
-+		secure_computing_strict(regs->gpr[0]);
-+
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->gpr[0]);
- 
-diff --git a/arch/s390/kernel/ptrace.c b/arch/s390/kernel/ptrace.c
-index 4993e68..b95c0ac 100644
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -718,9 +718,6 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
--	/* Do the secure computing check first. */
--	secure_computing_strict(regs->gprs[2]);
--
- 	/*
- 	 * The sysc_tracesys code in entry.S stored the system
- 	 * call number to gprs[2].
-@@ -737,6 +734,9 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- 		ret = -1;
- 	}
- 
-+	/* Do the secure computing check with a final syscall set. */
-+	secure_computing_strict(regs->gprs[2]);
-+
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->gprs[2]);
- 
-diff --git a/arch/sh/kernel/ptrace_32.c b/arch/sh/kernel/ptrace_32.c
-index 81f999a..2500ce1 100644
---- a/arch/sh/kernel/ptrace_32.c
-+++ b/arch/sh/kernel/ptrace_32.c
-@@ -503,8 +503,6 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- {
- 	long ret = 0;
- 
--	secure_computing_strict(regs->regs[0]);
--
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
- 	    tracehook_report_syscall_entry(regs))
- 		/*
-@@ -514,6 +512,9 @@ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- 		 */
- 		ret = -1L;
- 
-+	if (!ret)
-+		secure_computing_strict(regs->regs[0]);
-+
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->regs[0]);
- 
-diff --git a/arch/sh/kernel/ptrace_64.c b/arch/sh/kernel/ptrace_64.c
-index af90339..cc030e0 100644
---- a/arch/sh/kernel/ptrace_64.c
-+++ b/arch/sh/kernel/ptrace_64.c
-@@ -522,8 +522,6 @@ asmlinkage long long do_syscall_trace_enter(struct pt_regs *regs)
- {
- 	long long ret = 0;
- 
--	secure_computing_strict(regs->regs[9]);
--
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
- 	    tracehook_report_syscall_entry(regs))
- 		/*
-@@ -533,6 +531,9 @@ asmlinkage long long do_syscall_trace_enter(struct pt_regs *regs)
- 		 */
- 		ret = -1LL;
- 
-+	if (!ret)
-+		secure_computing_strict(regs->regs[9]);
-+
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->regs[9]);
- 
-diff --git a/arch/sparc/kernel/ptrace_64.c b/arch/sparc/kernel/ptrace_64.c
-index 484daba..31fff51 100644
---- a/arch/sparc/kernel/ptrace_64.c
-+++ b/arch/sparc/kernel/ptrace_64.c
-@@ -1061,12 +1061,13 @@ asmlinkage int syscall_trace_enter(struct pt_regs *regs)
- {
- 	int ret = 0;
- 
--	/* do the secure computing check first */
--	secure_computing_strict(regs->u_regs[UREG_G1]);
--
- 	if (test_thread_flag(TIF_SYSCALL_TRACE))
- 		ret = tracehook_report_syscall_entry(regs);
- 
-+	/* do the secure computing check with the final syscall */
-+	if (!ret)
-+		secure_computing_strict(regs->u_regs[UREG_G1]);
-+
- 	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
- 		trace_sys_enter(regs, regs->u_regs[UREG_G1]);
- 
--- 
-1.7.9.5
-
+On Tue, May 22, 2012 at 11:35:55AM +0400, Stanislav Kinsbursky wrote:
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfs/callback.c |    4 ++--
+>  fs/nfs/callback.h |    2 +-
+>  fs/nfs/client.c   |    2 +-
+>  3 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+> index 970659d..f3d7ee2 100644
+> --- a/fs/nfs/callback.c
+> +++ b/fs/nfs/callback.c
+> @@ -322,7 +322,7 @@ out_err:
+>  /*
+>   * Kill the callback thread if it's no longer being used.
+>   */
+> -void nfs_callback_down(int minorversion)
+> +void nfs_callback_down(int minorversion, struct net *net)
+>  {
+>  	struct nfs_callback_data *cb_info = &nfs_callback_info[minorversion];
+>  
+> @@ -330,7 +330,7 @@ void nfs_callback_down(int minorversion)
+>  	cb_info->users--;
+>  	if (cb_info->users == 0 && cb_info->task != NULL) {
+>  		kthread_stop(cb_info->task);
+> -		svc_shutdown_net(cb_info->serv, current->nsproxy->net_ns);
+> +		svc_shutdown_net(cb_info->serv, net);
+>  		svc_exit_thread(cb_info->rqst);
+>  		cb_info->serv = NULL;
+>  		cb_info->rqst = NULL;
+> diff --git a/fs/nfs/callback.h b/fs/nfs/callback.h
+> index a5527c9..6d900cf 100644
+> --- a/fs/nfs/callback.h
+> +++ b/fs/nfs/callback.h
+> @@ -194,7 +194,7 @@ extern __be32 nfs4_callback_recall(struct cb_recallargs *args, void *dummy,
+>  				   struct cb_process_state *cps);
+>  #ifdef CONFIG_NFS_V4
+>  extern int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt);
+> -extern void nfs_callback_down(int minorversion);
+> +extern void nfs_callback_down(int minorversion, struct net *net);
+>  extern int nfs4_validate_delegation_stateid(struct nfs_delegation *delegation,
+>  					    const nfs4_stateid *stateid);
+>  extern int nfs4_set_callback_sessionid(struct nfs_client *clp);
+> diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+> index da7b5e4..44cd70f 100644
+> --- a/fs/nfs/client.c
+> +++ b/fs/nfs/client.c
+> @@ -222,7 +222,7 @@ static void nfs4_shutdown_session(struct nfs_client *clp)
+>  static void nfs4_destroy_callback(struct nfs_client *clp)
+>  {
+>  	if (__test_and_clear_bit(NFS_CS_CALLBACK, &clp->cl_res_state))
+> -		nfs_callback_down(clp->cl_mvops->minor_version);
+> +		nfs_callback_down(clp->cl_mvops->minor_version, clp->net);
+>  }
+>  
+>  static void nfs4_shutdown_client(struct nfs_client *clp)
+> 
