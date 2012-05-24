@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758935Ab2EXRzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:55:11 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:50214 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758845Ab2EXRzE (ORCPT
+	id S1758886Ab2EXRzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:55:09 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:28876 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756245Ab2EXRzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:55:04 -0400
-Message-ID: <acabbed13c4f02e653879844a9cbddef.squirrel@webmail.greenhost.nl>
-In-Reply-To: <1337875681-20717-2-git-send-email-wad@chromium.org>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
-    <1337875681-20717-1-git-send-email-wad@chromium.org>
-    <1337875681-20717-2-git-send-email-wad@chromium.org>
-Date: Thu, 24 May 2012 19:54:50 +0200
-Subject: Re: [RFC PATCH 1/3] seccomp: Don't allow tracers to abuse RET_TRACE
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Will Drewry" <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com, hpa@zytor.com,
-        netdev@parisplace.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org,
-        "Will Drewry" <wad@chromium.org>
-User-Agent: SquirrelMail/1.4.22
+	Thu, 24 May 2012 13:55:03 -0400
+Date: Thu, 24 May 2012 13:47:41 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [PATCH] swiotlb: add "dma_attrs" argument to alloc and free, to
+ match dma_map_ops
+Message-ID: <20120524174741.GG24934@phenom.dumpdata.com>
+References: <20120524114422.GA25950@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 729ef2e9e2cd27dd49f9ca04774c95e6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524114422.GA25950@mail.gnudd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 18:07, Will Drewry wrote:
-> Ensure that consumers of the PTRACE_EVENT_SECCOMP notification
-> cannot change the system call number for the traced task
-> without it resulting in the system call being skipped.
->
-> Traditionally, tracers will set the system call number to
-> -1 to skip the system call. This behavior will work as expected
-> but the tracer will be unable to remap the system call to a valid
-> system call after the seccomp policy has been evaluated.
->
-> Signed-off-by: Will Drewry <wad@chromium.org>
+On Thu, May 24, 2012 at 01:44:22PM +0200, Alessandro Rubini wrote:
+> The alloc and free pointers within "struct dma_map_ops" receive a
+> pointer to dma_attrs that was not present in the generic swiotlb
+> functions.  For this reason, a few files had a local wrapper for the
+> free function that just removes the attrs argument before calling the
+> generic function.
+> 
+> This patch adds the extra argument to generic functions and removes
+> such wrappers when they are no more needed.  This also fixes a
+> compiler warning for sta2x11-fixup.c, that would have required yet
+> another wrapper.
+> 
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > ---
->  kernel/seccomp.c |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index ee376be..33f0ad6 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -425,6 +425,10 @@ int __secure_computing(int this_syscall)
->  			 */
->  			if (fatal_signal_pending(current))
->  				break;
-> +			/* Skip the system call if the tracer changed it. */
-> +			if (this_syscall !=
-> +			    syscall_get_nr(current, task_pt_regs(current)))
-> +				goto skip;
->  			return 0;
->  		case SECCOMP_RET_ALLOW:
->  			return 0;
-> --
+>  arch/ia64/kernel/pci-swiotlb.c       |   11 ++---------
+>  arch/mips/cavium-octeon/dma-octeon.c |    4 ++--
+>  arch/unicore32/mm/dma-swiotlb.c      |   22 ++--------------------
+>  arch/x86/kernel/pci-swiotlb.c        |   11 ++---------
+>  arch/x86/pci/sta2x11-fixup.c         |    3 ++-
+>  include/linux/swiotlb.h              |    7 ++++---
+>  lib/swiotlb.c                        |    5 +++--
 
-This patch doesn't make any sense whatsoever. You can't know why a system
-call was blocked by a seccomp filter, assuming it's always because of the
-system call number is wrong.
+So .. what is this based on? I see in mainline  alloc_coherent and free_coherent
+which are obviously changed here.
 
-Also, you don't check if an allowed system call is changed into a denied
-one, so this doesn't protect against ptracers bypassing seccomp filters.
+Don't you also need to change these two files:
 
-And one of the main points of PTRACE_EVENT_SECCOMP events was that it's
-useful for cases that can't be handled or decided by the seccomp filter.
-Then taking away the ability to change the syscall number makes it a lot
-less useful.
-
-Either do the seccomp test before or after ptrace, or both, but please
-don't introduce ad hoc checks like this.
-
-Greetings,
-
-Indan
-
-
+ arch/x86/xen/pci-swiotlb-xen.c
+ drivers/xen/swiotlb-xen.c
