@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965472Ab2EXWBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 18:01:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43314 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933192Ab2EXWA7 (ORCPT
+	id S965566Ab2EXWBR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:01:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59098 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965485Ab2EXWBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:00:59 -0400
-Date: Thu, 24 May 2012 15:00:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com, hpa@zytor.com,
-        indan@nul.nu, netdev@parisplace.org,
-        linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
-        corbet@lwn.net, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, viro@zeniv.linux.org.uk, jmorris@namei.org
-Subject: Re: [RFC PATCH 0/3] move the secure_computing call
-Message-Id: <20120524150057.86c14b35.akpm@linux-foundation.org>
-In-Reply-To: <1337875681-20717-1-git-send-email-wad@chromium.org>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
-	<1337875681-20717-1-git-send-email-wad@chromium.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 May 2012 18:01:13 -0400
+Date: Fri, 25 May 2012 07:01:05 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 3.5-rc0
+Message-ID: <20120524220105.GB18120@kroah.com>
+References: <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
+ <20120524180154.GA15036@core.coreip.homeip.net>
+ <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
+ <20120524195851.GA15306@core.coreip.homeip.net>
+ <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
+ <20120524203647.GA16024@core.coreip.homeip.net>
+ <CA+55aFz9Fp2J=oCkoDAwNTnEJoBeKC9tn+5dqMCKf4C22CAi6Q@mail.gmail.com>
+ <20120524205952.GA16621@core.coreip.homeip.net>
+ <CA+55aFybQDXjGaEK0k=60gS88bxwE8vC7XvOffaQAf3de9cCfg@mail.gmail.com>
+ <CA+55aFzZm2aAhgZagWq=rsfKTt=2_2_mpVjXDN3LAqAJmWoZqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzZm2aAhgZagWq=rsfKTt=2_2_mpVjXDN3LAqAJmWoZqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 May 2012 11:07:58 -0500
-Will Drewry <wad@chromium.org> wrote:
-
-> This is an RFC based on the comments from Al Viro and Eric Paris
-> regarding ptrace()rs being able to change the system call the kernel
-> sees after the seccomp enforcement has occurred (for mode 1 or 2).
-
-Perhaps you could repeat those comments in this changelog.
-
-> With this series applied, a (p)tracer of a process with seccomp enabled
-> will be unable to change the tracee's system call number after the
-> secure computing check has been performed.
+On Thu, May 24, 2012 at 02:44:31PM -0700, Linus Torvalds wrote:
+> On Thu, May 24, 2012 at 2:07 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Thu, May 24, 2012 at 1:59 PM, Dmitry Torokhov
+> > <dmitry.torokhov@gmail.com> wrote:
+> >>
+> >> I was concerned about the _next_ device (the one that will be created
+> >> the moment I plug in the tablet back into the same port) having exact
+> >> same name as the one that is half dead and clashing in sysfs and
+> >> elsewhere. We used to have issues with this.
+> >
+> > Ok, that's certainly a valid concern.
+> >
+> > It's still - I think - really sad/wrong that the device name is then
+> > so useless than the drivers end up basically not using it.
 > 
-> The x86 change is tested, as is the seccomp.c change.  For other arches,
-> it is not (RFC :).  Given that there are other inconsistencies in this
-> code across architectures, I'm not sure if it makes sense to attempt to
-> fix them all at once or to roll through as I attempt to add seccomp
-> filter support.
+> Ok, so I wonder if we could solve the issue at least partly by
+> separating the "print name for kernel messages" from the "name used
+> for /sysfs etc".
 > 
-> As is, the biggest benefit of this change is just setting consistent
-> expectations in what the ptrace/seccomp interactions should be.  The
-> current ability for ptrace to "bypass" secure computing (by remapping
-> allowed system calls) is not necessarily a problem, but it is not
-> necessarily intuitive behavior.
+> Because you're right: the sysfs uniqueness rules does make it very
+> hard to do a good job on descriptive names.
 > 
+> Also, in sysfs, you by definition see the parent (hey, it's part of
+> the path), so in sysfs, duplicating parent data would be useless and
+> just ugly.
+> 
+> But for dev_dbg(), those sysfs rules actually act against us: the name
+> of a device is often tied to the parent bus location.
+> 
+> So I wonder if we could teach  dev_printk() to use something more
+> interesting than "dev_name()" when appropriate? Greg?
 
-Because my take on the above reasoning is "why did you bother writing
-these patches"!
+I'm open to ideas on what to change it to.  A full sysfs path?
+Something more "unique"?  I don't know what works for everything here.
 
+thanks,
+
+greg k-h
