@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759306Ab2EXXx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:53:57 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32985 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757841Ab2EXXxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:53:54 -0400
-Date: Thu, 24 May 2012 16:53:33 -0700
-From: tip-bot for Magnus Damm <magnus.damm@gmail.com>
-Message-ID: <tip-e5400321a6f15ce0fe77c8455954f213ef7dcc54@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, horms@verge.net.au, hpa@zytor.com,
-        mingo@kernel.org, damm@opensource.se, tglx@linutronix.de,
-        magnus.damm@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, horms@verge.net.au,
-        linux-kernel@vger.kernel.org, damm@opensource.se, tglx@linutronix.de,
-        magnus.damm@gmail.com
-In-Reply-To: <20120509143934.27521.46553.sendpatchset@w520>
-References: <20120509143934.27521.46553.sendpatchset@w520>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] clockevents: Make clockevents_config()
-  a global symbol
-Git-Commit-ID: e5400321a6f15ce0fe77c8455954f213ef7dcc54
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1759507Ab2EXX5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:57:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33030 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758408Ab2EXX5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 19:57:47 -0400
+Message-ID: <4FBECAC2.6050303@zytor.com>
+Date: Thu, 24 May 2012 16:56:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 16:53:40 -0700 (PDT)
+To: Andrew Lutomirski <luto@mit.edu>
+CC: James Morris <jmorris@namei.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, mcgrathr@google.com, indan@nul.nu,
+        netdev@parisplace.org, linux-security-module@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
+        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
+        serge.hallyn@canonical.com, pmoore@redhat.com,
+        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
+        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
+        viro@zeniv.linux.org.uk
+Subject: Re: [RFC PATCH 0/3] move the secure_computing call
+References: <20120522173942.GJ11775@ZenIV.linux.org.uk> <1337875681-20717-1-git-send-email-wad@chromium.org> <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org> <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
+In-Reply-To: <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e5400321a6f15ce0fe77c8455954f213ef7dcc54
-Gitweb:     http://git.kernel.org/tip/e5400321a6f15ce0fe77c8455954f213ef7dcc54
-Author:     Magnus Damm <magnus.damm@gmail.com>
-AuthorDate: Wed, 9 May 2012 23:39:34 +0900
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 25 May 2012 01:44:51 +0200
+On 05/24/2012 04:43 PM, Andrew Lutomirski wrote:
+> 
+> IMO the behavior should change.  Alternatively, a post-ptrace syscall
+> should have to pass the *tracer's* seccomp filter, but that seems
+> overcomplicated and confusing.
+> 
+> OTOH, allowing ptrace in a seccomp filter is asking for trouble anyway
+> -- if you can ptrace something outside the sandbox, you've escaped.
+> 
 
-clockevents: Make clockevents_config() a global symbol
+This is my suggestion: if there is demand, make it possible to install a
+*second* seccomp filter program which is run on the result of the
+ptrace.  I.e.:
 
-Make clockevents_config() into a global symbol to allow it to be used
-by compiled-in clockevent drivers. This is needed by drivers that want
-to update the timer frequency after registration time.
+Untraced:	process -> seccomp1 -> kernel
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Tested-by: Simon Horman <horms@verge.net.au>
-Cc: arnd@arndb.de
-Cc: johnstul@us.ibm.com
-Cc: rjw@sisk.pl
-Cc: lethal@linux-sh.org
-Cc: gregkh@linuxfoundation.org
-Cc: olof@lixom.net
-Cc: Magnus Damm <magnus.damm@gmail.com>
-Link: http://lkml.kernel.org/r/20120509143934.27521.46553.sendpatchset@w520
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/clockchips.h |    1 +
- kernel/time/clockevents.c  |    3 +--
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Traced:		process -> seccomp1 -> ptrace -> seccomp2 -> kernel
 
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index 81e803e..acba8943 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -132,6 +132,7 @@ extern u64 clockevent_delta2ns(unsigned long latch,
- 			       struct clock_event_device *evt);
- extern void clockevents_register_device(struct clock_event_device *dev);
- 
-+extern void clockevents_config(struct clock_event_device *dev, u32 freq);
- extern void clockevents_config_and_register(struct clock_event_device *dev,
- 					    u32 freq, unsigned long min_delta,
- 					    unsigned long max_delta);
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 9cd928f..7e1ce01 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -297,8 +297,7 @@ void clockevents_register_device(struct clock_event_device *dev)
- }
- EXPORT_SYMBOL_GPL(clockevents_register_device);
- 
--static void clockevents_config(struct clock_event_device *dev,
--			       u32 freq)
-+void clockevents_config(struct clock_event_device *dev, u32 freq)
- {
- 	u64 sec;
- 
+This is something we could add later if there is demand.
+
+	-hpa
+
+
