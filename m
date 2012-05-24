@@ -1,31 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916Ab2EXRRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:17:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56206 "EHLO
+	id S933941Ab2EXRSD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:18:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56222 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933683Ab2EXRRA (ORCPT
+	with ESMTP id S932167Ab2EXRSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:17:00 -0400
-Date: Thu, 24 May 2012 10:16:28 -0700
-From: tip-bot for Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Message-ID: <tip-00b9da7219cd027a1c51c3ef576aadbbd9fe38fe@git.kernel.org>
+	Thu, 24 May 2012 13:18:00 -0400
+Date: Thu, 24 May 2012 10:17:21 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-57d34dc5568f6ac700ef7e5c67f2bd6a8c7c4659@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, namhyung.kim@lge.com, namhyung@gmail.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, stefanha@linux.vnet.ibm.com,
-        tglx@linutronix.de, avi@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, bp@alien8.de,
+        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, namhyung@gmail.com, fweisbec@gmail.com,
-        stefanha@linux.vnet.ibm.com, rostedt@goodmis.org, tglx@linutronix.de,
-        avi@redhat.com
-In-Reply-To: <1337740619-27925-6-git-send-email-namhyung.kim@lge.com>
-References: <1337740619-27925-6-git-send-email-namhyung.kim@lge.com>
+        namhyung.kim@lge.com, bp@alien8.de, namhyung@gmail.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1337740619-27925-11-git-send-email-namhyung.kim@lge.com>
+References: <1337740619-27925-11-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools lib traceevent:
-  Allow expressions in __print_symbolic() fields
-Git-Commit-ID: 00b9da7219cd027a1c51c3ef576aadbbd9fe38fe
+Subject: [tip:perf/urgent] tools lib traceevent: Fix a possible memory leak
+Git-Commit-ID: 57d34dc5568f6ac700ef7e5c67f2bd6a8c7c4659
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,60 +33,52 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 10:16:36 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 10:17:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  00b9da7219cd027a1c51c3ef576aadbbd9fe38fe
-Gitweb:     http://git.kernel.org/tip/00b9da7219cd027a1c51c3ef576aadbbd9fe38fe
-Author:     Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-AuthorDate: Wed, 23 May 2012 11:36:42 +0900
+Commit-ID:  57d34dc5568f6ac700ef7e5c67f2bd6a8c7c4659
+Gitweb:     http://git.kernel.org/tip/57d34dc5568f6ac700ef7e5c67f2bd6a8c7c4659
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Wed, 23 May 2012 11:36:47 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 May 2012 11:29:25 -0300
+CommitDate: Thu, 24 May 2012 11:32:10 -0300
 
-tools lib traceevent: Allow expressions in __print_symbolic() fields
+tools lib traceevent: Fix a possible memory leak
 
-The __print_symbolic() function takes a sequence of key-value pairs for
-pretty-printing a constant.  The new kvm:kvm_exit print fmt uses the
-expression:
+If event_read_fields failed in the middle, each member of
+struct format_field should be freed also.
 
-  __print_symbolic(..., { 0x040 + 1, "DB excp" }, ...)
-
-Currently only atoms are supported and this print fmt fails to parse.
-This patch adds support for expressions instead of just atoms so that
-0x040 + 1 is parsed successfully.
-
-Cc: Avi Kivity <avi@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1337740619-27925-6-git-send-email-namhyung.kim@lge.com
+Link: http://lkml.kernel.org/r/1337740619-27925-11-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/traceevent/event-parse.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ tools/lib/traceevent/event-parse.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
 diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 9985349..33450c9 100644
+index 33450c9..d598b37 100644
 --- a/tools/lib/traceevent/event-parse.c
 +++ b/tools/lib/traceevent/event-parse.c
-@@ -2124,6 +2124,13 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
- 
- 		free_token(token);
- 		type = process_arg(event, arg, &token);
-+
-+		if (type == EVENT_OP)
-+			type = process_op(event, arg, &token);
-+
-+		if (type == EVENT_ERROR)
-+			goto out_free;
-+
- 		if (test_type_token(type, token, EVENT_DELIM, ","))
- 			goto out_free;
+@@ -1434,8 +1434,11 @@ static int event_read_fields(struct event_format *event, struct format_field **f
+ fail:
+ 	free_token(token);
+ fail_expect:
+-	if (field)
++	if (field) {
++		free(field->type);
++		free(field->name);
+ 		free(field);
++	}
+ 	return -1;
+ }
  
