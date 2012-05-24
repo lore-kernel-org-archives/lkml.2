@@ -1,200 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab2EXNR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 09:17:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41222 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab2EXNRZ (ORCPT
+	id S1754215Ab2EXNTn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 09:19:43 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:65459 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab2EXNTm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 09:17:25 -0400
-Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on
- westmere
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
-In-Reply-To: <1337857490.7300.19.camel@marge.simpson.net>
-References: <1337857490.7300.19.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 May 2012 15:17:11 +0200
-Message-ID: <1337865431.9783.148.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 24 May 2012 09:19:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337845230.9783.51.camel@laptop>
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>
+ <1337782555-8088-9-git-send-email-alex.shi@intel.com> <4FBD18D20200007800085951@nat28.tlf.novell.com>
+ <1337792984.9783.37.camel@laptop> <1337793338.9783.38.camel@laptop>
+ <CAObL_7GEzHYV9RbinPmK5D3DkZLiV0Wbz6j8x-Agbi21BM_OgA@mail.gmail.com> <1337845230.9783.51.camel@laptop>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 24 May 2012 06:19:21 -0700
+X-Google-Sender-Auth: dr_nHSARDS6yafWPAdmgY6R-MMI
+Message-ID: <CAObL_7FK8Pb7Ahmr0SBaPg1BvPTspr=EKG8v_QfcpdmMyuE5dA@mail.gmail.com>
+Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings of SMT
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jan Beulich <JBeulich@suse.com>, Alex Shi <alex.shi@intel.com>,
+        borislav.petkov@amd.com, arnd@arndb.de, akinobu.mita@gmail.com,
+        eric.dumazet@gmail.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        hughd@google.com, jeremy@goop.org, len.brown@intel.com,
+        tony.luck@intel.com, yongjie.ren@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, ak@linux.intel.com, avi@redhat.com,
+        dhowells@redhat.com, mingo@redhat.com, riel@redhat.com, cpw@sgi.com,
+        steiner@sgi.com, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        hpa@zytor.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 13:04 +0200, Mike Galbraith wrote:
-> sched: fix select_idle_sibling() induced bouncing
-> 
-> Traversing an entire package is not only expensive, it also leads to tasks
-> bouncing all over a partially idle and possible quite large package.  Fix
-> that up by assigning a 'buddy' CPU to try to motivate.  Each buddy may try
-> to motivate that one other CPU, if it's busy, tough, it may then try it's
-> SMT sibling, but that's all this optimization is allowed to cost.
-> 
-> Sibling cache buddies are cross-wired to prevent bouncing.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> 
-> ---
->  include/linux/sched.h |    1 +
->  kernel/sched/core.c   |   40 +++++++++++++++++++++++++++++++++++++++-
->  kernel/sched/fair.c   |   28 +++++++++-------------------
->  3 files changed, 49 insertions(+), 20 deletions(-)
-> 
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -928,6 +928,7 @@ struct sched_domain {
->         struct sched_domain *parent;    /* top domain must be null terminated */
->         struct sched_domain *child;     /* bottom domain must be null terminated */
->         struct sched_group *groups;     /* the balancing groups of the domain */
-> +       struct sched_group *sibling;    /* group assigned to select_idle_sibling() */
+On Thu, May 24, 2012 at 12:40 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-05-23 at 18:46 -0700, Andrew Lutomirski wrote:
+>> On Wed, May 23, 2012 at 10:15 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Wed, 2012-05-23 at 19:09 +0200, Peter Zijlstra wrote:
+>> >> > There is no comment or anything else indicating that this is
+>> >> > suitable for dual-thread CPUs only - when there are more than
+>> >> > 2 threads per core, the intended effect won't be achieved.
+>> >>
+>> >> Why would that be? Won't higher thread count still share the same
+>> >> resources just more so?
+>> >
+>> > Ah, I see, you're saying his code is buggy for >2 threads. Agreed.
+>> >
+>>
+>> An evil knob to statically choose which SMT sibling gets the interrupt
+>> would be nice.  Then my compute-intensive thread could be (mostly)
+>> unaffected by the other thread on a different core that calls munmap
+>> frequently.
+>
+> Just make sure the two workloads never share a core and this should
+> already happen since TLB invalidates are only broadcast to the mm
+> cpumask.
+>
 
-A better name would be idle_sibling, or possibly idle_buddy.
+I already do that.  But these two workloads share the same mm (they're
+threads in the same process), so I'd gain performance if the
+invalidations were sent from the core that called munmap to the SMT
+sibling of the other thread.
 
-Sibling is oft times understood to mean SMT-sibling, confusion reigns.
+A decent heuristic might be to prefer idle SMT siblings for TLB
+invalidation.  I don't know what effect that would have on power
+consumption (it would be rather bad if idling one SMT thread while the
+other one is busy saves much power).
 
-Also, it looks like you're explicitly going down the sched_domains to a
-single cpu group. If that's the exact purpose of this, to point to a
-particular cpu, make it an int and do away with the group/cpumask bits.
-
->         unsigned long min_interval;     /* Minimum balance interval ms */
->         unsigned long max_interval;     /* Maximum balance interval ms */
->         unsigned int busy_factor;       /* less balancing by factor if busy */
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5888,9 +5888,47 @@ static void update_top_cache_domain(int
->         int id = cpu;
->  
->         sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
-> -       if (sd)
-> +       if (sd) {
-> +               struct sched_domain *tmp = sd;
-> +               struct sched_group *sg = tmp->groups, *prev = sg;
-> +               int smt = 0, right = 1;
-> +
->                 id = cpumask_first(sched_domain_span(sd));
->  
-> +               /*
-> +                * Assign a 'buddy' CPU for select_idle_sibling()
-> +                * to try to motivate.  These point at each other
-> +                * at the MC level, and at own sibling at SIBLING
-> +                * to prevent mad bouncing of tasks on a package
-> +                * with many cores/siblings.
-> +                */
-> +               while (cpumask_first(sched_group_cpus(sg)) != id)
-> +                       sg = sg->next;
-
-ok, because we're staring at @cpu's sched domains, @id need not be in
-the first group.
-
-> +               /*
-> +                * Ok, have first group, should we point right or left?
-> +                * sg is tmp->groups again when done, ie our group.
-> +                */
-> +               while (!cpumask_test_cpu(cpu, sched_group_cpus(sg))) {
-> +                       prev = sg;
-> +                       sg = sg->next;
-> +                       right = !right;
-> +               }
-
-Slightly confused by this.. So we find @id's group, then we iterate
-until we find @cpu's group (sd->groups in fact), but need the iteration
-count to find if its even or odd numbered.
-
-Now couldn't you have used the iteration count on the first while()
-loop?
-
-> +               /* A CPU went down, never point back to package start. */
-> +               if (right && cpumask_first(sched_group_cpus(sg->next)) == id)
-> +                       right = 0;
-
-Slightly more confusion, unplugged cpus aren't part of the sched_domain
-structure...
-
-> +               sg = right ? sg->next : prev;
-
-So if it was odd we go one more, if it was even we go one back..
-
-Suppose we have 6 cores sharing a cache and no smt, then cpu0 would have
-no iterations and right == 1, so we pick cpu1. cpu1 will end up on cpu0
-and we continue like 3-4 4-3 etc.
-
-> +               do {
-> +                       if (smt)
-> +                               sg = tmp->groups->next;
-> +                       rcu_assign_pointer(tmp->sibling, sg);
-> +                       smt = 1;
-> +               } while ((tmp = tmp->child));
-
-Oh, wait we keep a ->sibling pointer for each level.. 
-
-So here we go down, somehow always picking the second smt sibling:
-
-   core0      core1
-
- smt0 smt1   smt0 smt1
-
-So cpu0 would end up at smt1, cpu1 would end up at smt0, crossing them
-nicely.
-
-For power7 with 4 smt it would end up as 1230 I guess.
-
-So if we then make it a 6 core 2 smt machine we get:
-
-core 0->1, 1->0, 2->3, 3->2 etc..
-
-but at the same time we get the smt stuff.. I suppose you mean to select
-an SMT sibling from core1, however your tmp = tmp->child goes down the
-topology on core0, selecting core0 threads instead.
-
-Surely that's not the intention?
-
-> +       }
-> +
->         rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
->         per_cpu(sd_llc_id, cpu) = id;
->  }
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -2655,29 +2655,19 @@ static int select_idle_sibling(struct ta
->                 return prev_cpu;
->  
->         /*
-> +        * Otherwise, check assigned siblings to find an elegible idle cpu.
->          */
->         sd = rcu_dereference(per_cpu(sd_llc, target));
-> +       for_each_lower_domain(sd) {
-> +               sg = rcu_dereference(sd->sibling);
-> +               for_each_cpu_and(i, sched_group_cpus(sg), tsk_cpus_allowed(p)) {
-> +                       if (idle_cpu(i))
-> +                               return i;
-> +                       break;
-> +               }
-
-Ah, I think I see the smt thing..
-
-So suppose cpu0 on our 6 core 2 thread system is doing its thing here,
-the first round will try both threads from core1, the second level will
-then try our own smt sibling.
-
->         }
-> +
->         return target;
->  }
-
-And I guess the performance improvement comes from simply doing less
-work, right?
-
-Did you do you numbers with the distro NR_CPUS=4096 bloat?
-
-Somewhat related, Arjan recently told me we should try and avoid waking
-an idle core for tasks that will run very short. Now currently we don't
-have runtime estimation (anymore), but pjt's load tracking stuff would
-re-introduce that.
-
-Now if only pjt would re-surface... :-)
-
+--Andy
