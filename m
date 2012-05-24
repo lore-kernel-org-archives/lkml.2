@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2EXSyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 14:54:35 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8392 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab2EXSye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 14:54:34 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=9czN0PM_2i_WrB6jP5cA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337885672.13348.194.camel@gandalf.stny.rr.com>
-Subject: Re: tracing ring_buffer_resize oops.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Date: Thu, 24 May 2012 14:54:32 -0400
-In-Reply-To: <20120524184728.GA13201@redhat.com>
-References: <20120524160146.GA6226@redhat.com>
-	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
-	 <20120524172223.GA10689@redhat.com>
-	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
-	 <20120524184728.GA13201@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933022Ab2EXSyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 14:54:55 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:37748 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757446Ab2EXSyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 14:54:52 -0400
+Date: Thu, 24 May 2012 20:53:25 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: konrad.wilk@oracle.com
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org, giancarlo.asnaghi@st.com,
+        tony.luck@intel.com, fenghua.yu@intel.com, ralf@linux-mips.org,
+        gxt@mprc.pku.edu.cn, tglx@linutronix.de, kyungmin.park@samsung.com,
+        fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [PATCH] swiotlb: add "dma_attrs" argument to alloc and free,
+ to match dma_map_ops
+Message-ID: <20120524185325.GA16292@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20120524174741.GG24934@phenom.dumpdata.com>
+References: <20120524174741.GG24934@phenom.dumpdata.com>
+  <20120524114422.GA25950@mail.gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 14:47 -0400, Dave Jones wrote:
-> On Thu, May 24, 2012 at 01:35:14PM -0400, Steven Rostedt wrote:
+>> The alloc and free pointers within "struct dma_map_ops" receive a
+>> pointer to dma_attrs that was not present in the generic swiotlb
+>> functions.  For this reason, a few files had a local wrapper for the
+>> free function that just removes the attrs argument before calling the
+>> generic function.
+>> 
+>> This patch adds the extra argument to generic functions and removes
+>> such wrappers when they are no more needed.  This also fixes a
+>> compiler warning for sta2x11-fixup.c, that would have required yet
+>> another wrapper.
+
+> So .. what is this based on?
+
+Current linux-next. But it has been like this for a while. I had
+the warning in sta2x11-fixup.c pending for a while, and yesterday
+I raised the issue.
+
+> I see in mainline  alloc_coherent and free_coherent
+> which are obviously changed here.
+
+Do you refer to the swiotlb methods (I confirm they are changed, like
+all their users) or something else? I'm only changing the two methods
+in swiotlb, nothing else is affected.
+
+Actually, I wanted to call them alloc and free, like the field they
+are assigned to, but swiotlb_free is already there, to do something
+else.
+ 
+> Don't you also need to change these two files:
 > 
->  > Hmm, I wonder if this is the break point change :-/
->  > 
->  > Do you have NMIs enabled? I didn't have 'paranoid_exit' in my backtrace
->  > when I saw the bug.
-> 
-> $ grep NMI .config
-> CONFIG_OPROFILE_NMI_TIMER=y
-> CONFIG_HAVE_PERF_EVENTS_NMI=y
-> CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
-> CONFIG_HPWDT_NMI_DECODING=y
-> # CONFIG_DEBUG_NMI_SELFTEST is not set
+>  arch/x86/xen/pci-swiotlb-xen.c
+>  drivers/xen/swiotlb-xen.c
 
-Could you email your entire config. I haven't been able to trigger the
-bug again. Maybe your config might do it :-/
+No, because xen implements the dma_map_ops with the proper prototypes.
+I grepped for all users, and found these are not related.
 
-Also, how reproducible is it? When it triggered for me, it was constant.
-Every boot and test failed. But after I did the make mrproper, I have
-not been able to trigger it again. This is why I put it down as a bad
-build.
-
--- Steve
-
-
+Thank your for checking
+/alessandro
