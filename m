@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965167Ab2EXTwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:52:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932869Ab2EXTwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:52:19 -0400
-Date: Thu, 24 May 2012 15:52:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, bharrosh@panasas.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v2 08/14] block: Kill bi_destructor
-Message-ID: <20120524195202.GG27550@redhat.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
- <1337817771-25038-9-git-send-email-koverstreet@google.com>
+	id S966195Ab2EXT6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:58:15 -0400
+Received: from nm10.bullet.mail.ac4.yahoo.com ([98.139.52.207]:41579 "HELO
+	nm10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S966173Ab2EXT6A convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 15:58:00 -0400
+X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 May 2012 15:58:00 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 853623.23863.bm@omp1011.access.mail.mud.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=UA4Uudo1+Ig7BUgUrst7j6gLeX2KZGEimMTenPDtkoecQCjjdbdYnSUljFGrbCDZ49as9GzKIjqUnSjYIgb0v9G+4fLBU2A21vGAzACs7dn30wG33YpchSnMtea1BokEWnAo5wEQDGa24pt7eYZh34sr0XhZjIMWCyyS9djX5KM=;
+X-YMail-OSG: JV3FhJcVM1l9bFFlfkYAi0QVzqTMpuhKY6OzrL9Vkqo0L3e
+ QaIRtUdlk4rL.C0KrLUFSM89DOvVT6Ysiapz.SDQXKKpZMpBMi13LPyuza5k
+ GfbwgANvNtm2cPZnDnNibTQ.v93l.z8LPvX.T_oRfaRX7v5pu..psUwYY0ZV
+ OVxsBB345jxjbdyA8oslfYG16FVWpV30_.TNRsGpH2G_2ysYbhia1zb9ovMy
+ R_.HK4NLljrBAw0jJw0qBneByEy3GLYIAxitMl7p1bpIwb_UR6Z7cAiPRV7H
+ 1csOn1GKVnVWqQZR_FuRULbrcS.vDwNundB617fjH8JL67i9yyZST4U674tE
+ 7jLMwH6JpUjzYc0Eh647Rb1gpLqO52s7_09FYCQqx8iLt7VzxuINt6LxLS4T
+ uHX8SnqzMPLcMlVxtQ1QF8mA7sf5CnlqbnFmUhbnIHOKN8WsiEEwVtbvkczb
+ AySdMcqGFKeqY_8IrikJuun3lfFBEKnFgFJr.bMRKpsPBshS5gbiC
+X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
+Message-ID: <1337889128.10617.YahooMailClassic@web84515.mail.ne1.yahoo.com>
+Date: Thu, 24 May 2012 12:52:08 -0700 (PDT)
+From: kd6lvw@yahoo.com
+Subject: Re: Mounting /proc w/ kernel 3.4.0 - "uid" parameter no longer valid?
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337817771-25038-9-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 05:02:45PM -0700, Kent Overstreet wrote:
+--- On Thu, 5/24/12, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> "D. Stussy" <spam+newsgroups@bde-arc.ampr.org> writes:
+> > proc:  unrecognized mount option "uid=1" or missing value
+> >
+> > This works under 3.3.6 and earlier (I never tried 3.3.7).  It appears that the
+> > "uid" mount option was removed.  WHY?  More importantly, where is this change
+> > listed?  I didn't see it in the git log.
+> >
+> > This is really bad as I rebooted a remotely colocated server and since the
+> > procfs is not mounted, I cannot log in via SSH to correct the problem.
+> >
+> > OK, so there's not that much point in changing the UID of the procfs files, but
+> > I preferred to set their default ownership to a non-privileged user. 
+> 
+> There has never been a uid= option to /proc in Linus's tree.  I believe
+> if you look you will find this feature was from a patch (perhaps from
+> your distro) that added that support.
 
-[..]
-> @@ -234,6 +234,13 @@ void bio_free(struct bio *bio, struct bio_set *bs)
->  {
->  	void *p;
->  
-> +	if (!bs) {
-> +		if (bio_integrity(bio))
-> +			bio_integrity_free(bio, fs_bio_set);
-> +		kfree(bio);
-> +		return;
-> +	}
-> +
+I compile both the util-linux-ng and the kernel from source.  There is no distribution patch involved.  As noted, kernel version 3.3.6 didn't bitch about the setting, while 3.4.0 does and won't mount procfs.
 
-Ok, this seems to be the code which will take care of freeing kmalloced
-bio. I think putting little comment about the explicit assumption is not
-a bad idea.
+>From the man page (copy at "http://linux.die.net/man/8/mount"):
 
-Somehow we need to integrate two patches so that we don't have memory leak
-in bisection and reading code becomes easier.
+"Mount options for proc
 
-Also then what's the need of bio_reset() in previous patch. That seems to
-be independent from getting rid of pkt_bio_destructor(). I would think
-that keep we can split the patch and keep bio_reset() logic in a separate
-patch. In fact I am not even sure that for one driver we should introduce
-bio_reset() in generic block layer. So to me we should get rid of bio_reset()
-and let all the gory details remain in driver.
+     "uid=value and gid=value 
 
-Thanks
-Vivek
+"These options are recognized, but have no effect as far as I can see."
+
+
+Removal of this compatibility should have been noted.  WHERE was it noted?  Linux.die.net is a distribution independent documentation site.  It might not do anything, but per mount's documentation, it is acceptable.
+
