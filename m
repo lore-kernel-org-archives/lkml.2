@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab2EXLZT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 07:25:19 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37983 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab2EXLZR (ORCPT
+	id S932244Ab2EXLZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 07:25:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44828 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753957Ab2EXLZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 07:25:17 -0400
+	Thu, 24 May 2012 07:25:38 -0400
+From: Marc Reilly <marc@cpdesign.com.au>
+Reply-To: marc@cpdesign.com.au
+Organization: Creative Product Design
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
+Date: Thu, 24 May 2012 21:22:29 +1000
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.11-desktop; KDE/4.6.0; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@freescale.com>,
+        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>,
+        Fabio Estevam <festevam@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Philippe =?iso-8859-1?q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <201205221053.21792.marc@cpdesign.com.au> <201205241908.38278.marc@cpdesign.com.au> <20120524103749.GJ5361@opensource.wolfsonmicro.com>
+In-Reply-To: <20120524103749.GJ5361@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqc3MrwfDnf9iCRLCedapZOtOfmBb6E84ORgwmdP1fx8QA@mail.gmail.com>
-References: <20120523002645.GA3490@redhat.com> <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
- <CA+1xoqf0G3kDY3c4Gb=RkQZ8_L+but6-uUjtSVfvYUf6iL2_JA@mail.gmail.com>
- <20120524121056.24fbdcdb@pyramind.ukuu.org.uk> <CA+1xoqegLYLsP5yWw7d7oMngUSgZjXePJu_b6E-yw4aBE8Qhgg@mail.gmail.com>
- <CA+1xoqc3MrwfDnf9iCRLCedapZOtOfmBb6E84ORgwmdP1fx8QA@mail.gmail.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 24 May 2012 13:24:56 +0200
-Message-ID: <CA+1xoqeD3yyOgmLe_eQ_PS=HJA=93Syidtk6rq-K9dBoC-DOzQ@mail.gmail.com>
-Subject: Re: 3.4+ tty lockdep trace
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Ming Lei <tom.leiming@gmail.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: multipart/mixed; boundary=e89a8f2356c98f083304c0c68139
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205242122.29648.marc@cpdesign.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f2356c98f083304c0c68139
-Content-Type: text/plain; charset=ISO-8859-1
+Hi,
 
-On Thu, May 24, 2012 at 1:21 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Thu, May 24, 2012 at 1:20 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
->> On Thu, May 24, 2012 at 1:10 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>>> I'm still seeing the warning with this patch:
->>>
->>> Can you attach the trace that went with the trigger as well ?
->>
->> Ofcourse, attached as a file.
->
-> Heh, this was a different one as well. I'll try to get the one I got
-> in the morning again.
+On Thursday, May 24, 2012 08:37:49 PM Mark Brown wrote:
+> On Thu, May 24, 2012 at 07:08:37PM +1000, Marc Reilly wrote:
+> > I'm wondering about regmap_init where the buf_size is set up. I think it
+> > will
+> > 
+> > only end up being 3 bytes. I think line 249 should be something like:
+> > 	map->format.buf_size = (config->reg_bits
+> > 	
+> >                           + config->val_bits
+> > 					         
+> > 					         + (config->pad_bits % 8)) / 8;
+> > 
+> > or perhaps better:
+> > 	map->reg_shift = config->pad_bits % 8;
+> > 	map->format.buf_size = (config->reg_bits
+> > 	
+> >                           + config->val_bits
+> > 					         
+> > 					         + map->reg_shift) / 8;
+> 
+> Yes, that's been missed in the addition of padding.  We should also be
+> using DIV_ROUND_UP() which we aren't at the minute.  
 
-And here is the second one attached as well, so these are two
-different warnings I get with the new version.
+That would break, in _regmap_read_raw():
 
---e89a8f2356c98f083304c0c68139
-Content-Type: text/plain; charset=US-ASCII; name="tty_lockdep2.txt"
-Content-Disposition: attachment; filename="tty_lockdep2.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h2lqjtjq0
+	ret = map->bus->read(map->bus_context, map->work_buf,
+			     map->format.reg_bytes + map->format.pad_bytes,
+			     val, val_len);
 
-WyAgIDM5Ljg4ODExNV0gPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09ClsgICAzOS44ODgxMTVdIFsgSU5GTzogcG9zc2libGUgcmVjdXJzaXZlIGxvY2tpbmcgZGV0
-ZWN0ZWQgXQpbICAgMzkuODg4MTE1XSAzLjQuMC1uZXh0LTIwMTIwNTI0LXNhc2hhLTAwMDAyLWcx
-MWRjNjUxICMyNzMgVGFpbnRlZDogRyAgICAgICAgVyAgIApbICAgMzkuODg4MTE1XSAtLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KWyAgIDM5Ljg4ODExNV0gdHJp
-bml0eS80OTgwIGlzIHRyeWluZyB0byBhY3F1aXJlIGxvY2s6ClsgICAzOS44ODgxMTVdICAoJnR0
-eS0+bGVnYWN5X211dGV4KXsrLisuKy59LCBhdDogWzxmZmZmZmZmZjgyZjcxZmRiPl0gdHR5X2xv
-Y2tfbmVzdGVkKzB4N2IvMHg5MApbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gYnV0IHRh
-c2sgaXMgYWxyZWFkeSBob2xkaW5nIGxvY2s6ClsgICAzOS44ODgxMTVdICAoJnR0eS0+bGVnYWN5
-X211dGV4KXsrLisuKy59LCBhdDogWzxmZmZmZmZmZjgyZjcxZmRiPl0gdHR5X2xvY2tfbmVzdGVk
-KzB4N2IvMHg5MApbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gb3RoZXIgaW5mbyB0aGF0
-IG1pZ2h0IGhlbHAgdXMgZGVidWcgdGhpczoKWyAgIDM5Ljg4ODExNV0gIFBvc3NpYmxlIHVuc2Fm
-ZSBsb2NraW5nIHNjZW5hcmlvOgpbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gICAgICAg
-IENQVTAKWyAgIDM5Ljg4ODExNV0gICAgICAgIC0tLS0KWyAgIDM5Ljg4ODExNV0gICBsb2NrKCZ0
-dHktPmxlZ2FjeV9tdXRleCk7ClsgICAzOS44ODgxMTVdICAgbG9jaygmdHR5LT5sZWdhY3lfbXV0
-ZXgpOwpbICAgMzkuODg4MTE1XSAKWyAgIDM5Ljg4ODExNV0gICoqKiBERUFETE9DSyAqKioKWyAg
-IDM5Ljg4ODExNV0gClsgICAzOS44ODgxMTVdICBNYXkgYmUgZHVlIHRvIG1pc3NpbmcgbG9jayBu
-ZXN0aW5nIG5vdGF0aW9uClsgICAzOS44ODgxMTVdIApbICAgMzkuODg4MTE1XSAxIGxvY2sgaGVs
-ZCBieSB0cmluaXR5LzQ5ODA6ClsgICAzOS44ODgxMTVdICAjMDogICgmdHR5LT5sZWdhY3lfbXV0
-ZXgpeysuKy4rLn0sIGF0OiBbPGZmZmZmZmZmODJmNzFmZGI+XSB0dHlfbG9ja19uZXN0ZWQrMHg3
-Yi8weDkwClsgICAzOS44ODgxMTVdIApbICAgMzkuODg4MTE1XSBzdGFjayBiYWNrdHJhY2U6Clsg
-ICAzOS44ODgxMTVdIFBpZDogNDk4MCwgY29tbTogdHJpbml0eSBUYWludGVkOiBHICAgICAgICBX
-ICAgIDMuNC4wLW5leHQtMjAxMjA1MjQtc2FzaGEtMDAwMDItZzExZGM2NTEgIzI3MwpbICAgMzku
-ODg4MTE1XSBDYWxsIFRyYWNlOgpbICAgMzkuODg4MTE1XSAgWzxmZmZmZmZmZjgxMTQ4MDE5Pl0g
-cHJpbnRfZGVhZGxvY2tfYnVnKzB4MTE5LzB4MTQwClsgICAzOS44ODgxMTVdICBbPGZmZmZmZmZm
-ODExNGExOGU+XSB2YWxpZGF0ZV9jaGFpbisweDVlZS8weDc5MApbICAgMzkuODg4MTE1XSAgWzxm
-ZmZmZmZmZjgxMTFhNWY4Pl0gPyBzY2hlZF9jbG9ja19jcHUrMHgxMDgvMHgxMjAKWyAgIDM5Ljk3
-MzU1MF0gIFs8ZmZmZmZmZmY4MTE0YTc1Mz5dIF9fbG9ja19hY3F1aXJlKzB4NDIzLzB4NGMwClsg
-ICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODExNGE5N2E+XSBsb2NrX2FjcXVpcmUrMHgxOGEvMHgx
-ZTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MmY3MWZkYj5dID8gdHR5X2xvY2tfbmVzdGVk
-KzB4N2IvMHg5MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjZlNDEwPl0gX19tdXRleF9s
-b2NrX2NvbW1vbisweDYwLzB4NTkwClsgICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODJmNzFmZGI+
-XSA/IHR0eV9sb2NrX25lc3RlZCsweDdiLzB4OTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4
-MTE0YWVhMj5dID8gX19sb2NrX3JlbGVhc2UrMHgxYzIvMHgxZTAKWyAgIDM5Ljk3MzU1MF0gIFs8
-ZmZmZmZmZmY4MTBmNTI0MD5dID8gZmx1c2hfc2NoZWR1bGVkX3dvcmsrMHgyMC8weDIwClsgICAz
-OS45NzM1NTBdICBbPGZmZmZmZmZmODJmNzFmZGI+XSA/IHR0eV9sb2NrX25lc3RlZCsweDdiLzB4
-OTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MmY2ZWE3MD5dIG11dGV4X2xvY2tfbmVzdGVk
-KzB4NDAvMHg1MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjcxZmRiPl0gdHR5X2xvY2tf
-bmVzdGVkKzB4N2IvMHg5MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjcxZmZiPl0gdHR5
-X2xvY2srMHhiLzB4MTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MWIxNTVmNz5dIHR0eV9s
-ZGlzY19yZWxlYXNlKzB4NDcvMHhiMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxYjBmYzMz
-Pl0gdHR5X3JlbGVhc2UrMHg0NTMvMHg0ZDAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MTIz
-MmQ0YT5dIF9fZnB1dCsweDExYS8weDJjMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMjMy
-ZjA1Pl0gZnB1dCsweDE1LzB4MjAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MTIyZjIxMj5d
-IGZpbHBfY2xvc2UrMHg4Mi8weGEwClsgICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODEwZDY1MTQ+
-XSBjbG9zZV9maWxlcysweDFiNC8weDIwMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMGQ2
-MzYwPl0gPyB3YWl0X3Rhc2tfc3RvcHBlZCsweDNkMC8weDNkMApbICAgMzkuOTczNTUwXSAgWzxm
-ZmZmZmZmZjgxMGQ2NzI1Pl0gPyBleGl0X2ZpbGVzKzB4NDUvMHg2MApbICAgMzkuOTczNTUwXSAg
-WzxmZmZmZmZmZjgxMGQ2NTgxPl0gcHV0X2ZpbGVzX3N0cnVjdCsweDIxLzB4MTgwClsgICAzOS45
-NzM1NTBdICBbPGZmZmZmZmZmODJmNzFhMTA+XSA/IF9yYXdfc3Bpbl91bmxvY2srMHgzMC8weDYw
-ClsgICAzOS45NzM1NTBdICBbPGZmZmZmZmZmODEwZDY3MmQ+XSBleGl0X2ZpbGVzKzB4NGQvMHg2
-MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMGQ4OWYyPl0gZG9fZXhpdCsweDMyMi8weDUx
-MApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgxMGQ4YzgxPl0gZG9fZ3JvdXBfZXhpdCsweGEx
-LzB4ZTAKWyAgIDM5Ljk3MzU1MF0gIFs8ZmZmZmZmZmY4MTBkOGNkMj5dIHN5c19leGl0X2dyb3Vw
-KzB4MTIvMHgyMApbICAgMzkuOTczNTUwXSAgWzxmZmZmZmZmZjgyZjcyYmI5Pl0gc3lzdGVtX2Nh
-bGxfZmFzdHBhdGgrMHgxNi8weDFiCg==
---e89a8f2356c98f083304c0c68139--
+If pad_bytes was 1 here, then the register size would end up being 2 bytes.
+
+The way I understood the pad_bytes field was it was the number of _complete_ 
+padding bytes (ie, full 8 bits) between the register address and value. Any 
+remainder of padding bits is incorporated into the register and shifted by 
+shift bits.
+
+> We could also do
+> reg_bytes + pad_bytes + val_bytes which should cover everything I think?
+
+If we want to cover everything, we could do reg_bytes + pad_bytes + val_bytes 
++ 3 ... :) (I'm not seriously suggesting that).
+
+Cheers,
+Marc
