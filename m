@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933902Ab2EXSCE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 14:02:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65450 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933458Ab2EXSCB (ORCPT
+	id S934018Ab2EXSCW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 14:02:22 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:40613 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933532Ab2EXSCS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 14:02:01 -0400
-Date: Thu, 24 May 2012 11:01:54 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Thu, 24 May 2012 14:02:18 -0400
+Date: Thu, 24 May 2012 11:01:21 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [git pull] Input updates for 3.5-rc0
-Message-ID: <20120524180154.GA15036@core.coreip.homeip.net>
-References: <20120524083216.GD10562@core.coreip.homeip.net>
- <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
+        Pavel Emelyanov <xemul@parallels.com>,
+        James Bottomley <jbottomley@parallels.com>, ebiederm@xmission.com,
+        tj@kernel.org, skinsbursky@openvz.org
+Subject: Re: [rfc v2 0/7] procfs fdinfo extension v2
+Message-ID: <20120524180121.GK798@count0.beaverton.ibm.com>
+References: <20120523102541.382837149@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
+In-Reply-To: <20120523102541.382837149@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12052418-1780-0000-0000-000005DB5F3C
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000277; HX=3.00000188; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00142019; UDB=6.00032768; UTC=2012-05-24
+ 18:02:16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 10:33:49AM -0700, Linus Torvalds wrote:
-> On Thu, May 24, 2012 at 1:32 AM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > Hi Linus,
-> >
-> > to receive updates for the input subsystem. You will get:
-> 
-> I get an annoying conflict, and the reason I call it annoying is not
-> because it's hard to resolve, it's because doing that shows that you
-> seem to have preferred using
-> 
->    dev_dbg(&input->dev.parent, ...)
-> 
-> over the much more natural
-> 
->    dev_dbg(&input->dev, ...)
-> 
-> which would seem to make more sense.
-> 
-> Why? Are the input layer device names so bad that using them for debug
-> output is useless? And if so, why *are* they so bad?
-> 
-> I'm going to take your version over Greg's more straightforward one,
-> because I assume Greg did things a bit more mindlessly and I think you
-> presumably had a *reason* for your extra (stupid) ".parent" part. But
-> I'm unhappy with it, because I suspect the reason you did that implies
-> that the input layer does something bad.
+On Wed, May 23, 2012 at 02:25:41PM +0400, Cyrill Gorcunov wrote:
 
-A couple of points:
+<snip>
 
-1. A driver should try to use the same device for all its messages and
-input devices are not created yet at the time we try to bind USB
-interface to a driver. Most (all?) USB probe() methods use interface's
-device with dev_xxx() which shows exactly which interface we are dealing
-with.
+>  - finally it would be great to have ability to attach tasks to
+>    frozen tasks cgroup to thaw them at one moment (the preliminary
+>    patch I've proposed pretty long ago, but Tejun was modifying cgroups
+>    code and asked to wait until 3.4 is release, so I didn't check
+>    the current status of task cgroups at moment, I've it in my todo list)
 
-2. Input devices are essentially driver-less (they are class devices) and
-therefore do not provide useful information if used in messages as the
-format of the message would be:
+This still strikes me as the wrong way to go about freezing for c/r.
+You never explained why you had to do it this way. Why can't you inject
+the parasite thread, move that thread out of the cgroup-to-be-frozen,
+then freeze?
 
-	input inputX: some message
+As best I can tell your reply last time only fleshed out the details
+of *how* you would like it to work, not *why it needs to* work that way:
 
-which does not identify neitehr the driver nor hardware device.  By
-using input->dev.parent we get to the USB interface thus getting more
-meaningful messages:
+	http://lkml.org/lkml/2011/11/30/27
 
-	wacom 2-1.2:1.0: some error happened
+Cheers,
+	-Matt Helsley
 
-We had a discussion with Greg about this and he was going to change his
-patchset to use USB interfaces in the messages...
-
-Thanks.
-
--- 
-Dmitry
