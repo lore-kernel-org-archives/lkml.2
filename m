@@ -1,70 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966195Ab2EXT6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:58:15 -0400
-Received: from nm10.bullet.mail.ac4.yahoo.com ([98.139.52.207]:41579 "HELO
-	nm10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S966173Ab2EXT6A convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:58:00 -0400
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 May 2012 15:58:00 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 853623.23863.bm@omp1011.access.mail.mud.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=UA4Uudo1+Ig7BUgUrst7j6gLeX2KZGEimMTenPDtkoecQCjjdbdYnSUljFGrbCDZ49as9GzKIjqUnSjYIgb0v9G+4fLBU2A21vGAzACs7dn30wG33YpchSnMtea1BokEWnAo5wEQDGa24pt7eYZh34sr0XhZjIMWCyyS9djX5KM=;
-X-YMail-OSG: JV3FhJcVM1l9bFFlfkYAi0QVzqTMpuhKY6OzrL9Vkqo0L3e
- QaIRtUdlk4rL.C0KrLUFSM89DOvVT6Ysiapz.SDQXKKpZMpBMi13LPyuza5k
- GfbwgANvNtm2cPZnDnNibTQ.v93l.z8LPvX.T_oRfaRX7v5pu..psUwYY0ZV
- OVxsBB345jxjbdyA8oslfYG16FVWpV30_.TNRsGpH2G_2ysYbhia1zb9ovMy
- R_.HK4NLljrBAw0jJw0qBneByEy3GLYIAxitMl7p1bpIwb_UR6Z7cAiPRV7H
- 1csOn1GKVnVWqQZR_FuRULbrcS.vDwNundB617fjH8JL67i9yyZST4U674tE
- 7jLMwH6JpUjzYc0Eh647Rb1gpLqO52s7_09FYCQqx8iLt7VzxuINt6LxLS4T
- uHX8SnqzMPLcMlVxtQ1QF8mA7sf5CnlqbnFmUhbnIHOKN8WsiEEwVtbvkczb
- AySdMcqGFKeqY_8IrikJuun3lfFBEKnFgFJr.bMRKpsPBshS5gbiC
-X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
-Message-ID: <1337889128.10617.YahooMailClassic@web84515.mail.ne1.yahoo.com>
-Date: Thu, 24 May 2012 12:52:08 -0700 (PDT)
-From: kd6lvw@yahoo.com
-Subject: Re: Mounting /proc w/ kernel 3.4.0 - "uid" parameter no longer valid?
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org
+	id S966020Ab2EXT7b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:59:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37157 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966250Ab2EXT66 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 15:58:58 -0400
+Date: Thu, 24 May 2012 12:58:51 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 3.5-rc0
+Message-ID: <20120524195851.GA15306@core.coreip.homeip.net>
+References: <20120524083216.GD10562@core.coreip.homeip.net>
+ <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
+ <20120524180154.GA15036@core.coreip.homeip.net>
+ <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Thu, 5/24/12, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> "D. Stussy" <spam+newsgroups@bde-arc.ampr.org> writes:
-> > proc:  unrecognized mount option "uid=1" or missing value
+On Thu, May 24, 2012 at 11:21:20AM -0700, Linus Torvalds wrote:
+> On Thu, May 24, 2012 at 11:01 AM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
 > >
-> > This works under 3.3.6 and earlier (I never tried 3.3.7).  It appears that the
-> > "uid" mount option was removed.  WHY?  More importantly, where is this change
-> > listed?  I didn't see it in the git log.
-> >
-> > This is really bad as I rebooted a remotely colocated server and since the
-> > procfs is not mounted, I cannot log in via SSH to correct the problem.
-> >
-> > OK, so there's not that much point in changing the UID of the procfs files, but
-> > I preferred to set their default ownership to a non-privileged user. 
+> > A couple of points:
 > 
-> There has never been a uid= option to /proc in Linus's tree.  I believe
-> if you look you will find this feature was from a patch (perhaps from
-> your distro) that added that support.
+> *NEITHER* of your points actually address my issue.
+> 
+> If the "inputX" name is useless (and dammit, I agree), then why do you
+> continue to use it then?
+> 
+> IOW, why the hell do you set a name that is so useful that no sane
+> person would ever want to use it?
+> 
+> Basically, my complaint is that the input layer drivers end up doing
+> stupid things ("dev_dbg(input->dev.parent..") because the input layer
+> has done stupid things (dev_set_name(&dev->dev, "input%ld").
+> 
+> So let me be more blunt and direct: which part of "that's f*cking
+> stupid" do you disagree with?
+> 
+> So instead of making drivers do stupid things because you've made the
+> input layer names so damn useless, why don't you make the input layer
+> use better naming? Doesn't that seem to be the *smart* thing to do?
+> 
+> Wouldn't everybody be much happier if they saw useful names in the
+> device tree? And then the drivers could actually *use* those useful
+> names, instead of clearly saying "our names are so shitty that we have
+> to look up the parent name just to get a useful printout"?
+> 
+> Do people really *want* to see names like "input2" when working with a
+> keyboard? Do we have some stupid userlevel interface that requires
+> these useless and nondescriptive names that are so useless that even
+> the input layer itself doesn't want to use them?
+> 
+> Wouldn't it be *much* nicer if the input layer would, for example, do
+> something like
+> 
+>    dev_set_name(&dev->dev, "input-%s", dev_name(dev->dev.parent));
+> 
+> or whatever? Better yet, make it easy for the driver to say what it
+> is, so that it really can just say "wacom %s" or whatever.
+> 
+> Because the basic reason you seem to want to use "dev.parent" instead
+> of just "dev" *all* seem to boil down to a very simple reason:
+> 
+>  - other subsystems name their devices better, so you want to use
+> those better names
 
-I compile both the util-linux-ng and the kernel from source.  There is no distribution patch involved.  As noted, kernel version 3.3.6 didn't bitch about the setting, while 3.4.0 does and won't mount procfs.
+NO. What you seem to be missing is that the driver does not operate on
+an input device, input device is a _product_ of that driver. The error
+condition did not arise in input stack or input handler, the error
+condition happend on a physical device connected to a given USB port.
+And that is why it is proper to associate the error (in this case) with
+USB interface and USB driver that controls it. input_dev->dev.parent was
+just a convenient way of getting to this object but if it irks you I can
+stuff a device pointer in wacom_wac structure so that we use
 
->From the man page (copy at "http://linux.die.net/man/8/mount"):
+	dev_xxx(wacom->dev, "blah);
 
-"Mount options for proc
+instead.
 
-     "uid=value and gid=value 
+On  the topic of naming - nobody cares what input devices are called as
+long as they are unique. Userspace does not work with input devices
+directly (there is no API), they are working with iterfaces (such as
+evdev) that have their own interfaces and names. We could burden drivers
+to make sure they provide unique names, but that would not be optimal
+and most likely gotten wrong. Considering your
 
-"These options are recognized, but have no effect as far as I can see."
+	dev_set_name(&dev->dev, "input-%s", dev_name(dev->dev.parent));
 
+what happens if I unplug and replug my wacom tablet while event node is
+still opened and therefore all kobjects are still pinned into memory?
+The parent device's name is stuill the same so we'll fail to cretaed
+device with duplicate name. Extending with global counter? We could I
+guess, but why bother? If you check /sys/class/ most of the abstract
+devices do not care to have unique names. Is /sys/class/block/loop5 or
+/sys/class/rtc/rct0 or /sys/class/sound/card0 any better than
+/sys/class/input/inputX?
 
-Removal of this compatibility should have been noted.  WHERE was it noted?  Linux.die.net is a distribution independent documentation site.  It might not do anything, but per mount's documentation, it is acceptable.
+Thanks.
 
+-- 
+Dmitry
