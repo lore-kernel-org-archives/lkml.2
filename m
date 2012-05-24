@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965162Ab2EXUcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:32:43 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:50944 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933904Ab2EXUcm (ORCPT
+	id S965395Ab2EXUdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:33:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11312 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932979Ab2EXUdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:32:42 -0400
-Date: Thu, 24 May 2012 13:32:04 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Matt Helsley <matthltc@us.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "skinsbursky@openvz.org" <skinsbursky@openvz.org>
-Subject: Re: [rfc v2 0/7] procfs fdinfo extension v2
-Message-ID: <20120524203204.GM798@count0.beaverton.ibm.com>
-References: <20120523102541.382837149@openvz.org>
- <20120524180121.GK798@count0.beaverton.ibm.com>
- <4FBE907F.8040701@parallels.com>
- <20120524202739.GA26409@moon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524202739.GA26409@moon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052420-3270-0000-0000-0000069F7AB5
+	Thu, 24 May 2012 16:33:08 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=kjX7_rKuXr5PvPQUUXIA:9 a=UYWFLoxdwKkJ_VTLLGsA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337891586.13348.202.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kbuild@vger.kernel.org
+Date: Thu, 24 May 2012 16:33:06 -0400
+In-Reply-To: <1337890690.13348.199.camel@gandalf.stny.rr.com>
+References: <20120524160146.GA6226@redhat.com>
+	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
+	 <20120524184728.GA13201@redhat.com>
+	 <1337885672.13348.194.camel@gandalf.stny.rr.com>
+	 <20120524191147.GA13936@redhat.com>
+	 <1337887495.13348.195.camel@gandalf.stny.rr.com>
+	 <20120524200541.GA6552@redhat.com>
+	 <1337890690.13348.199.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 12:27:39AM +0400, Cyrill Gorcunov wrote:
-> On Thu, May 24, 2012 at 11:48:15PM +0400, Pavel Emelyanov wrote:
+On Thu, 2012-05-24 at 16:18 -0400, Steven Rostedt wrote:
+> On Thu, 2012-05-24 at 16:05 -0400, Dave Jones wrote:
+> > On Thu, May 24, 2012 at 03:24:55PM -0400, Steven Rostedt wrote:
+> >  > On Thu, 2012-05-24 at 15:11 -0400, Dave Jones wrote:
+> >  > 
+> >  > >  > Also, how reproducible is it? When it triggered for me, it was constant.
+> >  > >  > Every boot and test failed. But after I did the make mrproper, I have
+> >  > >  > not been able to trigger it again. This is why I put it down as a bad
+> >  > >  > build.
+> >  > > 
+> >  > > happens every time for me so far.
+> >  > 
+> >  > Did you also do a make mrproper and try again?
 > > 
-> > The thing is that we seem to have resolved all the issues with freezing/unfreezing
-> > the processes we're checkpoiting/restoring, and currently we are OK with the existing
-> > ptrace functionality. No more modifications of freeze cgroup are required.
+> > ok, that's nasty.  Works fine after a make clean.
 > > 
-> > Cyrill?
 > 
-> Oh, crap, sorry Matt, Pavel, indeed I somehow missed that this is not
-> "must have" anymore, this bullet should be dropped from list. Sorry again
-> guys for confusion.
+> Thanks for verifying. I'm thinking this is a build bug. Something's not
+> cleaning up properly. It may be with the recordmcount code. Perhaps
+> objects needed to change where the mcount calls are and did not?
+> 
+> I'll try other things to see if I can trigger this again. Then I'll save
+> off the build tree, do a make clean, rebuild, and compare what's
+> different.
+> 
 
-OK, no problem -- if anything I'm glad to have verification that this
-change is not needed.
+I'm kicking off the ktest that initially caused this issue hoping that
+it reproduces the bad tree again.
 
-Cheers,
-	-Matt
+BTW, did you happen to upgrade gcc or anything? The ktest I run does
+test against different gcc's and I don't think I had it do a make clean
+between the switch. That may be the cause of this problem too :-?
+
+-- Steve
+
 
