@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964980Ab2EXSHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 14:07:55 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36921 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964927Ab2EXSHx convert rfc822-to-8bit (ORCPT
+	id S965049Ab2EXSIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 14:08:23 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:59074 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S964792Ab2EXSIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 14:07:53 -0400
+	Thu, 24 May 2012 14:08:21 -0400
+Message-ID: <4FBE7915.2000704@xenotime.net>
+Date: Thu, 24 May 2012 11:08:21 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <4FBE5E3C.9070600@zytor.com>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk> <1337875681-20717-1-git-send-email-wad@chromium.org>
- <4FBE5E3C.9070600@zytor.com>
-From: Roland McGrath <mcgrathr@google.com>
-Date: Thu, 24 May 2012 11:07:31 -0700
-Message-ID: <CAB=4xhp3WYoD6RnY+Y=XV18RiCLOeT-dsDmHxAVUYpaSUMpZdA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] move the secure_computing call
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org, indan@nul.nu,
-        netdev@parisplace.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Hans de Goede <hdegoede@redhat.com>
+Subject: Re: linux-next: Tree for May 24 (hwmon/sch56xx)
+References: <20120524164915.fc6b1d90b75c50baab856280@canb.auug.org.au>
+In-Reply-To: <20120524164915.fc6b1d90b75c50baab856280@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 9:13 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I think this really screws with using seccomp for self-interception.  I
-> wouldn't inherently be opposed to the following flow:
->
->        seccomp -> ptrace -> seccomp
->
-> ... i.e. if ptrace is enabled and we enable something, run it through
-> seccomp again, but there are bunch of use cases (mostly involving
-> SIGSYS) where doing ptrace before seccomp is just bizarre.
+On 05/23/12 23:49, Stephen Rothwell wrote:
 
-Are you sure?  This is ptrace syscall tracing going first.
-If seccomp generates a SIGSYS, then ptrace will still get its opportunity
-to intercept the signal and change the register state however it likes.
+> Hi all,
+> 
+> Changes since 20120523:
 
 
-Thanks,
-Roland
+
+
+when CONFIG_WATCHDOG is not enabled:
+
+drivers/built-in.o: In function `sch56xx_watchdog_register':
+(.text+0x50711c): undefined reference to `watchdog_register_device'
+drivers/built-in.o: In function `sch56xx_watchdog_unregister':
+(.text+0x507171): undefined reference to `watchdog_unregister_device'
+
+or when SCH56XX_COMMON=m:
+
+ERROR: "watchdog_unregister_device" [drivers/hwmon/sch56xx-common.ko] undefined!
+ERROR: "watchdog_register_device" [drivers/hwmon/sch56xx-common.ko] undefined!
+
+
+-- 
+~Randy
