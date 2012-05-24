@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab2EXPCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 11:02:38 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:65108 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364Ab2EXPCh (ORCPT
+	id S1756626Ab2EXPDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 11:03:54 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:36569 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364Ab2EXPDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 11:02:37 -0400
+	Thu, 24 May 2012 11:03:53 -0400
+Message-ID: <4FBE4DD5.50906@xs4all.nl>
+Date: Thu, 24 May 2012 17:03:49 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1337779362-31259-2-git-send-email-b29396@freescale.com>
-References: <1337779362-31259-1-git-send-email-b29396@freescale.com>
-	<1337779362-31259-2-git-send-email-b29396@freescale.com>
-Date: Thu, 24 May 2012 17:02:34 +0200
-Message-ID: <CACRpkdbsWr73kGdLuHALWnLaAVLrwZg-eUXd8jAgrSxE_fKS4g@mail.gmail.com>
-Subject: Re: [PATCH RFC v3 2/3] pinctrl: add pinctrl_add_gpio_ranges function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Dong Aisheng <b29396@freescale.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linus.walleij@stericsson.com, swarren@wwwdotorg.org
+To: linux-kernel@vger.kernel.org
+Subject: pwc driver bugs
+X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 3:22 PM, Dong Aisheng <b29396@freescale.com> wrote:
+Hello,
 
-> From: Dong Aisheng <dong.aisheng@linaro.org>
->
-> Acked-by: Stephen Warren <swarren@wwwdotorg.org>
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> ---
-> ChangeLog v2->v3:
-> * remove pinctrl_remove_gpio_ranges function.
+I discovered some issues in the pwc driver for certain USB webcams.
+I opened some bugs[1].
+I do think both issues might be related and the crash issue is quite
+serious.
 
-Applied this v3 version of both patches as well.
+Please have a look, I can assist by testing any patches with fixes. (for
+~3.3.7)
 
-Yours,
-Linus Walleij
+Kind regards,
+Udo
+
+
+[1]: https://bugzilla.kernel.org/show_bug.cgi?id=43291  		
+     https://bugzilla.kernel.org/show_bug.cgi?id=43290
