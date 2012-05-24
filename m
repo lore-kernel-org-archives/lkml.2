@@ -1,108 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756809Ab2EXBl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 21:41:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37054 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409Ab2EXBl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 21:41:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="156465401"
-Message-ID: <4FBD9161.3040206@intel.com>
-Date: Thu, 24 May 2012 09:39:45 +0800
-From: "kun.jiang" <kunx.jiang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S932342Ab2EXBmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 21:42:03 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:35119 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755382Ab2EXBmA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 May 2012 21:42:00 -0400
+Message-ID: <4FBD914A.5040406@ce.jp.nec.com>
+Date: Thu, 24 May 2012 10:39:22 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        YMZHANG <yanmin_zhang@linux.intel.com>, davem@davemloft.net,
-        eric.dumazet@gmail.com
-Subject: [PATCH V2] ipv4: fix the rcu race between free_fib_info and ip_route_output_slow
+To: Kent Overstreet <koverstreet@google.com>
+CC: device-mapper development <dm-devel@redhat.com>, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org, tj@kernel.org,
+        linux-bcache@vger.kernel.org, mpatocka@redhat.com, agk@redhat.com,
+        bharrosh@panasas.com, linux-fsdevel@vger.kernel.org,
+        yehuda@hq.newdream.net, drbd-dev@lists.linbit.com, vgoyal@redhat.com,
+        sage@newdream.net
+Subject: Re: [dm-devel] [PATCH v2 02/14] dm: kill dm_rq_bio_destructor
+References: <1337817771-25038-1-git-send-email-koverstreet@google.com> <1337817771-25038-3-git-send-email-koverstreet@google.com> <4FBD7E80.4020005@ce.jp.nec.com> <20120524003915.GA27443@google.com> <4FBD8BD9.8070708@ce.jp.nec.com>
+In-Reply-To: <4FBD8BD9.8070708@ce.jp.nec.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+On 05/24/12 10:16, Jun'ichi Nomura wrote:
+> On 05/24/12 09:39, Kent Overstreet wrote:
+>> On Thu, May 24, 2012 at 09:19:12AM +0900, Jun'ichi Nomura wrote:
+>>> The destructor may also be called from blk_rq_unprep_clone(),
+>>> which just puts bio.
+>>> So this patch will introduce a memory leak.
+>>
+>> Well, keeping around bi_destructor solely for that reason would be
+>> pretty lousy. Can you come up with a better solution?
+> 
+> I don't have good one but here are some ideas:
+>   a) Do bio_endio() rather than bio_put() in blk_rq_unprep_clone()
+>      and let bi_end_io reap additional data.
+>      It looks ugly.
+>   b) Separate the constructor from blk_rq_prep_clone().
+>      dm has to do rq_for_each_bio loop again for constructor.
+>      Possible performance impact.
+>   c) Open code blk_rq_prep/unprep_clone() in dm.
+>      It exposes unnecessary block-internals to dm.
+>   d) Pass destructor function to blk_rq_prep/unprep_clone()
+>      for them to callback.
+> 
+> Umm, is "d)" better?
 
-We hit a kernel OOPS.
+I mean the patch like this:
 
-<3>[23898.789643] BUG: sleeping function called from invalid context at
-/data/buildbot/workdir/ics/hardware/intel/linux-2.6/arch/x86/mm/fault.c:1103
-<3>[23898.862215] in_atomic(): 0, irqs_disabled(): 0, pid: 10526, name:
-Thread-6683
-<4>[23898.967805] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.258526] Pid: 10526, comm: Thread-6683 Tainted: G        W
-3.0.8-137685-ge7742f9 #1
-<4>[23899.357404] HSU serial 0000:00:05.1: 0000:00:05.2:HSU serial prevented me
-to suspend...
-<4>[23899.904225] Call Trace:
-<4>[23899.989209]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.000416]  [<c1238c2a>] __might_sleep+0x10a/0x110
-<4>[23900.007357]  [<c1228021>] do_page_fault+0xd1/0x3c0
-<4>[23900.013764]  [<c18e9ba9>] ? restore_all+0xf/0xf
-<4>[23900.024024]  [<c17c007b>] ? napi_complete+0x8b/0x690
-<4>[23900.029297]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.123739]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.128955]  [<c18ea0c3>] error_code+0x5f/0x64
-<4>[23900.133466]  [<c1227f50>] ? pgtable_bad+0x130/0x130
-<4>[23900.138450]  [<c17f6298>] ? __ip_route_output_key+0x698/0x7c0
-<4>[23900.144312]  [<c17f5f8d>] ? __ip_route_output_key+0x38d/0x7c0
-<4>[23900.150730]  [<c17f63df>] ip_route_output_flow+0x1f/0x60
-<4>[23900.156261]  [<c181de58>] ip4_datagram_connect+0x188/0x2b0
-<4>[23900.161960]  [<c18e981f>] ? _raw_spin_unlock_bh+0x1f/0x30
-<4>[23900.167834]  [<c18298d6>] inet_dgram_connect+0x36/0x80
-<4>[23900.173224]  [<c14f9e88>] ? _copy_from_user+0x48/0x140
-<4>[23900.178817]  [<c17ab9da>] sys_connect+0x9a/0xd0
-<4>[23900.183538]  [<c132e93c>] ? alloc_file+0xdc/0x240
-<4>[23900.189111]  [<c123925d>] ? sub_preempt_count+0x3d/0x50
-
-Function free_fib_info resets nexthop_nh->nh_dev to NULL before releasing
-fi. Other cpu might be accessing fi. Fixing it by delaying the releasing.
-
-With the patch, we ran MTBF testing on Android mobile for 12 hours
-and didn't trigger the issue.
-
-Thank Eric for very detailed review/checking the issue.
-
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: Kun Jiang <kunx.jiang@intel.com>
----
- net/ipv4/fib_semantics.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/net/ipv4/fib_semantics.c b/net/ipv4/fib_semantics.c
-index 5063fa3..8861f91 100644
---- a/net/ipv4/fib_semantics.c
-+++ b/net/ipv4/fib_semantics.c
-@@ -145,6 +145,12 @@ static void free_fib_info_rcu(struct rcu_head *head)
+Index: linux-3.4/block/blk-core.c
+===================================================================
+--- linux-3.4.orig/block/blk-core.c	2012-05-21 07:29:13.000000000 +0900
++++ linux-3.4/block/blk-core.c	2012-05-24 11:15:40.562817784 +0900
+@@ -2596,17 +2596,20 @@
+ /**
+  * blk_rq_unprep_clone - Helper function to free all bios in a cloned request
+  * @rq: the clone request to be cleaned up
++ * @bio_dtr: cleanup function to be called for each clone bio.
+  *
+  * Description:
+  *     Free all bios in @rq for a cloned request.
+  */
+-void blk_rq_unprep_clone(struct request *rq)
++void blk_rq_unprep_clone(struct request *rq, void (*bio_dtr)(struct bio *))
  {
- 	struct fib_info *fi = container_of(head, struct fib_info, rcu);
+ 	struct bio *bio;
  
-+	change_nexthops(fi) {
-+		if (nexthop_nh->nh_dev)
-+			dev_put(nexthop_nh->nh_dev);
-+	} endfor_nexthops(fi);
-+
-+	release_net(fi->fib_net);
- 	if (fi->fib_metrics != (u32 *) dst_default_metrics)
- 		kfree(fi->fib_metrics);
- 	kfree(fi);
-@@ -156,13 +162,7 @@ void free_fib_info(struct fib_info *fi)
- 		pr_warn("Freeing alive fib_info %p\n", fi);
- 		return;
+ 	while ((bio = rq->bio) != NULL) {
+ 		rq->bio = bio->bi_next;
+ 
++		if (bio_dtr)
++			bio_dtr(bio);
+ 		bio_put(bio);
  	}
--	change_nexthops(fi) {
--		if (nexthop_nh->nh_dev)
--			dev_put(nexthop_nh->nh_dev);
--		nexthop_nh->nh_dev = NULL;
--	} endfor_nexthops(fi);
- 	fib_info_cnt--;
--	release_net(fi->fib_net);
- 	call_rcu(&fi->rcu, free_fib_info_rcu);
+ }
+@@ -2636,6 +2639,7 @@
+  * @gfp_mask: memory allocation mask for bio
+  * @bio_ctr: setup function to be called for each clone bio.
+  *           Returns %0 for success, non %0 for failure.
++ * @bio_dtr: cleanup function to be called for each clone bio.
+  * @data: private data to be passed to @bio_ctr
+  *
+  * Description:
+@@ -2650,7 +2654,7 @@
+ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
+ 		      struct bio_set *bs, gfp_t gfp_mask,
+ 		      int (*bio_ctr)(struct bio *, struct bio *, void *),
+-		      void *data)
++		      void (*bio_dtr)(struct bio *), void *data)
+ {
+ 	struct bio *bio, *bio_src;
+ 
+@@ -2687,7 +2691,7 @@
+ free_and_out:
+ 	if (bio)
+ 		bio_free(bio, bs);
+-	blk_rq_unprep_clone(rq);
++	blk_rq_unprep_clone(rq, bio_dtr);
+ 
+ 	return -ENOMEM;
+ }
+Index: linux-3.4/drivers/md/dm.c
+===================================================================
+--- linux-3.4.orig/drivers/md/dm.c	2012-05-24 11:12:52.000000000 +0900
++++ linux-3.4/drivers/md/dm.c	2012-05-24 11:24:06.325803254 +0900
+@@ -701,6 +701,7 @@
+ 	struct bio *bio = info->orig;
+ 	unsigned int nr_bytes = info->orig->bi_size;
+ 
++	free_bio_info(info);
+ 	bio_put(clone);
+ 
+ 	if (tio->error)
+@@ -763,11 +764,12 @@
+ 	dm_put(md);
  }
  
--- 
-1.7.1
++static void dm_rq_bio_destructor(struct bio *bio);
+ static void free_rq_clone(struct request *clone)
+ {
+ 	struct dm_rq_target_io *tio = clone->end_io_data;
+ 
+-	blk_rq_unprep_clone(clone);
++	blk_rq_unprep_clone(clone, dm_rq_bio_destructor);
+ 	free_rq_tio(tio);
+ }
+ 
+@@ -1461,10 +1463,8 @@
+ static void dm_rq_bio_destructor(struct bio *bio)
+ {
+ 	struct dm_rq_clone_bio_info *info = bio->bi_private;
+-	struct mapped_device *md = info->tio->md;
+ 
+ 	free_bio_info(info);
+-	bio_free(bio, md->bs);
+ }
+ 
+ static int dm_rq_bio_constructor(struct bio *bio, struct bio *bio_orig,
+@@ -1481,7 +1481,6 @@
+ 	info->tio = tio;
+ 	bio->bi_end_io = end_clone_bio;
+ 	bio->bi_private = info;
+-	bio->bi_destructor = dm_rq_bio_destructor;
+ 
+ 	return 0;
+ }
+@@ -1492,7 +1491,7 @@
+ 	int r;
+ 
+ 	r = blk_rq_prep_clone(clone, rq, tio->md->bs, GFP_ATOMIC,
+-			      dm_rq_bio_constructor, tio);
++			      dm_rq_bio_constructor, dm_rq_bio_destructor, tio);
+ 	if (r)
+ 		return r;
+ 
+Index: linux-3.4/include/linux/blkdev.h
+===================================================================
+--- linux-3.4.orig/include/linux/blkdev.h	2012-05-21 07:29:13.000000000 +0900
++++ linux-3.4/include/linux/blkdev.h	2012-05-24 11:20:53.455808958 +0900
+@@ -678,8 +678,8 @@
+ extern int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
+ 			     struct bio_set *bs, gfp_t gfp_mask,
+ 			     int (*bio_ctr)(struct bio *, struct bio *, void *),
+-			     void *data);
+-extern void blk_rq_unprep_clone(struct request *rq);
++			     void (*bio_dtr)(struct bio *), void *data);
++extern void blk_rq_unprep_clone(struct request *rq, void (*bio_dtr)(struct bio *));
+ extern int blk_insert_cloned_request(struct request_queue *q,
+ 				     struct request *rq);
+ extern void blk_delay_queue(struct request_queue *, unsigned long);
