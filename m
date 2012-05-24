@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab2EXW4R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 18:56:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43612 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637Ab2EXW4P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 18:56:15 -0400
-Date: Thu, 24 May 2012 15:56:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: ShuoX Liu <shuox.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        andi@firstfloor.org, Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v2] printk: ignore recursion_bug flag in HW error handle
- process
-Message-Id: <20120524155611.b7aeff4d.akpm@linux-foundation.org>
-In-Reply-To: <20120524061145.GA18284@liondog.tnic>
-References: <4FBC444A.6060500@intel.com>
-	<20120523100138.GA13506@x1.osrc.amd.com>
-	<4FBDCE4A.7050900@intel.com>
-	<20120524061145.GA18284@liondog.tnic>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754765Ab2EXW5M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 18:57:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58405 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752345Ab2EXW5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 18:57:09 -0400
+Date: Thu, 24 May 2012 18:57:03 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: tracing ring_buffer_resize oops.
+Message-ID: <20120524225703.GA31149@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@redhat.com>
+References: <20120524160146.GA6226@redhat.com>
+ <1337876398.13348.178.camel@gandalf.stny.rr.com>
+ <20120524172223.GA10689@redhat.com>
+ <1337880914.13348.189.camel@gandalf.stny.rr.com>
+ <20120524184728.GA13201@redhat.com>
+ <1337885672.13348.194.camel@gandalf.stny.rr.com>
+ <20120524191147.GA13936@redhat.com>
+ <1337887495.13348.195.camel@gandalf.stny.rr.com>
+ <20120524200541.GA6552@redhat.com>
+ <1337899781.13348.208.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337899781.13348.208.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 May 2012 08:11:45 +0200
-Borislav Petkov <bp@alien8.de> wrote:
+On Thu, May 24, 2012 at 06:49:41PM -0400, Steven Rostedt wrote:
+ > On Thu, 2012-05-24 at 16:05 -0400, Dave Jones wrote:
+ > > On Thu, May 24, 2012 at 03:24:55PM -0400, Steven Rostedt wrote:
+ > >  > On Thu, 2012-05-24 at 15:11 -0400, Dave Jones wrote:
+ > >  > 
+ > >  > >  > Also, how reproducible is it? When it triggered for me, it was constant.
+ > >  > >  > Every boot and test failed. But after I did the make mrproper, I have
+ > >  > >  > not been able to trigger it again. This is why I put it down as a bad
+ > >  > >  > build.
+ > >  > > 
+ > >  > > happens every time for me so far.
+ > >  > 
+ > >  > Did you also do a make mrproper and try again?
+ > > 
+ > > ok, that's nasty.  Works fine after a make clean.
+ > > 
+ > 
+ > Hmm, I did two make mrproper builds and they both failed. So this isn't
+ > a build issue. Must just be some nasty race. I'm still leaning that this
+ > has to do with the breakpoint function tracing updates.
+ > 
+ > Looking deeper into it.
+ > 
+ > -- Steve
 
-> > +/* HW error handle status helpers */
-> > +extern atomic_t hw_error;
-> > +static inline void hw_error_enter(void)
-> > +{
-> > +	atomic_inc(&hw_error);
-> > +}
-> > +
-> > +static inline void hw_error_exit(void)
-> > +{
-> > +	atomic_dec(&hw_error);
-> > +}
-> > +
-> > +static inline int in_hw_error(void)
-> > +{
-> > +	return atomic_read(&hw_error);
-> > +}
-> 
-> Shouldn't those be generic empty functions and each arch implement their
-> own with the stuff they want to do on the respective architecture when
-> they get a hardware error?
+Possibly unrelated, but I found that it only worked once per boot. Is that expected ?
 
-This code needs documentation.
+echo irqsoff > current_tracer
+echo latency-format > trace_options
+echo 0 > tracing_max_latency
+echo 1 > tracing_on
+blah
+echo 0 > tracing_on
+cat trace
 
-Specifically, it should clearly explain (and hence define) what a
-"hardware error" *is*, and for what purpose this code exists.
+showed me a trace as I expected
 
-Because as it stands, this interface is hopelessly vague.  Once one
-sees that it is *specifically* used for handling mce within a printk,
-it all makes sense.
+repeating the same commands then got me an empty trace.
 
-And with that understanding comes the realisation that the interface is
-poorly named.  It will not be used for any purpose other than adjusting
-printk() behavior so it should mention printk() in its name and in its
-comments and probably it should all be moved into printk.h.
+what gives ?
 
-Futhermore, this code is not really related to MCE or hardware or
-anything else.  It is simply a way in which callers can suppress
-printk()'s recursion check.  Callers are free to use it for reasons
-other than "hardware errors".
+	Dave
 
-And once all that is done, and this interface becomes part of printk()
-then no, there is no need to add per-arch hooks.  An arch can call into
-printk_recursion_check_disable() and printk_recursion_chack_enable() -
-nice and simple.
-
-
-IOW, the title of this patch should be
-
-	[patch 1/2] printk: add interface for disabling recursion check
-	[patch 2/2] x86 mce: use new printk recursion disabling interface
