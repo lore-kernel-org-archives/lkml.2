@@ -1,56 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759507Ab2EXX5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:57:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33030 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758408Ab2EXX5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:57:47 -0400
-Message-ID: <4FBECAC2.6050303@zytor.com>
-Date: Thu, 24 May 2012 16:56:50 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S933850Ab2EXX7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 19:59:17 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:35349 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933380Ab2EXX7O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 19:59:14 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
+        Colin Cross <ccross@android.com>, Magnus Damm <magnus.damm@gmail.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: Re: [Update 2x][RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
+Organization: Texas Instruments, Inc.
+References: <201205092340.26561.rjw@sisk.pl> <201205162229.38252.rjw@sisk.pl>
+	<87sjeqzge3.fsf@ti.com> <201205241817.43541.rjw@sisk.pl>
+Date: Thu, 24 May 2012 16:59:11 -0700
+In-Reply-To: <201205241817.43541.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Thu, 24 May 2012 18:17:43 +0200")
+Message-ID: <87zk8xp1v4.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Andrew Lutomirski <luto@mit.edu>
-CC: James Morris <jmorris@namei.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, mcgrathr@google.com, indan@nul.nu,
-        netdev@parisplace.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk
-Subject: Re: [RFC PATCH 0/3] move the secure_computing call
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk> <1337875681-20717-1-git-send-email-wad@chromium.org> <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org> <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
-In-Reply-To: <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 04:43 PM, Andrew Lutomirski wrote:
-> 
-> IMO the behavior should change.  Alternatively, a post-ptrace syscall
-> should have to pass the *tracer's* seccomp filter, but that seems
-> overcomplicated and confusing.
-> 
-> OTOH, allowing ptrace in a seccomp filter is asking for trouble anyway
-> -- if you can ptrace something outside the sandbox, you've escaped.
-> 
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-This is my suggestion: if there is demand, make it possible to install a
-*second* seccomp filter program which is run on the result of the
-ptrace.  I.e.:
+> On Thursday, May 24, 2012, Kevin Hilman wrote:
+>> Hi Rafael,
+>> 
+>> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+>> 
+>> > From: Rafael J. Wysocki <rjw@sisk.pl>
+>> >
+>> > On some systems there are CPU cores located in the same power
+>> > domains as I/O devices.  Then, power can only be removed from the
+>> > domain if all I/O devices in it are not in use and the CPU core
+>> > is idle.  Add preliminary support for that to the generic PM domains
+>> > framework.
+>> >
+>> > First, the platform is expected to provide a cpuidle driver with one
+>> > extra state designated for use with the generic PM domains code.
+>> > This state should be initially disabled and its exit_latency value
+>> > should be set to whatever time is needed to bring up the CPU core
+>> > itself after restoring power to it, not including the domain's
+>> > power on latency.  Its .enter() callback should point to a procedure
+>> > that will remove power from the domain containing the CPU core at
+>> > the end of the CPU power transition.
+>> >
+>> > The remaining characteristics of the extra cpuidle state, referred to
+>> > as the "domain" cpuidle state below, (e.g. power usage, target
+>> > residency) should be populated in accordance with the properties of
+>> > the hardware.
+>> >
+>> > Next, the platform should execute genpd_attach_cpuidle() on the PM
+>> > domain containing the CPU core.  That will cause the generic PM
+>> > domains framework to treat that domain in a special way such that:
+>> >
+>> >  * When all devices in the domain have been suspended and it is about
+>> >    to be turned off, the states of the devices will be saved, but
+>> >    power will not be removed from the domain.  Instead, the "domain"
+>> >    cpuidle state will be enabled so that power can be removed from
+>> >    the domain when the CPU core is idle and the state has been chosen
+>> >    as the target by the cpuidle governor.
+>> >
+>> >  * When the first I/O device in the domain is resumed and
+>> >    __pm_genpd_poweron(() is called for the first time after
+>> >    power has been removed from the domain, the "domain" cpuidle
+>> >    state will be disabled to avoid subsequent surprise power removals
+>> >    via cpuidle.
+>> 
+>> This looks like a good approach.  I like that it keeps a pretty clean
+>> separation between CPUidle and PM domains.
+>> 
+>> My only comment would be that the recalc of the exit_latency should be
+>> described a bit more.  Specifically, I'm not sure why it's adjused at
+>> every genpd poweron.  At first I thought it was just supposed to be
+>> adjusted upon attach, then adjusted back on detatch, but with the recalc
+>> also in every poweron, I'm a little confused.  Care to clarify?
+>
+> The problem is that the PM domains code measures the time it takes to
+> power off a domain and updates its power on latency parameter if the
+> measured time is greater.  This is done for PM QoS to operate on realistic
+> numbers (most of the time at least).
 
-Untraced:	process -> seccomp1 -> kernel
+OK, I see.  Maybe clarifying that in the changelog would help make that
+clearer.
 
-Traced:		process -> seccomp1 -> ptrace -> seccomp2 -> kernel
+> Of course, this also affects the CPU wakeup latency if the wakeup involves
+> turning a domain on.
 
-This is something we could add later if there is demand.
+Right.
 
-	-hpa
-
-
+Kevin
