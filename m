@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab2EXDE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 23:04:27 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55388 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab2EXDE0 (ORCPT
+	id S932917Ab2EXDJA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 23:09:00 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58783 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756780Ab2EXDI7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 23:04:26 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-8a-4fbda5377e6b
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>
-Cc: Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf, x86: Make cycles:p working on SNB
-Date: Thu, 24 May 2012 12:02:05 +0900
-Message-Id: <1337828525-1789-1-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.1
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 23 May 2012 23:08:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205222029590.28165@chino.kir.corp.google.com>
+References: <CABawtvNSYENtrJTaB5Vfd+j5MahE=xv4Ueb6-zmd1CHShuU0iQ@mail.gmail.com>
+	<alpine.DEB.2.00.1205222029590.28165@chino.kir.corp.google.com>
+Date: Thu, 24 May 2012 11:08:58 +0800
+Message-ID: <CABawtvM-ZzFvT3LLb5V2bm52odeSyxeQwwvbVXgrNcMX5WMrbQ@mail.gmail.com>
+Subject: Re: ACPI and NUMA guys, please help to check if this patch is OK
+From: ethan zhao <ethan.kernel@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-kernel@vger.kernel.org, Kurt Garloff <kurt@garloff.de>,
+        Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel SDM (Vol.3B 18-55, Table 18-21) says the PEBS
-is only work for INST_RETIRED.PREC_DIST (0x01C0) and it's
-applied into intel_snb_pebs_event_constraints already.
-Thus, current alt_config which has umake set to 0 cannot
-work on SNBs and the output will look like below:
+David,
+    What we can do to help improving Linux OS is only about fatal
+error ? Can I do something to give more clear warning information and
+easy to find the root cause ?
 
- namhyung@sejong:perf$ ./perf stat -e cycles:p noploop 1
+Thanks,
+Ethan
 
- Performance counter stats for 'noploop 1':
-
-   <not supported> cycles
-
-       1.001116732 seconds time elapsed
-
-After applying this patch, the event is counted properly.
-
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 166546ec6aef..db8948171e22 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1329,6 +1329,12 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 		 */
- 		u64 alt_config = X86_CONFIG(.event=0xc0, .inv=1, .cmask=16);
- 
-+		/*
-+		 * SNB introduced INST_RETIRED.PREC_DIST for this purpose.
-+		 */
-+		if (x86_pmu.pebs_constraints == intel_snb_pebs_event_constraints)
-+			alt_config = X86_CONFIG(.event=0xc0, .umask=0x01,
-+						.inv=1, .cmask=16);
- 
- 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
- 		event->hw.config = alt_config;
--- 
-1.7.10.1
-
+On Wed, May 23, 2012 at 11:30 AM, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 23 May 2012, ethan zhao wrote:
+>
+>> [PATCH] drivers/acpi/numa.c: Add localities checking code against
+>> proximity domains to slit_valid()
+>>
+>>  Some buggy BIOS/ACPI will set different number to SLIT localities and
+>> SRAT proximity domains,
+>>  That will make NUMA configuration invalid and kernel will output
+>> information like following
+>>
+>> NUMA:Warning:invalid distance parameter, from=-1 to=-1 distance=83
+>>
+>> This patch adds some checking code to slit_valid() function in order
+>> to check theSLIT localities
+>> count against SRAT proximity domains number and give clear information
+>> about ACPI bug.
+>>
+>> Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+>
+> There's nothing in the ACPI spec that prohibits this and the result is
+> non-fatal (it only emits a warning of the mismatch), so this patch is
+> unnecessary.
