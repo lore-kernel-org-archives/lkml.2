@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab2EXPMq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 11:12:46 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:47084 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756730Ab2EXPMp (ORCPT
+	id S932459Ab2EXPPX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 11:15:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44797 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab2EXPPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 11:12:45 -0400
-Message-ID: <4FBE4FE7.3010005@atmel.com>
-Date: Thu, 24 May 2012 17:12:39 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Thu, 24 May 2012 11:15:21 -0400
+Message-ID: <4FBE5085.2090904@gmail.com>
+Date: Thu, 24 May 2012 08:15:17 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "Ludovic Desroches" <ludovic.desroches@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] at91: platform data for atmel-mci (for 3.5)
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, linux-ia64@vger.kernel.org,
+        linux-mips@linux-mips.org,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] swiotlb: add "dma_attrs" argument to alloc and free,
+ to match dma_map_ops
+References: <20120524114422.GA25950@mail.gnudd.com>
+In-Reply-To: <20120524114422.GA25950@mail.gnudd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd, hi Olof,
+On 05/24/2012 04:44 AM, Alessandro Rubini wrote:
+> The alloc and free pointers within "struct dma_map_ops" receive a
+> pointer to dma_attrs that was not present in the generic swiotlb
+> functions.  For this reason, a few files had a local wrapper for the
+> free function that just removes the attrs argument before calling the
+> generic function.
+>
+> This patch adds the extra argument to generic functions and removes
+> such wrappers when they are no more needed.  This also fixes a
+> compiler warning for sta2x11-fixup.c, that would have required yet
+> another wrapper.
+>
+> Signed-off-by: Alessandro Rubini<rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi<giancarlo.asnaghi@st.com>
+> Cc: Tony Luck<tony.luck@intel.com>
+> Cc: Fenghua Yu<fenghua.yu@intel.com>
+> Cc: Ralf Baechle<ralf@linux-mips.org>
+> Cc: Guan Xuetao<gxt@mprc.pku.edu.cn>
+> Cc: Thomas Gleixner<tglx@linutronix.de>
+> Cc: Kyungmin Park<kyungmin.park@samsung.com>
+> Cc: FUJITA Tomonori<fujita.tomonori@lab.ntt.co.jp>
+> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
+> ---
+>   arch/ia64/kernel/pci-swiotlb.c       |   11 ++---------
+>   arch/mips/cavium-octeon/dma-octeon.c |    4 ++--
+>   arch/unicore32/mm/dma-swiotlb.c      |   22 ++--------------------
+>   arch/x86/kernel/pci-swiotlb.c        |   11 ++---------
+>   arch/x86/pci/sta2x11-fixup.c         |    3 ++-
+>   include/linux/swiotlb.h              |    7 ++++---
+>   lib/swiotlb.c                        |    5 +++--
+>   7 files changed, 17 insertions(+), 46 deletions(-)
+>
 
-Here is an additional AT91 patch for 3.5 concerning platform data
-related to atmel-mci driver. It is maybe a bit late on your side
-but you can choose to sent it during 3.5-rc cycle considering the
-reasons that I give in the tag comment...
+This looks sane (although I haven't tested it).  For the OCTEON bits:
 
-If you feel it does not have to integrate 3.5, having it in
-a kind of "staging" or "late" branch can help us to exercise it
-in linux-next.
+Acked-by: David Daney <david.daney@cavium.com>
 
-(is merges seamlessly with current Linus' tree as the commit that I have
-based my tag upon is already integrated upstream)
 
-The following changes since commit cce783c608fee0716cff65926d1835a5fd097b69:
-
-  ARM: at91: Add DT description files for AT91SAM9N12-EK (2012-04-28 01:40:27 +0800)
-
-are available in the git repository at:
-
-  git://github.com/at91linux/linux-at91.git tags/at91-for-next-soc
-
-for you to fetch changes up to 6df5c23817852e865c452e72414063acd0cd7309:
-
-  ARM: at91: add atmel-mci support for chips and boards which can use it (2012-05-21 12:30:41 +0200)
-
-----------------------------------------------------------------
-This addition of platform data for atmel-mci driver in AT91 SoC & boards
-will temporary overload the information for at91_mci driver.
-This situation will end in 3.7 when the at91_mci driver marked deprecated
-will be removed. At this time, all platform data for this old driver will
-be erased from all SoC & boards files.
-The sooner we provide elements for people to switch to this newer and more
-stable driver, the better we will run this transition.
-
-----------------------------------------------------------------
-Ludovic Desroches (1):
-      ARM: at91: add atmel-mci support for chips and boards which can use it
-
- arch/arm/mach-at91/at91rm9200_devices.c  |   99 ++++++++++++++++++
- arch/arm/mach-at91/at91sam9261_devices.c |   67 ++++++++++++
- arch/arm/mach-at91/at91sam9263.c         |    2 +
- arch/arm/mach-at91/at91sam9263_devices.c |  164 ++++++++++++++++++++++++++++++
- arch/arm/mach-at91/at91sam9rl_devices.c  |   70 +++++++++++++
- arch/arm/mach-at91/board-afeb-9260v1.c   |   14 +++
- arch/arm/mach-at91/board-carmeva.c       |   14 +++
- arch/arm/mach-at91/board-cpu9krea.c      |   14 +++
- arch/arm/mach-at91/board-cpuat91.c       |   14 +++
- arch/arm/mach-at91/board-csb337.c        |   14 +++
- arch/arm/mach-at91/board-eb9200.c        |   14 +++
- arch/arm/mach-at91/board-ecbat91.c       |   14 +++
- arch/arm/mach-at91/board-eco920.c        |   14 +++
- arch/arm/mach-at91/board-flexibity.c     |   14 +++
- arch/arm/mach-at91/board-foxg20.c        |   16 ++-
- arch/arm/mach-at91/board-kb9202.c        |   14 +++
- arch/arm/mach-at91/board-neocore926.c    |   14 +++
- arch/arm/mach-at91/board-picotux200.c    |   14 +++
- arch/arm/mach-at91/board-qil-a9260.c     |   14 +++
- arch/arm/mach-at91/board-rm9200dk.c      |   14 +++
- arch/arm/mach-at91/board-rm9200ek.c      |   14 +++
- arch/arm/mach-at91/board-rsi-ews.c       |   14 +++
- arch/arm/mach-at91/board-sam9-l9260.c    |   16 ++-
- arch/arm/mach-at91/board-sam9260ek.c     |   16 ++-
- arch/arm/mach-at91/board-sam9261ek.c     |   14 +++
- arch/arm/mach-at91/board-sam9263ek.c     |   14 +++
- arch/arm/mach-at91/board-sam9rlek.c      |   14 +++
- arch/arm/mach-at91/board-usb-a926x.c     |    2 +-
- arch/arm/mach-at91/board-yl-9200.c       |   14 +++
- 29 files changed, 728 insertions(+), 4 deletions(-)
-
-Thanks, best regards,
--- 
-Nicolas Ferre
