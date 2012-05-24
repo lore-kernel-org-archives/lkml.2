@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965418Ab2EXTQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 15:16:49 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58291 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965357Ab2EXTQf (ORCPT
+	id S934193Ab2EXTRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 15:17:35 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48718 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965465Ab2EXTRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 15:16:35 -0400
-Date: Thu, 24 May 2012 21:16:17 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-cc: Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
- smp_irq_move_cleanup_interrupt
-In-Reply-To: <1337883560.7938.9.camel@sbsiddha-desk.sc.intel.com>
-Message-ID: <alpine.LFD.2.02.1205242113400.3231@ionos>
-References: <20120521164959.GE16454@sgi.com>  <alpine.LFD.2.02.1205212304580.3231@ionos> <20120521211917.GA25567@sgi.com>  <alpine.LFD.2.02.1205212324260.3231@ionos> <20120523181636.GA2032@sgi.com>  <20120523190414.GA5263@sgi.com> 
- <1337801086.1997.197.camel@sbsiddha-desk.sc.intel.com>  <20120523200226.GA6936@sgi.com>  <1337816970.1997.207.camel@sbsiddha-desk.sc.intel.com>  <20120524143711.GA24711@sgi.com> <1337883560.7938.9.camel@sbsiddha-desk.sc.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 24 May 2012 15:17:24 -0400
+Date: Thu, 24 May 2012 15:10:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
+ platform (v2)
+Message-ID: <20120524191039.GB28338@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
+ <20120522092354.GB18578@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
+ <20120524103023.GA27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524162605.GK27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED978@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351ED978@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 May 2012, Suresh Siddha wrote:
-> On Thu, 2012-05-24 at 09:37 -0500, Dimitri Sivanich wrote:
-> > And speaking of possible holes in destroy_irq()..
+> >> The reason is, if we do so, it would be covered by native
+> >> misc_register(&mce_chrdev_device) later when native kernel init (xen
+> >> init first and then start native kernel).  
+> >> Under such case, if linux running under xen platform, /dev/mcelog
+> >> point to vcpu, that's pointless since it cannot get any mcelog from
+> >> physical cpu (which owned by xen).  
+> >> 
+> >> Yes, we can use another misc device like /dev/xen-mcelog, w/ another
+> >> device minor like 226, but that's not good for userspace mcelog
+> >> tools. As far as I know, Novell mcelog use unified /dev/mcelog
+> >> interface for linux running under either bare metal or xen platform.
 > > 
-> > What happens if we're running __assign_irq_vector() (say we're changing irq
-> > affinity), and on another cpu we had just run through __clear_irq_vector()
-> > via destroy_irq().  Now destroy_irq() is going to call
-> > free_irq_at()->free_irq_cfg, which will clear irq_cfg.  Then
-> > __assign_irq_vector goes to access irq_cfg (cfg->vector or
-> > cfg->move_in_progress, for instance), which was already freed.
+> > Maybe create a symlink in /dev/mcelog pointing to /dev/xen-mcelog?
 > > 
-> > I'm not sure if this can happen, but just eyeballing it, it does look that
-> > that way.
-> > 
+> > That should solve it.
 > 
-> I wanted to say, irq desc is locked when we change the irq affinity,
-> which calls assign_irq_vector() and friends, so this should be fine.
-> 
-> BUT NO. I don't see any reference counts being maintained when we do
-> irq_to_desc(). So locking/unlocking that desc pointer is bogus when
-> destroy_irq() can go ahead and free the desc in parallel.
-> 
-> So, SPARSE_IRQ looks terribly broken! Yinghai, Thomas?
+> Kernel has created a file /dev/mcelog no matter running at native or xen platform.
+> If xen try to mask kernel creating /dev/mcelog, that would be harmful to native kernel.
 
-Yes, we need refcounts for that. We talked about that before, but then
-the argument was against it was that all that code is serialized
-already, so no need. How wrong :)
+Huh? The Xen code won't run under native kernel so how will it mask it?
+> 
+> > 
+> >> This patch just do redirection at xen code path, and that would not
+> >> hurt anything to native kernel.
+> > 
+> > My concern is that if we remove /dev/mcelog one day, xen people will
+> > cry.
 
+Hehe.
+
+The goal here is to serve the distros so to say. So if the distros
+stop using /dev/mcelog and the /dev/mcelog goes away we won't cry b/c
+well, the user of it has gone away!
+
+So the moment you remove that, pls CC us so we can remove it too
+and retool to use the MCElogv2.
+
+> 
+> Don't worry :) 
+> Xen people would handle that case (that's not trouble for xen), just notify us is enough.
+> If kernel really remove /dev/mcelog some day, xen just need simply add 1 line misc_register(&xen_mce_chrdev_device), since currently all other code are xen-self-contained.
+
+Well, I will delete it. My customer is distro (Fedora, Debian, Oracle
+and SuSE)- and if the distro is not using it there is not point
+of keeping it.
