@@ -1,82 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965124Ab2EXVXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 17:23:52 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:36219 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964927Ab2EXVXu convert rfc822-to-8bit (ORCPT
+	id S965278Ab2EXVYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 17:24:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59872 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964927Ab2EXVYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 17:23:50 -0400
+	Thu, 24 May 2012 17:24:18 -0400
+Date: Thu, 24 May 2012 14:23:23 -0700
+From: tip-bot for Jiang Liu <liuj97@gmail.com>
+Message-ID: <tip-f841d792e38f75f5e25b0b66f7b5d235d180a735@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        yinghai@kernel.org, cpw@sgi.com, nagananda.chumbalkar@hp.com,
+        chenkeping@huawei.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        liuj97@gmail.com, jiang.liu@huawei.com, jacob.jun.pan@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, nagananda.chumbalkar@hp.com, cpw@sgi.com,
+        chenkeping@huawei.com, suresh.b.siddha@intel.com, jiang.liu@huawei.com,
+        liuj97@gmail.com, tglx@linutronix.de, jacob.jun.pan@linux.intel.com
+In-Reply-To: <1333120296-13563-4-git-send-email-jiang.liu@huawei.com>
+References: <1333120296-13563-4-git-send-email-jiang.liu@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86:
+  Return IRQ_SET_MASK_OK_NOCOPY from irq affinity functions
+Git-Commit-ID: f841d792e38f75f5e25b0b66f7b5d235d180a735
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
-References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
-Date: Thu, 24 May 2012 14:23:49 -0700
-X-Google-Sender-Auth: LxxAtu2mUZ2S6jmZFZJG9Txv4pA
-Message-ID: <CA+8MBbJknmrUXG7U_hBaTs4vJ-1Fa-ENq5g3Qzzh6EmsNiSfXg@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched domain support
-From: Tony Luck <tony.luck@intel.com>
-To: mingo@kernel.org, a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        cmetcalf@tilera.com, tony.luck@intel.com, sivanich@sgi.com,
-        akpm@linux-foundation.org, ralf@linux-mips.org, greg.pearson@hp.com,
-        ink@jurassic.park.msu.ru, tglx@linutronix.de, rth@twiddle.net,
-        kamezawa.hiroyu@jp.fujitsu.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, anton@samba.org,
-        lethal@linux-sh.org, davem@davemloft.net, benh@kernel.crashing.org,
-        dhowells@redhat.com, mattst88@gmail.com, fenghua.yu@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 14:23:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 9, 2012 at 7:29 AM, tip-bot for Peter Zijlstra
-<a.p.zijlstra@chello.nl> wrote:
-> Commit-ID:  cb83b629bae0327cf9f44f096adc38d150ceb913
-> Gitweb:     http://git.kernel.org/tip/cb83b629bae0327cf9f44f096adc38d150ceb913
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Tue, 17 Apr 2012 15:49:36 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Wed, 9 May 2012 15:00:55 +0200
->
-> sched/numa: Rewrite the CONFIG_NUMA sched domain support
+Commit-ID:  f841d792e38f75f5e25b0b66f7b5d235d180a735
+Gitweb:     http://git.kernel.org/tip/f841d792e38f75f5e25b0b66f7b5d235d180a735
+Author:     Jiang Liu <liuj97@gmail.com>
+AuthorDate: Fri, 30 Mar 2012 23:11:35 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 24 May 2012 23:16:33 +0200
 
-This is upstream in Linus' tree now - and seems to be the cause of
-an ia64 boot failure. The zonelist that arrives at __alloc_pages_nodemask
-is garbage. Changing both the kzalloc_node() calls in sched_init_numa()
-into plain kzalloc() calls seems to fix things. So it looks like we are trying
-to allocate on a node before the node has been fully set up.
+x86: Return IRQ_SET_MASK_OK_NOCOPY from irq affinity functions
 
-Call Trace:
- [<a0000001000165e0>] show_stack+0x80/0xa0
-                                sp=e000000301b7f6f0 bsp=e000000301b71348
- [<a000000100016c40>] show_regs+0x640/0x920
-                                sp=e000000301b7f8c0 bsp=e000000301b712f0
- [<a0000001000417f0>] die+0x190/0x2c0
-                                sp=e000000301b7f8d0 bsp=e000000301b712b0
- [<a000000100074a90>] ia64_do_page_fault+0x6b0/0xac0
-                                sp=e000000301b7f8d0 bsp=e000000301b71258
- [<a00000010000c100>] ia64_native_leave_kernel+0x0/0x270
-                                sp=e000000301b7f960 bsp=e000000301b71258
- [<a00000010016b3a0>] __alloc_pages_nodemask+0x140/0xce0
-                                sp=e000000301b7fb30 bsp=e000000301b710f0
- [<a0000001001ec970>] allocate_slab+0x130/0x3c0
-                                sp=e000000301b7fb50 bsp=e000000301b71098
- [<a0000001001ecc40>] new_slab+0x40/0x680
-                                sp=e000000301b7fb50 bsp=e000000301b71040
- [<a0000001001ed960>] __slab_alloc+0x6e0/0x8e0
-                                sp=e000000301b7fb50 bsp=e000000301b70fa8
- [<a0000001001ef9a0>] kmem_cache_alloc_node+0xc0/0x3a0
-                                sp=e000000301b7fb90 bsp=e000000301b70f70
- [<a0000001000df8a0>] sched_init_numa+0x360/0x780
-                                sp=e000000301b7fb90 bsp=e000000301b70ed0
- [<a000000100d6be80>] sched_init_smp+0x30/0x300
-                                sp=e000000301b7fbb0 bsp=e000000301b70eb0
- [<a000000100d50760>] kernel_init+0x230/0x340
-                                sp=e000000301b7fdb0 bsp=e000000301b70e88
- [<a0000001000145f0>] kernel_thread_helper+0x30/0x60
-                                sp=e000000301b7fe30 bsp=e000000301b70e60
- [<a00000010000a0c0>] start_kernel_thread+0x20/0x40
-                                sp=e000000301b7fe30 bsp=e000000301b70e60
-Disabling lock debugging due to kernel taint
+The interrupt chip irq_set_affinity() functions copy the affinity mask
+to irq_data->affinity but return 0, i.e. IRQ_SET_MASK_OK.
+IRQ_SET_MASK_OK causes the core code to do another redundant copy.
 
--Tony
+Return IRQ_SET_MASK_OK_NOCOPY to avoid this.
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Naga Chumbalkar <nagananda.chumbalkar@hp.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Cliff Wickman <cpw@sgi.com>
+Cc: Jiang Liu <liuj97@gmail.com>
+Cc: Keping Chen <chenkeping@huawei.com>
+Link: http://lkml.kernel.org/r/1333120296-13563-4-git-send-email-jiang.liu@huawei.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/io_apic.c |    9 +++++----
+ arch/x86/platform/uv/uv_irq.c  |    2 +-
+ 2 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ac96561..bce2001 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -2270,6 +2270,7 @@ ioapic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+ 		__target_IO_APIC_irq(irq, dest, data->chip_data);
++		ret = IRQ_SET_MASK_OK_NOCOPY;
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 	return ret;
+@@ -3092,7 +3093,7 @@ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 
+ 	__write_msi_msg(data->msi_desc, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ #endif /* CONFIG_SMP */
+ 
+@@ -3214,7 +3215,7 @@ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 
+ 	dmar_msi_write(irq, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif /* CONFIG_SMP */
+@@ -3267,7 +3268,7 @@ static int hpet_msi_set_affinity(struct irq_data *data,
+ 
+ 	hpet_msi_write(data->handler_data, &msg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif /* CONFIG_SMP */
+@@ -3340,7 +3341,7 @@ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ 		return -1;
+ 
+ 	target_ht_irq(data->irq, dest, cfg->vector);
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ #endif
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index f25c276..a22c416 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -222,7 +222,7 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 	if (cfg->move_in_progress)
+ 		send_cleanup_vector(cfg);
+ 
+-	return 0;
++	return IRQ_SET_MASK_OK_NOCOPY;
+ }
+ 
+ /*
