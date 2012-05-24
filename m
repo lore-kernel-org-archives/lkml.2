@@ -1,138 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab2EXRep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:34:45 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:21701 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab2EXRen (ORCPT
+	id S1758689Ab2EXRfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:35:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8842 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757533Ab2EXRfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:34:43 -0400
-Message-ID: <1337880880.2718.68.camel@lorien2>
-Subject: Re: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: shuahkhan@gmail.com, lenb@kernel.org, linux-acpi@vger.kernel.org,
-        bhelgaas@google.com, liuj97@gmail.com, andi@firstfloor.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 24 May 2012 11:34:40 -0600
-In-Reply-To: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
-References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Thu, 24 May 2012 13:35:16 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=FyswP2SAAAAA:20 a=9Q8v3AZrQv3AlcyO2GIA:9 a=JUKMFUBBdahR3mIr8UoA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337880914.13348.189.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Thu, 24 May 2012 13:35:14 -0400
+In-Reply-To: <20120524172223.GA10689@redhat.com>
+References: <20120524160146.GA6226@redhat.com>
+	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
-> This patchset supports ACPI OSPM Status Indication (_OST) method for
-> ACPI CPU/memory/container hotplug operations and sysfs eject. After
-> an ACPI hotplug operation has completed, OSPM calls _OST to indicate
-> the result of the operation to the platform. If a platform does not
-> support _OST, this patchset has no effect on the platform.
+On Thu, 2012-05-24 at 13:22 -0400, Dave Jones wrote:
+> On Thu, May 24, 2012 at 12:19:58PM -0400, Steven Rostedt wrote:
+>  > On Thu, 2012-05-24 at 12:01 -0400, Dave Jones wrote:
+>  > > Hit this while trying to configure the irq-tracer.
+>  > > I ran cat trace before doing a "echo 0 > tracing_on" by mistake.
+>  > > Shot myself in the foot, but it still shouldn't oops.
+>  > > 
+>  > 
+>  > Hi Dave,
+>  > 
+>  > Thanks for reporting. Could you try this patch to see if it fixes it for
+>  > you.
+>  > 
+>  > http://groups.google.com/group/linux.kernel/msg/4294e8d564d66997?dmode=source
+>  > 
+>  > Below is the patch again, as the one in the link has GPG tags that might
+>  > screw with patch.
 > 
-> This _OST support is enabled when all relevant ACPI hotplug operations,
-> such as CPU, memory and container hotplug, are enabled. This assures
-> consistent behavior among the hotplug operations with regarding the
-> _OST support.
+> hmm, this time I didn't even get past 'echo irqsoff > current_tracer'
+
+This looks different. In fact, I had the similar bug but! (see below)
+
 > 
-> Some platforms may require the OS to support _OST in order to support
-> ACPI hotplug operations. For example, if a platform has the management
-> console where user can request a hotplug operation from, this _OST
-> support would be required for the management console to show the result
-> of the hotplug request to user.
+> 	Dave
 > 
-> The _OST definition can be found in section 6.3.5 of ACPI 5.0 spec.
-> The HPPF spec below also describes hotplug flows with _OST.
-> 
->   DIG64 Hot-Plug & Partitioning Flow (HPPF) Specification R1.0
->   http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
-> 
-> The changes have been tested with simulated _OST methods.
+> [ 1013.243754] BUG: unable to handle kernel NULL pointer dereference at 0000000000000002
+> [ 1013.272665] IP: [<ffff880145cc0000>] 0xffff880145cbffff
+> [ 1013.285186] PGD 1401b2067 PUD 14324c067 PMD 0 
+> [ 1013.298832] Oops: 0010 [#1] PREEMPT SMP 
+> [ 1013.310600] CPU 2 
+> [ 1013.317904] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel microcode usb_debug serio_raw pcspkr iTCO_wdt i2c_i801 iTCO_vendor_support e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> [ 1013.401848] 
+> [ 1013.407399] Pid: 112, comm: kworker/2:1 Not tainted 3.4.0+ #30 
+> [ 1013.437943] RIP: 8eb8:[<ffff88014630a000>]  [<ffff88014630a000>] 0xffff880146309fff
 
-Toshi,
+The RIP is meaningless.
 
-First of all thanks for asking for my feedback. :) Having benefited from
-reviewing the previous versions of this patch set, my thoughts on the
-implementation have evolved.
+> [ 1013.459871] RSP: ffffffff8165e919:ffff88014780f408  EFLAGS: 00010046
+> [ 1013.477909] RAX: 0000000000000001 RBX: ffffffff81104020 RCX: 0000000000000000
+> [ 1013.499458] RDX: ffff880148008ea8 RSI: ffffffff8131ef40 RDI: ffffffff82203b20
+> [ 1013.521612] RBP: ffffffff81005751 R08: 0000000000000000 R09: 0000000000000000
+> [ 1013.543121] R10: ffffffff82cdc318 R11: 0000000000000000 R12: ffff880145cc0000
+> [ 1013.564614] R13: ffff880148008eb8 R14: 0000000000000002 R15: ffff88014780cb40
+> [ 1013.586108] FS:  0000000000000000(0000) GS:ffff880148000000(0000) knlGS:0000000000000000
+> [ 1013.609458] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1013.627420] CR2: 0000000000000002 CR3: 0000000141f10000 CR4: 00000000001407e0
+> [ 1013.649051] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [ 1013.670724] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [ 1013.692376] Process kworker/2:1 (pid: 112, threadinfo ffff88013fe0e000, task ffff88014020a6a0)
+> [ 1013.717028] Stack:
+> [ 1013.724131]  ffff88014780f570 ffff880145cc0000 0000400000004000 0000000000000000
+> [ 1013.745918]  cccccccccccccccc ffff88014780cca8 ffffffff811072bb ffffffff81651627
+> [ 1013.767870]  ffffffff8118f8a7 ffffffff811072bb ffffffff81f2b6c5 ffffffff81f11bdb
+> [ 1013.790021] Call Trace:
+> [ 1013.800701] Code: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a <e7> d7 64 81 ff ff ff ff 01 00 00 00 00 00 00 00 65 d9 64 81 ff 
+> [ 1013.861443] RIP  [<ffff88014630a000>] 0xffff880146309fff
+> [ 1013.884466]  RSP <ffff88014780f408>
+> [ 1013.901507] CR2: 0000000000000002
+> [ 1013.918628] ---[ end trace d0e6e5741aaf56ac ]---
+> [ 1013.940297] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
+> [ 1013.972340] in_atomic(): 0, irqs_disabled(): 1, pid: 112, name: kworker/2:1
+> [ 1014.001470] INFO: lockdep is turned off.
+> [ 1014.021285] irq event stamp: 146784
+> [ 1014.039375] hardirqs last  enabled at (146783): [<ffffffff8165b4f4>] paranoid_restore+0x10/0x66
+> [ 1014.074744] hardirqs last disabled at (146784): [<ffffffff8165b380>] int3+0x10/0x40
+> [ 1014.106164] softirqs last  enabled at (146418): [<ffffffff81052054>] __do_softirq+0x144/0x3d0
+> [ 1014.141604] softirqs last disabled at (146407): [<ffffffff81663e4c>] call_softirq+0x1c/0x30
+> [ 1014.174829] Pid: 112, comm: kworker/2:1 Tainted: G      D      3.4.0+ #30
+> [ 1014.204753] Call Trace:
+> [ 1014.220719]  <#DB>  [<ffffffff810b3eb0>] ? print_irqtrace_events+0xd0/0xe0
+> [ 1014.251033]  [<ffffffff8107f5c0>] __might_sleep+0x140/0x1f0
+> [ 1014.276482]  [<ffffffff81657fc6>] down_read+0x26/0x93
+> [ 1014.301499]  [<ffffffff810624e4>] exit_signals+0x24/0x130
+> [ 1014.326264]  [<ffffffff8104e95c>] do_exit+0xbc/0xb70
+> [ 1014.348709]  [<ffffffff8104b8b3>] ? kmsg_dump+0x83/0x2b0
+> [ 1014.373726]  [<ffffffff8164d5e3>] ? printk+0x61/0x63
+> [ 1014.396878]  [<ffffffff8165c007>] oops_end+0x97/0xe0
+> [ 1014.420306]  [<ffffffff8164cece>] no_context+0x258/0x283
+> [ 1014.446640]  [<ffffffff8164d0bd>] __bad_area_nosemaphore+0x1c4/0x1e3
+> [ 1014.474615]  [<ffffffff8164d0ef>] bad_area_nosemaphore+0x13/0x15
+> [ 1014.505249]  [<ffffffff8165e540>] do_page_fault+0x3c0/0x4b0
+> [ 1014.531368]  [<ffffffff8106f708>] ? __kernel_text_address+0x58/0x80
+> [ 1014.560247]  [<ffffffff810057cf>] ? print_context_stack+0x8f/0xf0
+> [ 1014.589070]  [<ffffffff810860f1>] ? get_parent_ip+0x11/0x50
+> [ 1014.614948]  [<ffffffff8165b613>] ? error_sti+0x5/0x6
+> [ 1014.641105]  [<ffffffff810b0b38>] ? trace_hardirqs_off_caller+0x28/0xc0
+> [ 1014.671882]  [<ffffffff81005751>] ? print_context_stack+0x11/0xf0
+> [ 1014.700148]  [<ffffffff8131ac5d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+> [ 1014.730928]  [<ffffffff81005751>] ? print_context_stack+0x11/0xf0
+> [ 1014.759028]  [<ffffffff8165b42f>] page_fault+0x1f/0x30
+> [ 1014.784924]  [<ffffffff81005751>] ? print_context_stack+0x11/0xf0
+> [ 1014.812910]  [<ffffffff81104020>] ? __add_hash_entry+0x90/0x90
+> [ 1014.840108]  [<ffffffff8131ef40>] ? bsearch+0x60/0x90
+> [ 1014.864867]  [<ffffffff81104020>] ? __add_hash_entry+0x90/0x90
+> [ 1014.891647]  [<ffffffff8165e919>] ? sub_preempt_count+0x9/0xd0
+> [ 1014.918212]  [<ffffffff8165b466>] ? paranoid_exit+0x6/0x1b
+> [ 1014.942506]  [<ffffffff810b0b38>] ? trace_hardirqs_off_caller+0x28/0xc0
+> [ 1014.971053]  [<ffffffff8131ac5d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+> [ 1014.999788]  [<ffffffff81104020>] ? __add_hash_entry+0x90/0x90
+> [ 1015.026354]  [<ffffffff8165e919>] ? sub_preempt_count+0x9/0xd0
+> [ 1015.052818]  [<ffffffff8165b466>] ? paranoid_exit+0x6/0x1b
 
-I have some general comments first in the response, and please find code
-specific comments on individual patches.
+Hmm, I wonder if this is the break point change :-/
 
-This patch set enables Insertion/Ejection _OST processing support which
-will be a good addition since OS already supports it for Processor
-Aggregator Device Support and _PPC.
+Do you have NMIs enabled? I didn't have 'paranoid_exit' in my backtrace
+when I saw the bug.
 
-However, in this case it is enabled as a compile time option and would
-require a kernel build when firmware starts supporting _OST method in
-some cases. Reference: PATCH v4 1/6. 
+I saw this but after doing a cp .config /tmp; make mrproper;
+cp /tmp/.config .;  make
 
-It also restricts the support to be all or nothing. i.e _OST is
-supported only when all relevant hotplug operations are supported and
-these need to be specifically enabled using the config options that
-control it. For example, if a platform supports CPU_HOTPLUG and not
-MEMORY_HOTPLUG, _OST support will be disabled even when firmware
-supports it for cpus. Also the set of hotplug operations is limited as
-_OST could be present in other hotplug cases such as PCI and PCIe.
+The problem went away.
 
-I understand the spirit of this restriction that you are trying to limit
-the exposure and it is a good goal. However, it probably could be
-achieved in a way that doesn't shoehorn the implementation.
+I'll start running a bunch of high stress tests using NMIs again (on
+this box) and see if I can force this to happen again :-/
 
-I think here are the goals, 
+-- Steve
 
-1. limit exposure so platforms that don't implement _OST are not
-penalized evaluation _OST unnecessarily.
 
-2. enable it when needed without requiring special compile time steps
-and not worrying about sorting through various config options.
+> [ 1015.077099]  [<ffffffff81005751>] ? print_context_stack+0x11/0xf0
+> [ 1015.103546]  [<ffffffff8165e91e>] ? sub_preempt_count+0xe/0xd0
+> [ 1015.131390]  <<EOE>> 
+> [ 1015.145014] BUG: unable to handle kernel paging request at fffffffffffffff8
+> [ 1015.169954] IP: [<ffffffff81072ee1>] kthread_data+0x11/0x20
+> [ 1015.190713] PGD 1c0d067 PUD 1c0e067 PMD 0 
+> [ 1015.207586] Oops: 0000 [#2] PREEMPT SMP 
+> [ 1015.224452] CPU 2 
+> [ 1015.236313] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel microcode usb_debug serio_raw pcspkr iTCO_wdt i2c_i801 iTCO_vendor_support e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> [ 1015.339235] 
 
-3. don't require all hotplug variants to be enabled in config, before OS
-enables _OST support.
-
-I see that you are enabling _OST evaluation and set the cap bit
-OSC_SB_PPC_OST_SUPPORT only when ACPI_HOTPLUG_OST is defined. What
-happens on when a kernel is configured with the config options that
-enable ACPI_HOTPLUG_OST at compile time, and other hotplug options for
-example CONFIG_HOTPLUG_PCI_PCIE, and CONFIG_HOTPLUG_PCI.
-
-_OST is a platform capability and once OS tells firmware it can support
-it, isn't it expected to call all _OST method if present under any
-device object that is hotplug capable? What are the implications and
-issues if OS doesn't evaluate _OST on PCI for example, once it tells the
-firmware it supports _OST as a platform capability when it evaluates
-_OSC? The question is, is it safe? This goes back to the first goal on
-exposure.
-
-Also, when _OSC is evaluated, the _OST code in this patch set, tells
-firmware it supports _OST, however it doesn't check whether or not the
-firmware actually acked the capability or not. Hence, it doesn't make
-sure firmware has support for it, before it enables the _OST.
-
-I think you will get closer to implementing a solution that achieves the
-stated objectives by changing the design some as outlined below: ( I am
-sure there are other ideas )
-
-1. implement this similar to the way APEI support (OSC_SB_APEI_SUPPORT)
-is implemented by checking the firmware ack and enabling the apei
-support using a bool osc_sb_apei_support_acked which is only set when
-firmware acknowledges back saying it can also support _OST. This ensures
-that the feature is enabled only when both OS and firmware support it.
-It will also get rid of the compile time restrictions.
-
-2. Calling acpi_get_handle() on _OST prior to executing the method. This
-will ensure that this method only gets run if it is present under the
-device in question. Coupled with what is already outlined in #1 above,
-now _OST gets executed only when it is defined under the device object.
-Example case in the existing code, please see acpi_processor_ppc_ost()
-implementation.
-
-Please see other examples of _OST implementation in the kernel that
-implement _OST for PAD and _PPC. These two examples will help you
-understand my premise for these review comments.
-
-Thanks,
--- Shuah
 
