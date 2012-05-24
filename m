@@ -1,92 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933512Ab2EXQMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:12:43 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:35211 "EHLO ogre.sisk.pl"
+	id S933530Ab2EXQNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:13:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab2EXQMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:12:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [Update 2x][RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
-Date: Thu, 24 May 2012 18:17:43 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Colin Cross <ccross@android.com>, Magnus Damm <magnus.damm@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-References: <201205092340.26561.rjw@sisk.pl> <201205162229.38252.rjw@sisk.pl> <87sjeqzge3.fsf@ti.com>
-In-Reply-To: <87sjeqzge3.fsf@ti.com>
+	id S932304Ab2EXQNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 12:13:36 -0400
+Message-ID: <4FBE5E1D.7070804@redhat.com>
+Date: Thu, 24 May 2012 13:13:17 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <1337358773-6919-38-git-send-email-mchehab@redhat.com> <1337854460-25191-1-git-send-email-mchehab@redhat.com> <20120524105604.GC27063@aftab.osrc.amd.com>
+In-Reply-To: <20120524105604.GC27063@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205241817.43541.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 24, 2012, Kevin Hilman wrote:
-> Hi Rafael,
+Em 24-05-2012 07:56, Borislav Petkov escreveu:
+> On Thu, May 24, 2012 at 07:14:20AM -0300, Mauro Carvalho Chehab wrote:
+>> + * Default error mechanisms for Memory Controller errors (CE and UE)
+>> + */
+>> +TRACE_EVENT(mc_event,
+>> +
+>> +	TP_PROTO(const unsigned int err_type,
+>> +		 const unsigned int mc_index,
+>> +		 const char *error_msg,
+>> +		 const char *label,
+>> +		 int layer0,
+>> +		 int layer1,
+>> +		 int layer2,
+>> +		 unsigned long address,
+>> +		 unsigned long grain,
+>> +		 unsigned long syndrome,
+>> +		 const char *driver_detail),
 > 
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> What about the comments I had about layer{0,1,2} and grain?
 > 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > On some systems there are CPU cores located in the same power
-> > domains as I/O devices.  Then, power can only be removed from the
-> > domain if all I/O devices in it are not in use and the CPU core
-> > is idle.  Add preliminary support for that to the generic PM domains
-> > framework.
-> >
-> > First, the platform is expected to provide a cpuidle driver with one
-> > extra state designated for use with the generic PM domains code.
-> > This state should be initially disabled and its exit_latency value
-> > should be set to whatever time is needed to bring up the CPU core
-> > itself after restoring power to it, not including the domain's
-> > power on latency.  Its .enter() callback should point to a procedure
-> > that will remove power from the domain containing the CPU core at
-> > the end of the CPU power transition.
-> >
-> > The remaining characteristics of the extra cpuidle state, referred to
-> > as the "domain" cpuidle state below, (e.g. power usage, target
-> > residency) should be populated in accordance with the properties of
-> > the hardware.
-> >
-> > Next, the platform should execute genpd_attach_cpuidle() on the PM
-> > domain containing the CPU core.  That will cause the generic PM
-> > domains framework to treat that domain in a special way such that:
-> >
-> >  * When all devices in the domain have been suspended and it is about
-> >    to be turned off, the states of the devices will be saved, but
-> >    power will not be removed from the domain.  Instead, the "domain"
-> >    cpuidle state will be enabled so that power can be removed from
-> >    the domain when the CPU core is idle and the state has been chosen
-> >    as the target by the cpuidle governor.
-> >
-> >  * When the first I/O device in the domain is resumed and
-> >    __pm_genpd_poweron(() is called for the first time after
-> >    power has been removed from the domain, the "domain" cpuidle
-> >    state will be disabled to avoid subsequent surprise power removals
-> >    via cpuidle.
-> 
-> This looks like a good approach.  I like that it keeps a pretty clean
-> separation between CPUidle and PM domains.
-> 
-> My only comment would be that the recalc of the exit_latency should be
-> described a bit more.  Specifically, I'm not sure why it's adjused at
-> every genpd poweron.  At first I thought it was just supposed to be
-> adjusted upon attach, then adjusted back on detatch, but with the recalc
-> also in every poweron, I'm a little confused.  Care to clarify?
+> http://marc.info/?l=linux-edac&m=133769207124938&w=2
 
-The problem is that the PM domains code measures the time it takes to
-power off a domain and updates its power on latency parameter if the
-measured time is greater.  This is done for PM QoS to operate on realistic
-numbers (most of the time at least).
+Sorry, I missed that email.
 
-Of course, this also affects the CPU wakeup latency if the wakeup involves
-turning a domain on.
 
-Thanks,
-Rafael
+Em 22-05-2012 10:05, Borislav Petkov escreveu:
+> On Tue, May 22, 2012 at 07:18:21AM -0300, Mauro Carvalho Chehab wrote:
+>> Em 22-05-2012 06:28, Borislav Petkov escreveu:
+>>> On Tue, May 22, 2012 at 12:04:48AM -0300, Mauro Carvalho Chehab wrote:
+>>>> +TRACE_EVENT(mc_event,
+>>>> +
+>>>> +	TP_PROTO(const unsigned int err_type,
+>>>> +		 const unsigned int mc_index,
+>>>> +		 const char *error_msg,
+>>>> +		 const char *label,
+>>>> +		 int layer0,
+>>>> +		 int layer1,
+>>>> +		 int layer2,
+>>>
+>>> Those are EDAC-internal layer representation, why are they exported to
+>>> userspace? Userspace needs only the location and label AFAICT.
+>>
+>> Those are not the EDAC internal layer representation. They're the physical
+>> location of the DIMM or rank.
+> 
+> Ok, you've replaced the location char * with the layers.
+
+Yes. 
+> 
+>>> If you export them to userspace, they need much more meaningful names -
+>>> layer{0,1,2} mean nothing outside of the kernel.
+>>
+>> Ok. Do you have a better naming suggestion?
+>>
+>> What about layer0_pos, layer1_pos, layer2_pos?
+> 
+> Actually, I'd like them to be called channel/rank/row or something. Having them
+> numbered I don't know which layer is the top layer (channel/branch/slot)
+> and the lowest (rank/csrow/...)
+> 
+> Maybe top_layer, middle_layer, lowest_layer? Or something like that...
+
+Works for me.
+
+> 
+>>>
+>>>> +		 unsigned long pfn,
+>>>> +		 unsigned long offset,
+>>>> +		 unsigned long grain,
+>>>
+>>> Why aren't those a single 'unsigned long address' since they all are
+>>> computed from it?
+>>
+>> We can merge pfn and offset into "unsigned long address".
+> 
+> Just have a single "unsigned long address" field and userspace can pick
+> out the stuff it needs from it.
+
+Ok.
+
+>> With regards to the grain, it is an address mask, written with a "short" way.
+>> So, grain 32, for example, means:
+>> 	ffff:ffff:ffff:fffe0
+>>
+>> As the current EDAC API exports it as grain, IMO, it is better to keep it as-is,
+>> but it won't be hard to do:
+>> 	unsigned long mask = ((unsigned long) -1) && (1 - grain)
+>>
+>> What do you think?
+> 
+> Why are we even exporting grain actually with each tracepoint
+> invocation? This is the granularity of reported error in bytes, and it,
+> as such, is statically assigned to a value in each driver. Userspace can
+> certainly figure out that value in a different way.
+
+The API doesn't export the grain, except via the tracepoint/printk.
+
+> But the more important question is: does the grain help us when handling
+> the error info in userspace?
+> 
+> It tells us that at this physical address with "grain" granularity we
+> had an error. So?
+
+While a certain number of corrected errors that happened on different, sparsed,
+addresses may not mean a damaged memory, the same number of corrected errors
+happening at the same physical address/grain means that the DRAM chip that
+contains such address is damaged, so the corresponding DIMM needs to be 
+replaced.
+
+So, the address/grain can be used by userspace algorithms to increase the
+probability that a DIMM is damaged.
+
+Regards,
+Mauro.
+
+I'm folding the following patch with this one:
+
+diff --git a/include/ras/ras_event.h b/include/ras/ras_event.h
+index 5b06c43..18dde46 100644
+--- a/include/ras/ras_event.h
++++ b/include/ras/ras_event.h
+@@ -49,9 +49,9 @@ TRACE_EVENT(mc_event,
+ 		__field(	unsigned int,	mc_index		)
+ 		__string(	msg,		error_msg		)
+ 		__string(	label,		label			)
+-		__field(	int,		layer0			)
+-		__field(	int,		layer1			)
+-		__field(	int,		layer2			)
++		__field(	int,		top_layer		)
++		__field(	int,		middle_layer		)
++		__field(	int,		lower_layer		)
+ 		__field(	int,		address			)
+ 		__field(	int,		grain			)
+ 		__field(	int,		syndrome		)
+@@ -63,9 +63,9 @@ TRACE_EVENT(mc_event,
+ 		__entry->mc_index		= mc_index;
+ 		__assign_str(msg, error_msg);
+ 		__assign_str(label, label);
+-		__entry->layer0			= layer0;
+-		__entry->layer1			= layer1;
+-		__entry->layer2			= layer2;
++		__entry->top_layer		= layer0;
++		__entry->middle_layer		= layer1;
++		__entry->lower_layer		= layer2;
+ 		__entry->address		= address;
+ 		__entry->grain			= grain;
+ 		__entry->syndrome		= syndrome;
+@@ -80,9 +80,9 @@ TRACE_EVENT(mc_event,
+ 		  __get_str(msg),
+ 		  __get_str(label),
+ 		  __entry->mc_index,
+-		  __entry->layer0,
+-		  __entry->layer1,
+-		  __entry->layer2,
++		  __entry->top_layer,
++		  __entry->middle_layer,
++		  __entry->lower_layer,
+ 		  __entry->address,
+ 		  __entry->grain,
+ 		  __entry->syndrome,
+
