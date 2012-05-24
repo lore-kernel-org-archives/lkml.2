@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab2EXAEM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 20:04:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37733 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455Ab2EXADb (ORCPT
+	id S1754605Ab2EXAEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 20:04:09 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47332 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754081Ab2EXAD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 20:03:31 -0400
+	Wed, 23 May 2012 20:03:29 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
         dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
         bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
         sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v2 09/14] block: Add an explicit bio flag for bios that own their bvec
-Date: Wed, 23 May 2012 17:02:46 -0700
-Message-Id: <1337817771-25038-10-git-send-email-koverstreet@google.com>
+Subject: [PATCH v2 07/14] pktcdvd: Switch to bio_kmalloc()
+Date: Wed, 23 May 2012 17:02:44 -0700
+Message-Id: <1337817771-25038-8-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.3.327.g2980b
 In-Reply-To: <1337817771-25038-1-git-send-email-koverstreet@google.com>
 References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
@@ -24,67 +24,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is for the new bio splitting code. When we split a bio, if the
-split occured on a bvec boundry we reuse the bvec for the new bio. But
-that means bio_free() can't free it, hence the explicit flag.
+This is prep work for killing bi_destructor - previously, pktcdvd had
+its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
+necessitating its own bi_destructor implementation.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Change-Id: I040f6b501088e882a9f013d6b6e730ff04e9c1da
+Change-Id: I5604293e07f695c8f0106ae819e306f1def89a67
 ---
- fs/bio.c                  |    3 ++-
- include/linux/bio.h       |    5 -----
- include/linux/blk_types.h |    1 +
- 3 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/block/pktcdvd.c |  115 ++++++++++++++++-------------------------------
+ 1 file changed, 39 insertions(+), 76 deletions(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index fc4a168..24b1d1c 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -241,7 +241,7 @@ void bio_free(struct bio *bio, struct bio_set *bs)
- 		return;
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index ba66e44..6fe693a 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -522,36 +522,38 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
  	}
- 
--	if (bio_has_allocated_vec(bio))
-+	if (bio_flagged(bio, BIO_HAS_VEC))
- 		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
- 
- 	if (bio_integrity(bio))
-@@ -312,6 +312,7 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 			goto err_free;
- 
- 		nr_iovecs = bvec_nr_vecs(idx);
-+		bio->bi_flags |= 1 << BIO_HAS_VEC;
- 	}
- out_set:
- 	bio->bi_flags |= idx << BIO_POOL_OFFSET;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 35f7c4d..8dd8cae 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -84,11 +84,6 @@ static inline void *bio_data(struct bio *bio)
- 	return NULL;
  }
  
--static inline int bio_has_allocated_vec(struct bio *bio)
+-static void pkt_bio_destructor(struct bio *bio)
++static void pkt_end_io_read(struct bio *bio, int err)
+ {
+-	kfree(bio->bi_io_vec);
+-	kfree(bio);
+-}
++	struct packet_data *pkt = bio->bi_private;
++	struct pktcdvd_device *pd = pkt->pd;
++	BUG_ON(!pd);
+ 
+-static struct bio *pkt_bio_alloc(int nr_iovecs)
 -{
--	return bio->bi_io_vec && bio->bi_io_vec != bio->bi_inline_vecs;
+-	struct bio_vec *bvl = NULL;
+-	struct bio *bio;
++	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
++		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
+ 
+-	bio = kmalloc(sizeof(struct bio), GFP_KERNEL);
+-	if (!bio)
+-		goto no_bio;
+-	bio_init(bio);
++	if (err)
++		atomic_inc(&pkt->io_errors);
++	if (atomic_dec_and_test(&pkt->io_wait)) {
++		atomic_inc(&pkt->run_sm);
++		wake_up(&pd->wqueue);
++	}
++	pkt_bio_finished(pd);
++}
+ 
+-	bvl = kcalloc(nr_iovecs, sizeof(struct bio_vec), GFP_KERNEL);
+-	if (!bvl)
+-		goto no_bvl;
++static void pkt_end_io_packet_write(struct bio *bio, int err)
++{
++	struct packet_data *pkt = bio->bi_private;
++	struct pktcdvd_device *pd = pkt->pd;
++	BUG_ON(!pd);
+ 
+-	bio->bi_max_vecs = nr_iovecs;
+-	bio->bi_io_vec = bvl;
+-	bio->bi_destructor = pkt_bio_destructor;
++	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
+ 
+-	return bio;
++	pd->stats.pkt_ended++;
+ 
+- no_bvl:
+-	kfree(bio);
+- no_bio:
+-	return NULL;
++	pkt_bio_finished(pd);
++	atomic_dec(&pkt->io_wait);
++	atomic_inc(&pkt->run_sm);
++	wake_up(&pd->wqueue);
+ }
+ 
+ /*
+@@ -567,10 +569,13 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 		goto no_pkt;
+ 
+ 	pkt->frames = frames;
+-	pkt->w_bio = pkt_bio_alloc(frames);
++	pkt->w_bio = bio_kmalloc(GFP_KERNEL, frames);
+ 	if (!pkt->w_bio)
+ 		goto no_bio;
+ 
++	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
++	pkt->w_bio->bi_private = pkt;
++
+ 	for (i = 0; i < frames / FRAMES_PER_PAGE; i++) {
+ 		pkt->pages[i] = alloc_page(GFP_KERNEL|__GFP_ZERO);
+ 		if (!pkt->pages[i])
+@@ -581,9 +586,12 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 	bio_list_init(&pkt->orig_bios);
+ 
+ 	for (i = 0; i < frames; i++) {
+-		struct bio *bio = pkt_bio_alloc(1);
++		struct bio *bio = bio_kmalloc(GFP_KERNEL, 1);
+ 		if (!bio)
+ 			goto no_rd_bio;
++
++		bio->bi_end_io = pkt_end_io_read;
++		bio->bi_private = pkt;
+ 		pkt->r_bios[i] = bio;
+ 	}
+ 
+@@ -1036,40 +1044,6 @@ static void pkt_make_local_copy(struct packet_data *pkt, struct bio_vec *bvec)
+ 	}
+ }
+ 
+-static void pkt_end_io_read(struct bio *bio, int err)
+-{
+-	struct packet_data *pkt = bio->bi_private;
+-	struct pktcdvd_device *pd = pkt->pd;
+-	BUG_ON(!pd);
+-
+-	VPRINTK("pkt_end_io_read: bio=%p sec0=%llx sec=%llx err=%d\n", bio,
+-		(unsigned long long)pkt->sector, (unsigned long long)bio->bi_sector, err);
+-
+-	if (err)
+-		atomic_inc(&pkt->io_errors);
+-	if (atomic_dec_and_test(&pkt->io_wait)) {
+-		atomic_inc(&pkt->run_sm);
+-		wake_up(&pd->wqueue);
+-	}
+-	pkt_bio_finished(pd);
+-}
+-
+-static void pkt_end_io_packet_write(struct bio *bio, int err)
+-{
+-	struct packet_data *pkt = bio->bi_private;
+-	struct pktcdvd_device *pd = pkt->pd;
+-	BUG_ON(!pd);
+-
+-	VPRINTK("pkt_end_io_packet_write: id=%d, err=%d\n", pkt->id, err);
+-
+-	pd->stats.pkt_ended++;
+-
+-	pkt_bio_finished(pd);
+-	atomic_dec(&pkt->io_wait);
+-	atomic_inc(&pkt->run_sm);
+-	wake_up(&pd->wqueue);
 -}
 -
  /*
-  * will die
+  * Schedule reads for the holes in a packet
   */
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index b6ddbf1..ab2252d 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -101,6 +101,7 @@ struct bio {
- #define BIO_FS_INTEGRITY 9	/* fs owns integrity data, not block layer */
- #define BIO_QUIET	10	/* Make BIO Quiet */
- #define BIO_MAPPED_INTEGRITY 11/* integrity metadata has been remapped */
-+#define BIO_HAS_VEC	12	/* bio_free() should free bvec */
- #define bio_flagged(bio, flag)	((bio)->bi_flags & (1 << (flag)))
+@@ -1111,21 +1085,15 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 	 * Schedule reads for missing parts of the packet.
+ 	 */
+ 	for (f = 0; f < pkt->frames; f++) {
+-		struct bio_vec *vec;
+-
+ 		int p, offset;
++
+ 		if (written[f])
+ 			continue;
++
+ 		bio = pkt->r_bios[f];
+-		vec = bio->bi_io_vec;
+-		bio_init(bio);
+-		bio->bi_max_vecs = 1;
+-		bio->bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
+-		bio->bi_bdev = pd->bdev;
+-		bio->bi_end_io = pkt_end_io_read;
+-		bio->bi_private = pkt;
+-		bio->bi_io_vec = vec;
+-		bio->bi_destructor = pkt_bio_destructor;
++		bio_reset(bio);
++		bio->bi_sector	= pkt->sector + f * (CD_FRAMESIZE >> 9);
++		bio->bi_bdev	= pd->bdev;
  
- /*
+ 		p = (f * CD_FRAMESIZE) / PAGE_SIZE;
+ 		offset = (f * CD_FRAMESIZE) % PAGE_SIZE;
+@@ -1418,14 +1386,9 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 	}
+ 
+ 	/* Start the write request */
+-	bio_init(pkt->w_bio);
+-	pkt->w_bio->bi_max_vecs = PACKET_MAX_SIZE;
++	bio_reset(pkt->w_bio);
+ 	pkt->w_bio->bi_sector = pkt->sector;
+ 	pkt->w_bio->bi_bdev = pd->bdev;
+-	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
+-	pkt->w_bio->bi_private = pkt;
+-	pkt->w_bio->bi_io_vec = bvec;
+-	pkt->w_bio->bi_destructor = pkt_bio_destructor;
+ 	for (f = 0; f < pkt->frames; f++)
+ 		if (!bio_add_page(pkt->w_bio, bvec[f].bv_page, CD_FRAMESIZE, bvec[f].bv_offset))
+ 			BUG();
 -- 
 1.7.9.3.327.g2980b
 
