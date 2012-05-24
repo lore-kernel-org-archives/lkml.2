@@ -1,72 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab2EXGJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 02:09:02 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:14337 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab2EXGJA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 02:09:00 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-61-4fbdd07b40db
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: sameo@linux.intel.com
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] mfd: Fix build break of max77693 by adding REGMAP_I2C option
-Date: Thu, 24 May 2012 15:08:58 +0900
-Message-id: <1337839738-18246-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t9jQd3qC3v9Df5u47e4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZe1//YS84xF/xt+UecwPjXt4uRnYOCQETiZ3sXYycQJaYxIV7
-	69lAbCGB6YwS53cUdTFyAdnLmCT6nj1nBkmwCWhJ7H9xA6xIREBS4tnjdYwgNrNArcS+a02s
-	ILawgK/EyX+PwWpYBFQlvn3vAavhFXCVaPm+iglimYJE67JD7BMYuRcwMqxiFE0tSC4oTkrP
-	NdQrTswtLs1L10vOz93ECPbeM6kdjCsbLA4xCnAwKvHwfjy311+INbGsuDL3EKMEB7OSCK9X
-	MVCINyWxsiq1KD++qDQntfgQozQHi5I4r93iHf5CAumJJanZqakFqUUwWSYOTqkGxsS8v+tr
-	Sjg0Ag0O3je8OtVp2V1epZveov+t5+7a5so4L97Gwvjst0TFuPXGX28wSfF1vOg4ePseQ91v
-	zfrE05uEm7lEtmUFNm3uuBdh3PUs++/fqgtn0ifd+/FEW967tbI1Zf0NjbJ9bPOS3Vz/eXiw
-	WCU3nGc4eeVxc8H5jxYXrlR915GWVmIpzkg01GIuKk4EAHSD8V3aAQAA
-X-TM-AS-MML: No
+	id S1753200Ab2EXGLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 02:11:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45468 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751808Ab2EXGLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 02:11:49 -0400
+Date: Thu, 24 May 2012 08:11:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: ShuoX Liu <shuox.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v2] printk: ignore recursion_bug flag in HW error handle
+ process
+Message-ID: <20120524061145.GA18284@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	ShuoX Liu <shuox.liu@intel.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
+	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+	Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+References: <4FBC444A.6060500@intel.com>
+ <20120523100138.GA13506@x1.osrc.amd.com>
+ <4FBDCE4A.7050900@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FBDCE4A.7050900@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add REGMAP_I2C config option to fix build break
-of max77693 mfd driver because max77693 use regmap interface
-for i2c communication.
+On Thu, May 24, 2012 at 01:59:38PM +0800, ShuoX Liu wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
+> 
+> When MCE happens in printk, we ignore recursion_bug to make sure MCE logs printed out.
+> 
+> According to Boris' suggestion, we add some helper functions.
+> 1) hw_error_enter: Call it when specific arch begins to process a hardware error.
+> 2) hw_error_exit: Call it when specific arch finishes the processing of a hardware error.
+> 3) in_hw_error():indicates whether HW error handling is in processing.
+> 
+> Each arch could call the helpers in their arch-dependent HW error handlers.
 
-drivers/mfd/max77693.c:103: error: variable 'max77693_regmap_config' has initializer but incomplete type
-drivers/mfd/max77693.c:104: error: unknown field 'reg_bits' specified in initializer
-drivers/mfd/max77693.c:104: warning: excess elements in struct initializer
-drivers/mfd/max77693.c:104: warning: (near initialization for 'max77693_regmap_config')
-drivers/mfd/max77693.c:105: error: unknown field 'val_bits' specified in initializer
-drivers/mfd/max77693.c:105: warning: excess elements in struct initializer
-drivers/mfd/max77693.c:105: warning: (near initialization for 'max77693_regmap_config')
-drivers/mfd/max77693.c:106: error: unknown field 'max_register' specified in initializer
-drivers/mfd/max77693.c:106: warning: excess elements in struct initializer
-drivers/mfd/max77693.c:106: warning: (near initialization for 'max77693_regmap_config')
-drivers/mfd/max77693.c: In function 'max77693_i2c_probe':
-drivers/mfd/max77693.c:122: error: implicit declaration of function 'devm_regmap_init_i2c'
-drivers/mfd/max77693.c:122: warning: assignment makes pointer from integer without a cast
+Yep, looks better, thanks. Design question though:
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/mfd/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> ---
+>  arch/x86/include/asm/mce.h       |    2 --
+>  arch/x86/kernel/cpu/mcheck/mce.c |    6 ++----
+>  include/linux/cpu.h              |   17 +++++++++++++++++
+>  kernel/cpu.c                     |    3 +++
+>  kernel/printk.c                  |    3 ++-
+>  5 files changed, 24 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+> index 441520e..aeda4cc 100644
+> --- a/arch/x86/include/asm/mce.h
+> +++ b/arch/x86/include/asm/mce.h
+> @@ -187,8 +187,6 @@ int mce_available(struct cpuinfo_x86 *c);
+>  DECLARE_PER_CPU(unsigned, mce_exception_count);
+>  DECLARE_PER_CPU(unsigned, mce_poll_count);
+>  
+> -extern atomic_t mce_entry;
+> -
+>  typedef DECLARE_BITMAP(mce_banks_t, MAX_NR_BANKS);
+>  DECLARE_PER_CPU(mce_banks_t, mce_poll_banks);
+>  
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 2afcbd2..aaf41d2 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -61,8 +61,6 @@ int mce_disabled __read_mostly;
+>  
+>  #define SPINUNIT 100	/* 100ns */
+>  
+> -atomic_t mce_entry;
+> -
+>  DEFINE_PER_CPU(unsigned, mce_exception_count);
+>  
+>  /*
+> @@ -1015,7 +1013,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
+>  	char *msg = "Unknown";
+>  
+> -	atomic_inc(&mce_entry);
+> +	hw_error_enter();
+>  
+>  	this_cpu_inc(mce_exception_count);
+>  
+> @@ -1143,7 +1141,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  		mce_report_event(regs);
+>  	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+>  out:
+> -	atomic_dec(&mce_entry);
+> +	hw_error_exit();
+>  	sync_core();
+>  }
+>  EXPORT_SYMBOL_GPL(do_machine_check);
+> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+> index 7230bb5..beb56d0 100644
+> --- a/include/linux/cpu.h
+> +++ b/include/linux/cpu.h
+> @@ -210,4 +210,21 @@ static inline int disable_nonboot_cpus(void) { return 0; }
+>  static inline void enable_nonboot_cpus(void) {}
+>  #endif /* !CONFIG_PM_SLEEP_SMP */
+>  
+> +/* HW error handle status helpers */
+> +extern atomic_t hw_error;
+> +static inline void hw_error_enter(void)
+> +{
+> +	atomic_inc(&hw_error);
+> +}
+> +
+> +static inline void hw_error_exit(void)
+> +{
+> +	atomic_dec(&hw_error);
+> +}
+> +
+> +static inline int in_hw_error(void)
+> +{
+> +	return atomic_read(&hw_error);
+> +}
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index a8619eb..0323a31 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -456,6 +456,7 @@ config MFD_MAX77693
- 	bool "Maxim Semiconductor MAX77693 PMIC Support"
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select MFD_CORE
-+	select REGMAP_I2C
- 	help
- 	  Say yes here to support for Maxim Semiconductor MAX77693.
- 	  This is a companion Power Management IC with Flash, Haptic, Charger,
+Shouldn't those be generic empty functions and each arch implement their
+own with the stuff they want to do on the respective architecture when
+they get a hardware error?
+
+Andrew, Ingo?
+
+Thanks.
+
 -- 
-1.7.0.4
-
+Regards/Gruss,
+    Boris.
