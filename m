@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934074Ab2EXSZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 14:25:01 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:35375 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757483Ab2EXSZA (ORCPT
+	id S934078Ab2EXSZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 14:25:38 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26051 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295Ab2EXSZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 14:25:00 -0400
-Date: Thu, 24 May 2012 15:24:53 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: perf tools: Preserving event modifiers
-Message-ID: <20120524182453.GD2336@infradead.org>
+	Thu, 24 May 2012 14:25:37 -0400
+Date: Thu, 24 May 2012 14:18:59 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/4] xen/hvc: Fix error cases around
+ HVM_PARAM_CONSOLE_PFN
+Message-ID: <20120524181859.GK24934@phenom.dumpdata.com>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com>
+ <1337795222-29946-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1205241145200.26786@kaball-desktop>
+ <20120524173110.GE24934@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <20120524173110.GE24934@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Thu, May 24, 2012 at 01:31:10PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, May 24, 2012 at 11:47:12AM +0100, Stefano Stabellini wrote:
+> > On Wed, 23 May 2012, Konrad Rzeszutek Wilk wrote:
+> > > We weren't resetting the parameter to be passed in to a
+> > > known default. Nor were we checking the return value of
+> > > hvm_get_parameter.
+> > > 
+> > > CC: stable@kernel.org
+> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > >
+> > >  drivers/tty/hvc/hvc_xen.c |    3 ++-
+> > >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> > > index afc7fc2..3277f0e 100644
+> > > --- a/drivers/tty/hvc/hvc_xen.c
+> > > +++ b/drivers/tty/hvc/hvc_xen.c
+> > > @@ -219,7 +219,8 @@ static int xen_hvm_console_init(void)
+> > >  	if (r < 0)
+> > >  		goto err;
+> > >  	info->evtchn = v;
+> > > -	hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+> > > +	v = 0;
+> > > +	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+> > >  	if (r < 0)
+> > >  		goto err;
+> > >  	mfn = v;
+> > 
+> > Is 0 the right default here?
+> > Maybe something invalid like (~0UL) would be better?
+> 
+> Perhaps both? The zero is the default non-initialized value. But
+> -0UL is also a good check value.
 
-We need to preserve the original event name so that we can show it on the TUI,
-for instance. Humm, when rebuilding it from perf.data we'll need to look at
-perf_event_attr.precise bits too...
+Somehow I misread your comment as checking the return value, not the
+default value.
 
-(gdb) run top -e cycles:p
-Starting program: /root/bin/perf top -e cycles:p
-[Thread debugging using libthread_db enabled]
-
-Breakpoint 1, perf_evsel__init (evsel=0x909c50, attr=0x7fffffffad30, idx=0) at util/evsel.c:50
-50	{
-(gdb) n
-51		evsel->idx	   = idx;
-(gdb) n
-52		evsel->attr	   = *attr;
-(gdb) 
-53		INIT_LIST_HEAD(&evsel->node);
-(gdb) 
-54		hists__init(&evsel->hists);
-(gdb) 
-55	}
-(gdb) 
-perf_evsel__new (attr=0x7fffffffad30, idx=0) at util/evsel.c:64
-64		return evsel;
-(gdb) 
-65	}
-(gdb) 
-add_event (_list=0x7fffffffadc0, idx=0x7fffffffb6c0, attr=0x7fffffffad30, name=0x54598b "cycles") at util/parse-events.c:376
-376		if (!evsel) {
-(gdb) 
-381		evsel->name = strdup(name);
-(gdb) p name
-$5 = 0x54598b "cycles"
-(gdb) p name
-$6 = 0x54598b "cycles"
-(gdb) bt
-#0  add_event (_list=0x7fffffffadc0, idx=0x7fffffffb6c0, attr=0x7fffffffad30, name=0x54598b "cycles") at util/parse-events.c:381
-#1  0x000000000044e483 in parse_events_add_numeric (list=0x7fffffffadc0, idx=0x7fffffffb6c0, type=0, config=0, head_config=0x0) at util/parse-events.c:674
-#2  0x000000000047667d in parse_events_parse (list_all=0x7fffffffb6a0, idx=0x7fffffffb6c0) at util/parse-events.y:117
-#3  0x000000000044e9fd in parse_events (evlist=0x9083c0, str=0x7fffffffe899 "cycles:p", unset=0) at util/parse-events.c:807
-#4  0x000000000044eaf1 in parse_events_option (opt=0x7fffffffba10, str=0x7fffffffe899 "cycles:p", unset=0) at util/parse-events.c:833
-#5  0x000000000044b68f in get_value (p=0x7fffffffb840, opt=0x7fffffffba10, flags=1) at util/parse-options.c:112
-#6  0x000000000044ba8b in parse_short_opt (p=0x7fffffffb840, options=0x7fffffffba10) at util/parse-options.c:191
-#7  0x000000000044c0bd in parse_options_step (ctx=0x7fffffffb840, options=0x7fffffffba10, usagestr=0x53f9f0) at util/parse-options.c:342
-#8  0x000000000044c46e in parse_options (argc=3, argv=0x7fffffffe640, options=0x7fffffffba10, usagestr=0x53f9f0, flags=0) at util/parse-options.c:417
-#9  0x000000000042eead in cmd_top (argc=3, argv=0x7fffffffe640, prefix=0x0) at builtin-top.c:1250
-#10 0x0000000000415359 in run_builtin (p=0x79b8a8, argc=3, argv=0x7fffffffe640) at perf.c:273
-#11 0x000000000041555c in handle_internal_command (argc=3, argv=0x7fffffffe640) at perf.c:345
-#12 0x00000000004156a8 in run_argv (argcp=0x7fffffffe52c, argv=0x7fffffffe520) at perf.c:389
-#13 0x000000000041592e in main (argc=3, argv=0x7fffffffe640) at perf.c:487
-(gdb)
+I think zero is the right choice as that is the default non-initialized
+value.
