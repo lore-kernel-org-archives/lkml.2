@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab2EXUgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:36:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:57368 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2EXUgx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:36:53 -0400
-Date: Thu, 24 May 2012 13:36:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [git pull] Input updates for 3.5-rc0
-Message-ID: <20120524203647.GA16024@core.coreip.homeip.net>
-References: <20120524083216.GD10562@core.coreip.homeip.net>
- <CA+55aFxw0HRpizzJZxhhA2oqPpzg4DPUvH2r7YoYfctXS6K=WQ@mail.gmail.com>
- <20120524180154.GA15036@core.coreip.homeip.net>
- <CA+55aFx0ww=BtYAj9WEbqMT2R30ZZpjd014cYCpC=b+HRtUf_A@mail.gmail.com>
- <20120524195851.GA15306@core.coreip.homeip.net>
- <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
+	id S1759052Ab2EXUhH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:37:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53666 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758930Ab2EXUhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 16:37:02 -0400
+Date: Thu, 24 May 2012 16:36:56 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: USB device PM oddity in 3.5
+Message-ID: <20120524203655.GK1143@zod.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxX+xidcuVXb1h4oFTemtHo+ANECaoOw=vxtKN231N+cA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:11:14PM -0700, Linus Torvalds wrote:
-> On Thu, May 24, 2012 at 12:58 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> >
-> >  Considering your
-> >
-> >        dev_set_name(&dev->dev, "input-%s", dev_name(dev->dev.parent));
-> >
-> > what happens if I unplug and replug my wacom tablet while event node is
-> > still opened and therefore all kobjects are still pinned into memory?
-> 
-> I'll let you think about just how stupid that comment was for a moment.
+I'm testing Linus' tree as the merge window happens, and I've hit an
+issue with what I believe is USB device power management (or something)
+that is causing my mouse and keyboard to become unresponsive.  After a
+very short time of non-use, either device will cut out.  I can move the
+mouse around but it doesn't relay to the screen and I noticed this is
+because the laser is turned off.  If I click a button on it, it will
+turn back on and function again until a small period of non-use.  The
+keyboard exhibits similar behavior, "ignoring" the first few key strokes
+until it wakes back up.
 
-Hmm, I guess we are better now with cleaning and turning devices into
-zombies waiting to be reaped. Still have to handle parent have several
-input devices (HID devices quite often do it). And I still do not see
-the point why we want to bother, the proper layer to report driver
-errors is driver and object it is bound to.
+I found this thread:
 
--- 
-Dmitry
+http://thread.gmane.org/gmane.linux.usb.general/64292
+and
+http://marc.info/?t=133552726500001&r=1&w=2
+
+which have similar symptoms, but the kernels I'm using have the
+subsequent patches applied.  I'm doing a git bisect at the moment, with
+72c04af as the starting good commit and 61011677 as the first bad.  I'll
+let you know what comes of this, but I thought I'd mail about it now in
+case anyone has any ideas.
+
+josh
