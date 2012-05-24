@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab2EXGLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 02:11:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45468 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751808Ab2EXGLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 02:11:49 -0400
-Date: Thu, 24 May 2012 08:11:45 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: ShuoX Liu <shuox.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v2] printk: ignore recursion_bug flag in HW error handle
- process
-Message-ID: <20120524061145.GA18284@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	ShuoX Liu <shuox.liu@intel.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	andi@firstfloor.org, Andrew Morton <akpm@linux-foundation.org>,
-	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-	Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-References: <4FBC444A.6060500@intel.com>
- <20120523100138.GA13506@x1.osrc.amd.com>
- <4FBDCE4A.7050900@intel.com>
+	id S1753544Ab2EXGOT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 02:14:19 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33278 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388Ab2EXGOS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 02:14:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FBDCE4A.7050900@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
+References: <20120523002645.GA3490@redhat.com> <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 24 May 2012 08:13:55 +0200
+Message-ID: <CA+1xoqf0G3kDY3c4Gb=RkQZ8_L+but6-uUjtSVfvYUf6iL2_JA@mail.gmail.com>
+Subject: Re: 3.4+ tty lockdep trace
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 01:59:38PM +0800, ShuoX Liu wrote:
-> From: ShuoX Liu <shuox.liu@intel.com>
-> 
-> When MCE happens in printk, we ignore recursion_bug to make sure MCE logs printed out.
-> 
-> According to Boris' suggestion, we add some helper functions.
-> 1) hw_error_enter: Call it when specific arch begins to process a hardware error.
-> 2) hw_error_exit: Call it when specific arch finishes the processing of a hardware error.
-> 3) in_hw_error():indicates whether HW error handling is in processing.
-> 
-> Each arch could call the helpers in their arch-dependent HW error handlers.
+On Wed, May 23, 2012 at 3:06 AM, Ming Lei <tom.leiming@gmail.com> wrote:
+> Hi Dave,
+>
+> On Wed, May 23, 2012 at 8:26 AM, Dave Jones <davej@redhat.com> wrote:
+>> From v3.4-4413-gfb09baf
+>>
+>> [   43.374948] =============================================
+>> [   43.374991] [ INFO: possible recursive locking detected ]
+>> [   43.375035] 3.4.0+ #24 Not tainted
+>> [   43.375065] ---------------------------------------------
+>> [   43.375108] sshd/639 is trying to acquire lock:
+>> [   43.375157]  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81656d57>] tty_lock+0x37/0x80
+>> [   43.375216]
+>> [   43.375216] but task is already holding lock:
+>> [   43.375268]  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81656d57>] tty_lock+0x37/0x80
+>> [   43.375327]
+>> [   43.375327] other info that might help us debug this:
+>> [   43.375378]  Possible unsafe locking scenario:
+>> [   43.375378]
+>> [   43.375425]        CPU0
+>> [   43.375447]        ----
+>> [   43.375471]   lock(&tty->legacy_mutex);
+>> [   43.375504]   lock(&tty->legacy_mutex);
+>> [   43.375536]
+>> [   43.375536]  *** DEADLOCK ***
+>> [   43.375536]
+>> [   43.375583]  May be due to missing lock nesting notation
+>> [   43.375583]
+>> [   43.375637] 2 locks held by sshd/639:
+>> [   43.375675]  #0:  (tty_mutex){+.+.+.}, at: [<ffffffff813b0243>] tty_release+0x1c3/0x5d0
+>> [   43.375740]  #1:  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81656d57>] tty_lock+0x37/0x80
+>> [   43.375802]
+>> [   43.375802] stack backtrace:
+>> [   43.375841] Pid: 639, comm: sshd Not tainted 3.4.0+ #24
+>> [   43.375882] Call Trace:
+>> [   43.377572]  [<ffffffff810b4604>] __lock_acquire+0x1584/0x1aa0
+>> [   43.379286]  [<ffffffff810b51e2>] lock_acquire+0x92/0x1f0
+>> [   43.380995]  [<ffffffff81656d57>] ? tty_lock+0x37/0x80
+>> [   43.382700]  [<ffffffff816534f1>] mutex_lock_nested+0x71/0x3b0
+>> [   43.384403]  [<ffffffff81656d57>] ? tty_lock+0x37/0x80
+>> [   43.386094]  [<ffffffff81085521>] ? get_parent_ip+0x11/0x50
+>> [   43.387794]  [<ffffffff81656d57>] ? tty_lock+0x37/0x80
+>> [   43.389480]  [<ffffffff8165a68d>] ? sub_preempt_count+0x6d/0xd0
+>> [   43.391176]  [<ffffffff813b0243>] ? tty_release+0x1c3/0x5d0
+>> [   43.393003]  [<ffffffff81656d57>] tty_lock+0x37/0x80
+>> [   43.394867]  [<ffffffff81656dc3>] tty_lock_pair+0x23/0x5c
+>> [   43.396671]  [<ffffffff813b024e>] tty_release+0x1ce/0x5d0
+>> [   43.398462]  [<ffffffff811a765c>] fput+0x12c/0x300
+>> [   43.400292]  [<ffffffff811a23a9>] filp_close+0x69/0xa0
+>> [   43.402084]  [<ffffffff811a2f2d>] sys_close+0xad/0x1a0
+>> [   43.403871]  [<ffffffff8165e652>] system_call_fastpath+0x16/0x1b
+>
+> We have one patch to address the problem, could you test it from the link below?
+>
+>        http://marc.info/?l=linux-kernel&m=133765211309247&w=2
 
-Yep, looks better, thanks. Design question though:
+I'm still seeing the warning with this patch:
 
-> 
-> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
-> ---
->  arch/x86/include/asm/mce.h       |    2 --
->  arch/x86/kernel/cpu/mcheck/mce.c |    6 ++----
->  include/linux/cpu.h              |   17 +++++++++++++++++
->  kernel/cpu.c                     |    3 +++
->  kernel/printk.c                  |    3 ++-
->  5 files changed, 24 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-> index 441520e..aeda4cc 100644
-> --- a/arch/x86/include/asm/mce.h
-> +++ b/arch/x86/include/asm/mce.h
-> @@ -187,8 +187,6 @@ int mce_available(struct cpuinfo_x86 *c);
->  DECLARE_PER_CPU(unsigned, mce_exception_count);
->  DECLARE_PER_CPU(unsigned, mce_poll_count);
->  
-> -extern atomic_t mce_entry;
-> -
->  typedef DECLARE_BITMAP(mce_banks_t, MAX_NR_BANKS);
->  DECLARE_PER_CPU(mce_banks_t, mce_poll_banks);
->  
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 2afcbd2..aaf41d2 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -61,8 +61,6 @@ int mce_disabled __read_mostly;
->  
->  #define SPINUNIT 100	/* 100ns */
->  
-> -atomic_t mce_entry;
-> -
->  DEFINE_PER_CPU(unsigned, mce_exception_count);
->  
->  /*
-> @@ -1015,7 +1013,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->  	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
->  	char *msg = "Unknown";
->  
-> -	atomic_inc(&mce_entry);
-> +	hw_error_enter();
->  
->  	this_cpu_inc(mce_exception_count);
->  
-> @@ -1143,7 +1141,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->  		mce_report_event(regs);
->  	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
->  out:
-> -	atomic_dec(&mce_entry);
-> +	hw_error_exit();
->  	sync_core();
->  }
->  EXPORT_SYMBOL_GPL(do_machine_check);
-> diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-> index 7230bb5..beb56d0 100644
-> --- a/include/linux/cpu.h
-> +++ b/include/linux/cpu.h
-> @@ -210,4 +210,21 @@ static inline int disable_nonboot_cpus(void) { return 0; }
->  static inline void enable_nonboot_cpus(void) {}
->  #endif /* !CONFIG_PM_SLEEP_SMP */
->  
-> +/* HW error handle status helpers */
-> +extern atomic_t hw_error;
-> +static inline void hw_error_enter(void)
-> +{
-> +	atomic_inc(&hw_error);
-> +}
-> +
-> +static inline void hw_error_exit(void)
-> +{
-> +	atomic_dec(&hw_error);
-> +}
-> +
-> +static inline int in_hw_error(void)
-> +{
-> +	return atomic_read(&hw_error);
-> +}
-
-Shouldn't those be generic empty functions and each arch implement their
-own with the stuff they want to do on the respective architecture when
-they get a hardware error?
-
-Andrew, Ingo?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+[   83.032572] trinity (4823): Using mlock ulimits for SHM_HUGETLB is deprecated
+[   83.060427] type=1400 audit(1.288:2): op=linkat action=denied
+pid=4820 comm="trinity" path=2F7472696E6974792F746D702F03 dev="9p"
+ino=104345
+[   83.190164]
+[   83.191412] =============================================
+[   83.196004] [ INFO: possible recursive locking detected ]
+[   83.196004] 3.4.0-next-20120523-sasha-00004-gc6cd556 #272 Tainted:
+G        W
+[   83.196004] ---------------------------------------------
+[   83.196004] trinity/4823 is trying to acquire lock:
+[   83.196004]  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff82f6a5db>]
+tty_lock_nested+0x7b/0x90
+[   83.196004]
+[   83.196004] but task is already holding lock:
+[   83.196004]  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff82f6a5db>]
+tty_lock_nested+0x7b/0x90
+[   83.196004]
+[   83.196004] other info that might help us debug this:
+[   83.196004]  Possible unsafe locking scenario:
+[   83.196004]
+[   83.196004]        CPU0
+[   83.196004]        ----
+[   83.196004]   lock(&tty->legacy_mutex);
+[   83.196004]   lock(&tty->legacy_mutex);
+[   83.196004]
+[   83.196004]  *** DEADLOCK ***
