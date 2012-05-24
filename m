@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab2EXBIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 May 2012 21:08:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57479 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755389Ab2EXBIo (ORCPT
+	id S1755112Ab2EXBMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 May 2012 21:12:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50554 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751933Ab2EXBMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 May 2012 21:08:44 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [GIT PULL 0/1] perf/core fix
-Date: Wed, 23 May 2012 22:08:24 -0300
-Message-Id: <1337821705-3941-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 23 May 2012 21:12:21 -0400
+Date: Wed, 23 May 2012 18:12:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch -linus] regmap: REMAP_IRQ should select IRQ_DOMAIN
+ itself
+In-Reply-To: <alpine.DEB.2.00.1205231735100.8785@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1205231810570.28167@chino.kir.corp.google.com>
+References: <20120522183037.75ec03c9d8881ec188e7f787@canb.auug.org.au> <4FBBAF1B.1070702@xenotime.net> <alpine.DEB.2.00.1205222339030.9290@chino.kir.corp.google.com> <20120523093208.GB4085@opensource.wolfsonmicro.com> <CA+55aFynyjrHUCh48aXSQpZpboQM7MCCtMHvxBxCf+gDoCVWXg@mail.gmail.com>
+ <20120523173342.GB4064@opensource.wolfsonmicro.com> <alpine.DEB.2.00.1205231735100.8785@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On Wed, 23 May 2012, David Rientjes wrote:
 
-	Please pull,
+> So my patch to select IRQ_DOMAIN for REGMAP_IRQ is correct since 
+> REGMAP_IRQ now requires IRC_DOMAIN since the commit listed in the 
+> changelog.
+> 
+> What's fragile is going around and adding "select IRQ_DOMAIN" to 
+> everything that does "select REGMAP_IRQ".  So I removed that and just made 
+> IRQ_DOMAIN select REGMAP_IRQ itself.
+> 
+> So can this be merged or what's the issue?
+> 
 
-- Arnaldo
-
-The following changes since commit ab0cce560ef177bdc7a8f73e9962be9d829a7b2c:
-
-  Revert "sched, perf: Use a single callback into the scheduler" (2012-05-23 17:40:51 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-
-for you to fetch changes up to a1d44b9acdf7b2820ef762846150b4d13b84e075:
-
-  perf evlist: Explicititely initialize input_name (2012-05-23 21:47:51 -0300)
-
-----------------------------------------------------------------
-Fix perf evlist uninitialized local variable
-
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (1):
-      perf evlist: Explicititely initialize input_name
-
- tools/perf/builtin-evlist.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Oh well, Linus already merged your git pull that you didn't cc to me and 
+you did it with a bogus commit message that insists this is only a 
+randconfig issue when in reality you never tested enabling 
+CONFIG_MFD_PALMAS without CONFIG_IRQ_DOMAIN when you merged 4af8be67fd99 
+("regmap: Convert regmap_irq to use irq_domain").
