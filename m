@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758774Ab2EXRmi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 13:42:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56495 "EHLO mail.zytor.com"
+	id S1758716Ab2EXRrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 13:47:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab2EXRmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 13:42:36 -0400
-Message-ID: <4FBE72C4.3040204@zytor.com>
-Date: Thu, 24 May 2012 10:41:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753677Ab2EXRrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 13:47:11 -0400
+Date: Thu, 24 May 2012 13:46:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, bharrosh@panasas.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v2 01/14] block: Generalized bio pool freeing
+Message-ID: <20120524174649.GC27550@redhat.com>
+References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
+ <1337817771-25038-2-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: T Makphaibulchoke <tmac@hp.com>, lethal@linux-sh.org, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, kaloz@openwrt.org,
-        matt.fleming@intel.com, lasse.collin@tukaani.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
-        heiko.carstens@de.ibm.com, linux390@de.ibm.com
-Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper functions
-References: <1337875436-27640-1-git-send-email-tmac@hp.com>  <1337880371.5070.24.camel@joe2Laptop> <4FBE6FF6.5090904@zytor.com> <1337881229.5070.29.camel@joe2Laptop>
-In-Reply-To: <1337881229.5070.29.camel@joe2Laptop>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337817771-25038-2-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 10:40 AM, Joe Perches wrote:
+On Wed, May 23, 2012 at 05:02:38PM -0700, Kent Overstreet wrote:
+> With the old code, when you allocate a bio from a bio pool you have to
+> implement your own destructor that knows how to find the bio pool the
+> bio was originally allocated from.
 > 
-> Many of these functions are only optimized in certain cases; if not
-> optimized in a particular case, a call to the library function will be
-> emitted.
+> This adds a new field to struct bio (bi_pool) and changes
+> bio_alloc_bioset() to use it. This makes various bio destructors
+> unnecessary, so they're then deleted.
 > 
 
-Right, what part of that don't you understand?
+[..]
+> @@ -419,7 +406,11 @@ void bio_put(struct bio *bio)
+>  	 */
+>  	if (atomic_dec_and_test(&bio->bi_cnt)) {
+>  		bio->bi_next = NULL;
+> -		bio->bi_destructor(bio);
+> +
+> +		if (bio->bi_pool)
+> +			bio_free(bio, bio->bi_pool);
+> +		else
+> +			bio->bi_destructor(bio);
 
-	-hpa
+If you have removed all the users of bi_destructor, then I am wondering that
+why are we retaining this field and trying to call into it when bio_pool
+is not set?
+
+Thanks
+Vivek
 
