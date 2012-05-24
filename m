@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab2EXI5l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 04:57:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37430 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751368Ab2EXI5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 04:57:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="144107194"
-Message-ID: <4FBDF79D.1060805@intel.com>
-Date: Thu, 24 May 2012 16:55:57 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@suse.com>
-CC: borislav.petkov@amd.com, arnd@arndb.de, a.p.zijlstra@chello.nl,
-        akinobu.mita@gmail.com, eric.dumazet@gmail.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, hughd@google.com, jeremy@goop.org,
-        len.brown@intel.com, tony.luck@intel.com, yongjie.ren@intel.com,
-        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
-        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, ak@linux.intel.com, luto@mit.edu,
-        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hpa@zytor.com
-Subject: Re: [PATCH v7 2/8] x86/flush_tlb: try flush_tlb_single one by one
- in flush_tlb_range
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com> <1337782555-8088-3-git-send-email-alex.shi@intel.com> <4FBD157602000078000858F7@nat28.tlf.novell.com> <4FBDD82C.4020003@intel.com> <4FBE09740200007800085B89@nat28.tlf.novell.com>
-In-Reply-To: <4FBE09740200007800085B89@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754196Ab2EXI5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 04:57:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61865 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab2EXI5w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 04:57:52 -0400
+Message-ID: <1337849866.1028.1.camel@phoenix>
+Subject: [PATCH 2/2] mfd: max77693: Remove unused iolock mutex
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Thu, 24 May 2012 16:57:46 +0800
+In-Reply-To: <1337849788.1028.0.camel@phoenix>
+References: <1337849788.1028.0.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 04:12 PM, Jan Beulich wrote:
+Now this driver is using regmap APIs, the iolock mutex is not used and can be
+removed.
 
->>>> On 24.05.12 at 08:41, Alex Shi <alex.shi@intel.com> wrote:
->> On 05/23/2012 10:51 PM, Jan Beulich wrote:
->>> Unless there is an implicit assumption that 'start' and 'end' are on
->>> the same page (which I doubt, as then it would be pointless to
->>> add 'end' here), this one is definitely wrong - you'd either have
->>> to issue multiple MMUEXT_INVLPG_MULTI-s, or you'd have to
->>> also use MMUEXT_TLB_FLUSH_MULTI for the multi-page case.
->>
->> Thanks comments!
->> So, the following change should be more safe for PV?
->>
->> -       if (va == TLB_FLUSH_ALL) {
->> -               args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
->> -       } else {
->> -               args->op.cmd = MMUEXT_INVLPG_MULTI;
->> -               args->op.arg1.linear_addr = va;
->> -       }
->> +       args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
-> 
-> This would be safe ...
-> 
->> +       if (start != TLB_FLUSH_ALL)
->> +               args->op.arg1.linear_addr = start;
-> 
-> ... and then this superfluous, but it'd result in an unconditional
-> full TLB flush. When start and end (or perhaps end-1, assuming
-> end is not inclusive) are on the same page, MMUEXT_INVLPG_MULTI
-> should be used; MMUEXT_TLB_FLUSH_MULTI might need to be
-> used in all other cases, unless you want to split multi-page, non-
-> global invalidations into multiple MMUEXT_INVLPG_MULTI-s (which
-> would appear to be what the whole patch aims at).
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/max77693.c               |    2 --
+ include/linux/mfd/max77693-private.h |    1 -
+ 2 files changed, 0 insertions(+), 3 deletions(-)
 
-
-        args->op.cmd = MMUEXT_TLB_FLUSH_MULTI;
--       if (start != TLB_FLUSH_ALL)
-+       if (start != TLB_FLUSH_ALL && (end - start) < PAGE_SIZE) {
-+               args->op.cmd = MMUEXT_INVLPG_MULTI;
-                args->op.arg1.linear_addr = start;
-+       }
-
-So, above it correct code for xen?
-As to the xen optimisation of flush range, it is may better to be done
-in a separate patch.
-
-> 
-> Perhaps the abstraction layer needs to be changed instead:
-> Have the low level routines (Xen, UV, native) just deal with
-> single pages, and do the splitting in common code (using the
-> TLB size metrics).
-> 
-> But then again these metrics will become stale after a
-> migration (not only on Xen, but in all virtualization scenarios), so
-> some additional aspects will need to be taken care of anyway.
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index e9e4278..4055bc2 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -138,8 +138,6 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 
+ 	max77693->wakeup = pdata->wakeup;
+ 
+-	mutex_init(&max77693->iolock);
+-
+ 	if (max77693_read_reg(max77693->regmap,
+ 				MAX77693_PMIC_REG_PMIC_ID2, &reg_data) < 0) {
+ 		dev_err(max77693->dev, "device not found on this channel\n");
+diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+index 68263c5..1eeae5c 100644
+--- a/include/linux/mfd/max77693-private.h
++++ b/include/linux/mfd/max77693-private.h
+@@ -190,7 +190,6 @@ struct max77693_dev {
+ 	struct i2c_client *i2c;		/* 0xCC , PMIC, Charger, Flash LED */
+ 	struct i2c_client *muic;	/* 0x4A , MUIC */
+ 	struct i2c_client *haptic;	/* 0x90 , Haptic */
+-	struct mutex iolock;
+ 
+ 	int type;
+ 
+-- 
+1.7.5.4
 
 
-Sure, thanks for your care!
+
