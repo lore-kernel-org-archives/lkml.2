@@ -1,132 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759106Ab2EXURM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:17:12 -0400
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:51607 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab2EXURJ (ORCPT
+	id S934208Ab2EXUSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:18:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26963 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933458Ab2EXUSM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:17:09 -0400
-Message-ID: <b70813c0eac769820b35e8879180b13f.squirrel@webmail.greenhost.nl>
-In-Reply-To: <CABqD9hZCx88UzAeayn0cz=nTcT=fMiUZohTayHWq+Dcnnx-hQQ@mail.gmail.com>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk>
-    <1337875681-20717-1-git-send-email-wad@chromium.org>
-    <1337875681-20717-2-git-send-email-wad@chromium.org>
-    <acabbed13c4f02e653879844a9cbddef.squirrel@webmail.greenhost.nl>
-    <CABqD9hZCx88UzAeayn0cz=nTcT=fMiUZohTayHWq+Dcnnx-hQQ@mail.gmail.com>
-Date: Thu, 24 May 2012 22:17:05 +0200
-Subject: Re: [RFC PATCH 1/3] seccomp: Don't allow tracers to abuse RET_TRACE
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Will Drewry" <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, mcgrathr@google.com, hpa@zytor.com,
-        netdev@parisplace.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        luto@mit.edu, serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk, jmorris@namei.org
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: ee739817b6cd2655ac6326818c89325b
+	Thu, 24 May 2012 16:18:12 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=vlL1T_X9D0qvDJ_GPIoA:9 a=wlFNVk2mk1MTPEmNMF8A:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337890690.13348.199.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kbuild@vger.kernel.org
+Date: Thu, 24 May 2012 16:18:10 -0400
+In-Reply-To: <20120524200541.GA6552@redhat.com>
+References: <20120524160146.GA6226@redhat.com>
+	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+	 <1337880914.13348.189.camel@gandalf.stny.rr.com>
+	 <20120524184728.GA13201@redhat.com>
+	 <1337885672.13348.194.camel@gandalf.stny.rr.com>
+	 <20120524191147.GA13936@redhat.com>
+	 <1337887495.13348.195.camel@gandalf.stny.rr.com>
+	 <20120524200541.GA6552@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 20:24, Will Drewry wrote:
-> On Thu, May 24, 2012 at 12:54 PM, Indan Zupancic <indan@nul.nu> wrote:
->> This patch doesn't make any sense whatsoever. You can't know why a system
->> call was blocked by a seccomp filter, assuming it's always because of the
->> system call number is wrong.
->
-> All this does is assert that the tracer can't change the syscall
-> number without it skipping the call.
+On Thu, 2012-05-24 at 16:05 -0400, Dave Jones wrote:
+> On Thu, May 24, 2012 at 03:24:55PM -0400, Steven Rostedt wrote:
+>  > On Thu, 2012-05-24 at 15:11 -0400, Dave Jones wrote:
+>  > 
+>  > >  > Also, how reproducible is it? When it triggered for me, it was constant.
+>  > >  > Every boot and test failed. But after I did the make mrproper, I have
+>  > >  > not been able to trigger it again. This is why I put it down as a bad
+>  > >  > build.
+>  > > 
+>  > > happens every time for me so far.
+>  > 
+>  > Did you also do a make mrproper and try again?
+> 
+> ok, that's nasty.  Works fine after a make clean.
+> 
 
-Why wouldn't it be allowed to change the system call number?
+Thanks for verifying. I'm thinking this is a build bug. Something's not
+cleaning up properly. It may be with the recordmcount code. Perhaps
+objects needed to change where the mcount calls are and did not?
 
-And try answering that question in a way that doesn't apply to syscall
-argument values too.
+I'll try other things to see if I can trigger this again. Then I'll save
+off the build tree, do a make clean, rebuild, and compare what's
+different.
 
-> If seccomp returned
-> SECCOMP_RET_TRACE because the argument to open was O_RDWR, then
-> everything is fine.
-
-No it's not fine, because it's inconsistent and arbitrary.
-
->
->> Also, you don't check if an allowed system call is changed into a denied
->> one, so this doesn't protect against ptracers bypassing seccomp filters.
->
-> This enforces that the system call that is going to be executed is the
-> one that triggered SECCOMP_RET_TRACE.  That means seccomp is
-> delegating the go/no-go decision to the tracer.  I don't understand
-> your assertion here.  This code doesn't affect the PTRACE_SYSCALL
-> case.
-
-It still gives normal ptracers the ability to bypass seccomp by changing
-allowed system calls into system calls that would have been denied. So
-considering ptrace can still be used to execute arbitrary system calls,
-why add this special case restriction to SECCOMP_RET_TRACE?
-
->
->> And one of the main points of PTRACE_EVENT_SECCOMP events was that it's
->> useful for cases that can't be handled or decided by the seccomp filter.
->> Then taking away the ability to change the syscall number makes it a lot
->> less useful.
->
-> Do you have a valid case where you want to remap one system call to
-> another without the ability to also handle the syscall exit path and
-> do any fixups?  I've mostly just seen skip, allow, update arguments -
-> not swapping the entire syscall.  That said, it's possible.  you could
-> do all sorts of weird things with ptrace if you want :)
-
-One case is for system call injection where an arbitrary syscall is
-hijacked for the jailer's purposes. But that needs the exit path too.
-Another one is replacing fork() with clone(), but that's only necessary
-on 2.4. Another one is to let the process call exit() to get rid of it.
-
-But it's easy to get the exit notification by resuming with PTRACE_SYSCALL
-after getting a PTRACE_EVENT_SECCOMP event, so I don't see how it matters
-if we're interested in the exit path or not.
-
-In the jailer the first system call after an execve is replaced with a
-call to mmap2() to get a read-only shared mapping which is used to avoid
-file path modifications and similar races. And when using seccomp all
-events are PTRACE_EVENT_SECCOMP ones, and those are exactly the ones
-where we need the shared read-only mapping. We could work around your
-ad hoc restriction, but the main thing is if seccomp filters is just
-about syscall numbers anyway, then why use BPF instead of a bitmask?
-
-The whole point of PTRACE_EVENT_SECCOMP is to delegate to ptrace, it
-means "we can't decide in the filter, ask the ptracer". This implies
-that the ptracer is trusted, so doing any checks afterwards is a bit
-pointless. But if you want to do it anyway, at least do it properly
-and re-run the filter after ptrace. To avoid loops you need to allow
-the syscall if you get another PTRACE_EVENT_SECCOMP.
-
->
->> Either do the seccomp test before or after ptrace, or both, but please
->> don't introduce ad hoc checks like this.
->
-> I don't feel strongly about this RFC, but I don't believe that
-> expectations are being changed dramatically.
-
-As seccomp can generate ptrace events, the only thing that makes sense is
-to either do seccomp first and ignore ptrace changes, or rerun filters after
-any ptrace changes. But as I said in my other mail, if a process can call
-ptrace(), it will pretty much avoid all secomp filters anyway, seccomp
-filters which allow ptrace() are pretty much guaranteed to be insecure.
-We're talking about a non-seccomped process ptracing a seccomped process,
-both with the same UID. I don't think it matters in practice what you do
-in this case, from a security point of view.
-
-Greetings,
-
-Indan
+-- Steve
 
 
