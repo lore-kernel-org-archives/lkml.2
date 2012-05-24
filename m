@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758043Ab2EXQij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 12:38:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab2EXQig (ORCPT
+	id S1758092Ab2EXQkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 12:40:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44655 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755145Ab2EXQka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 12:38:36 -0400
-Date: Thu, 24 May 2012 09:38:31 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v2 03/14] block: Add bio_clone_bioset()
-Message-ID: <20120524163831.GE27983@google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
- <1337817771-25038-4-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337817771-25038-4-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 May 2012 12:40:30 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/6] tools lib traceevent: Allow expressions in __print_symbolic() fields
+Date: Thu, 24 May 2012 13:40:08 -0300
+Message-Id: <1337877613-15133-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1337877613-15133-1-git-send-email-acme@infradead.org>
+References: <1337877613-15133-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 05:02:40PM -0700, Kent Overstreet wrote:
-> This consolidates some code, and will help in a later patch changing how
-> bio cloning works.
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
 
-Which consolidations are happening and which drivers are being
-affected how?
+The __print_symbolic() function takes a sequence of key-value pairs for
+pretty-printing a constant.  The new kvm:kvm_exit print fmt uses the
+expression:
 
-> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-> index e6e7b19..e5076f2 100644
-> --- a/drivers/md/dm.c
-> +++ b/drivers/md/dm.c
-> @@ -1062,26 +1062,19 @@ static struct bio *split_bvec(struct bio *bio, sector_t sector,
->   * Creates a bio that consists of range of complete bvecs.
->   */
->  static struct bio *clone_bio(struct bio *bio, sector_t sector,
-> -			     unsigned short idx, unsigned short bv_count,
-> +			     unsigned short bv_count,
->  			     unsigned int len, struct bio_set *bs)
->  {
->  	struct bio *clone;
->  
-> -	clone = bio_alloc_bioset(GFP_NOIO, bio->bi_max_vecs, bs);
-> -	__bio_clone(clone, bio);
-> +	clone = bio_clone_bioset(bio, GFP_NOIO, bs);
->  	clone->bi_sector = sector;
-> -	clone->bi_idx = idx;
-> -	clone->bi_vcnt = idx + bv_count;
-> +	clone->bi_vcnt = bv_count;
->  	clone->bi_size = to_bytes(len);
-> -	clone->bi_flags &= ~(1 << BIO_SEG_VALID);
+  __print_symbolic(..., { 0x040 + 1, "DB excp" }, ...)
 
-Why is this safe?  If it's only bioset related API changes, why are
-there other changes at all?  If the new clone interface can handle
-bioset fine, do we still need to expose __bio_clone()?
+Currently only atoms are supported and this print fmt fails to parse.
+This patch adds support for expressions instead of just atoms so that
+0x040 + 1 is parsed successfully.
 
-> -	if (bio_integrity(bio)) {
-> -		bio_integrity_clone(clone, bio, GFP_NOIO, bs);
-> -
-> -		if (idx != bio->bi_idx || clone->bi_size < bio->bi_size)
-> -			bio_integrity_trim(clone,
-> -					   bio_sector_offset(bio, idx, 0), len);
-> -	}
-> +	if (bio_integrity(bio) &&
-> +	    clone->bi_size < bio->bi_size)
-> +		bio_integrity_trim(clone, 0, len);
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1337740619-27925-6-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/lib/traceevent/event-parse.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Why is idx != bi_idx test dropped?
-
-I'm gonna stop here on this series.  It doesn't seem like the issues
-pointed out before have been addressed.  I recommend spending more
-effort on patch descriptions.  Writing descriptions is not only
-important for reviewing and history but it's a good step in ensuring
-the patches are sane and properly split.  If you can't explain each
-change in the patch, it generally means either the changes themselves
-are wrong or wrongly split.
-
-Thanks.
-
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 9985349..33450c9 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -2124,6 +2124,13 @@ process_fields(struct event_format *event, struct print_flag_sym **list, char **
+ 
+ 		free_token(token);
+ 		type = process_arg(event, arg, &token);
++
++		if (type == EVENT_OP)
++			type = process_op(event, arg, &token);
++
++		if (type == EVENT_ERROR)
++			goto out_free;
++
+ 		if (test_type_token(type, token, EVENT_DELIM, ","))
+ 			goto out_free;
+ 
 -- 
-tejun
+1.7.9.2.358.g22243
+
