@@ -1,172 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab2EXUzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 16:55:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59647 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751513Ab2EXUzF (ORCPT
+	id S1759213Ab2EXU4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 16:56:22 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:29893 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab2EXU4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 16:55:05 -0400
-Date: Thu, 24 May 2012 13:53:26 -0700
-From: tip-bot for Jiang Liu <liuj97@gmail.com>
-Message-ID: <tip-818b0f3bfb236ae66cac3ff38e86b9e47f24b7aa@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        chenkeping@huawei.com, jiang.liu@huawei.com, liuj97@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, liuj97@gmail.com, jiang.liu@huawei.com,
-        chenkeping@huawei.com
-In-Reply-To: <1333120296-13563-3-git-send-email-jiang.liu@huawei.com>
-References: <1333120296-13563-3-git-send-email-jiang.liu@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Introduce irq_do_set_affinity()
-  to reduce duplicated code
-Git-Commit-ID: 818b0f3bfb236ae66cac3ff38e86b9e47f24b7aa
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 24 May 2012 13:53:33 -0700 (PDT)
+	Thu, 24 May 2012 16:56:21 -0400
+Message-ID: <1337892811.16730.419.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 6/6] ACPI: Set hotplug _OST support bit to _OSC
+From: Toshi Kani <toshi.kani@hp.com>
+To: shuahkhan@gmail.com
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
+        liuj97@gmail.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
+Date: Thu, 24 May 2012 14:53:31 -0600
+In-Reply-To: <1337884020.2718.89.camel@lorien2>
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
+	 <1337826324-16802-7-git-send-email-toshi.kani@hp.com>
+	 <1337884020.2718.89.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  818b0f3bfb236ae66cac3ff38e86b9e47f24b7aa
-Gitweb:     http://git.kernel.org/tip/818b0f3bfb236ae66cac3ff38e86b9e47f24b7aa
-Author:     Jiang Liu <liuj97@gmail.com>
-AuthorDate: Fri, 30 Mar 2012 23:11:34 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 24 May 2012 22:36:40 +0200
+On Thu, 2012-05-24 at 12:27 -0600, Shuah Khan wrote:
+> On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
+> > When ACPI_HOTPLUG_OST is defined, set hotplug _OST support bit
+> > OSC_SB_HOTPLUG_OST_SUPPORT to indicate that the OS supports hotplug
+> > _OST by calling the platform-wide ACPI Operating System Capabilities
+> > (_OSC).
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > ---
+> >  drivers/acpi/bus.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> > index 3188da3..3d4fc7a 100644
+> > --- a/drivers/acpi/bus.c
+> > +++ b/drivers/acpi/bus.c
+> > @@ -548,6 +548,10 @@ static void acpi_bus_osc_support(void)
+> >  	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_PPC_OST_SUPPORT;
+> >  #endif
+> >  
+> > +#ifdef ACPI_HOTPLUG_OST
+> > +	capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_HOTPLUG_OST_SUPPORT;
+> > +#endif
+> 
+> Why isn't firmware response to _OSC checked to make sure firmware also
+> supports _OST? My general comments about compile time switch that is
+> enabled only a few cases _OST Ejection/Insertion is intended to be used
+> are applicable here.
 
-genirq: Introduce irq_do_set_affinity() to reduce duplicated code
+This is because when FW does not support _OST, it does not implement
+_OST method.  acpi_evaluate_hotplug_opt() simply returns with
+AE_NOT_FOUND when _OST method does not exist.
 
-All invocations of chip->irq_set_affinity() are doing the same return
-value checks. Let them all use a common function.
 
-[ tglx: removed the silly likely while at it ]
+Thanks for all good questions and thorough review!  Please let me know
+if I did not address any of your comments properly.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>
-Cc: Keping Chen <chenkeping@huawei.com>
-Link: http://lkml.kernel.org/r/1333120296-13563-3-git-send-email-jiang.liu@huawei.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/internals.h |    3 +++
- kernel/irq/manage.c    |   39 ++++++++++++++++++++++-----------------
- kernel/irq/migration.c |   13 ++-----------
- 3 files changed, 27 insertions(+), 28 deletions(-)
+Thanks,
+-Toshi
 
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index 8e5c56b..001fa5b 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -101,6 +101,9 @@ extern int irq_select_affinity_usr(unsigned int irq, struct cpumask *mask);
- 
- extern void irq_set_thread_affinity(struct irq_desc *desc);
- 
-+extern int irq_do_set_affinity(struct irq_data *data,
-+			       const struct cpumask *dest, bool force);
-+
- /* Inline functions for support of irq chips on slow busses */
- static inline void chip_bus_lock(struct irq_desc *desc)
- {
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index bb32326..a1b9033 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -139,6 +139,25 @@ static inline void
- irq_get_pending(struct cpumask *mask, struct irq_desc *desc) { }
- #endif
- 
-+int irq_do_set_affinity(struct irq_data *data, const struct cpumask *mask,
-+			bool force)
-+{
-+	struct irq_desc *desc = irq_data_to_desc(data);
-+	struct irq_chip *chip = irq_data_get_irq_chip(data);
-+	int ret;
-+
-+	ret = chip->irq_set_affinity(data, mask, false);
-+	switch (ret) {
-+	case IRQ_SET_MASK_OK:
-+		cpumask_copy(data->affinity, mask);
-+	case IRQ_SET_MASK_OK_NOCOPY:
-+		irq_set_thread_affinity(desc);
-+		ret = 0;
-+	}
-+
-+	return ret;
-+}
-+
- int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- {
- 	struct irq_chip *chip = irq_data_get_irq_chip(data);
-@@ -149,14 +168,7 @@ int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
- 		return -EINVAL;
- 
- 	if (irq_can_move_pcntxt(data)) {
--		ret = chip->irq_set_affinity(data, mask, false);
--		switch (ret) {
--		case IRQ_SET_MASK_OK:
--			cpumask_copy(data->affinity, mask);
--		case IRQ_SET_MASK_OK_NOCOPY:
--			irq_set_thread_affinity(desc);
--			ret = 0;
--		}
-+		ret = irq_do_set_affinity(data, mask, false);
- 	} else {
- 		irqd_set_move_pending(data);
- 		irq_copy_pending(desc, mask);
-@@ -280,9 +292,8 @@ EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
- static int
- setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- {
--	struct irq_chip *chip = irq_desc_get_chip(desc);
- 	struct cpumask *set = irq_default_affinity;
--	int ret, node = desc->irq_data.node;
-+	int node = desc->irq_data.node;
- 
- 	/* Excludes PER_CPU and NO_BALANCE interrupts */
- 	if (!irq_can_set_affinity(irq))
-@@ -308,13 +319,7 @@ setup_affinity(unsigned int irq, struct irq_desc *desc, struct cpumask *mask)
- 		if (cpumask_intersects(mask, nodemask))
- 			cpumask_and(mask, mask, nodemask);
- 	}
--	ret = chip->irq_set_affinity(&desc->irq_data, mask, false);
--	switch (ret) {
--	case IRQ_SET_MASK_OK:
--		cpumask_copy(desc->irq_data.affinity, mask);
--	case IRQ_SET_MASK_OK_NOCOPY:
--		irq_set_thread_affinity(desc);
--	}
-+	irq_do_set_affinity(&desc->irq_data, mask, false);
- 	return 0;
- }
- #else
-diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
-index c3c8975..ca3f4aa 100644
---- a/kernel/irq/migration.c
-+++ b/kernel/irq/migration.c
-@@ -42,17 +42,8 @@ void irq_move_masked_irq(struct irq_data *idata)
- 	 * For correct operation this depends on the caller
- 	 * masking the irqs.
- 	 */
--	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
--		   < nr_cpu_ids)) {
--		int ret = chip->irq_set_affinity(&desc->irq_data,
--						 desc->pending_mask, false);
--		switch (ret) {
--		case IRQ_SET_MASK_OK:
--			cpumask_copy(desc->irq_data.affinity, desc->pending_mask);
--		case IRQ_SET_MASK_OK_NOCOPY:
--			irq_set_thread_affinity(desc);
--		}
--	}
-+	if (cpumask_any_and(desc->pending_mask, cpu_online_mask) < nr_cpu_ids)
-+		irq_do_set_affinity(&desc->irq_data, desc->pending_mask, false);
- 
- 	cpumask_clear(desc->pending_mask);
- }
+
+
+> 
+> -- Shuah
+> 
+> 
+> 
+> 
+> > +
+> >  	if (!ghes_disable)
+> >  		capbuf[OSC_SUPPORT_TYPE] |= OSC_SB_APEI_SUPPORT;
+> >  	if (ACPI_FAILURE(acpi_get_handle(NULL, "\\_SB", &handle)))
+> 
+> 
+
+
