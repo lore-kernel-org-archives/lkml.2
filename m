@@ -1,155 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2EXHnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 03:43:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53307 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751346Ab2EXHnA (ORCPT
+	id S1753511Ab2EXHpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 03:45:25 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:4638 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab2EXHpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 03:43:00 -0400
-Message-ID: <1337845361.2955.6.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not
- recognized
-From: James Bottomley <jejbbe@hansenpartnership.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: David Miller <davem@davemloft.net>, mroos@linux.ee,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        stern@rowland.harvard.edu, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>
-Date: Thu, 24 May 2012 08:42:41 +0100
-In-Reply-To: <1337826142.6877.7.camel@dwillia2-mobl>
-References: <alpine.SOC.1.00.1205221200050.9585@math.ut.ee>
-	 <20120522.151217.278388169416093561.davem@davemloft.net>
-	 <alpine.SOC.1.00.1205231945480.12326@math.ut.ee>
-	 <20120523.140451.386112705611304887.davem@davemloft.net>
-	 <1337813770.3013.37.camel@dabdike.int.hansenpartnership.com>
-	 <1337826142.6877.7.camel@dwillia2-mobl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 24 May 2012 03:45:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6720"; a="194205770"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH] memblock: Document memblock_is_region_{memory,reserved}()
+Date: Thu, 24 May 2012 00:45:21 -0700
+Message-Id: <1337845521-32755-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.2.552.gaa3bb87
+In-Reply-To: <20120515151509.GC6119@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 19:22 -0700, Dan Williams wrote:
-> On Wed, 2012-05-23 at 23:56 +0100, James Bottomley wrote:
-> > On Wed, 2012-05-23 at 14:04 -0400, David Miller wrote:
-> > > From: Meelis Roos <mroos@linux.ee>
-> > > Date: Wed, 23 May 2012 19:46:46 +0300 (EEST)
-> > > 
-> > > CC:'ing interested parties.
-> > > 
-> > > >> > Just tested 3.4.0-02580-g72c04af on about 10 machines. While most of 
-> > > >> > them work (including 3 different sparc64 machines with real scsi disks), 
-> > > >> > Sun Netra X1 with pata_ali and IDE disk consistently fails to boot. sda 
-> > > >> > is recognized but no partitions. 3.3.0 works fine, as did something 
-> > > >> > around 3.4-rc7 (plain 3.4 not tested yet). No other IDE machines tested 
-> > > >> > yet since I have none with remote console at the moment.
-> > > >> 
-> > > >> If 3.4.0-final is OK, start bisecting from v3.4.0 until 72c04af.  One
-> > > >> possibility could be the sparc64 NOBOOTMEM conversion that went into
-> > > >> the merge window.
-> > > > 
-> > > > Bisecting leads to this commit:
-> > > > 
-> > > > a7a20d103994fd760766e6c9d494daa569cbfe06 is the first bad commit
-> > > > commit a7a20d103994fd760766e6c9d494daa569cbfe06
-> > > > Author: Dan Williams <dan.j.williams@intel.com>
-> > > > Date:   Thu Mar 22 17:05:11 2012 -0700
-> > > > 
-> > > >     [SCSI] sd: limit the scope of the async probe domain
-> > 
-> > My theory is that this is an init problem: The assumption in a lot of
-> > our code is that async_synchronize_full() waits for everything ... even
-> > the domain specific async schedules, which isn't true.
-> > 
-> > The code in init that makes this assumption is wait_for_device_probe().
-> > There's also a fun async_synchronize_full() in init_post() that assumes
-> > it can free the init memory after, which would fail badly if anything in
-> > init used an async domain.
-> > 
-> > So either we fix the assumptions or we can't use domain specific async
-> > schedules.
-> > 
-> 
-> Hm, we already have cases of code not trusting the semantics of
-> wait_for_device_probe(), especially as it relates to async scanning like
-> in kernel/power/hibernate.c:
-> 
->                 /*
->                  * Some device discovery might still be in progress; we need
->                  * to wait for this to finish.
->                  */
->                 wait_for_device_probe();
-> 
->                 if (resume_wait) {
->                         while ((swsusp_resume_device = name_to_dev_t(resume_file)) == 0)
->                                 msleep(10);
->                         async_synchronize_full();
->                 }
-> 
->                 /*
->                  * We can't depend on SCSI devices being available after loading
->                  * one of their modules until scsi_complete_async_scans() is
->                  * called and the resume device usually is a SCSI one.
->                  */
->                 scsi_complete_async_scans();
+At first glance one would think that memblock_is_region_memory()
+and memblock_is_region_reserved() would be implemented in the
+same way. Unfortunately they aren't and the former returns
+whether the region specified is a subset of a memory bank while
+the latter returns whether the region specified intersects with
+reserved memory.
 
-This is actually looks wrong: it works if SCSI is built in, but it's a
-nop if SCSI is a module (the nop function is gated by the else clause of
-#ifdef CONFIG_SCSI)
+Document the two functions so that users aren't tempted to
+make the implementation the same between them and to clarify the
+purpose of the functions.
 
-Rafael, you added this not via the SCSI tree, is that the intention?
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ mm/memblock.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-> ...so it seems scsi_complete_async_scans() should take care to flush sd
-> probe actions as well... here is a test patch:
-> 
-> --- snip ---
-> 
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 8906557..05a92d3 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -141,13 +141,13 @@ struct async_scan_data {
->   * started scanning after this function was called may or may not have
->   * finished.
->   */
-> -int scsi_complete_async_scans(void)
-> +static void __scsi_complete_async_scans(void)
->  {
->         struct async_scan_data *data;
->  
->         do {
->                 if (list_empty(&scanning_hosts))
-> -                       return 0;
-> +                       return;
->                 /* If we can't get memory immediately, that's OK.  Just
->                  * sleep a little.  Even if we never get memory, the async
->                  * scans will finish eventually.
-> @@ -181,6 +181,13 @@ int scsi_complete_async_scans(void)
->         spin_unlock(&async_scan_lock);
->  
->         kfree(data);
-> +}
-> +
-> +int scsi_complete_async_scans(void)
-> +{
-> +       __scsi_complete_async_scans();
-> +       async_synchronize_full_domain(&scsi_sd_probe_domain);
-> +
->         return 0;
->  }
-
-But this still doesn't fix the boot problem, does it? ... unless we want
-to add a scsi_complete_async_scans() into init/do_mounts.c, which looks
-like piling one hack on top of another.
-
-I really think the correct fix is to have wait_for_device_probe()
-actually wait until all probes have completed and everything is
-discovered, that way we get the semantics the name implies and boot
-should just work.
-
-James
-
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a44eab3..e35e39b 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -855,6 +855,16 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
+ 	return memblock_search(&memblock.memory, addr) != -1;
+ }
+ 
++/**
++ * memblock_is_region_memory - check if a region is a subset of memory
++ * @base: base of region to check
++ * @size: size of region to check
++ *
++ * Check if the region [@base, @base+@size) is a subset of a memory block.
++ *
++ * RETURNS:
++ * 0 if false, non-zero if true
++ */
+ int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
+ {
+ 	int idx = memblock_search(&memblock.memory, base);
+@@ -867,6 +877,16 @@ int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size
+ 		 memblock.memory.regions[idx].size) >= end;
+ }
+ 
++/**
++ * memblock_is_region_reserved - check if a region intersects reserved memory
++ * @base: base of region to check
++ * @size: size of region to check
++ *
++ * Check if the region [@base, @base+@size) intersects a reserved memory block.
++ *
++ * RETURNS:
++ * 0 if false, non-zero if true
++ */
+ int __init_memblock memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
+ {
+ 	memblock_cap_size(base, &size);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
