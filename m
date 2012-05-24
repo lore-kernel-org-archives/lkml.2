@@ -1,96 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2EXOVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 10:21:51 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:62436 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339Ab2EXOVt convert rfc822-to-8bit (ORCPT
+	id S932463Ab2EXO0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 10:26:25 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:44565 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab2EXO0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 10:21:49 -0400
+	Thu, 24 May 2012 10:26:24 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v6 3/4] cpusets,
+ hotplug: Restructure functions that are invoked during hotplug
+To: a.p.zijlstra@chello.nl, mingo@kernel.org, pjt@google.com,
+        paul@paulmenage.org, akpm@linux-foundation.org
+Cc: rjw@sisk.pl, nacc@us.ibm.com, rientjes@google.com,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
+        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Thu, 24 May 2012 19:46:55 +0530
+Message-ID: <20120524141650.3692.48637.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com>
+References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20120523120212.GA17595@phenom.ffwll.local>
-References: <20120522123058.GB4629@phenom.ffwll.local>
-	<CAJJYPdmcJYT1VTnqbkbybut-_NqpFYsuEEzDb9LO-E+ss=wz-g@mail.gmail.com>
-	<20120522144443.GD4629@phenom.ffwll.local>
-	<CAJJYPdmimcz45qdT0W-iLTyY-U2qCe4fa4+e19adrjMtwd2Ywg@mail.gmail.com>
-	<CAJJYPdkhSOXZeCJN9MDHTgd1hg07zo1ZDXkwwASJ74NojQ=dyQ@mail.gmail.com>
-	<CAOw6vbKOss-h8A2yRRunCKv7RUnD6QV4Pj1Rg8+2YC5qBKL8pQ@mail.gmail.com>
-	<CAJJYPdnoEu6QGuACUn0e10TG3XQQsaM5AqfbhqRbH6pwUQoVwg@mail.gmail.com>
-	<20120523070728.GC5062@phenom.ffwll.local>
-	<20120523091109.GI5062@phenom.ffwll.local>
-	<CAJJYPdmmFrUB=SPq5dyLxnDH=q0hwVcGvKCtHpNMVv8CfdomFw@mail.gmail.com>
-	<20120523120212.GA17595@phenom.ffwll.local>
-Date: Thu, 24 May 2012 16:21:48 +0200
-Message-ID: <CAJJYPd=G2bdA+92cWJeMBqHV9FVL1-vRPSYH44+Hh3G8aqa9pg@mail.gmail.com>
-Subject: Re: [Intel-gfx] Regression on GMA965 - display seems to have slow
- jump changes in brightness
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-        Sean Paul <seanpaul@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx@lists.freedesktop.org, jbarnes@virtuousgeek.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052414-2674-0000-0000-000004AB608D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/23 Daniel Vetter <daniel@ffwll.ch>:
-> On Wed, May 23, 2012 at 01:48:41PM +0200, Zdenek Kabelac wrote:
->> 2012/5/23 Daniel Vetter <daniel@ffwll.ch>:
->> > On Wed, May 23, 2012 at 09:07:28AM +0200, Daniel Vetter wrote:
->> >> On Wed, May 23, 2012 at 08:59:07AM +0200, Zdenek Kabelac wrote:
->> >> > Hmm I've been using i915.lvds_downclock=1 on grub command line, and
->> >> > haven't noticed any visible problems with 3.3 kernel. So I'd rather
->> >> > ask if the problematic patch isn't doing downclocking in a wrong way?
->> >> > Or maybe detection that downclocking is not supported properly is not
->> >> > correct now ?
->> >>
->> >> Nope, Sean's analysis is pretty much correct, that patch only makes
->> >> downclocking possible in more circumstances. And downclocking can
->> >> certainly explain what you're seeing, the backlight pwm signal is driven
->> >> off the panel dotclock, so if we change that we can very likely cause some
->> >> funny interference. I guess we could frob the backligth control settings
->> >> and adjust them for the change in clockspeed, but the current backlight
->> >> code is a bit a mess. So right now I suggest you just drop that option -
->> >> there are reasons it's not the default ;-)
->> >
->> > Quick question: What's the frequency of the brightness change? And how
->> > regular are the changes?
->> > -Daniel
->>
->>
->> Now when it's obvious it's related to powersaving  - it's probably
->> much easier to explain,
->> that I've been observing those changes when some activity was happing -
->> i.e. opening  picture - and after like 1 second image has flashed, -
->> then I've moved the mouse
->> stopped - and again image has flashed with brightness a bit.
->>
->> The issue would be probably far less noticeable if the period of time
->> of idle GPU would have to be
->> much longer (i.e. in minute range)
->
-> Hm, that sounds more like something ugly is happening when we switch
-> frequencies as opposed to the different frequency causing interference
-> with the backlight. Just to check: You only see a quick flash, then
-> brightness is back to normal?
+Separate out the cpuset related handling for CPU/Memory online/offline.
+This also helps us exploit the most obvious and basic level of optimization
+that any notification mechanism (CPU/Mem online/offline) has to offer us:
+"We *know* why we have been invoked. So stop pretending that we are lost,
+and do only the necessary amount of processing!".
 
-In fact I'm not really noticing the moment it goes back to normal -
-I'll notice when it gets darker.
-i.e. when I open  picture with  'qiv'  - after a second I notice that
-picture becomes a bit darker.
-If I do not move with anything - it stays this way.
+And while at it, rename scan_for_empty_cpusets() to
+scan_cpusets_upon_hotplug(), which is more appropriate considering how
+it is restructured.
 
->
-> If that's the case, please try Chris' fastboot branch. vsyncing the
-> frequency change might indeed fix this.
->
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-I've tried to compile, but compilation finished with some errors - so
-I've tried to rebase branch on master 3.4 - tried to resolve some
-error - but probably in a wrong thus resulted kernel given me just
-black screen when X has been initialized.  So I'll try to remove some
-config options and I'll try to rebuild original fastboot branch later.
+ include/linux/cpuset.h |    4 +-
+ kernel/cpuset.c        |   88 +++++++++++++++++++++++++++++++++---------------
+ kernel/sched/core.c    |    4 +-
+ 3 files changed, 65 insertions(+), 31 deletions(-)
 
-Zdenek
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index 668f66b..838320f 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -20,7 +20,7 @@ extern int number_of_cpusets;	/* How many cpusets are defined in system? */
+ 
+ extern int cpuset_init(void);
+ extern void cpuset_init_smp(void);
+-extern void cpuset_update_active_cpus(void);
++extern void cpuset_update_active_cpus(bool cpu_online);
+ extern void cpuset_cpus_allowed(struct task_struct *p, struct cpumask *mask);
+ extern void cpuset_cpus_allowed_fallback(struct task_struct *p);
+ extern nodemask_t cpuset_mems_allowed(struct task_struct *p);
+@@ -124,7 +124,7 @@ static inline void set_mems_allowed(nodemask_t nodemask)
+ static inline int cpuset_init(void) { return 0; }
+ static inline void cpuset_init_smp(void) {}
+ 
+-static inline void cpuset_update_active_cpus(void)
++static inline void cpuset_update_active_cpus(bool cpu_online)
+ {
+ 	partition_sched_domains(1, NULL, NULL);
+ }
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index ba96349..ba0a4d7 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -147,6 +147,12 @@ typedef enum {
+ 	CS_SPREAD_SLAB,
+ } cpuset_flagbits_t;
+ 
++/* the type of hotplug event */
++enum hotplug_event {
++	CPUSET_CPU_OFFLINE,
++	CPUSET_MEM_OFFLINE,
++};
++
+ /* convenient tests for these bits */
+ static inline int is_cpu_exclusive(const struct cpuset *cs)
+ {
+@@ -2016,8 +2022,10 @@ static struct cpuset *cpuset_next(struct list_head *queue)
+ 
+ 
+ /*
+- * Walk the specified cpuset subtree and look for empty cpusets.
+- * The tasks of such cpuset must be moved to a parent cpuset.
++ * Walk the specified cpuset subtree upon a hotplug operation (CPU/Memory
++ * online/offline) and update the cpusets accordingly.
++ * For regular CPU/Mem hotplug, look for empty cpusets; the tasks of such
++ * cpuset must be moved to a parent cpuset.
+  *
+  * Called with cgroup_mutex held.  We take callback_mutex to modify
+  * cpus_allowed and mems_allowed.
+@@ -2030,38 +2038,58 @@ static struct cpuset *cpuset_next(struct list_head *queue)
+  * that has tasks along with an empty 'mems'.  But if we did see such
+  * a cpuset, we'd handle it just like we do if its 'cpus' was empty.
+  */
+-static void scan_for_empty_cpusets(struct cpuset *root)
++static void
++scan_cpusets_upon_hotplug(struct cpuset *root, enum hotplug_event event)
+ {
+ 	LIST_HEAD(queue);
+-	struct cpuset *cp;	/* scans cpusets being updated */
++	struct cpuset *cp;		/* scans cpusets being updated */
+ 	static nodemask_t oldmems;	/* protected by cgroup_mutex */
+ 
+ 	list_add_tail((struct list_head *)&root->stack_list, &queue);
+ 
+-	while ((cp = cpuset_next(&queue)) != NULL) {
++	switch (event) {
++	case CPUSET_CPU_OFFLINE:
++		while ((cp = cpuset_next(&queue)) != NULL) {
+ 
+-		/* Continue past cpusets with all cpus, mems online */
+-		if (cpumask_subset(cp->cpus_allowed, cpu_active_mask) &&
+-		    nodes_subset(cp->mems_allowed, node_states[N_HIGH_MEMORY]))
+-			continue;
++			/* Continue past cpusets with all cpus online */
++			if (cpumask_subset(cp->cpus_allowed, cpu_active_mask))
++				continue;
+ 
+-		oldmems = cp->mems_allowed;
++			/* Remove offline cpus from this cpuset. */
++			mutex_lock(&callback_mutex);
++			cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
++							cpu_active_mask);
++			mutex_unlock(&callback_mutex);
+ 
+-		/* Remove offline cpus and mems from this cpuset. */
+-		mutex_lock(&callback_mutex);
+-		cpumask_and(cp->cpus_allowed, cp->cpus_allowed,
+-			    cpu_active_mask);
+-		nodes_and(cp->mems_allowed, cp->mems_allowed,
++			/* Move tasks from the empty cpuset to a parent */
++			if (cpumask_empty(cp->cpus_allowed))
++				remove_tasks_in_empty_cpuset(cp);
++			else
++				update_tasks_cpumask(cp, NULL);
++		}
++		break;
++
++	case CPUSET_MEM_OFFLINE:
++		while ((cp = cpuset_next(&queue)) != NULL) {
++
++			/* Continue past cpusets with all mems online */
++			if (nodes_subset(cp->mems_allowed,
++					node_states[N_HIGH_MEMORY]))
++				continue;
++
++			oldmems = cp->mems_allowed;
++
++			/* Remove offline mems from this cpuset. */
++			mutex_lock(&callback_mutex);
++			nodes_and(cp->mems_allowed, cp->mems_allowed,
+ 						node_states[N_HIGH_MEMORY]);
+-		mutex_unlock(&callback_mutex);
++			mutex_unlock(&callback_mutex);
+ 
+-		/* Move tasks from the empty cpuset to a parent */
+-		if (cpumask_empty(cp->cpus_allowed) ||
+-		     nodes_empty(cp->mems_allowed))
+-			remove_tasks_in_empty_cpuset(cp);
+-		else {
+-			update_tasks_cpumask(cp, NULL);
+-			update_tasks_nodemask(cp, &oldmems, NULL);
++			/* Move tasks from the empty cpuset to a parent */
++			if (nodes_empty(cp->mems_allowed))
++				remove_tasks_in_empty_cpuset(cp);
++			else
++				update_tasks_nodemask(cp, &oldmems, NULL);
+ 		}
+ 	}
+ }
+@@ -2080,8 +2108,11 @@ static void scan_for_empty_cpusets(struct cpuset *root)
+  *
+  * Called within get_online_cpus().  Needs to call cgroup_lock()
+  * before calling generate_sched_domains().
++ *
++ * @cpu_online: Indicates whether this is a CPU online event (true) or
++ * a CPU offline event (false).
+  */
+-void cpuset_update_active_cpus(void)
++void cpuset_update_active_cpus(bool cpu_online)
+ {
+ 	struct sched_domain_attr *attr;
+ 	cpumask_var_t *doms;
+@@ -2091,7 +2122,10 @@ void cpuset_update_active_cpus(void)
+ 	mutex_lock(&callback_mutex);
+ 	cpumask_copy(top_cpuset.cpus_allowed, cpu_active_mask);
+ 	mutex_unlock(&callback_mutex);
+-	scan_for_empty_cpusets(&top_cpuset);
++
++	if (!cpu_online)
++		scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_CPU_OFFLINE);
++
+ 	ndoms = generate_sched_domains(&doms, &attr);
+ 	cgroup_unlock();
+ 
+@@ -2122,9 +2156,9 @@ static int cpuset_track_online_nodes(struct notifier_block *self,
+ 	case MEM_OFFLINE:
+ 		/*
+ 		 * needn't update top_cpuset.mems_allowed explicitly because
+-		 * scan_for_empty_cpusets() will update it.
++		 * scan_cpusets_upon_hotplug() will update it.
+ 		 */
+-		scan_for_empty_cpusets(&top_cpuset);
++		scan_cpusets_upon_hotplug(&top_cpuset, CPUSET_MEM_OFFLINE);
+ 		break;
+ 	default:
+ 		break;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 59a1591..62f3fb2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6853,7 +6853,7 @@ static int cpuset_cpu_active(struct notifier_block *nfb, unsigned long action,
+ 
+ 	case CPU_ONLINE:
+ 	case CPU_DOWN_FAILED:
+-		cpuset_update_active_cpus();
++		cpuset_update_active_cpus(true);
+ 		break;
+ 	default:
+ 		return NOTIFY_DONE;
+@@ -6866,7 +6866,7 @@ static int cpuset_cpu_inactive(struct notifier_block *nfb, unsigned long action,
+ {
+ 	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+-		cpuset_update_active_cpus();
++		cpuset_update_active_cpus(false);
+ 		break;
+ 	case CPU_DOWN_PREPARE_FROZEN:
+ 		num_cpus_frozen++;
+
