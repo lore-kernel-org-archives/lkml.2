@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab2EYNNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:13:34 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:42836 "EHLO relay.sw.ru"
+	id S933098Ab2EYNOE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:14:04 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:15912 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672Ab2EYNJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:09:07 -0400
+	id S1757743Ab2EYNIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:08:52 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
@@ -17,9 +17,9 @@ Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Glauber Costa <glommer@parallels.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v3 14/28] slab: create duplicate cache
-Date: Fri, 25 May 2012 17:03:34 +0400
-Message-Id: <1337951028-3427-15-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 10/28] slab/slub: struct memcg_params
+Date: Fri, 25 May 2012 17:03:30 +0400
+Message-Id: <1337951028-3427-11-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
 References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
@@ -27,16 +27,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides kmem_cache_dup(), that duplicates
-a cache for a memcg, preserving its creation properties.
-Object size, alignment and flags are all respected.
-An exception is the SLAB_PANIC flag, since cache creation
-inside a memcg should not be fatal.
-
-This code is mostly written by Suleiman Souhlal,
-with some adaptations and simplifications by me.
-
-[ v3: add get_online cpus before the slab mutex ]
+For the kmem slab controller, we need to record some extra
+information in the kmem_cache structure.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 Signed-off-by: Suleiman Souhlal <suleiman@google.com>
@@ -46,78 +38,65 @@ CC: Michal Hocko <mhocko@suse.cz>
 CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
 ---
- mm/slab.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ include/linux/slab.h     |   14 ++++++++++++++
+ include/linux/slab_def.h |    4 ++++
+ include/linux/slub_def.h |    3 +++
+ 3 files changed, 21 insertions(+), 0 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 8bff32a1..e2227de 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -301,6 +301,8 @@ static void free_block(struct kmem_cache *cachep, void **objpp, int len,
- 			int node);
- static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp);
- static void cache_reap(struct work_struct *unused);
-+static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
-+			    int batchcount, int shared, gfp_t gfp);
+diff --git a/include/linux/slab.h b/include/linux/slab.h
+index a595dce..dbf36b5 100644
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -153,6 +153,20 @@ unsigned int kmem_cache_size(struct kmem_cache *);
+ #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
+ #endif
  
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++struct mem_cgroup_cache_params {
++	struct mem_cgroup *memcg;
++	int id;
++	atomic_t refcnt;
++
++#ifdef CONFIG_SLAB
++	/* Original cache parameters, used when creating a memcg cache */
++	size_t orig_align;
++
++#endif
++};
++#endif
++
  /*
-  * This function must be completely optimized away if a constant is passed to
-@@ -2616,6 +2618,42 @@ kmem_cache_create(const char *name, size_t size, size_t align,
- }
- EXPORT_SYMBOL(kmem_cache_create);
+  * Common kmalloc functions provided by all allocators
+  */
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index cba3139..06e4a3e 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -83,6 +83,10 @@ struct kmem_cache {
+ 	int obj_size;
+ #endif
  
 +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
-+				  struct kmem_cache *cachep)
-+{
-+	struct kmem_cache *new;
-+	unsigned long flags;
-+	char *name;
++	struct mem_cgroup_cache_params memcg_params;
++#endif
 +
-+	name = mem_cgroup_cache_name(memcg, cachep);
-+	if (!name)
-+		return NULL;
-+
-+	flags = cachep->flags & ~(SLAB_PANIC|CFLGS_OFF_SLAB);
-+
-+	get_online_cpus();
-+	mutex_lock(&cache_chain_mutex);
-+	new = __kmem_cache_create(memcg, name, obj_size(cachep),
-+	    cachep->memcg_params.orig_align, flags, cachep->ctor);
-+
-+	if (new == NULL) {
-+		kfree(name);
-+		goto out;
-+	}
-+
-+	if ((cachep->limit != new->limit) ||
-+	    (cachep->batchcount != new->batchcount) ||
-+	    (cachep->shared != new->shared))
-+		do_tune_cpucache(new, cachep->limit, cachep->batchcount,
-+		    cachep->shared, GFP_KERNEL);
-+out:
-+	mutex_unlock(&cache_chain_mutex);
-+	put_online_cpus();
-+	return new;
-+}
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-+
- #if DEBUG
- static void check_irq_off(void)
- {
-@@ -2811,6 +2849,12 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
- 		rcu_barrier();
- 
- 	mem_cgroup_release_cache(cachep);
+ /* 6) per-cpu/per-node data, touched during every alloc/free */
+ 	/*
+ 	 * We put array[] at the end of kmem_cache, because we want to size
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index c2f8c8b..5f5e942 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -102,6 +102,9 @@ struct kmem_cache {
+ #ifdef CONFIG_SYSFS
+ 	struct kobject kobj;	/* For sysfs */
+ #endif
 +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	/* memcg cache: free the name string. Doing it here saves us
-+	 * a pointer to it outside the slab code */
-+	if (cachep->memcg_params.id == -1)
-+		kfree(cachep->name);
++	struct mem_cgroup_cache_params memcg_params;
 +#endif
  
- 	__kmem_cache_destroy(cachep);
- 	mutex_unlock(&cache_chain_mutex);
+ #ifdef CONFIG_NUMA
+ 	/*
 -- 
 1.7.7.6
 
