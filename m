@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965113Ab2EYRIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:08:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22180 "EHLO mx1.redhat.com"
+	id S965063Ab2EYRI3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:08:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7390 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933417Ab2EYRDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933463Ab2EYRDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 13:03:35 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -23,41 +23,35 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 24/35] autonuma: follow_page check for pte_numa/pmd_numa
-Date: Fri, 25 May 2012 19:02:28 +0200
-Message-Id: <1337965359-29725-25-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 30/35] autonuma: reset autonuma page data when pages are freed
+Date: Fri, 25 May 2012 19:02:34 +0200
+Message-Id: <1337965359-29725-31-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this, follow_page wouldn't trigger the NUMA hinting faults.
+When pages are freed abort any pending migration. If knuma_migrated
+arrives first it will notice because get_page_unless_zero would fail.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/memory.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ mm/page_alloc.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 7f265fc..e3aa47c 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1483,7 +1483,7 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		goto no_page_table;
- 
- 	pmd = pmd_offset(pud, address);
--	if (pmd_none(*pmd))
-+	if (pmd_none(*pmd) || pmd_numa(*pmd))
- 		goto no_page_table;
- 	if (pmd_huge(*pmd) && vma->vm_flags & VM_HUGETLB) {
- 		BUG_ON(flags & FOLL_GET);
-@@ -1517,7 +1517,7 @@ split_fallthrough:
- 	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
- 
- 	pte = *ptep;
--	if (!pte_present(pte))
-+	if (!pte_present(pte) || pte_numa(pte))
- 		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
- 		goto unlock;
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 3d1ee70..1d3163f 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -614,6 +614,10 @@ static inline int free_pages_check(struct page *page)
+ 		bad_page(page);
+ 		return 1;
+ 	}
++	autonuma_migrate_page_remove(page);
++#ifdef CONFIG_AUTONUMA
++	ACCESS_ONCE(page->autonuma_last_nid) = -1;
++#endif
+ 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
+ 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
+ 	return 0;
