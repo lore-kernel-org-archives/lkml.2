@@ -1,64 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525Ab2EYXCn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 19:02:43 -0400
-Received: from mga02.intel.com ([134.134.136.20]:29985 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751136Ab2EYXCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 19:02:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="144799402"
-From: Andi Kleen <andi@firstfloor.org>
-To: daniel.santos@pobox.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Generic Red-Black Trees (status update)
-References: <4FC00C50.3000907@att.net>
-Date: Fri, 25 May 2012 16:02:41 -0700
-In-Reply-To: <4FC00C50.3000907@att.net> (Daniel Santos's message of "Fri, 25
-	May 2012 17:48:48 -0500")
-Message-ID: <m2fwanlv8u.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1759047Ab2EYXKZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 19:10:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44978 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756796Ab2EYXKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 19:10:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
+	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+	<CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+	<20120525043651.GA1391@google.com>
+	<CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+	<CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+	<20120525193716.GA8817@google.com>
+	<CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+	<CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+Date: Fri, 25 May 2012 16:10:20 -0700
+X-Google-Sender-Auth: Cc7vZO4JbMAA2AanqFJoJE47tAw
+Message-ID: <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8ff1c3d0f592f804c0e478e2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Santos <danielfsantos@att.net> writes:
+--e89a8ff1c3d0f592f804c0e478e2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> For anybody that's keeping up with this, I've gone through multiple
-> iterations and tests with 9 different gcc versions and concluded that
-> the search, insert & remove cores need to be coded in rbtree.h, using
-> the traditional interface (i.e., passing struct rb_node & rb_root
-> pointers instead of pointers to your specific object types).  The reason
-> is that gcc can't handle the cool fully-generic code until 4.6.  In gcc
-> 4.5.x, optimization completely breaks expanding the inline functions
-
-Can you post details?
-
-> into huge bloated  monsters.  Also, while I'm re-coding it all, I'm
-> adding find_near & insert_near, for more efficient insertion & retrieval
-> when you already have a node that should be close to the one you want
-> (which is often the case when inserting many objects at once).
+On Fri, May 25, 2012 at 2:55 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> I think we should fix this with a separate patch that removes
+> PCIBIOS_MAX_MEM_32 altogether, replacing this use with an explicit
+> 0xffffffff (or some other "max 32-bit value" symbol). =A0I don't think
+> there's anything arch-specific about this.
 >
-> So after I'm done with this, I'll start on a new header file (grbtree.h
-> probably) using the "grb_" prefix for it's functions that implements the
-> gcc 4.6.x+ fully generic & type safe interface, but using cute
-> pre-processor tricks for pre-4.6.x compatibility (basically, something
-> to consider using once gcc 4.6+ is more widely used).
+> So I'd like to see two patches here:
+> =A01) Avoid allocating 64-bit regions for 32-bit BARs
+> =A02) Try to allocate regions above 4GB for 64-bit BARs
 
-That doesn't make sense. Either it's used or it's not used,
-but if it's available it should work with all compilers.
+Sure. please check updated two patches.
 
-Otherwise you would end up with drivers or subsystems that
-are compiler specific.
+Thanks
 
-It's ok to be somewhat slower or bigger on older compilers.
+Yinghai
 
+--e89a8ff1c3d0f592f804c0e478e2
+Content-Type: application/octet-stream; name="32_bit_bar_allocation.patch"
+Content-Disposition: attachment; filename="32_bit_bar_allocation.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2nv487f0
 
+U3ViamVjdDogW1BBVENIXSBQQ0k6IGNhcCByZXNvdXJjZSBhbGxvY2F0aW9uIGZvciAzMmJpdCBi
+YXIgZm9yIGFsbCBhcmNoaXRpdHVyZXMKClNob3VsZCBub3QgbGltaXQgdG8geDg2IHBsYXRmb3Jt
+LCB0aGF0IGlzIHBjaSByZXF1aXJlbWVudC4KCkFkZCBQQ0lfTUFYX1JFU09VUkNFXzMyIGFuZCB1
+c2UgdGhhdCBpbnN0ZWFkLgoKQWxzbyBraWxsIFBDSUJJT1NfTUFYX01FTV8zMi4KClNpZ25lZC1v
+ZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC94ODYvaW5j
+bHVkZS9hc20vcGNpLmggfCAgICAxIC0KIGRyaXZlcnMvcGNpL2J1cy5jICAgICAgICAgIHwgICAg
+NCArKy0tCiBkcml2ZXJzL3BjaS9wY2kuaCAgICAgICAgICB8ICAgIDMgKysrCiBpbmNsdWRlL2xp
+bnV4L3BjaS5oICAgICAgICB8ICAgIDQgLS0tLQogNCBmaWxlcyBjaGFuZ2VkLCA1IGluc2VydGlv
+bnMoKyksIDcgZGVsZXRpb25zKC0pCgpJbmRleDogbGludXgtMi42L2RyaXZlcnMvcGNpL2J1cy5j
+Cj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvcGNpL2J1cy5jCisrKyBsaW51
+eC0yLjYvZHJpdmVycy9wY2kvYnVzLmMKQEAgLTEyMSwxMyArMTIxLDEzIEBAIHBjaV9idXNfYWxs
+b2NfcmVzb3VyY2Uoc3RydWN0IHBjaV9idXMgKmIKIHsKIAlpbnQgaSwgcmV0ID0gLUVOT01FTTsK
+IAlzdHJ1Y3QgcmVzb3VyY2UgKnI7Ci0JcmVzb3VyY2Vfc2l6ZV90IG1heCA9IC0xOworCXJlc291
+cmNlX3NpemVfdCBtYXggPSBQQ0lfTUFYX1JFU09VUkNFOwogCiAJdHlwZV9tYXNrIHw9IElPUkVT
+T1VSQ0VfSU8gfCBJT1JFU09VUkNFX01FTTsKIAogCS8qIGRvbid0IGFsbG9jYXRlIHRvbyBoaWdo
+IGlmIHRoZSBwcmVmIG1lbSBkb2Vzbid0IHN1cHBvcnQgNjRiaXQqLwogCWlmICghKHJlcy0+Zmxh
+Z3MgJiBJT1JFU09VUkNFX01FTV82NCkpCi0JCW1heCA9IFBDSUJJT1NfTUFYX01FTV8zMjsKKwkJ
+bWF4ID0gUENJX01BWF9SRVNPVVJDRV8zMjsKIAogCXBjaV9idXNfZm9yX2VhY2hfcmVzb3VyY2Uo
+YnVzLCByLCBpKSB7CiAJCWlmICghcikKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9wY2ku
+aAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9wY2kuaAorKysgbGlu
+dXgtMi42L2RyaXZlcnMvcGNpL3BjaS5oCkBAIC0yMDgsNiArMjA4LDkgQEAgZW51bSBwY2lfYmFy
+X3R5cGUgewogCXBjaV9iYXJfbWVtNjQsCQkvKiBBIDY0LWJpdCBtZW1vcnkgQkFSICovCiB9Owog
+CisjZGVmaW5lIFBDSV9NQVhfUkVTT1VSQ0UJKChyZXNvdXJjZV9zaXplX3QpfjApCisjZGVmaW5l
+IFBDSV9NQVhfUkVTT1VSQ0VfMzIJKChyZXNvdXJjZV9zaXplX3QpMHhmZmZmZmZmZikKKwogYm9v
+bCBwY2lfYnVzX3JlYWRfZGV2X3ZlbmRvcl9pZChzdHJ1Y3QgcGNpX2J1cyAqYnVzLCBpbnQgZGV2
+Zm4sIHUzMiAqcGwsCiAJCQkJaW50IGNyc190aW1lb3V0KTsKIGV4dGVybiBpbnQgcGNpX3NldHVw
+X2RldmljZShzdHJ1Y3QgcGNpX2RldiAqZGV2KTsKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9p
+bmNsdWRlL2FzbS9wY2kuaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9p
+bmNsdWRlL2FzbS9wY2kuaAorKysgbGludXgtMi42L2FyY2gveDg2L2luY2x1ZGUvYXNtL3BjaS5o
+CkBAIC0xNDksNyArMTQ5LDYgQEAgdm9pZCBkZWZhdWx0X3Jlc3RvcmVfbXNpX2lycXMoc3RydWN0
+IHBjaQogCiAvKiBnZW5lcmljIHBjaSBzdHVmZiAqLwogI2luY2x1ZGUgPGFzbS1nZW5lcmljL3Bj
+aS5oPgotI2RlZmluZSBQQ0lCSU9TX01BWF9NRU1fMzIgMHhmZmZmZmZmZgogCiAjaWZkZWYgQ09O
+RklHX05VTUEKIC8qIFJldHVybnMgdGhlIG5vZGUgYmFzZWQgb24gcGNpIGJ1cyAqLwpJbmRleDog
+bGludXgtMi42L2luY2x1ZGUvbGludXgvcGNpLmgKPT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9y
+aWcvaW5jbHVkZS9saW51eC9wY2kuaAorKysgbGludXgtMi42L2luY2x1ZGUvbGludXgvcGNpLmgK
+QEAgLTEzNDAsMTAgKzEzNDAsNiBAQCBzdGF0aWMgaW5saW5lIGludCBwY2lfZG9tYWluX25yKHN0
+cnVjdCBwCiAKICNpbmNsdWRlIDxhc20vcGNpLmg+CiAKLSNpZm5kZWYgUENJQklPU19NQVhfTUVN
+XzMyCi0jZGVmaW5lIFBDSUJJT1NfTUFYX01FTV8zMiAoLTEpCi0jZW5kaWYKLQogLyogdGhlc2Ug
+aGVscGVycyBwcm92aWRlIGZ1dHVyZSBhbmQgYmFja3dhcmRzIGNvbXBhdGliaWxpdHkKICAqIGZv
+ciBhY2Nlc3NpbmcgcG9wdWxhciBQQ0kgQkFSIGluZm8gKi8KICNkZWZpbmUgcGNpX3Jlc291cmNl
+X3N0YXJ0KGRldiwgYmFyKQkoKGRldiktPnJlc291cmNlWyhiYXIpXS5zdGFydCkK
+--e89a8ff1c3d0f592f804c0e478e2
+Content-Type: application/octet-stream; 
+	name="allocate_high_at_first_v4.patch"
+Content-Disposition: attachment; filename="allocate_high_at_first_v4.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2nv4nvh1
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+U3ViamVjdDogW1BBVENIXSBQQ0k6IFRyeSB0byBhbGxvY2F0ZSBtZW02NCBhYm92ZSA0RyBhdCBm
+aXJzdAoKYW5kIHdpbGwgZmFsbCBiYWNrIHRvIGJlbG93IDRnIGlmIGl0IGNhbiBub3QgZmluZCBh
+bnkgYWJvdmUgNGcuCgp4ODYgMzJiaXQgd2l0aG91dCBYODZfUEFFIHN1cHBvcnQgd2lsbCBoYXZl
+IGJvdHRvbSBzZXQgdG8gMCwgYmVjdWFzZQpyZXNvdXJjZV9zaXplX3QgaXMgMzJiaXQuCgpBbHNv
+IGZvciAzMmJpdCB3aXRoIHJlc291cmNlX3NpemVfdCA2NGJpdCBrZXJuZWwgb24gbWFjaGluZSB3
+aXRoIHBhZSBzdXBwb3J0CndlIGFyZSBzYWZlIGJlY2F1c2UgaW9tZW1fcmVzb3VyY2UgaXMgbGlt
+aXRlZCB0byAzMmJpdCBhY2NvcmRpbmcgdG8KeDg2X3BoeXNfYml0cy4KCi12MjogdXBkYXRlIGJv
+dHRvbSBhc3NpZ25pbmcgdG8gbWFrZSBpdCBjbGVhciBmb3Igbm9uLXBhZSBzdXBwb3J0IG1hY2hp
+bmUuCi12MzogQmpvcm4ncyBjaGFuZ2U6Cgl1c2UgTUFYX1JFT1VSQ0UgaW5zdGVhZCBvZiAtMQoJ
+dXNlIHN0YXJ0L2VuZCBpbnN0ZWFkIG9mIGJvdHRvbS9tYXgKCWZvciBhbGwgYXJjaCBpbnN0ZWFk
+IG9mIGp1c3QgeDg2XzY0Ci12NDogdXBkYXRlZCBhZnRlciBQQ0lfTUFYX1JFU09VUkNFXzMyIGNo
+YW5nZS4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0t
+LQogZHJpdmVycy9wY2kvYnVzLmMgfCAgIDI5ICsrKysrKysrKysrKysrKysrKysrKystLS0tLS0t
+CiAxIGZpbGUgY2hhbmdlZCwgMjIgaW5zZXJ0aW9ucygrKSwgNyBkZWxldGlvbnMoLSkKCkluZGV4
+OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvYnVzLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9y
+aWcvZHJpdmVycy9wY2kvYnVzLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9idXMuYwpAQCAt
+MTIxLDE0ICsxMjEsMjMgQEAgcGNpX2J1c19hbGxvY19yZXNvdXJjZShzdHJ1Y3QgcGNpX2J1cyAq
+YgogewogCWludCBpLCByZXQgPSAtRU5PTUVNOwogCXN0cnVjdCByZXNvdXJjZSAqcjsKLQlyZXNv
+dXJjZV9zaXplX3QgbWF4ID0gUENJX01BWF9SRVNPVVJDRTsKKwlyZXNvdXJjZV9zaXplX3QgZW5k
+ID0gUENJX01BWF9SRVNPVVJDRTsKKwlyZXNvdXJjZV9zaXplX3Qgc3RhcnQgPSAwOwogCiAJdHlw
+ZV9tYXNrIHw9IElPUkVTT1VSQ0VfSU8gfCBJT1JFU09VUkNFX01FTTsKIAotCS8qIGRvbid0IGFs
+bG9jYXRlIHRvbyBoaWdoIGlmIHRoZSBwcmVmIG1lbSBkb2Vzbid0IHN1cHBvcnQgNjRiaXQqLwot
+CWlmICghKHJlcy0+ZmxhZ3MgJiBJT1JFU09VUkNFX01FTV82NCkpCi0JCW1heCA9IFBDSV9NQVhf
+UkVTT1VSQ0VfMzI7CisJLyoKKwkgKiBkb24ndCBhbGxvY2F0ZSB0b28gaGlnaCBpZiB0aGUgcHJl
+ZiBtZW0gZG9lc24ndCBzdXBwb3J0IDY0Yml0CisJICogYWxzbyBpZiB0aGlzIGlzIGEgNjQtYml0
+IG1lbSByZXNvdXJjZSwgdHJ5IGFib3ZlIDRHQiBmaXJzdAorCSAqLworCWlmIChyZXMtPmZsYWdz
+ICYgSU9SRVNPVVJDRV9NRU0pIHsKKwkJaWYgKCEocmVzLT5mbGFncyAmIElPUkVTT1VSQ0VfTUVN
+XzY0KSkKKwkJCWVuZCA9IFBDSV9NQVhfUkVTT1VSQ0VfMzI7CisJCWVsc2UKKwkJCXN0YXJ0ID0g
+KHJlc291cmNlX3NpemVfdCkoMVVMTDw8MzIpOworCX0KIAorYWdhaW46CiAJcGNpX2J1c19mb3Jf
+ZWFjaF9yZXNvdXJjZShidXMsIHIsIGkpIHsKIAkJaWYgKCFyKQogCQkJY29udGludWU7CkBAIC0x
+NDUsMTIgKzE1NCwxOCBAQCBwY2lfYnVzX2FsbG9jX3Jlc291cmNlKHN0cnVjdCBwY2lfYnVzICpi
+CiAKIAkJLyogT2ssIHRyeSBpdCBvdXQuLiAqLwogCQlyZXQgPSBhbGxvY2F0ZV9yZXNvdXJjZShy
+LCByZXMsIHNpemUsCi0JCQkJCXItPnN0YXJ0ID8gOiBtaW4sCi0JCQkJCW1heCwgYWxpZ24sCisJ
+CQkJCW1heChzdGFydCwgci0+c3RhcnQgPyA6IG1pbiksCisJCQkJCWVuZCwgYWxpZ24sCiAJCQkJ
+CWFsaWduZiwgYWxpZ25mX2RhdGEpOwogCQlpZiAocmV0ID09IDApCi0JCQlicmVhazsKKwkJCXJl
+dHVybiAwOworCX0KKworCWlmIChzdGFydCAhPSAwKSB7CisJCXN0YXJ0ID0gMDsKKwkJZ290byBh
+Z2FpbjsKIAl9CisKIAlyZXR1cm4gcmV0OwogfQogCg==
+--e89a8ff1c3d0f592f804c0e478e2--
