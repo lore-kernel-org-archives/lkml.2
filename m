@@ -1,60 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab2EYJBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:01:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54503 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab2EYJB3 convert rfc822-to-8bit (ORCPT
+	id S1752807Ab2EYJIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:08:36 -0400
+Received: from forward19.mail.yandex.net ([95.108.253.144]:36566 "EHLO
+	forward19.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab2EYJId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:01:29 -0400
+	Fri, 25 May 2012 05:08:33 -0400
+X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 May 2012 05:08:33 EDT
+From: Alexey Ivanov <rbtz@yandex-team.ru>
+To: Marc Haber <mh+linux-kernel@zugschlus.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <20120322073428.GA11510@torres.zugschlus.de>
+References: <20120322073428.GA11510@torres.zugschlus.de>
+Subject: Re: IPv6 flapping with kernel 3.3 (regression from 3.2.9)
 MIME-Version: 1.0
-In-Reply-To: <20120525071643.GA9105@kroah.com>
-References: <20120426001529.GA14006@kroah.com> <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
- <20120426151242.GA14774@kroah.com> <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
- <20120524215249.GA17936@kroah.com> <CAAJw_ZtaeAV2nZU7LcyngJTN15YVn+8y2dMPxtBqTGn750Tjdg@mail.gmail.com>
- <20120525060124.GA18035@kroah.com> <CAAJw_Ztke1NqY6Jm2fqyPOWzeVAqK=pKv=6bPhhdGaNVHaHM+g@mail.gmail.com>
- <20120525071643.GA9105@kroah.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 25 May 2012 11:01:09 +0200
-Message-ID: <CAPXgP10bzpJ1vEX9SqddV2qr9AuNY-fgZN444S-pYNM21ByBOA@mail.gmail.com>
-Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Message-Id: <43071337936526@webcorp7.yandex-team.ru>
+Date: Fri, 25 May 2012 13:02:06 +0400
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 9:16 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, May 25, 2012 at 03:06:33PM +0800, Jeff Chua wrote:
+On Thursday, March 22, 2012 12:20:02 PM UTC+4, Marc Haber wrote:
+> Hi,
+> 
+> I have a host which has IPv6 misbehaving when running with Linux 3.3.
+> It is flawlessly working with Linux 3.2.9.
+> 
+> The host
+> - is running Debian stable (x64_64) with a few locally built and/or
+>   backported packages, including the kernel.
+> - has native IPv6 connectivity on eth0
+> - is not doing SLAAC on eth0, both IP address (from 2a01/16) and
+>   default gateway (fe80::1) are statically configured
+> - is running a handful of VMs using KVM/libvirt
+> - has IPv6 forwarding enabled
+> - does IPv4 NAT
+> - has a handful of iptables rules, both for v4 and v6. ICMP and ICMPv6
+>   are fully open
+> 
+> - the gateway is not under my control
+> - the VMs are either bridged to br0 or to br1
+> - both br0 and br1 have an IPv6 /64 and radvd running to provide IPv6
+>   to the VMs
+> 
+> This setup is unique in my machine list, my other machines either are
+> no KVM hosts or do only have IPv6 tunneled.
+> 
+> When I run the box with kernel 3.3, it drops off the IPv6 network
+> every few minutes and is not responding to pings any more. This state
+> stays like 30 seconds to a minute and then IPv6 resumes. It looks to
+> me that the box does not lose its default route though. Once in a
+> while, I see "fe80::1 dev eth0  router FAILED" in the ip neigh output.
 
->> >> VMware USB Arbitration Service Version 8.4.19
->> >> USB: Unable to open "/proc/bus/usb/devices" (No such file or directory).
+I think I observe similar problem on some of our boxes:
+IPv6 default router on vlan gets stuck at FAILED state until I ping it.
 
-I think vmware tries to open the usual /dev/bus/usb/ nodes directly
-after it has tried the deprecated /proc nodes.
 
-Udev would create the /dev/bus/ nodes.
+I'm pinging some host on vlan763 and keep getting "Destination unreachable: No route":
 
-Or the kernel would create them itself if:
-  CONFIG_DEVTMPFS=y
-  CONFIG_DEVTMPFS_MOUNT=y
-is used.
+user@host:~$ ping6 2a02:0000:0:a00::4d58:1602
+PING 2a02:0000:0:a00::4d58:1602(2a02:0000:0:a00::4d58:1602) 56 data bytes
+>From 2a02:0000:0:200::5 icmp_seq=1 Destination unreachable: No route
+>From 2a02:0000:0:200::5 icmp_seq=2 Destination unreachable: No route
+^C
+--- 2a02:0000:0:a00::4d58:1602 ping statistics ---
+2 packets transmitted, 0 received, +2 errors, 100% packet loss, time 1001ms
 
-> Use /dev/usb/ device nodes instead.  If you have a distro that has static
-> device nodes, just add them to the package that has those nodes, and you
-> should be fine.  That will bring you into the mid 2000's as far as
-> device nodes go, I'm amazed that this hasn't been noticed before now.
 
-Many distros have disabled the USB_DEVICEFS option and there are
-usually no reports about problems any more.
+Somehow route happens to be eth2:
 
-But I guess the number of systems that want to run USB devices, and
-pass them along to virtualization, but have an unmanaged static /dev
-are close to one user these days. :)
+user@host:~$ ip route get 2a02:0000:0:a00::4d58:1602
+2a02:0000:0:a00::4d58:1602 from :: via 2a02:0000:0:88d:: dev eth2  src 2a02:0000:0:88d:215:17ff:feb8:3b62  metric 0 
+    cache  mtu 1450 advmss 1390
 
-Kay
+
+But routing table says it should be on vlan763:
+
+user@host:~$ ip -6 route 
+.. snip ...
+2a02:0000:0:a0b::/64 dev vlan763  proto kernel  metric 256 
+2a02:0000:0:a00::/59 via 2a02:0000:0:a0b::1 dev vlan763  metric 1024  mtu 8950 advmss 8890
+.. snip ...
+default via 2a02:0000:0:88d:: dev eth2  metric 1024  mtu 1450 advmss 1390
+default via fe80::225:90ff:fe06:223c dev eth2  proto kernel  metric 1024  expires 0sec
+
+
+Here is our culprit - default router on vlan763 is marked as FAILED:
+
+user@host:~$ ip -6 neigh
+fe80::225:90ff:fe06:223c dev eth2 lladdr 00:25:90:06:22:3c router REACHABLE
+2a02:0000:0:88d:: dev eth2 lladdr 00:25:90:06:22:3c router STALE
+2a02:0000:0:a0b::1 dev vlan763  router FAILED
+
+
+Now lets ping it:
+
+user@host:~$ ping6 2a02:0000:0:a0b::1
+PING 2a02:0000:0:a0b::1(2a02:0000:0:a0b::1) 56 data bytes
+64 bytes from 2a02:0000:0:a0b::1: icmp_seq=1 ttl=64 time=2.62 ms
+64 bytes from 2a02:0000:0:a0b::1: icmp_seq=2 ttl=64 time=47.8 ms
+64 bytes from 2a02:0000:0:a0b::1: icmp_seq=3 ttl=64 time=0.341 ms
+..snip...
+^C
+--- 2a02:0000:0:a0b::1 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4003ms
+rtt min/avg/max/mdev = 0.330/10.303/47.801/18.769 ms
+
+
+Now everything is back to normal.
+Router is REACHABLE:
+
+user@host:~$ ip -6 neigh
+fe80::225:90ff:fe06:223c dev eth2 lladdr 00:25:90:06:22:3c router STALE
+fe80::224:50ff:fe5b:e400 dev vlan763 lladdr 00:24:50:5b:e4:00 DELAY
+2a02:0000:0:88d:: dev eth2 lladdr 00:25:90:06:22:3c router STALE
+2a02:0000:0:a0b::1 dev vlan763 lladdr 00:24:50:5b:e4:00 router REACHABLE
+
+
+Route is on vlan763:
+
+user@host:~$ ip route get 2a02:0000:0:a00::4d58:1602
+2a02:0000:0:a00::4d58:1602 from :: via 2a02:0000:0:a0b::1 dev vlan763  src 2a02:0000:0:a0b::5f6c:9c1a  metric 0 
+    cache  mtu 8950 advmss 8890
+
+
+And I can finally ping hosts on the other side of the router:
+
+user@host:~$ ping6 2a02:0000:0:a00::4d58:1602
+PING 2a02:0000:0:a00::4d58:1602(2a02:0000:0:a00::4d58:1602) 56 data bytes
+64 bytes from 2a02:0000:0:a00::4d58:1602: icmp_seq=1 ttl=62 time=1.82 ms
+64 bytes from 2a02:0000:0:a00::4d58:1602: icmp_seq=2 ttl=62 time=1.77 ms
+64 bytes from 2a02:0000:0:a00::4d58:1602: icmp_seq=3 ttl=62 time=1.83 ms
+..snip...
+^C
+--- 2a02:0000:0:a00::4d58:1602 ping statistics ---
+9 packets transmitted, 9 received, 0% packet loss, time 8014ms
+rtt min/avg/max/mdev = 1.511/1.671/1.852/0.141 ms
+
+
+Kernel is:
+Linux 3.2.0-23-server x86_64
+This is copy of ubuntu 12.04 generic flavor with set of TCP patches that do not affect ND/routing: https://gist.github.com/2407652
+
+user@host:~$ grep IPV6 /boot/config-3.2.0-23-server 
+CONFIG_IPV6=y
+CONFIG_IPV6_PRIVACY=y
+CONFIG_IPV6_ROUTER_PREF=y
+CONFIG_IPV6_ROUTE_INFO=y
+# CONFIG_IPV6_OPTIMISTIC_DAD is not set
+CONFIG_IPV6_MIP6=m
+CONFIG_IPV6_SIT=m
+CONFIG_IPV6_SIT_6RD=y
+CONFIG_IPV6_NDISC_NODETYPE=y
+CONFIG_IPV6_TUNNEL=m
+CONFIG_IPV6_MULTIPLE_TABLES=y
+CONFIG_IPV6_SUBTREES=y
+CONFIG_IPV6_MROUTE=y
+CONFIG_IPV6_MROUTE_MULTIPLE_TABLES=y
+CONFIG_IPV6_PIMSM_V2=y
+
+Sysctls:
+net.ipv6.conf.all.accept_ra = 0
+net.ipv6.conf.all.autoconf = 0
+
+> 
+> Running a continuous ping in either direction doesn't seem to help.
+> 
+> Booting the box back to 3.2.9 immediately fixes the issue.
+> 
+> I have not yet re-tried going back to 3.3 since a few of the VMs are
+> too important to reboot again today. I tried running tcpdump on eth0
+> over night but hit br1 instead, so I don't have any packet dumps to
+> show.
+> 
+> I guess that something goes wrong with neighbor detection regarding
+> the IPv6 gateway.
+> 
+> Was there a relevant change between 3.2.9 and 3.3? Where do I look for
+> the issue?
+> 
+> Greetings
+> Marc
+> 
+> -- 
+> -----------------------------------------------------------------------------
+> Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+> Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 31958061
+> Nordisch by Nature |  How to make an American Quilt | Fax: *49 621 31958062
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Alexey Ivanov
+Yandex Search Admin Team
+*************
+tel.: +7 (985) 120-35-83 (int. 7176)
+http://staff.yandex-team.ru/rbtz
+*************
