@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933628Ab2EYRLO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:11:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12117 "EHLO mx1.redhat.com"
+	id S933647Ab2EYRMA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:12:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932140Ab2EYRD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:03:29 -0400
+	id S1757287Ab2EYRD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:03:27 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -23,71 +23,65 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 19/35] autonuma: alloc/free/init mm_autonuma
-Date: Fri, 25 May 2012 19:02:23 +0200
-Message-Id: <1337965359-29725-20-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 13/35] autonuma: add page structure fields
+Date: Fri, 25 May 2012 19:02:17 +0200
+Message-Id: <1337965359-29725-14-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where the mm_autonuma structure is being handled. Just like
-sched_autonuma, this is only allocated at runtime if the hardware the
-kernel is running on has been detected as NUMA. On not NUMA hardware
-the memory cost is reduced to one pointer per mm.
+On 64bit archs, 20 bytes are used for async memory migration (specific
+to the knuma_migrated per-node threads), and 4 bytes are used for the
+thread NUMA false sharing detection logic.
 
-To get rid of the pointer in the each mm, the kernel can be compiled
-with CONFIG_AUTONUMA=n.
+This is a bad implementation due lack of time to do a proper one.
+
+These AutoNUMA new fields must be moved to the pgdat like memcg
+does. So that they're only allocated at boot time if the kernel is
+booted on NUMA hardware. And so that they're not allocated even if
+booted on NUMA hardware if "noautonuma" is passed as boot parameter to
+the kernel.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/fork.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ include/linux/mm_types.h |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d323eb1..22f102e 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -526,6 +526,8 @@ static void mm_init_aio(struct mm_struct *mm)
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 780ded7..e8dc82c 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -126,6 +126,31 @@ struct page {
+ 		struct page *first_page;	/* Compound tail pages */
+ 	};
  
- static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- {
-+	if (unlikely(alloc_mm_autonuma(mm)))
-+		goto out_free_mm;
- 	atomic_set(&mm->mm_users, 1);
- 	atomic_set(&mm->mm_count, 1);
- 	init_rwsem(&mm->mmap_sem);
-@@ -548,6 +550,8 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
- 		return mm;
- 	}
- 
-+	free_mm_autonuma(mm);
-+out_free_mm:
- 	free_mm(mm);
- 	return NULL;
- }
-@@ -597,6 +601,7 @@ void __mmdrop(struct mm_struct *mm)
- 	destroy_context(mm);
- 	mmu_notifier_mm_destroy(mm);
- 	check_mm(mm);
-+	free_mm_autonuma(mm);
- 	free_mm(mm);
- }
- EXPORT_SYMBOL_GPL(__mmdrop);
-@@ -880,6 +885,7 @@ fail_nocontext:
- 	 * If init_new_context() failed, we cannot use mmput() to free the mm
- 	 * because it calls destroy_context()
- 	 */
-+	free_mm_autonuma(mm);
- 	mm_free_pgd(mm);
- 	free_mm(mm);
- 	return NULL;
-@@ -1706,6 +1712,7 @@ void __init proc_caches_init(void)
- 	mm_cachep = kmem_cache_create("mm_struct",
- 			sizeof(struct mm_struct), ARCH_MIN_MMSTRUCT_ALIGN,
- 			SLAB_HWCACHE_ALIGN|SLAB_PANIC|SLAB_NOTRACK, NULL);
-+	mm_autonuma_init();
- 	vm_area_cachep = KMEM_CACHE(vm_area_struct, SLAB_PANIC);
- 	mmap_init();
- 	nsproxy_cache_init();
++#ifdef CONFIG_AUTONUMA
++	/*
++	 * FIXME: move to pgdat section along with the memcg and allocate
++	 * at runtime only in presence of a numa system.
++	 */
++	/*
++	 * To modify autonuma_last_nid lockless the architecture,
++	 * needs SMP atomic granularity < sizeof(long), not all archs
++	 * have that, notably some alpha. Archs without that requires
++	 * autonuma_last_nid to be a long.
++	 */
++#if BITS_PER_LONG > 32
++	int autonuma_migrate_nid;
++	int autonuma_last_nid;
++#else
++#if MAX_NUMNODES >= 32768
++#error "too many nodes"
++#endif
++	/* FIXME: remember to check the updates are atomic */
++	short autonuma_migrate_nid;
++	short autonuma_last_nid;
++#endif
++	struct list_head autonuma_migrate_node;
++#endif
++
+ 	/*
+ 	 * On machines where all RAM is mapped into kernel address space,
+ 	 * we can simply calculate the virtual address. On machines with
