@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab2EYJkN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:40:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58190 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab2EYJkL (ORCPT
+	id S1756833Ab2EYJsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:48:22 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:61579 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab2EYJsU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:40:11 -0400
-Subject: Re: [PATCH 3/3] sched/rt: Remove redundant check before
- push_rt_task()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <4FBF2A1D.2090302@ct.jp.nec.com>
-References: <4FBF29B2.9030904@ct.jp.nec.com>
-	 <4FBF2A1D.2090302@ct.jp.nec.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 11:39:58 +0200
-Message-ID: <1337938798.9783.172.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 May 2012 05:48:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
+References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+	<1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
+Date: Fri, 25 May 2012 15:18:19 +0530
+Message-ID: <CAM=Q2csSuQ3R9U=XKwj9F0xijTxx_ULperAiQYD_X3a5GKVjFg@mail.gmail.com>
+Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
+ Macro to head file.
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: sonic.zhang@analog.com
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 15:43 +0900, Hiroshi Shimamoto wrote:
-> From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> 
-> Currently rq->rt.overloaded is checked twice in switched_to_rt().
-> Remove the first one which out of push_rt_task().
+Hi ,
+Some minor comments/ doubts.
+On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
+> From: Sonic Zhang <sonic.zhang@analog.com>
+>
 
-Steven was this on purpose to avoid the call or can I apply this thing?
+A small description may be helpful.
+Also the $SUBJECT says move the patch looks more like the remove.
+Am I missing something.
 
-> Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 > ---
->  kernel/sched/rt.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> index c5565c3..a601a70 100644
-> --- a/kernel/sched/rt.c
-> +++ b/kernel/sched/rt.c
-> @@ -1907,7 +1907,7 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
->  	 */
->  	if (p->on_rq && rq->curr != p) {
->  #ifdef CONFIG_SMP
-> -		if (rq->rt.overloaded && push_rt_task(rq) &&
-> +		if (push_rt_task(rq) &&
->  		    /* Don't resched if we changed runqueues */
->  		    rq != task_rq(p))
->  			check_resched = 0;
-
-
-
+>  drivers/i2c/busses/i2c-bfin-twi.c |   45 -------------------------------------
+>  1 files changed, 0 insertions(+), 45 deletions(-)
+>
+> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
+> index b2ca317..e6a0cba 100644
+> --- a/drivers/i2c/busses/i2c-bfin-twi.c
+> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
+> @@ -33,51 +33,6 @@
+>  #define TWI_I2C_MODE_COMBINED          3
+>  #define TWI_I2C_MODE_REPEAT            4
+>
+> -struct bfin_twi_iface {
+> -       int                     irq;
+> -       spinlock_t              lock;
+> -       char                    read_write;
+> -       u8                      command;
+> -       u8                      *transPtr;
+> -       int                     readNum;
+> -       int                     writeNum;
+> -       int                     cur_mode;
+> -       int                     manual_stop;
+> -       int                     result;
+> -       struct i2c_adapter      adap;
+> -       struct completion       complete;
+> -       struct i2c_msg          *pmsg;
+> -       int                     msg_num;
+> -       int                     cur_msg;
+> -       u16                     saved_clkdiv;
+> -       u16                     saved_control;
+> -       void __iomem            *regs_base;
+> -};
+> -
+> -
+> -#define DEFINE_TWI_REG(reg, off) \
+> -static inline u16 read_##reg(struct bfin_twi_iface *iface) \
+> -       { return bfin_read16(iface->regs_base + (off)); } \
+> -static inline void write_##reg(struct bfin_twi_iface *iface, u16 v) \
+> -       { bfin_write16(iface->regs_base + (off), v); }
+> -
+> -DEFINE_TWI_REG(CLKDIV, 0x00)
+> -DEFINE_TWI_REG(CONTROL, 0x04)
+> -DEFINE_TWI_REG(SLAVE_CTL, 0x08)
+> -DEFINE_TWI_REG(SLAVE_STAT, 0x0C)
+> -DEFINE_TWI_REG(SLAVE_ADDR, 0x10)
+> -DEFINE_TWI_REG(MASTER_CTL, 0x14)
+> -DEFINE_TWI_REG(MASTER_STAT, 0x18)
+> -DEFINE_TWI_REG(MASTER_ADDR, 0x1C)
+> -DEFINE_TWI_REG(INT_STAT, 0x20)
+> -DEFINE_TWI_REG(INT_MASK, 0x24)
+> -DEFINE_TWI_REG(FIFO_CTL, 0x28)
+> -DEFINE_TWI_REG(FIFO_STAT, 0x2C)
+> -DEFINE_TWI_REG(XMT_DATA8, 0x80)
+> -DEFINE_TWI_REG(XMT_DATA16, 0x84)
+> -DEFINE_TWI_REG(RCV_DATA8, 0x88)
+> -DEFINE_TWI_REG(RCV_DATA16, 0x8C)
+> -
+>  static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
+>                                        unsigned short twi_int_status)
+>  {
+> --
+> 1.7.0.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
