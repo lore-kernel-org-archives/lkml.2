@@ -1,119 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab2EYD3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 23:29:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34789 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309Ab2EYD3n convert rfc822-to-8bit (ORCPT
+	id S1754630Ab2EYDdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 23:33:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54282 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab2EYDdQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 23:29:43 -0400
+	Thu, 24 May 2012 23:33:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6721"; a="194589125"
+Message-ID: <4FBEFD7B.1010709@codeaurora.org>
+Date: Thu, 24 May 2012 20:33:15 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120523151604.GB30542@redhat.com>
-References: <1337246456-30909-1-git-send-email-kernelfans@gmail.com>
-	<1337357675.12999.31.camel@oc3660625478.ibm.com>
-	<CAFgQCTsdXqitVGKm5jQjtC--yvZy6x04zRduJ+_tXqUnkncdog@mail.gmail.com>
-	<4FBCF99F.4070409@linux.vnet.ibm.com>
-	<20120523151604.GB30542@redhat.com>
-Date: Fri, 25 May 2012 11:29:42 +0800
-Message-ID: <CAFgQCTuKh2=xkzW594SuV6++xXKojionOk2=y-O8MzXRM1WHKQ@mail.gmail.com>
-Subject: Re: [RFC:kvm] export host NUMA info to guest & make emulated device
- NUMA attr
-From: Liu ping fan <kernelfans@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Andrew Theurer <habanero@linux.vnet.ibm.com>,
-        Shirley Ma <mashirle@us.ibm.com>, kvm@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org, Avi Kivity <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Ryan Harper <ryanh@us.ibm.com>, Shirley Ma <xma@us.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Tom Lendacky <toml@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Rob Herring <robherring2@gmail.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "arm@kernel.org" <arm@kernel.org>, Shawn Guo <shawn.guo@freescale.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] DT clk binding support
+References: <4FB80F32.5090309@gmail.com>    <20120520030653.GB5810@S2100-06.ap.freescale.net>    <4FB9A5E7.2070000@gmail.com>    <20120521064901.GE8140@S2101-09.ap.freescale.net>    <4FBA89E3.7010106@gmail.com>    <20120521232616.GF8140@S2101-09.ap.freescale.net>    <4FBAD545.7060803@gmail.com>    <20120522021535.GG8140@S2101-09.ap.freescale.net>    <4FBB134D.6050409@codeaurora.org> <4FBB9A08.2050803@gmail.com> <49cd509b59c8172c880b0c8a50c0f02c.squirrel@www.codeaurora.org> <4FBCED4D.1040908@gmail.com> <4FBEA540.1010409@codeaurora.org> <4FBEAE01.7030905@gmail.com>
+In-Reply-To: <4FBEAE01.7030905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 11:16 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Wed, May 23, 2012 at 09:52:15AM -0500, Andrew Theurer wrote:
->> On 05/22/2012 04:28 AM, Liu ping fan wrote:
->> >On Sat, May 19, 2012 at 12:14 AM, Shirley Ma<mashirle@us.ibm.com>  wrote:
->> >>On Thu, 2012-05-17 at 17:20 +0800, Liu Ping Fan wrote:
->> >>>Currently, the guest can not know the NUMA info of the vcpu, which
->> >>>will
->> >>>result in performance drawback.
->> >>>
->> >>>This is the discovered and experiment by
->> >>>         Shirley Ma<xma@us.ibm.com>
->> >>>         Krishna Kumar<krkumar2@in.ibm.com>
->> >>>         Tom Lendacky<toml@us.ibm.com>
->> >>>Refer to -
->> >>>http://www.mail-archive.com/kvm@vger.kernel.org/msg69868.html
->> >>>we can see the big perfermance gap between NUMA aware and unaware.
->> >>>
->> >>>Enlightened by their discovery, I think, we can do more work -- that
->> >>>is to
->> >>>export NUMA info of host to guest.
->> >>
->> >>There three problems we've found:
->> >>
->> >>1. KVM doesn't support NUMA load balancer. Even there are no other
->> >>workloads in the system, and the number of vcpus on the guest is smaller
->> >>than the number of cpus per node, the vcpus could be scheduled on
->> >>different nodes.
->> >>
->> >>Someone is working on in-kernel solution. Andrew Theurer has a working
->> >>user-space NUMA aware VM balancer, it requires libvirt and cgroups
->> >>(which is default for RHEL6 systems).
->> >>
->> >Interesting, and I found that "sched/numa: Introduce
->> >sys_numa_{t,m}bind()" committed by Peter and Ingo may help.
->> >But I think from the guest view, it can not tell whether the two vcpus
->> >are on the same host node. For example,
->> >vcpu-a in node-A is not vcpu-b in node-B, the guest lb will be more
->> >expensive if it pull_task from vcpu-a and
->> >choose vcpu-b to push.  And my idea is to export such info to guest,
->> >still working on it.
+On 05/24/2012 02:54 PM, Rob Herring wrote:
+> On 05/24/2012 04:16 PM, Saravana Kannan wrote:
+>> On 05/23/2012 06:59 AM, Rob Herring wrote:
+>>> On 05/22/2012 08:38 PM, Saravana Kannan wrote:
+>
+> snip
+>
+>>>> If only the leaf nodes are defined in DT, then how is the clock platform
+>>>> driver implementer supposed to instantiate the rest of the tree and
+>>>> connect it up with the partial list of clocks in DT? So, they have to
+>>>> switch back and forth between DT and the .c file which defines the rest
+>>>> and make sure the parent<->child names match?
+>>>>
+>>>> To me it looks that it might better to decouple the description of the
+>>>> clock HW from the mapping of a clock leaf to a consumer device. If we
+>>>> just
+>>>> use a string to identify the clock that's consumed by a device, we can
+>>>> achieve this decoupling at a clean boundary -- clock consumers devices
+>>>> (UART) vs clock producer devices (clock controller in the SoC, in a
+>>>> PMIC,
+>>>> audio codec, etc).
+>>>>
+>>>> With the decoupling, we don't have the inconsistency of having some
+>>>> of the
+>>>> clocks of a clock producer device incompletely defined in DT and the
+>>>> rest
+>>>> of the clocks of the same clock producer device hard coded in the
+>>>> kernel.
+>>>> So, you either put your entire clock tree in the SoC in the DT or put
+>>>> all
+>>>> of it in the kernel but you aren't forced to put just some of them in
+>>>> the
+>>>> DT just to get DT working. I see no benefit in defining only some of the
+>>>> clocks in DT -- it just adds more confusion in the clock tree
+>>>> definition.
+>>>> What am I missing?
+>>>
+>>> I fail to see what would need changing in the binding itself. The
+>>> binding just describes connections. Whether that is a connection to a
+>>> clock controller node to a device or a clock gate/mux/divider node to a
+>>> device is really beyond the clock binding. This is really just policy.
+>>> You are free to put no clocks in DT, all clocks, or a nexus of clocks.
 >>
->> The long term solution is to two-fold:
->> 1) Guests that are quite large (in that they cannot fit in a host
->> NUMA node) must have static mulit-node NUMA topology implemented by
->> Qemu. That is here today, but we do not do it automatically, which
->> is probably going to be a VM management responsibility.
->> 2) Host scheduler and NUMA code must be enhanced to get better
->> placement of Qemu memory and threads.  For single-node vNUMA guests,
->> this is easy, put it all in one node.  For mulit-node vNUMA guests,
->> the host must understand that some Qemu memory belongs with certain
->> vCPU threads (which make up one of the guests vNUMA nodes), and then
->> place that memory/threads in a specific host node (and continue for
->> other memory/threads for each Qemu vNUMA node).
+>> With the current approach you are taking can you please give an example
+>> of how a random device described in DT would hook itself up with a leaf
+>> clock if that leaf clock is not described in DT? So that it can do a
+>> call a DT version of clk_get() to get the clock it cares for.
 >
-> And for IO, we need multiqueue devices such that each
-> node can have its own queue in its local memory.
+> No, because that's impossible with any binding.
+
+So, this is really forcing everyone moving rest of their devices to DT 
+to put part/all of the clocks in DT. Either that or deal with the "aux 
+data" that's supposed to be temporary.
+
+> The only way that would
+> work is provide a string with a clock name and matching to the struct
+> clk name string. That means putting linux clock names into the h/w
+> description.
+
+No, the name of the clocks stored in clk->name should be the name of the 
+clock in HW.
+
+> That is the wrong direction and not how bindings work.
+> Defining bindings should not get tangled up with how the OS
+> implementation is done.
+
+So, I'm not asking to bind to the name of a clock as defined by the OS 
+implementation. I'm just asking to bind to the name of the clock in HW 
+instead of the name binding to an actual DT clock node. And I'm only 
+asking this because we seem to want to give an option to NOT have the 
+clocks in DT.
+
+A developer might choose to abbreviate the clock name in DT and in 
+clk->name field in the kernel, but there's nothing wrong with it. Nor 
+can DT do anything about it for ANY (not just clock) DT device descriptions.
+
+>> And no, there is a huge difference between binding a clock controller
+>> node (by which I mean the block that provides many clocks) to a device
+>> vs. binding a clock leaf to a device. The former is useless wrt to
+>> clk_get() and similar functions. The latter is very useful to handle that.
 >
-Yes, my patches include such solution. Independent device sub logic
-units are seated in different NUMA node, "subdev" in the patches
-stands for the logic unit. And each of they are backed by a
-vhost-thread.  On the other hand, for virtio-guest, the vqs(including
-vrings) are allocated align at the PAGE_SIZE, so their NUMA problem
-will be resolved automatically by KVM(maybe a little more effort
-needed here).
+> The binding and clkdev changes support clk_get fully. Drivers don't have
+> to change at all. There is not a DT version of clk_get that all drivers
+> have to adopt. It's all handled within clk_get and should be transparent
+> to drivers. The only thing that has to change is callers of clk_get_sys
+> to use of_clk_get, but that's a small fraction of clocks.
 
-I had thought to export the real host NUMA info to virtio layer (not
-scheduler,that is another topic). So we can create the exact num of
-logic unit as needed.
-And we even can increase/decrease the logic unit.
+I understand there are changes to have clk_get() work on clocks added 
+through DT. But, you said earlier that it doesn't matter if a general DT 
+device binds to a clock controller DT device or to an actual clock node 
+(say, a leaf in the clock tree) defined in DT. I'm just pointing out 
+that it's not true. If a general DT device binds to a clock controller 
+DT device, there is no way to figure out what clock node/leaf from the 
+clock controller is actually consumed by this general device.
 
-But what hesitate me to move on is that is it acceptable to create
-independent vhost-thread for each node as the user's demand?
-And the scalability is perVM *demand_node_num.  Object?
+-Saravana
 
-
-Thanks,
-pingfan
-
-
-
-> --
-> MST
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
