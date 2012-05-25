@@ -1,124 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab2EYIaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:30:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:10069 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756133Ab2EYIaT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:30:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="157143481"
-Subject: [GIT PULL] slave-dmaengine updates for 3.5
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dan <dan.j.williams@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 13:53:25 +0530
-Message-ID: <1337934205.1580.12.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932332Ab2EYIao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:30:44 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62935 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab2EYIai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 04:30:38 -0400
+Date: Fri, 25 May 2012 10:30:27 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Vinod Koul <vinod.koul@linux.intel.com>
+cc: linux-kernel@vger.kernel.org, Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/9 v3] dmaengine: add an shdma-base library
+In-Reply-To: <1337933737.1580.8.camel@vkoul-udesk3>
+Message-ID: <Pine.LNX.4.64.1205251028530.13353@axis700.grange>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1336576161-27082-2-git-send-email-g.liakhovetski@gmx.de> 
+ <1337055734.16185.5360.camel@vkoul-udesk3>  <Pine.LNX.4.64.1205171912140.10086@axis700.grange>
+ <1337933737.1580.8.camel@vkoul-udesk3>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:oXTDNi9BfEoqpWI6mTXvkpQ28uoN5mrlI6Gosa36Yks
+ 4owFqOAXmiSAYefgKREjjod8vnRxk3l2SunR/iWOLeXOE6+fYW
+ y2IgUNHu+0Mfm/YvbRJ5/42jZ0a5V5u+9JMJPnrBY/hb+jSjbD
+ igcYij7jQGqCudCkDwrlP1QkT68H5v8EEIl9ZhXgBiRyC5QG8t
+ DGJnVTTG2fEdZGM+aUEG2nMOqJJjbCw5iov54uBOhGFvfbI5Dy
+ 0DjmbeNeetLXQ4JGbbmme+2MGDVsDpkr3Ln9a4NI4vQO8vaGe1
+ WKRdWbsXMTRlmuHwbS80PsZ9nqz4UCuExrZCm0mBfVD1ujdxus
+ qeExVYBZ5n7f6uXLGyyY3ZK33el6zcHsU/HjRp9R+rUdOO1M24
+ MH0xCuT6OF8fQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Vinod
 
-Hi Linus,
+On Fri, 25 May 2012, Vinod Koul wrote:
 
-Here is the slave-dmaengine update for 3.5 merge cycle.
+> On Fri, 2012-05-18 at 10:21 +0200, Guennadi Liakhovetski wrote:
+> > Hi Vinod
+> > 
+> > Thanks for your review.
+> sorry for the late reply, was away for few days
+> > 
+> > On Tue, 15 May 2012, Vinod Koul wrote:
+> > 
+> > > On Wed, 2012-05-09 at 17:09 +0200, Guennadi Liakhovetski wrote: 
+> > > > This patch extracts code from shdma.c, that does not directly deal with
+> > > > hardware implementation details and can be re-used with diverse DMA
+> > > > controller variants, found on SH-based SoCs.
+> > > Have you see recent Russell's virtual dma patches [1]? I like the idea
+> > > and simplifies things for implementation in each driver.
+> > > Said that, do we need this libarry. Can you see if you can use/enhance
+> > > that one.
+> > 
+> > No, I haven't seen it. I had a look at it, and it doesn't seem to provide 
+> > an immediate solution to our problem. It can be used as a part of one, but 
+> > a significant amount of work would still be required to convert shdma to a 
+> > virtual-channel based design.
+> > 
+> > Let me try to describe, what such a virtual channel solution would look 
+> > like:
+> > 
+> > 1. One (virtual) DMA channel is allocated per client
+> > 2. As clients issue dma_request_channel(), the correct channel is selected
+> > 3. The client configures the channel with a call to 
+> >    dmaengine_slave_config()
+> > 4. As transfers are prepared and issued they are queued in per-virtual 
+> >    channel lists
+> > 5. Each virtual channel links to a list of suitable DMA devices and 
+> >    channels
+> > 6. As a new transfer request on a specific virtual channel has to be 
+> >    processed, a suitable free physical channel is picked up, configured 
+> >    and the request is sent out
+> > 
+> > If this my understanding is right, this should be doable, but not within 
+> > the current 3.5 time-frame. Further, if we first do this conversion, we'll 
+> > still have to split the driver similar to what is proposed by this patch 
+> > series, but then it would be largely a new effort, most of the work 
+> > invested into this so far will be lost. OTOH, if we now push the shdma 
+> > driver split, we enable the merge of the SUDMAC support and porting to the 
+> > virtual channel design should also become easier, because the hardware and 
+> > the software parts of the driver will already be separated and presumably 
+> > the hardware part will not need to be changed.
+> > 
+> > One more thing, before going into detail and replying to your comments: 
+> > this split doesn't change driver's functionality, it simply splits it into 
+> > two parts. So, most questions, that you ask in this your review would also 
+> > apply to the current driver. This patch just extracts hardware-neutral 
+> > code from the shdma driver into a separate file. I think, any functional 
+> > changes should be done separately from this driver-split series.
+> Yes most of my comments do apply to current driver.
+> IMO update to a driver should fix existing problems, that why I pointed
+> them out.
+> 
+> Let me know if you plan to fixing them or I will queue these up for 3.6
 
-Nothing exciting this time, odd fixes in bunch of drivers.
+Please, queue these patches for the next merge window, we will work on 
+improving the driver after this split.
 
+Thanks
+Guennadi
 
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
-  Linus Torvalds (1):
-        Linux 3.4-rc1
+> > [snip]
+> > 
+> > > > +static dma_cookie_t shdma_tx_submit(struct dma_async_tx_descriptor *tx)
+> > > > +{
+> > > > +	struct shdma_desc *chunk, *c, *desc =
+> > > > +		container_of(tx, struct shdma_desc, async_tx),
+> > > > +		*last = desc;
+> > > > +	struct shdma_chan *schan = to_shdma_chan(tx->chan);
+> > > > +	struct shdma_slave *slave = tx->chan->private;
+> > > > +	dma_async_tx_callback callback = tx->callback;
+> > > > +	dma_cookie_t cookie;
+> > > > +	bool power_up;
+> > > > +
+> > > > +	spin_lock_irq(&schan->chan_lock);
+> > > > +
+> > > > +	power_up = list_empty(&schan->ld_queue);
+> > > > +
+> > > > +	cookie = dma_cookie_assign(tx);
+> > > > +
+> > > > +	/* Mark all chunks of this descriptor as submitted, move to the queue */
+> > > > +	list_for_each_entry_safe(chunk, c, desc->node.prev, node) {
+> > > > +		/*
+> > > > +		 * All chunks are on the global ld_free, so, we have to find
+> > > > +		 * the end of the chain ourselves
+> > > > +		 */
+> > > > +		if (chunk != desc && (chunk->mark == DESC_IDLE ||
+> > > > +				      chunk->async_tx.cookie > 0 ||
+> > > > +				      chunk->async_tx.cookie == -EBUSY ||
+> > > > +				      &chunk->node == &schan->ld_free))
+> > > > +			break;
+> > > > +		chunk->mark = DESC_SUBMITTED;
+> > > > +		/* Callback goes to the last chunk */
+> > > > +		chunk->async_tx.callback = NULL;
+> > > > +		chunk->cookie = cookie;
+> > > > +		list_move_tail(&chunk->node, &schan->ld_queue);
+> > > > +		last = chunk;
+> > > > +
+> > > > +		dev_dbg(schan->dev, "submit #%d@%p on %d\n",
+> > > > +			tx->cookie, &last->async_tx, schan->id);
+> > > > +	}
+> > > > +
+> > > > +	last->async_tx.callback = callback;
+> > > > +	last->async_tx.callback_param = tx->callback_param;
+> > > > +
+> > > > +	if (power_up) {
+> > > > +		int ret;
+> > > > +		schan->pm_state = SHDMA_PM_BUSY;
+> > > > +
+> > > > +		ret = pm_runtime_get(schan->dev);
+> > > any reason why this is here and not in issue pending?
+> > 
+> > Sorry, we have discussed this multiple times already. See, for example,
+> > 
+> > http://thread.gmane.org/gmane.linux.kernel/1181989/focus=12187
+> > 
+> > [snip]
+> > 
+> > > > +/*
+> > > > + * Drivers, using this library are expected to embed struct shdma_dev,
+> > > > + * struct shdma_chan, struct shdma_desc, and struct shdma_slave
+> > > > + * in their respective device, channel, descriptor and slave objects.
+> > > > + */
+> > > > +
+> > > > +struct shdma_slave {
+> > > > +	unsigned int slave_id;
+> > > this should be moved to struct dma_slave_config 
+> > 
+> > Again, this would be a functional change. And struct dma_slave_config 
+> > doesn't have a slave-ID field in it, which is the only thing we need for 
+> > now. Instead it has a bunch of other fields, of which none is so far used 
+> > by this driver.
+> > 
+> > Thanks
+> > Guennadi
+> > ---
+> > Guennadi Liakhovetski, Ph.D.
+> > Freelance Open-Source Software Developer
+> > http://www.open-technology.de/
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+> -- 
+> ~Vinod
+> 
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/vkoul/slave-dma.git next
-
-Davide Ciminaghi (1):
-      dmaengine/amba-pl08x : reset phychan_hold on terminate all
-
-Huang Shijie (1):
-      dma: imx-sdma: keep the callbacks invoked in the tasklet
-
-Kuninori Morimoto (1):
-      dmaengine: Fixup dmaengine_prep_slave_single() to be actually useful
-
-Lars-Peter Clausen (2):
-      dmaengine: Use sg_dma_address instead of sg_phys
-      dmaengine: Use dma_sg_len(sg) instead of sg->length
-
-Linus Walleij (4):
-      dma/ste_dma40: explicitly include regulator consumer header
-      dma/ste_dma40: fix erroneous comparison
-      dma/amba-pl08x: check for terminal count status only
-      dma/amba-pl08x: add support for the Nomadik variant
-
-Narayanan G (1):
-      dma40: Improve the logic of stopping logical chan
-
-Nicolas Ferre (4):
-      dmaengine: at_hdmac: remove clear-on-read in atc_dostart()
-      dmaengine: at_hdmac: remove some at_dma_slave comments
-      dmaengine: at_hdmac: remove ATC_DEFAULT_CTRLA constant
-      dmaengine: at_hdmac: take maxburst from slave configuration
-
-Olof Johansson (1):
-      dma: pl330: fix a couple of compilation warnings
-
-Richard Zhao (1):
-      dma: imx-sdma: make channel0 operations atomic
-
-Sachin Kamat (1):
-      DMA: PL330: Remove duplicate header file inclusion
-
-Shawn Guo (1):
-      dma: mxs-dma: enable channel in device_issue_pending call
-
-Vinod Koul (6):
-      dmaengine: imx-dma: dont complete descriptor for cyclic dma
-      Merge branch 'fixes' into next
-      dmaengine: pl330: dont complete descriptor for cyclic dma
-      Merge branch 'fixes' into next
-      dmaengine: fix cyclic dma usage
-      Merge branch 'fixes' into next
-
-Viresh Kumar (2):
-      dmaengine: dw_dmac: Add clk_{un}prepare() support
-      dmaengine: dw_dma: add Device Tree probing capability
-
- Documentation/devicetree/bindings/dma/snps-dma.txt |   17 +
- arch/arm/include/asm/hardware/pl080.h              |    2 +
- arch/arm/mach-at91/at91sam9g45_devices.c           |    1 -
- arch/arm/mach-at91/include/mach/at_hdmac.h         |   26 --
- drivers/dma/amba-pl08x.c                           |   53 +++-
- drivers/dma/at_hdmac.c                             |   23 +-
- drivers/dma/at_hdmac_regs.h                        |   21 ++-
- drivers/dma/coh901318.c                            |    2 +-
- drivers/dma/coh901318_lli.c                        |    4 +-
- drivers/dma/dw_dmac.c                              |   26 +-
- drivers/dma/ep93xx_dma.c                           |    4 +-
- drivers/dma/imx-dma.c                              |   21 +-
- drivers/dma/imx-sdma.c                             |   68 +++--
- drivers/dma/intel_mid_dma.c                        |    8 +-
- drivers/dma/mxs-dma.c                              |   16 +-
- drivers/dma/pch_dma.c                              |    2 +-
- drivers/dma/pl330.c                                |   29 +-
- drivers/dma/ste_dma40.c                            |  325 ++++++++++++--------
- drivers/dma/ste_dma40_ll.h                         |    2 -
- drivers/mmc/host/mxs-mmc.c                         |    3 +
- drivers/mtd/nand/gpmi-nand/gpmi-nand.c             |    1 +
- include/linux/amba/pl08x.h                         |    3 +
- include/linux/dmaengine.h                          |    6 +-
- 23 files changed, 407 insertions(+), 256 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/dma/snps-dma.txt
-
-
--- 
-~Vinod
-
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
