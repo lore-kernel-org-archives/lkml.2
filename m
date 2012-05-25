@@ -1,98 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab2EYOCl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:02:41 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:23246 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242Ab2EYOCj (ORCPT
+	id S1754322Ab2EYOIw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:08:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34156 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab2EYOIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:02:39 -0400
-Message-ID: <4FBF90E5.8030800@siemens.com>
-Date: Fri, 25 May 2012 11:02:13 -0300
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
-Subject: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE NIC
- as broken
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 May 2012 10:08:51 -0400
+Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in
+ tty_lock_pair(v1)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>, Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20120525150141.7a099aa3@pyramind.ukuu.org.uk>
+References: <1337651931-5301-1-git-send-email-ming.lei@canonical.com>
+	 <CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
+	 <1337952533.9783.195.camel@laptop>
+	 <20120525144713.6946df1e@bob.linux.org.uk>
+	 <1337953922.9783.205.camel@laptop>
+	 <20120525150141.7a099aa3@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 16:08:40 +0200
+Message-ID: <1337954920.9783.207.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to Alexey, the T310 does not properly support INTx masking as
-it fails to keep the PCI_STATUS_INTERRUPT bit updated once the interrupt
-is masked. Mark this adapter as broken so that pci_intx_mask_supported
-won't report it as compatible.
+On Fri, 2012-05-25 at 15:01 +0100, Alan Cox wrote:
+> 
+> It applies on top of the other patches being tested in the thread on the
+> lockdep warning.
 
-Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
----
+You're really going to make me hunt and peck patches from lkml?
 
-Alexey, please test if this catches your case correctly.
+/me looses interest and gets on with reducing his inbox.
 
- drivers/pci/pci.c    |    3 +++
- drivers/pci/quirks.c |   12 ++++++++++++
- include/linux/pci.h  |    2 ++
- 3 files changed, 17 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8f16900..3a1aeb5 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2876,6 +2876,9 @@ bool pci_intx_mask_supported(struct pci_dev *dev)
- 	bool mask_supported = false;
- 	u16 orig, new;
- 
-+	if (dev->broken_intx_masking)
-+		return false;
-+
- 	pci_cfg_access_lock(dev);
- 
- 	pci_read_config_word(dev, PCI_COMMAND, &orig);
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 2a75216..151e174 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2929,6 +2929,18 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
- 
-+/*
-+ * Some devices may pass our check in pci_intx_mask_supported if
-+ * PCI_COMMAND_INTX_DISABLE works though they actually do not properly
-+ * support this feature.
-+ */
-+static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
-+{
-+	dev->broken_intx_masking = 1;
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
-+			quirk_broken_intx_masking);
-+
- static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
- 			  struct pci_fixup *end)
- {
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 17b7b5b..c7cfd73 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -324,6 +324,8 @@ struct pci_dev {
- 	unsigned int    is_hotplug_bridge:1;
- 	unsigned int    __aer_firmware_first_valid:1;
- 	unsigned int	__aer_firmware_first:1;
-+	unsigned int	broken_intx_masking:1;	/* device's INTx masking
-+						   support is not working */
- 	pci_dev_flags_t dev_flags;
- 	atomic_t	enable_cnt;	/* pci_enable_device has been called */
- 
--- 
-1.7.3.4
