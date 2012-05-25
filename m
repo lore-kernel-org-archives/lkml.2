@@ -1,139 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab2EYIzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:55:35 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60204 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab2EYIzc (ORCPT
+	id S1752380Ab2EYJBc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:01:32 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54503 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab2EYJB3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:55:32 -0400
-Message-ID: <4FBF3CD1.7030603@linux.vnet.ibm.com>
-Date: Fri, 25 May 2012 13:33:29 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
+	Fri, 25 May 2012 05:01:29 -0400
 MIME-Version: 1.0
-To: eranian@google.com, Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf record: Fixing record option data type in parse_branch_stack
-References: <4FBDFDA6.5010304@linux.vnet.ibm.com> <4FBF185F.4060007@linux.vnet.ibm.com>
-In-Reply-To: <4FBF185F.4060007@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052508-4790-0000-0000-000002F017A1
+In-Reply-To: <20120525071643.GA9105@kroah.com>
+References: <20120426001529.GA14006@kroah.com> <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
+ <20120426151242.GA14774@kroah.com> <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
+ <20120524215249.GA17936@kroah.com> <CAAJw_ZtaeAV2nZU7LcyngJTN15YVn+8y2dMPxtBqTGn750Tjdg@mail.gmail.com>
+ <20120525060124.GA18035@kroah.com> <CAAJw_Ztke1NqY6Jm2fqyPOWzeVAqK=pKv=6bPhhdGaNVHaHM+g@mail.gmail.com>
+ <20120525071643.GA9105@kroah.com>
+From: Kay Sievers <kay@vrfy.org>
+Date: Fri, 25 May 2012 11:01:09 +0200
+Message-ID: <CAPXgP10bzpJ1vEX9SqddV2qr9AuNY-fgZN444S-pYNM21ByBOA@mail.gmail.com>
+Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf record: Fixing record option data type in parse_branch_stack
+On Fri, May 25, 2012 at 9:16 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Fri, May 25, 2012 at 03:06:33PM +0800, Jeff Chua wrote:
 
-	Currently parse_branch_stack does not update record.opts.branch_stack
-	value in powerpc architecture. opt->value is declared as int in struct
-	perf_record_opts. But is worked on as uint64_t isnide the function.
-	This breaks functionality in poweprc due to bit representation
-	of uint64_t which is inaccessible as int.
+>> >> VMware USB Arbitration Service Version 8.4.19
+>> >> USB: Unable to open "/proc/bus/usb/devices" (No such file or directory).
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- tools/perf/builtin-record.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I think vmware tries to open the usual /dev/bus/usb/ nodes directly
+after it has tried the deprecated /proc nodes.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index e5cb084..161c0f1 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -677,7 +677,7 @@ parse_branch_stack(const struct option *opt, const char *str, int unset)
- 	 PERF_SAMPLE_BRANCH_KERNEL	|\
- 	 PERF_SAMPLE_BRANCH_HV)
- 
--	uint64_t *mode = (uint64_t *)opt->value;
-+	int *mode = (int *)opt->value;
- 	const struct branch_mode *br;
- 	char *s, *os = NULL, *p;
- 	int ret = -1;
--- 
-1.7.9.5
+Udev would create the /dev/bus/ nodes.
 
+Or the kernel would create them itself if:
+  CONFIG_DEVTMPFS=y
+  CONFIG_DEVTMPFS_MOUNT=y
+is used.
 
+> Use /dev/usb/ device nodes instead.  If you have a distro that has static
+> device nodes, just add them to the package that has those nodes, and you
+> should be fine.  That will bring you into the mid 2000's as far as
+> device nodes go, I'm amazed that this hasn't been noticed before now.
 
-On Friday 25 May 2012 10:57 AM, Anshuman Khandual wrote:
+Many distros have disabled the USB_DEVICEFS option and there are
+usually no reports about problems any more.
 
-> This code is breaking in powerpc systems.
-> 
-> (1) 'opt->value' gets updated inside the function parse_branch_stack via
->     dereferencing a (uint64_t *) type casted pointer.
-> 
-> (2) But the value is not accessible when we again use opt->value via 
->     dereferencing a (int *) type casted pointer.
-> 
-> (3) As a result record.opts.branch_stack remains 0 and unchanged by parse_branch_stack
-> 
-> This is caused by bit representation of 'uint64_t' and 'int' in powerpc systems. Bytes update
-> for the data (when accessed trough (uint64_t *) casting) is no longer available to the
-> data when accessed through (int *) type casting. Verified this from bit representation of
-> the data (accessed through both type casting methods).
-> 
-> However this problem does not seem to be present on an Intel box. Integer dereferencing of
-> the opt->value still gives the value which was updated as (uint64_t).
-> 
-> All this problem would not have been there if we had used (int *) instead of (uint64_t *) in
-> the first place inside parse_branch_stack function.
-> 
-> On Thursday 24 May 2012 02:51 PM, Anshuman Khandual wrote:
-> 
->> Hey Stephane,
->>
->> Just wondering why we used the type casting of (uint64_t *) on a data 
->> which is defined as "int" in the structure of "perf_record_opts".
->>
->> struct perf_record_opts {
->>         struct perf_target target;
->>         bool         call_graph;
->>         bool         group;
->>         bool         inherit_stat;
->>         bool         no_delay;
->>         bool         no_inherit;
->>         bool         no_samples;
->>         bool         pipe_output;
->>         bool         raw_samples;
->>         bool         sample_address;
->>         bool         sample_time;
->>         bool         sample_id_all_missing;
->>         bool         exclude_guest_missing;
->>         bool         period;
->>         unsigned int freq;
->>         unsigned int mmap_pages;
->>         unsigned int user_freq;
->>         int          branch_stack;
->>         u64          default_interval;
->>         u64          user_interval;
->> };
->>
->> static int
->> parse_branch_stack(const struct option *opt, const char *str, int unset)
->> {
->> #define ONLY_PLM \
->>         (PERF_SAMPLE_BRANCH_USER        |\
->>          PERF_SAMPLE_BRANCH_KERNEL      |\
->>          PERF_SAMPLE_BRANCH_HV)
->>
->>         uint64_t *mode = (uint64_t *)opt->value;
->> --
->> Regards
->> Anshuman Khandual
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+But I guess the number of systems that want to run USB devices, and
+pass them along to virtualization, but have an unmanaged static /dev
+are close to one user these days. :)
 
-
+Kay
