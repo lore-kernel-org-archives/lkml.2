@@ -1,173 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab2EYVnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 17:43:22 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54870 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab2EYVnU (ORCPT
+	id S1754297Ab2EYVoB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 17:44:01 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:41521 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab2EYVoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 17:43:20 -0400
+	Fri, 25 May 2012 17:44:00 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+References: <20120517170015.GA12436@redhat.com> <87d3628oqa.fsf@xmission.com>
+	<20120518123911.GA417@redhat.com> <87zk95kper.fsf@xmission.com>
+	<20120521124414.GA20391@redhat.com> <87d35x5ank.fsf_-_@xmission.com>
+	<20120522122315.c3f2118c.akpm@linux-foundation.org>
+	<20120523145239.GA20378@redhat.com>
+	<20120525151526.GA13111@redhat.com>
+	<20120525155941.GA16885@redhat.com>
+	<20120525160008.GB16885@redhat.com>
+Date: Fri, 25 May 2012 15:43:48 -0600
+In-Reply-To: <20120525160008.GB16885@redhat.com> (Oleg Nesterov's message of
+	"Fri, 25 May 2012 18:00:08 +0200")
+Message-ID: <87pq9sdjhn.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <87wr40ko8j.fsf@xmission.com>
-References: <1337889128.10617.YahooMailClassic@web84515.mail.ne1.yahoo.com> <87wr40ko8j.fsf@xmission.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 25 May 2012 14:42:59 -0700
-X-Google-Sender-Auth: OAvTxhc9J2sMMs4oWdzIGnnoChI
-Message-ID: <CA+55aFw9eaKdx9-j1tXxKcRcOzfEiOKgnP+p1hu8WVhs9tu4FQ@mail.gmail.com>
-Subject: Re: Regression Mounting /proc w/ kernel 3.4.0 - "uid" parameter no
- longer ignored.
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: kd6lvw@yahoo.com, linux-kernel@vger.kernel.org,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: multipart/mixed; boundary=001636c5a6f1b4a6c504c0e34107
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/PQmbKGn9CSa/hfSQfoVJIz3xWD+QO2ao=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0458]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_05 8+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH -mm 1/1] pidns: find_new_reaper() can no longer switch to init_pid_ns.child_reaper
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636c5a6f1b4a6c504c0e34107
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Oleg Nesterov <oleg@redhat.com> writes:
 
-Heh.
+> find_new_reaper() changes pid_ns->child_reaper, see add0d4df
+> "pid_ns: zap_pid_ns_processes: fix the ->child_reaper changing".
+>
+> The original reason has gone away after the previous patch,
+> ->children list must be empty after zap_pid_ns_processes().
+> However, "can't clear ->child_reaper or leave it alone" is
+> still true, and now we can not use init_pid_ns.child_reaper.
+>
+> __unhash_process() relies on the "->child_reaper == parent"
+> check, but this check does not work if the last exiting task
+> is also the child reaper.
+>
+> Change find_new_reaper() to use pid_ns->parent->child_reaper.
 
-If it is *only* uid, maybe we should just expressly ignore it. Like
-the (completely untested) attached patch.
+Oleg this is a good catch for a real problem.  However I disagree about
+the fix.
 
-Hmm?
+We should make unhash_process say:
+	if ((task_active_pid_ns(parent)->child_reaper == parent) &&
+	    list_empty(&parent->children) &&
+	    (parent->flags & PF_EXITING))
+		wake_up_process(parent);
 
-                  Linus
+It is always the child_reaper of our parent's pid namespace that we are
+reparented to if our parent exits.  So we were looking at the wrong
+processes pid_namespace.  Just using parent removes any need for magic
+after zap_pid_ns_processes(), and the test always becomes valid.
 
-On Fri, May 25, 2012 at 1:19 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> kd6lvw@yahoo.com writes:
->
->> --- On Thu, 5/24/12, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>> "D. Stussy" <spam+newsgroups@bde-arc.ampr.org> writes:
->>> > proc:=A0 unrecognized mount option "uid=3D1" or missing value
->>> >
->>> > This works under 3.3.6 and earlier (I never tried 3.3.7).=A0 It appea=
-rs that the
->>> > "uid" mount option was removed.=A0 WHY?=A0 More importantly, where is=
- this change
->>> > listed?=A0 I didn't see it in the git log.
->>> >
->>> > This is really bad as I rebooted a remotely colocated server and sinc=
-e the
->>> > procfs is not mounted, I cannot log in via SSH to correct the problem=
-.
->>> >
->>> > OK, so there's not that much point in changing the UID of the procfs =
-files, but
->>> > I preferred to set their default ownership to a non-privileged user.
->>>
->>> There has never been a uid=3D option to /proc in Linus's tree.=A0 I bel=
-ieve
->>> if you look you will find this feature was from a patch (perhaps from
->>> your distro) that added that support.
->>
->> I compile both the util-linux-ng and the kernel from source.=A0 There is=
- no distribution patch involved.=A0 As noted, kernel version 3.3.6 didn't b=
-itch about the setting, while 3.4.0 does and won't mount procfs.
->>
->> From the man page (copy at "http://linux.die.net/man/8/mount"):
->>
->> "Mount options for proc
->>
->> =A0 =A0=A0=A0"uid=3Dvalue and gid=3Dvalue
->>
->> "These options are recognized, but have no effect as far as I can see."
->>
->>
->> Removal of this compatibility should have been noted.=A0 WHERE was it
->> noted?=A0 Linux.die.net is a distribution independent documentation
->> site. =A0It might not do anything, but per mount's documentation, it is
->> acceptable.
->
-> The only possible change to /proc that could have cause this behavior
-> between 3.3 and 3.4 is below.
->
-> Not ignoring options seems to be a regression that has affected your
-> setup on 3.4.
->
-> My gut feel is that we should revert all of the /proc option parsing
-> code as it is ugly code and apparently it could not have been used
-> before 3.4 so no one can be depending on it. =A0But I just want an excuse
-> to get rid of ugly code. =A0Accepting that /proc ignores all options
-> passed ot it as part of the ABI and not being able to add any options
-> to /proc ever is also a pretty horrible state to be in.
->
-> Shrug I will let you and the parties involved in creating this
-> regression figure this out.
->
-> Eric
->
-> ommit 99663be772c827b8f5f594fe87eb4807be1994e5
-> Author: Vasiliy Kulikov <segoon@openwall.com>
-> Date: =A0 Thu Apr 5 14:25:04 2012 -0700
->
-> =A0 =A0proc: fix mount -t proc -o AAA
->
-> =A0 =A0The proc_parse_options() call from proc_mount() runs only once at =
-boot
-> =A0 =A0time. =A0So on any later mount attempt, any mount options are igno=
-red
-> =A0 =A0because ->s_root is already initialized.
->
-> =A0 =A0As a consequence, "mount -o <options>" will ignore the options. =
-=A0The
-> =A0 =A0only way to change mount options is "mount -o remount,<options>".
->
-> =A0 =A0To fix this, parse the mount options unconditionally.
->
-> =A0 =A0Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> =A0 =A0Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-> =A0 =A0Tested-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-> =A0 =A0Cc: Alexey Dobriyan <adobriyan@gmail.com>
-> =A0 =A0Cc: Al Viro <viro@zeniv.linux.org.uk>
-> =A0 =A0Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-> =A0 =A0Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> =A0 =A0Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> diff --git a/fs/proc/root.c b/fs/proc/root.c
-> index 46a15d8..eed44bf 100644
-> --- a/fs/proc/root.c
-> +++ b/fs/proc/root.c
-> @@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct file_system=
-_type *fs_type,
-> =A0 =A0 =A0 =A0if (IS_ERR(sb))
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0return ERR_CAST(sb);
->
-> + =A0 =A0 =A0 if (!proc_parse_options(options, ns)) {
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 deactivate_locked_super(sb);
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 return ERR_PTR(-EINVAL);
-> + =A0 =A0 =A0 }
-> +
-> =A0 =A0 =A0 =A0if (!sb->s_root) {
->
+And we should just set delete the code after zap_pid_ns_processes that
+changes the child_reaper since nothing we will use the child_reaper
+after that.  We could set pid_ns.child_reaper to NULL after that
+but why bother.
 
---001636c5a6f1b4a6c504c0e34107
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h2ns1e860
-
-IGZzL3Byb2Mvcm9vdC5jIHwgOCArKysrKysrLQogMSBmaWxlIGNoYW5nZWQsIDcgaW5zZXJ0aW9u
-cygrKSwgMSBkZWxldGlvbigtKQoKZGlmZiAtLWdpdCBhL2ZzL3Byb2Mvcm9vdC5jIGIvZnMvcHJv
-Yy9yb290LmMKaW5kZXggN2MzMGZjZTAzN2MwLi5iMWRlMDRmNmU0MWIgMTAwNjQ0Ci0tLSBhL2Zz
-L3Byb2Mvcm9vdC5jCisrKyBiL2ZzL3Byb2Mvcm9vdC5jCkBAIC0zOCwxMiArMzgsMTMgQEAgc3Rh
-dGljIGludCBwcm9jX3NldF9zdXBlcihzdHJ1Y3Qgc3VwZXJfYmxvY2sgKnNiLCB2b2lkICpkYXRh
-KQogfQogCiBlbnVtIHsKLQlPcHRfZ2lkLCBPcHRfaGlkZXBpZCwgT3B0X2VyciwKKwlPcHRfZ2lk
-LCBPcHRfaGlkZXBpZCwgT3B0X3VpZCwgT3B0X2VyciwKIH07CiAKIHN0YXRpYyBjb25zdCBtYXRj
-aF90YWJsZV90IHRva2VucyA9IHsKIAl7T3B0X2hpZGVwaWQsICJoaWRlcGlkPSV1In0sCiAJe09w
-dF9naWQsICJnaWQ9JXUifSwKKwl7T3B0X3VpZCwgInVpZD0ldSJ9LAkvLyBpZ25vcmVkCiAJe09w
-dF9lcnIsIE5VTEx9LAogfTsKIApAQCAtNjksNiArNzAsMTEgQEAgc3RhdGljIGludCBwcm9jX3Bh
-cnNlX29wdGlvbnMoY2hhciAqb3B0aW9ucywgc3RydWN0IHBpZF9uYW1lc3BhY2UgKnBpZCkKIAkJ
-CQlyZXR1cm4gMDsKIAkJCXBpZC0+cGlkX2dpZCA9IG1ha2Vfa2dpZChjdXJyZW50X3VzZXJfbnMo
-KSwgb3B0aW9uKTsKIAkJCWJyZWFrOworCQljYXNlIE9wdF91aWQ6CisJCQlpZiAobWF0Y2hfaW50
-KCZhcmdzWzBdLCAmb3B0aW9uKSkKKwkJCQlyZXR1cm4gMDsKKwkJCS8qIGlnbm9yZSBpdCAqLwor
-CQkJYnJlYWs7CiAJCWNhc2UgT3B0X2hpZGVwaWQ6CiAJCQlpZiAobWF0Y2hfaW50KCZhcmdzWzBd
-LCAmb3B0aW9uKSkKIAkJCQlyZXR1cm4gMDsK
---001636c5a6f1b4a6c504c0e34107--
+Eric
