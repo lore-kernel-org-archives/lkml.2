@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2EYVsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 17:48:53 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49381 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab2EYVsv (ORCPT
+	id S1755570Ab2EYVtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 17:49:05 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44777 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab2EYVtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 17:48:51 -0400
-Date: Fri, 25 May 2012 22:48:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [git pull] signals, the first series
-Message-ID: <20120525214845.GQ11775@ZenIV.linux.org.uk>
-References: <20120522043525.GI11775@ZenIV.linux.org.uk>
- <20120522180635.93ba83a63481b2364bd8f425@canb.auug.org.au>
- <20120523151405.f264a88ca4edf8d22c08c86c@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523151405.f264a88ca4edf8d22c08c86c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 May 2012 17:49:03 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/5 v2] perf tools: fix thread_map__new_by_pid_str() memory leak in error path
+Date: Fri, 25 May 2012 18:48:56 -0300
+Message-Id: <1337982539-2882-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1337982539-2882-1-git-send-email-acme@infradead.org>
+References: <1337982539-2882-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 03:14:05PM +1000, Stephen Rothwell wrote:
-> OK, it seem that most of this has been in Andrew's tree for a while,
-> sorry about that.
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-Grr...  *Another* missing prereq for task_work_add() series, this time on
-ppc64.  Could somebody familiar with that beast take a look at this and
-tell if the change is sane?  What we want is
-	r0 = r3 & MSR_PR ?
-		_TIF_NEED_RESCHED | _TIF_NOTIFY_RESUME | _TIF_SIGPENDING :
-		_TIF_NEED_RESCHED;
-and when Roland re-added NOTIFY_RESUME he'd missed that hack (non-PREEMPT
-variant and 32bit code all just check _TIF_USER_WORK_MASK, so updating
-it had been enough in those cases).  I don't have the hardware in
-question; the same instructions in userland on ppc32 box produce the
-right value.  Unless NAKed I'm going to throw that one into the second
-pull request from signal.git, so if anyone has objections, please yell.
+The namelist array (including its content) was not freed if we fail to
+realloc a new 'threads' structure.
 
-I'll gladly replace that with better solution if one shows up (or, better
-yet, goes via ppc tree).  AFAICS the diff below should work, but whether
-it's the best variant or not... No idea.
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1337952109-31995-1-git-send-email-fbuihuu@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/thread_map.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-Back to massaging VFS queue for pull...
-
-diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
-index ed1718f..e4fd9bb 100644
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -563,9 +563,10 @@ _GLOBAL(ret_from_except_lite)
- 	li	r0,_TIF_NEED_RESCHED	/* bits to check */
- 	ld	r3,_MSR(r1)
- 	ld	r4,TI_FLAGS(r9)
--	/* Move MSR_PR bit in r3 to _TIF_SIGPENDING position in r0 */
-+	/* Add MSR_PR bit in r3 in _TIF_SIGPENDING and _TIF_NOTIFY_RESUME positions in r0 */
- 	rlwimi	r0,r3,32+TIF_SIGPENDING-MSR_PR_LG,_TIF_SIGPENDING
--	and.	r0,r4,r0	/* check NEED_RESCHED and maybe SIGPENDING */
-+	rlwimi	r0,r3,32+TIF_NOTIFY_RESUME-MSR_PR_LG,_TIF_NOTIFY_RESUME
-+	and.	r0,r4,r0	/* check NEED_RESCHED and maybe SIGPENDING/NOTIFY_RESUME */
- 	bne	do_work
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 84d9bd78..9b5f856 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -188,28 +188,27 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+ 		nt = realloc(threads, (sizeof(*threads) +
+ 				       sizeof(pid_t) * total_tasks));
+ 		if (nt == NULL)
+-			goto out_free_threads;
++			goto out_free_namelist;
  
- #else /* !CONFIG_PREEMPT */
+ 		threads = nt;
+ 
+-		if (threads) {
+-			for (i = 0; i < items; i++)
+-				threads->map[j++] = atoi(namelist[i]->d_name);
+-			threads->nr = total_tasks;
+-		}
+-
+-		for (i = 0; i < items; i++)
++		for (i = 0; i < items; i++) {
++			threads->map[j++] = atoi(namelist[i]->d_name);
+ 			free(namelist[i]);
++		}
++		threads->nr = total_tasks;
+ 		free(namelist);
+-
+-		if (!threads)
+-			break;
+ 	}
+ 
+ out:
+ 	strlist__delete(slist);
+ 	return threads;
+ 
++out_free_namelist:
++	for (i = 0; i < items; i++)
++		free(namelist[i]);
++	free(namelist);
++
+ out_free_threads:
+ 	free(threads);
+ 	threads = NULL;
+-- 
+1.7.9.2.358.g22243
+
