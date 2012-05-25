@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933954Ab2EYA1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 20:27:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63959 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758913Ab2EYA1O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 20:27:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FBECAC2.6050303@zytor.com>
-References: <20120522173942.GJ11775@ZenIV.linux.org.uk> <1337875681-20717-1-git-send-email-wad@chromium.org>
- <alpine.LRH.2.02.1205250932270.26644@tundra.namei.org> <CAObL_7GHEdoyzVPjhR5U0RvQhRP50e6YM83CkXifzUKOFb+KHQ@mail.gmail.com>
- <4FBECAC2.6050303@zytor.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 24 May 2012 17:26:54 -0700
-X-Google-Sender-Auth: LCPy_F0IYAjuJAEXp0lC3hIGO8k
-Message-ID: <CAObL_7GSNbgceHQpNx3fbiCbV5u-_vJJO5cptwVCK34W7wFH5Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/3] move the secure_computing call
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: James Morris <jmorris@namei.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, mcgrathr@google.com, indan@nul.nu,
-        netdev@parisplace.org, linux-security-module@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, mingo@redhat.com, oleg@redhat.com,
-        peterz@infradead.org, rdunlap@xenotime.net, tglx@linutronix.de,
-        serge.hallyn@canonical.com, pmoore@redhat.com,
-        akpm@linux-foundation.org, corbet@lwn.net, markus@chromium.org,
-        coreyb@linux.vnet.ibm.com, keescook@chromium.org,
-        viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S964806Ab2EYA3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 20:29:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44926 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758913Ab2EYA3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 20:29:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="147566180"
+Message-ID: <1337905811.14538.206.camel@ymzhang.sh.intel.com>
+Subject: Re: [PATCH v2] printk: ignore recursion_bug flag in HW error handle
+ process
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Borislav Petkov <bp@alien8.de>, ShuoX Liu <shuox.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        andi@firstfloor.org, Tony Luck <tony.luck@intel.com>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Fri, 25 May 2012 08:30:11 +0800
+In-Reply-To: <20120524155611.b7aeff4d.akpm@linux-foundation.org>
+References: <4FBC444A.6060500@intel.com>
+	 <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com>
+	 <20120524061145.GA18284@liondog.tnic>
+	 <20120524155611.b7aeff4d.akpm@linux-foundation.org>
+Organization: MCG
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 4:56 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/24/2012 04:43 PM, Andrew Lutomirski wrote:
->>
->> IMO the behavior should change.  Alternatively, a post-ptrace syscall
->> should have to pass the *tracer's* seccomp filter, but that seems
->> overcomplicated and confusing.
->>
->> OTOH, allowing ptrace in a seccomp filter is asking for trouble anyway
->> -- if you can ptrace something outside the sandbox, you've escaped.
->>
->
-> This is my suggestion: if there is demand, make it possible to install a
-> *second* seccomp filter program which is run on the result of the
-> ptrace.  I.e.:
->
-> Untraced:       process -> seccomp1 -> kernel
->
-> Traced:         process -> seccomp1 -> ptrace -> seccomp2 -> kernel
+On Thu, 2012-05-24 at 15:56 -0700, Andrew Morton wrote:
+> On Thu, 24 May 2012 08:11:45 +0200
+> Borislav Petkov <bp@alien8.de> wrote:
+> 
+> > > +/* HW error handle status helpers */
+> > > +extern atomic_t hw_error;
+> > > +static inline void hw_error_enter(void)
+> > > +{
+> > > +	atomic_inc(&hw_error);
+> > > +}
+> > > +
+> > > +static inline void hw_error_exit(void)
+> > > +{
+> > > +	atomic_dec(&hw_error);
+> > > +}
+> > > +
+> > > +static inline int in_hw_error(void)
+> > > +{
+> > > +	return atomic_read(&hw_error);
+> > > +}
+> > 
+> > Shouldn't those be generic empty functions and each arch implement their
+> > own with the stuff they want to do on the respective architecture when
+> > they get a hardware error?
+> 
+> This code needs documentation.
+> 
+> Specifically, it should clearly explain (and hence define) what a
+> "hardware error" *is*, and for what purpose this code exists.
+> 
+> Because as it stands, this interface is hopelessly vague.  Once one
+> sees that it is *specifically* used for handling mce within a printk,
+> it all makes sense.
+> 
+> And with that understanding comes the realisation that the interface is
+> poorly named.  It will not be used for any purpose other than adjusting
+> printk() behavior so it should mention printk() in its name and in its
+> comments and probably it should all be moved into printk.h.
+> 
+> Futhermore, this code is not really related to MCE or hardware or
+> anything else.  It is simply a way in which callers can suppress
+> printk()'s recursion check.  Callers are free to use it for reasons
+> other than "hardware errors".
+> 
+> And once all that is done, and this interface becomes part of printk()
+> then no, there is no need to add per-arch hooks.  An arch can call into
+> printk_recursion_check_disable() and printk_recursion_chack_enable() -
+> nice and simple.
+> 
+> 
+> IOW, the title of this patch should be
+> 
+> 	[patch 1/2] printk: add interface for disabling recursion check
+> 	[patch 2/2] x86 mce: use new printk recursion disabling interface
+Andrew,
 
-Just to clarify: are you suggesting that, for now, the traced behavior
-should be:
+Thanks for the detailed comment. It's more reasonable to bind it to printk.
+We would follow it to create new patches.
 
-process -> seccomp -> ptrace -> kernel?
+Yanmin
 
-If so, I think the man page or something should have a big fat warning
-that seccomp filters should *never* allow ptrace (even PTRACE_TRACEME)
-unless they fully understand the issue.
 
-In any case, I think that the UML interaction is missing the point.
-UML will *emulate* the seccomp filter.  If it chooses to use host
-seccomp filters for some business, that's its business.
-
---Andy
