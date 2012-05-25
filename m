@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933063Ab2EYPsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:48:32 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:51472 "EHLO mail.gnudd.com"
+	id S933538Ab2EYPub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:50:31 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:51476 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab2EYPs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:48:28 -0400
-Date: Fri, 25 May 2012 17:47:48 +0200
+	id S932577Ab2EYPsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 11:48:31 -0400
+Date: Fri, 25 May 2012 17:48:00 +0200
 From: Alessandro Rubini <rubini@gnudd.com>
 To: linux-kernel@vger.kernel.org
 Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
@@ -14,85 +14,142 @@ Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
         x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: [PATCH 0/6] Bridging PCI to amba
-Message-ID: <cover.1337959750.git.rubini@gnudd.com>
+Subject: [PATCH 1/6] sizes.h: move from asm-generic to <linux/sizes.h>
+Message-ID: <1ae7f300a5cd23f89007e06e68713bb7075146de.1337959750.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+References: <cover.1337959750.git.rubini@gnudd.com>
+In-Reply-To: <cover.1337959750.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set introduces use of the pl011 AMBA serial port under a
-PCI bridge.  To compile AMBA under x86, though I need <asm/sizes.h>,
-which is moved to <linux/sizes.h> as suggested earlier.
+sizes.h is used throughout the AMBA code and drivers, so the header
+should be available to everyone in order to driver AMBA/PrimeCell
+peripherals behind a PCI bridge where the host can be any platform
+(I'm doing it under x86).
 
-I'm hereby volunteering to handle the moving of the various users
-of <asm/sizes.h> to <linux/sizes.h>; this set only moves the ARM core
-files and the ones that I need under x86.
+At this step <asm-generic/sizes.h> includes <linux/sizes.h>,
+to allow a grace period for both in-tree and out-of-tree drivers.
 
-The whole patch set is sent to the same set of recipients:
-all relevant lists, Russell King (for arm), Greg-KH (for uart) and
-Arnd Bergmann (for generic include).
-
-With this set in place (plus a clok API not included here) I have
-4 serial ports working. We have a number of other devices that can
-use existing drivers, but we definitely need <linux/sizes.h> first.
-
-  spusa.root# uname -r
-  3.4.0-next-20120524-00014-gae0c129
-
-  spusa.root# dmesg | grep ttyA
-  pl011-pci-03:0005: ttyAMA0 at MMIO 0xcf400000 (irq = 46) is a PL011 rev3
-  pl011-pci-03:0006: ttyAMA1 at MMIO 0xcec00000 (irq = 47) is a PL011 rev3
-  pl011-pci-03:0007: ttyAMA2 at MMIO 0xce400000 (irq = 48) is a PL011 rev3
-  pl011-pci-04:0005: ttyAMA3 at MMIO 0xd3400000 (irq = 49) is a PL011 rev3
-
-  spusa.root# grep -C1 pl011 /proc/iomem
-          ce400000-ce7fffff : 0000:03:00.7
-            ce400000-ce400fff : pl011-pci-03:0007
-            ce400000-ce400fff : uart-pl011
-          ce800000-cebfffff : 0000:03:00.6
-          cec00000-ceffffff : 0000:03:00.6
-            cec00000-cec00fff : pl011-pci-03:0006
-            cec00000-cec00fff : uart-pl011
-          cf000000-cf3fffff : 0000:03:00.5
-          cf400000-cf7fffff : 0000:03:00.5
-            cf400000-cf400fff : pl011-pci-03:0005
-            cf400000-cf400fff : uart-pl011
-          cf800000-cfbfffff : 0000:03:00.4
-  --
-          d3400000-d37fffff : 0000:04:00.5
-            d3400000-d3400fff : pl011-pci-04:0005
-            d3400000-d3400fff : uart-pl011
-          d3800000-d3bfffff : 0000:04:00.4
-
-
-Alessandro Rubini (6):
-  sizes.h: move from asm-generic to <linux/sizes.h>
-  amba: use the new linux/sizes.h
-  ARM: use the new linux/sizes.h
-  serial: use the new linux/sizes.h
-  x86: add CONFIG_ARM_AMBA, selected by STA2X11
-  serial: add amba-pl011-pci
-
- arch/arm/include/asm/memory.h       |    2 +-
- arch/arm/mm/dma-mapping.c           |    2 +-
- arch/arm/mm/init.c                  |    2 +-
- arch/arm/mm/ioremap.c               |    2 +-
- arch/arm/mm/mmu.c                   |    2 +-
- arch/x86/Kconfig                    |    4 ++
- drivers/amba/bus.c                  |    2 +-
- drivers/tty/serial/Kconfig          |   10 +++-
- drivers/tty/serial/Makefile         |    1 +
- drivers/tty/serial/amba-pl011-pci.c |  101 +++++++++++++++++++++++++++++++++++
- drivers/tty/serial/amba-pl011.c     |    2 +-
- include/asm-generic/sizes.h         |   49 +----------------
- include/linux/sizes.h               |   47 ++++++++++++++++
- 13 files changed, 171 insertions(+), 55 deletions(-)
- create mode 100644 drivers/tty/serial/amba-pl011-pci.c
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/sizes.h |   49 +-----------------------------------------
+ include/linux/sizes.h       |   47 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+), 47 deletions(-)
  create mode 100644 include/linux/sizes.h
 
+diff --git a/include/asm-generic/sizes.h b/include/asm-generic/sizes.h
+index ea5d4ef..1dcfad9 100644
+--- a/include/asm-generic/sizes.h
++++ b/include/asm-generic/sizes.h
+@@ -1,47 +1,2 @@
+-/*
+- * linux/include/asm-generic/sizes.h
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#ifndef __ASM_GENERIC_SIZES_H__
+-#define __ASM_GENERIC_SIZES_H__
+-
+-#define SZ_1				0x00000001
+-#define SZ_2				0x00000002
+-#define SZ_4				0x00000004
+-#define SZ_8				0x00000008
+-#define SZ_16				0x00000010
+-#define SZ_32				0x00000020
+-#define SZ_64				0x00000040
+-#define SZ_128				0x00000080
+-#define SZ_256				0x00000100
+-#define SZ_512				0x00000200
+-
+-#define SZ_1K				0x00000400
+-#define SZ_2K				0x00000800
+-#define SZ_4K				0x00001000
+-#define SZ_8K				0x00002000
+-#define SZ_16K				0x00004000
+-#define SZ_32K				0x00008000
+-#define SZ_64K				0x00010000
+-#define SZ_128K				0x00020000
+-#define SZ_256K				0x00040000
+-#define SZ_512K				0x00080000
+-
+-#define SZ_1M				0x00100000
+-#define SZ_2M				0x00200000
+-#define SZ_4M				0x00400000
+-#define SZ_8M				0x00800000
+-#define SZ_16M				0x01000000
+-#define SZ_32M				0x02000000
+-#define SZ_64M				0x04000000
+-#define SZ_128M				0x08000000
+-#define SZ_256M				0x10000000
+-#define SZ_512M				0x20000000
+-
+-#define SZ_1G				0x40000000
+-#define SZ_2G				0x80000000
+-
+-#endif /* __ASM_GENERIC_SIZES_H__ */
++/* This is a placeholder, to be removed over time */
++#include <linux/sizes.h>
+diff --git a/include/linux/sizes.h b/include/linux/sizes.h
+new file mode 100644
+index 0000000..ce3e815
+--- /dev/null
++++ b/include/linux/sizes.h
+@@ -0,0 +1,47 @@
++/*
++ * include/linux/sizes.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#ifndef __LINUX_SIZES_H__
++#define __LINUX_SIZES_H__
++
++#define SZ_1				0x00000001
++#define SZ_2				0x00000002
++#define SZ_4				0x00000004
++#define SZ_8				0x00000008
++#define SZ_16				0x00000010
++#define SZ_32				0x00000020
++#define SZ_64				0x00000040
++#define SZ_128				0x00000080
++#define SZ_256				0x00000100
++#define SZ_512				0x00000200
++
++#define SZ_1K				0x00000400
++#define SZ_2K				0x00000800
++#define SZ_4K				0x00001000
++#define SZ_8K				0x00002000
++#define SZ_16K				0x00004000
++#define SZ_32K				0x00008000
++#define SZ_64K				0x00010000
++#define SZ_128K				0x00020000
++#define SZ_256K				0x00040000
++#define SZ_512K				0x00080000
++
++#define SZ_1M				0x00100000
++#define SZ_2M				0x00200000
++#define SZ_4M				0x00400000
++#define SZ_8M				0x00800000
++#define SZ_16M				0x01000000
++#define SZ_32M				0x02000000
++#define SZ_64M				0x04000000
++#define SZ_128M				0x08000000
++#define SZ_256M				0x10000000
++#define SZ_512M				0x20000000
++
++#define SZ_1G				0x40000000
++#define SZ_2G				0x80000000
++
++#endif /* __LINUX_SIZES_H__ */
 -- 
 1.7.7.2
