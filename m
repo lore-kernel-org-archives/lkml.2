@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933461Ab2EYQXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 12:23:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:58856 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756000Ab2EYQXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 12:23:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="171338151"
-Subject: [PATCH] scsi: fix async probe regression
-To: JBottomley@parallels.com
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Meelis Roos <mroos@linux.ee>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Date: Fri, 25 May 2012 09:39:15 -0700
-Message-ID: <20120525163529.28315.92813.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
+	id S1757778Ab2EYQY2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 12:24:28 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44246 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757309Ab2EYQY0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 12:24:26 -0400
+Message-ID: <4FBFB237.50007@gmail.com>
+Date: Fri, 25 May 2012 09:24:23 -0700
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Alexander Sverdlin <asv@sysgo.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Venkat Subbiah <venkat.subbiah@cavium.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Possible race in request_irq() (__setup_irq())
+References: <4FB39EDA.3030807@sysgo.com> <alpine.LFD.2.02.1205161512270.3231@ionos> <4FBF90B9.7010902@sysgo.com>
+In-Reply-To: <4FBF90B9.7010902@sysgo.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a7a20d1 "[SCSI] sd: limit the scope of the async probe domain"
-moved sd probe work out of reach of wait_for_device_probe().  Allow it
-to be synced via scsi_complete_async_scans().
+On 05/25/2012 07:01 AM, Alexander Sverdlin wrote:
+> Hello Thomas, David, Venkat,
+>
+> On 05/16/2012 03:44 PM, Thomas Gleixner wrote:
+>> Your irq is using handle_percpu_irq() as the flow handler.
+>>
+>> handle_percpu_irq() is a special flow handler which does not take the
+>> irq descriptor lock for performance reasons. It's a single interrupt
+>> number which has a percpu dev_id and can be handled on all cores in
+>> parallel.
+>>
+>> The interrupts need to be marked as such and requested with
+>> request_percpu_irq(). Those interrupts are either marked as
+>> NOAUTOENABLE or set up by the low level setup code, which runs on the
+>> boot cpu with interrupt enabled.
+>>
+>> Those interrupts are marked as percpu and can only be requested with
+>> request_percpu_irq().
+>>
+>
+> Could someone comment please, why exactly this happens in current linux-next for Octeon:
+>
+> In arch/mips/cavium-octeon/octeon-irq.c MBOX IRQs are set up to be handled by handle_percpu_irq():
+>
+> static void __init octeon_irq_init_ciu(void)
+> {
+> ...
+> 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
+> 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
+>
+> But in arch/mips/cavium-octeon/smp.c it's requested as normal IRQ:
+>
+> void octeon_prepare_cpus(unsigned int max_cpus)
+> {
+> ...
+> 	if (request_irq(OCTEON_IRQ_MBOX0, mailbox_interrupt,
+> 			IRQF_PERCPU | IRQF_NO_THREAD, "SMP-IPI",
+> 			mailbox_interrupt)) {
+> 		panic("Cannot request_irq(OCTEON_IRQ_MBOX0)");
+> 	}
+>
+> Is it a bug, or some kind of special case?
+>
 
-Cc: David Miller <davem@davemloft.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
+Probably a bug.  But it works, so it has never been an issue.
 
- So this is the stop gap that allows us to keep a7a20d1 as a fix for a
- resume deadlock, and gives us time to figure out how to clarify
- async_synchronize_full() properly in the 3.6 timeframe.
+Patches to bring this code more in line with current Linux irq orthodoxy 
+would receive prompt review.  Especially if there were an explanation of 
+some problem they were fixing.
 
- drivers/scsi/scsi_scan.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 01b0374..41f9192 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -141,13 +141,13 @@ struct async_scan_data {
-  * started scanning after this function was called may or may not have
-  * finished.
-  */
--int scsi_complete_async_scans(void)
-+static void __scsi_complete_async_scans(void)
- {
- 	struct async_scan_data *data;
- 
- 	do {
- 		if (list_empty(&scanning_hosts))
--			return 0;
-+			return;
- 		/* If we can't get memory immediately, that's OK.  Just
- 		 * sleep a little.  Even if we never get memory, the async
- 		 * scans will finish eventually.
-@@ -181,6 +181,14 @@ int scsi_complete_async_scans(void)
- 	spin_unlock(&async_scan_lock);
- 
- 	kfree(data);
-+}
-+
-+
-+int scsi_complete_async_scans(void)
-+{
-+	__scsi_complete_async_scans();
-+	async_synchronize_full_domain(&scsi_sd_probe_domain);
-+
- 	return 0;
- }
- 
-
+David Daney
