@@ -1,36 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab2EYQcD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 12:32:03 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:63632 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab2EYQb6 (ORCPT
+	id S1753668Ab2EYQi5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 12:38:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64999 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab2EYQiz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 12:31:58 -0400
+	Fri, 25 May 2012 12:38:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAEFj984efuO12nSPsZ2A0Q0nwPLesYJ8gDHwgh=0e1VO3_UtGw@mail.gmail.com>
-References: <1337934071-29342-1-git-send-email-qasimj@gmail.com>
-	<CAEFj985HxSrOwOoevDjG1jxPxobLda-X_LZUtj6LgwXZwozBog@mail.gmail.com>
-	<CAJivULpmLp9JK+PQZ9RkrvvYHNk=uA33=A-ffftroigivy1_NQ@mail.gmail.com>
-	<CAEFj984efuO12nSPsZ2A0Q0nwPLesYJ8gDHwgh=0e1VO3_UtGw@mail.gmail.com>
-Date: Sat, 26 May 2012 00:31:57 +0800
-Message-ID: <CAEFj987dNMyMcS9rySzVpfY0Fo5t0LtL9FZg770ohKi+bDO9ZA@mail.gmail.com>
-Subject: Re: [RFC] mac80211: Use correct originator sequence number in a Path Reply
-From: Yeoh Chun-Yeow <yeohchunyeow@gmail.com>
-To: devel@lists.open80211s.org
-Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ravip@utdallas.edu
+In-Reply-To: <C15A7948-95DF-4B4E-A560-A10A181DE9BB@dilger.ca>
+References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
+	<20120525154249.GC2082@localhost.localdomain>
+	<CAB9VWqDGgWE8S4dS5izkzUGEWkUbFSanWCV5trm7VWB0=r-tXQ@mail.gmail.com>
+	<C15A7948-95DF-4B4E-A560-A10A181DE9BB@dilger.ca>
+Date: Fri, 25 May 2012 18:38:54 +0200
+Message-ID: <CAB9VWqDCM5mwnd0nQV8OEcbEa7mt=ySkqWdhbsGk=VpdmY2pog@mail.gmail.com>
+Subject: Re: atime and filesystems with snapshots (especially Btrfs)
+From: Alexander Block <ablock84@googlemail.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Josef Bacik <josef@redhat.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think that the PREQ element has originator sequence number at the
-> end but the PREQ element has the target sequence number at the end.
-> This is what mesh_path_sel_frame_tx is doing.
-
-PREP element has originator sequence number at the end but the PREQ
-element has the target sequence number at the end.
-
-Regards,
-Chun-Yeow
+On Fri, May 25, 2012 at 6:28 PM, Andreas Dilger <adilger@dilger.ca> wrote:
+> On 2012-05-25, at 9:59, Alexander Block <ablock84@googlemail.com> wrote:
+>
+> Are you talking about the atime for the primary copy, or the atime for the snapshots?  IMHO, the atime should not be updated for a snapshot unless it is explicitly mounted r/w, or it isn't really a good snapshot.
+>
+Snapshots are by default r/w but can be created r/o explicitly. But
+that doesn't matter for the normal use case where you snapshot / and
+continue working on /. After snapshotting, all metadata is shared
+between the two subvolumes, but when a metadata block in one of both
+subvolume changes (no matter which one), this one metadata block get's
+cowed and unshared and uses up more space.
