@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965026Ab2EYRI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:08:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63932 "EHLO mx1.redhat.com"
+	id S933748Ab2EYRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:09:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58815 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933480Ab2EYRDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933366Ab2EYRDf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 13:03:35 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -23,34 +23,50 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 31/35] autonuma: initialize page structure fields
-Date: Fri, 25 May 2012 19:02:35 +0200
-Message-Id: <1337965359-29725-32-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 15/35] autonuma: init knuma_migrated queues
+Date: Fri, 25 May 2012 19:02:19 +0200
+Message-Id: <1337965359-29725-16-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the AutoNUMA page structure fields at boot.
+Initialize the knuma_migrated queues at boot time.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- mm/page_alloc.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ mm/page_alloc.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1d3163f..3c354d4 100644
+index 3d69735..3d1ee70 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -3673,6 +3673,10 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+@@ -58,6 +58,7 @@
+ #include <linux/memcontrol.h>
+ #include <linux/prefetch.h>
+ #include <linux/page-debug-flags.h>
++#include <linux/autonuma.h>
  
- 		INIT_LIST_HEAD(&page->lru);
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+@@ -4295,8 +4296,18 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
+ 	int nid = pgdat->node_id;
+ 	unsigned long zone_start_pfn = pgdat->node_start_pfn;
+ 	int ret;
 +#ifdef CONFIG_AUTONUMA
-+		page->autonuma_last_nid = -1;
-+		page->autonuma_migrate_nid = -1;
++	int node_iter;
 +#endif
- #ifdef WANT_PAGE_VIRTUAL
- 		/* The shift won't overflow because ZONE_NORMAL is below 4G. */
- 		if (!is_highmem_idx(zone))
+ 
+ 	pgdat_resize_init(pgdat);
++#ifdef CONFIG_AUTONUMA
++	spin_lock_init(&pgdat->autonuma_lock);
++	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
++	pgdat->autonuma_nr_migrate_pages = 0;
++	for_each_node(node_iter)
++		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
++#endif
+ 	pgdat->nr_zones = 0;
+ 	init_waitqueue_head(&pgdat->kswapd_wait);
+ 	pgdat->kswapd_max_order = 0;
