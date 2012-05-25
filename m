@@ -1,148 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab2EYGm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 02:42:27 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39195 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754249Ab2EYGmX (ORCPT
+	id S1754406Ab2EYGnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 02:43:37 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44543 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab2EYGnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 02:42:23 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275ch8275bhz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FBF29B4.7000206@analog.com>
-Date: Fri, 25 May 2012 08:41:56 +0200
-From: Michael Hennerich <michael.hennerich@analog.com>
-Reply-To: <michael.hennerich@analog.com>
-Organization: Analog Devices Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 25 May 2012 02:43:35 -0400
+Date: Fri, 25 May 2012 14:44:09 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, Russ.Dill@ti.com,
+        mporter@ti.com, linux-arm-kernel@lists.infradead.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] [ARM] Unconditional call to smp_cross_call on UP crashes
+ (take #2)
+Message-ID: <20120525064406.GG3332@S2101-09.ap.freescale.net>
+References: <1337975916-31167-1-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>
-Subject: Re: [PATCH 02/13] backlight: adp8870: use devm_ functions
-References: <000d01cd3a1c$90d16630$b2743290$%han@samsung.com>
-In-Reply-To: <000d01cd3a1c$90d16630$b2743290$%han@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: analog.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337975916-31167-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 04:17 AM, Jingoo Han wrote:
-> The devm_ functions allocate memory that is released when a driver
-> detaches. This patch uses devm_kzalloc of these functions.
->
-> Cc: Michael Hennerich<michael.hennerich@analog.com>
-> Cc: Richard Purdie<rpurdie@rpsys.net>
-> Signed-off-by: Jingoo Han<jg1.han@samsung.com>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+On Fri, May 25, 2012 at 07:58:36PM +0000, Pantelis Antoniou wrote:
+> omap2plus_defconfig builds with SMP & SMP_ON_UP set.
+> On beagle (which is UP) is_smp() returns false and we don't call
+> smp_init_cpus which in turn does not initialize smp_cross_call which
+> remains NULL.
+> 
+> When issuing a reboot we OOPS with a NULL dereference on stop smp_call.
+> 
+> Fixed by a check with if (!cpumask_empty(&mask)) before issuing the smp
+> stop cross call.
+> 
+I can reproduce the issue on imx5 built from imx_v6_v7_defconfig, and
+see the patch fix it here. Thus,
+
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
+
+Regards,
+Shawn
+
+> Restarting system.
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> pgd = dda50000
+> [00000000] *pgd=9e723831, *pte=00000000, *ppte=00000000
+> Internal error: Oops: 80000007 [#1] SMP ARM
+> Modules linked in:
+> CPU: 0    Not tainted  (3.4.0-00001-gb15b046 #30)
+> PC is at 0x0
+> LR is at smp_send_stop+0x4c/0xe8
+> pc : [<00000000>]    lr : [<c00188cc>]    psr: 60000013
+> sp : de7b5e70  ip : 00000000  fp : 00000001
+> r10: 00000000  r9 : de7b4000  r8 : c07263d0
+> r7 : 00000000  r6 : c06e1294  r5 : 000f4240  r4 : de7b5e74
+> r3 : 00000000  r2 : 00000000  r1 : 00000006  r0 : de7b5e74
+> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> Control: 10c5387d  Table: 9da50019  DAC: 00000015
+> Process reboot (pid: 2229, stack limit = 0xde7b42f8)
+> Stack: (0xde7b5e70 to 0xde7b6000)
+> 5e60:                                     00000000 00000000 00000000 01234567
+> 5e80: de7b4000 c001475c 4321fedc c0052570 0000003e 00000000 c081db78 0000003e
+> 5ea0: 00000001 00000002 00000002 c00891f0 00000002 dd5ba0ac 00000002 00000000
+> 5ec0: dd5ba0ac de7b4000 c009eef4 de7b4000 c00f44dc de7b4000 c00f44dc 00000000
+> 5ee0: c0c94d24 de7b4000 00000000 00000000 00000002 00000002 00000000 c00891f0
+> 5f00: 00000002 00000000 00000000 c011286c 00000000 dd5ba060 60000013 00000000
+> 5f20: dd688d8c 00000000 de7b4000 c06e20f8 dec14760 dec14750 de7b4000 c06e20f8
+> 5f40: 00011f10 c01128a0 00000002 00000000 c011286c c00fa014 dd8c3180 de7b4000
+> 5f60: c0013380 de508bc0 00000001 60000010 00000001 ef000000 00000001 c0089bfc
+> 5f80: 00000000 00000001 00000004 00000058 00000000 00000001 00000004 00000058
+> 5fa0: c0013428 c0013260 00000000 00000001 fee1dead 28121969 01234567 00000000
+> 5fc0: 00000000 00000001 00000004 00000058 00000001 00000001 00000000 00000001
+> 5fe0: b6e76200 beba4c90 00009210 b6e76218 60000010 fee1dead 00000000 00000000
+> [<c00188cc>] (smp_send_stop+0x4c/0xe8) from [<c001475c>] (machine_restart+0xc/0x54)
+> [<c001475c>] (machine_restart+0xc/0x54) from [<c0052570>] (sys_reboot+0x140/0x204)
+> [<c0052570>] (sys_reboot+0x140/0x204) from [<c0013260>] (ret_fast_syscall+0x0/0x3c)
+> Code: bad PC value
+> ---[ end trace f5035e8726d1f51b ]---
+> 
+> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> Cc: stable@vger.kernel.org
 > ---
->   drivers/video/backlight/adp8870_bl.c |   22 +++++++---------------
->   1 files changed, 7 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
-> index 9be58c6..32c025f 100644
-> --- a/drivers/video/backlight/adp8870_bl.c
-> +++ b/drivers/video/backlight/adp8870_bl.c
-> @@ -244,8 +244,8 @@ static int __devinit adp8870_led_probe(struct i2c_client *client)
->   	struct led_info *cur_led;
->   	int ret, i;
->
-> -
-> -	led = kcalloc(pdata->num_leds, sizeof(*led), GFP_KERNEL);
-> +	led = devm_kzalloc(&client->dev, pdata->num_leds * sizeof(*led),
-> +				GFP_KERNEL);
->   	if (led == NULL) {
->   		dev_err(&client->dev, "failed to alloc memory\n");
->   		return -ENOMEM;
-> @@ -253,17 +253,17 @@ static int __devinit adp8870_led_probe(struct i2c_client *client)
->
->   	ret = adp8870_write(client, ADP8870_ISCLAW, pdata->led_fade_law);
->   	if (ret)
-> -		goto err_free;
-> +		return ret;
->
->   	ret = adp8870_write(client, ADP8870_ISCT1,
->   			(pdata->led_on_time&  0x3)<<  6);
->   	if (ret)
-> -		goto err_free;
-> +		return ret;
->
->   	ret = adp8870_write(client, ADP8870_ISCF,
->   			FADE_VAL(pdata->led_fade_in, pdata->led_fade_out));
->   	if (ret)
-> -		goto err_free;
-> +		return ret;
->
->   	for (i = 0; i<  pdata->num_leds; ++i) {
->   		cur_led =&pdata->leds[i];
-> @@ -317,9 +317,6 @@ static int __devinit adp8870_led_probe(struct i2c_client *client)
->   		cancel_work_sync(&led[i].work);
->   	}
->
-> - err_free:
-> -	kfree(led);
-> -
->   	return ret;
->   }
->
-> @@ -335,7 +332,6 @@ static int __devexit adp8870_led_remove(struct i2c_client *client)
->   		cancel_work_sync(&data->led[i].work);
->   	}
->
-> -	kfree(data->led);
->   	return 0;
->   }
->   #else
-> @@ -874,7 +870,7 @@ static int __devinit adp8870_probe(struct i2c_client *client,
->   		return -ENODEV;
->   	}
->
-> -	data = kzalloc(sizeof(*data), GFP_KERNEL);
-> +	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
->   	if (data == NULL)
->   		return -ENOMEM;
->
-> @@ -894,8 +890,7 @@ static int __devinit adp8870_probe(struct i2c_client *client,
->   			&client->dev, data,&adp8870_bl_ops,&props);
->   	if (IS_ERR(bl)) {
->   		dev_err(&client->dev, "failed to register backlight\n");
-> -		ret = PTR_ERR(bl);
-> -		goto out2;
-> +		return PTR_ERR(bl);
->   	}
->
->   	data->bl = bl;
-> @@ -930,8 +925,6 @@ out:
->   			&adp8870_bl_attr_group);
->   out1:
->   	backlight_device_unregister(bl);
-> -out2:
-> -	kfree(data);
->
->   	return ret;
->   }
-> @@ -950,7 +943,6 @@ static int __devexit adp8870_remove(struct i2c_client *client)
->   			&adp8870_bl_attr_group);
->
->   	backlight_device_unregister(data->bl);
-> -	kfree(data);
->
->   	return 0;
->   }
-
-
--- 
-Greetings,
-Michael
-
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
-Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
-Margaret Seif
-
-
+>  arch/arm/kernel/smp.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 8f46446..7babc3f 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -590,7 +590,8 @@ void smp_send_stop(void)
+>  
+>  	cpumask_copy(&mask, cpu_online_mask);
+>  	cpumask_clear_cpu(smp_processor_id(), &mask);
+> -	smp_cross_call(&mask, IPI_CPU_STOP);
+> +	if (!cpumask_empty(&mask))
+> +		smp_cross_call(&mask, IPI_CPU_STOP);
+>  
+>  	/* Wait up to one second for other CPUs to stop */
+>  	timeout = USEC_PER_SEC;
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
