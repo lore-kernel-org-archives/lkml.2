@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758950Ab2EYWss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 18:48:48 -0400
-Received: from nm17.access.bullet.mail.sp2.yahoo.com ([98.139.44.144]:26728
-	"HELO nm17.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755099Ab2EYWsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 18:48:47 -0400
-X-Yahoo-Newman-Id: 855148.51834.bm@omp1003.access.mail.sp2.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: u9pBy9gVM1nFk8_7cEUx0k7RgxKZbmrH9iJRHz_EU_Wbamh
- KTOBO8YQivn5.gwPNNKPcVHaXaOAMuHzmVdUYaTVR34kKxBXovUqIY2Nplu9
- ufJwM_D_2ZjRHUndGeuiiBd7kx8U7xwXp7LbvabyE9RiihhMX0GYmTGjPW0X
- j7KTToq45sXrCIc.8nNUVc1ZTbRVsfvs4JzqCScQiVXEi12Ct6Nq0wyMtCti
- 6AWirpuH3NfN2aLZtdtSGougKKql4lsylRhoI0MAmTA0nFu4PM8otLYuSDrY
- _pMt6eksCmgLpFrACZHNX6Cygb43g3m8wZCR3goQJimwxEciP_kdiwSeaaPv
- nsweaWY0.yGfLkpNFTDIKy_PwiBUY70PzqBOHRwCGWfbe1AfMki7Wu7.b5jQ
- ifyptuQ--
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <4FC00C50.3000907@att.net>
-Date: Fri, 25 May 2012 17:48:48 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: daniel.santos@pobox.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	id S1758971Ab2EYWtH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 18:49:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19368 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755237Ab2EYWtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 18:49:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104453223"
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: perf, x86: only do lbr init if bts is available
+References: <4FBE5FA6.5050802@gmail.com>
+	<CABPqkBT7dKa3P2hk=_pismGdPHuseWMbCKhUzz1sQNDemb133A@mail.gmail.com>
+	<4FBE64D0.7040507@gmail.com>
+	<CABPqkBQc=XAfGY8_Rex4Hy91eBtwxtGzpfT0RaskBDDcSv1C4w@mail.gmail.com>
+Date: Fri, 25 May 2012 15:49:04 -0700
+In-Reply-To: <CABPqkBQc=XAfGY8_Rex4Hy91eBtwxtGzpfT0RaskBDDcSv1C4w@mail.gmail.com>
+	(Stephane Eranian's message of "Thu, 24 May 2012 19:11:28 +0200")
+Message-ID: <m2obpblvvj.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Generic Red-Black Trees (status update)
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For anybody that's keeping up with this, I've gone through multiple
-iterations and tests with 9 different gcc versions and concluded that
-the search, insert & remove cores need to be coded in rbtree.h, using
-the traditional interface (i.e., passing struct rb_node & rb_root
-pointers instead of pointers to your specific object types).  The reason
-is that gcc can't handle the cool fully-generic code until 4.6.  In gcc
-4.5.x, optimization completely breaks expanding the inline functions
-into huge bloated  monsters.  Also, while I'm re-coding it all, I'm
-adding find_near & insert_near, for more efficient insertion & retrieval
-when you already have a node that should be close to the one you want
-(which is often the case when inserting many objects at once).
+Stephane Eranian <eranian@google.com> writes:
 
-So after I'm done with this, I'll start on a new header file (grbtree.h
-probably) using the "grb_" prefix for it's functions that implements the
-gcc 4.6.x+ fully generic & type safe interface, but using cute
-pre-processor tricks for pre-4.6.x compatibility (basically, something
-to consider using once gcc 4.6+ is more widely used).
+> On Thu, May 24, 2012 at 6:41 PM, David Ahern <dsahern@gmail.com> wrote:
+>> On 5/24/12 10:35 AM, Stephane Eranian wrote:
+>>>
+>>> Well, no. There is no connection between BTS and LBR and you're creating
+>>> one.
+>>
+>>
+>> Ok. That was not clear to me from skimming the manual.
+>> Then should it be tied to X86_FEATURE_DTES64?
+>>
+> No, it is unrelated to the Debug Store.
+> There is really nothing you can use to figure that out, not event IA32_DEBUGCTL.
 
-Daniel
+One way to do it would be to reread DEBUGCTL after writing and see if
+the bit really changed to 1. If not assume LBR is not available.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
