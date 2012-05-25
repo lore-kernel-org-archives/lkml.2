@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab2EYRM1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:12:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2480 "EHLO mx1.redhat.com"
+	id S932597Ab2EYRMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:12:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886Ab2EYRD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756905Ab2EYRD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 13:03:26 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -23,91 +23,61 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 18/35] autonuma: alloc/free/init sched_autonuma
-Date: Fri, 25 May 2012 19:02:22 +0200
-Message-Id: <1337965359-29725-19-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 04/35] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
+Date: Fri, 25 May 2012 19:02:08 +0200
+Message-Id: <1337965359-29725-5-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is where the dynamically allocated sched_autonuma structure is
-being handled.
+We will set these bitflags only when the pmd and pte is non present.
 
-The reason for keeping this outside of the task_struct besides not
-using too much kernel stack, is to only allocate it on NUMA
-hardware. So the not NUMA hardware only pays the memory of a pointer
-in the kernel stack (which remains NULL at all times in that case).
+They work like PROT_NONE but they identify a request for the numa
+hinting page fault to trigger.
 
-If the kernel is compiled with CONFIG_AUTONUMA=n, not even the pointer
-is allocated on the kernel stack of course.
+Because we want to be able to set these bitflag in any established pte
+or pmd (while clearing the present bit at the same time) without
+losing information, these bitflags must never be set when the pte and
+pmd are present.
+
+For _PAGE_NUMA_PTE the pte bitflag used is _PAGE_PSE, which cannot be
+set on ptes and it also fits in between _PAGE_FILE and _PAGE_PROTNONE
+which avoids having to alter the swp entries format.
+
+For _PAGE_NUMA_PMD, we use a reserved bitflag. pmds never contain
+swap_entries but if in the future we'll swap transparent hugepages, we
+must keep in mind not to use the _PAGE_UNUSED2 bitflag in the swap
+entry format and to start the swap entry offset above it.
+
+PAGE_UNUSED2 is used by Xen but only on ptes established by ioremap,
+but it's never used on pmds so there's no risk of collision with Xen.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/fork.c |   24 ++++++++++++++----------
- 1 files changed, 14 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 237c34e..d323eb1 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -206,6 +206,7 @@ static void account_kernel_stack(struct thread_info *ti, int account)
- void free_task(struct task_struct *tsk)
- {
- 	account_kernel_stack(tsk->stack, -1);
-+	free_sched_autonuma(tsk);
- 	free_thread_info(tsk->stack);
- 	rt_mutex_debug_task_free(tsk);
- 	ftrace_graph_exit_task(tsk);
-@@ -260,6 +261,8 @@ void __init fork_init(unsigned long mempages)
- 	/* do the arch specific task caches init */
- 	arch_task_cache_init();
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index b74cac9..6e2d954 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -71,6 +71,17 @@
+ #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
+ #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
  
-+	sched_autonuma_init();
++/*
++ * Cannot be set on pte. The fact it's in between _PAGE_FILE and
++ * _PAGE_PROTNONE avoids having to alter the swp entries.
++ */
++#define _PAGE_NUMA_PTE	_PAGE_PSE
++/*
++ * Cannot be set on pmd, if transparent hugepages will be swapped out
++ * the swap entry offset must start above it.
++ */
++#define _PAGE_NUMA_PMD	_PAGE_UNUSED2
 +
- 	/*
- 	 * The default maximum number of threads is set to a safe
- 	 * value: the thread structures can take up at most half
-@@ -292,21 +295,21 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 	struct thread_info *ti;
- 	unsigned long *stackend;
- 	int node = tsk_fork_get_node(orig);
--	int err;
- 
- 	tsk = alloc_task_struct_node(node);
--	if (!tsk)
-+	if (unlikely(!tsk))
- 		return NULL;
- 
- 	ti = alloc_thread_info_node(tsk, node);
--	if (!ti) {
--		free_task_struct(tsk);
--		return NULL;
--	}
-+	if (unlikely(!ti))
-+		goto out_task_struct;
- 
--	err = arch_dup_task_struct(tsk, orig);
--	if (err)
--		goto out;
-+	if (unlikely(arch_dup_task_struct(tsk, orig)))
-+		goto out_thread_info;
-+
-+	if (unlikely(alloc_sched_autonuma(tsk, orig, node)))
-+		/* free_thread_info() undoes arch_dup_task_struct() too */
-+		goto out_thread_info;
- 
- 	tsk->stack = ti;
- 
-@@ -334,8 +337,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
- 
- 	return tsk;
- 
--out:
-+out_thread_info:
- 	free_thread_info(ti);
-+out_task_struct:
- 	free_task_struct(tsk);
- 	return NULL;
- }
+ #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
+ 			 _PAGE_ACCESSED | _PAGE_DIRTY)
+ #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
