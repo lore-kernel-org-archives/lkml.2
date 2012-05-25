@@ -1,135 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755352Ab2EYHQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 03:16:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61390 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753314Ab2EYHQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 03:16:52 -0400
-Date: Fri, 25 May 2012 16:16:43 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
-Message-ID: <20120525071643.GA9105@kroah.com>
-References: <20120426001529.GA14006@kroah.com>
- <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
- <20120426151242.GA14774@kroah.com>
- <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
- <20120524215249.GA17936@kroah.com>
- <CAAJw_ZtaeAV2nZU7LcyngJTN15YVn+8y2dMPxtBqTGn750Tjdg@mail.gmail.com>
- <20120525060124.GA18035@kroah.com>
- <CAAJw_Ztke1NqY6Jm2fqyPOWzeVAqK=pKv=6bPhhdGaNVHaHM+g@mail.gmail.com>
+	id S1755515Ab2EYHVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 03:21:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:14430 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753410Ab2EYHVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 03:21:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104167255"
+Message-ID: <4FBF3295.7090608@intel.com>
+Date: Fri, 25 May 2012 15:19:49 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAJw_Ztke1NqY6Jm2fqyPOWzeVAqK=pKv=6bPhhdGaNVHaHM+g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, andi@firstfloor.org,
+        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 1/2] printk: add interface for disabling recursion check
+References: <4FBC444A.6060500@intel.com>  <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com>  <20120524061145.GA18284@liondog.tnic>  <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1337905811.14538.206.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 03:06:33PM +0800, Jeff Chua wrote:
-> On Fri, May 25, 2012 at 2:01 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Fri, May 25, 2012 at 01:48:06PM +0800, Jeff Chua wrote:
-> >> On Fri, May 25, 2012 at 5:52 AM, Greg Kroah-Hartman
-> >> <gregkh@linuxfoundation.org> wrote:
-> >> > On Thu, May 24, 2012 at 11:55:16PM +0800, Jeff Chua wrote:
-> >> >> On Thu, Apr 26, 2012 at 11:12 PM, Greg Kroah-Hartman
-> >> >> <gregkh@linuxfoundation.org> wrote:
-> >> >> > On Thu, Apr 26, 2012 at 11:06:45AM -0400, Alan Stern wrote:
-> >> >> >> On Wed, 25 Apr 2012, Greg Kroah-Hartman wrote:
-> >> >> >>
-> >> >> >> > This option has been deprecated for many years now, and no userspace
-> >> >> >> > tools use it anymore, so it should be safe to finally remove it.
-> >> >> >> >
-> >> >> >> > Reported-by: Kay Sievers <kay@vrfy.org>
-> >> >> >> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >> >> >> >
-> >> >> >> > Anyone object to me queuing this up for the 3.5 kernel release?
-> >> >> >>
-> >> >> >> I'm not sure about this.  There are a few systems still floating around
-> >> >> >> that don't use udev; on those systems /proc/bus/usb is the only way for
-> >> >> >> user programs to control USB devices.  Admittedly, I have no idea
-> >> >> >> whether any such systems will be using 3.5 or later kernels...
-> >> >> >
-> >> >> > They don't have to use udev, they can use devtmpfs (which is what the
-> >> >> > majority of embedded systems use today), or they can just use static
-> >> >> > device nodes to get access to these devices, the char node is still
-> >> >> > present, we aren't getting rid of them at all.
-> >> >>
-> >> >> Looks like vmware is breaking. Can't find any usb devices. I'm not using udev.
-> >> >
-> >> > vmware doesn't use usbfs, otherwise how would it be working on all of
-> >> > the systems out there that haven't mounted usbfs for years?
-> >> >
-> >> > What exactly broke?  What version of vmware are you using, and is the
-> >> > problem in the guest or host?
-> >> >
-> >> > We delayed other usbfs changes for years due to vmware "issues", it
-> >> > wouldn't be the first time we've had to handle this :(
-> >>
-> >>
-> >> VMWare workstation 8.0.3
-> >>
-> >> # vmware-usbarbitrator -f --info
-> >> DICT       product.buildNumber = 703057
-> >> DICT           product.version = 8.0.3
-> >> DICT workstation.product.version = 8.0.3
-> >> DICT              product.name = VMware Workstation
-> >> VMware USB Arbitration Service Version 8.4.19
-> >> USB: Unable to open "/proc/bus/usb/devices" (No such file or directory).
-> >> No USB enumerator!
-> > Ok, I have no idea what any of this means.
-> 
-> I think the process "vmware-usbarbitrator" is trying to read
-> proc/bus/usb/devices and can't find the file, so when I go to vmware,
-> it can't find any usb devices.
+From: ShuoX Liu <shuox.liu@intel.com>
 
-You are running this program where, in the host or guest?
+With some special scenario, such as Machine Check Exception happened
+in printk, we want to bypass printk recursion check to print some
+important information. So we add these interfaces in printk.
 
-> > What host os are you using that does not have udev in it?
-> 
-> No udev. My own vanilla kernel.
+1) printk_recursion_check_disable() for disabling recursion check
+2) printk_recursion_check_enable() for enabling recursion check
 
-What distro.  Why no udev?  What is managing your /dev/ tree?  A distro
-package?  A tarball?  Something else?
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ include/linux/printk.h |    3 +++
+ kernel/printk.c        |   16 +++++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-> > What client os are you using that wants access to the USB ports that is
-> > not working?  Is this the latest version of vmware (hint, I have no idea
-> > what their version numbering is, you are going to have to look that up,
-> > but I know they have fixed stuff like this in their newer releases.)
-> 
-> It's the latest vmware workstation 8.0.3. The vmware "Removable
-> Devices" tab is not showing any USB devices.
-
-For the host or guest?
-
-> > What release of the host os are you running?
-> 
-> Linux-3.4.0 with commit 07acfc2a9349a8ce45b236c2624dad452001966b.
-
-No, sorry, what distro?
-
-> > If you aren't using udev, what are you using for your static device nodes?
-> 
-> Usually, with /proc/bus/usb/devices present, vmware will just read
-> from this file and I get to see the usb devices in vmware.
-
-That's nice, but it's been depreciated for many years now.  vmware
-supports this to run on older systems that never changed.  The usbfs
-code turned out to be wrong as it couldn't handle user permissions
-properly, which is why it has been removed.
-
-Use /dev/usb/ device nodes intead.  If you have a distro that has static
-device nodes, just add them to the package that has those nodes, and you
-should be fine.  That will bring you into the mid 2000's as far as
-device nodes go, I'm amazed that this hasn't been noticed before now.
-
-thanks,
-
-greg k-h
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..da48ec7 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -42,6 +42,9 @@ static inline void console_verbose(void)
+ 		console_loglevel = 15;
+ }
+ 
++void printk_recursion_check_disable(void);
++void printk_recursion_check_enable(void);
++
+ struct va_format {
+ 	const char *fmt;
+ 	va_list *va;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..61067fe 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -78,6 +78,18 @@ int console_printk[4] = {
+ int oops_in_progress;
+ EXPORT_SYMBOL(oops_in_progress);
+ 
++static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
++
++void printk_recursion_check_disable(void)
++{
++	atomic_inc(&recursion_check_disabled);
++}
++
++void printk_recursion_check_enable(void)
++{
++	atomic_dec(&recursion_check_disabled);
++}
++
+ /*
+  * console_sem protects the console_drivers list, and also
+  * provides serialisation for access to the entire console
+@@ -1295,7 +1307,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * recursion and return - but flag the recursion so that
+ 		 * it can be printed at the next appropriate moment:
+ 		 */
+-		if (!oops_in_progress && !lockdep_recursing(current)) {
++		if (!atomic_read(&recursion_check_disabled)
++			&& !oops_in_progress
++			&& !lockdep_recursing(current)) {
+ 			recursion_bug = 1;
+ 			goto out_restore_irqs;
+ 		}
+-- 
+1.7.1
