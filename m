@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756328Ab2EYOlG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:41:06 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41946 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab2EYOlA (ORCPT
+	id S1755954Ab2EYOrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:47:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52970 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752783Ab2EYOrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:41:00 -0400
-Message-ID: <1337956828.2351.68.camel@falcor>
-Subject: Re: [PATCH 00/23] Crypto keys and module signing
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, kyle@mcmartin.ca,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org
-Date: Fri, 25 May 2012 10:40:28 -0400
-In-Reply-To: <3662.1337954002@redhat.com>
-References: <1337951294.2351.34.camel@falcor>
-	 <CALLzPKYVahsgcsyF0zMP+wLNAp5TeiGeofy5KJyMHkjsdyvo9Q@mail.gmail.com>
-	 <87obpfxdpr.fsf@rustcorp.com.au>
-	 <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
-	 <7474.1337782847@redhat.com> <8762blyedn.fsf@rustcorp.com.au>
-	 <6426.1337945879@redhat.com>  <3662.1337954002@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052514-4242-0000-0000-000001C71FF8
+	Fri, 25 May 2012 10:47:15 -0400
+Date: Fri, 25 May 2012 11:47:10 -0300
+From: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf record: Fixing record option data type in
+ parse_branch_stack
+Message-ID: <20120525144710.GG2336@infradead.org>
+References: <4FBDFDA6.5010304@linux.vnet.ibm.com>
+ <4FBF185F.4060007@linux.vnet.ibm.com>
+ <4FBF3CD1.7030603@linux.vnet.ibm.com>
+ <CABPqkBS6cdUkKgC1Jp_pzMWxDKZYJtomoZUx6g2z739y=TkPAw@mail.gmail.com>
+ <4FBF5FAF.4010906@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBF5FAF.4010906@linux.vnet.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 14:53 +0100, David Howells wrote:
-> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+Em Fri, May 25, 2012 at 04:02:15PM +0530, Anshuman Khandual escreveu:
+> On Friday 25 May 2012 02:14 PM, Stephane Eranian wrote:
 > 
-> > The issue here is whether we want the integrity metadata for kernel
-> > modules to be stored differently than for all other files.
+> > Hi,
+> > 
+> > It should be something like that instead:
+> > 
+> > diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> > index 8a9687e..c9ca7c4 100644
+> > --- a/tools/perf/perf.h
+> > +++ b/tools/perf/perf.h
+> > @@ -228,7 +228,7 @@ struct perf_record_opts {
+> >         unsigned int freq;
+> >         unsigned int mmap_pages;
+> >         unsigned int user_freq;
+> > -       int          branch_stack;
+> > +       u64          branch_stack;
+> >         u64          default_interval;
+> >         u64          user_interval;
+> >  };
+> > 
 > 
-> Surely it's handled differently.  The kernel is told by insmod what the
-> signature should be in your scheme rather than going looking for it itself.  In
-> such a case, why not include the signature in the module file?  It's more
-> efficient on the filesystem, doesn't require xattr support and is easier for
-> things like the initramfs composer to deal with.
-
-Yes, unfortunately, it is handled differently.  Instead of passing a
-file descriptor, a buffer containing the file data is passed.  Without
-the file descriptor, you also need to pass the file metadata, in this
-case, the signature as well.  Whether the signature is passed as a
-separate parameter or appended to the file, it still is being passed to
-the kernel.
-
-> Btw, am I right in thinking that with IMA, the kernel itself normally goes and
-> finds the signature (if there is one) for a file when it needs to open a file?
-> Do you only check the IMA when exec'ing a file or whenever you open it?
 > 
-> David
+> 
+> Agreed. I just tried to fix the problem where it was more evident because
+> of the data type mismatch.
 
-IMA measures a file and appraises file data integrity based on the IMA
-measurement/appraisal policy.  There are currently 3 hooks: open -
-ima_file_check(), exec - ima_bprm_check() and mmap - ima_file_mapp().
+Can you send an updated patch on a message just for that?
 
-I don't know the reasons or history for passing the file data content,
-instead of a file descriptor, but if a file descriptor were passed, then
-module integrity appraisal could simply be another integrity hook.
-
-Mimi
-
+- Arnaldo
