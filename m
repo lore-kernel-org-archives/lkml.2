@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab2EYNLP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:11:15 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16184 "EHLO relay.sw.ru"
+	id S1758121Ab2EYNJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:09:36 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28806 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932872Ab2EYNJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:09:47 -0400
+	id S1758077Ab2EYNJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:09:33 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
@@ -17,9 +17,9 @@ Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Glauber Costa <glommer@parallels.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v3 23/28] slab: Track all the memcg children of a kmem_cache.
-Date: Fri, 25 May 2012 17:03:43 +0400
-Message-Id: <1337951028-3427-24-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 20/28] memcg: disable kmem code when not in use.
+Date: Fri, 25 May 2012 17:03:40 +0400
+Message-Id: <1337951028-3427-21-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
 References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
@@ -27,196 +27,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables us to remove all the children of a kmem_cache being
-destroyed, if for example the kernel module it's being used in
-gets unloaded. Otherwise, the children will still point to the
-destroyed parent.
+We can use jump labels to patch the code in or out
+when not used.
 
-We also use this to propagate /proc/slabinfo settings to all
-the children of a cache, when, for example, changing its
-batchsize.
+Because the assignment: memcg->kmem_accounted = true
+is done after the jump labels increment, we guarantee
+that the root memcg will always be selected until
+all call sites are patched (see mem_cgroup_kmem_enabled).
+This guarantees that no mischarges are applied.
 
-Code is inspired by Suleiman's, with adaptations to
-the patchset and simplifications by me.
+Jump label decrement happens when the last reference
+count from the memcg dies. This will only happen when
+the caches are all dead.
 
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
 CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/memcontrol.h |    1 +
- include/linux/slab.h       |    1 +
- mm/memcontrol.c            |   13 ++++++++-
- mm/slab.c                  |   61 +++++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 73 insertions(+), 3 deletions(-)
+ include/linux/memcontrol.h |    4 +++-
+ mm/memcontrol.c            |   22 +++++++++++++++++++++-
+ 2 files changed, 24 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index df049e1..63113de 100644
+index fbc5ba1..bad8ebd 100644
 --- a/include/linux/memcontrol.h
 +++ b/include/linux/memcontrol.h
-@@ -465,6 +465,7 @@ extern struct static_key mem_cgroup_kmem_enabled_key;
- #define mem_cgroup_kmem_on static_key_false(&mem_cgroup_kmem_enabled_key)
+@@ -22,6 +22,7 @@
+ #include <linux/cgroup.h>
+ #include <linux/vm_event_item.h>
+ #include <linux/hardirq.h>
++#include <linux/jump_label.h>
  
- void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
-+void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id);
+ struct mem_cgroup;
+ struct page_cgroup;
+@@ -460,7 +461,8 @@ void __mem_cgroup_free_kmem_page(struct page *page);
+ struct kmem_cache *
+ __mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp);
+ 
+-#define mem_cgroup_kmem_on 1
++extern struct static_key mem_cgroup_kmem_enabled_key;
++#define mem_cgroup_kmem_on static_key_false(&mem_cgroup_kmem_enabled_key)
  #else
  static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
  					     struct kmem_cache *s)
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 25f073e..714aeab 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -172,6 +172,7 @@ struct mem_cgroup_cache_params {
- 	struct kmem_cache *parent;
- #endif
- 	struct list_head destroyed_list; /* Used when deleting memcg cache */
-+	struct list_head sibling_list;
- };
- #endif
- 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e2576c5..08f3c3e 100644
+index f3a3812..f2f1525 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -542,10 +542,11 @@ void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+@@ -422,6 +422,10 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
+ #include <net/sock.h>
+ #include <net/ip.h>
  
- 	cachep->memcg_params.memcg = memcg;
- 
--	if (!memcg)
-+	if (!memcg) {
- 		id = ida_simple_get(&cache_types, 0, MAX_KMEM_CACHE_TYPES,
- 				    GFP_KERNEL);
--	else
-+		INIT_LIST_HEAD(&cachep->memcg_params.sibling_list);
-+	} else
- 		INIT_LIST_HEAD(&cachep->memcg_params.destroyed_list);
- 	cachep->memcg_params.id = id;
- }
-@@ -845,6 +846,14 @@ struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
- }
- EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
- 
-+void mem_cgroup_remove_child_kmem_cache(struct kmem_cache *cachep, int id)
-+{
-+	mutex_lock(&memcg_cache_mutex);
-+	cachep->memcg_params.memcg->slabs[id] = NULL;
-+	mutex_unlock(&memcg_cache_mutex);
-+	mem_cgroup_put(cachep->memcg_params.memcg);
-+}
++struct static_key mem_cgroup_kmem_enabled_key;
++/* so modules can inline the checks */
++EXPORT_SYMBOL(mem_cgroup_kmem_enabled_key);
 +
- bool __mem_cgroup_new_kmem_page(struct page *page, gfp_t gfp)
- {
- 	struct mem_cgroup *memcg;
-diff --git a/mm/slab.c b/mm/slab.c
-index 59f1027..cb409ae 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2661,6 +2661,8 @@ struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
- 		goto out;
+ static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+ static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
+ static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
+@@ -468,6 +472,12 @@ void sock_release_memcg(struct sock *sk)
  	}
- 
-+	list_add(&new->memcg_params.sibling_list,
-+	    &cachep->memcg_params.sibling_list);
- 	if ((cachep->limit != new->limit) ||
- 	    (cachep->batchcount != new->batchcount) ||
- 	    (cachep->shared != new->shared))
-@@ -2829,6 +2831,33 @@ int kmem_cache_shrink(struct kmem_cache *cachep)
  }
- EXPORT_SYMBOL(kmem_cache_shrink);
  
-+static void kmem_cache_destroy_memcg_children(struct kmem_cache *cachep)
++static void disarm_static_keys(struct mem_cgroup *memcg)
 +{
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	struct kmem_cache *c;
-+	struct mem_cgroup_cache_params *p, *tmp;
-+	int id = cachep->memcg_params.id;
-+
-+	if (id == -1)
-+		return;
-+
-+	mutex_lock(&cache_chain_mutex);
-+	list_for_each_entry_safe(p, tmp,
-+	    &cachep->memcg_params.sibling_list, sibling_list) {
-+		c = container_of(p, struct kmem_cache, memcg_params);
-+		if (WARN_ON(c == cachep))
-+			continue;
-+
-+		mutex_unlock(&cache_chain_mutex);
-+		BUG_ON(c->memcg_params.id != -1);
-+		mem_cgroup_remove_child_kmem_cache(c, id);
-+		kmem_cache_destroy(c);
-+		mutex_lock(&cache_chain_mutex);
-+	}
-+	mutex_unlock(&cache_chain_mutex);
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++	if (memcg->kmem_accounted)
++		static_key_slow_dec(&mem_cgroup_kmem_enabled_key);
 +}
 +
- /**
-  * kmem_cache_destroy - delete a cache
-  * @cachep: the cache to destroy
-@@ -2849,6 +2878,9 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
+ #ifdef CONFIG_INET
+ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
  {
- 	BUG_ON(!cachep || in_interrupt());
- 
-+	/* Destroy all the children caches if we aren't a memcg cache */
-+	kmem_cache_destroy_memcg_children(cachep);
-+
- 	/* Find the cache in the chain of caches. */
- 	get_online_cpus();
- 	mutex_lock(&cache_chain_mutex);
-@@ -2869,6 +2901,7 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
- 
- 	mem_cgroup_release_cache(cachep);
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	list_del(&cachep->memcg_params.sibling_list);
- 	/* memcg cache: free the name string. Doing it here saves us
- 	 * a pointer to it outside the slab code */
- 	if (cachep->memcg_params.id == -1)
-@@ -4243,7 +4276,7 @@ static void do_ccupdate_local(void *info)
+@@ -843,6 +853,10 @@ static void memcg_slab_init(struct mem_cgroup *memcg)
+ 	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
+ 		memcg->slabs[i] = NULL;
  }
- 
- /* Always called with the cache_chain_mutex held */
--static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
-+static int __do_tune_cpucache(struct kmem_cache *cachep, int limit,
- 				int batchcount, int shared, gfp_t gfp)
- {
- 	struct ccupdate_struct *new;
-@@ -4286,6 +4319,32 @@ static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
- 	return alloc_kmemlist(cachep, gfp);
- }
- 
-+static int do_tune_cpucache(struct kmem_cache *cachep, int limit,
-+				int batchcount, int shared, gfp_t gfp)
++#else
++static inline void disarm_static_keys(struct mem_cgroup *memcg)
 +{
-+	int ret;
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	struct kmem_cache *c;
-+	struct mem_cgroup_cache_params *p;
-+#endif
-+
-+	ret = __do_tune_cpucache(cachep, limit, batchcount, shared, gfp);
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	if (g_cpucache_up < FULL)
-+		return ret;
-+
-+	if ((ret < 0) || (cachep->memcg_params.id == -1))
-+		return ret;
-+
-+	list_for_each_entry(p, &cachep->memcg_params.sibling_list, sibling_list) {
-+		c = container_of(p, struct kmem_cache, memcg_params);
-+		/* return value determined by the parent cache only */
-+		__do_tune_cpucache(c, limit, batchcount, shared, gfp);
-+	}
-+#endif
-+	return ret;
 +}
-+
- /* Called with cache_chain_mutex held always */
- static int enable_cpucache(struct kmem_cache *cachep, gfp_t gfp)
- {
+ #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+ 
+ static void drain_all_stock_async(struct mem_cgroup *memcg);
+@@ -4362,8 +4376,13 @@ static int mem_cgroup_write(struct cgroup *cont, struct cftype *cft,
+ 			 *
+ 			 * But it is not worth the trouble
+ 			 */
+-			if (!memcg->kmem_accounted && val != RESOURCE_MAX)
++			mutex_lock(&set_limit_mutex);
++			if (!memcg->kmem_accounted && val != RESOURCE_MAX
++			    && !memcg->kmem_accounted) {
++				static_key_slow_inc(&mem_cgroup_kmem_enabled_key);
+ 				memcg->kmem_accounted = true;
++			}
++			mutex_unlock(&set_limit_mutex);
+ 		}
+ #endif
+ 		else
+@@ -5297,6 +5316,7 @@ static void free_work(struct work_struct *work)
+ 	int size = sizeof(struct mem_cgroup);
+ 
+ 	memcg = container_of(work, struct mem_cgroup, work_freeing);
++	disarm_static_keys(memcg);
+ 	if (size < PAGE_SIZE)
+ 		kfree(memcg);
+ 	else
 -- 
 1.7.7.6
 
