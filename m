@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab2EYKeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 06:34:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:35724 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156Ab2EYKeA (ORCPT
+	id S1756011Ab2EYKeT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 06:34:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10001 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab2EYKeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 06:34:00 -0400
-Date: Fri, 25 May 2012 12:33:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jan Beulich <JBeulich@suse.com>
-cc: mingo@elte.hu, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86: clear HPET configuration registers on startup
-In-Reply-To: <4FBF792D02000078000861BD@nat28.tlf.novell.com>
-Message-ID: <alpine.LFD.2.02.1205251230550.3231@ionos>
-References: <4F79D0BB020000780007C02D@nat28.tlf.novell.com> <alpine.LFD.2.02.1205242352460.3231@ionos> <4FBF792D02000078000861BD@nat28.tlf.novell.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 25 May 2012 06:34:15 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 25 May 2012 03:33:53 -0700
+Message-ID: <4FBF5EA9.704@nvidia.com>
+Date: Fri, 25 May 2012 15:57:53 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Vinod Koul <vinod.koul@linux.intel.com>
+CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/9 v3] dmaengine: add an shdma-base library
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de>	 <1336576161-27082-2-git-send-email-g.liakhovetski@gmx.de>	 <1337055734.16185.5360.camel@vkoul-udesk3>	 <Pine.LNX.4.64.1205171912140.10086@axis700.grange> <1337933737.1580.8.camel@vkoul-udesk3>
+In-Reply-To: <1337933737.1580.8.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Jan Beulich wrote:
-> >>> On 25.05.12 at 00:06, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Mon, 2 Apr 2012, Jan Beulich wrote:
-> > 
-> > Sorry for ignoring this for so long.
-> > 
-> >> +	cfg = hpet_readl(HPET_CFG);
-> >> +	hpet_boot_cfg = kmalloc((last + 2) * sizeof(*hpet_boot_cfg),
-> >> +				GFP_KERNEL);
-> >> +	if (hpet_boot_cfg)
-> >> +		*hpet_boot_cfg = cfg;
-> >> +	else
-> >> +		pr_warn("HPET initial state will not be saved\n");
-> >> +	cfg &= ~(HPET_CFG_ENABLE | HPET_CFG_LEGACY);
-> >> +	hpet_writel(cfg, HPET_Tn_CFG(i));
-> > 
-> > This wants to be  
-> > 
-> >> +	hpet_writel(cfg, HPET_CFG);
-> > 
-> > Right ?
-> 
-> Oh yes, absolutely.
-> 
-> >> @@ -923,14 +952,28 @@ fs_initcall(hpet_late_init);
-> >>  void hpet_disable(void)
-> >>  {
-> >>  	if (is_hpet_capable() && hpet_virt_address) {
-> >> -		unsigned int cfg = hpet_readl(HPET_CFG);
-> >> +		unsigned int cfg = hpet_readl(HPET_CFG), id, last;
-> >>  
-> >> -		if (hpet_legacy_int_enabled) {
-> >> +		if (hpet_boot_cfg)
-> >> +			cfg = *hpet_boot_cfg;
-> > 
-> > That restores the setting which you recorded at init time. Why do you
-> > want to do that? There is no point to restore to an eventually borked
-> > state. If we shut down the thing, then we better leave it in a
-> > consistent state rather than something dubious, really.
-> 
-> The problem is that we can't - forward compatibly - say what
-> is "borked" and what is merely beyond the knowledge of the
-> kernel. Given the system was able to boot with the original
-> settings, restoring them seems the safest approach to me.
-> 
-> Besides that it's not the purpose of the patch to get around
-> firmware bugs, but instead to get the hardware back into
-> boot-time like state. So I'd really like to merely correct the
-> error above that you pointed out (which also would seem to
-> be the most appropriate route given that Linus already
-> merged the patch), and leave a decision whether you agree
-> with my position here (or whether you want to further
-> tweak that code) to you.
+On Friday 25 May 2012 01:45 PM, Vinod Koul wrote:
+> On Fri, 2012-05-18 at 10:21 +0200, Guennadi Liakhovetski wrote:
 
-I can see the point, but what I really don't like is restoring to an
-eventually enabled state instead of doing it proper and keep the thing
-shut down.
+> +/*
+>>>> + * Drivers, using this library are expected to embed struct shdma_dev,
+>>>> + * struct shdma_chan, struct shdma_desc, and struct shdma_slave
+>>>> + * in their respective device, channel, descriptor and slave objects.
+>>>> + */
+>>>> +
+>>>> +struct shdma_slave {
+>>>> +	unsigned int slave_id;
+>>> this should be moved to struct dma_slave_config
+>> Again, this would be a functional change. And struct dma_slave_config
+>> doesn't have a slave-ID field in it, which is the only thing we need for
+>> now. Instead it has a bunch of other fields, of which none is so far used
+>> by this driver.
+>>
 
-Thanks,
+In Nvidia's tegra SOC also require to pass the slave id from client to 
+dma driver. I have pushed the change to make it part of struct 
+dma_slave_config  on the patch
+[PATCH V4 1/2] dma: dmaengine: add slave req id in slave_config
 
-	tglx
+So hope you can use the same if that patch get merged.
+
+
