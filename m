@@ -1,96 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757023Ab2EYJbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:31:00 -0400
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:55447 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756316Ab2EYJa6 (ORCPT
+	id S1757058Ab2EYJbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:31:31 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:56043 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897Ab2EYJaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:30:58 -0400
-Date: Fri, 25 May 2012 12:29:28 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>, arnd@arndb.de, svadivu@ti.com,
-        aneesh@ti.com
-Subject: Re: [PATCH] misc: emif: fix compilation error
-Message-ID: <20120525092927.GI3850@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1337933492-25361-1-git-send-email-balbi@ti.com>
- <CAMQu2gxeB1h9aieJU_WvCK2rPPLYkOVN8gw0i8xBm6yEPRNmHQ@mail.gmail.com>
+	Fri, 25 May 2012 05:30:05 -0400
+X-AuditID: b753bd60-9a705ba000007aa1-3b-4fbf4c987531
+X-AuditID: b753bd60-9a705ba000007aa1-3b-4fbf4c987531
+From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Subject: [RFC PATCH 2/4 V2] livedump: Add the new misc device "livedump"
+To: "Thomas Gleixner" <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "Vivek Goyal" <vgoyal@redhat.com>, linux-kernel@vger.kernel.org
+Cc: "Andy Lutomirski" <luto@mit.edu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Ingo Molnar" <mingo@elte.hu>, "Ingo Molnar" <mingo@redhat.com>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "Kees Cook" <keescook@chromium.org>, "Kevin Hilman" <khilman@ti.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Prarit Bhargava" <prarit@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, "Tejun Heo" <tj@kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Fri, 25 May 2012 18:12:07 +0900
+Message-ID: <20120525091207.10256.87298.stgit@t3500.sdl.hitachi.co.jp>
+In-Reply-To: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp>
+References: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xQR6quUbZ63TTuTU"
-Content-Disposition: inline
-In-Reply-To: <CAMQu2gxeB1h9aieJU_WvCK2rPPLYkOVN8gw0i8xBm6yEPRNmHQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Introduces the new misc device "livedump".
+This device will be used as interface between livedump and user space.
+Right now, the device only has empty ioctl operation.
 
---xQR6quUbZ63TTuTU
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+***ATTENTION PLEASE***
+I think debugfs is more suitable for this feature, but currently livedump
+uses the misc device for simplicity. This will be fixed in the future.
 
-On Fri, May 25, 2012 at 02:40:18PM +0530, Shilimkar, Santosh wrote:
-> On Fri, May 25, 2012 at 1:41 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > commit 99d3eccf (ARM: OMAP4/5: EMIF: Probe
-> > Emif driver with initcall) introduced a compile
-> > error by not removing module_init() when adding
-> > postcore_initcall().
-> >
-> > This problem would've been caught by just compiling
-> > the driver as module.
-> >
-> > Fix the issue by removing module_init() from the
-> > driver.
-> >
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > ---
-> > =A0drivers/misc/emif.c | =A0 =A01 -
-> > =A01 file changed, 1 deletion(-)
-> >
-> > diff --git a/drivers/misc/emif.c b/drivers/misc/emif.c
-> > index 36fda8e..8725ea9 100644
-> > --- a/drivers/misc/emif.c
-> > +++ b/drivers/misc/emif.c
->=20
-> This driver is in drivers/memory now and this patch is
-> certainly not applicable. Looks like you might have seen
-> this issue with the older, internal version of the driver.
+Signed-off-by: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Kevin Hilman <khilman@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org
+---
 
-could be.. I probably merged something I shouldn't on my master branch
-;-)
+ arch/x86/Kconfig  |   15 ++++++++++
+ kernel/Makefile   |    1 +
+ kernel/livedump.c |   83 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 99 insertions(+), 0 deletions(-)
+ create mode 100644 kernel/livedump.c
 
-Weird is that my master is built on top of v3.4... anyway.. forget about
-this patch, sorry for the noise.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c9866b0..4c97583 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1729,6 +1729,21 @@ config CMDLINE_OVERRIDE
+ 	  This is used to work around broken boot loaders.  This should
+ 	  be set to 'N' under normal conditions.
+ 
++config LIVEDUMP
++	bool "Live Dump support"
++	depends on X86_64
++	---help---
++	  Set this option to 'Y' to allow the kernel support to acquire
++	  a consistent snapshot of kernel space without stopping system.
++
++	  This feature regularly causes small overhead on kernel.
++
++	  Once this feature is initialized by its special ioctl, it
++	  allocates huge memory for itself and causes much more overhead
++	  on kernel.
++
++	  If in doubt, say N.
++
+ endmenu
+ 
+ config ARCH_ENABLE_MEMORY_HOTPLUG
+diff --git a/kernel/Makefile b/kernel/Makefile
+index cb41b95..f095e7a 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -106,6 +106,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+ obj-$(CONFIG_JUMP_LABEL) += jump_label.o
++obj-$(CONFIG_LIVEDUMP) += livedump.o
+ 
+ $(obj)/configs.o: $(obj)/config_data.h
+ 
+diff --git a/kernel/livedump.c b/kernel/livedump.c
+new file mode 100644
+index 0000000..3103292
+--- /dev/null
++++ b/kernel/livedump.c
+@@ -0,0 +1,83 @@
++/* livedump.c - Live Dump's main
++ * Copyright (C) 2012 Hitachi, Ltd.
++ * Author: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA  02110-1301, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/miscdevice.h>
++
++#define DEVICE_NAME	"livedump"
++
++#define LIVEDUMP_IOC(x)	_IO(0xff, x)
++
++static long livedump_ioctl(
++		struct file *file, unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++
++static int livedump_open(struct inode *inode, struct file *file)
++{
++	if (!try_module_get(THIS_MODULE))
++		return -ENOENT;
++	return 0;
++}
++
++static int livedump_release(struct inode *inode, struct file *file)
++{
++	module_put(THIS_MODULE);
++	return 0;
++}
++
++static const struct file_operations livedump_fops = {
++	.unlocked_ioctl = livedump_ioctl,
++	.open = livedump_open,
++	.release = livedump_release,
++};
++static struct miscdevice livedump_misc = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = DEVICE_NAME,
++	.fops = &livedump_fops,
++};
++
++static int livedump_module_init(void)
++{
++	int ret;
++
++	ret = misc_register(&livedump_misc);
++	if (WARN(ret,
++				"livedump: Failed to register livedump on misc device.\n"
++		))
++		return ret;
++
++	return 0;
++}
++module_init(livedump_module_init);
++
++static void livedump_module_exit(void)
++{
++	misc_deregister(&livedump_misc);
++}
++module_exit(livedump_module_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Livedump kernel module");
 
---=20
-balbi
-
---xQR6quUbZ63TTuTU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPv1D3AAoJEIaOsuA1yqREOzwQAKV7sWI7YBbvxI/ANXR1/uPw
-8bwd7ys64mhcOCGrcAcu0j9j6gSksQd7LBiHh0MCibtMyDJEim1T5A6ue+Zvi/8e
-oMejKsH3gJu8zo0PKTJAVVLTA4JYKKKsGCD+zCZ8ttArqjPdDREqKhUNGdIBR8Bi
-UHKtydi8fEDSkK1af0f8b6wdStruPr4II8jHpFEHK9PMzXQhsNacPbro71fb7x4N
-G19FIRP4NAYq9V2k+8D3AhNJ+eoAy/ySRvTaQpNXV3pmVy+7TlmK0yeCrIyfp966
-z2B5tqEjsh/0kS5icpnAbPxyALR5QdOjjCN6jelHNYQcS4Ljp+3bLXC8Ay2MP6U2
-yLUJnNDZHadl3JgicPZD7XcElYx7EOnoguMZ/w1ZAy/OlKRyB9fsZwnXa6KgCg8z
-nF+d7LG1mPX8YhxS0EKaey5jEJ+Wp+XRlXXyXIfaRoPo46U9JCCok5OJBUsyr0sQ
-1ddsXjDvY+IP3ius8m8Dwd9zNkOAjqfh8pVfN5lWYcIb/IF1fLuiLnRnMaHaRVrp
-FPxoVJbq7B1h/hWivtlT7+uo10NbJr57FT1riVhJc9X47y2U6gqn9blEjpboZ/v6
-tGc56dG3ZwnZdmoTDyjq+UGr1PAGd4EeaxOgvsJFqFoqNYk0+dfKIlV1QupSuLEO
-fiZw394eryyzw36zPET/
-=v4IQ
------END PGP SIGNATURE-----
-
---xQR6quUbZ63TTuTU--
