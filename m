@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757860Ab2EYNem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:34:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:41834 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754516Ab2EYNeU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:34:20 -0400
+	id S932411Ab2EYNet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:34:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49255 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757878Ab2EYNep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:34:45 -0400
+Date: Fri, 25 May 2012 15:34:41 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
+Message-ID: <20120525133441.GB30527@tiehlicka.suse.cz>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
 MIME-Version: 1.0
-Date: Fri, 25 May 2012 21:34:19 +0800
-Message-ID: <CAJd=RBCGT09TZL-KfAi5Ccm9MjHhzocyyQfgaNhTwzWBjjTuUg@mail.gmail.com>
-Subject: [patch 2/4] BFS 420: fix ttwu_stat
-From: Hillf Danton <dhillf@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last parameter, wake_flags, as not used, is replaced by the result that the
-sleeper is activated successfully or not. If not, only to increase ttwu counter.
+On Fri 25-05-12 17:03:20, Glauber Costa wrote:
+> I believe some of the early patches here are already in some trees around.
+> I don't know who should pick this, so if everyone agrees with what's in here,
+> please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
+> and I'll rebase it.
 
---- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
-+++ b/kernel/sched/bfs.c	Fri May 25 20:28:00 2012
-@@ -1486,7 +1486,7 @@ static void try_preempt(struct task_stru
- #endif /* CONFIG_SMP */
-
- static void
--ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
-+ttwu_stat(struct task_struct *p, int cpu, bool success)
- {
- #ifdef CONFIG_SCHEDSTATS
- 	struct rq *rq = this_rq();
-@@ -1494,6 +1494,8 @@ ttwu_stat(struct task_struct *p, int cpu
- #ifdef CONFIG_SMP
- 	int this_cpu = smp_processor_id();
-
-+	if (!success)
-+		goto out;
- 	if (cpu == this_cpu)
- 		schedstat_inc(rq, ttwu_local);
- 	else {
-@@ -1508,7 +1510,7 @@ ttwu_stat(struct task_struct *p, int cpu
- 		}
- 		rcu_read_unlock();
- 	}
--
-+out:
- #endif /* CONFIG_SMP */
-
- 	schedstat_inc(rq, ttwu_count);
-@@ -1603,7 +1605,7 @@ out_running:
- out_unlock:
- 	task_grq_unlock(&flags);
-
--	ttwu_stat(p, cpu, wake_flags);
-+	ttwu_stat(p, cpu, success);
-
- 	put_cpu();
-
-@@ -1634,7 +1636,7 @@ static void try_to_wake_up_local(struct
- 			schedstat_inc(rq, ttwu_local);
- 		}
- 		ttwu_activate(p, rq, false);
--		ttwu_stat(p, smp_processor_id(), 0);
-+		ttwu_stat(p, smp_processor_id(), true);
- 		success = true;
- 	}
- 	ttwu_post_activation(p, rq, success);
---
+memcg-devel tree is only to make development easier. Everything that
+applies on top of this tree should be applicable to both -mm and
+linux-next.
+So the patches should go via traditional Andrew's channel.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
