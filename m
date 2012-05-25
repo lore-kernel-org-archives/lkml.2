@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2EYBeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 21:34:19 -0400
-Received: from mail19h.g19.rapidsite.net ([204.202.242.57]:43714 "EHLO
-	mail19h.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab2EYBeR (ORCPT
+	id S1755309Ab2EYBjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 21:39:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22063 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab2EYBjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 21:34:17 -0400
-thread-index: Ac06FnuPa+Yfssn8TgSZ3ckb0DLZZw==
-Thread-Topic: The $1,549 per day ZERO traffic system (UPDATE) Recommends Advanced Sports to you
-From: <sniperxsystem@support.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: The $1,549 per day ZERO traffic system (UPDATE) Recommends Advanced Sports to you
-Date: Thu, 24 May 2012 21:34:10 -0400
-Message-ID: <E24325F80B63437FBF0AA37B8BDA5F71@g19.win.smewh.net>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 24 May 2012 21:39:24 -0400
+X-Authority-Analysis: v=2.0 cv=PqgRnnw3 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=nAdh4h428hE8ZYXE7NAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337909963.13348.232.camel@gandalf.stny.rr.com>
+Subject: Re: tracing ring_buffer_resize oops.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Date: Thu, 24 May 2012 21:39:23 -0400
+In-Reply-To: <4FBEC9E6.8040301@linux.intel.com>
+References: <20120524160146.GA6226@redhat.com>
+	  <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	  <20120524172223.GA10689@redhat.com>
+	 <1337902816.13348.224.camel@gandalf.stny.rr.com>
+	 <4FBEC9E6.8040301@linux.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052434)]
-X-MAIL-FROM: <sniperxsystem@support.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :The $1,549 per day ZERO traffic system (UPDATE)
-Email        :sniperxsystem@support.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :
+On Thu, 2012-05-24 at 16:53 -0700, H. Peter Anvin wrote:
 
-Listen to this... pretty crazy...
+> Much more fundamentally, RIP should never leave the range [-2G, 0).
+> What is happening here is almost certainly that we jump through
+> something which isn't a function pointer.
+> 
+> The other thing worth noting is that the code segment is not the
+> standard Linux code segment, not even close; it *also* doesn't look like
+> the typical Xen code segment.  This makes be believe that we did an IRET
+> with the stack pointer set to something other than a valid interrupt
+> stack frame.
 
-So many people rushed to download this 
-$530k/year system yesterday...
+I was thinking the same. But not from an NMI. Seems it may be a
+breakpoint IRET that is the issue. Could also be a nesting issue with
+the stack, as breakpoints have a single stack as well.
 
-That they crashed the ENTIRE server!
-
-=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
-
-(The site was down ALL day) Pretty crazy. 
-
-... The "ghetto" video alone has sent shockwaves 
-through the Clickbank community.
-
-Can you believe THIS guy's one of Clickbanks
-biggest super affiliates?
-
-=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
-
-Talk soon
-
-P.S. This is **BRAND NEW**...
-
-It works and it's made $1,549.87 a DAY for 
-the past 739 days in a ROW!
-
-No PPC, no PPV, no CPA, no so-called 'push
-button softwares' scams, no 'loopholes'...
-
-Something TOTALLY different.
-
-Check it out (fast, while it's still open):
-
-=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+I may modify the code a little to see if I can trigger it on a normal
+config. Right now, I can only trigger it with an allmodconfig. That may
+also be the issue. It may have added some debugging that causes
+something to be traced (and breakpoint added) that isn't normally
+traced.
 
 
+>   Specifically, note that the value of R12 is the same
+> value; R12 is a preserved register and may have been pushed onto the
+> stack by something that wants to save it.
+
+I don't see R12 as the same value:
+
+RIP: <ffff88014630a000>
+GS: ffff880148000000
+R12: ffff880145cc0000
+
+Close but not quite. Even R13 and R15 are close:
+
+R13: ffff880148008eb8
+R15: ffff88014780cb40
+
+But this probably does show that the stack is screwed up and did a bad
+iret.
+
+-- Steve
 
 
