@@ -1,312 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758726Ab2EYU2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:28:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62607 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757446Ab2EYU00 (ORCPT
+	id S1758789Ab2EYU2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:28:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58579 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757130Ab2EYU2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:26:26 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v3 13/16] Make generic_make_request handle arbitrarily large bios
-Date: Fri, 25 May 2012 13:25:36 -0700
-Message-Id: <1337977539-16977-14-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.9.3.327.g2980b
-In-Reply-To: <1337977539-16977-1-git-send-email-koverstreet@google.com>
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+	Fri, 25 May 2012 16:28:12 -0400
+Message-ID: <4FBFEB49.7050901@brockmann-consult.de>
+Date: Fri, 25 May 2012 22:27:53 +0200
+From: Peter Maloney <peter.maloney@brockmann-consult.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120421 Thunderbird/12.0
+MIME-Version: 1.0
+To: Alexander Block <ablock84@googlemail.com>
+CC: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: atime and filesystems with snapshots (especially Btrfs)
+References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com> <CAB9VWqAV+TohoMP0pcP6D6SEWB4o40XbHQssO1_Mbz3d_kUHaA@mail.gmail.com>
+In-Reply-To: <CAB9VWqAV+TohoMP0pcP6D6SEWB4o40XbHQssO1_Mbz3d_kUHaA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:lvoc9LDfBILOHd1WGE2xX5RH45jhrP5q83jhoDJZh+I
+ 5rpo2ciD8GLj4XmUk38ERxBfRAuFXoDsPw4O8OAJtht0giOdpC
+ wciMBdWE2NIjEKCgVgtrtznbs4KRkFSha4/NPxOo5G76ZsDoHY
+ vxDPgEfWW/L49qpCNwKtFZMkJCuyZqZHtSMy8q6J91+Gt3bsKJ
+ hfd4yOzafrX1UZ8YGZnHBArZSYP6WDokWJAlPNuACa5LpCIi6h
+ alPUDIpmP5JbAISMsr2cyrDitf3rS21u0T6WYhJ269RYGnQyYD
+ siDUS38YbLmldV6EdLpeTvf1ilNSIdPYy6BiaGvlrYSrG8czC2
+ LTOV+zDb71tjEw8A4i4Soi/1EzrjE+AgJfoz/6KyL0iwchAJaK
+ JsuBGb77x5q4w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The way the block layer is currently written, it goes to great lengths
-to avoid having to split bios; upper layer code (such as bio_add_page())
-checks what the underlying device can handle and tries to always create
-bios that don't need to be split.
-
-But this approach becomes unwieldy and eventually breaks down with
-stacked devices and devices with dynamic limits, and it adds a lot of
-complexity. If the block layer could split bios as needed, we could
-eliminate a lot of complexity elsewhere - particularly in stacked
-drivers. Code that creates bios can then create whatever size bios are
-convenient, and more importantly stacked drivers don't have to deal with
-both their own bio size limitations and the limitations of the
-(potentially multiple) devices underneath them.
-
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Change-Id: I53ed182e8c0a5fe192b040b1fdedba205fe953d5
----
- block/blk-core.c       |  118 ++++++++++++++++++++++++++++++++++++++++++++++++
- fs/bio.c               |   41 +++++++++++++++++
- include/linux/bio.h    |    7 +++
- include/linux/blkdev.h |    3 ++
- 4 files changed, 169 insertions(+)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 91617eb..19145ab 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -29,6 +29,7 @@
- #include <linux/fault-inject.h>
- #include <linux/list_sort.h>
- #include <linux/delay.h>
-+#include <linux/closure.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/block.h>
-@@ -52,6 +53,12 @@ static struct kmem_cache *request_cachep;
- struct kmem_cache *blk_requestq_cachep;
- 
- /*
-+ * For bio_split_hook
-+ */
-+static struct kmem_cache *bio_split_cache;
-+static struct workqueue_struct *bio_split_wq;
-+
-+/*
-  * Controlling structure to kblockd
-  */
- static struct workqueue_struct *kblockd_workqueue;
-@@ -487,6 +494,14 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	if (q->id < 0)
- 		goto fail_q;
- 
-+	q->bio_split_hook = mempool_create_slab_pool(4, bio_split_cache);
-+	if (!q->bio_split_hook)
-+		goto fail_split_hook;
-+
-+	q->bio_split = bioset_create(4, 0);
-+	if (!q->bio_split)
-+		goto fail_split;
-+
- 	q->backing_dev_info.ra_pages =
- 			(VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
- 	q->backing_dev_info.state = 0;
-@@ -526,6 +541,10 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 
- fail_id:
- 	ida_simple_remove(&blk_queue_ida, q->id);
-+fail_split:
-+	bioset_free(q->bio_split);
-+fail_split_hook:
-+	mempool_destroy(q->bio_split_hook);
- fail_q:
- 	kmem_cache_free(blk_requestq_cachep, q);
- 	return NULL;
-@@ -1493,6 +1512,90 @@ static inline bool should_fail_request(struct hd_struct *part,
- 
- #endif /* CONFIG_FAIL_MAKE_REQUEST */
- 
-+struct bio_split_hook {
-+	struct closure		cl;
-+	struct request_queue	*q;
-+	struct bio		*bio;
-+	bio_end_io_t		*bi_end_io;
-+	void			*bi_private;
-+};
-+
-+static void bio_submit_split_done(struct closure *cl)
-+{
-+	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
-+
-+	s->bio->bi_end_io = s->bi_end_io;
-+	s->bio->bi_private = s->bi_private;
-+	bio_endio(s->bio, 0);
-+
-+	closure_debug_destroy(&s->cl);
-+	mempool_free(s, s->q->bio_split_hook);
-+}
-+
-+static void bio_submit_split_endio(struct bio *bio, int error)
-+{
-+	struct closure *cl = bio->bi_private;
-+	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
-+
-+	if (error)
-+		clear_bit(BIO_UPTODATE, &s->bio->bi_flags);
-+
-+	bio_put(bio);
-+	closure_put(cl);
-+}
-+
-+static void __bio_submit_split(struct closure *cl)
-+{
-+	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
-+	struct bio *bio = s->bio, *n;
-+
-+	do {
-+		/*
-+		 * If we're running underneath generic_make_request(), we risk
-+		 * deadlock if we allocate multiple bios from the mempool.
-+		 *
-+		 * To avoid this, bio_split() masks out __GFP_WAIT
-+		 * current->bio_list != NULL; if it fails, the continue_at()
-+		 * just punts us to a workqueue, where we can safely retry the
-+		 * allocation using the mempool.
-+		 */
-+		n = bio_split(bio, bio_max_sectors(bio),
-+			      GFP_NOIO, s->q->bio_split);
-+		if (!n)
-+			continue_at(cl, __bio_submit_split, bio_split_wq);
-+
-+		closure_get(cl);
-+		generic_make_request(n);
-+	} while (n != bio);
-+
-+	continue_at(cl, bio_submit_split_done, NULL);
-+}
-+
-+static bool bio_submit_split(struct bio *bio)
-+{
-+	struct bio_split_hook *s;
-+	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
-+
-+	if (!bio_has_data(bio) || !q || !q->bio_split_hook ||
-+	    bio_sectors(bio) <= bio_max_sectors(bio))
-+		return false;
-+
-+	s = mempool_alloc(q->bio_split_hook, GFP_NOIO);
-+
-+	closure_init(&s->cl, NULL);
-+	s->bio		= bio;
-+	s->q		= q;
-+	s->bi_end_io	= bio->bi_end_io;
-+	s->bi_private	= bio->bi_private;
-+
-+	bio_get(bio);
-+	bio->bi_end_io	= bio_submit_split_endio;
-+	bio->bi_private	= &s->cl;
-+
-+	__bio_submit_split(&s->cl);
-+	return true;
-+}
-+
- /*
-  * Check whether this bio extends beyond the end of the device.
-  */
-@@ -1646,6 +1749,14 @@ void generic_make_request(struct bio *bio)
- 	 * it is non-NULL, then a make_request is active, and new requests
- 	 * should be added at the tail
- 	 */
-+
-+	/*
-+	 * If the device can't accept arbitrary sized bios, check if we
-+	 * need to split:
-+	 */
-+	if (bio_submit_split(bio))
-+		return;
-+
- 	if (current->bio_list) {
- 		bio_list_add(current->bio_list, bio);
- 		return;
-@@ -2892,11 +3003,18 @@ int __init blk_dev_init(void)
- 	if (!kblockd_workqueue)
- 		panic("Failed to create kblockd\n");
- 
-+	bio_split_wq = alloc_workqueue("bio_split", WQ_MEM_RECLAIM, 0);
-+	if (!bio_split_wq)
-+		panic("Failed to create bio_split wq\n");
-+
- 	request_cachep = kmem_cache_create("blkdev_requests",
- 			sizeof(struct request), 0, SLAB_PANIC, NULL);
- 
- 	blk_requestq_cachep = kmem_cache_create("blkdev_queue",
- 			sizeof(struct request_queue), 0, SLAB_PANIC, NULL);
- 
-+	bio_split_cache = kmem_cache_create("bio_split_hook",
-+			sizeof(struct bio_split_hook), 0, SLAB_PANIC, NULL);
-+
- 	return 0;
- }
-diff --git a/fs/bio.c b/fs/bio.c
-index a85239f..e4d54b2 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -430,6 +430,47 @@ inline int bio_phys_segments(struct request_queue *q, struct bio *bio)
- }
- EXPORT_SYMBOL(bio_phys_segments);
- 
-+unsigned __bio_max_sectors(struct bio *bio, struct block_device *bdev,
-+			   sector_t sector)
-+{
-+	unsigned ret = bio_sectors(bio);
-+	struct request_queue *q = bdev_get_queue(bdev);
-+	struct bio_vec *bv, *end = bio_iovec(bio) +
-+		min_t(int, bio_segments(bio), queue_max_segments(q));
-+
-+	struct bvec_merge_data bvm = {
-+		.bi_bdev	= bdev,
-+		.bi_sector	= sector,
-+		.bi_size	= 0,
-+		.bi_rw		= bio->bi_rw,
-+	};
-+
-+	if (bio_segments(bio) > queue_max_segments(q) ||
-+	    q->merge_bvec_fn) {
-+		ret = 0;
-+
-+		for (bv = bio_iovec(bio); bv < end; bv++) {
-+			if (q->merge_bvec_fn &&
-+			    q->merge_bvec_fn(q, &bvm, bv) < (int) bv->bv_len)
-+				break;
-+
-+			ret		+= bv->bv_len >> 9;
-+			bvm.bi_size	+= bv->bv_len;
-+		}
-+
-+		if (ret >= (BIO_MAX_PAGES * PAGE_SIZE) >> 9)
-+			return (BIO_MAX_PAGES * PAGE_SIZE) >> 9;
-+	}
-+
-+	ret = min(ret, queue_max_sectors(q));
-+
-+	WARN_ON(!ret);
-+	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(__bio_max_sectors);
-+
- /**
-  * 	__bio_clone	-	clone a bio
-  * 	@bio: destination bio
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 0880a71..758cd56 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -218,6 +218,13 @@ extern void bio_endio(struct bio *, int);
- struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
- 
-+unsigned __bio_max_sectors(struct bio *, struct block_device *, sector_t);
-+
-+static inline unsigned bio_max_sectors(struct bio *bio)
-+{
-+	return __bio_max_sectors(bio, bio->bi_bdev, bio->bi_sector);
-+}
-+
- extern void __bio_clone(struct bio *, struct bio *);
- extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
- extern struct bio *bio_clone(struct bio *, gfp_t);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 2aa2466..464adb7 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -399,6 +399,9 @@ struct request_queue {
- 	/* Throttle data */
- 	struct throtl_data *td;
- #endif
-+
-+	mempool_t		*bio_split_hook;
-+	struct bio_set		*bio_split;
- };
- 
- #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
--- 
-1.7.9.3.327.g2980b
+On 05/25/2012 09:10 PM, Alexander Block wrote:
+> Just to show some numbers I made a simple test on a fresh btrfs fs. I
+> copied my hosts /usr (4 gig) folder to that fs and checked metadata
+> usage with "btrfs fi df /mnt", which was around 300m. Then I created
+> 10 snapshots and checked metadata usage again, which didn't change
+> much. Then I run "grep foobar /mnt -R" to update all files atime.
+> After this was finished, metadata usage was 2.59 gig. So I lost 2.2
+> gig just because I searched for something. If someone already has
+> nearly no space left, he probably won't be able to move some data to
+> another disk, as he may get ENOSPC while copying the data.
+>
+> Here is the output of the final "btrfs fi df":
+>
+> # btrfs fi df /mnt
+> Data: total=6.01GB, used=4.19GB
+> System, DUP: total=8.00MB, used=4.00KB
+> System: total=4.00MB, used=0.00
+> Metadata, DUP: total=3.25GB, used=2.59GB
+> Metadata: total=8.00MB, used=0.00
+>
+> I don't know much about other filesystems that support snapshots, but
+> I have the feeling that most of them would have the same problem. Also
+> all other filesystems in combination with LVM snapshots may cause
+> problems (I'm not very familiar with LVM). Filesystem image formats,
+> like qcow, vmdk, vbox and so on may also have problems with atime.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Did you run the recursive grep after each snapshot (which I would expect
+would result in 11 times as many metadata blocks, max 3.3 GB), or just
+once after all 10 snapshots (which I think would mean only 2x as many
+metadata blocks, max 600 MB)?
 
