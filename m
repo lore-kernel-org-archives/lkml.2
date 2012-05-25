@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2EYOBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:01:33 -0400
-Received: from mail1.sysgo.com ([176.9.26.183]:44749 "EHLO mail1.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414Ab2EYOBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:01:32 -0400
-Message-ID: <4FBF90B9.7010902@sysgo.com>
-Date: Fri, 25 May 2012 16:01:29 +0200
-From: Alexander Sverdlin <asv@sysgo.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.27) Gecko/20120216 Lightning/1.0b2 Thunderbird/3.1.19
+	id S1752837Ab2EYOCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:02:41 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:23246 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab2EYOCj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 10:02:39 -0400
+Message-ID: <4FBF90E5.8030800@siemens.com>
+Date: Fri, 25 May 2012 11:02:13 -0300
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>,
-        David Daney <ddaney@caviumnetworks.com>,
-        Venkat Subbiah <venkat.subbiah@cavium.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Possible race in request_irq() (__setup_irq())
-References: <4FB39EDA.3030807@sysgo.com> <alpine.LFD.2.02.1205161512270.3231@ionos>
-In-Reply-To: <alpine.LFD.2.02.1205161512270.3231@ionos>
+To: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
+Subject: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE NIC
+ as broken
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas, David, Venkat,
+According to Alexey, the T310 does not properly support INTx masking as
+it fails to keep the PCI_STATUS_INTERRUPT bit updated once the interrupt
+is masked. Mark this adapter as broken so that pci_intx_mask_supported
+won't report it as compatible.
 
-On 05/16/2012 03:44 PM, Thomas Gleixner wrote:
-> Your irq is using handle_percpu_irq() as the flow handler.
-> 
-> handle_percpu_irq() is a special flow handler which does not take the
-> irq descriptor lock for performance reasons. It's a single interrupt
-> number which has a percpu dev_id and can be handled on all cores in
-> parallel.
-> 
-> The interrupts need to be marked as such and requested with
-> request_percpu_irq(). Those interrupts are either marked as
-> NOAUTOENABLE or set up by the low level setup code, which runs on the
-> boot cpu with interrupt enabled.
-> 
-> Those interrupts are marked as percpu and can only be requested with
-> request_percpu_irq().
-> 
+Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+---
 
-Could someone comment please, why exactly this happens in current linux-next for Octeon:
+Alexey, please test if this catches your case correctly.
 
-In arch/mips/cavium-octeon/octeon-irq.c MBOX IRQs are set up to be handled by handle_percpu_irq():
+ drivers/pci/pci.c    |    3 +++
+ drivers/pci/quirks.c |   12 ++++++++++++
+ include/linux/pci.h  |    2 ++
+ 3 files changed, 17 insertions(+), 0 deletions(-)
 
-static void __init octeon_irq_init_ciu(void)
-{
-...
-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
-	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
-
-But in arch/mips/cavium-octeon/smp.c it's requested as normal IRQ:
-
-void octeon_prepare_cpus(unsigned int max_cpus)
-{
-...
-	if (request_irq(OCTEON_IRQ_MBOX0, mailbox_interrupt,
-			IRQF_PERCPU | IRQF_NO_THREAD, "SMP-IPI",
-			mailbox_interrupt)) {
-		panic("Cannot request_irq(OCTEON_IRQ_MBOX0)");
-	}
-
-Is it a bug, or some kind of special case?
-
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 8f16900..3a1aeb5 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2876,6 +2876,9 @@ bool pci_intx_mask_supported(struct pci_dev *dev)
+ 	bool mask_supported = false;
+ 	u16 orig, new;
+ 
++	if (dev->broken_intx_masking)
++		return false;
++
+ 	pci_cfg_access_lock(dev);
+ 
+ 	pci_read_config_word(dev, PCI_COMMAND, &orig);
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 2a75216..151e174 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2929,6 +2929,18 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
+ 
++/*
++ * Some devices may pass our check in pci_intx_mask_supported if
++ * PCI_COMMAND_INTX_DISABLE works though they actually do not properly
++ * support this feature.
++ */
++static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
++{
++	dev->broken_intx_masking = 1;
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
++			quirk_broken_intx_masking);
++
+ static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+ 			  struct pci_fixup *end)
+ {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 17b7b5b..c7cfd73 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -324,6 +324,8 @@ struct pci_dev {
+ 	unsigned int    is_hotplug_bridge:1;
+ 	unsigned int    __aer_firmware_first_valid:1;
+ 	unsigned int	__aer_firmware_first:1;
++	unsigned int	broken_intx_masking:1;	/* device's INTx masking
++						   support is not working */
+ 	pci_dev_flags_t dev_flags;
+ 	atomic_t	enable_cnt;	/* pci_enable_device has been called */
+ 
 -- 
-Best regards,
-Alexander Sverdlin.
+1.7.3.4
