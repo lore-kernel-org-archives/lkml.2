@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964820Ab2EYAbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 20:31:20 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51869 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759425Ab2EYAbR (ORCPT
+	id S934033Ab2EYAdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 20:33:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37984 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758913Ab2EYAdj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 20:31:17 -0400
-Date: Thu, 24 May 2012 17:31:14 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, bharrosh@panasas.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v2 04/14] block: Add bio_clone_kmalloc()
-Message-ID: <20120525003114.GF22664@google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
- <1337817771-25038-5-git-send-email-koverstreet@google.com>
- <20120524185919.GE27550@redhat.com>
+	Thu, 24 May 2012 20:33:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524185919.GE27550@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <Pine.LNX.4.44L0.1205241029260.1349-100000@iolanthe.rowland.org>
+References: <20120524021429.GB12557@kroah.com>
+	<Pine.LNX.4.44L0.1205241029260.1349-100000@iolanthe.rowland.org>
+Date: Fri, 25 May 2012 08:33:35 +0800
+Message-ID: <CACVXFVPu_nbVCVR_HTt9H764+4JKC3=GPyhsf8Lpsch4Fa=xqQ@mail.gmail.com>
+Subject: =?UTF-8?Q?Re=3A_Race_condition_between_driver=5Fprobe=5Fdevice_and_d?=
+	=?UTF-8?Q?evice=5Fshutdown=E2=80=8F?=
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Wedson Almeida Filho <wedsonaf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 02:59:19PM -0400, Vivek Goyal wrote:
-> On Wed, May 23, 2012 at 05:02:41PM -0700, Kent Overstreet wrote:
-> 
-> [..]
-> > diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-> > index 013c7a5..5a953c6 100644
-> > --- a/drivers/block/rbd.c
-> > +++ b/drivers/block/rbd.c
-> > @@ -729,7 +729,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
-> >  	}
-> >  
-> >  	while (old_chain && (total < len)) {
-> > -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-> > +		tmp = bio_clone_kmalloc(old_chain, gfpmask);
-> >  		if (!tmp)
-> >  			goto err_out;
-> >  
-> > @@ -751,13 +751,9 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
-> >  			if (!bp)
-> >  				goto err_out;
-> >  
-> > -			__bio_clone(tmp, &bp->bio1);
-> > -
-> >  			*next = &bp->bio2;
-> 
-> Is this code correct. Now original code might clone bio after split and
-> new code will clone the original bio itself and not the split one?
+On Thu, May 24, 2012 at 10:37 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>
+> The code there is racy already.  It does:
+>
+>                } else if (dev->driver && dev->driver->shutdown) {
+>
+> without any locking protection.  If the driver is unbound while this
+> statement runs then dev->driver could be non-NULL for the first test
+> and NULL for the second.
 
-Argh, you're right, I screwed that up.
+Yes,  I missed this one, :-)
 
-I'd like to get rid of all the open coded bio_clone()s out there (to
-reduce the amount of code that "Only clone bio vecs that are in use" has
-to change, but this code is too tricky - I'm just going to drop this
-bit.
+>
+>> > to fix the race by prevent driver core from probing or releasing once
+>> > shutdown is started.
+>> >
+>> > How about the below patch?
+>>
+>> How about waiting for the original poster to respond as to exactly how
+>> they are hitting this race before doing anything?
+>
+> In addition, the patch is too complicated.  For this type of
+> synchronization you should use SRCU.  See
+> Documentation/RCU/whatisRCU.txt and related files.
+
+Yes, the synchronization should be a many reader vs. one
+writer problem, RCU should be suitable.
+
+Looks we think alike, :-)
+
+I have studied RCU yesterday, but was afraid that may introduce
+much more code, so not applied it in the patch. Will study it further
+to figure out a new version.
+
+
+Thanks,
+--
+Ming Lei
