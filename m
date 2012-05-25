@@ -1,58 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab2EYGfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 02:35:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44464 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751053Ab2EYGfU (ORCPT
+	id S1754153Ab2EYGmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 02:42:19 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:28095 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750930Ab2EYGmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 02:35:20 -0400
-Date: Fri, 25 May 2012 08:35:13 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Robert Lee <rob.lee@linaro.org>
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
-        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
-        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
-Subject: Re: [PATCH v5 0/7] cleanup imx5 idle, add imx5/6 cpuidle
-Message-ID: <20120525063513.GG30400@pengutronix.de>
-References: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
+	Fri, 25 May 2012 02:42:18 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VPS-11(zzbb2dI9371I1432N98dKzz1202hzz8275ch8275bhz2dh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FBF29BE.5010103@analog.com>
+Date: Fri, 25 May 2012 08:42:06 +0200
+From: Michael Hennerich <michael.hennerich@analog.com>
+Reply-To: <michael.hennerich@analog.com>
+Organization: Analog Devices Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 08:34:31 up 194 days, 14:21, 19 users,  load average: 0.00, 0.02,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>
+Subject: Re: [PATCH 01/13] backlight: adp8860: use devm_ functions
+References: <000c01cd3a1c$74c84670$5e58d350$%han@samsung.com>
+In-Reply-To: <000c01cd3a1c$74c84670$5e58d350$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+On 05/25/2012 04:16 AM, Jingoo Han wrote:
+> The devm_ functions allocate memory that is released when a driver
+> detaches. This patch uses devm_kzalloc of these functions.
+>
+> Cc: Michael Hennerich<michael.hennerich@analog.com>
+> Cc: Richard Purdie<rpurdie@rpsys.net>
+> Signed-off-by: Jingoo Han<jg1.han@samsung.com>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+> ---
+>   drivers/video/backlight/adp8860_bl.c |   22 +++++++---------------
+>   1 files changed, 7 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+> index 550dbf0..48af78f 100644
+> --- a/drivers/video/backlight/adp8860_bl.c
+> +++ b/drivers/video/backlight/adp8860_bl.c
+> @@ -222,7 +222,8 @@ static int __devinit adp8860_led_probe(struct i2c_client *client)
+>   	struct led_info *cur_led;
+>   	int ret, i;
+>
+> -	led = kzalloc(sizeof(*led) * pdata->num_leds, GFP_KERNEL);
+> +	led = devm_kzalloc(&client->dev, sizeof(*led) * pdata->num_leds,
+> +				GFP_KERNEL);
+>   	if (led == NULL) {
+>   		dev_err(&client->dev, "failed to alloc memory\n");
+>   		return -ENOMEM;
+> @@ -236,7 +237,7 @@ static int __devinit adp8860_led_probe(struct i2c_client *client)
+>
+>   	if (ret) {
+>   		dev_err(&client->dev, "failed to write\n");
+> -		goto err_free;
+> +		return ret;
+>   	}
+>
+>   	for (i = 0; i<  pdata->num_leds; ++i) {
+> @@ -291,9 +292,6 @@ static int __devinit adp8860_led_probe(struct i2c_client *client)
+>   		cancel_work_sync(&led[i].work);
+>   	}
+>
+> - err_free:
+> -	kfree(led);
+> -
+>   	return ret;
+>   }
+>
+> @@ -309,7 +307,6 @@ static int __devexit adp8860_led_remove(struct i2c_client *client)
+>   		cancel_work_sync(&data->led[i].work);
+>   	}
+>
+> -	kfree(data->led);
+>   	return 0;
+>   }
+>   #else
+> @@ -675,13 +672,13 @@ static int __devinit adp8860_probe(struct i2c_client *client,
+>   		return -EINVAL;
+>   	}
+>
+> -	data = kzalloc(sizeof(*data), GFP_KERNEL);
+> +	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
+>   	if (data == NULL)
+>   		return -ENOMEM;
+>
+>   	ret = adp8860_read(client, ADP8860_MFDVID,&reg_val);
+>   	if (ret<  0)
+> -		goto out2;
+> +		return ret;
+>
+>   	switch (ADP8860_MANID(reg_val)) {
+>   	case ADP8863_MANUFID:
+> @@ -694,8 +691,7 @@ static int __devinit adp8860_probe(struct i2c_client *client,
+>   		break;
+>   	default:
+>   		dev_err(&client->dev, "failed to probe\n");
+> -		ret = -ENODEV;
+> -		goto out2;
+> +		return -ENODEV;
+>   	}
+>
+>   	/* It's confirmed that the DEVID field is actually a REVID */
+> @@ -717,8 +713,7 @@ static int __devinit adp8860_probe(struct i2c_client *client,
+>   			&client->dev, data,&adp8860_bl_ops,&props);
+>   	if (IS_ERR(bl)) {
+>   		dev_err(&client->dev, "failed to register backlight\n");
+> -		ret = PTR_ERR(bl);
+> -		goto out2;
+> +		return PTR_ERR(bl);
+>   	}
+>
+>   	bl->props.brightness = ADP8860_MAX_BRIGHTNESS;
+> @@ -756,8 +751,6 @@ out:
+>   			&adp8860_bl_attr_group);
+>   out1:
+>   	backlight_device_unregister(bl);
+> -out2:
+> -	kfree(data);
+>
+>   	return ret;
+>   }
+> @@ -776,7 +769,6 @@ static int __devexit adp8860_remove(struct i2c_client *client)
+>   			&adp8860_bl_attr_group);
+>
+>   	backlight_device_unregister(data->bl);
+> -	kfree(data);
+>
+>   	return 0;
+>   }
 
-On Mon, May 21, 2012 at 05:50:23PM -0500, Robert Lee wrote:
-> Cleanup up imx5 idle code and enable imx5 low powe idle for imx53.
-> 
-> Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
-> platform cpuidle implementation.
-
-The series looks good now. We can take this right after the merge
-window.
-
-Sascha
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Greetings,
+Michael
+
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
+Margaret Seif
+
+
