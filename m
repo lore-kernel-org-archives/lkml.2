@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2EYGaM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 02:30:12 -0400
-Received: from scorpius.telkomsa.net ([196.25.211.121]:51965 "EHLO
-	scorpius.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab2EYGaK convert rfc822-to-8bit (ORCPT
+	id S1753619Ab2EYGfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 02:35:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44464 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2EYGfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 02:30:10 -0400
-Date: Fri, 25 May 2012 08:30:04 +0200 (SAST)
-From: "MASTER CARD AWARD @2012" <online611322@telkomsa.net>
-Reply-To: "MASTER CARD AWARD @2012" <stevefrank02@hotmail.com>
-Message-ID: <1544510617.63012.1337927404380.JavaMail.root@zimbra2-vm1.telkomsa.net>
-Subject: Att. Beneficiary
+	Fri, 25 May 2012 02:35:20 -0400
+Date: Fri, 25 May 2012 08:35:13 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Robert Lee <rob.lee@linaro.org>
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
+        u.kleine-koenig@pengutronix.de, richard.zhao@freescale.com,
+        amit.kucheria@linaro.org, daniel.lezcano@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org, jj@chaosbits.net
+Subject: Re: [PATCH v5 0/7] cleanup imx5 idle, add imx5/6 cpuidle
+Message-ID: <20120525063513.GG30400@pengutronix.de>
+References: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [41.203.64.133]
-X-Mailer: Zimbra 6.0.16_GA_2998 (zclient/6.0.16_GA_2998)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337640630-29176-1-git-send-email-rob.lee@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:34:31 up 194 days, 14:21, 19 users,  load average: 0.00, 0.02,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MASTER CARD AWARD ©  2012
+Hi Robert,
 
-Your company or your personal e-mail address, attached to the Master
-card No:5148 6547 8940 6543, won in the sixth (6) PROMO categories 007.
+On Mon, May 21, 2012 at 05:50:23PM -0500, Robert Lee wrote:
+> Cleanup up imx5 idle code and enable imx5 low powe idle for imx53.
+> 
+> Add common imx cpuidle initialization functionality and add a i.MX5 and i.MX6Q
+> platform cpuidle implementation.
 
-Your email address has brought you an unexpected luck, please read through this
-message.
+The series looks good now. We can take this right after the merge
+window.
 
-Note:You are to quote the below numbers regarding your master card to your
-claims Administrator in cash Credited to Master card No. 5148 6547
-8940 6543, and With Reg. No. MCIM.5148/4178,in cash Credited to Master card
-No. 5148 6547 8940 6543, and
-With Reg. No. MCIMJ:won £6.6, million Pounds each.Be informed that your winning
-prize (Master card No: 5148 6547 8940
-6543) has been insured and ready for disbursement by the well known
-"AIG BANK UK".
+Sascha
 
-Claims Administrator
-Name: Mr.Steve Frank
-E-mail:stevefrank02@hotmail.com
-
-Secretary
-Mrs Lucy Brown
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
