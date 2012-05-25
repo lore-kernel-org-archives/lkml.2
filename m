@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964972Ab2EYRFP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:05:15 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57143 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964791Ab2EYRFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:05:12 -0400
-Message-ID: <1337965507.2932.39.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] scsi: fix async probe regression
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Meelis Roos <mroos@linux.ee>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Date: Fri, 25 May 2012 18:05:07 +0100
-In-Reply-To: <20120525163529.28315.92813.stgit@dwillia2-linux.jf.intel.com>
-References: <20120525163529.28315.92813.stgit@dwillia2-linux.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S933829Ab2EYRDt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:03:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933517Ab2EYRDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:03:37 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: [PATCH 32/35] autonuma: link mm/autonuma.o and kernel/sched/numa.o
+Date: Fri, 25 May 2012 19:02:36 +0200
+Message-Id: <1337965359-29725-33-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 09:39 -0700, Dan Williams wrote:
-> Commit a7a20d1 "[SCSI] sd: limit the scope of the async probe domain"
-> moved sd probe work out of reach of wait_for_device_probe().  Allow it
-> to be synced via scsi_complete_async_scans().
-> 
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Reported-by: Meelis Roos <mroos@linux.ee>
-> Tested-by: Meelis Roos <mroos@linux.ee>
-> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> ---
-> 
->  So this is the stop gap that allows us to keep a7a20d1 as a fix for a
->  resume deadlock, and gives us time to figure out how to clarify
->  async_synchronize_full() properly in the 3.6 timeframe.
-> 
->  drivers/scsi/scsi_scan.c |   12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 01b0374..41f9192 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -141,13 +141,13 @@ struct async_scan_data {
->   * started scanning after this function was called may or may not have
->   * finished.
->   */
-> -int scsi_complete_async_scans(void)
-> +static void __scsi_complete_async_scans(void)
+Link the AutoNUMA core and scheduler object files in the kernel if
+CONFIG_AUTONUMA=y.
 
-Rather than wrappering the function, can we just fix it?
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ kernel/sched/Makefile |    1 +
+ mm/Makefile           |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Put the async_synchronize_full_domain(&scsi_sd_probe_domain); at the
-bottom with an out: label and make the only other return in the function
-become a goto out;
-
-Thanks,
-
-James
-
-
-
-
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index 173ea52..783a840 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -16,3 +16,4 @@ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+ obj-$(CONFIG_SCHED_DEBUG) += debug.o
++obj-$(CONFIG_AUTONUMA) += numa.o
+diff --git a/mm/Makefile b/mm/Makefile
+index 50ec00e..67c77bd 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -29,6 +29,7 @@ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
+ obj-$(CONFIG_NUMA) 	+= mempolicy.o
++obj-$(CONFIG_AUTONUMA) 	+= autonuma.o
+ obj-$(CONFIG_SPARSEMEM)	+= sparse.o
+ obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
+ obj-$(CONFIG_SLOB) += slob.o
