@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab2EYRjJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:39:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28009 "EHLO mga11.intel.com"
+	id S1757581Ab2EYRkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:40:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19631 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501Ab2EYRjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:39:07 -0400
+	id S1751434Ab2EYRkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:40:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="171360179"
-Subject: [PATCH v2] scsi: fix async probe regression
-To: JBottomley@parallels.com
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Meelis Roos <mroos@linux.ee>, Alan Stern <stern@rowland.harvard.edu>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Date: Fri, 25 May 2012 10:55:07 -0700
-Message-ID: <20120525175140.22423.21697.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
+   d="scan'208";a="147867696"
+Message-ID: <4FBFC421.3020901@linux.intel.com>
+Date: Fri, 25 May 2012 10:40:49 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: BUG - function tracing with breakpoints
+References: <20120524160146.GA6226@redhat.com>  <1337876398.13348.178.camel@gandalf.stny.rr.com>  <20120524172223.GA10689@redhat.com>  <1337902816.13348.224.camel@gandalf.stny.rr.com>  <4FBEC9E6.8040301@linux.intel.com>  <1337909963.13348.232.camel@gandalf.stny.rr.com>  <1337910106.13348.234.camel@gandalf.stny.rr.com>  <1337956262.13348.257.camel@gandalf.stny.rr.com> <1337959746.13348.264.camel@gandalf.stny.rr.com>
+In-Reply-To: <1337959746.13348.264.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a7a20d1 "[SCSI] sd: limit the scope of the async probe domain"
-moved sd probe work out of reach of wait_for_device_probe().  Allow it
-to be synced via scsi_complete_async_scans().
+On 05/25/2012 08:29 AM, Steven Rostedt wrote:
+> 
+> This would make sense for this bug, as if modifying_ftrace_code was not
+> seen by other CPUs, it wouldn't go into the ftrace_int3_handler() path.
+> That would cause this issue. But the bug remains after the smp_mb()'s
+> were put in place. Although it behaves a little differently not. Maybe
+> there's something else I missed?
+> 
 
-Cc: David Miller <davem@davemloft.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
+Perhaps you should make the modifying_ftrace_code modification atomic...
+it seems odd to have it not be atomic when it is clearly accessed across
+CPUs that way.
 
- v2: James: don't wrapper scsi_complete_async_scans()
+	-hpa
 
- Kept the Tested-by tag since this is equivalent to v1.
-
- --
- Dan
-
- drivers/scsi/scsi_scan.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 01b0374..2e5fe58 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -147,7 +147,7 @@ int scsi_complete_async_scans(void)
- 
- 	do {
- 		if (list_empty(&scanning_hosts))
--			return 0;
-+			goto out;
- 		/* If we can't get memory immediately, that's OK.  Just
- 		 * sleep a little.  Even if we never get memory, the async
- 		 * scans will finish eventually.
-@@ -179,8 +179,11 @@ int scsi_complete_async_scans(void)
- 	}
-  done:
- 	spin_unlock(&async_scan_lock);
--
- 	kfree(data);
-+
-+ out:
-+	async_synchronize_full_domain(&scsi_sd_probe_domain);
-+
- 	return 0;
- }
- 
 
