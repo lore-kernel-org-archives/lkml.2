@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab2EYUaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:30:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48805 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757232Ab2EYU0W (ORCPT
+	id S965096Ab2EYUaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:30:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41123 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758619Ab2EYU0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:26:22 -0400
+	Fri, 25 May 2012 16:26:20 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
         dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
         bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
         sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v3 10/16] block: Add bio_clone_bioset()
-Date: Fri, 25 May 2012 13:25:33 -0700
-Message-Id: <1337977539-16977-11-git-send-email-koverstreet@google.com>
+Subject: [PATCH v3 08/16] block: Rework bio splitting
+Date: Fri, 25 May 2012 13:25:31 -0700
+Message-Id: <1337977539-16977-9-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.3.327.g2980b
 In-Reply-To: <1337977539-16977-1-git-send-email-koverstreet@google.com>
 References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
@@ -24,149 +24,502 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This consolidates some code, and will help in a later patch changing how
-bio cloning works.
+Break out bio_split() and bio_pair_split(), and get rid of the
+limitations of bio_split()
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Change-Id: If6cfd840db9cf90a798c6a5862e3314465c83000
+Change-Id: Ic4733be7af6a4957974b42b09233b2209a779cbf
 ---
- block/blk-core.c    |    8 +-------
- drivers/md/dm.c     |    4 ++--
- drivers/md/md.c     |   20 +-------------------
- fs/bio.c            |   16 ++++++++++++----
- include/linux/bio.h |    1 +
- 5 files changed, 17 insertions(+), 32 deletions(-)
+ drivers/block/drbd/drbd_req.c |   16 +---
+ drivers/block/pktcdvd.c       |    4 +-
+ drivers/block/rbd.c           |    7 +-
+ drivers/md/linear.c           |    4 +-
+ drivers/md/raid0.c            |    6 +-
+ drivers/md/raid10.c           |   21 +-----
+ fs/bio-integrity.c            |   44 -----------
+ fs/bio.c                      |  167 +++++++++++++++++++++++++++++------------
+ include/linux/bio.h           |   25 +++---
+ 9 files changed, 144 insertions(+), 150 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 1f61b74..91617eb 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2660,16 +2660,10 @@ int blk_rq_prep_clone(struct request *rq, struct request *rq_src,
- 	blk_rq_init(NULL, rq);
- 
- 	__rq_for_each_bio(bio_src, rq_src) {
--		bio = bio_alloc_bioset(gfp_mask, bio_src->bi_max_vecs, bs);
-+		bio = bio_clone_bioset(bio_src, gfp_mask, bs);
- 		if (!bio)
- 			goto free_and_out;
- 
--		__bio_clone(bio, bio_src);
--
--		if (bio_integrity(bio_src) &&
--		    bio_integrity_clone(bio, bio_src, gfp_mask, bs))
--			goto free_and_out;
--
- 		if (bio_ctr && bio_ctr(bio, bio_src, data))
- 			goto free_and_out;
- 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 4014696..3f3c26e 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1101,8 +1101,8 @@ static void __issue_target_request(struct clone_info *ci, struct dm_target *ti,
- 	 * ci->bio->bi_max_vecs is BIO_INLINE_VECS anyway, for both flush
- 	 * and discard, so no need for concern about wasted bvec allocations.
- 	 */
--	clone = bio_alloc_bioset(GFP_NOIO, ci->bio->bi_max_vecs, ci->md->bs);
--	__bio_clone(clone, ci->bio);
-+	clone = bio_clone_bioset(ci->bio, GFP_NOIO, ci->md->bs);
-+
- 	if (len) {
- 		clone->bi_sector = ci->sector;
- 		clone->bi_size = to_bytes(len);
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index a5a524e..508ae81 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -173,28 +173,10 @@ EXPORT_SYMBOL_GPL(bio_alloc_mddev);
- struct bio *bio_clone_mddev(struct bio *bio, gfp_t gfp_mask,
- 			    struct mddev *mddev)
- {
--	struct bio *b;
--
- 	if (!mddev || !mddev->bio_set)
- 		return bio_clone(bio, gfp_mask);
- 
--	b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, mddev->bio_set);
--	if (!b)
--		return NULL;
--
--	__bio_clone(b, bio);
--	if (bio_integrity(bio)) {
--		int ret;
--
--		ret = bio_integrity_clone(b, bio, gfp_mask, mddev->bio_set);
--
--		if (ret < 0) {
--			bio_put(b);
--			return NULL;
--		}
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index 1c7e3c4..68fa494 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1101,18 +1101,6 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
+ 	if (likely(s_enr == e_enr)) {
+ 		inc_ap_bio(mdev, 1);
+ 		drbd_make_request_common(mdev, bio, start_time);
+-		return;
 -	}
 -
--	return b;
-+	return bio_clone_bioset(bio, gfp_mask, mddev->bio_set);
- }
- EXPORT_SYMBOL_GPL(bio_clone_mddev);
+-	/* can this bio be split generically?
+-	 * Maybe add our own split-arbitrary-bios function. */
+-	if (bio->bi_vcnt != 1 || bio->bi_idx != 0 || bio->bi_size > DRBD_MAX_BIO_SIZE) {
+-		/* rather error out here than BUG in bio_split */
+-		dev_err(DEV, "bio would need to, but cannot, be split: "
+-		    "(vcnt=%u,idx=%u,size=%u,sector=%llu)\n",
+-		    bio->bi_vcnt, bio->bi_idx, bio->bi_size,
+-		    (unsigned long long)bio->bi_sector);
+-		bio_endio(bio, -EINVAL);
+ 	} else {
+ 		/* This bio crosses some boundary, so we have to split it. */
+ 		struct bio_pair *bp;
+@@ -1139,10 +1127,10 @@ void drbd_make_request(struct request_queue *q, struct bio *bio)
  
-diff --git a/fs/bio.c b/fs/bio.c
-index d212ee2..a62b5b6 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -459,15 +459,17 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
- EXPORT_SYMBOL(__bio_clone);
+ 		D_ASSERT(e_enr == s_enr + 1);
+ 
+-		while (drbd_make_request_common(mdev, &bp->bio1, start_time))
++		while (drbd_make_request_common(mdev, &bp->split, start_time))
+ 			inc_ap_bio(mdev, 1);
+ 
+-		while (drbd_make_request_common(mdev, &bp->bio2, start_time))
++		while (drbd_make_request_common(mdev, bio, start_time))
+ 			inc_ap_bio(mdev, 1);
+ 
+ 		dec_ap_bio(mdev);
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index 12a14c0..1465155 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -2469,8 +2469,8 @@ static void pkt_make_request(struct request_queue *q, struct bio *bio)
+ 			first_sectors = last_zone - bio->bi_sector;
+ 			bp = bio_pair_split(bio, first_sectors);
+ 			BUG_ON(!bp);
+-			pkt_make_request(q, &bp->bio1);
+-			pkt_make_request(q, &bp->bio2);
++			pkt_make_request(q, &bp->split);
++			pkt_make_request(q, bio);
+ 			bio_pair_release(bp);
+ 			return;
+ 		}
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index a0b76c6..11777b4 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -747,14 +747,13 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+ 
+ 			/* split the bio. We'll release it either in the next
+ 			   call, or it will have to be released outside */
+-			bp = bio_pair_split(old_chain,
+-					    (len - total) / SECTOR_SIZE);
++			bp = bio_pair_split(old_chain, (len - total) / SECTOR_SIZE);
+ 			if (!bp)
+ 				goto err_out;
+ 
+-			__bio_clone(tmp, &bp->bio1);
++			__bio_clone(tmp, &bp->split);
+ 
+-			*next = &bp->bio2;
++			*next = bp->orig;
+ 		} else {
+ 			__bio_clone(tmp, old_chain);
+ 			*next = old_chain->bi_next;
+diff --git a/drivers/md/linear.c b/drivers/md/linear.c
+index e860cb9..7c6cafd 100644
+--- a/drivers/md/linear.c
++++ b/drivers/md/linear.c
+@@ -316,8 +316,8 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
+ 
+ 		bp = bio_pair_split(bio, end_sector - bio->bi_sector);
+ 
+-		linear_make_request(mddev, &bp->bio1);
+-		linear_make_request(mddev, &bp->bio2);
++		linear_make_request(mddev, &bp->split);
++		linear_make_request(mddev, bio);
+ 		bio_pair_release(bp);
+ 		return;
+ 	}
+diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
+index c89c8aa..3469adf 100644
+--- a/drivers/md/raid0.c
++++ b/drivers/md/raid0.c
+@@ -520,9 +520,9 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
+ 							   (chunk_sects-1)));
+ 		else
+ 			bp = bio_pair_split(bio, chunk_sects -
+-					    sector_div(sector, chunk_sects));
+-		raid0_make_request(mddev, &bp->bio1);
+-		raid0_make_request(mddev, &bp->bio2);
++				       sector_div(sector, chunk_sects));
++		raid0_make_request(mddev, &bp->split);
++		raid0_make_request(mddev, bio);
+ 		bio_pair_release(bp);
+ 		return;
+ 	}
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index f8b6f14..0062326 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1001,15 +1001,9 @@ static void make_request(struct mddev *mddev, struct bio * bio)
+ 		      > chunk_sects &&
+ 		    conf->near_copies < conf->raid_disks)) {
+ 		struct bio_pair *bp;
+-		/* Sanity check -- queue functions should prevent this happening */
+-		if (bio->bi_vcnt != 1 ||
+-		    bio->bi_idx != 0)
+-			goto bad_map;
+-		/* This is a one page bio that upper layers
+-		 * refuse to split for us, so we need to split it.
+-		 */
++
+ 		bp = bio_pair_split(bio,
+-				    chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
++				    chunk_sects - (bio->bi_sector & (chunk_sects - 1)));
+ 
+ 		/* Each of these 'make_request' calls will call 'wait_barrier'.
+ 		 * If the first succeeds but the second blocks due to the resync
+@@ -1023,8 +1017,8 @@ static void make_request(struct mddev *mddev, struct bio * bio)
+ 		conf->nr_waiting++;
+ 		spin_unlock_irq(&conf->resync_lock);
+ 
+-		make_request(mddev, &bp->bio1);
+-		make_request(mddev, &bp->bio2);
++		make_request(mddev, &bp->split);
++		make_request(mddev, bio);
+ 
+ 		spin_lock_irq(&conf->resync_lock);
+ 		conf->nr_waiting--;
+@@ -1033,13 +1027,6 @@ static void make_request(struct mddev *mddev, struct bio * bio)
+ 
+ 		bio_pair_release(bp);
+ 		return;
+-	bad_map:
+-		printk("md/raid10:%s: make_request bug: can't convert block across chunks"
+-		       " or bigger than %dk %llu %d\n", mdname(mddev), chunk_sects/2,
+-		       (unsigned long long)bio->bi_sector, bio->bi_size >> 10);
+-
+-		bio_io_error(bio);
+-		return;
+ 	}
+ 
+ 	md_write_start(mddev, bio);
+diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
+index e85c04b..9ed2c44 100644
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -682,50 +682,6 @@ void bio_integrity_trim(struct bio *bio, unsigned int offset,
+ EXPORT_SYMBOL(bio_integrity_trim);
  
  /**
-- *	bio_clone	-	clone a bio
-+ *	bio_clone_bioset -	clone a bio
-  *	@bio: bio to clone
-  *	@gfp_mask: allocation priority
-+ *	@bs: bio_set to allocate from
-  *
-  * 	Like __bio_clone, only also allocates the returned bio
+- * bio_integrity_split - Split integrity metadata
+- * @bio:	Protected bio
+- * @bp:		Resulting bio_pair
+- * @sectors:	Offset
+- *
+- * Description: Splits an integrity page into a bio_pair.
+- */
+-void bio_integrity_split(struct bio *bio, struct bio_pair *bp, int sectors)
+-{
+-	struct blk_integrity *bi;
+-	struct bio_integrity_payload *bip = bio->bi_integrity;
+-	unsigned int nr_sectors;
+-
+-	if (bio_integrity(bio) == 0)
+-		return;
+-
+-	bi = bdev_get_integrity(bio->bi_bdev);
+-	BUG_ON(bi == NULL);
+-	BUG_ON(bip->bip_vcnt != 1);
+-
+-	nr_sectors = bio_integrity_hw_sectors(bi, sectors);
+-
+-	bp->bio1.bi_integrity = &bp->bip1;
+-	bp->bio2.bi_integrity = &bp->bip2;
+-
+-	bp->iv1 = bip->bip_vec[0];
+-	bp->iv2 = bip->bip_vec[0];
+-
+-	bp->bip1.bip_vec[0] = bp->iv1;
+-	bp->bip2.bip_vec[0] = bp->iv2;
+-
+-	bp->iv1.bv_len = sectors * bi->tuple_size;
+-	bp->iv2.bv_offset += sectors * bi->tuple_size;
+-	bp->iv2.bv_len -= sectors * bi->tuple_size;
+-
+-	bp->bip1.bip_sector = bio->bi_integrity->bip_sector;
+-	bp->bip2.bip_sector = bio->bi_integrity->bip_sector + nr_sectors;
+-
+-	bp->bip1.bip_vcnt = bp->bip2.bip_vcnt = 1;
+-	bp->bip1.bip_idx = bp->bip2.bip_idx = 0;
+-}
+-EXPORT_SYMBOL(bio_integrity_split);
+-
+-/**
+  * bio_integrity_clone - Callback for cloning bios with integrity metadata
+  * @bio:	New bio
+  * @bio_src:	Original bio
+diff --git a/fs/bio.c b/fs/bio.c
+index fb7607b..62c4af81 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -35,7 +35,7 @@
   */
--struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-+struct bio *bio_clone_bioset(struct bio *bio, gfp_t gfp_mask,
-+			     struct bio_set *bs)
+ #define BIO_INLINE_VECS		4
+ 
+-static mempool_t *bio_split_pool __read_mostly;
++static struct bio_set *bio_split_pool __read_mostly;
+ 
+ /*
+  * if you change this list, also change bvec_alloc or things will
+@@ -1447,81 +1447,151 @@ EXPORT_SYMBOL(bio_endio);
+ void bio_pair_release(struct bio_pair *bp)
  {
--	struct bio *b = bio_alloc(gfp_mask, bio->bi_max_vecs);
-+	struct bio *b = bio_alloc_bioset(gfp_mask, bio->bi_max_vecs, bs);
+ 	if (atomic_dec_and_test(&bp->cnt)) {
+-		struct bio *master = bp->bio1.bi_private;
++		bp->orig->bi_end_io = bp->bi_end_io;
++		bp->orig->bi_private = bp->bi_private;
  
- 	if (!b)
- 		return NULL;
-@@ -477,7 +479,7 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
- 	if (bio_integrity(bio)) {
- 		int ret;
- 
--		ret = bio_integrity_clone(b, bio, gfp_mask, fs_bio_set);
-+		ret = bio_integrity_clone(b, bio, gfp_mask, bs);
- 
- 		if (ret < 0) {
- 			bio_put(b);
-@@ -487,6 +489,12 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
- 
- 	return b;
+-		bio_endio(master, bp->error);
+-		mempool_free(bp, bp->bio2.bi_private);
++		bio_endio(bp->orig, 0);
++		bio_put(&bp->split);
+ 	}
  }
-+EXPORT_SYMBOL(bio_clone_bioset);
-+
-+struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
-+{
-+	return bio_clone_bioset(bio, gfp_mask, fs_bio_set);
-+}
- EXPORT_SYMBOL(bio_clone);
+ EXPORT_SYMBOL(bio_pair_release);
  
- struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
+-static void bio_pair_end_1(struct bio *bi, int err)
++static void bio_pair_end(struct bio *bio, int error)
+ {
+-	struct bio_pair *bp = container_of(bi, struct bio_pair, bio1);
++	struct bio_pair *bp = bio->bi_private;
+ 
+-	if (err)
+-		bp->error = err;
++	if (error)
++		clear_bit(BIO_UPTODATE, &bp->orig->bi_flags);
+ 
+ 	bio_pair_release(bp);
+ }
+ 
+-static void bio_pair_end_2(struct bio *bi, int err)
++struct bio_pair *bio_pair_split(struct bio *bio, int first_sectors)
+ {
+-	struct bio_pair *bp = container_of(bi, struct bio_pair, bio2);
++	struct bio_pair *bp;
++	struct bio *split = bio_split(bio, first_sectors,
++				      GFP_NOIO, bio_split_pool);
+ 
+-	if (err)
+-		bp->error = err;
++	if (!split)
++		return NULL;
+ 
+-	bio_pair_release(bp);
++	BUG_ON(split == bio);
++
++	bp = container_of(split, struct bio_pair, split);
++
++	atomic_set(&bp->cnt, 3);
++
++	bp->bi_end_io = bio->bi_end_io;
++	bp->bi_private = bio->bi_private;
++
++	bio->bi_private = bp;
++	bio->bi_end_io = bio_pair_end;
++
++	split->bi_private = bp;
++	split->bi_end_io = bio_pair_end;
++
++	return bp;
+ }
++EXPORT_SYMBOL(bio_pair_split);
+ 
+-/*
+- * split a bio - only worry about a bio with a single page in its iovec
++/**
++ * bio_split - split a bio
++ * @bio:	bio to split
++ * @sectors:	number of sectors to split from the front of @bio
++ * @gfp:	gfp mask
++ * @bs:		bio set to allocate from
++ *
++ * Allocates and returns a new bio which represents @sectors from the start of
++ * @bio, and updates @bio to represent the remaining sectors.
++ *
++ * If bio_sectors(@bio) was less than or equal to @sectors, returns @bio
++ * unchanged.
++ *
++ * The newly allocated bio will point to @bio's bi_io_vec, if the split was on a
++ * bvec boundry; it is the caller's responsibility to ensure that @bio is not
++ * freed before the split.
++ *
++ * If bio_split() is running under generic_make_request(), it's not safe to
++ * allocate more than one bio from the same bio set. Therefore, if it is running
++ * under generic_make_request() it masks out __GFP_WAIT when doing the
++ * allocation. The caller must check for failure if there's any possibility of
++ * it being called from under generic_make_request(); it is then the caller's
++ * responsibility to retry from a safe context (by e.g. punting to workqueue).
+  */
+-struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
++struct bio *bio_split(struct bio *bio, int sectors,
++		      gfp_t gfp, struct bio_set *bs)
+ {
+-	struct bio_pair *bp = mempool_alloc(bio_split_pool, GFP_NOIO);
++	unsigned idx, vcnt = 0, nbytes = sectors << 9;
++	struct bio_vec *bv;
++	struct bio *ret = NULL;
+ 
+-	if (!bp)
+-		return bp;
++	BUG_ON(sectors <= 0);
+ 
+-	trace_block_split(bdev_get_queue(bi->bi_bdev), bi,
+-				bi->bi_sector + first_sectors);
++	/*
++	 * If we're being called from underneath generic_make_request() and we
++	 * already allocated any bios from this bio set, we risk deadlock if we
++	 * use the mempool. So instead, we possibly fail and let the caller punt
++	 * to workqueue or somesuch and retry in a safe context.
++	 */
++	if (current->bio_list)
++		gfp &= ~__GFP_WAIT;
+ 
+-	BUG_ON(bi->bi_vcnt != 1);
+-	BUG_ON(bi->bi_idx != 0);
+-	atomic_set(&bp->cnt, 3);
+-	bp->error = 0;
+-	bp->bio1 = *bi;
+-	bp->bio2 = *bi;
+-	bp->bio2.bi_sector += first_sectors;
+-	bp->bio2.bi_size -= first_sectors << 9;
+-	bp->bio1.bi_size = first_sectors << 9;
++	if (nbytes >= bio->bi_size)
++		return bio;
+ 
+-	bp->bv1 = bi->bi_io_vec[0];
+-	bp->bv2 = bi->bi_io_vec[0];
+-	bp->bv2.bv_offset += first_sectors << 9;
+-	bp->bv2.bv_len -= first_sectors << 9;
+-	bp->bv1.bv_len = first_sectors << 9;
++	trace_block_split(bdev_get_queue(bio->bi_bdev), bio,
++			  bio->bi_sector + sectors);
+ 
+-	bp->bio1.bi_io_vec = &bp->bv1;
+-	bp->bio2.bi_io_vec = &bp->bv2;
++	bio_for_each_segment(bv, bio, idx) {
++		vcnt = idx - bio->bi_idx;
+ 
+-	bp->bio1.bi_max_vecs = 1;
+-	bp->bio2.bi_max_vecs = 1;
++		if (!nbytes) {
++			ret = bio_alloc_bioset(gfp, 0, bs);
++			if (!ret)
++				return NULL;
+ 
+-	bp->bio1.bi_end_io = bio_pair_end_1;
+-	bp->bio2.bi_end_io = bio_pair_end_2;
++			ret->bi_io_vec = bio_iovec(bio);
++			ret->bi_flags |= 1 << BIO_CLONED;
++			break;
++		} else if (nbytes < bv->bv_len) {
++			ret = bio_alloc_bioset(gfp, ++vcnt, bs);
++			if (!ret)
++				return NULL;
+ 
+-	bp->bio1.bi_private = bi;
+-	bp->bio2.bi_private = bio_split_pool;
++			memcpy(ret->bi_io_vec, bio_iovec(bio),
++			       sizeof(struct bio_vec) * vcnt);
+ 
+-	if (bio_integrity(bi))
+-		bio_integrity_split(bi, bp, first_sectors);
++			ret->bi_io_vec[vcnt - 1].bv_len = nbytes;
++			bv->bv_offset	+= nbytes;
++			bv->bv_len	-= nbytes;
++			break;
++		}
+ 
+-	return bp;
++		nbytes -= bv->bv_len;
++	}
++
++	ret->bi_bdev	= bio->bi_bdev;
++	ret->bi_sector	= bio->bi_sector;
++	ret->bi_size	= sectors << 9;
++	ret->bi_rw	= bio->bi_rw;
++	ret->bi_vcnt	= vcnt;
++	ret->bi_max_vecs = vcnt;
++	ret->bi_end_io	= bio->bi_end_io;
++	ret->bi_private	= bio->bi_private;
++
++	bio->bi_sector	+= sectors;
++	bio->bi_size	-= sectors << 9;
++	bio->bi_idx	 = idx;
++
++	if (bio_integrity(bio)) {
++		bio_integrity_clone(ret, bio, gfp, bs);
++		bio_integrity_trim(ret, 0, bio_sectors(ret));
++		bio_integrity_trim(bio, bio_sectors(ret), bio_sectors(bio));
++	}
++
++	return ret;
+ }
+-EXPORT_SYMBOL(bio_pair_split);
++EXPORT_SYMBOL_GPL(bio_split);
+ 
+ /**
+  *      bio_sector_offset - Find hardware sector offset in bio
+@@ -1674,8 +1744,7 @@ static int __init init_bio(void)
+ 	if (bioset_integrity_create(fs_bio_set, BIO_POOL_SIZE))
+ 		panic("bio: can't create integrity pool\n");
+ 
+-	bio_split_pool = mempool_create_kmalloc_pool(BIO_SPLIT_ENTRIES,
+-						     sizeof(struct bio_pair));
++	bio_split_pool = bioset_create(BIO_POOL_SIZE, offsetof(struct bio_pair, split));
+ 	if (!bio_split_pool)
+ 		panic("bio: can't create split pool\n");
+ 
 diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 8f280f7..0880a71 100644
+index 18ab020..486233c 100644
 --- a/include/linux/bio.h
 +++ b/include/linux/bio.h
-@@ -219,6 +219,7 @@ struct request_queue;
- extern int bio_phys_segments(struct request_queue *, struct bio *);
+@@ -192,15 +192,17 @@ struct bio_integrity_payload {
+  *   in bio2.bi_private
+  */
+ struct bio_pair {
+-	struct bio			bio1, bio2;
+-	struct bio_vec			bv1, bv2;
+-#if defined(CONFIG_BLK_DEV_INTEGRITY)
+-	struct bio_integrity_payload	bip1, bip2;
+-	struct bio_vec			iv1, iv2;
+-#endif
+-	atomic_t			cnt;
+-	int				error;
++	atomic_t		cnt;
++
++	bio_end_io_t		*bi_end_io;
++	void			*bi_private;
++
++	struct bio		*orig;
++	struct bio		split;
+ };
++
++extern struct bio *bio_split(struct bio *bio, int sectors,
++			     gfp_t gfp, struct bio_set *bs);
+ extern struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors);
+ extern void bio_pair_release(struct bio_pair *dbio);
  
- extern void __bio_clone(struct bio *, struct bio *);
-+extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
- extern struct bio *bio_clone(struct bio *, gfp_t);
- struct bio *bio_clone_kmalloc(struct bio *, gfp_t);
+@@ -503,7 +505,6 @@ extern int bio_integrity_prep(struct bio *);
+ extern void bio_integrity_endio(struct bio *, int);
+ extern void bio_integrity_advance(struct bio *, unsigned int);
+ extern void bio_integrity_trim(struct bio *, unsigned int, unsigned int);
+-extern void bio_integrity_split(struct bio *, struct bio_pair *, int);
+ extern int bio_integrity_clone(struct bio *, struct bio *, gfp_t, struct bio_set *);
+ extern int bioset_integrity_create(struct bio_set *, int);
+ extern void bioset_integrity_free(struct bio_set *);
+@@ -547,12 +548,6 @@ static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+ 	return 0;
+ }
  
+-static inline void bio_integrity_split(struct bio *bio, struct bio_pair *bp,
+-				       int sectors)
+-{
+-	return;
+-}
+-
+ static inline void bio_integrity_advance(struct bio *bio,
+ 					 unsigned int bytes_done)
+ {
 -- 
 1.7.9.3.327.g2980b
 
