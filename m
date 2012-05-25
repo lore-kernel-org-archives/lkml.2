@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab2EYN3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:29:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33472 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab2EYN3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:29:05 -0400
+	id S1753747Ab2EYNbj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:31:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39586 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752679Ab2EYNbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:31:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="148391804"
+Date: Fri, 25 May 2012 14:47:13 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
 Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in
  tty_lock_pair(v1)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
+Message-ID: <20120525144713.6946df1e@bob.linux.org.uk>
+In-Reply-To: <1337952533.9783.195.camel@laptop>
 References: <1337651931-5301-1-git-send-email-ming.lei@canonical.com>
-	 <CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 15:28:53 +0200
-Message-ID: <1337952533.9783.195.camel@laptop>
+	<CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
+	<1337952533.9783.195.camel@laptop>
+Organization: Intel
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-23 at 14:01 +0800, Ming Lei wrote:
+> Having looked at the source I still don't see how it could possibly
+> work,.. So the problem with tty_release() -> tty_ldisc_release() is
+> that tty_ldisc_release() does an unlock/lock of tty.
 
-> Even though the patch is applied, there is still one related problem about
-> mixing tty_lock_pair with tty_unlock and tty_lock. If tty locks are
-> held by calling
-> tty_lock_pair, then deadlock warning between legacy_mutex/1 and legacy_mutex
-> may be triggered if tty_unlock(tty) and tty_lock(tty) are called later
-> when tty < tty2,
-> see tty_ldisc_release() in tty_release().
+Yes it should do the pair, see the patch I posted restructing it, and
+the second one restructing it right.
 
-This just gives me a head-ache instead of explaining anything.
+> However your tty_lock_pair() can still result in tty being subclass 1,
+> see your else branch, nested case.
+> 
+> That said, how is this not a real deadlock? If you rely on tty pointer
+> ordering to avoid deadlocks, you always need to lock them in the same
+> order. The unlock+lock in ldisc_release violates that.
 
-Having looked at the source I still don't see how it could possibly
-work,.. So the problem with tty_release() -> tty_ldisc_release() is that
-tty_ldisc_release() does an unlock/lock of tty.
+Which was a bug.
 
-However your tty_lock_pair() can still result in tty being subclass 1,
-see your else branch, nested case.
-
-That said, how is this not a real deadlock? If you rely on tty pointer
-ordering to avoid deadlocks, you always need to lock them in the same
-order. The unlock+lock in ldisc_release violates that.
-
-If we don't rely on the order, then why bother with the _pair()
-primitive?
-
+Alan
