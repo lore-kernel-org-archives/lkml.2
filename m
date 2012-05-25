@@ -1,107 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab2EYTfz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 15:35:55 -0400
-Received: from mailfw02.zoner.fi ([84.34.147.249]:12131 "EHLO
-	mailfw02.zoner.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab2EYTfm (ORCPT
+	id S933380Ab2EYTgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 15:36:06 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:16614 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290Ab2EYTgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 15:35:42 -0400
-Date: Fri, 25 May 2012 22:35:37 +0300
-From: Lasse Collin <lasse.collin@tukaani.org>
-To: Thavatchai Makphaibulcboke <thavatchai.makpahibulchoke@hp.com>
-Cc: "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kaloz@openwrt.org" <kaloz@openwrt.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>
-Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper
- functions
-Message-ID: <20120525223537.3f537e26@tukaani.org>
-In-Reply-To: <4FBFB3F3.1000606@hp.com>
-References: <1337875436-27640-1-git-send-email-tmac@hp.com>
-	<20120525113432.3beea6ed@tukaani.org>
-	<4FBFB3F3.1000606@hp.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 25 May 2012 15:36:02 -0400
+Message-ID: <4FBFDF20.8060408@tilera.com>
+Date: Fri, 25 May 2012 15:36:00 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile update for 3.5
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-25 Thavatchai Makphaibulcboke wrote:
-> Yes, I agree that having a shared file would be the best solution.
-> Unfortunately with the current preboot architecture and infra
-> structure, it would not be a trivial task.
+Linus,
 
-I agree.
+Please pull the following changes for 3.5 from:
 
-> I believe defining these functions for each arch would give a better
-> code modularity compared to including them in the decompressor file.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
 
-I guess so. decompress_unxz.c certainly isn't the right place for those
-functions. The arch-specific files also allow arch-specific
-optimizations if someone finds them useful.
+These changes cover a range of new arch/tile features and optimizations.
+They've been through LKML review and on linux-next for a month or so.
+There's also one bug-fix that just missed 3.4, which I've marked for stable.
 
-> > These already have memcpy. It can save a few bytes if one reused
-> > memmove as memcpy when using XZ compression. I got a difference of
-> > 48 bytes on x86_64.
-> 
-> We could do that.  But according to the comment in the original
-> implementation, there seems to be a concern regarding its performance
-> speed. If you believe all archs' memcpy would give comparable
-> performance to the memmove. then I could do that.
+Chris Metcalf (15):
+      arch/tile: use interrupt critical sections less
+      arch/tile: allow building Linux with transparent huge pages enabled
+      arch/tile: support building big-endian kernel
+      arch/tile: optimize get_user/put_user and friends
+      arch/tile: Allow tilegx to build with either 16K or 64K page size
+      arch/tile: support <asm/cachectl.h> header for cacheflush() syscall
+      arch/tile: support kexec() for tilegx
+      mm: add new arch_make_huge_pte() method for tile support
+      arch/tile: support multiple huge page sizes dynamically
+      arch/tile: fix hardwall for tilegx and generalize for idn and ipi
+      arch/tile: allow querying cpu module information from the hypervisor
+      arch/tile: add descriptive text if the kernel reports a bad trap
+      arch/tile: mark TILEGX as not EXPERIMENTAL
+      tile: fix bug where fls(0) was not returning 0
+      tile: default to tilegx_defconfig for ARCH=tile
 
-In a generic case, you can replace memcpy with memmove but not vice
-versa. memmove is generally slower than memcpy because memmove has to
-support overlapping buffers.
+Kautuk Consul (1):
+      tile/mm/fault.c: Port OOM changes to handle_page_fault
 
-I guess the current comment in decompress_unxz.c could be clearer. In
-short, memmove and memcpy speeds don't matter much *for kernel
-decompression* which is done in the single-call mode of the XZ
-decompressor on archs that currently support XZ. memcpy speed could
-matter if the kernel image contained a large amount of incompressible
-data, but even if it did, it shouldn't matter much.
-
-> > Adding memmove to string.c on x86 means that memmove is included in
-> > the kernel image even when memmove isn't needed. With gzip
-> > compression I got 128 bytes bigger image on x86_64 after adding the
-> > unneeded memmove to string.c.
-> > 
-> > I don't know if those size increases matter in practice.
-> 
-> For x86, I think I could move memmove to the misc.c file and put an
-> ifdef XZ_PREBOOT around it.  This way it should not impact other
-> decompressor.  I could also do this for s390 and sh.  But if we decide
-> to replace memmove with memcpy this would be necessart.
-
-Or you can use #ifdef CONFIG_KERNEL_XZ in string.c. XZ_PREBOOT is kind
-of internal define to the XZ code so it's not good to rely on it.
-
-If you add a static memmove function to misc.c, compiler can omit it
-when memmove isn't used. Since misc.h pulls <linux/string.h> via
-<linux/elf.h> and so there's a prototype of extern memmove already, one
-needs to call the static function e.g. my_memmove and #define memmove
-my_memmove. This way you don't need to #ifdef it to any particular
-decompressors.
-
-If memmove is used to implement memcpy, you probably cannot avoid
-decompressor-specific #ifdefs unless you use memmove for all
-decompressors. The question is how clean code you want vs. how much you
-care about saving 30-150 bytes in bzImage size.
+ arch/tile/Kconfig                                  |   43 +-
+ arch/tile/Makefile                                 |    7 +-
+ arch/tile/include/arch/spr_def_32.h                |   56 ++
+ arch/tile/include/arch/spr_def_64.h                |   43 ++
+ arch/tile/include/asm/Kbuild                       |    2 +-
+ arch/tile/include/asm/atomic_32.h                  |   10 +
+ arch/tile/include/asm/bitops.h                     |   12 +-
+ arch/tile/include/asm/byteorder.h                  |   20 +
+ arch/tile/include/asm/cachectl.h                   |   42 ++
+ arch/tile/include/asm/compat.h                     |    3 -
+ arch/tile/include/asm/elf.h                        |    5 +
+ arch/tile/include/asm/futex.h                      |  143 +++--
+ arch/tile/include/asm/hardwall.h                   |   18 +-
+ arch/tile/include/asm/hugetlb.h                    |   21 +
+ arch/tile/include/asm/irqflags.h                   |   34 +-
+ arch/tile/include/asm/kexec.h                      |   12 +
+ arch/tile/include/asm/mmu.h                        |    2 +-
+ arch/tile/include/asm/mmu_context.h                |    8 +-
+ arch/tile/include/asm/module.h                     |   40 +
+ arch/tile/include/asm/page.h                       |   18 +-
+ arch/tile/include/asm/pgalloc.h                    |   92 ++-
+ arch/tile/include/asm/pgtable.h                    |  111 +++-
+ arch/tile/include/asm/pgtable_32.h                 |   40 +-
+ arch/tile/include/asm/pgtable_64.h                 |   57 +-
+ arch/tile/include/asm/processor.h                  |   17 +-
+ arch/tile/include/asm/setup.h                      |   10 +-
+ arch/tile/include/asm/syscalls.h                   |    3 +-
+ arch/tile/include/asm/tlbflush.h                   |   17 +-
+ arch/tile/include/asm/uaccess.h                    |  222 ++++---
+ arch/tile/include/asm/unistd.h                     |    4 +-
+ arch/tile/include/hv/drv_xgbe_intf.h               |    2 +-
+ arch/tile/include/hv/hypervisor.h                  |  325 ++++++---
+ arch/tile/kernel/Makefile                          |    3 +-
+ arch/tile/kernel/entry.S                           |    3 +-
+ arch/tile/kernel/hardwall.c                        |  754 +++++++++++++-------
+ arch/tile/kernel/head_32.S                         |    8 +-
+ arch/tile/kernel/head_64.S                         |   22 +-
+ arch/tile/kernel/hvglue.lds                        |    3 +-
+ arch/tile/kernel/intvec_64.S                       |   80 ++-
+ arch/tile/kernel/machine_kexec.c                   |   42 +-
+ arch/tile/kernel/module.c                          |   12 +-
+ arch/tile/kernel/proc.c                            |    1 +
+ arch/tile/kernel/process.c                         |   16 +-
+ .../{relocate_kernel.S => relocate_kernel_32.S}    |    0
+ .../{relocate_kernel.S => relocate_kernel_64.S}    |  150 ++---
+ arch/tile/kernel/setup.c                           |  169 +++--
+ arch/tile/kernel/single_step.c                     |   16 +-
+ arch/tile/kernel/smp.c                             |    2 +-
+ arch/tile/kernel/sys.c                             |   10 +-
+ arch/tile/kernel/sysfs.c                           |    8 +
+ arch/tile/kernel/tlb.c                             |   11 +-
+ arch/tile/kernel/traps.c                           |   30 +-
+ arch/tile/lib/atomic_32.c                          |   47 +--
+ arch/tile/lib/exports.c                            |    8 -
+ arch/tile/lib/memchr_64.c                          |    8 +-
+ arch/tile/lib/memcpy_64.c                          |   23 +-
+ arch/tile/lib/memcpy_tile64.c                      |    8 +-
+ arch/tile/lib/strchr_64.c                          |   15 +-
+ arch/tile/lib/string-endian.h                      |   33 +
+ arch/tile/lib/strlen_64.c                          |   11 +-
+ arch/tile/lib/usercopy_32.S                        |   76 --
+ arch/tile/lib/usercopy_64.S                        |   49 --
+ arch/tile/mm/fault.c                               |   34 +-
+ arch/tile/mm/homecache.c                           |    1 +
+ arch/tile/mm/hugetlbpage.c                         |  285 ++++++--
+ arch/tile/mm/init.c                                |   19 +-
+ arch/tile/mm/migrate.h                             |    6 +
+ arch/tile/mm/migrate_32.S                          |   36 +-
+ arch/tile/mm/migrate_64.S                          |   34 +-
+ arch/tile/mm/pgtable.c                             |   40 +-
+ include/asm-generic/pgtable.h                      |    5 +-
+ include/linux/hugetlb.h                            |    8 +
+ mm/hugetlb.c                                       |    1 +
+ mm/pgtable-generic.c                               |    4 +-
+ 74 files changed, 2276 insertions(+), 1254 deletions(-)
+ create mode 100644 arch/tile/include/asm/cachectl.h
+ create mode 100644 arch/tile/include/asm/module.h
+ copy arch/tile/kernel/{relocate_kernel.S => relocate_kernel_32.S} (100%)
+ rename arch/tile/kernel/{relocate_kernel.S => relocate_kernel_64.S} (54%)
+ create mode 100644 arch/tile/lib/string-endian.h
 
 -- 
-Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
