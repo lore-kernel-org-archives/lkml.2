@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab2EYVaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 17:30:52 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:42662 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2EYVav (ORCPT
+	id S1752716Ab2EYVbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 17:31:50 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:60651 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751136Ab2EYVbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 17:30:51 -0400
-Date: Fri, 25 May 2012 18:30:45 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/4] perf top: Fix counter name fixup when fallbacking to
- cpu-clock
-Message-ID: <20120525213045.GH2336@infradead.org>
-References: <1337975958-24047-1-git-send-email-acme@infradead.org>
- <1337975958-24047-4-git-send-email-acme@infradead.org>
- <4FBFEAFA.8050004@gmail.com>
+	Fri, 25 May 2012 17:31:48 -0400
+X-Sasl-enc: I5UQUBYxQLPWuJoPHengg5lfMhmoo7LZ1x2YNBjTkJeE 1337981508
+Message-ID: <4FBFFA41.70607@fastmail.fm>
+Date: Fri, 25 May 2012 22:31:45 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBFEAFA.8050004@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+References: <4FBFEACC.8040601@fastmail.fm>  <1337978725.10135.0.camel@edumazet-glaptop> <1337979331.10135.2.camel@edumazet-glaptop>
+In-Reply-To: <1337979331.10135.2.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, May 25, 2012 at 02:26:34PM -0600, David Ahern escreveu:
-> The patch I sent had:
+On 05/25/2012 09:55 PM, Eric Dumazet wrote:
+> On Fri, 2012-05-25 at 22:45 +0200, Eric Dumazet wrote:
+>> No need, update your tree.
 > 
-> + if (counter->name) {
-> + free(counter->name);
-> + counter->name = NULL;
-> + counter->name = strdup(event_name(counter));
-> + }
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=1ca7ee30630e1022dbcf1b51be20580815ffab73
 > 
-> See http://lkml.indiana.edu/hypermail/linux/kernel/1205.1/00390.html
 
-I probably messed up this one, should've put a committer note for that
-stupid simplification, anyway, just setting it to NULL is enough and
-less confusing.
+Thank you. Rebuilding now.
 
-- Arnaldo
+Jack
+
