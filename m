@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315Ab2EYPe0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:34:26 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33438 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab2EYPeZ (ORCPT
+	id S1757272Ab2EYPfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:35:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48526 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab2EYPfi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:34:25 -0400
-Date: Fri, 25 May 2012 16:34:16 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, matt.fleming@linux.intel.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
-Message-ID: <20120525153416.GA16973@srcf.ucam.org>
-References: <4FBFBF5F020000780008637F@nat28.tlf.novell.com>
- <20120525152414.GA16704@srcf.ucam.org>
- <4FBFC1A3020000780008638F@nat28.tlf.novell.com>
+	Fri, 25 May 2012 11:35:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBFC1A3020000780008638F@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Date: Fri, 25 May 2012 17:35:37 +0200
+Message-ID: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
+Subject: atime and filesystems with snapshots (especially Btrfs)
+From: Alexander Block <ablock84@googlemail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 04:30:11PM +0100, Jan Beulich wrote:
-> >>> On 25.05.12 at 17:24, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > Looks good, but should we also be changing get_time to return in UTC? 
-> 
-> Imo that would be a separate change though.
+Hello,
 
-Sure, but probably a useful one. I've had complaints from firmware 
-vendors that we're not handling the timezone properly here.
+(this is a resend with proper CC for linux-fsdevel and linux-kernel)
 
-> > What are the expected semantics for get_wallclock?
-> 
-> Not sure - I think both are permitted (just like for the legacy RTC),
-> with the expectation that early user mode would tell the kernel.
+I would like to start a discussion on atime in Btrfs (and other
+filesystems with snapshot support).
 
-Yeah. I think get_time and set_time should probably both be paying 
-attention to sys_tz and converting appropriately.
+As atime is updated on every access of a file or directory, we get
+many changes to the trees in btrfs that as always trigger cow
+operations. This is no problem as long as the changed tree blocks are
+not shared by other subvolumes. Performance is also not a problem, no
+matter if shared or not (thanks to relatime which is the default).
+The problems start when someone starts to use snapshots. If you for
+example snapshot your root and continue working on your root, after
+some time big parts of the tree will be cowed and unshared. In the
+worst case, the whole tree gets unshared and thus takes up the double
+space. Normally, a user would expect to only use extra space for a
+tree if he changes something.
+A worst case scenario would be if someone took regular snapshots for
+backup purposes and later greps the contents of all snapshots to find
+a specific file. This would touch all inodes in all trees and thus
+make big parts of the trees unshared.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+relatime (which is the default) reduces this problem a little bit, as
+it by default only updates atime once a day. This means, if anyone
+wants to test this problem, mount with relatime disabled or change the
+system date before you try to update atime (that's the way i tested
+it).
+
+As a solution, I would suggest to make noatime the default for btrfs.
+I'm however not sure if it is allowed in linux to have different
+default mount options for different filesystem types. I know this
+discussion pops up every few years (last time it resulted in making
+relatime the default). But this is a special case for btrfs. atime is
+already bad on other filesystems, but it's much much worse in btrfs.
+
+Alex.
