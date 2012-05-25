@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab2EYUzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:55:39 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52721 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756768Ab2EYUzh (ORCPT
+	id S1758619Ab2EYU4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:56:19 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:52207 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753461Ab2EYU4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:55:37 -0400
-Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1337978725.10135.0.camel@edumazet-glaptop>
-References: <4FBFEACC.8040601@fastmail.fm>
-	 <1337978725.10135.0.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 22:55:31 +0200
-Message-ID: <1337979331.10135.2.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 25 May 2012 16:56:18 -0400
+Message-ID: <4FBFF1F0.6050802@tilera.com>
+Date: Fri, 25 May 2012 16:56:16 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Gilad Ben-Yossef <gilad@benyossef.com>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Christoph Lameter <cl@linux.com>, Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <linux-mm@kvack.org>
+Subject: Re: [PATCH v1 1/6] timer: make __next_timer_interrupt explicit about
+ no future event
+References: <1336056962-10465-1-git-send-email-gilad@benyossef.com> <1336056962-10465-2-git-send-email-gilad@benyossef.com> <alpine.LFD.2.02.1205251846520.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205251846520.3231@ionos>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 22:45 +0200, Eric Dumazet wrote:
-> On Fri, 2012-05-25 at 21:25 +0100, Jack Stone wrote:
-> > Hi All,
-> > 
-> > The following warning keeps hitting me. I couldn't get the first one - it had already left dmesg hence the W taint.
-> > The C taint is from r8712u from staging.
-> > 
-> > I've seen it with 3.4.0-076444-g07acfc2 (recent Linus tree) and 3.4.0-rc3-00089-gc6f5c93.
-> > 
-> > I am going to attempt to bisect it now.
-> 
-> No need, update your tree.
-> 
-> 
+On 5/25/2012 4:48 PM, Thomas Gleixner wrote:
+>> I've noticed a similar but slightly different fix to the
+>> > same problem in the Tilera kernel tree from Chris M. (I've
+>> > wrote this before seeing that one), so some variation of this
+>> > fix is in use on real hardware for some time now.
+> Sigh, why can't people post their fixes instead of burying them in
+> their private trees?
 
+The tree was never really ready for review.  I pushed the tree just for
+reference to the nohz cpusets work, and so that I have something I can
+refer people to when I start participating more actively in that discussion.
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=1ca7ee30630e1022dbcf1b51be20580815ffab73
+It didn't seem useful to post a single patch by itself without more
+motivating examples behind it (i.e. without the entirety of the tree).
 
-
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
