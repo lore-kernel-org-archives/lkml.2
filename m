@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab2EYLEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 07:04:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37720 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109Ab2EYLEU (ORCPT
+	id S932230Ab2EYLId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 07:08:33 -0400
+Received: from smtp3.mundo-r.com ([212.51.32.191]:46348 "EHLO
+	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751763Ab2EYLIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 07:04:20 -0400
-Date: Fri, 25 May 2012 13:04:06 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Juri Lelli <juri.lelli@gmail.com>, mingo@redhat.com, rostedt@goodmis.org,
-        oleg@redhat.com, fweisbec@gmail.com, darren@dvhart.com,
-        johan.eker@ericsson.com, p.faure@akatech.ch,
-        linux-kernel@vger.kernel.org, claudio@evidence.eu.com,
-        michael@amarulasolutions.com, fchecconi@gmail.com,
-        tommaso.cucinotta@sssup.it, nicola.manica@disi.unitn.it,
-        luca.abeni@unitn.it, dhaval.giani@gmail.com, hgu1972@gmail.com,
-        paulmck@linux.vnet.ibm.com, raistlin@linux.it, insop.song@ericsson.com,
-        liming.wang@windriver.com, jkacur@redhat.com,
-        harald.gustafsson@ericsson.com
-Subject: Re: [RFC][PATCH 00/15] sched: SCHED_DEADLINE v5
-In-Reply-To: <1337942569.9783.183.camel@laptop>
-Message-ID: <alpine.LFD.2.02.1205251302540.3231@ionos>
-References: <1337809375-24295-1-git-send-email-juri.lelli@gmail.com> <1337942569.9783.183.camel@laptop>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Fri, 25 May 2012 07:08:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAIZnv09bdWOb/2dsb2JhbABEtSOBB4IWAQUnUhBRVwYTiBG7OJBHA5UYiR6GUoJi
+X-IronPort-AV: E=Sophos;i="4.75,656,1330902000"; 
+   d="scan'208";a="995316716"
+From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Staging: ipack/devices/ipoctal: change pr_* usage for dev_* functions
+Date: Fri, 25 May 2012 13:08:13 +0200
+Message-Id: <1337944093-16963-2-git-send-email-siglesias@igalia.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1337944093-16963-1-git-send-email-siglesias@igalia.com>
+References: <1337944093-16963-1-git-send-email-siglesias@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Peter Zijlstra wrote:
+Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
+---
+ drivers/staging/ipack/devices/ipoctal.c |   22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-> On Wed, 2012-05-23 at 23:42 +0200, Juri Lelli wrote:
-> > Still missing/incomplete:
-> >   - (c)group based bandwidth management, and maybe scheduling;
-> 
-> The b/w stuff for cgroups shouldn't be particularly hard, right? It
-> shouldn't be more than ensuring the utilization sum of all children
-> stays below the set value.
-> 
-> Or am I missing something?
-> 
-> >   - bandwidth inheritance (to replace deadline/priority inheritance);
-> 
-> Yes please, but this is somewhat longer term, I think the band-aids in
-> place are sufficient to allow us to move fwd.
-> 
-> >   - access control for non-root users (and related security concerns to
-> >     address). 
-> 
-> Right, so could you detail what all is needed to allow regular users to
-> create dl tasks?
-> 
-> Aside from this, Ingo, Thomas, Steven do you agree in merging these
-> patches as a suitable base to continue work from?
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index a6f424e..17aa35a 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -11,8 +11,6 @@
+  * Software Foundation; version 2 of the License.
+  */
+ 
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+@@ -116,7 +114,8 @@ static int ipoctal_port_activate(struct tty_port *port, struct tty_struct *tty)
+ 	ipoctal = ipoctal_find_board(tty);
+ 
+ 	if (ipoctal == NULL) {
+-		pr_err("Device not found. Major %d\n", tty->driver->major);
++		dev_err(tty->dev, "Device not found. Major %d\n",
++			tty->driver->major);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -136,7 +135,8 @@ static int ipoctal_open(struct tty_struct *tty, struct file *file)
+ 	ipoctal = ipoctal_find_board(tty);
+ 
+ 	if (ipoctal == NULL) {
+-		pr_err("Device not found. Major %d\n", tty->driver->major);
++		dev_err(tty->dev, "Device not found. Major %d\n",
++			tty->driver->major);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -381,7 +381,9 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev, 0,
+ 						IPACK_ID_SPACE);
+ 	if (res) {
+-		pr_err("Unable to map slot [%d:%d] ID space!\n", bus_nr, slot);
++		dev_err(&ipoctal->dev->dev,
++			"Unable to map slot [%d:%d] ID space!\n",
++			bus_nr, slot);
+ 		return res;
+ 	}
+ 
+@@ -396,14 +398,18 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev, 0,
+ 						IPACK_IO_SPACE);
+ 	if (res) {
+-		pr_err("Unable to map slot [%d:%d] IO space!\n", bus_nr, slot);
++		dev_err(&ipoctal->dev->dev,
++			"Unable to map slot [%d:%d] IO space!\n",
++			bus_nr, slot);
+ 		goto out_unregister_id_space;
+ 	}
+ 
+ 	res = ipoctal->dev->bus->ops->map_space(ipoctal->dev,
+ 					   0x8000, IPACK_MEM_SPACE);
+ 	if (res) {
+-		pr_err("Unable to map slot [%d:%d] MEM space!\n", bus_nr, slot);
++		dev_err(&ipoctal->dev->dev,
++			"Unable to map slot [%d:%d] MEM space!\n",
++			bus_nr, slot);
+ 		goto out_unregister_io_space;
+ 	}
+ 
+@@ -472,7 +478,7 @@ static int ipoctal_inst_slot(struct ipoctal *ipoctal, unsigned int bus_nr,
+ 	tty_set_operations(tty, &ipoctal_fops);
+ 	res = tty_register_driver(tty);
+ 	if (res) {
+-		pr_err("Can't register tty driver.\n");
++		dev_err(&ipoctal->dev->dev, "Can't register tty driver.\n");
+ 		put_tty_driver(tty);
+ 		goto out_unregister_slot_unmap;
+ 	}
+-- 
+1.7.10
 
-I haven't looked in detail, but I didn't spot horrible things
-either. And yes, we should start with that set and improve from there.
-
-Thanks,
-
-	tglx
