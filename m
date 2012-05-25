@@ -1,291 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933917Ab2EYTST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 15:18:19 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:45488 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758339Ab2EYTSN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 15:18:13 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>
-Subject: [PATCH 2/4] [RFC] Range tree implementation
-Date: Fri, 25 May 2012 12:17:34 -0700
-Message-Id: <1337973456-19533-3-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1337973456-19533-1-git-send-email-john.stultz@linaro.org>
-References: <1337973456-19533-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052519-3270-0000-0000-000006A60F13
+	id S964955Ab2EYTSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 15:18:30 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:37585 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752900Ab2EYTS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 15:18:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Subject: Re: [PATCH 1/4] async: introduce 'async_domain' type
+Date: Fri, 25 May 2012 21:23:27 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Dan Williams <dan.j.williams@intel.com>, mroos@linux.ee,
+        linux-scsi@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        Liam Girdwood <lrg@ti.com>
+References: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com> <CABE8wwtfW0FusNuOEmwMxZLVMTVSj0R9HCA5xLWidrgj_7Ax+A@mail.gmail.com> <1337935700.2932.18.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1337935700.2932.18.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205252123.27869.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After Andrew suggested something like his mumbletree idea
-to better store a list of ranges, I worked on a few different
-approaches, and this is what I've finally managed to get working.
+On Friday, May 25, 2012, James Bottomley wrote:
+> On Fri, 2012-05-25 at 01:18 -0700, Dan Williams wrote:
+> > On Fri, May 25, 2012 at 12:51 AM, James Bottomley
+> > <James.Bottomley@hansenpartnership.com> wrote:
+> > > On Fri, 2012-05-25 at 00:50 -0700, Dan Williams wrote:
+> > >> This is in preparation for teaching async_synchronize_full() to sync all
+> > >> pending async work, and not just on the async_running domain.  This
+> > >> conversion is functionally equivalent, just embedding the existing list
+> > >> in a new async_domain type.
+> > >
+> > > This looks good, but I want Arjan and others who invented the async code
+> > > to speed up boot to comment on all of this.  What was the intention of
+> > > async_synchronize_full() and if it wasn't to synchronise all domains,
+> > > should we fix the documentation and add a new primitive to do that,
+> > > since boot clearly assumes the all domains behaviour.
+> > >
+> > > In the mean time, this is probably all a bit much for a merge window, so
+> > > I'll revert
+> > >
+> > > commit a7a20d103994fd760766e6c9d494daa569cbfe06
+> > > Author: Dan Williams <dan.j.williams@intel.com>
+> > > Date:   Thu Mar 22 17:05:11 2012 -0700
+> > >
+> > >    [SCSI] sd: limit the scope of the async probe domain
+> > >
+> > > And we'll put whatever is chosen in early for the next merge window.
+> > >
+> > 
+> > Makes sense... but could also go ahead with the smaller fix I posted
+> > for 3.5.  Meelis confirms it is working.
+> 
+> OK, that's what I hadn't seen.  I can't think of another way we could
+> fail at the moment, except in suspend/resume because the
+> scsi_complete_async_scans will be a nop. Can someone test the
+> suspend/resume case?
+> 
+> 
+> There is actually one good thing to come out of this:  Rafael's commit
+> 
+> commit c751085943362143f84346d274e0011419c84202
+> Author: Rafael J. Wysocki <rjw@sisk.pl>
+> Date:   Sun Apr 12 20:06:56 2009 +0200
+> 
+>     PM/Hibernate: Wait for SCSI devices scan to complete during resume
+> 
+> Actually broke the scsi_wait_scan module, because for modular SCSI
+> (which is effectively all distributions) its scsi_complete_async_scans()
+> is also a nop.  I assume this means that no distributions rely on it any
+> more and we can remove it?
 
-I suspect range-tree isn't a totally accurate name, but I
-couldn't quite make out the difference between range trees
-and interval trees, so I just picked one to call it. Do
-let me know if you have a better name.
+Well, there still are users who build their own kernels ...
 
-The idea of storing ranges in a tree is nice, but has a number
-of complications. When adding a range, its possible that a
-large range will consume and merge a number of smaller ranges.
-When removing a range, its possible you may end up splitting an
-existing range, causing one range to become two. This makes it
-very difficult to provide generic list_head like behavior, as
-the parent structures would need to be duplicated and removed,
-and that has lots of memory ownership issues.
+The problem was that when we had started to do the async scan, resume from
+hibernation stopped working for the poeple who _had_ built-in SCSI and the
+commit above was meant to address that.
 
-So, this is a much simplified and more list_head like
-implementation. You can add a node to a tree, or remove a node
-to a tree, but the generic implementation doesn't do the
-merging or splitting for you. But it does provide helpers to
-find overlapping and adjacent ranges.
-
-Andrew also really wanted this range-tree implementation to be
-resuable so we don't duplicate the file locking logic. I'm not
-totally convinced that the requirements between the volatile
-ranges and file locking are really equivelent, but this reduced
-impelementation may make it possible.
-
-Changelog:
-v2:
-* Reworked code to use an rbtree instead of splaying
-
-v3:
-* Added range_tree_next_in_range() to avoid having to start
-  lookups from the root every time.
-* Fixed some comments and return NULL instead of 0, as suggested
-  by Aneesh Kumar K.V
-
-v6:
-* Fixed range_tree_in_range() so that it finds the earliest range,
-  rather then the first. This allows the next_in_range() function
-  to properly cover all the ranges in the tree.
-* Minor clenaups to simplify some of the functions
-
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Android Kernel Team <kernel-team@android.com>
-CC: Robert Love <rlove@google.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Hugh Dickins <hughd@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Neil Brown <neilb@suse.de>
-CC: Andrea Righi <andrea@betterlinux.com>
-CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-CC: Taras Glek <tgek@mozilla.com>
-CC: Mike Hommey <mh@glandium.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/rangetree.h |   53 ++++++++++++++++++++++
- lib/Makefile              |    2 +-
- lib/rangetree.c           |  107 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 161 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/rangetree.h
- create mode 100644 lib/rangetree.c
-
-diff --git a/include/linux/rangetree.h b/include/linux/rangetree.h
-new file mode 100644
-index 0000000..9fa24de
---- /dev/null
-+++ b/include/linux/rangetree.h
-@@ -0,0 +1,53 @@
-+#ifndef _LINUX_RANGETREE_H
-+#define _LINUX_RANGETREE_H
-+
-+#include <linux/types.h>
-+#include <linux/rbtree.h>
-+
-+struct range_tree_node {
-+	struct rb_node rb;
-+	u64 start;
-+	u64 end;
-+};
-+
-+struct range_tree_root {
-+	struct rb_root head;
-+};
-+
-+static inline void range_tree_init(struct range_tree_root *root)
-+{
-+	root->head = RB_ROOT;
-+}
-+
-+static inline void range_tree_node_init(struct range_tree_node *node)
-+{
-+	rb_init_node(&node->rb);
-+	node->start = 0;
-+	node->end = 0;
-+}
-+
-+static inline int range_tree_empty(struct range_tree_root *root)
-+{
-+	return RB_EMPTY_ROOT(&root->head);
-+}
-+
-+static inline
-+struct range_tree_node *range_tree_root_node(struct range_tree_root *root)
-+{
-+	struct range_tree_node *ret;
-+	ret = container_of(root->head.rb_node, struct range_tree_node, rb);
-+	return ret;
-+}
-+
-+extern struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
-+							 u64 start, u64 end);
-+extern struct range_tree_node *range_tree_next_in_range(
-+						struct range_tree_node *node,
-+						u64 start, u64 end);
-+extern void range_tree_add(struct range_tree_root *root,
-+						struct range_tree_node *node);
-+extern void range_tree_remove(struct range_tree_root *root,
-+						struct range_tree_node *node);
-+#endif
-+
-+
-diff --git a/lib/Makefile b/lib/Makefile
-index 74290c9..a636a2d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o rangetree.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/rangetree.c b/lib/rangetree.c
-new file mode 100644
-index 0000000..7586d37
---- /dev/null
-+++ b/lib/rangetree.c
-@@ -0,0 +1,107 @@
-+#include <linux/rangetree.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+
-+/**
-+ * range_tree_in_range - Returns the first node that overlaps with the
-+ *                       given range
-+ * @root: range_tree root
-+ * @start: range start
-+ * @end: range end
-+ *
-+ */
-+struct range_tree_node *range_tree_in_range(struct range_tree_root *root,
-+						u64 start, u64 end)
-+{
-+	struct rb_node *p = root->head.rb_node;
-+	struct range_tree_node *candidate, *match = NULL;
-+
-+	while (p) {
-+		candidate = rb_entry(p, struct range_tree_node, rb);
-+		if (end < candidate->start)
-+			p = p->rb_left;
-+		else if (start > candidate->end)
-+			p = p->rb_right;
-+		else {
-+			/* We found one, but try to find an earlier match */
-+			match = candidate;
-+			p = p->rb_left;
-+		}
-+	}
-+
-+	return match;
-+}
-+
-+
-+/**
-+ * range_tree_next_in_range - Return the next range in a range_tree still
-+ *                            contained within a specified range.
-+ * @root: range_tree root
-+ * @start: range start
-+ * @end: range end
-+ *
-+ */
-+struct range_tree_node *range_tree_next_in_range(struct range_tree_node *node,
-+							u64 start, u64 end)
-+{
-+	struct rb_node *next;
-+	struct range_tree_node *candidate;
-+	if (!node)
-+		return NULL;
-+	next = rb_next(&node->rb);
-+	if (!next)
-+		return NULL;
-+
-+	candidate = container_of(next, struct range_tree_node, rb);
-+
-+	if ((candidate->start > end) || (candidate->end < start))
-+		return NULL;
-+
-+	return candidate;
-+}
-+
-+/**
-+ * range_tree_add - Add a node to a range tree
-+ * @root: range tree to be added to
-+ * @node: range_tree_node to be added
-+ *
-+ * Adds a node to the range tree.
-+ */
-+void range_tree_add(struct range_tree_root *root,
-+					struct range_tree_node *node)
-+{
-+	struct rb_node **p = &root->head.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct range_tree_node *ptr;
-+
-+	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
-+
-+	while (*p) {
-+		parent = *p;
-+		ptr = rb_entry(parent, struct range_tree_node, rb);
-+		if (node->start < ptr->start)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&node->rb, parent, p);
-+	rb_insert_color(&node->rb, &root->head);
-+
-+}
-+
-+
-+/**
-+ * range_tree_remove: Removes a given node from the tree
-+ * @root: root of tree
-+ * @node: Node to be removed
-+ *
-+ * Removes a node and splays the tree
-+ */
-+void range_tree_remove(struct range_tree_root *root,
-+						struct range_tree_node *node)
-+{
-+	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
-+
-+	rb_erase(&node->rb, &root->head);
-+	RB_CLEAR_NODE(&node->rb);
-+}
--- 
-1.7.3.2.146.gca209
-
+Thanks,
+Rafael
