@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756959Ab2EYWjN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 18:39:13 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:43160 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab2EYWjL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 18:39:11 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 26 May 2012 00:38:56 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for v3.5-rc1] media updates for v3.5
-Message-ID: <20120526003856.7e4efd77@stein>
-In-Reply-To: <4FBF773B.10408@redhat.com>
-References: <4FBE5518.5090705@redhat.com>
-	<CA+55aFyt2OFOsr5uCpQ6nrur4zhHhmWUJrvMgLH_Wy1niTbC6w@mail.gmail.com>
-	<4FBEB72D.4040905@redhat.com>
-	<CA+55aFyYQkrtgvG99ZOOhAzoKi8w5rJfRgZQy3Dqs39p1n=FPA@mail.gmail.com>
-	<4FBF773B.10408@redhat.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758900Ab2EYWj4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 18:39:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63820 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751136Ab2EYWjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 18:39:54 -0400
+Date: Fri, 25 May 2012 23:39:37 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>,
+        Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-bcache@vger.kernel.org, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net,
+        mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com,
+        tj@kernel.org, sage@newdream.net, agk@redhat.com,
+        drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>,
+        tytso@google.com
+Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
+Message-ID: <20120525223937.GF5761@agk-dp.fab.redhat.com>
+Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
+	Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-bcache@vger.kernel.org, dm-devel@redhat.com,
+	linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+	yehuda@hq.newdream.net, mpatocka@redhat.com, vgoyal@redhat.com,
+	bharrosh@panasas.com, tj@kernel.org, sage@newdream.net,
+	agk@redhat.com, drbd-dev@lists.linbit.com,
+	Dave Chinner <dchinner@redhat.com>, tytso@google.com
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com> <1337977539-16977-15-git-send-email-koverstreet@google.com> <20120525204651.GA24246@redhat.com> <20120525210944.GB14196@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120525210944.GB14196@google.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 25 Mauro Carvalho Chehab wrote:
-> A simple way to solve it seems to make those options dependent on CONFIG_EXPERT.
-> 
-> Not sure if all usual distributions disable it, but I guess most won't have
-> EXPERT enabled.
-> 
-> The enclosed patch does that. If nobody complains, I'll submit it together
-> with the next git pull request.
+Where's the urge to remove merge_bvec coming from?
 
-I only want dvb-core and firedtv.  But when I switch off
-CONFIG_MEDIA_TUNER_CUSTOMISE, suddenly also
+I think it's premature to touch this, and that the other changes, if
+fixed and integrated, should be allowed to bed themselves down first.
 
-  CC [M]  drivers/media/common/tuners/tuner-xc2028.o
-  CC [M]  drivers/media/common/tuners/tuner-simple.o
-  CC [M]  drivers/media/common/tuners/tuner-types.o
-  CC [M]  drivers/media/common/tuners/mt20xx.o
-  CC [M]  drivers/media/common/tuners/tda8290.o
-  CC [M]  drivers/media/common/tuners/tea5767.o
-  CC [M]  drivers/media/common/tuners/tea5761.o
-  CC [M]  drivers/media/common/tuners/tda9887.o
-  CC [M]  drivers/media/common/tuners/tda827x.o
-  CC [M]  drivers/media/common/tuners/tda18271-maps.o
-  CC [M]  drivers/media/common/tuners/tda18271-common.o
-  CC [M]  drivers/media/common/tuners/tda18271-fe.o
-  CC [M]  drivers/media/common/tuners/xc5000.o
-  CC [M]  drivers/media/common/tuners/xc4000.o
-  CC [M]  drivers/media/common/tuners/mc44s803.o
-  LD [M]  drivers/media/common/tuners/tda18271.o
 
-are built.  Why is that?
+Ideally every bio would be the best size on submission and no bio would
+ever need to be split.
 
-$ grep DVB .config
-CONFIG_DVB_CORE=m
-# CONFIG_DVB_NET is not set
-CONFIG_DVB_MAX_ADAPTERS=8
-# CONFIG_DVB_DYNAMIC_MINORS is not set
-CONFIG_DVB_CAPTURE_DRIVERS=y
-# CONFIG_DVB_BUDGET_CORE is not set
-# CONFIG_DVB_TTUSB_BUDGET is not set
-# CONFIG_DVB_TTUSB_DEC is not set
-# CONFIG_DVB_B2C2_FLEXCOP is not set
-# CONFIG_DVB_PLUTO2 is not set
-CONFIG_DVB_FIREDTV=m
-CONFIG_DVB_FIREDTV_INPUT=y
-# CONFIG_DVB_PT1 is not set
-# CONFIG_DVB_NGENE is not set
-# CONFIG_DVB_DDBRIDGE is not set
-# Supported DVB Frontends
-# CONFIG_DVB_FE_CUSTOMISE is not set
-# DVB-S (satellite) frontends
-# DVB-T (terrestrial) frontends
-# DVB-C (cable) frontends
-# SEC control devices for DVB-S
-# CONFIG_DVB_DUMMY_FE is not set
+But there is a cost involved in calculating the best size - we use
+merge_bvec for this, which gives a (probable) maximum size.  It's
+usually very cheap to calculate - but not always.  [In dm, we permit
+some situations where the answer we give will turn out to be wrong, but
+ensure dm will always fix up those particular cases itself later and
+still process the over-sized bio correctly.]
 
--- 
-Stefan Richter
--=====-===-- -=-= ==-=-
-http://arcgraph.de/sr/
+Similarly there is a performance penalty incurred when the size is wrong
+- the bio has to be split, requiring memory, potential delays etc.
+
+There is a trade-off between those two, and our experience with the current
+code has that tilted strongly in favour of using merge_bvec all the time.
+The wasted overhead in cases where it is of no benefit seem to be
+outweighed by the benefit where it does avoid lots of splitting and help
+filesystems optimise their behaviour.
+
+
+If the splitting mechanism is changed as proposed, then that balance
+might shift.  My gut feeling though is that any shift would strengthen
+the case for merge_bvec.
+
+Alasdair
+
