@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab2EYU57 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:57:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46857 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab2EYU55 (ORCPT
+	id S1758909Ab2EYU6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:58:18 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45190 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758850Ab2EYU56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:57:57 -0400
+	Fri, 25 May 2012 16:57:58 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         paul.gortmaker@windriver.com
-Subject: [PATCH 2/3] timerqueue: convert to generic rb tree code
-Date: Fri, 25 May 2012 13:57:40 -0700
-Message-Id: <1337979461-19654-3-git-send-email-koverstreet@google.com>
+Subject: [PATCH 3/3] block: convert elevator to generic rb tree code
+Date: Fri, 25 May 2012 13:57:41 -0700
+Message-Id: <1337979461-19654-4-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.3.327.g2980b
 In-Reply-To: <1337979461-19654-1-git-send-email-koverstreet@google.com>
 References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
@@ -21,57 +21,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change-Id: Ib31c42c037203b7eb78515673475130db9fa6b0b
+Change-Id: I676968e201f0de9a0d0a7813e2fcc6873343e8c3
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- lib/timerqueue.c |   23 +++++++++--------------
- 1 file changed, 9 insertions(+), 14 deletions(-)
+ block/elevator.c |   42 ++++++++++++------------------------------
+ 1 file changed, 12 insertions(+), 30 deletions(-)
 
-diff --git a/lib/timerqueue.c b/lib/timerqueue.c
-index a382e4a..3014abe 100644
---- a/lib/timerqueue.c
-+++ b/lib/timerqueue.c
-@@ -27,6 +27,14 @@
- #include <linux/rbtree.h>
- #include <linux/export.h>
+diff --git a/block/elevator.c b/block/elevator.c
+index f016855..7429682 100644
+--- a/block/elevator.c
++++ b/block/elevator.c
+@@ -295,28 +295,21 @@ static struct request *elv_rqhash_find(struct request_queue *q, sector_t offset)
+ 	return NULL;
+ }
  
-+static int timerqueue_cmp(struct rb_node *l, struct rb_node *r)
++static int elv_rb_cmp(struct rb_node *l, struct rb_node *r)
 +{
 +	return clamp_t(int64_t,
-+		       rb_entry(l, struct timerqueue_node, node)->expires.tv64 -
-+		       rb_entry(r, struct timerqueue_node, node)->expires.tv64,
++		       blk_rq_pos(rb_entry(l, struct request, rb_node)) -
++		       blk_rq_pos(rb_entry(r, struct request, rb_node)),
 +		       -1, 1);
 +}
 +
- /**
-  * timerqueue_add - Adds timer to timerqueue.
-  *
-@@ -38,23 +46,10 @@
+ /*
+  * RB-tree support functions for inserting/lookup/removal of requests
+  * in a sorted RB tree.
   */
- void timerqueue_add(struct timerqueue_head *head, struct timerqueue_node *node)
+ void elv_rb_add(struct rb_root *root, struct request *rq)
  {
--	struct rb_node **p = &head->head.rb_node;
+-	struct rb_node **p = &root->rb_node;
 -	struct rb_node *parent = NULL;
--	struct timerqueue_node  *ptr;
+-	struct request *__rq;
 -
- 	/* Make sure we don't add nodes that are already added */
- 	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->node));
- 
 -	while (*p) {
 -		parent = *p;
--		ptr = rb_entry(parent, struct timerqueue_node, node);
--		if (node->expires.tv64 < ptr->expires.tv64)
+-		__rq = rb_entry(parent, struct request, rb_node);
+-
+-		if (blk_rq_pos(rq) < blk_rq_pos(__rq))
 -			p = &(*p)->rb_left;
--		else
+-		else if (blk_rq_pos(rq) >= blk_rq_pos(__rq))
 -			p = &(*p)->rb_right;
 -	}
--	rb_link_node(&node->node, parent, p);
--	rb_insert_color(&node->node, &head->head);
-+	rb_insert_allow_dup(&head->head, &node->node, timerqueue_cmp);
+-
+-	rb_link_node(&rq->rb_node, parent, p);
+-	rb_insert_color(&rq->rb_node, root);
++	rb_insert_allow_dup(root, &rq->rb_node, elv_rb_cmp);
+ }
+ EXPORT_SYMBOL(elv_rb_add);
  
- 	if (!head->next || node->expires.tv64 < head->next->expires.tv64)
- 		head->next = node;
+@@ -330,21 +323,10 @@ EXPORT_SYMBOL(elv_rb_del);
+ 
+ struct request *elv_rb_find(struct rb_root *root, sector_t sector)
+ {
+-	struct rb_node *n = root->rb_node;
+-	struct request *rq;
+-
+-	while (n) {
+-		rq = rb_entry(n, struct request, rb_node);
++	struct request search = { .__sector = sector };
++	struct rb_node *r = _rb_search(root, &search.rb_node, elv_rb_cmp);
+ 
+-		if (sector < blk_rq_pos(rq))
+-			n = n->rb_left;
+-		else if (sector > blk_rq_pos(rq))
+-			n = n->rb_right;
+-		else
+-			return rq;
+-	}
+-
+-	return NULL;
++	return container_of_or_null(r, struct request, rb_node);
+ }
+ EXPORT_SYMBOL(elv_rb_find);
+ 
 -- 
 1.7.9.3.327.g2980b
 
