@@ -1,173 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab2EYHfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 03:35:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39270 "EHLO mga11.intel.com"
+	id S1753021Ab2EYHlU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 03:41:20 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54340 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab2EYHfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 03:35:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="157129097"
-Subject: [PATCH 4/4] scsi: cleanup usages of scsi_complete_async_scans
-To: mroos@linux.ee
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Len Brown <len.brown@intel.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <JBottomley@parallels.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Fri, 25 May 2012 00:50:43 -0700
-Message-ID: <20120525075043.21933.3650.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com>
-References: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
+	id S1751164Ab2EYHlS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 03:41:18 -0400
+Date: Fri, 25 May 2012 09:41:14 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: ShuoX Liu <shuox.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 2/2] x86 mce: use new printk recursion disabling interface
+Message-ID: <20120525074114.GA5417@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	ShuoX Liu <shuox.liu@intel.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+	Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+	Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+References: <4FBC444A.6060500@intel.com>
+ <20120523100138.GA13506@x1.osrc.amd.com>
+ <4FBDCE4A.7050900@intel.com>
+ <20120524061145.GA18284@liondog.tnic>
+ <20120524155611.b7aeff4d.akpm@linux-foundation.org>
+ <1337905811.14538.206.camel@ymzhang.sh.intel.com>
+ <4FBF3295.7090608@intel.com>
+ <4FBF32E8.90101@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FBF32E8.90101@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that scsi registers its async scan work with the async subsystem,
-wait_for_device_probe() is sufficient for ensuring all scanning is
-complete.
+On Fri, May 25, 2012 at 03:21:12PM +0800, ShuoX Liu wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
+> 
+> Disable printk recursion to make sure MCE logs printed out.
+> 
+> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 2afcbd2..365c35d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1015,6 +1015,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
+>  	char *msg = "Unknown";
+>  
+> +	printk_recursion_check_disable();
+>  	atomic_inc(&mce_entry);
+>  
+>  	this_cpu_inc(mce_exception_count);
+> @@ -1144,6 +1145,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+>  out:
+>  	atomic_dec(&mce_entry);
+> +	printk_recursion_check_enable();
 
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/scsi/scsi_scan.c      |   12 ------------
- drivers/scsi/scsi_wait_scan.c |   15 +++++----------
- include/scsi/scsi_scan.h      |   11 -----------
- kernel/power/hibernate.c      |    8 --------
- kernel/power/user.c           |    2 --
- 5 files changed, 5 insertions(+), 43 deletions(-)
- delete mode 100644 include/scsi/scsi_scan.h
+Looks like those should be at the beginning and the end of print_mce() -
+do_machine_check() could exit without printing an MCE and disabling the
+recursion check then is superfluous, methinks.
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index fb42aa0..20c7108 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -184,18 +184,6 @@ int scsi_complete_async_scans(void)
- 	return 0;
- }
- 
--/* Only exported for the benefit of scsi_wait_scan */
--EXPORT_SYMBOL_GPL(scsi_complete_async_scans);
--
--#ifndef MODULE
--/*
-- * For async scanning we need to wait for all the scans to complete before
-- * trying to mount the root fs.  Otherwise non-modular drivers may not be ready
-- * yet.
-- */
--late_initcall(scsi_complete_async_scans);
--#endif
--
- /**
-  * scsi_unlock_floptical - unlock device via a special MODE SENSE command
-  * @sdev:	scsi device to send command to
-diff --git a/drivers/scsi/scsi_wait_scan.c b/drivers/scsi/scsi_wait_scan.c
-index 74708fc..57de24a 100644
---- a/drivers/scsi/scsi_wait_scan.c
-+++ b/drivers/scsi/scsi_wait_scan.c
-@@ -12,21 +12,16 @@
- 
- #include <linux/module.h>
- #include <linux/device.h>
--#include <scsi/scsi_scan.h>
- 
- static int __init wait_scan_init(void)
- {
- 	/*
--	 * First we need to wait for device probing to finish;
--	 * the drivers we just loaded might just still be probing
--	 * and might not yet have reached the scsi async scanning
-+	 * This will not return until all async work (system wide) is
-+	 * quiesced.  Probing queues host-scanning work to the async
-+	 * queue which is why we don't need a separate call to
-+	 * scsi_complete_async_scans()
- 	 */
- 	wait_for_device_probe();
--	/*
--	 * and then we wait for the actual asynchronous scsi scan
--	 * to finish.
--	 */
--	scsi_complete_async_scans();
- 	return 0;
- }
- 
-@@ -38,5 +33,5 @@ MODULE_DESCRIPTION("SCSI wait for scans");
- MODULE_AUTHOR("James Bottomley");
- MODULE_LICENSE("GPL");
- 
--late_initcall(wait_scan_init);
-+module_init(wait_scan_init);
- module_exit(wait_scan_exit);
-diff --git a/include/scsi/scsi_scan.h b/include/scsi/scsi_scan.h
-deleted file mode 100644
-index 7889888..0000000
---- a/include/scsi/scsi_scan.h
-+++ /dev/null
-@@ -1,11 +0,0 @@
--#ifndef _SCSI_SCSI_SCAN_H
--#define _SCSI_SCSI_SCAN_H
--
--#ifdef CONFIG_SCSI
--/* drivers/scsi/scsi_scan.c */
--extern int scsi_complete_async_scans(void);
--#else
--static inline int scsi_complete_async_scans(void) { return 0; }
--#endif
--
--#endif /* _SCSI_SCSI_SCAN_H */
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index e09dfbf..821114a 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -25,7 +25,6 @@
- #include <linux/freezer.h>
- #include <linux/gfp.h>
- #include <linux/syscore_ops.h>
--#include <scsi/scsi_scan.h>
- 
- #include "power.h"
- 
-@@ -735,13 +734,6 @@ static int software_resume(void)
- 			async_synchronize_full();
- 		}
- 
--		/*
--		 * We can't depend on SCSI devices being available after loading
--		 * one of their modules until scsi_complete_async_scans() is
--		 * called and the resume device usually is a SCSI one.
--		 */
--		scsi_complete_async_scans();
--
- 		swsusp_resume_device = name_to_dev_t(resume_file);
- 		if (!swsusp_resume_device) {
- 			error = -ENODEV;
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 91b0fd0..4ed81e7 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -24,7 +24,6 @@
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/freezer.h>
--#include <scsi/scsi_scan.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -84,7 +83,6 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 		 * appear.
- 		 */
- 		wait_for_device_probe();
--		scsi_complete_async_scans();
- 
- 		data->swap = -1;
- 		data->mode = O_WRONLY;
+Thanks.
 
+-- 
+Regards/Gruss,
+    Boris.
