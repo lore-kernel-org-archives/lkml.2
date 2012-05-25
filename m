@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab2EYRKT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:10:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41878 "EHLO mx1.redhat.com"
+	id S932072Ab2EYRD2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:03:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11772 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932718Ab2EYRDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:03:33 -0400
+	id S1754194Ab2EYRDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:03:24 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -23,153 +23,50 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 05/35] autonuma: x86 pte_numa() and pmd_numa()
-Date: Fri, 25 May 2012 19:02:09 +0200
-Message-Id: <1337965359-29725-6-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 25/35] autonuma: default mempolicy follow AutoNUMA
+Date: Fri, 25 May 2012 19:02:29 +0200
+Message-Id: <1337965359-29725-26-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement pte_numa and pmd_numa and related methods on x86 arch.
-
-We must atomically set the numa bit and clear the present bit to
-define a pte_numa or pmd_numa.
-
-Whenever a pte or pmd is set as pte_numa or pmd_numa the first time a
-thread will touch that virtual address, a NUMA hinting page fault will
-trigger. The NUMA hinting page fault will simply clear the NUMA bit
-and set the present bit again to resolve the page fault.
-
-NUMA hinting page faults are used:
-
-1) to fill in the per-thread NUMA statistic stored for each thread in
-   a current->sched_autonuma data structure
-
-2) to track the per-node last_nid information in the page structure to
-   detect false sharing
-
-3) to queue the page mapped by the pte_numa or pmd_numa for async
-   migration if there have been enough NUMA hinting page faults on the
-   page coming from remote CPUs
-
-NUMA hinting page faults don't do anything except collecting
-information and possibly adding pages to migrate queues. They're
-extremely quick and absolutely non blocking. They don't allocate any
-memory either.
-
-The only "input" information of the AutoNUMA algorithm that isn't
-collected through NUMA hinting page faults are the per-process
-(per-thread not) mm->mm_autonuma statistics. Those mm_autonuma
-statistics are collected by the knuma_scand pmd/pte scans that are
-also responsible for setting the pte_numa/pmd_numa to activate the
-NUMA hinting page faults.
-
-knuma_scand -> NUMA hinting page faults
-  |                       |
- \|/                     \|/
-mm_autonuma  <->  sched_autonuma (CPU follow memory, this is mm_autonuma too)
-                  page last_nid  (false thread sharing/thread shared memory detection )
-                  queue or cancel page migration (memory follow CPU)
-
-After pages are queued, there is one knuma_migratedN daemon per NUMA
-node that will take care of migrating the pages at a perfectly steady
-rate in parallel from all nodes, and in round robin from all incoming
-nodes going to the same destination node to keep all memory channels
-in large boxes active at the same time to avoid hitting on a single
-memory channel for too long to minimize memory bus migration latency
-effects.
-
-Once pages are queued for async migration by knuma_migratedN, their
-migration can still be canceled before they're actually migrated, if
-false sharing is later detected.
+If the task has already been moved to an autonuma_node try to allocate
+memory from it even if it's temporarily not the local node. Chances
+are it's where most of its memory is already located and where it will
+run in the future.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/x86/include/asm/pgtable.h |   51 +++++++++++++++++++++++++++++++++++++--
- 1 files changed, 48 insertions(+), 3 deletions(-)
+ mm/mempolicy.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 49afb3f..7514fa6 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -109,7 +109,7 @@ static inline int pte_write(pte_t pte)
- 
- static inline int pte_file(pte_t pte)
- {
--	return pte_flags(pte) & _PAGE_FILE;
-+	return (pte_flags(pte) & _PAGE_FILE) == _PAGE_FILE;
- }
- 
- static inline int pte_huge(pte_t pte)
-@@ -405,7 +405,9 @@ static inline int pte_same(pte_t a, pte_t b)
- 
- static inline int pte_present(pte_t a)
- {
--	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
-+	/* _PAGE_NUMA includes _PAGE_PROTNONE */
-+	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
-+			       _PAGE_NUMA_PTE);
- }
- 
- static inline int pte_hidden(pte_t pte)
-@@ -415,7 +417,46 @@ static inline int pte_hidden(pte_t pte)
- 
- static inline int pmd_present(pmd_t pmd)
- {
--	return pmd_flags(pmd) & _PAGE_PRESENT;
-+	return pmd_flags(pmd) & (_PAGE_PRESENT | _PAGE_PROTNONE |
-+				 _PAGE_NUMA_PMD);
-+}
-+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 88f9422..b6b88f6 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1925,10 +1925,21 @@ retry_cpuset:
+ 	 */
+ 	if (pol->mode == MPOL_INTERLEAVE)
+ 		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
+-	else
++	else {
++		int nid;
 +#ifdef CONFIG_AUTONUMA
-+static inline int pte_numa(pte_t pte)
-+{
-+	return (pte_flags(pte) &
-+		(_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
-+}
-+
-+static inline int pmd_numa(pmd_t pmd)
-+{
-+	return (pmd_flags(pmd) &
-+		(_PAGE_NUMA_PMD|_PAGE_PRESENT)) == _PAGE_NUMA_PMD;
-+}
++		nid = -1;
++		if (current->sched_autonuma)
++			nid = current->sched_autonuma->autonuma_node;
++		if (nid < 0)
++			nid = numa_node_id();
++#else
++		nid = numa_node_id();
 +#endif
-+
-+static inline pte_t pte_mknotnuma(pte_t pte)
-+{
-+	pte = pte_clear_flags(pte, _PAGE_NUMA_PTE);
-+	return pte_set_flags(pte, _PAGE_PRESENT|_PAGE_ACCESSED);
-+}
-+
-+static inline pmd_t pmd_mknotnuma(pmd_t pmd)
-+{
-+	pmd = pmd_clear_flags(pmd, _PAGE_NUMA_PMD);
-+	return pmd_set_flags(pmd, _PAGE_PRESENT|_PAGE_ACCESSED);
-+}
-+
-+static inline pte_t pte_mknuma(pte_t pte)
-+{
-+	pte = pte_set_flags(pte, _PAGE_NUMA_PTE);
-+	return pte_clear_flags(pte, _PAGE_PRESENT);
-+}
-+
-+static inline pmd_t pmd_mknuma(pmd_t pmd)
-+{
-+	pmd = pmd_set_flags(pmd, _PAGE_NUMA_PMD);
-+	return pmd_clear_flags(pmd, _PAGE_PRESENT);
- }
+ 		page = __alloc_pages_nodemask(gfp, order,
+-				policy_zonelist(gfp, pol, numa_node_id()),
++				policy_zonelist(gfp, pol, nid),
+ 				policy_nodemask(gfp, pol));
++	}
  
- static inline int pmd_none(pmd_t pmd)
-@@ -474,6 +515,10 @@ static inline pte_t *pte_offset_kernel(pmd_t *pmd, unsigned long address)
- 
- static inline int pmd_bad(pmd_t pmd)
- {
-+#ifdef CONFIG_AUTONUMA
-+	if (pmd_numa(pmd))
-+		return 0;
-+#endif
- 	return (pmd_flags(pmd) & ~_PAGE_USER) != _KERNPG_TABLE;
- }
- 
+ 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+ 		goto retry_cpuset;
