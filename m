@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755371Ab2EYHel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 03:34:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59471 "EHLO mga03.intel.com"
+	id S1755731Ab2EYHfZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 03:35:25 -0400
+Received: from mga11.intel.com ([192.55.52.93]:53314 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab2EYHeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 03:34:36 -0400
+	id S1754488Ab2EYHfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 03:35:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="147676114"
-Subject: [PATCH 3/4] scsi: queue async scan work to an async_schedule domain
+   d="scan'208";a="171212332"
+Subject: [RFT PATCH 0/4] fix / cleanup async scsi scanning
 To: mroos@linux.ee
 From: Dan Williams <dan.j.williams@intel.com>
-Cc: Len Brown <len.brown@intel.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <JBottomley@parallels.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Fri, 25 May 2012 00:50:38 -0700
-Message-ID: <20120525075037.21933.69967.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com>
-References: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org
+Date: Fri, 25 May 2012 00:50:22 -0700
+Message-ID: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com>
 User-Agent: StGit/0.16-1-g7004
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,60 +24,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is preparation to enable async_synchronize_full() to be used as a
-replacement for scsi_complete_async_scans(), i.e. to stop leaking scsi
-internal details where they are not needed.
+Commit a7a20d10 "[SCSI] sd: limit the scope of the async probe domain"
+introduces a boot regression by moving sd probe work off of the global
+async queue.  Using a local async domain hides the probe work from being
+synchronized by wait_for_device_probe()->async_synchronize_full().
 
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Fix this by teaching async_synchronize_full() to flush all async work
+regardless of domain, and take the opportunity to convert scsi scanning
+to async_schedule().  This enables wait_for_device_probe() to flush scsi
+scanning work.
+
+Lightly boot tested, Meelis does this fix your regression?
+
+Thanks for your help.
+
+--
+Dan
+
 ---
- drivers/scsi/scsi_scan.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 5e00e09..fb42aa0 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -1847,14 +1847,13 @@ static void do_scsi_scan_host(struct Scsi_Host *shost)
- 	}
- }
- 
--static int do_scan_async(void *_data)
-+static void do_scan_async(void *_data, async_cookie_t c)
- {
- 	struct async_scan_data *data = _data;
- 	struct Scsi_Host *shost = data->shost;
- 
- 	do_scsi_scan_host(shost);
- 	scsi_finish_async_scan(data);
--	return 0;
- }
- 
- /**
-@@ -1863,7 +1862,6 @@ static int do_scan_async(void *_data)
-  **/
- void scsi_scan_host(struct Scsi_Host *shost)
- {
--	struct task_struct *p;
- 	struct async_scan_data *data;
- 
- 	if (strncmp(scsi_scan_type, "none", 4) == 0)
-@@ -1878,9 +1876,11 @@ void scsi_scan_host(struct Scsi_Host *shost)
- 		return;
- 	}
- 
--	p = kthread_run(do_scan_async, data, "scsi_scan_%d", shost->host_no);
--	if (IS_ERR(p))
--		do_scan_async(data);
-+	/* register with the async subsystem so wait_for_device_probe()
-+	 * will flush this work
-+	 */
-+	async_schedule(do_scan_async, data);
-+
- 	/* scsi_autopm_put_host(shost) is called in scsi_finish_async_scan() */
- }
- EXPORT_SYMBOL(scsi_scan_host);
+Dan Williams (4):
+      async: introduce 'async_domain' type
+      async: make async_synchronize_full() flush all work regardless of domain
+      scsi: queue async scan work to an async_schedule domain
+      scsi: cleanup usages of scsi_complete_async_scans
 
+
+ drivers/regulator/core.c      |    2 +-
+ drivers/scsi/libsas/sas_ata.c |    2 +-
+ drivers/scsi/scsi.c           |    3 ++-
+ drivers/scsi/scsi_priv.h      |    3 ++-
+ drivers/scsi/scsi_scan.c      |   24 ++++++------------------
+ drivers/scsi/scsi_wait_scan.c |   15 +++++----------
+ include/linux/async.h         |   20 ++++++++++++++++----
+ include/scsi/scsi_scan.h      |   11 -----------
+ kernel/async.c                |   36 ++++++++++++++++++++----------------
+ kernel/power/hibernate.c      |    8 --------
+ kernel/power/user.c           |    2 --
+ 11 files changed, 53 insertions(+), 73 deletions(-)
+ delete mode 100644 include/scsi/scsi_scan.h
