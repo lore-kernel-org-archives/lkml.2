@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758681Ab2EYUas (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:30:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48893 "EHLO
+	id S1757183Ab2EYU0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:26:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62607 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218Ab2EYU0V (ORCPT
+	with ESMTP id S1757036Ab2EYU0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:26:21 -0400
+	Fri, 25 May 2012 16:26:12 -0400
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
         dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
         agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
         bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
         sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v3 09/16] block: Add bio_clone_kmalloc()
-Date: Fri, 25 May 2012 13:25:32 -0700
-Message-Id: <1337977539-16977-10-git-send-email-koverstreet@google.com>
+Subject: [PATCH v3 02/16] dm: Use bioset's front_pad for dm_rq_clone_bio_info
+Date: Fri, 25 May 2012 13:25:25 -0700
+Message-Id: <1337977539-16977-3-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.9.3.327.g2980b
 In-Reply-To: <1337977539-16977-1-git-send-email-koverstreet@google.com>
 References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
@@ -24,91 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Change-Id: I4aad3ae23640e847056f9de54d6cb75b0ddaa85b
----
- drivers/block/osdblk.c |    3 +--
- fs/bio.c               |   13 +++++++++++++
- fs/exofs/ore.c         |    5 ++---
- include/linux/bio.h    |    1 +
- 4 files changed, 17 insertions(+), 5 deletions(-)
+Previously, dm_rq_clone_bio_info needed to be freed by the bio's
+destructor to avoid a memory leak in the blk_rq_prep_clone() error path.
+This gets rid of a memory allocation and means we can kill
+dm_rq_bio_destructor.
 
-diff --git a/drivers/block/osdblk.c b/drivers/block/osdblk.c
-index 87311eb..1bbc681 100644
---- a/drivers/block/osdblk.c
-+++ b/drivers/block/osdblk.c
-@@ -266,11 +266,10 @@ static struct bio *bio_chain_clone(struct bio *old_chain, gfp_t gfpmask)
- 	struct bio *tmp, *new_chain = NULL, *tail = NULL;
+Change-Id: I4ed2b9dbd1dffd44ad15bc3de89d3c3b6bc7714a
+
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ drivers/md/dm.c |   31 +++++--------------------------
+ 1 file changed, 5 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 40b7735..4014696 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -92,6 +92,7 @@ struct dm_rq_target_io {
+ struct dm_rq_clone_bio_info {
+ 	struct bio *orig;
+ 	struct dm_rq_target_io *tio;
++	struct bio clone;
+ };
  
- 	while (old_chain) {
--		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
-+		tmp = bio_clone_kmalloc(old_chain, gfpmask);
- 		if (!tmp)
- 			goto err_out;
- 
--		__bio_clone(tmp, old_chain);
- 		tmp->bi_bdev = NULL;
- 		gfpmask &= ~__GFP_WAIT;
- 		tmp->bi_next = NULL;
-diff --git a/fs/bio.c b/fs/bio.c
-index 62c4af81..d212ee2 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -489,6 +489,19 @@ struct bio *bio_clone(struct bio *bio, gfp_t gfp_mask)
+ union map_info *dm_get_mapinfo(struct bio *bio)
+@@ -467,16 +468,6 @@ static void free_rq_tio(struct dm_rq_target_io *tio)
+ 	mempool_free(tio, tio->md->tio_pool);
  }
- EXPORT_SYMBOL(bio_clone);
  
-+struct bio *bio_clone_kmalloc(struct bio *bio, gfp_t gfp_mask)
-+{
-+	struct bio *b = bio_kmalloc(gfp_mask, bio->bi_max_vecs);
-+
-+	if (!b)
-+		return NULL;
-+
-+	__bio_clone(b, bio);
-+
-+	return b;
-+}
-+EXPORT_SYMBOL(bio_clone_kmalloc);
-+
- /**
-  *	bio_get_nr_vecs		- return approx number of vecs
-  *	@bdev:  I/O target
-diff --git a/fs/exofs/ore.c b/fs/exofs/ore.c
-index 49cf230..95c7264 100644
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -820,8 +820,8 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
- 			struct bio *bio;
+-static struct dm_rq_clone_bio_info *alloc_bio_info(struct mapped_device *md)
+-{
+-	return mempool_alloc(md->io_pool, GFP_ATOMIC);
+-}
+-
+-static void free_bio_info(struct dm_rq_clone_bio_info *info)
+-{
+-	mempool_free(info, info->tio->md->io_pool);
+-}
+-
+ static int md_in_flight(struct mapped_device *md)
+ {
+ 	return atomic_read(&md->pending[READ]) +
+@@ -1438,30 +1429,17 @@ void dm_dispatch_request(struct request *rq)
+ }
+ EXPORT_SYMBOL_GPL(dm_dispatch_request);
  
- 			if (per_dev != master_dev) {
--				bio = bio_kmalloc(GFP_KERNEL,
--						  master_dev->bio->bi_max_vecs);
-+				bio = bio_clone_kmalloc(master_dev->bio,
-+							GFP_KERNEL);
- 				if (unlikely(!bio)) {
- 					ORE_DBGMSG(
- 					      "Failed to allocate BIO size=%u\n",
-@@ -830,7 +830,6 @@ static int _write_mirror(struct ore_io_state *ios, int cur_comp)
- 					goto out;
- 				}
+-static void dm_rq_bio_destructor(struct bio *bio)
+-{
+-	struct dm_rq_clone_bio_info *info = bio->bi_private;
+-	struct mapped_device *md = info->tio->md;
+-
+-	free_bio_info(info);
+-	bio_free(bio, md->bs);
+-}
+-
+ static int dm_rq_bio_constructor(struct bio *bio, struct bio *bio_orig,
+ 				 void *data)
+ {
+ 	struct dm_rq_target_io *tio = data;
+-	struct mapped_device *md = tio->md;
+-	struct dm_rq_clone_bio_info *info = alloc_bio_info(md);
+-
+-	if (!info)
+-		return -ENOMEM;
++	struct dm_rq_clone_bio_info *info =
++		container_of(bio, struct dm_rq_clone_bio_info, clone);
  
--				__bio_clone(bio, master_dev->bio);
- 				bio->bi_bdev = NULL;
- 				bio->bi_next = NULL;
- 				per_dev->offset = master_dev->offset;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 486233c..8f280f7 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -220,6 +220,7 @@ extern int bio_phys_segments(struct request_queue *, struct bio *);
+ 	info->orig = bio_orig;
+ 	info->tio = tio;
+ 	bio->bi_end_io = end_clone_bio;
+ 	bio->bi_private = info;
+-	bio->bi_destructor = dm_rq_bio_destructor;
  
- extern void __bio_clone(struct bio *, struct bio *);
- extern struct bio *bio_clone(struct bio *, gfp_t);
-+struct bio *bio_clone_kmalloc(struct bio *, gfp_t);
+ 	return 0;
+ }
+@@ -2696,7 +2674,8 @@ struct dm_md_mempools *dm_alloc_md_mempools(unsigned type, unsigned integrity)
+ 	if (!pools->tio_pool)
+ 		goto free_io_pool_and_out;
  
- extern void bio_init(struct bio *);
- extern void bio_reset(struct bio *);
+-	pools->bs = bioset_create(pool_size, 0);
++	pools->bs = bioset_create(pool_size,
++				  offsetof(struct dm_rq_clone_bio_info, orig));
+ 	if (!pools->bs)
+ 		goto free_tio_pool_and_out;
+ 
 -- 
 1.7.9.3.327.g2980b
 
