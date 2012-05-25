@@ -1,162 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab2EYIod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:44:33 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57514 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290Ab2EYIo3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:44:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FBF3CD1.7030603@linux.vnet.ibm.com>
-References: <4FBDFDA6.5010304@linux.vnet.ibm.com>
-	<4FBF185F.4060007@linux.vnet.ibm.com>
-	<4FBF3CD1.7030603@linux.vnet.ibm.com>
-Date: Fri, 25 May 2012 10:44:27 +0200
-Message-ID: <CABPqkBS6cdUkKgC1Jp_pzMWxDKZYJtomoZUx6g2z739y=TkPAw@mail.gmail.com>
-Subject: Re: [PATCH] perf record: Fixing record option data type in parse_branch_stack
-From: Stephane Eranian <eranian@google.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1756299Ab2EYIpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:45:33 -0400
+Received: from mailfw02.zoner.fi ([84.34.147.249]:6551 "EHLO mailfw02.zoner.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752075Ab2EYIp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 04:45:29 -0400
+X-Greylist: delayed 650 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 May 2012 04:45:28 EDT
+Date: Fri, 25 May 2012 11:34:32 +0300
+From: Lasse Collin <lasse.collin@tukaani.org>
+To: T Makphaibulchoke <tmac@hp.com>
+Cc: lethal@linux-sh.org, hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, kaloz@openwrt.org, matt.fleming@intel.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux@arm.linux.org.uk, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, linux390@de.ibm.com
+Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper
+ functions
+Message-ID: <20120525113432.3beea6ed@tukaani.org>
+In-Reply-To: <1337875436-27640-1-git-send-email-tmac@hp.com>
+References: <1337875436-27640-1-git-send-email-tmac@hp.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Antivirus-Scanner: Clean mail though you should still use an Antivirus
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2012-05-24 T Makphaibulchoke wrote:
+> The patch cleans up the file lib/decompress_unxz.c by removing all
+> memory helper functions, e.g., memmove.  By doing so, any
+> architecture's preboot environment supporting the XZ decompression
+> needs to define its own copy of any of the missing memory helper
+> functions.
 
-It should be something like that instead:
+Is it best to copy these functions to each arch, or would it be better
+to have a shared file from which these functions could be pulled for
+multiple archs? I wasn't sure when I wrote decompress_unxz.c, which is
+why I put the extra functions there as a temporary solution.
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 8a9687e..c9ca7c4 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -228,7 +228,7 @@ struct perf_record_opts {
-        unsigned int freq;
-        unsigned int mmap_pages;
-        unsigned int user_freq;
--       int          branch_stack;
-+       u64          branch_stack;
-        u64          default_interval;
-        u64          user_interval;
- };
+> Adding both the missing memmove and memcmp functions, required by the
+> XZ decompressor, to the sh preboot environment.
+> 
+> Adding the missing memmove function, required by XZ decompressor, to
+> the x86 preboot environment.
 
+These already have memcpy. It can save a few bytes if one reused
+memmove as memcpy when using XZ compression. I got a difference of 48
+bytes on x86_64.
 
-On Fri, May 25, 2012 at 10:03 AM, Anshuman Khandual
-<khandual@linux.vnet.ibm.com> wrote:
-> perf record: Fixing record option data type in parse_branch_stack
->
->        Currently parse_branch_stack does not update record.opts.branch_stack
->        value in powerpc architecture. opt->value is declared as int in struct
->        perf_record_opts. But is worked on as uint64_t isnide the function.
->        This breaks functionality in poweprc due to bit representation
->        of uint64_t which is inaccessible as int.
->
-> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> ---
->  tools/perf/builtin-record.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index e5cb084..161c0f1 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -677,7 +677,7 @@ parse_branch_stack(const struct option *opt, const char *str, int unset)
->         PERF_SAMPLE_BRANCH_KERNEL      |\
->         PERF_SAMPLE_BRANCH_HV)
->
-> -       uint64_t *mode = (uint64_t *)opt->value;
-> +       int *mode = (int *)opt->value;
->        const struct branch_mode *br;
->        char *s, *os = NULL, *p;
->        int ret = -1;
-> --
-> 1.7.9.5
->
->
->
-> On Friday 25 May 2012 10:57 AM, Anshuman Khandual wrote:
->
->> This code is breaking in powerpc systems.
->>
->> (1) 'opt->value' gets updated inside the function parse_branch_stack via
->>     dereferencing a (uint64_t *) type casted pointer.
->>
->> (2) But the value is not accessible when we again use opt->value via
->>     dereferencing a (int *) type casted pointer.
->>
->> (3) As a result record.opts.branch_stack remains 0 and unchanged by parse_branch_stack
->>
->> This is caused by bit representation of 'uint64_t' and 'int' in powerpc systems. Bytes update
->> for the data (when accessed trough (uint64_t *) casting) is no longer available to the
->> data when accessed through (int *) type casting. Verified this from bit representation of
->> the data (accessed through both type casting methods).
->>
->> However this problem does not seem to be present on an Intel box. Integer dereferencing of
->> the opt->value still gives the value which was updated as (uint64_t).
->>
->> All this problem would not have been there if we had used (int *) instead of (uint64_t *) in
->> the first place inside parse_branch_stack function.
->>
->> On Thursday 24 May 2012 02:51 PM, Anshuman Khandual wrote:
->>
->>> Hey Stephane,
->>>
->>> Just wondering why we used the type casting of (uint64_t *) on a data
->>> which is defined as "int" in the structure of "perf_record_opts".
->>>
->>> struct perf_record_opts {
->>>         struct perf_target target;
->>>         bool         call_graph;
->>>         bool         group;
->>>         bool         inherit_stat;
->>>         bool         no_delay;
->>>         bool         no_inherit;
->>>         bool         no_samples;
->>>         bool         pipe_output;
->>>         bool         raw_samples;
->>>         bool         sample_address;
->>>         bool         sample_time;
->>>         bool         sample_id_all_missing;
->>>         bool         exclude_guest_missing;
->>>         bool         period;
->>>         unsigned int freq;
->>>         unsigned int mmap_pages;
->>>         unsigned int user_freq;
->>>         int          branch_stack;
->>>         u64          default_interval;
->>>         u64          user_interval;
->>> };
->>>
->>> static int
->>> parse_branch_stack(const struct option *opt, const char *str, int unset)
->>> {
->>> #define ONLY_PLM \
->>>         (PERF_SAMPLE_BRANCH_USER        |\
->>>          PERF_SAMPLE_BRANCH_KERNEL      |\
->>>          PERF_SAMPLE_BRANCH_HV)
->>>
->>>         uint64_t *mode = (uint64_t *)opt->value;
->>> --
->>> Regards
->>> Anshuman Khandual
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
+Adding memmove to string.c on x86 means that memmove is included in the
+kernel image even when memmove isn't needed. With gzip compression I
+got 128 bytes bigger image on x86_64 after adding the unneeded memmove
+to string.c.
+
+I don't know if those size increases matter in practice.
+
+> + * To support XZ-decompressed file in preboot environment, the
+
+s/XZ-decompressed/XZ-compressed/ :-)
+
+-- 
+Lasse Collin  |  IRC: Larhzu @ IRCnet & Freenode
