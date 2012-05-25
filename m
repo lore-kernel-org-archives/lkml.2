@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab2EYUfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:35:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43449 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754682Ab2EYUfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:35:18 -0400
-Message-ID: <4FBFEC74.7090602@zytor.com>
-Date: Fri, 25 May 2012 13:32:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S934014Ab2EYUgj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:36:39 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:47472 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933208Ab2EYUgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 16:36:37 -0400
+Date: Fri, 25 May 2012 16:26:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 03/35] xen: document Xen is using an unused bit for the
+ pagetables
+Message-ID: <20120525202656.GA23655@phenom.dumpdata.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-4-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Sam Ravnborg <sam@ravnborg.org>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 1/4] [-next] Makefile: Do not call cc-option before including
- the arch's Makefile
-References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org> <20120520092744.GA21341@merkur.ravnborg.org> <4FBF7B34.2080506@suse.cz>
-In-Reply-To: <4FBF7B34.2080506@suse.cz>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337965359-29725-4-git-send-email-aarcange@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 05:29 AM, Michal Marek wrote:
->>
->> Michal - was this serie ever applied to kbuild?
-> 
-> The first patch has to go to the tip tree, where the CONFIG_READABLE_ASM
-> option is introduced. The remaining patches can go to the individual
-> arch trees, I see Geert already pushed the m68k one.
-> 
+On Fri, May 25, 2012 at 07:02:07PM +0200, Andrea Arcangeli wrote:
+> Xen has taken over the last reserved bit available for the pagetables
+> which is set through ioremap, this documents it and makes the code
+> more readable.
 
-OK, can you ack it, please?
-
-	-hpa
-
+Andrea, my previous respone had a question about this - was wondering
+if you had a chance to look at that in your busy schedule and provide
+some advice on how to remove the _PAGE_IOMAP altogether?
