@@ -1,123 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050Ab2EYKEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 06:04:13 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:60114 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab2EYKEL (ORCPT
+	id S1754299Ab2EYKKg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 06:10:36 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43820 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302Ab2EYKKR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 06:04:11 -0400
-Message-ID: <4FBF5916.4070705@atmel.com>
-Date: Fri, 25 May 2012 12:04:06 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 25 May 2012 06:10:17 -0400
 MIME-Version: 1.0
-To: Peter Korsgaard <jacmet@sunsite.dk>, <herbert@gondor.hengli.com.au>
-CC: <jamie@jamieiles.com>, <linux-kernel@vger.kernel.org>, <GPontis@z9.com>,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] hw_random: atmel-rng: fix race condition leading to repeated
- bits
-References: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
-In-Reply-To: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.159.245.112]
+In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D170230E5ADF@NWD2CMBX1.ad.analog.com>
+References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
+	<1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
+	<CAM=Q2csSuQ3R9U=XKwj9F0xijTxx_ULperAiQYD_X3a5GKVjFg@mail.gmail.com>
+	<DB904C5425BA6F4E8424B3B51A1414D170230E5ADF@NWD2CMBX1.ad.analog.com>
+Date: Fri, 25 May 2012 15:40:16 +0530
+Message-ID: <CAM=Q2cveBrYUiNYEbUgXyTnK2JhVD8UyhGgYJ=Zr86YnMMJ6Dg@mail.gmail.com>
+Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
+ Macro to head file.
+From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
+To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "uclinux-dist-devel@blackfin.uclinux.org" 
+	<uclinux-dist-devel@blackfin.uclinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 11:12 AM, Peter Korsgaard :
-> Data valid gets cleared by reading the ISR (status register) and NOT from
-> reading ODATA (data register). A new data word can become available between
-> checking ISR and reading ODATA, causing us to reuse the same data word next
-> time atmel_trng_read() gets called, if that happens before the following
-> data word is ready.
+Hi ,
+On Fri, May 25, 2012 at 3:24 PM, Zhang, Sonic <Sonic.Zhang@analog.com> wrote:
+>
+>
+>>-----Original Message-----
+>>From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
+>>Sent: Friday, May 25, 2012 5:48 PM
+>>To: Zhang, Sonic
+>>Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux-dist-
+>>devel@blackfin.uclinux.org
+>>Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
+>>Macro to head file.
+>>
+>>Hi ,
+>>Some minor comments/ doubts.
+>>On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
+>>> From: Sonic Zhang <sonic.zhang@analog.com>
+>>>
+>>
+>>A small description may be helpful.
+>>Also the $SUBJECT says move the patch looks more like the remove.
+>>Am I missing something.
+>
+> The subject says these definitions are moved to a head file by the other patch for Blackfin architecture.
 
-Hi Peter, thanks for finding this...
+Got it thanks.
 
-> With this fixed, rngtest no longer complains of 'Continous run' errors.
-> Before:
-> 
-> rngtest -c 1000 < /dev/hwrng
-> rngtest 3
-> Copyright (c) 2004 by Henrique de Moraes Holschuh
-> This is free software; see the source for copying conditions.  There is NO warr.
-> 
-> rngtest: starting FIPS tests...
-> rngtest: bits received from input: 20000032
-> rngtest: FIPS 140-2 successes: 923
-> rngtest: FIPS 140-2 failures: 77
-> rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-> rngtest: FIPS 140-2(2001-10-10) Poker: 0
-> rngtest: FIPS 140-2(2001-10-10) Runs: 1
-> rngtest: FIPS 140-2(2001-10-10) Long run: 0
-> rngtest: FIPS 140-2(2001-10-10) Continuous run: 76
-> rngtest: input channel speed: (min=721.402; avg=46003.510; max=49321.338)Kibitss
-> rngtest: FIPS tests speed: (min=11.442; avg=12.714; max=12.801)Mibits/s
-> rngtest: Program run time: 1931860 microseconds
-> 
-> After:
-> 
-> rngtest -c 1000 < /dev/hwrng
-> rngtest 3
-> Copyright (c) 2004 by Henrique de Moraes Holschuh
-> This is free software; see the source for copying conditions.  There is NO warr.
-> 
-> rngtest: starting FIPS tests...
-> rngtest: bits received from input: 20000032
-> rngtest: FIPS 140-2 successes: 1000
-> rngtest: FIPS 140-2 failures: 0
-> rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-> rngtest: FIPS 140-2(2001-10-10) Poker: 0
-> rngtest: FIPS 140-2(2001-10-10) Runs: 0
-> rngtest: FIPS 140-2(2001-10-10) Long run: 0
-> rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
-> rngtest: input channel speed: (min=777.518; avg=36988.482; max=43115.342)Kibitss
-> rngtest: FIPS tests speed: (min=11.951; avg=12.715; max=12.887)Mibits/s
-> rngtest: Program run time: 2035543 microseconds
-> 
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-> Reported-by: George Pontis <GPontis@z9.com>
-> ---
->  drivers/char/hw_random/atmel-rng.c |    7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
-> index d7ab920..731c904 100644
-> --- a/drivers/char/hw_random/atmel-rng.c
-> +++ b/drivers/char/hw_random/atmel-rng.c
-> @@ -36,6 +36,13 @@ static int atmel_trng_read(struct hwrng *rng, void *buf, size_t max,
->  	/* data ready? */
->  	if (readl(trng->base + TRNG_ISR) & 1) {
->  		*data = readl(trng->base + TRNG_ODATA);
-> +		/*
-> +		  ensure data ready is only set again AFTER the next data
-> +		  word is ready in case it got set between checking ISR
-> +		  and reading ODATA, so we don't risk re-reading the
-> +		  same word
-> +		*/
-> +		readl(trng->base + TRNG_ISR);
->  		return 4;
->  	} else
->  		return 0;
+You may want to add a dependency otherwise it might lead to a compilation break?
 
-What about a single read to ISR like this:
 
-tmp = readl(trng->base + TRNG_ODATA);
-if (readl(trng->base + TRNG_ISR) & 1) {
-	*data = tmp;
-	return 4;
-} else {
-  	return 0;
-}
-
-But it is true that there is always 2 reads in case of data not
-available, instead of just one: I cannot figure out which solution is
-the fastest: your thoughts?
-
-Bye,
--- 
-Nicolas Ferre
+>
+> Regards,
+>
+> Sonic
