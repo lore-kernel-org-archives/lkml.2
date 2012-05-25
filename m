@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab2EYVtK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 17:49:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40724 "EHLO
+	id S1757323Ab2EYVtP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 17:49:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40735 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907Ab2EYVtI (ORCPT
+	with ESMTP id S1755907Ab2EYVtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 17:49:08 -0400
+	Fri, 25 May 2012 17:49:12 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anshuman Khandual <khandual@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Franck Bui-Huu <fbuihuu@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/5 v2] perf top: Fix counter name fixup when fallbacking to cpu-clock
-Date: Fri, 25 May 2012 18:48:57 -0300
-Message-Id: <1337982539-2882-4-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/5 v2] perf/urgent fixes
+Date: Fri, 25 May 2012 18:48:54 -0300
+Message-Id: <1337982539-2882-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1337982539-2882-1-git-send-email-acme@infradead.org>
-References: <1337982539-2882-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,56 +30,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-In 40491eaa "perf top: Update event name when falling back to cpu-clock"
-we freed counter->name but didn't reset it to NULL, then when setting it
-to the result of event_name(), event_name() would use the cached value,
-which by now was overwritten and thus we got garbage or a zero lenght
-string.
+	There was a problem in the previous series, the 4 patches that ended up
+being posted were not the 4 on perf/urgent, but on my local perf/core branch,
+so I'm reposting now and have resigned the perf-urgent-for-mingo signed tag.
 
-Fix it by just freeing and setting counter->name to NULL, this way
-event_name() when called afterwards, will find the right counter name
-and cache it again.
+	Please consider pulling and sorry for the thinko,
 
-Found while trying 'cycles:pp' on a machine were :pp couldn't be
-honoured. Probably the best fallback here is to tell the user that that
-level of precision is not available on the PMU and then go removing 'p',
-levels of precision till we get to play 'cycles' and if even that fails,
-_then_ get to 'cpu-clock'.
+- Arnaldo
 
-But that is the matter for another patch, this one just needs to fix the
-caching issue, which in the end will show 'cpu-clock' when tools ask for
-the event name being used, which clarifies things for the user, that
-will see that 'cycles:pp' or whatever not support event is not being
-used, some sort of fallback happened.
+The following changes since commit eaec12d7f526694f24d581a4ad23de6ce0315cd2:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-w1neie2dqli89we1bzwkf4id@git.kernel.org
+  tools lib traceevent: Fix signature of create_arg_item() (2012-05-24 11:36:05 -0300)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+
+for you to fetch changes up to a00dc319e98161949aa87f71a17db32e925c3257:
+
+  perf record: Fix branch_stack type in perf_record_opts (2012-05-25 18:32:44 -0300)
+
+----------------------------------------------------------------
+Fixes for perf/urgent.
+
+. Fix build on newer distros where _FORTIFY_SOURCE needs optimization enable.
+
+. Fix event name caching when fallbacking to cpu-clock
+
+. Event name reconstruction from perf_event_attr now include modifiers.
+
+. Elliminate leak on error path when parsing pid/tid list, From Franck Bui-Huu.
+
+. Fix type problems resulting in endianness problems on PPC64, from Stephane Eranian.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6031dce..d4a5f9b 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -953,7 +953,7 @@ try_again:
- 				attr->config = PERF_COUNT_SW_CPU_CLOCK;
- 				if (counter->name) {
- 					free(counter->name);
--					counter->name = strdup(event_name(counter));
-+					counter->name = NULL;
- 				}
- 				goto try_again;
- 			}
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (3):
+      perf tools: Do not use _FORTIFY_SOURCE when DEBUG=1 is specified
+      perf top: Fix counter name fixup when fallbacking to cpu-clock
+      perf tools: Reconstruct event with modifiers from perf_event_attr
 
+Franck Bui-Huu (1):
+      perf tools: fix thread_map__new_by_pid_str() memory leak in error path
+
+Stephane Eranian (1):
+      perf record: Fix branch_stack type in perf_record_opts
+
+ tools/perf/Makefile            |    4 +-
+ tools/perf/builtin-top.c       |    2 +-
+ tools/perf/perf.h              |    2 +-
+ tools/perf/util/evsel.c        |   90 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |    3 ++
+ tools/perf/util/parse-events.c |   27 +++++-------
+ tools/perf/util/thread_map.c   |   21 +++++-----
+ 7 files changed, 118 insertions(+), 31 deletions(-)
