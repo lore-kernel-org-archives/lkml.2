@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab2EYIIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:08:11 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:46057 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab2EYIIA (ORCPT
+	id S1756240Ab2EYIKF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:10:05 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:23280
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755587Ab2EYIJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:08:00 -0400
+	Fri, 25 May 2012 04:09:58 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+Date: Fri, 25 May 2012 16:09:44 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <linuxzsc@gmail.com>, <shawn.guo@gmail.com>, <kernel@pengutronix.de>
+Subject: Re: [PATCH 1/1] dma: imx-sdma: buf_tail should be initialize in
+ prepare function
+Message-ID: <20120525080943.GA18733@b20223-02.ap.freescale.net>
+References: <1337603494-27464-1-git-send-email-richard.zhao@freescale.com>
+ <20120524032026.GB17621@S2101-09.ap.freescale.net>
+ <20120524032659.GA19682@b20223-02.ap.freescale.net>
+ <20120524033356.GC17621@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-In-Reply-To: <20120525023222.GC30024@home.goodmis.org>
-References: <20120523002645.GA3490@redhat.com> <CACVXFVMz_GKHXpzbqt24yY=fHJ6uYZPOcSnKNFHrvbdpWxc7tw@mail.gmail.com>
- <CA+1xoqf0G3kDY3c4Gb=RkQZ8_L+but6-uUjtSVfvYUf6iL2_JA@mail.gmail.com>
- <20120524121056.24fbdcdb@pyramind.ukuu.org.uk> <CA+1xoqegLYLsP5yWw7d7oMngUSgZjXePJu_b6E-yw4aBE8Qhgg@mail.gmail.com>
- <CA+1xoqc3MrwfDnf9iCRLCedapZOtOfmBb6E84ORgwmdP1fx8QA@mail.gmail.com>
- <CA+1xoqeD3yyOgmLe_eQ_PS=HJA=93Syidtk6rq-K9dBoC-DOzQ@mail.gmail.com>
- <20120524155457.56e37df2@bob.linux.org.uk> <20120525023222.GC30024@home.goodmis.org>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Fri, 25 May 2012 10:07:38 +0200
-Message-ID: <CA+1xoqfCQutidqdwb3ysCtajHF2r0zNLc4H+X7cYpxrmjoqAvg@mail.gmail.com>
-Subject: Re: 3.4+ tty lockdep trace
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Alan Cox <alan@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ming Lei <tom.leiming@gmail.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120524033356.GC17621@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 4:32 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, May 24, 2012 at 03:54:57PM +0100, Alan Cox wrote:
->> On Thu, 24 May 2012 13:24:56 +0200
->> Sasha Levin <levinsasha928@gmail.com> wrote:
->> >
->> > And here is the second one attached as well, so these are two
->> > different warnings I get with the new version.
->>
->>
->> I'm somewhat baffled by this one. Can lockdep be fooled by an object
->> being freed and reallocated at the same address, Is there any markup
->> that should be present to avoid that ?
->
-> Sasha,
->
-> Did you apply Ming's second patch. His first patch (the one referenced
-> in the email) didn't have the unlock fixup.
+On Thu, May 24, 2012 at 11:33:58AM +0800, Shawn Guo wrote:
+> On Thu, May 24, 2012 at 11:27:00AM +0800, Richard Zhao wrote:
+> > > root@linaro-developer:~# aplay audio8k16S.wav
+> > > Playing WAVE 'audio8k16S.wav' : Signed 16 bit Little Endian, Rate 8000 Hz, Stere
+> > > o
+> > > ^Z
+> > > [1]+  Stopped                 aplay audio8k16S.wav
+> > > root@linaro-developer:~# fg
+> > > aplay audio8k16S.wav
+> > > underrun!!! (at least 2034.382 ms long)
+> > Does the audio playback recover? Without the patch, sometimes the
+> > playback will have distortion and play too fast.
+> > 
+> No, it does not recover.
+Maybe it's not the same issue. It do recover on imx6q sabrelite board.
+And from source code, it do be a bug.
 
-Nope, I just got the first one.
+Thanks
+Richard
+> 
+> -- 
+> Regards,
+> Shawn
+> 
 
-What's the right patchset to use atm? I know about these patches from
-Ming, and I see Alan sent out two patches yesterday. Which ones should
-I use for testing?
