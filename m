@@ -1,96 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab2EYOk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:40:29 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:9423 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755855Ab2EYOk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:40:27 -0400
-Subject: [PATCH v2] NFSd: fix locking in nfsd_forget_delegations()
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 25 May 2012 18:38:50 +0400
-Message-ID: <20120525143843.15863.27213.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1756196Ab2EYOkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:40:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51998 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297Ab2EYOki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 10:40:38 -0400
+Date: Fri, 25 May 2012 11:40:34 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: dsahern@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] perf tools: fix thread_map__new_by_pid_str() memory
+ leak in error path
+Message-ID: <20120525144034.GF2336@infradead.org>
+References: <1337952109-31995-1-git-send-email-fbuihuu@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337952109-31995-1-git-send-email-fbuihuu@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2: dl_recall_lru list is used for delegations collect because it's modified
-both in unhash_delegation() and nfsd_break_one_deleg().
+Em Fri, May 25, 2012 at 03:21:49PM +0200, Franck Bui-Huu escreveu:
+> namelist array (including its content) was not freed if we fail
+> to realloc a new 'threads' structure.
+> 
+> Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
 
-This patch adds recall_lock hold to nfsd_forget_delegations() to protect
-nfsd_process_n_delegations() call.
-Also, looks like it would be better to collect delegations to some local
-on-stack list, and then unhash collected list. This split allows to
-simplify locking, because delegation traversing is protected by recall_lock,
-when delegation unhash is protected by client_mutex.
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfs4state.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
-
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 21266c7..3d6848b 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4694,7 +4694,7 @@ void nfsd_forget_openowners(u64 num)
- 	printk(KERN_INFO "NFSD: Forgot %d open owners", count);
- }
- 
--int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegation *))
-+int nfsd_process_n_delegations(u64 num, struct list_head *list)
- {
- 	int i, count = 0;
- 	struct nfs4_file *fp, *fnext;
-@@ -4703,7 +4703,7 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
- 	for (i = 0; i < FILE_HASH_SIZE; i++) {
- 		list_for_each_entry_safe(fp, fnext, &file_hashtbl[i], fi_hash) {
- 			list_for_each_entry_safe(dp, dnext, &fp->fi_delegations, dl_perfile) {
--				deleg_func(dp);
-+				list_move(&dp->dl_recall_lru, list);
- 				if (++count == num)
- 					return count;
- 			}
-@@ -4716,9 +4716,16 @@ int nfsd_process_n_delegations(u64 num, void (*deleg_func)(struct nfs4_delegatio
- void nfsd_forget_delegations(u64 num)
- {
- 	unsigned int count;
-+	LIST_HEAD(victims);
-+	struct nfs4_delegation *dp, *dnext;
-+
-+	spin_lock(&recall_lock);
-+	count = nfsd_process_n_delegations(num, &victims);
-+	spin_unlock(&recall_lock);
- 
- 	nfs4_lock_state();
--	count = nfsd_process_n_delegations(num, unhash_delegation);
-+	list_for_each_entry_safe(dp, dnext, &victims, dl_recall_lru)
-+		unhash_delegation(dp);
- 	nfs4_unlock_state();
- 
- 	printk(KERN_INFO "NFSD: Forgot %d delegations", count);
-@@ -4727,10 +4734,16 @@ void nfsd_forget_delegations(u64 num)
- void nfsd_recall_delegations(u64 num)
- {
- 	unsigned int count;
-+	LIST_HEAD(victims);
-+	struct nfs4_delegation *dp, *dnext;
- 
- 	nfs4_lock_state();
- 	spin_lock(&recall_lock);
--	count = nfsd_process_n_delegations(num, nfsd_break_one_deleg);
-+	count = nfsd_process_n_delegations(num, &victims);
-+	list_for_each_entry_safe(dp, dnext, &victims, dl_recall_lru) {
-+		list_del(&dp->dl_recall_lru);
-+		nfsd_break_one_deleg(dp);
-+	}
- 	spin_unlock(&recall_lock);
- 	nfs4_unlock_state();
- 
-
+Thanks, applied.
