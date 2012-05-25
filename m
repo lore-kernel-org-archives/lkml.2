@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464Ab2EYEph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 00:45:37 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:59412 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2EYEpg (ORCPT
+	id S1752419Ab2EYE5g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 00:57:36 -0400
+Received: from ip-relay-001.utdallas.edu ([129.110.20.111]:63131 "EHLO
+	ip-relay-001.utdallas.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2EYE5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 00:45:36 -0400
-Message-ID: <4FBF0DF9.5040806@linaro.org>
-Date: Thu, 24 May 2012 21:43:37 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: Jiri Slaby <jslaby@suse.cz>, lkml <linux-kernel@vger.kernel.org>
-Subject: tty_lock lockdep warning
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052504-7282-0000-0000-0000095264D3
+	Fri, 25 May 2012 00:57:34 -0400
+X-Group: RELAYLIST
+X-IronPort-AV: E=Sophos;i="4.75,654,1330927200"; 
+   d="scan'208";a="98570397"
+From: Qasim Javed <qasimj@gmail.com>
+To: linux-wireless@vger.kernel.org, devel@lists.open80211s.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, ravip@utdallas.edu,
+        Qasim Javed <qasimj@gmail.com>
+Subject: [RFC] mac80211: Use correct originator sequence number in a Path Reply
+Date: Fri, 25 May 2012 03:21:11 -0500
+Message-Id: <1337934071-29342-1-git-send-email-qasimj@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Alan,
-	I've been seeing the following lockdep warning w/ Linus' 3.5-rc HEAD 
-from today. This is running x86_64 in a kvm environment.
+Sorry for the duplicate email. As suggested by Julian I have marked this as RFC (was PATCH previously), so that people can comment on it.
 
-Let me know if there are any other details you'd like from me.
+I have been doing some experiments using the 802.11s functionality in the mac80211 stack. Today I stumbled across something which I believe is a critical bug in the usage of originator sequence number for a Path Reply message upon the reception of a Path Request message.
 
-thanks
--john
+Consider the following topology:
 
+                    +---+
+                    | S |
+                    +---+
+                  /      \
+                 /        \
+            +---+          +---+
+            | A |          | B |
+            +---+          +---+
+                 \         /
+                  \       /
+                    +---+
+                    | D |
+                    +---+
 
-=============================================
-[ INFO: possible recursive locking detected ]
-3.4.0john+ #347 Not tainted
----------------------------------------------
-plymouthd/1345 is trying to acquire lock:
-  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81b10091>] tty_lock+0x61/0xb0
+Node S is the source node and D the destination. Clearly there are two possible paths from S to D namely S->A->D and S->B->D. When S wants to communicate with D, it will broadcast a Path Request (PREQ) where the originator will be S and target will be D. On receiving the PREQ, both A and B will broadcast it further to D. Let us assume that aggregate value of the metric for path D->B->S denoted by cost(DBS) is greater than cost(DAS). Notice that according to HWMP operation, when the PREQ is propagating from S to D, the cost on the "reverse" path is aggregated, that is why I used cost(DB) + cost(BS) for cost(DBS) and did not consider cost(SBD). Suppose also that smaller the metric the better it is which is the case for the default airtime link metric used by the 802.11s stack.
 
-but task is already holding lock:
-  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81b10091>] tty_lock+0x61/0xb0
+Let us suppose that the PREQ which passes through B arrives first at D and as mentioned earlier has a larger (worse) value than the soon to be received PREQ through the intermediate hop A. When D receives a PREQ from B, since it has not received any other PREQ, it generates a Path Reply (PREP). More specifically, the function hwmp_preq_frame_process generates the PREP. The PREQ contains originator and target sequence numbers which are used to avoid loops and ascertain the freshness of route information. On receiving a PREQ at D, the above mentioned function checks whether dot11MeshHWMPnetDiameterTraversalTime has elapsed since the last sequence number update (stored in ifmsh->last_sn_update). So suppose this is true when the first PREQ via B is received at D. So, in this case the originator sequence number in PREP is incremented (that is becomes one more than the target sequence number in the PREQ).
 
-other info that might help us debug this:
-  Possible unsafe locking scenario:
+Let us look at an example at this point. Suppose, the the originator sequence number in the PREQ is 1 and the target sequence number is 2. When this PREQ is received at D via B, and considering that dot11MeshHWMPnetDiameterTraversalTime have passed since the last sequence number update, we will increment the target sequence number which now becomes 3. Now for the PREP, the originator sequence number of PREQ, 1 in this case, becomes the target sequence number of PREP and the target sequence number of the PREQ (which has been updated and its value is 3) becomes the originator sequence number of the PREP.
 
-        CPU0
-        ----
-   lock(&tty->legacy_mutex);
-   lock(&tty->legacy_mutex);
+As this PREQ which was received at D via B has a larger metric, we know that when the PREQ from S is received via A, it will have a lower (better) metric, hence we will also generate a PREP for that PREQ. Suppose the second PREQ via A is received at D within dot11MeshHWMPnetDiameterTraversalTime (currently 50ms). This is a reasonable assumption since the PREQ is broadcast by S and further broadcast by A and B in some order. There is very less likelihood that the time difference between the PREQ from A and B would be greater than 50ms since this is a lot of time in 802.11 speak where the nodes are contending for the channel on the order of hundreds of microseconds (typically). In short, it is very likely (confirmed through experiments) that this difference is less than 50ms.
 
-  *** DEADLOCK ***
+So, when the PREQ from S arrives a D via A, since most likely this event happens within 50ms if the PREQ via B, the target sequence number will not be updated. Therefore, the originator sequence number stays at 1 and the target sequence number remains 2. It is very important to note that the code in hwmp_preq_frame_process just "swaps" the originator and target sequence numbers for use in the PREP. More specifically as mentioned earlier, the second PREP will have an originator sequence number of 2 and a target sequence number of 1.
 
-  May be due to missing lock nesting notation
+At this point, we have two PREPs in flight, one via B and one via A.
 
-2 locks held by plymouthd/1345:
-  #0:  (tty_mutex){+.+.+.}, at: [<ffffffff81417122>] tty_release+0x1e2/0x600
-  #1:  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff81b10091>] 
-tty_lock+0x61/0xb0
+PREP via B: originator sequence number = 3, target sequence number = 1
+PREP via A: originator sequence number = 2, target sequence number = 1
 
-stack backtrace:
-Pid: 1345, comm: plymouthd Not tainted 3.4.0john+ #347
-Call Trace:
-  [<ffffffff81044727>] ? vprintk_emit+0x287/0x5d0
-  [<ffffffff810b63b6>] validate_chain+0xf36/0x1380
-  [<ffffffff8108b433>] ? sched_clock_local+0x43/0xb0
-  [<ffffffff8108b6df>] ? local_clock+0x6f/0x80
-  [<ffffffff810b0ee9>] ? trace_hardirqs_off_caller+0x29/0x140
-  [<ffffffff810b6c3e>] __lock_acquire+0x43e/0xb80
-  [<ffffffff810b7431>] lock_acquire+0xb1/0x210
-  [<ffffffff81b10091>] ? tty_lock+0x61/0xb0
-  [<ffffffff81b0c273>] mutex_lock_nested+0x73/0x4b0
-  [<ffffffff81b10091>] ? tty_lock+0x61/0xb0
-  [<ffffffff81b10091>] ? tty_lock+0x61/0xb0
-  [<ffffffff81b10091>] tty_lock+0x61/0xb0
-  [<ffffffff81b1013d>] tty_lock_pair+0x5d/0x64
-  [<ffffffff8141712d>] tty_release+0x1ed/0x600
-  [<ffffffff811851e8>] fput+0x138/0x2e0
-  [<ffffffff81416d18>] tty_ioctl+0xb68/0xd40
-  [<ffffffff81b0fee1>] ? _raw_spin_unlock_irqrestore+0x71/0xa0
-  [<ffffffff81198d94>] do_vfs_ioctl+0xa4/0x5c0
-  [<ffffffff8141d12c>] ? put_ldisc+0x11c/0x190
-  [<ffffffff8141d1de>] ? tty_ldisc_deref+0xe/0x10
-  [<ffffffff81413887>] ? tty_compat_ioctl+0xc7/0xf0
-  [<ffffffff811ded87>] compat_sys_ioctl+0x257/0x1220
-  [<ffffffff81b12138>] ? sysenter_dispatch+0x19/0x26
-  [<ffffffff81392ffd>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-  [<ffffffff81b12126>] sysenter_dispatch+0x7/0x26
-  [<ffffffff81392fbe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+The net effect is that when these PREPs reach S, irrespective of the order in which they arrive, the PREP via A will be ignored! This is very wrong since the reason we sent the PREP via A in the first place was that it had a better metric (albeit on the reverse path).
+
+I have not tested the patch yet. This is more of a heads up email to let everyone know.
+
+Signed-off-by: Qasim Javed <qasimj@gmail.com>
+---
+ net/mac80211/mesh_hwmp.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/mac80211/mesh_hwmp.c b/net/mac80211/mesh_hwmp.c
+index 70ac7d1..a13b593 100644
+--- a/net/mac80211/mesh_hwmp.c
++++ b/net/mac80211/mesh_hwmp.c
+@@ -543,6 +543,8 @@ static void hwmp_preq_frame_process(struct ieee80211_sub_if_data *sdata,
+ 		    time_before(jiffies, ifmsh->last_sn_update)) {
+ 			target_sn = ++ifmsh->sn;
+ 			ifmsh->last_sn_update = jiffies;
++		} else {
++			target_sn = ifmsh->sn;
+ 		}
+ 	} else {
+ 		rcu_read_lock();
+-- 
+1.7.1
 
