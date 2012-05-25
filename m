@@ -1,132 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615Ab2EYEQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 00:16:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33428 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab2EYEQx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 00:16:53 -0400
+	id S1751796Ab2EYEax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 00:30:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50822 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751053Ab2EYEaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 00:30:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="144487903"
+Message-ID: <4FBF0AC1.6030406@linux.intel.com>
+Date: Thu, 24 May 2012 21:29:53 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FAB8EB5.8080901@jp.fujitsu.com>
-References: <1336588657.26723.23.camel@andre> <4FAB8EB5.8080901@jp.fujitsu.com>
-From: Zhu Yanhai <zhu.yanhai@gmail.com>
-Date: Fri, 25 May 2012 12:16:33 +0800
-Message-ID: <CAC8teKXWuzANxCVuV1c+A4Qyh5i7Ws=H5=f-oph72Di_XJFdAQ@mail.gmail.com>
-Subject: Re: About cgroup memory limits
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andre Nathan <andre@digirati.com.br>, linux-kernel@vger.kernel.org,
-        balbir@linux.vnet.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "lkml, " <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>,
+        Carmine Iascone <carmine.iascone@st.com>,
+        Matteo Dameno <matteo.dameno@st.com>
+Subject: LIS331DLH accelerometer driver, IIO or not?
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/10 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>:
-> (2012/05/10 3:37), Andre Nathan wrote:
->
->> Hello
->>
->> I'm doing some tests with LXC and how it interacts with the memory
->> cgroup limits, more specifically the memory.limit_in_bytes control file.
->>
->> Am I correct in my understanding of the memory cgroup documentation[1]
->> that the limit set in memory.limit_in_bytes is applied to the sum of the
->> fields 'cache', 'rss' and 'mapped_file' in the memory.stat file?
->>
->
-> cache includes mapped_file. Then,
+I'm working to enable the LIS331DLH accelerometer on the Fish River
+Island II embedded atom development kit.
 
-Excuse me, but it does read:
+http://www.st.com/internet/analog/product/218132.jsp
 
-	switch (ctype) {
-	case MEM_CGROUP_CHARGE_TYPE_CACHE:
-	case MEM_CGROUP_CHARGE_TYPE_SHMEM:
-		SetPageCgroupCache(pc);
-		SetPageCgroupUsed(pc);
-		break;
-	case MEM_CGROUP_CHARGE_TYPE_MAPPED:
-		ClearPageCgroupCache(pc);
-		SetPageCgroupUsed(pc);
-		break;
-	default:
-		break;
-	}
-	mem_cgroup_charge_statistics(mem, pc, page_size);
+http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
 
-And then, in 	mem_cgroup_charge_statistics() we have :
+This device is attached to an i2c bus implemented in a CPLD (complex
+programmable logic device) integrated on the compute module. I found an
+IIO driver for the device written for 2.6.34. I've rewritten most of the
+driver to work with the 3.2 kernel's IIO subsystem (and had planned to
+next port it all the way to git HEAD and push it upstream).
 
-	if (PageCgroupCache(pc))
-		__mem_cgroup_stat_add_safe(cpustat,
-			MEM_CGROUP_STAT_CACHE, numpages);
-	else
-		__mem_cgroup_stat_add_safe(cpustat, MEM_CGROUP_STAT_RSS,
-			numpages);
+However, I've since stumbled across a couple of things which cloud the
+issue for me.
 
-So it seems that rss includes mapped_file, not cache?
+First, Carmine Iascone submitted a driver (driver/misc, not iio) for the
+LIS331DLH back in Nov 2010.
 
->
-> rss + cache < limit.
->
-> cache - mapped_file == unmapped file caches.
->
->
->> I am also trying to understand the values reported in memory.stat when
->> compared to the statistics in /proc/$PID/statm.
->>
->> Below is the sum of each field in /proc/$PID/statm for every process
->> running inside a test container, converted to bytes:
->>
->>        size  resident     share     text  lib       data  dt
->>   897208320  28741632  20500480  1171456    0  170676224   0
->>
->
-> from statm source code.
->
-> size      = total virtual memory size
->            # total amount of mmaps().
->
-> shared    = mapped_file
->            # resident mapped file caches
->
-> text      = end_code - start_code
->            # end_code and start_code is determined when the program is loaded.
->            # this is virtual memory size.
->
-> data      = total virtual memory size  - MAP_SHARED virtual memory size.
->
-> regisdent = anonymous pages + mapped_file.
->
->
->> Compare this with the usage reports from memory.stat (fields total_*,
->> hierarchical_* and pg* omitted):
->>
->> cache                     16834560
->> rss                       8192000
->> mapped_file               3743744
->> swap                      0
->> inactive_anon             0
->> active_anon               8192000
->> inactive_file             13996032
->> active_file               2838528
->> unevictable               0
->>
->> Is there a way to reconcile these numbers somehow? I understand that the
->> fields from the two files represent different things. What I'm trying to
->> do is to combine, for example, the fields from memory.stat to
->> approximately reach what is displayed by statm.
->>
->
->
-> From above, rss + mapped_file == resident.
->
-> Thanks,
-> -Kame
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+http://lkml.org/lkml/2010/11/9/369
+
+It was suggested that this driver be merged with the existing lis3lv02d
+driver which listed support for a similar chip in the header, LIS331DL,
+but it also lists LIS331DLF as not supported. The current git HEAD still
+does not list LIS331DLH, and there is not a compatible register map in
+the header.
+
+Second, I came across the following TI document for porting the
+LIS331DLH driver for Android:
+
+http://processors.wiki.ti.com/index.php/TI-Android-GingerBread-2.3.4-DevKit-2.1_PortingGuides
+
+This references a lis331dlh.c driver which I do not find in Linus' git
+repository nor in linux-next.
+
+So there are 3 ways I can go about this, and I'd appreciate any
+direction on which would be the most acceptable for merging upstream.
+
+1) Continue with my IIO version. This subsystem seems well suited to the
+accelerometer. The iio_chan_spec simplifies the task of exposing the
+event capabilities of the device, which the drivers/misc/lis3lv02d
+driver mostly glosses over. It only supports events on free-fall for
+example, while with IIO it is straight forward to enable interrupts for
+rising and/or falling thresholds for each axis independently.
+
+2) Attempt to merge Carmine's drivers/misc/lis331dlh driver with the
+existing lis3lv02d driver as suggested in the thread mentioned above.
+This driver isn't as fully functional.
+
+3) Try and dig up the lis331dlh driver referenced in the TI document and
+work to get that upstream. Like option 2, this driver is not likely to
+be as configurable as the IIO driver.
+
+I am more interested in enabling people to do bizarre and interesting
+things with the device, so I'm leaning toward continuing with my IIO
+implementation.
+
+Thanks!
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
