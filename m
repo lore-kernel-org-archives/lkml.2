@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759564Ab2EYAaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 20:30:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47819 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753939Ab2EYAaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 20:30:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="157010816"
-Message-ID: <4FBED22F.1030607@intel.com>
-Date: Fri, 25 May 2012 08:28:31 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+	id S964820Ab2EYAbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 20:31:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51869 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759425Ab2EYAbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 20:31:17 -0400
+Date: Thu, 24 May 2012 17:31:14 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, bharrosh@panasas.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v2 04/14] block: Add bio_clone_kmalloc()
+Message-ID: <20120525003114.GF22664@google.com>
+References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
+ <1337817771-25038-5-git-send-email-koverstreet@google.com>
+ <20120524185919.GE27550@redhat.com>
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Andrew Lutomirski <luto@mit.edu>,
-        Jan Beulich <JBeulich@suse.com>, borislav.petkov@amd.com,
-        arnd@arndb.de, akinobu.mita@gmail.com, eric.dumazet@gmail.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, hughd@google.com,
-        jeremy@goop.org, len.brown@intel.com, tony.luck@intel.com,
-        yongjie.ren@intel.com, kamezawa.hiroyu@jp.fujitsu.com,
-        seto.hidetoshi@jp.fujitsu.com, penberg@kernel.org, yinghai@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, ak@linux.intel.com,
-        avi@redhat.com, dhowells@redhat.com, mingo@redhat.com, riel@redhat.com,
-        cpw@sgi.com, steiner@sgi.com, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, hpa@zytor.com,
-        "asit.k.mallick@intel.com" <asit.k.mallick@intel.com>
-Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
- of SMT
-References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>  <1337782555-8088-9-git-send-email-alex.shi@intel.com>  <4FBD18D20200007800085951@nat28.tlf.novell.com>  <1337792984.9783.37.camel@laptop> <1337793338.9783.38.camel@laptop>  <CAObL_7GEzHYV9RbinPmK5D3DkZLiV0Wbz6j8x-Agbi21BM_OgA@mail.gmail.com>  <1337845230.9783.51.camel@laptop>  <CAObL_7FK8Pb7Ahmr0SBaPg1BvPTspr=EKG8v_QfcpdmMyuE5dA@mail.gmail.com> <1337865811.9783.152.camel@laptop> <4FBE39FE.4050001@linux.intel.com> <4FBE3D95.8030501@intel.com> <4FBE4335.6020602@linux.intel.com> <4FBE4671.2090408@intel.com> <4FBE5D01.8040809@linux.intel.com>
-In-Reply-To: <4FBE5D01.8040809@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524185919.GE27550@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 12:08 AM, Arjan van de Ven wrote:
+On Thu, May 24, 2012 at 02:59:19PM -0400, Vivek Goyal wrote:
+> On Wed, May 23, 2012 at 05:02:41PM -0700, Kent Overstreet wrote:
+> 
+> [..]
+> > diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+> > index 013c7a5..5a953c6 100644
+> > --- a/drivers/block/rbd.c
+> > +++ b/drivers/block/rbd.c
+> > @@ -729,7 +729,7 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+> >  	}
+> >  
+> >  	while (old_chain && (total < len)) {
+> > -		tmp = bio_kmalloc(gfpmask, old_chain->bi_max_vecs);
+> > +		tmp = bio_clone_kmalloc(old_chain, gfpmask);
+> >  		if (!tmp)
+> >  			goto err_out;
+> >  
+> > @@ -751,13 +751,9 @@ static struct bio *bio_chain_clone(struct bio **old, struct bio **next,
+> >  			if (!bp)
+> >  				goto err_out;
+> >  
+> > -			__bio_clone(tmp, &bp->bio1);
+> > -
+> >  			*next = &bp->bio2;
+> 
+> Is this code correct. Now original code might clone bio after split and
+> new code will clone the original bio itself and not the split one?
 
-> On 5/24/2012 7:32 AM, Alex Shi wrote:
->>>>> we really really shouldn't do flushing of tlb's on only one half of SMT.
->>
->>>>> SMT sibblings have their own TLB pool at least on some of Intels chips.
->>>>
->>>>
->>>> That is also the biggest question I want to know. Actually, some
->>>> documents, wiki said the SMT sibling just has process registers and
->>>> interrupt part, no any tlb/l1 cache etc, (like intel's doc
->>>> vol6iss1_hyper_threading_technology.pdf).  And the patch runs well on
->>>> NHM EP/WSM EP/NHM EX/SNB EP CPUs.
->>>>
->>>> But hard to get such clearly per cpu info of SMT/HT, so, what the
->>>> detailed Intel chips has 'TLB pool' on SMT?
->>>
->>> all of them.
->>>
->>> the TLB pool is shared as physical resource (dynamic or static, that
->>> depends), but each tlb entry will be tagged for which of the two HT
->>> pairs it's for, and on a logical level, they are completely separate as
->>> a result (as they should be)
->>
->>
->> But, why just flush part of SMT doesn't crash kernel on many benchmarks
->> testing? 
-> 
-> stale tlb's don't crash the kernel
-> they do random weird **** to userspace processes.
-> 
-> you REALLY don't want to be debugging those.
-> 
-> There is absolutely NO GUARANTEE that a full tlbflush on one thread
-> flushes the other one. (in fact I'd be surprised if it actually did).
-> 
-> Also remember that there are several levels of TLB and tlb caches, and
-> you HAVE to flush all.
+Argh, you're right, I screwed that up.
 
-
-Thanks for comments!
-BTW,
-As my limited knowledge, rewrite cr3 or invlpg will flush all levels TLB
-entries in CPU. So, what's you mean of 'HAVE to flush all'?
+I'd like to get rid of all the open coded bio_clone()s out there (to
+reduce the amount of code that "Only clone bio vecs that are in use" has
+to change, but this code is too tricky - I'm just going to drop this
+bit.
