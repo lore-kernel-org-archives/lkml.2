@@ -1,70 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933989Ab2EYUmX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:42:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40623 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab2EYUmV convert rfc822-to-8bit (ORCPT
+	id S933417Ab2EYUpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:45:31 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42164 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab2EYUpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:42:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FBFEB49.7050901@brockmann-consult.de>
-References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
-	<CAB9VWqAV+TohoMP0pcP6D6SEWB4o40XbHQssO1_Mbz3d_kUHaA@mail.gmail.com>
-	<4FBFEB49.7050901@brockmann-consult.de>
-Date: Fri, 25 May 2012 22:42:21 +0200
-Message-ID: <CAB9VWqAnv2vyQDmw6+JKzj61+W-mWWV3ZmX-PNECm2RMEpkyqQ@mail.gmail.com>
-Subject: Re: atime and filesystems with snapshots (especially Btrfs)
-From: Alexander Block <ablock84@googlemail.com>
-To: Peter Maloney <peter.maloney@brockmann-consult.de>
-Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 May 2012 16:45:30 -0400
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4FBFEACC.8040601@fastmail.fm>
+References: <4FBFEACC.8040601@fastmail.fm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 22:45:25 +0200
+Message-ID: <1337978725.10135.0.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 10:27 PM, Peter Maloney
-<peter.maloney@brockmann-consult.de> wrote:
-> On 05/25/2012 09:10 PM, Alexander Block wrote:
->> Just to show some numbers I made a simple test on a fresh btrfs fs. I
->> copied my hosts /usr (4 gig) folder to that fs and checked metadata
->> usage with "btrfs fi df /mnt", which was around 300m. Then I created
->> 10 snapshots and checked metadata usage again, which didn't change
->> much. Then I run "grep foobar /mnt -R" to update all files atime.
->> After this was finished, metadata usage was 2.59 gig. So I lost 2.2
->> gig just because I searched for something. If someone already has
->> nearly no space left, he probably won't be able to move some data to
->> another disk, as he may get ENOSPC while copying the data.
->>
->> Here is the output of the final "btrfs fi df":
->>
->> # btrfs fi df /mnt
->> Data: total=6.01GB, used=4.19GB
->> System, DUP: total=8.00MB, used=4.00KB
->> System: total=4.00MB, used=0.00
->> Metadata, DUP: total=3.25GB, used=2.59GB
->> Metadata: total=8.00MB, used=0.00
->>
->> I don't know much about other filesystems that support snapshots, but
->> I have the feeling that most of them would have the same problem. Also
->> all other filesystems in combination with LVM snapshots may cause
->> problems (I'm not very familiar with LVM). Filesystem image formats,
->> like qcow, vmdk, vbox and so on may also have problems with atime.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Did you run the recursive grep after each snapshot (which I would expect
-> would result in 11 times as many metadata blocks, max 3.3 GB), or just
-> once after all 10 snapshots (which I think would mean only 2x as many
-> metadata blocks, max 600 MB)?
->
+On Fri, 2012-05-25 at 21:25 +0100, Jack Stone wrote:
+> Hi All,
+> 
+> The following warning keeps hitting me. I couldn't get the first one - it had already left dmesg hence the W taint.
+> The C taint is from r8712u from staging.
+> 
+> I've seen it with 3.4.0-076444-g07acfc2 (recent Linus tree) and 3.4.0-rc3-00089-gc6f5c93.
+> 
+> I am going to attempt to bisect it now.
 
-I've run it only once after creating all snapshots. My expectation is that
-in both cases the result is the same. If all snapshots have the file /foo/bar,
-then each individual snapshotted copy of it would have a different atime
-and thus an own metadata block for it. As this happens with all files, no
-matter how i iterated the files, then nearly all metadata blocks get their
-own copy.
+No need, update your tree.
+
+
+
