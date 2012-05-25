@@ -1,139 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933380Ab2EYTgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 15:36:06 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:16614 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932290Ab2EYTgC (ORCPT
+	id S1758447Ab2EYThW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 15:37:22 -0400
+Received: from mail-lpp01m010-f74.google.com ([209.85.215.74]:64836 "EHLO
+	mail-lpp01m010-f74.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752220Ab2EYThU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 15:36:02 -0400
-Message-ID: <4FBFDF20.8060408@tilera.com>
-Date: Fri, 25 May 2012 15:36:00 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 25 May 2012 15:37:20 -0400
+Date: Fri, 25 May 2012 13:37:16 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+Message-ID: <20120525193716.GA8817@google.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+ <1337754877-19759-3-git-send-email-yinghai@kernel.org>
+ <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+ <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+ <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+ <20120525043651.GA1391@google.com>
+ <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+ <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/tile update for 3.5
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, May 25, 2012 at 11:39:26AM -0700, Yinghai Lu wrote:
+> On Fri, May 25, 2012 at 10:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> >> I don't really like the dependency on PCIBIOS_MAX_MEM_32 + 1ULL
+> >> overflowing to zero -- that means the reader has to know what the
+> >> value of PCIBIOS_MAX_MEM_32 is, and things would break in non-obvious
+> >> ways if we changed it.
+> >>
+> 
+> please check if attached one is more clear.
+> 
+> make max and bottom is only related to _MEM and not default one.
+> 
+> -       if (!(res->flags & IORESOURCE_MEM_64))
+> -               max = PCIBIOS_MAX_MEM_32;
+> +       if (res->flags & IORESOURCE_MEM) {
+> +               if (!(res->flags & IORESOURCE_MEM_64))
+> +                       max = PCIBIOS_MAX_MEM_32;
+> +               else if (PCIBIOS_MAX_MEM_32 != -1)
+> +                       bottom = (resource_size_t)(1ULL<<32);
+> +       }
+> 
+> will still not affect to other arches.
 
-Please pull the following changes for 3.5 from:
+That's goofy.  You're proposing to make only x86_64 and x86-PAE try to put
+64-bit BARs above 4GB.  Why should this be specific to x86?  I acknowledge
+that there's risk in doing this, but if it's a good idea for x86_64, it
+should also be a good idea for other 64-bit architectures.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
+And testing for "is this x86_32 without PAE?" with
+"PCIBIOS_MAX_MEM_32 == -1" is just plain obtuse and hides an
+important bit of arch-specific behavior.
 
-These changes cover a range of new arch/tile features and optimizations.
-They've been through LKML review and on linux-next for a month or so.
-There's also one bug-fix that just missed 3.4, which I've marked for stable.
+Tangential question about allocate_resource():  Is its "max" argument
+really necessary?  We'll obviously only allocate from inside the root
+resource, so "max" is just a way to artificially avoid the end of
+that resource.  Is there really a case where that's required?
 
-Chris Metcalf (15):
-      arch/tile: use interrupt critical sections less
-      arch/tile: allow building Linux with transparent huge pages enabled
-      arch/tile: support building big-endian kernel
-      arch/tile: optimize get_user/put_user and friends
-      arch/tile: Allow tilegx to build with either 16K or 64K page size
-      arch/tile: support <asm/cachectl.h> header for cacheflush() syscall
-      arch/tile: support kexec() for tilegx
-      mm: add new arch_make_huge_pte() method for tile support
-      arch/tile: support multiple huge page sizes dynamically
-      arch/tile: fix hardwall for tilegx and generalize for idn and ipi
-      arch/tile: allow querying cpu module information from the hypervisor
-      arch/tile: add descriptive text if the kernel reports a bad trap
-      arch/tile: mark TILEGX as not EXPERIMENTAL
-      tile: fix bug where fls(0) was not returning 0
-      tile: default to tilegx_defconfig for ARCH=tile
+"min" makes sense because in a case like this, it's valid to allocate from
+anywhere in the root resource, but we want to try to allocate from the >4GB
+part first, then fall back to allocating from the whole resource.  I'm not
+sure there's a corresponding case for "max."
 
-Kautuk Consul (1):
-      tile/mm/fault.c: Port OOM changes to handle_page_fault
+Getting back to this patch, I don't think we should need to adjust "max" at
+all.  For example, this:
 
- arch/tile/Kconfig                                  |   43 +-
- arch/tile/Makefile                                 |    7 +-
- arch/tile/include/arch/spr_def_32.h                |   56 ++
- arch/tile/include/arch/spr_def_64.h                |   43 ++
- arch/tile/include/asm/Kbuild                       |    2 +-
- arch/tile/include/asm/atomic_32.h                  |   10 +
- arch/tile/include/asm/bitops.h                     |   12 +-
- arch/tile/include/asm/byteorder.h                  |   20 +
- arch/tile/include/asm/cachectl.h                   |   42 ++
- arch/tile/include/asm/compat.h                     |    3 -
- arch/tile/include/asm/elf.h                        |    5 +
- arch/tile/include/asm/futex.h                      |  143 +++--
- arch/tile/include/asm/hardwall.h                   |   18 +-
- arch/tile/include/asm/hugetlb.h                    |   21 +
- arch/tile/include/asm/irqflags.h                   |   34 +-
- arch/tile/include/asm/kexec.h                      |   12 +
- arch/tile/include/asm/mmu.h                        |    2 +-
- arch/tile/include/asm/mmu_context.h                |    8 +-
- arch/tile/include/asm/module.h                     |   40 +
- arch/tile/include/asm/page.h                       |   18 +-
- arch/tile/include/asm/pgalloc.h                    |   92 ++-
- arch/tile/include/asm/pgtable.h                    |  111 +++-
- arch/tile/include/asm/pgtable_32.h                 |   40 +-
- arch/tile/include/asm/pgtable_64.h                 |   57 +-
- arch/tile/include/asm/processor.h                  |   17 +-
- arch/tile/include/asm/setup.h                      |   10 +-
- arch/tile/include/asm/syscalls.h                   |    3 +-
- arch/tile/include/asm/tlbflush.h                   |   17 +-
- arch/tile/include/asm/uaccess.h                    |  222 ++++---
- arch/tile/include/asm/unistd.h                     |    4 +-
- arch/tile/include/hv/drv_xgbe_intf.h               |    2 +-
- arch/tile/include/hv/hypervisor.h                  |  325 ++++++---
- arch/tile/kernel/Makefile                          |    3 +-
- arch/tile/kernel/entry.S                           |    3 +-
- arch/tile/kernel/hardwall.c                        |  754 +++++++++++++-------
- arch/tile/kernel/head_32.S                         |    8 +-
- arch/tile/kernel/head_64.S                         |   22 +-
- arch/tile/kernel/hvglue.lds                        |    3 +-
- arch/tile/kernel/intvec_64.S                       |   80 ++-
- arch/tile/kernel/machine_kexec.c                   |   42 +-
- arch/tile/kernel/module.c                          |   12 +-
- arch/tile/kernel/proc.c                            |    1 +
- arch/tile/kernel/process.c                         |   16 +-
- .../{relocate_kernel.S => relocate_kernel_32.S}    |    0
- .../{relocate_kernel.S => relocate_kernel_64.S}    |  150 ++---
- arch/tile/kernel/setup.c                           |  169 +++--
- arch/tile/kernel/single_step.c                     |   16 +-
- arch/tile/kernel/smp.c                             |    2 +-
- arch/tile/kernel/sys.c                             |   10 +-
- arch/tile/kernel/sysfs.c                           |    8 +
- arch/tile/kernel/tlb.c                             |   11 +-
- arch/tile/kernel/traps.c                           |   30 +-
- arch/tile/lib/atomic_32.c                          |   47 +--
- arch/tile/lib/exports.c                            |    8 -
- arch/tile/lib/memchr_64.c                          |    8 +-
- arch/tile/lib/memcpy_64.c                          |   23 +-
- arch/tile/lib/memcpy_tile64.c                      |    8 +-
- arch/tile/lib/strchr_64.c                          |   15 +-
- arch/tile/lib/string-endian.h                      |   33 +
- arch/tile/lib/strlen_64.c                          |   11 +-
- arch/tile/lib/usercopy_32.S                        |   76 --
- arch/tile/lib/usercopy_64.S                        |   49 --
- arch/tile/mm/fault.c                               |   34 +-
- arch/tile/mm/homecache.c                           |    1 +
- arch/tile/mm/hugetlbpage.c                         |  285 ++++++--
- arch/tile/mm/init.c                                |   19 +-
- arch/tile/mm/migrate.h                             |    6 +
- arch/tile/mm/migrate_32.S                          |   36 +-
- arch/tile/mm/migrate_64.S                          |   34 +-
- arch/tile/mm/pgtable.c                             |   40 +-
- include/asm-generic/pgtable.h                      |    5 +-
- include/linux/hugetlb.h                            |    8 +
- mm/hugetlb.c                                       |    1 +
- mm/pgtable-generic.c                               |    4 +-
- 74 files changed, 2276 insertions(+), 1254 deletions(-)
- create mode 100644 arch/tile/include/asm/cachectl.h
- create mode 100644 arch/tile/include/asm/module.h
- copy arch/tile/kernel/{relocate_kernel.S => relocate_kernel_32.S} (100%)
- rename arch/tile/kernel/{relocate_kernel.S => relocate_kernel_64.S} (54%)
- create mode 100644 arch/tile/lib/string-endian.h
+commit cb1c8e46244cfd84a1a2fe91be860a74c1cf4e25
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Thu May 24 22:15:26 2012 -0600
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+    PCI: try to allocate 64-bit mem resources above 4GB
+    
+    If we have a 64-bit mem resource, try to allocate it above 4GB first.  If
+    that fails, we'll fall back to allocating space below 4GB.
 
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 4ce5ef2..075e5b1 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -121,14 +121,16 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ {
+ 	int i, ret = -ENOMEM;
+ 	struct resource *r;
+-	resource_size_t max = -1;
++	resource_size_t start = 0;
++	resource_size_t end = MAX_RESOURCE;
+ 
+ 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
+ 
+-	/* don't allocate too high if the pref mem doesn't support 64bit*/
+-	if (!(res->flags & IORESOURCE_MEM_64))
+-		max = PCIBIOS_MAX_MEM_32;
++	/* If this is a 64-bit mem resource, try above 4GB first */
++	if (res->flags & IORESOURCE_MEM_64)
++		start = (resource_size_t) (1ULL << 32);
+ 
++again:
+ 	pci_bus_for_each_resource(bus, r, i) {
+ 		if (!r)
+ 			continue;
+@@ -145,12 +147,18 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ 
+ 		/* Ok, try it out.. */
+ 		ret = allocate_resource(r, res, size,
+-					r->start ? : min,
+-					max, align,
++					max(start, r->start ? : min),
++					end, align,
+ 					alignf, alignf_data);
+ 		if (ret == 0)
+-			break;
++			return 0;
++	}
++
++	if (start != 0) {
++		start = 0;
++		goto again;
+ 	}
++
+ 	return ret;
+ }
+ 
