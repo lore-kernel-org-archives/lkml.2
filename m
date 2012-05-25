@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab2EYWPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 18:15:18 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42059 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752726Ab2EYWPO convert rfc822-to-8bit (ORCPT
+	id S1758829Ab2EYWPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 18:15:37 -0400
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:26653
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756213Ab2EYWPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 18:15:14 -0400
+	Fri, 25 May 2012 18:15:35 -0400
+X-Forefront-Antispam-Report: CIP:157.56.240.117;KIP:(null);UIP:(null);IPV:NLI;H:BL2PRD0610HT005.namprd06.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: PS0(zzzz1202hzzz2fh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FC0047E.9070907@ixiacom.com>
+Date: Fri, 25 May 2012 15:15:26 -0700
+From: Earl Chew <echew@ixiacom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FC0009C.5000704@zytor.com>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
- <1337754877-19759-3-git-send-email-yinghai@kernel.org> <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
- <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
- <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
- <20120525043651.GA1391@google.com> <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
- <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
- <20120525193716.GA8817@google.com> <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
- <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com> <4FC0009C.5000704@zytor.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 25 May 2012 16:14:53 -0600
-Message-ID: <CAErSpo5-Wypc8LMfgE51=Ob0UV1ky9QxKTtaAigU8YyNcXxiQw@mail.gmail.com>
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: <netdev@vger.kernel.org>
+Subject: Inadvertently sending a Christmas Tree TCP packet
+In-Reply-To: <4FBFCFCA.2090501@ixiacom.com>
+References: <4FBFCFCA.2090501@ixiacom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [216.23.154.50]
+X-MS-Exchange-CrossPremises-AuthSource: BL2PRD0610HT005.namprd06.prod.outlook.com
+X-MS-Exchange-CrossPremises-AuthAs: Internal
+X-MS-Exchange-CrossPremises-AuthMechanism: 06
+X-MS-Exchange-CrossPremises-Rules-Execution-History: Support - Juniper
+X-MS-Exchange-CrossPremises-Processed-By-Journaling: Journal Agent
+X-OrganizationHeadersPreserved: BL2PRD0610HT005.namprd06.prod.outlook.com
+X-OriginatorOrg: ixiacom.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 3:58 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/25/2012 02:55 PM, Bjorn Helgaas wrote:
->>
->> I think we actually have a separate bug here.  On 64-bit non-x86
->> architectures, PCIBIOS_MAX_MEM_32 is a 64-bit -1, so the following
->> attempt to avoid putting a 32-bit BAR above 4G only works on x86,
->> where PCIBIOS_MAX_MEM_32 is 0xffffffff.
->>
->>         /* don't allocate too high if the pref mem doesn't support 64bit*/
->>         if (!(res->flags & IORESOURCE_MEM_64))
->>                 max = PCIBIOS_MAX_MEM_32;
->>
->> I think we should fix this with a separate patch that removes
->> PCIBIOS_MAX_MEM_32 altogether, replacing this use with an explicit
->> 0xffffffff (or some other "max 32-bit value" symbol).  I don't think
->> there's anything arch-specific about this.
->>
->> So I'd like to see two patches here:
->>   1) Avoid allocating 64-bit regions for 32-bit BARs
->>   2) Try to allocate regions above 4GB for 64-bit BARs
->
-> Do we also need to track the maximum address available to the CPU?
+I had previously observed the following behaviour captured from WireShark:
 
-We are allocating from the resources available on this bus, which
-means the host bridge apertures or a subset.  If the arch supplies
-those, that should be enough.  If it doesn't, we default to
-iomem_resource.  On x86, we trim that down to only the supported
-address space:
+16220	111.075627	10.64.33.43	10.128.163.100	TCP	59253 > exec [SYN] Seq=0 Win=65535 Len=0 MSS=1460 WS=2
+16222	0.203210	10.128.163.100	10.64.33.43	TCP	exec > 59253 [SYN, ACK] Seq=0 Ack=1 Win=5840 Len=0 MSS=1250 WS=7
+16223	0.000032	10.64.33.43	10.128.163.100	TCP	59253 > exec [ACK] Seq=1 Ack=1 Win=65532 Len=0
+... snip ...
+16237	0.000319	10.128.163.100	10.64.33.43	TCP	exec > 59253 [FIN, PSH, ACK, URG] Seq=31 Ack=30 Win=5888 Urg=1 Len=1
+16240	1.114085	10.128.163.100	10.64.33.43	TCP	[TCP Retransmission] exec > 59253 [FIN, PSH, ACK, URG] Seq=31 Ack=30 Win=5888 Urg=1 Len=1
 
-        iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
 
-But I'm sure some other architectures don't do that yet.  I guess
-that's one of the risks -- if an arch is doesn't tell us the apertures
-and doesn't trim iomem_resource, we could allocate a non-addressable
-region.
+These packets were sent from an application running on Linux 2.6.18. 
 
-Bjorn
+The receiver has become confused, and the so the Linux sender retransmits at packet 16240,
+and continues retransmitting. In this case, the application code at the receiver is blocked
+indefinitely trying to read a socket that seemingly has (URG) data and yet at the same time
+doesn't have any more data (FIN).
+
+Looking at the 2.6.18 source code for tcp_output.c, I see code at tcp_send_fin()
+that is attaching FIN to the packet.
+
+The code in 3.4 seems fairly much the same:
+
+
+/* Send a fin.  The caller locks the socket for us.  This cannot be
+ * allowed to fail queueing a FIN frame under any circumstances.
+ */
+void tcp_send_fin(struct sock *sk)
+{
+	struct tcp_sock *tp = tcp_sk(sk);
+	struct sk_buff *skb = tcp_write_queue_tail(sk);
+	int mss_now;
+
+	/* Optimization, tack on the FIN if we have a queue of
+	 * unsent frames.  But be careful about outgoing SACKS
+	 * and IP options.
+	 */
+	mss_now = tcp_current_mss(sk);
+
+	if (tcp_send_head(sk) != NULL) {
+		TCP_SKB_CB(skb)->tcp_flags |= TCPHDR_FIN;
+		TCP_SKB_CB(skb)->end_seq++;
+		tp->write_seq++;
+	} else {
+
+
+
+The comment block says to be careful about IP options, but
+the code doesn't appear to worry too much.
+
+Is something like:
+
+	if (tcp_send_head(sk) != NULL &&
+		TCP_SKB_CB(skb)->tcp_flags == 0)
+
+more appropriate ?
+
+
+Earl
+
