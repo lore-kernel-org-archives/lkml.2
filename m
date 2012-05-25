@@ -1,65 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab2EYIhN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:37:13 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:17280 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932201Ab2EYIhH (ORCPT
+	id S1755872Ab2EYIod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:44:33 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57514 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab2EYIo3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:37:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-Date: Fri, 25 May 2012 16:56:51 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Marc Reilly <marc@cpdesign.com.au>
-CC: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Fabio Estevam <festevam@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: mc13xxx-core: kernel hangs after 'regmap_read'
-Message-ID: <20120525085649.GA8495@S2100-06.ap.freescale.net>
-References: <201205221053.21792.marc@cpdesign.com.au>
- <20120524064635.GP3710@pengutronix.de>
- <20120524073315.GE7843@S2100-06.ap.freescale.net>
- <201205241908.38278.marc@cpdesign.com.au>
+	Fri, 25 May 2012 04:44:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201205241908.38278.marc@cpdesign.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4FBF3CD1.7030603@linux.vnet.ibm.com>
+References: <4FBDFDA6.5010304@linux.vnet.ibm.com>
+	<4FBF185F.4060007@linux.vnet.ibm.com>
+	<4FBF3CD1.7030603@linux.vnet.ibm.com>
+Date: Fri, 25 May 2012 10:44:27 +0200
+Message-ID: <CABPqkBS6cdUkKgC1Jp_pzMWxDKZYJtomoZUx6g2z739y=TkPAw@mail.gmail.com>
+Subject: Re: [PATCH] perf record: Fixing record option data type in parse_branch_stack
+From: Stephane Eranian <eranian@google.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 07:08:37PM +1000, Marc Reilly wrote:
-> > diff --git a/drivers/mfd/mc13xxx-spi.c b/drivers/mfd/mc13xxx-spi.c
-> > index 3fcdab3..5d1969f 100644
-> > --- a/drivers/mfd/mc13xxx-spi.c
-> > +++ b/drivers/mfd/mc13xxx-spi.c
-> > @@ -49,6 +49,7 @@ static struct regmap_config mc13xxx_regmap_spi_config = {
-> >         .reg_bits = 7,
-> >         .pad_bits = 1,
-> >         .val_bits = 24,
-> > +       .write_flag_mask = 0x80,
-> 
-> Should probably have .read_flag_mask = 0x00, here too. If either are non zero, 
-> both are set.
-> 
-Since mc13xxx_regmap_spi_config is a static variable, .read_flag_mask
-is initialized as 0 already.
+Hi,
 
-> I guess this is the problem, regmap's default read_flag_mask for the spi bus 
-> is 0x80, and the write mask defaults to 0. The mc13xxx works the opposite way 
-> though! aarg. My bad for not noticing. So setting the write_flag_mask to 0x80 
-> also sets the read mask to 0 correctly also.
+It should be something like that instead:
 
--- 
-Regards,
-Shawn
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 8a9687e..c9ca7c4 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -228,7 +228,7 @@ struct perf_record_opts {
+        unsigned int freq;
+        unsigned int mmap_pages;
+        unsigned int user_freq;
+-       int          branch_stack;
++       u64          branch_stack;
+        u64          default_interval;
+        u64          user_interval;
+ };
 
+
+On Fri, May 25, 2012 at 10:03 AM, Anshuman Khandual
+<khandual@linux.vnet.ibm.com> wrote:
+> perf record: Fixing record option data type in parse_branch_stack
+>
+>        Currently parse_branch_stack does not update record.opts.branch_stack
+>        value in powerpc architecture. opt->value is declared as int in struct
+>        perf_record_opts. But is worked on as uint64_t isnide the function.
+>        This breaks functionality in poweprc due to bit representation
+>        of uint64_t which is inaccessible as int.
+>
+> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+> ---
+>  tools/perf/builtin-record.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index e5cb084..161c0f1 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -677,7 +677,7 @@ parse_branch_stack(const struct option *opt, const char *str, int unset)
+>         PERF_SAMPLE_BRANCH_KERNEL      |\
+>         PERF_SAMPLE_BRANCH_HV)
+>
+> -       uint64_t *mode = (uint64_t *)opt->value;
+> +       int *mode = (int *)opt->value;
+>        const struct branch_mode *br;
+>        char *s, *os = NULL, *p;
+>        int ret = -1;
+> --
+> 1.7.9.5
+>
+>
+>
+> On Friday 25 May 2012 10:57 AM, Anshuman Khandual wrote:
+>
+>> This code is breaking in powerpc systems.
+>>
+>> (1) 'opt->value' gets updated inside the function parse_branch_stack via
+>>     dereferencing a (uint64_t *) type casted pointer.
+>>
+>> (2) But the value is not accessible when we again use opt->value via
+>>     dereferencing a (int *) type casted pointer.
+>>
+>> (3) As a result record.opts.branch_stack remains 0 and unchanged by parse_branch_stack
+>>
+>> This is caused by bit representation of 'uint64_t' and 'int' in powerpc systems. Bytes update
+>> for the data (when accessed trough (uint64_t *) casting) is no longer available to the
+>> data when accessed through (int *) type casting. Verified this from bit representation of
+>> the data (accessed through both type casting methods).
+>>
+>> However this problem does not seem to be present on an Intel box. Integer dereferencing of
+>> the opt->value still gives the value which was updated as (uint64_t).
+>>
+>> All this problem would not have been there if we had used (int *) instead of (uint64_t *) in
+>> the first place inside parse_branch_stack function.
+>>
+>> On Thursday 24 May 2012 02:51 PM, Anshuman Khandual wrote:
+>>
+>>> Hey Stephane,
+>>>
+>>> Just wondering why we used the type casting of (uint64_t *) on a data
+>>> which is defined as "int" in the structure of "perf_record_opts".
+>>>
+>>> struct perf_record_opts {
+>>>         struct perf_target target;
+>>>         bool         call_graph;
+>>>         bool         group;
+>>>         bool         inherit_stat;
+>>>         bool         no_delay;
+>>>         bool         no_inherit;
+>>>         bool         no_samples;
+>>>         bool         pipe_output;
+>>>         bool         raw_samples;
+>>>         bool         sample_address;
+>>>         bool         sample_time;
+>>>         bool         sample_id_all_missing;
+>>>         bool         exclude_guest_missing;
+>>>         bool         period;
+>>>         unsigned int freq;
+>>>         unsigned int mmap_pages;
+>>>         unsigned int user_freq;
+>>>         int          branch_stack;
+>>>         u64          default_interval;
+>>>         u64          user_interval;
+>>> };
+>>>
+>>> static int
+>>> parse_branch_stack(const struct option *opt, const char *str, int unset)
+>>> {
+>>> #define ONLY_PLM \
+>>>         (PERF_SAMPLE_BRANCH_USER        |\
+>>>          PERF_SAMPLE_BRANCH_KERNEL      |\
+>>>          PERF_SAMPLE_BRANCH_HV)
+>>>
+>>>         uint64_t *mode = (uint64_t *)opt->value;
+>>> --
+>>> Regards
+>>> Anshuman Khandual
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+>
