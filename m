@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755515Ab2EYHVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 03:21:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14430 "EHLO mga03.intel.com"
+	id S1755596Ab2EYHWm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 03:22:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:56041 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753410Ab2EYHVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 03:21:18 -0400
+	id S1753410Ab2EYHWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 03:22:41 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104167255"
-Message-ID: <4FBF3295.7090608@intel.com>
-Date: Fri, 25 May 2012 15:19:49 +0800
+   d="scan'208";a="104167932"
+Message-ID: <4FBF32E8.90101@intel.com>
+Date: Fri, 25 May 2012 15:21:12 +0800
 From: ShuoX Liu <shuox.liu@intel.com>
 Reply-To: shuox.liu@intel.com
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
@@ -20,9 +20,9 @@ CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>, andi@firstfloor.org,
         Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 1/2] printk: add interface for disabling recursion check
-References: <4FBC444A.6060500@intel.com>  <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com>  <20120524061145.GA18284@liondog.tnic>  <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1337905811.14538.206.camel@ymzhang.sh.intel.com>
+Subject: [PATCH 2/2] x86 mce: use new printk recursion disabling interface
+References: <4FBC444A.6060500@intel.com>  <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com>  <20120524061145.GA18284@liondog.tnic>  <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com> <4FBF3295.7090608@intel.com>
+In-Reply-To: <4FBF3295.7090608@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,67 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: ShuoX Liu <shuox.liu@intel.com>
 
-With some special scenario, such as Machine Check Exception happened
-in printk, we want to bypass printk recursion check to print some
-important information. So we add these interfaces in printk.
-
-1) printk_recursion_check_disable() for disabling recursion check
-2) printk_recursion_check_enable() for enabling recursion check
+Disable printk recursion to make sure MCE logs printed out.
 
 Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
 Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
 ---
- include/linux/printk.h |    3 +++
- kernel/printk.c        |   16 +++++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 1bec2f7..da48ec7 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -42,6 +42,9 @@ static inline void console_verbose(void)
- 		console_loglevel = 15;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 2afcbd2..365c35d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1015,6 +1015,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
+ 	char *msg = "Unknown";
+ 
++	printk_recursion_check_disable();
+ 	atomic_inc(&mce_entry);
+ 
+ 	this_cpu_inc(mce_exception_count);
+@@ -1144,6 +1145,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+ out:
+ 	atomic_dec(&mce_entry);
++	printk_recursion_check_enable();
+ 	sync_core();
  }
- 
-+void printk_recursion_check_disable(void);
-+void printk_recursion_check_enable(void);
-+
- struct va_format {
- 	const char *fmt;
- 	va_list *va;
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 32462d2..61067fe 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -78,6 +78,18 @@ int console_printk[4] = {
- int oops_in_progress;
- EXPORT_SYMBOL(oops_in_progress);
- 
-+static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
-+
-+void printk_recursion_check_disable(void)
-+{
-+	atomic_inc(&recursion_check_disabled);
-+}
-+
-+void printk_recursion_check_enable(void)
-+{
-+	atomic_dec(&recursion_check_disabled);
-+}
-+
- /*
-  * console_sem protects the console_drivers list, and also
-  * provides serialisation for access to the entire console
-@@ -1295,7 +1307,9 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 * recursion and return - but flag the recursion so that
- 		 * it can be printed at the next appropriate moment:
- 		 */
--		if (!oops_in_progress && !lockdep_recursing(current)) {
-+		if (!atomic_read(&recursion_check_disabled)
-+			&& !oops_in_progress
-+			&& !lockdep_recursing(current)) {
- 			recursion_bug = 1;
- 			goto out_restore_irqs;
- 		}
+ EXPORT_SYMBOL_GPL(do_machine_check);
 -- 
 1.7.1
+
