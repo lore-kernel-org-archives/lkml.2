@@ -1,175 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab2EYKDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 06:03:20 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:47854
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752471Ab2EYKDA (ORCPT
+	id S1755050Ab2EYKEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 06:04:13 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:60114 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab2EYKEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 06:03:00 -0400
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz2ei87h2a8h668h839hd24he5bhe96h)
-X-FB-DOMAIN-IP-MATCH: fail
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>
-CC: <linux-crypto@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <uclinux-dist-devel@blackfin.uclinux.org>,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 1/2] crypto: Add new test cases for Blackfin CRC crypto driver.
-Date: Fri, 25 May 2012 17:54:13 +0800
-Message-ID: <1337939654-12222-1-git-send-email-sonic.adi@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 25 May 2012 06:04:11 -0400
+Message-ID: <4FBF5916.4070705@atmel.com>
+Date: Fri, 25 May 2012 12:04:06 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter Korsgaard <jacmet@sunsite.dk>, <herbert@gondor.hengli.com.au>
+CC: <jamie@jamieiles.com>, <linux-kernel@vger.kernel.org>, <GPontis@z9.com>,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] hw_random: atmel-rng: fix race condition leading to repeated
+ bits
+References: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
+In-Reply-To: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+On 05/25/2012 11:12 AM, Peter Korsgaard :
+> Data valid gets cleared by reading the ISR (status register) and NOT from
+> reading ODATA (data register). A new data word can become available between
+> checking ISR and reading ODATA, causing us to reuse the same data word next
+> time atmel_trng_read() gets called, if that happens before the following
+> data word is ready.
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
----
- crypto/tcrypt.c  |    3 ++
- crypto/testmgr.c |    9 +++++
- crypto/testmgr.h |   90 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 102 insertions(+), 0 deletions(-)
+Hi Peter, thanks for finding this...
 
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index 8f147bf..750cce4 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -1192,6 +1192,9 @@ static int do_test(int m)
- 	case 109:
- 		ret += tcrypt_test("vmac(aes)");
- 		break;
-+	case 110:
-+		ret += tcrypt_test("hmac(crc32)");
-+		break;
- 
- 	case 150:
- 		ret += tcrypt_test("ansi_cprng");
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 5674878..eb6d20f 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -2220,6 +2220,15 @@ static const struct alg_test_desc alg_test_descs[] = {
- 			}
- 		}
- 	}, {
-+		.alg = "hmac(crc32)",
-+		.test = alg_test_hash,
-+		.suite = {
-+			.hash = {
-+				.vecs = bfin_crc_tv_template,
-+				.count = BFIN_CRC_TEST_VECTORS
-+			}
-+		}
-+	}, {
- 		.alg = "hmac(md5)",
- 		.test = alg_test_hash,
- 		.suite = {
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index 36e5a8e..34a9d51 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -14858,4 +14858,94 @@ static struct hash_testvec crc32c_tv_template[] = {
- 	},
- };
- 
-+/*
-+ * Blakcifn CRC test vectors
-+ */
-+#define BFIN_CRC_TEST_VECTORS 6
-+
-+static struct hash_testvec bfin_crc_tv_template[] = {
-+	{
-+		.psize = 0,
-+		.digest = "\x00\x00\x00\x00",
-+	},
-+	{
-+		.key = "\x87\xa9\xcb\xed",
-+		.ksize = 4,
-+		.psize = 0,
-+		.digest = "\x87\xa9\xcb\xed",
-+	},
-+	{
-+		.key = "\xff\xff\xff\xff",
-+		.ksize = 4,
-+		.plaintext = "\x01\x02\x03\x04\x05\x06\x07\x08"
-+			     "\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
-+			     "\x11\x12\x13\x14\x15\x16\x17\x18"
-+			     "\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"
-+			     "\x21\x22\x23\x24\x25\x26\x27\x28",
-+		.psize = 40,
-+		.digest = "\x84\x0c\x8d\xa2",
-+	},
-+	{
-+		.key = "\xff\xff\xff\xff",
-+		.ksize = 4,
-+		.plaintext = "\x01\x02\x03\x04\x05\x06\x07\x08"
-+			     "\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
-+			     "\x11\x12\x13\x14\x15\x16\x17\x18"
-+			     "\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"
-+			     "\x21\x22\x23\x24\x25\x26",
-+		.psize = 38,
-+		.digest = "\x8c\x58\xec\xb7",
-+	},
-+	{
-+		.key = "\xff\xff\xff\xff",
-+		.ksize = 4,
-+		.plaintext = "\x01\x02\x03\x04\x05\x06\x07\x08"
-+			     "\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
-+			     "\x11\x12\x13\x14\x15\x16\x17\x18"
-+			     "\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"
-+			     "\x21\x22\x23\x24\x25\x26\x27",
-+		.psize = 39,
-+		.digest = "\xdc\x50\x28\x7b",
-+	},
-+	{
-+		.key = "\xff\xff\xff\xff",
-+		.ksize = 4,
-+		.plaintext = "\x01\x02\x03\x04\x05\x06\x07\x08"
-+			     "\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
-+			     "\x11\x12\x13\x14\x15\x16\x17\x18"
-+			     "\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20"
-+			     "\x21\x22\x23\x24\x25\x26\x27\x28"
-+			     "\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30"
-+			     "\x31\x32\x33\x34\x35\x36\x37\x38"
-+			     "\x39\x3a\x3b\x3c\x3d\x3e\x3f\x40"
-+			     "\x41\x42\x43\x44\x45\x46\x47\x48"
-+			     "\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50"
-+			     "\x51\x52\x53\x54\x55\x56\x57\x58"
-+			     "\x59\x5a\x5b\x5c\x5d\x5e\x5f\x60"
-+			     "\x61\x62\x63\x64\x65\x66\x67\x68"
-+			     "\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70"
-+			     "\x71\x72\x73\x74\x75\x76\x77\x78"
-+			     "\x79\x7a\x7b\x7c\x7d\x7e\x7f\x80"
-+			     "\x81\x82\x83\x84\x85\x86\x87\x88"
-+			     "\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90"
-+			     "\x91\x92\x93\x94\x95\x96\x97\x98"
-+			     "\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0"
-+			     "\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8"
-+			     "\xa9\xaa\xab\xac\xad\xae\xaf\xb0"
-+			     "\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8"
-+			     "\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0"
-+			     "\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8"
-+			     "\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0"
-+			     "\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8"
-+			     "\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0"
-+			     "\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8"
-+			     "\xe9\xea\xeb\xec\xed\xee\xef\xf0",
-+		.psize = 240,
-+		.digest = "\x10\x19\x4a\x5c",
-+		.np = 2,
-+		.tap = { 31, 209 }
-+	},
-+
-+};
-+
- #endif	/* _CRYPTO_TESTMGR_H */
+> With this fixed, rngtest no longer complains of 'Continous run' errors.
+> Before:
+> 
+> rngtest -c 1000 < /dev/hwrng
+> rngtest 3
+> Copyright (c) 2004 by Henrique de Moraes Holschuh
+> This is free software; see the source for copying conditions.  There is NO warr.
+> 
+> rngtest: starting FIPS tests...
+> rngtest: bits received from input: 20000032
+> rngtest: FIPS 140-2 successes: 923
+> rngtest: FIPS 140-2 failures: 77
+> rngtest: FIPS 140-2(2001-10-10) Monobit: 0
+> rngtest: FIPS 140-2(2001-10-10) Poker: 0
+> rngtest: FIPS 140-2(2001-10-10) Runs: 1
+> rngtest: FIPS 140-2(2001-10-10) Long run: 0
+> rngtest: FIPS 140-2(2001-10-10) Continuous run: 76
+> rngtest: input channel speed: (min=721.402; avg=46003.510; max=49321.338)Kibitss
+> rngtest: FIPS tests speed: (min=11.442; avg=12.714; max=12.801)Mibits/s
+> rngtest: Program run time: 1931860 microseconds
+> 
+> After:
+> 
+> rngtest -c 1000 < /dev/hwrng
+> rngtest 3
+> Copyright (c) 2004 by Henrique de Moraes Holschuh
+> This is free software; see the source for copying conditions.  There is NO warr.
+> 
+> rngtest: starting FIPS tests...
+> rngtest: bits received from input: 20000032
+> rngtest: FIPS 140-2 successes: 1000
+> rngtest: FIPS 140-2 failures: 0
+> rngtest: FIPS 140-2(2001-10-10) Monobit: 0
+> rngtest: FIPS 140-2(2001-10-10) Poker: 0
+> rngtest: FIPS 140-2(2001-10-10) Runs: 0
+> rngtest: FIPS 140-2(2001-10-10) Long run: 0
+> rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
+> rngtest: input channel speed: (min=777.518; avg=36988.482; max=43115.342)Kibitss
+> rngtest: FIPS tests speed: (min=11.951; avg=12.715; max=12.887)Mibits/s
+> rngtest: Program run time: 2035543 microseconds
+> 
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
+> Reported-by: George Pontis <GPontis@z9.com>
+> ---
+>  drivers/char/hw_random/atmel-rng.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
+> index d7ab920..731c904 100644
+> --- a/drivers/char/hw_random/atmel-rng.c
+> +++ b/drivers/char/hw_random/atmel-rng.c
+> @@ -36,6 +36,13 @@ static int atmel_trng_read(struct hwrng *rng, void *buf, size_t max,
+>  	/* data ready? */
+>  	if (readl(trng->base + TRNG_ISR) & 1) {
+>  		*data = readl(trng->base + TRNG_ODATA);
+> +		/*
+> +		  ensure data ready is only set again AFTER the next data
+> +		  word is ready in case it got set between checking ISR
+> +		  and reading ODATA, so we don't risk re-reading the
+> +		  same word
+> +		*/
+> +		readl(trng->base + TRNG_ISR);
+>  		return 4;
+>  	} else
+>  		return 0;
+
+What about a single read to ISR like this:
+
+tmp = readl(trng->base + TRNG_ODATA);
+if (readl(trng->base + TRNG_ISR) & 1) {
+	*data = tmp;
+	return 4;
+} else {
+  	return 0;
+}
+
+But it is true that there is always 2 reads in case of data not
+available, instead of just one: I cannot figure out which solution is
+the fastest: your thoughts?
+
+Bye,
 -- 
-1.7.0.4
-
-
+Nicolas Ferre
