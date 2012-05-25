@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab2EYLrV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 07:47:21 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54146 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab2EYLrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 07:47:20 -0400
-Message-ID: <4FBF6B78.5020905@linux.vnet.ibm.com>
-Date: Fri, 25 May 2012 16:52:32 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	id S932663Ab2EYLul (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 07:50:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11626 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932181Ab2EYLuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 07:50:40 -0400
+Date: Fri, 25 May 2012 07:50:35 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Lan Tianyu <tianyu.lan@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: USB device PM oddity in 3.5
+Message-ID: <20120525115034.GC23824@zod.bos.redhat.com>
+References: <20120524203655.GK1143@zod.bos.redhat.com>
+ <Pine.LNX.4.44L0.1205241646080.1186-100000@iolanthe.rowland.org>
+ <20120525113936.GA23824@zod.bos.redhat.com>
+ <20120525114152.GA10193@srcf.ucam.org>
+ <20120525114512.GB23824@zod.bos.redhat.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: mingo@kernel.org, pjt@google.com, paul@paulmenage.org,
-        akpm@linux-foundation.org, rjw@sisk.pl, nacc@us.ibm.com,
-        rientjes@google.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH v6 0/4] CPU hotplug, cpusets, suspend/resume: Fixes, cleanups
- and optimizations
-References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com> <1337938707.9783.171.camel@laptop>
-In-Reply-To: <1337938707.9783.171.camel@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052511-4790-0000-0000-000002F13148
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120525114512.GB23824@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 03:08 PM, Peter Zijlstra wrote:
-
+On Fri, May 25, 2012 at 07:45:12AM -0400, Josh Boyer wrote:
+> On Fri, May 25, 2012 at 12:41:52PM +0100, Matthew Garrett wrote:
+> > The kernel's fine, udev isn't. Let me push the patch for that.
 > 
-> Thanks, queued them.
+> Er... can you be more verbose?  Or point me to a previous discussion?
 > 
+> From a packaging standpoint, are distributions going to have to require
+> a newer udev package before the 3.5 kernel can be used?
 
+I think I mentioned this previously, but this is the 3.5 kernel running
+on F17 userspace.  So:
 
-Thanks a lot Peter!
+udev-182-1.fc17.x86_64
 
-Regards,
-Srivatsa S. Bhat
+Rawhide is on the same major version.
 
+josh
