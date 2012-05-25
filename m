@@ -1,101 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758851Ab2EYW1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 18:27:10 -0400
-Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:46108 "EHLO
-	intmgw001.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756796Ab2EYW1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 18:27:08 -0400
-From: Arun Sharma <asharma@fb.com>
-To: netdev@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>
-Subject: [PATCH] net: compute a more reasonable default ip6_rt_max_size (v2)
-Date: Fri, 25 May 2012 15:26:56 -0700
-Message-Id: <1337984816-8374-1-git-send-email-asharma@fb.com>
-X-Mailer: git-send-email 1.7.8.4
+	id S1758930Ab2EYW1u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 18:27:50 -0400
+Received: from mga03.intel.com ([143.182.124.21]:4928 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758523Ab2EYW1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 18:27:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104447984"
+From: Andi Kleen <andi@firstfloor.org>
+To: Xin Tong <xerox.time.tech@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: native_save_fl taking good amount of time in profile
+References: <CALKntY1wDFxzZX6ONgeVuNjBxi=bPA-0vhWJ-_NMXR37GNmvBQ@mail.gmail.com>
+Date: Fri, 25 May 2012 15:27:47 -0700
+In-Reply-To: <CALKntY1wDFxzZX6ONgeVuNjBxi=bPA-0vhWJ-_NMXR37GNmvBQ@mail.gmail.com>
+	(Xin Tong's message of "Fri, 25 May 2012 18:12:10 -0400")
+Message-ID: <m2vcjjlwv0.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The algorithm is based on ipv4 and alloc_large_system_hash().
+Xin Tong <xerox.time.tech@gmail.com> writes:
 
-The following data is from a x86_64 box I tested:
+> I have collected a profile on the whole system. But the only thing
+> that is really running is a mysql database server. I have noticed that
+> there is a function in kernel that took 5% of the overall running
+> time. what does native_save_fl do ? does it make sense that
+> native_save_fl takes the most amount of time among all kernel
+> functions ?
 
-128MB
-$ cat /proc/sys/net/ipv{4,6}/route/max_size
-16384
-22444
+What are the callers (-g)? It does not make sense normally.
+-Andi
 
-512MB
-$ cat /proc/sys/net/ipv{4,6}/route/max_size
-65536
-99856
-
-1GB
-$ cat /proc/sys/net/ipv{4,6}/route/max_size
-524288
-203068
-
-2GB
-$ cat /proc/sys/net/ipv{4,6}/route/max_size
-1048576
-524288
-
-4GB
-$ cat /proc/sys/net/ipv{4,6}/route/max_size
-2097152
-524288
-
-Signed-off-by: Arun Sharma <asharma@fb.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: David Miller <davem@davemloft.net>
----
- net/ipv6/route.c |   21 ++++++++++++++++++++-
- 1 files changed, 20 insertions(+), 1 deletions(-)
-
-diff --git a/net/ipv6/route.c b/net/ipv6/route.c
-index 49d6ce1..bf85926 100644
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -2827,6 +2827,16 @@ struct ctl_table * __net_init ipv6_route_sysctl_init(struct net *net)
- }
- #endif
- 
-+static __initdata unsigned long ip6_rt_entries;
-+static int __init set_rt_entries(char *str)
-+{
-+	if (!str)
-+		return 0;
-+	ip6_rt_entries = simple_strtoul(str, &str, 0);
-+	return 1;
-+}
-+__setup("ip6_rt_entries=", set_rt_entries);
-+
- static int __net_init ip6_route_net_init(struct net *net)
- {
- 	int ret = -ENOMEM;
-@@ -2872,8 +2882,17 @@ static int __net_init ip6_route_net_init(struct net *net)
- 			 ip6_template_metrics, true);
- #endif
- 
-+	/* Compute a reasonable default based on what we do for ipv4
-+	 * total size = 1/16th of total RAM
-+	 * No more than 512k entries unless overridden on kernel cmdline */
-+	if (ip6_rt_entries == 0) {
-+		ip6_rt_entries = (totalram_pages << PAGE_SHIFT) >> 4;
-+		ip6_rt_entries /= sizeof(struct rt6_info);
-+		ip6_rt_entries = min(512 * 1024UL, ip6_rt_entries);
-+	}
-+
- 	net->ipv6.sysctl.flush_delay = 0;
--	net->ipv6.sysctl.ip6_rt_max_size = 4096;
-+	net->ipv6.sysctl.ip6_rt_max_size = ip6_rt_entries;
- 	net->ipv6.sysctl.ip6_rt_gc_min_interval = HZ / 2;
- 	net->ipv6.sysctl.ip6_rt_gc_timeout = 60*HZ;
- 	net->ipv6.sysctl.ip6_rt_gc_interval = 30*HZ;
 -- 
-1.7.8.4
-
+ak@linux.intel.com -- Speaking for myself only
