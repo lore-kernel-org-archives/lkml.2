@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab2EYTzN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 15:55:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54822 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755467Ab2EYTzL convert rfc822-to-8bit (ORCPT
+	id S1758522Ab2EYT7Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 15:59:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41909 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2EYT7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 15:55:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104404571"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@amd64.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: RE: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
- platform (v2)
-Thread-Topic: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
- platform (v2)
-Thread-Index: AQHNOqCgr6jLO/PX8Ee8ZH/5SHvSCZba2xXg
-Date: Fri, 25 May 2012 19:55:08 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351F0E70@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
- <20120522092354.GB18578@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
- <20120524103023.GA27063@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
- <20120524162605.GK27063@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351ED978@SHSMSX101.ccr.corp.intel.com>
- <20120524191039.GB28338@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0C89@SHSMSX101.ccr.corp.intel.com>
- <20120525180303.GB27280@phenom.dumpdata.com>
-In-Reply-To: <20120525180303.GB27280@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 25 May 2012 15:59:24 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Franck Bui-Huu <fbuihuu@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/4] perf tools: fix thread_map__new_by_pid_str() memory leak in error path
+Date: Fri, 25 May 2012 16:59:16 -0300
+Message-Id: <1337975958-24047-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.9.2.358.g22243
+In-Reply-To: <1337975958-24047-1-git-send-email-acme@infradead.org>
+References: <1337975958-24047-1-git-send-email-acme@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Fri, May 25, 2012 at 06:01:04PM +0000, Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>>>>> The reason is, if we do so, it would be covered by native
->>>>>> misc_register(&mce_chrdev_device) later when native kernel init
->>>>>> (xen init first and then start native kernel).
->>>>>> Under such case, if linux running under xen platform, /dev/mcelog
->>>>>> point to vcpu, that's pointless since it cannot get any mcelog
->>>>>> from physical cpu (which owned by xen).
->>>>>> 
->>>>>> Yes, we can use another misc device like /dev/xen-mcelog, w/
->>>>>> another device minor like 226, but that's not good for userspace
->>>>>> mcelog tools. As far as I know, Novell mcelog use unified
->>>>>> /dev/mcelog interface for linux running under either bare metal
->>>>>> or xen platform.
->>>>> 
->>>>> Maybe create a symlink in /dev/mcelog pointing to /dev/xen-mcelog?
->>>>> 
->>>>> That should solve it.
->>>> 
->>>> Kernel has created a file /dev/mcelog no matter running at native
->>>> or xen platform. If xen try to mask kernel creating /dev/mcelog,
->>>> that would be harmful to native kernel.
->>> 
->>> Huh? The Xen code won't run under native kernel so how will it mask
->>> it?
->> 
->> Hmm, I mean 'xen related code' of linux kernel, e.g. drivers/xen/...
-> 
-> OK? I am still not getting what you are saying. Could you please
-> rephrase it?
+From: Franck Bui-Huu <fbuihuu@gmail.com>
 
-What I mean is,
-If mcelog.c create /dev/xen-mcelog (say, minor=226), native mce.c would create /dev/mcelog (minor=227).
-Under such case, may we create a symlink in /dev/mcelog pointing to /dev/xen-mcelog, without touching native mce code? and how?
+The namelist array (including its content) was not freed if we fail to
+realloc a new 'threads' structure.
 
-> 
-> Why would disabling the generic "/dev/mcelog" and use your version
-> of "/dev/mcelog" be harmful? I think this is what Boris was hinting
-> as the proper way of doing it.
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1337952109-31995-1-git-send-email-fbuihuu@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/thread_map.c |   21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 84d9bd78..9b5f856 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -188,28 +188,27 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+ 		nt = realloc(threads, (sizeof(*threads) +
+ 				       sizeof(pid_t) * total_tasks));
+ 		if (nt == NULL)
+-			goto out_free_threads;
++			goto out_free_namelist;
+ 
+ 		threads = nt;
+ 
+-		if (threads) {
+-			for (i = 0; i < items; i++)
+-				threads->map[j++] = atoi(namelist[i]->d_name);
+-			threads->nr = total_tasks;
+-		}
+-
+-		for (i = 0; i < items; i++)
++		for (i = 0; i < items; i++) {
++			threads->map[j++] = atoi(namelist[i]->d_name);
+ 			free(namelist[i]);
++		}
++		threads->nr = total_tasks;
+ 		free(namelist);
+-
+-		if (!threads)
+-			break;
+ 	}
+ 
+ out:
+ 	strlist__delete(slist);
+ 	return threads;
+ 
++out_free_namelist:
++	for (i = 0; i < items; i++)
++		free(namelist[i]);
++	free(namelist);
++
+ out_free_threads:
+ 	free(threads);
+ 	threads = NULL;
+-- 
+1.7.9.2.358.g22243
 
