@@ -1,41 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758578Ab2EYUJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:09:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37924 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758363Ab2EYUJH (ORCPT
+	id S1758553Ab2EYUQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:16:49 -0400
+Received: from intmgw001.ash2.facebook.com ([66.220.155.178]:62860 "EHLO
+	intmgw002.ash2.facebook.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756085Ab2EYUQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:09:07 -0400
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
-Date: Fri, 25 May 2012 13:08:46 -0700
-X-Google-Sender-Auth: BuqtjWQpG-ktfh9lj7VKG5iPcvo
-Message-ID: <CAB=NE6Urc0LPLP87rH6sDRsaKxb8Mh9u+suWQff6X3T2mYWx1A@mail.gmail.com>
-Subject: [ANN] QCA swiss army knife
-To: linux-wireless <linux-wireless@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, qca-linux-team <qca-linux-team@qualcomm.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 May 2012 16:16:47 -0400
+From: Arun Sharma <asharma@fb.com>
+To: netdev@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+Date: Fri, 25 May 2012 13:15:34 -0700
+Message-Id: <1337976934-18065-1-git-send-email-asharma@fb.com>
+X-Mailer: git-send-email 1.7.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help with simplifying placement of userspace tool development for
-QCA for our different drivers we have merged together a few public
-development repositories into one, a qca-swiss-army-knife:
+The algorithm is based on ipv4 and alloc_large_system_hash().
 
-Code: git://github.com/mcgrof/qca-swiss-army-knife.git
-Wiki: https://github.com/mcgrof/qca-swiss-army-knife/wiki
+The following data is from a x86_64 box I tested:
 
-Of most importance so far is the initval-tools [0], if you used to
-send patches for this utility please update your git tree to point to
-this new URL, a simple change in the name should let you git pull all
-the new changes, you will not have to reset your tree. The other tools
-that merged into this tree were  ath-utils and hal-reg-dump, so I've
-nuked the old trees from github.
+128MB
+$ cat /proc/sys/net/ipv{4,6}/route/max_size
+16384
+22444
 
-If you have any question please let us know.
+512MB
+$ cat /proc/sys/net/ipv{4,6}/route/max_size
+65536
+99856
 
-[0] http://wireless.kernel.org/en/users/Drivers/ath9k_hw/initvals-tool
+1GB
+$ cat /proc/sys/net/ipv{4,6}/route/max_size
+524288
+203068
 
-  Luis
+2GB
+$ cat /proc/sys/net/ipv{4,6}/route/max_size
+1048576
+524288
+
+4GB
+$ cat /proc/sys/net/ipv{4,6}/route/max_size
+2097152
+524288
+
+Signed-off-by: Arun Sharma <asharma@fb.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>
+---
+ net/ipv6/route.c |   21 ++++++++++++++++++++-
+ 1 files changed, 20 insertions(+), 1 deletions(-)
+
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 49d6ce1..c89ebbb 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -2827,6 +2827,16 @@ struct ctl_table * __net_init ipv6_route_sysctl_init(struct net *net)
+ }
+ #endif
+ 
++static __initdata unsigned long ip6_rt_entries;
++static int __init set_rt_entries(char *str)
++{
++	if (!str)
++		return 0;
++	ip6_rt_entries = simple_strtoul(str, &str, 0);
++	return 1;
++}
++__setup("ip6_rt_entries=", set_rt_entries);
++
+ static int __net_init ip6_route_net_init(struct net *net)
+ {
+ 	int ret = -ENOMEM;
+@@ -2872,8 +2882,17 @@ static int __net_init ip6_route_net_init(struct net *net)
+ 			 ip6_template_metrics, true);
+ #endif
+ 
++	/* Compute a reasonable default based on what we do for ipv4
++	 * total size = 1/16th of total RAM
++	 * No more than 512k entries unless overridden on kernel cmdline */
++        if (ip6_rt_entries == 0) {
++		ip6_rt_entries = (totalram_pages << PAGE_SHIFT) >> 4;
++		ip6_rt_entries /= sizeof(struct rt6_info);
++		ip6_rt_entries = min(512 * 1024UL, ip6_rt_entries);
++        }
++
+ 	net->ipv6.sysctl.flush_delay = 0;
+-	net->ipv6.sysctl.ip6_rt_max_size = 4096;
++	net->ipv6.sysctl.ip6_rt_max_size = ip6_rt_entries;
+ 	net->ipv6.sysctl.ip6_rt_gc_min_interval = HZ / 2;
+ 	net->ipv6.sysctl.ip6_rt_gc_timeout = 60*HZ;
+ 	net->ipv6.sysctl.ip6_rt_gc_interval = 30*HZ;
+-- 
+1.7.8.4
+
