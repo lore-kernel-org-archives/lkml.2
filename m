@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2EYDUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 23:20:13 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:5151
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751309Ab2EYDUL (ORCPT
+	id S1755023Ab2EYDV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 23:21:29 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:45359 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab2EYDV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 23:20:11 -0400
-X-SpamScore: -12
-X-BigFish: VS-12(zzbb2dI9371I1432N1418I98dKzz1202hzz8275dhz2dh2a8h668h839h944hd25hf0ah)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 25 May 2012 11:22:52 +0800
-From: Dong Aisheng <aisheng.dong@freescale.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Dong Aisheng-B29396 <B29396@freescale.com>,
-        Dong Aisheng <dongas86@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH RFC v3 3/3] pinctrl: add pinctrl gpio binding support
-Message-ID: <20120525032250.GA13524@shlinux2.ap.freescale.net>
-References: <1337779362-31259-1-git-send-email-b29396@freescale.com>
- <1337779362-31259-3-git-send-email-b29396@freescale.com>
- <4FBD4C13.8080209@wwwdotorg.org>
- <CAA+hA=Rb1Qix67QBthPjo_4d5ATWjA7pePembZRwJkPMtQNpjg@mail.gmail.com>
- <4FBE5225.301@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FBE5225.301@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginatorOrg: freescale.com
+	Thu, 24 May 2012 23:21:28 -0400
+Date: Thu, 24 May 2012 23:19:05 -0400 (EDT)
+Message-Id: <20120524.231905.583157981128832060.davem@davemloft.net>
+To: fenghua.yu@intel.com
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86/copy_user_generic: Optimize copy_user_generic with
+ CPU erms feature
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712200771A972@ORSMSX105.amr.corp.intel.com>
+References: <1337908785-14015-1-git-send-email-fenghua.yu@intel.com>
+	<20120524.215019.1013474044821595274.davem@davemloft.net>
+	<3E5A0FA7E9CA944F9D5414FEC6C712200771A972@ORSMSX105.amr.corp.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 24 May 2012 20:19:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 11:22:13PM +0800, Stephen Warren wrote:
-> On 05/23/2012 11:19 PM, Dong Aisheng wrote:
-> > On Thu, May 24, 2012 at 12:42:19PM +0800, Stephen Warren wrote:
-> >> On 05/23/2012 07:42 PM, Dong Aisheng wrote:
-> >>> On Thu, May 24, 2012 at 4:44 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> >>>> On 05/23/2012 07:22 AM, Dong Aisheng wrote:
-> >>>>> From: Dong Aisheng <dong.aisheng@linaro.org>
-> >>>>>
-> >>>>> This patch implements a standard common binding for pinctrl gpio ranges.
-> >>>>> Each SoC can add gpio ranges through device tree by adding a gpio-maps property
-> >>>>> under their pinctrl devices node with the format:
-> >>>>> <&gpio $gpio_offset $pin_offset $npin>.
-> >>>>>
-> >>>>> Then the pinctrl driver can call pinctrl_dt_add_gpio_ranges(pctldev, node)
-> >>>>> to parse and register the gpio ranges from device tree.
-> ...
-> >>>> Re: your locking comments in your other email: ranges[i].gc doesn't
-> >>>> appear to be used anywhere else in pinctrl, so I think it's OK not to
-> >>>> lock the GPIO chip for any more time than between the above two blocks
-> >>>> of code.
-> >>>
-> >>> So i will add lock between them like:
-> >>> ranges[i].gc = of_node_to_gpiochip(np_gpio);
-> >>> if (!try_module_get(ranges[i].gc->owner))
-> >>>     err...
-> >>
-> >> I think that module_get() needs to happen inside of_node_to_gpiochip(),
-> >> so that it executes inside any lock that function takes.
-> >
-> > Can you please help explain a bit more?
-> > I did not quite understand.
-> > It looks to me of_node_to_gpiochip is only convert the gpio node to gpio chip.
-> > Why need get the module inside this function?
-> > For gpio_request function, it also calls try_module_get(gc) after find the gpio
-> > chip.
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+Date: Fri, 25 May 2012 02:47:22 +0000
+
+> Are you talking about memory overlap between source and destination?
+> There is no overlap between these two areas in copy_user case
+> because one area is in user space and another one is in kernel
+> space.
 > 
-> The problem is this:
-> 
-> Thread 1: Call of_node_to_gpiochip(), returns a gpio_chip.
-> Thread 2: Unregisters the same gpio_chip that was returned above.
-> Thread 1: Accesses the now unregistered (and possibly free'd) gpio_chip
-> -> at best, bad data, at worst, OOPS.
-> 
-Correct. We did have this issue.
-Thanks for clarify.
+> In overlap case, it's software that detects overlap and sets
+> backward copy. I don't see backward rep movsb performance
+> degradation from my measurement.
 
-> In order to prevent this, of_node_to_gpiochip() should take measures to
-> prevent another thread from unregistering the gpio_chip until thread 1
-> has completed its step above.
-> 
-> The existing of_get_named_gpio_flags() is safe from this, since
-> gpiochip_find() acquires the GPIO lock, and all accesses to the fouond
-> gpio chip occur with that lock held, inside the match function. Perhaps
-> a similar approach could be used here.
-Why it looks to me of_get_named_gpio_flags has the same issue and also not safe?
-For of_node_to_gpiochip itself called in of_get_named_gpio_flags, it's safe.
-But after that, i'm suspecting it has the same issue as you described above, right?
+We have been told repeatedly in the past that the string instructions,
+for compatibility with the defined semantics of the instruction, only
+check the lowest bits when determining source and destination overlap.
 
-For example:
-int of_get_named_gpio_flags(struct device_node *np, const char *propname,
-                           int index, enum of_gpio_flags *flags)
-{
-...
-	gc = of_node_to_gpiochip(gpiospec.np);
-	if (!gc) {
-		pr_debug("%s: gpio controller %s isn't registered\n",
-			 np->full_name, gpiospec.np->full_name);
-		ret = -ENODEV;
-		goto err1;
-	}
+So even if bits 12 and higher in the virtual address are different, it
+is the address bits below bit 12 that determine overlap.  And if this
+overlap check triggers, the slow path is taken inside of the cpu.
 
-	===> the gc may be unregistered here by another thread and
-	     even already have been freed, right?
-
-	ret = gc->of_xlate(gc, &gpiospec, flags);
-...
-}
-
-Maybe we need get the lock in of_node_to_gpiochip and release it by calling
-of_gpio_put(..) after using?
-
-Regards
-Dong Aisheng
+This means that the impossibility of virtual address overlap, which
+you mention, is irrelevant.  Because it is the non-virtual address
+bits which the cpu uses for overlap detection.
 
