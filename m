@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2EYNwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:52:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33915 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab2EYNwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:52:14 -0400
-Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in
- tty_lock_pair(v1)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <20120525144713.6946df1e@bob.linux.org.uk>
-References: <1337651931-5301-1-git-send-email-ming.lei@canonical.com>
-	 <CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
-	 <1337952533.9783.195.camel@laptop>
-	 <20120525144713.6946df1e@bob.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 15:52:02 +0200
-Message-ID: <1337953922.9783.205.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1754878Ab2EYNyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:54:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751227Ab2EYNyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:54:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1337951294.2351.34.camel@falcor>
+References: <1337951294.2351.34.camel@falcor> <CALLzPKYVahsgcsyF0zMP+wLNAp5TeiGeofy5KJyMHkjsdyvo9Q@mail.gmail.com> <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <7474.1337782847@redhat.com> <8762blyedn.fsf@rustcorp.com.au> <6426.1337945879@redhat.com> 
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, kyle@mcmartin.ca,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+Date: Fri, 25 May 2012 14:53:22 +0100
+Message-ID: <3662.1337954002@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 14:47 +0100, Alan Cox wrote:
-> > Having looked at the source I still don't see how it could possibly
-> > work,.. So the problem with tty_release() -> tty_ldisc_release() is
-> > that tty_ldisc_release() does an unlock/lock of tty.
-> 
-> Yes it should do the pair, see the patch I posted restructing it, and
-> the second one restructing it right.
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-http://marc.info/?l=linux-kernel&m=133794355529930
+> The issue here is whether we want the integrity metadata for kernel
+> modules to be stored differently than for all other files.
 
-That one? To what tree does one apply that? Because the tty_lock_pair()
-in Linus is still missing a lockdep annotation afaict.
+Surely it's handled differently.  The kernel is told by insmod what the
+signature should be in your scheme rather than going looking for it itself.  In
+such a case, why not include the signature in the module file?  It's more
+efficient on the filesystem, doesn't require xattr support and is easier for
+things like the initramfs composer to deal with.
 
+Btw, am I right in thinking that with IMA, the kernel itself normally goes and
+finds the signature (if there is one) for a file when it needs to open a file?
+Do you only check the IMA when exec'ing a file or whenever you open it?
+
+David
