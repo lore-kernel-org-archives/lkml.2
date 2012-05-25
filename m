@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab2EYQi5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 12:38:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64999 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265Ab2EYQiz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 12:38:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <C15A7948-95DF-4B4E-A560-A10A181DE9BB@dilger.ca>
-References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
-	<20120525154249.GC2082@localhost.localdomain>
-	<CAB9VWqDGgWE8S4dS5izkzUGEWkUbFSanWCV5trm7VWB0=r-tXQ@mail.gmail.com>
-	<C15A7948-95DF-4B4E-A560-A10A181DE9BB@dilger.ca>
-Date: Fri, 25 May 2012 18:38:54 +0200
-Message-ID: <CAB9VWqDCM5mwnd0nQV8OEcbEa7mt=ySkqWdhbsGk=VpdmY2pog@mail.gmail.com>
-Subject: Re: atime and filesystems with snapshots (especially Btrfs)
-From: Alexander Block <ablock84@googlemail.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Josef Bacik <josef@redhat.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754137Ab2EYQmL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 12:42:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20382 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab2EYQmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 12:42:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="148464393"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [git pull] x86/mce changes
+Date: Fri, 25 May 2012 09:42:09 -0700
+Message-Id: <4fbfb661409215304@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 6:28 PM, Andreas Dilger <adilger@dilger.ca> wrote:
-> On 2012-05-25, at 9:59, Alexander Block <ablock84@googlemail.com> wrote:
->
-> Are you talking about the atime for the primary copy, or the atime for the snapshots?  IMHO, the atime should not be updated for a snapshot unless it is explicitly mounted r/w, or it isn't really a good snapshot.
->
-Snapshots are by default r/w but can be created r/o explicitly. But
-that doesn't matter for the normal use case where you snapshot / and
-continue working on /. After snapshotting, all metadata is shared
-between the two subvolumes, but when a metadata block in one of both
-subvolume changes (no matter which one), this one metadata block get's
-cowed and unshared and uses up more space.
+The following changes since commit 0034102808e0dbbf3a2394b82b1bb40b5778de9e:
+
+  Linux 3.4-rc2 (2012-04-07 18:30:41 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/x86-mce-merge
+
+for you to fetch changes up to 37c3459b67dd5a396a968e819cf4a86d24ac9ace:
+
+  x86/mce: Add instruction recovery signatures to mce-severity table (2012-05-23 14:24:11 -0700)
+
+----------------------------------------------------------------
+x86/mce merge window patches (including two that make error_context() checks less sucky)
+
+----------------------------------------------------------------
+Andi Kleen (1):
+      MCE: Fix vm86 handling for 32bit mce handler
+
+Chen Gong (1):
+      x86/mce Add validation check before GHES error is recorded
+
+Tony Luck (3):
+      x86/mce: Avoid reading every machine check bank register twice.
+      x86/mce: Fix check for processor context when machine check was taken.
+      x86/mce: Add instruction recovery signatures to mce-severity table
+
+ arch/x86/kernel/cpu/mcheck/mce-apei.c     |  3 ++-
+ arch/x86/kernel/cpu/mcheck/mce-severity.c | 26 ++++++++++++++++++++------
+ arch/x86/kernel/cpu/mcheck/mce.c          | 24 +++++++++++++++++++-----
+ 3 files changed, 41 insertions(+), 12 deletions(-)
