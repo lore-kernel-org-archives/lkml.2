@@ -1,145 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab2EYUTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:19:39 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:47175 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab2EYUTh convert rfc822-to-8bit (ORCPT
+	id S933518Ab2EYUTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:19:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33909 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758474Ab2EYUTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:19:37 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: kd6lvw@yahoo.com
-Cc: linux-kernel@vger.kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <1337889128.10617.YahooMailClassic@web84515.mail.ne1.yahoo.com>
-Date: Fri, 25 May 2012 14:19:24 -0600
-In-Reply-To: <1337889128.10617.YahooMailClassic@web84515.mail.ne1.yahoo.com>
-	(kd6lvw@yahoo.com's message of "Thu, 24 May 2012 12:52:08 -0700
-	(PDT)")
-Message-ID: <87wr40ko8j.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 25 May 2012 16:19:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19lK9L/K8TshMxqfoe6i29cGQzgcdiXoXY=
-X-SA-Exim-Connect-IP: 208.38.5.102
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
-	*  0.1 XMSubLong Long Subject
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;kd6lvw@yahoo.com
-X-Spam-Relay-Country: 
-Subject: Regression Mounting /proc w/ kernel 3.4.0 - "uid" parameter no longer ignored.
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <20120525193716.GA8817@google.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
+	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+	<CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+	<20120525043651.GA1391@google.com>
+	<CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+	<CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+	<20120525193716.GA8817@google.com>
+Date: Fri, 25 May 2012 13:19:46 -0700
+X-Google-Sender-Auth: ONFRlL1uTbWjSlcvcW5z1GXJ34U
+Message-ID: <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b2ee03ff64db504c0e216b4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kd6lvw@yahoo.com writes:
+--047d7b2ee03ff64db504c0e216b4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> --- On Thu, 5/24/12, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> "D. Stussy" <spam+newsgroups@bde-arc.ampr.org> writes:
->> > proc:  unrecognized mount option "uid=1" or missing value
->> >
->> > This works under 3.3.6 and earlier (I never tried 3.3.7).  It appears that the
->> > "uid" mount option was removed.  WHY?  More importantly, where is this change
->> > listed?  I didn't see it in the git log.
->> >
->> > This is really bad as I rebooted a remotely colocated server and since the
->> > procfs is not mounted, I cannot log in via SSH to correct the problem.
->> >
->> > OK, so there's not that much point in changing the UID of the procfs files, but
->> > I preferred to set their default ownership to a non-privileged user. 
->> 
->> There has never been a uid= option to /proc in Linus's tree.  I believe
->> if you look you will find this feature was from a patch (perhaps from
->> your distro) that added that support.
+On Fri, May 25, 2012 at 12:37 PM, Bjorn Helgaas <bhelgaas@google.com> wrote=
+:
+> On Fri, May 25, 2012 at 11:39:26AM -0700, Yinghai Lu wrote:
+>> On Fri, May 25, 2012 at 10:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> >> I don't really like the dependency on PCIBIOS_MAX_MEM_32 + 1ULL
+>> >> overflowing to zero -- that means the reader has to know what the
+>> >> value of PCIBIOS_MAX_MEM_32 is, and things would break in non-obvious
+>> >> ways if we changed it.
+>> >>
+>>
+>> please check if attached one is more clear.
+>>
+>> make max and bottom is only related to _MEM and not default one.
+>>
+>> - =A0 =A0 =A0 if (!(res->flags & IORESOURCE_MEM_64))
+>> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 max =3D PCIBIOS_MAX_MEM_32;
+>> + =A0 =A0 =A0 if (res->flags & IORESOURCE_MEM) {
+>> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (!(res->flags & IORESOURCE_MEM_64))
+>> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 max =3D PCIBIOS_MAX_MEM_32=
+;
+>> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 else if (PCIBIOS_MAX_MEM_32 !=3D -1)
+>> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 bottom =3D (resource_size_=
+t)(1ULL<<32);
+>> + =A0 =A0 =A0 }
+>>
+>> will still not affect to other arches.
 >
-> I compile both the util-linux-ng and the kernel from source.  There is no distribution patch involved.  As noted, kernel version 3.3.6 didn't bitch about the setting, while 3.4.0 does and won't mount procfs.
+> That's goofy. =A0You're proposing to make only x86_64 and x86-PAE try to =
+put
+> 64-bit BARs above 4GB. =A0Why should this be specific to x86? =A0I acknow=
+ledge
+> that there's risk in doing this, but if it's a good idea for x86_64, it
+> should also be a good idea for other 64-bit architectures.
 >
-> From the man page (copy at "http://linux.die.net/man/8/mount"):
+> And testing for "is this x86_32 without PAE?" with
+> "PCIBIOS_MAX_MEM_32 =3D=3D -1" is just plain obtuse and hides an
+> important bit of arch-specific behavior.
 >
-> "Mount options for proc
+> Tangential question about allocate_resource(): =A0Is its "max" argument
+> really necessary? =A0We'll obviously only allocate from inside the root
+> resource, so "max" is just a way to artificially avoid the end of
+> that resource. =A0Is there really a case where that's required?
 >
->      "uid=value and gid=value 
+> "min" makes sense because in a case like this, it's valid to allocate fro=
+m
+> anywhere in the root resource, but we want to try to allocate from the >4=
+GB
+> part first, then fall back to allocating from the whole resource. =A0I'm =
+not
+> sure there's a corresponding case for "max."
 >
-> "These options are recognized, but have no effect as far as I can see."
+> Getting back to this patch, I don't think we should need to adjust "max" =
+at
+> all. =A0For example, this:
 >
+> commit cb1c8e46244cfd84a1a2fe91be860a74c1cf4e25
+> Author: Bjorn Helgaas <bhelgaas@google.com>
+> Date: =A0 Thu May 24 22:15:26 2012 -0600
 >
-> Removal of this compatibility should have been noted.  WHERE was it
-> noted?  Linux.die.net is a distribution independent documentation
-> site.  It might not do anything, but per mount's documentation, it is
-> acceptable.
+> =A0 =A0PCI: try to allocate 64-bit mem resources above 4GB
+>
+> =A0 =A0If we have a 64-bit mem resource, try to allocate it above 4GB fir=
+st. =A0If
+> =A0 =A0that fails, we'll fall back to allocating space below 4GB.
+>
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index 4ce5ef2..075e5b1 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -121,14 +121,16 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct =
+resource *res,
+> =A0{
+> =A0 =A0 =A0 =A0int i, ret =3D -ENOMEM;
+> =A0 =A0 =A0 =A0struct resource *r;
+> - =A0 =A0 =A0 resource_size_t max =3D -1;
+> + =A0 =A0 =A0 resource_size_t start =3D 0;
+> + =A0 =A0 =A0 resource_size_t end =3D MAX_RESOURCE;
 
-The only possible change to /proc that could have cause this behavior
-between 3.3 and 3.4 is below.
+yeah, MAX_RESOURCE is better than -1.
 
-Not ignoring options seems to be a regression that has affected your
-setup on 3.4.
+>
+> =A0 =A0 =A0 =A0type_mask |=3D IORESOURCE_IO | IORESOURCE_MEM;
+>
+> - =A0 =A0 =A0 /* don't allocate too high if the pref mem doesn't support =
+64bit*/
+> - =A0 =A0 =A0 if (!(res->flags & IORESOURCE_MEM_64))
+> - =A0 =A0 =A0 =A0 =A0 =A0 =A0 max =3D PCIBIOS_MAX_MEM_32;
 
-My gut feel is that we should revert all of the /proc option parsing
-code as it is ugly code and apparently it could not have been used
-before 3.4 so no one can be depending on it.  But I just want an excuse
-to get rid of ugly code.  Accepting that /proc ignores all options
-passed ot it as part of the ABI and not being able to add any options
-to /proc ever is also a pretty horrible state to be in.
+can not remove this one.
+otherwise will could allocate above 4g range to non MEM64 resource.
 
-Shrug I will let you and the parties involved in creating this
-regression figure this out.
 
-Eric
+> + =A0 =A0 =A0 /* If this is a 64-bit mem resource, try above 4GB first */
+> + =A0 =A0 =A0 if (res->flags & IORESOURCE_MEM_64)
+> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 start =3D (resource_size_t) (1ULL << 32);
 
-ommit 99663be772c827b8f5f594fe87eb4807be1994e5
-Author: Vasiliy Kulikov <segoon@openwall.com>
-Date:   Thu Apr 5 14:25:04 2012 -0700
+could affect other arches. let's see if other arches is ok.
 
-    proc: fix mount -t proc -o AAA
-    
-    The proc_parse_options() call from proc_mount() runs only once at boot
-    time.  So on any later mount attempt, any mount options are ignored
-    because ->s_root is already initialized.
-    
-    As a consequence, "mount -o <options>" will ignore the options.  The
-    only way to change mount options is "mount -o remount,<options>".
-    
-    To fix this, parse the mount options unconditionally.
-    
-    Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-    Reported-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-    Tested-by: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-    Cc: Alexey Dobriyan <adobriyan@gmail.com>
-    Cc: Al Viro <viro@zeniv.linux.org.uk>
-    Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+please check merged version.
 
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 46a15d8..eed44bf 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -115,12 +115,13 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
-        if (IS_ERR(sb))
-                return ERR_CAST(sb);
- 
-+       if (!proc_parse_options(options, ns)) {
-+               deactivate_locked_super(sb);
-+               return ERR_PTR(-EINVAL);
-+       }
-+
-        if (!sb->s_root) {
+also we have
 
+include/linux/range.h:#define MAX_RESOURCE ((resource_size_t)~0)
+arch/x86/kernel/e820.c:#define MAX_RESOURCE_SIZE ((resource_size_t)-1)
+
+we should merge them later?
+
+Thanks
+
+Yinghai
+
+--047d7b2ee03ff64db504c0e216b4
+Content-Type: application/octet-stream; 
+	name="allocate_high_at_first_v3.patch"
+Content-Disposition: attachment; filename="allocate_high_at_first_v3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2nozh280
+
+U3ViamVjdDogW1BBVENIXSBQQ0k6IFRyeSB0byBhbGxvY2F0ZSBtZW02NCBhYm92ZSA0RyBhdCBm
+aXJzdAoKYW5kIHdpbGwgZmFsbCBiYWNrIHRvIGJlbG93IDRnIGlmIGl0IGNhbiBub3QgZmluZCBh
+bnkgYWJvdmUgNGcuCgpvbmx5IHg4NiBoYXZlIFBDSUJJT1NfTUFYX01FTV8zMiBzZXQgdG8gMHhm
+ZmZmZmZmZi4KaXQgd2lsbCBvbmx5IGFmZmVjdCB4ODZfNjQgYW5kIDMyYml0IHdpdGggcmVzb3Vy
+Y2Vfc2l6ZV90IDY0Yml0IHN1cHBvcnQuCm9ubHkgdGhhdCBjYXNlIGJvdHRvbSBpcyBzZXQgdG8g
+NGcgZm9yIGZpcnN0IHRyeS4KCng4NiAzMmJpdCB3aXRob3V0IFg4Nl9QQUUgc3VwcG9ydCB3aWxs
+IGhhdmUgYm90dG9tIHNldCB0byAwLCBiZWN1YXNlCnJlc291cmNlX3NpemVfdCBpcyAzMmJpdC4K
+CkFsc28gZm9yIDMyYml0IHdpdGggcmVzb3VyY2Vfc2l6ZV90IDY0Yml0IGtlcm5lbCBvbiBtYWNo
+aW5lIHdpdGggcGFlIHN1cHBvcnQKd2UgYXJlIHNhZmUgYmVjYXVzZSBpb21lbV9yZXNvdXJjZSBp
+cyBsaW1pdGVkIHRvIDMyYml0IGFjY29yZGluZyB0bwp4ODZfcGh5c19iaXRzLgoKLXYyOiB1cGRh
+dGUgYm90dG9tIGFzc2lnbmluZyB0byBtYWtlIGl0IGNsZWFyIGZvciBub24tcGFlIHN1cHBvcnQg
+bWFjaGluZS4KLXYzOiBCam9ybidzIGNoYW5nZToKCXVzZSBNQVhfUkVPVVJDRSBpbnN0ZWFkIG9m
+IC0xCgl1c2Ugc3RhcnQvZW5kIGluc3RlYWQgb2YgYm90dG9tL21heAoJZm9yIGFsbCBhcmNoIGlu
+c3RlYWQgb2YganVzdCB4ODZfNjQKClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlA
+a2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvYnVzLmMgfCAgIDI5ICsrKysrKysrKysrKysr
+KysrKysrKystLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMjIgaW5zZXJ0aW9ucygrKSwgNyBkZWxl
+dGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvZHJpdmVycy9wY2kvYnVzLmMKPT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQot
+LS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9wY2kvYnVzLmMKKysrIGxpbnV4LTIuNi9kcml2ZXJz
+L3BjaS9idXMuYwpAQCAtMTIxLDE0ICsxMjEsMjMgQEAgcGNpX2J1c19hbGxvY19yZXNvdXJjZShz
+dHJ1Y3QgcGNpX2J1cyAqYgogewogCWludCBpLCByZXQgPSAtRU5PTUVNOwogCXN0cnVjdCByZXNv
+dXJjZSAqcjsKLQlyZXNvdXJjZV9zaXplX3QgbWF4ID0gLTE7CisJcmVzb3VyY2Vfc2l6ZV90IGVu
+ZCA9IE1BWF9SRVNPVVJDRTsKKwlyZXNvdXJjZV9zaXplX3Qgc3RhcnQgPSAwOwogCiAJdHlwZV9t
+YXNrIHw9IElPUkVTT1VSQ0VfSU8gfCBJT1JFU09VUkNFX01FTTsKIAotCS8qIGRvbid0IGFsbG9j
+YXRlIHRvbyBoaWdoIGlmIHRoZSBwcmVmIG1lbSBkb2Vzbid0IHN1cHBvcnQgNjRiaXQqLwotCWlm
+ICghKHJlcy0+ZmxhZ3MgJiBJT1JFU09VUkNFX01FTV82NCkpCi0JCW1heCA9IFBDSUJJT1NfTUFY
+X01FTV8zMjsKKwkvKgorCSAqIGRvbid0IGFsbG9jYXRlIHRvbyBoaWdoIGlmIHRoZSBwcmVmIG1l
+bSBkb2Vzbid0IHN1cHBvcnQgNjRiaXQKKwkgKiBhbHNvIGlmIHRoaXMgaXMgYSA2NC1iaXQgbWVt
+IHJlc291cmNlLCB0cnkgYWJvdmUgNEdCIGZpcnN0CisJICovCisJaWYgKHJlcy0+ZmxhZ3MgJiBJ
+T1JFU09VUkNFX01FTSkgeworCQlpZiAoIShyZXMtPmZsYWdzICYgSU9SRVNPVVJDRV9NRU1fNjQp
+KQorCQkJZW5kID0gUENJQklPU19NQVhfTUVNXzMyOworCQllbHNlCisJCQlzdGFydCA9IChyZXNv
+dXJjZV9zaXplX3QpKDFVTEw8PDMyKTsKKwl9CiAKK2FnYWluOgogCXBjaV9idXNfZm9yX2VhY2hf
+cmVzb3VyY2UoYnVzLCByLCBpKSB7CiAJCWlmICghcikKIAkJCWNvbnRpbnVlOwpAQCAtMTQ1LDEy
+ICsxNTQsMTggQEAgcGNpX2J1c19hbGxvY19yZXNvdXJjZShzdHJ1Y3QgcGNpX2J1cyAqYgogCiAJ
+CS8qIE9rLCB0cnkgaXQgb3V0Li4gKi8KIAkJcmV0ID0gYWxsb2NhdGVfcmVzb3VyY2UociwgcmVz
+LCBzaXplLAotCQkJCQlyLT5zdGFydCA/IDogbWluLAotCQkJCQltYXgsIGFsaWduLAorCQkJCQlt
+YXgoc3RhcnQsIHItPnN0YXJ0ID8gOiBtaW4pLAorCQkJCQllbmQsIGFsaWduLAogCQkJCQlhbGln
+bmYsIGFsaWduZl9kYXRhKTsKIAkJaWYgKHJldCA9PSAwKQotCQkJYnJlYWs7CisJCQlyZXR1cm4g
+MDsKKwl9CisKKwlpZiAoc3RhcnQgIT0gMCkgeworCQlzdGFydCA9IDA7CisJCWdvdG8gYWdhaW47
+CiAJfQorCiAJcmV0dXJuIHJldDsKIH0KIAo=
+--047d7b2ee03ff64db504c0e216b4--
