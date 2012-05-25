@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462Ab2EYAYE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 20:24:04 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22665 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab2EYAYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 20:24:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6721"; a="192219222"
-From: "Olav Haugan" <ohaugan@codeaurora.org>
-To: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KyongHo'" <pullip.cho@samsung.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>
-References: <001c01cd3987$d1a71a50$74f54ef0$%cho@samsung.com> <20120524151231.e3a18ac5.akpm@linux-foundation.org>
-In-Reply-To: <20120524151231.e3a18ac5.akpm@linux-foundation.org>
-Subject: RE: mm: fix faulty initialization in vmalloc_init()
-Date: Thu, 24 May 2012 17:24:01 -0700
-Message-ID: <002c01cd3a0c$aef39530$0cdabf90$@codeaurora.org>
+	id S933428Ab2EYA0W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 20:26:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47666 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758913Ab2EYA0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 20:26:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="148177888"
+Message-ID: <4FBED148.70704@intel.com>
+Date: Fri, 25 May 2012 08:24:40 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Lutomirski <luto@mit.edu>, Jan Beulich <JBeulich@suse.com>,
+        borislav.petkov@amd.com, arnd@arndb.de, akinobu.mita@gmail.com,
+        eric.dumazet@gmail.com, fweisbec@gmail.com, rostedt@goodmis.org,
+        hughd@google.com, jeremy@goop.org, len.brown@intel.com,
+        tony.luck@intel.com, yongjie.ren@intel.com,
+        kamezawa.hiroyu@jp.fujitsu.com, seto.hidetoshi@jp.fujitsu.com,
+        penberg@kernel.org, yinghai@kernel.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, ak@linux.intel.com, avi@redhat.com,
+        dhowells@redhat.com, mingo@redhat.com, riel@redhat.com, cpw@sgi.com,
+        steiner@sgi.com, linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        "asit.k.mallick@intel.com" <asit.k.mallick@intel.com>
+Subject: Re: [PATCH v7 8/8] x86/tlb: just do tlb flush on one of siblings
+ of SMT
+References: <1337782555-8088-1-git-send-email-alex.shi@intel.com>  <1337782555-8088-9-git-send-email-alex.shi@intel.com>  <4FBD18D20200007800085951@nat28.tlf.novell.com>  <1337792984.9783.37.camel@laptop> <1337793338.9783.38.camel@laptop>  <CAObL_7GEzHYV9RbinPmK5D3DkZLiV0Wbz6j8x-Agbi21BM_OgA@mail.gmail.com>  <1337845230.9783.51.camel@laptop>  <CAObL_7FK8Pb7Ahmr0SBaPg1BvPTspr=EKG8v_QfcpdmMyuE5dA@mail.gmail.com> <1337865811.9783.152.camel@laptop> <4FBE39FE.4050001@linux.intel.com> <4FBE3D95.8030501@intel.com> <4FBE4335.6020602@linux.intel.com> <4FBE4671.2090408@intel.com> <4FBE4DB3.3070700@zytor.com>
+In-Reply-To: <4FBE4DB3.3070700@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQI9IbwIZCuqwZIGaoi0eNz+jQaRbwJhKT4zlea9DhA=
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> On Thu, 24 May 2012 17:32:56 +0900
-> KyongHo <pullip.cho@samsung.com> wrote:
+On 05/24/2012 11:03 PM, H. Peter Anvin wrote:
+
+> On 05/24/2012 07:32 AM, Alex Shi wrote:
+>>>
+>>> the TLB pool is shared as physical resource (dynamic or static, that
+>>> depends), but each tlb entry will be tagged for which of the two HT
+>>> pairs it's for, and on a logical level, they are completely separate as
+>>> a result (as they should be)
+>>
+>> But, why just flush part of SMT doesn't crash kernel on many benchmarks
+>> testing? Does it means flush tlb without PCID (doesn't enable in current
+>> kernel) will flush both of 'TLB pool'?
+>>
+>> Oh, lots of questions of the TLB pool details. :) Could you like share
+>> the URL of related documents?
+>>
 > 
-> > --- a/mm/vmalloc.c
-> > +++ b/mm/vmalloc.c
-> > @@ -1185,9 +1185,10 @@ void __init vmalloc_init(void)
-> >  	/* Import existing vmlist entries. */
-> >  	for (tmp = vmlist; tmp; tmp = tmp->next) {
-> >  		va = kzalloc(sizeof(struct vmap_area), GFP_NOWAIT);
- > -		va->flags = tmp->flags | VM_VM_AREA;
-> > +		va->flags = VM_VM_AREA;
+> Hang on here... there is a huge difference between what a particular CPU
+> implementation does and what is architecturally guaranteed.
 > 
-> This change is a mystery.  Why do we no longer transfer ->flags?
+> Both wearing my Linux x86 maintainer hat, and wearing my Intel employee
+> hat, I want to categorically state that Linux cannot rely on behavior
+> that isn't architecturally guaranteed.  Unless we can get an
+> architectural guarantee that this elision is safe, it cannot go in.  It
+> doesn't work the other way -- the burden of proof is to prove that the
+> change is safe, not that the change cannot be proven unsafe.
 
-I was actually debugging the same exact issue today. This transfer of flags
-actually causes some of the static mapping virtual addresses to be
-prematurely freed (before the mapping is removed) because VM_LAZY_FREE gets
-"set" if tmp->flags has VM_IOREMAP set. This might cause subsequent
-vmalloc/ioremap calls to fail because it might allocate one of the freed
-virtual address ranges that aren't unmapped. 
 
---
-Olav Haugan
+Understand and thanks for all of your time!
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> 
+> 	-hpa
+> 
 
 
