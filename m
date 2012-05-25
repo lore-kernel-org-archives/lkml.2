@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964797Ab2EYUB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:01:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45967 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757674Ab2EYUB1 (ORCPT
+	id S1758578Ab2EYUJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:09:09 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:37924 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758363Ab2EYUJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:01:27 -0400
-Date: Fri, 25 May 2012 13:01:23 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org, tj@kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v2 09/14] block: Add an explicit bio flag for bios that
- own their bvec
-Message-ID: <20120525200123.GA14196@google.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
- <1337817771-25038-10-git-send-email-koverstreet@google.com>
- <4FBE687E.1030605@panasas.com>
- <20120524213158.GB22664@google.com>
- <20120525164914.GE3855@redhat.com>
+	Fri, 25 May 2012 16:09:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120525164914.GE3855@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
+Date: Fri, 25 May 2012 13:08:46 -0700
+X-Google-Sender-Auth: BuqtjWQpG-ktfh9lj7VKG5iPcvo
+Message-ID: <CAB=NE6Urc0LPLP87rH6sDRsaKxb8Mh9u+suWQff6X3T2mYWx1A@mail.gmail.com>
+Subject: [ANN] QCA swiss army knife
+To: linux-wireless <linux-wireless@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org, qca-linux-team <qca-linux-team@qualcomm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 12:49:14PM -0400, Vivek Goyal wrote:
-> Even if you keep it as it is, I thought BIO_OWNS_BVEC probably communicates
-> the idea better than BIO_HAS_BVEC.
+To help with simplifying placement of userspace tool development for
+QCA for our different drivers we have merged together a few public
+development repositories into one, a qca-swiss-army-knife:
 
-Yeah, I'll make that change.
+Code: git://github.com/mcgrof/qca-swiss-army-knife.git
+Wiki: https://github.com/mcgrof/qca-swiss-army-knife/wiki
+
+Of most importance so far is the initval-tools [0], if you used to
+send patches for this utility please update your git tree to point to
+this new URL, a simple change in the name should let you git pull all
+the new changes, you will not have to reset your tree. The other tools
+that merged into this tree were  ath-utils and hal-reg-dump, so I've
+nuked the old trees from github.
+
+If you have any question please let us know.
+
+[0] http://wireless.kernel.org/en/users/Drivers/ath9k_hw/initvals-tool
+
+  Luis
