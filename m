@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab2EYNMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:12:33 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:34182 "EHLO relay.sw.ru"
+	id S933364Ab2EYNMy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:12:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:10342 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab2EYNJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:09:24 -0400
+	id S1758009Ab2EYNJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:09:21 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
@@ -17,9 +17,9 @@ Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
         Glauber Costa <glommer@parallels.com>,
         Christoph Lameter <cl@linux.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v3 16/28] memcg: kmem controller charge/uncharge infrastructure
-Date: Fri, 25 May 2012 17:03:36 +0400
-Message-Id: <1337951028-3427-17-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 18/28] slub: charge allocation to a memcg
+Date: Fri, 25 May 2012 17:03:38 +0400
+Message-Id: <1337951028-3427-19-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
 References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
@@ -27,604 +27,276 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With all the dependencies already in place, this patch introduces
-the charge/uncharge functions for the slab cache accounting in memcg.
+This patch charges allocation of a slab object to a particular
+memcg.
 
-Before we can charge a cache, we need to select the right cache.
-This is done by using the function __mem_cgroup_get_kmem_cache().
+The cache is selected with mem_cgroup_get_kmem_cache(),
+which is the biggest overhead we pay here, because
+it happens at all allocations. However, other than forcing
+a function call, this function is not very expensive, and
+try to return as soon as we realize we are not a memcg cache.
 
-If we should use the root kmem cache, this function tries to detect
-that and return as early as possible.
+The charge/uncharge functions are heavier, but are only called
+for new page allocations.
 
-The charge and uncharge functions comes in two flavours:
- * __mem_cgroup_(un)charge_slab(), that assumes the allocation is
-   a slab page, and
- * __mem_cgroup_(un)charge_kmem(), that does not. This later exists
-   because the slub allocator draws the larger kmalloc allocations
-   from the page allocator.
-
-In memcontrol.h those functions are wrapped in inline acessors.
-The idea is to later on, patch those with jump labels, so we don't
-incur any overhead when no mem cgroups are being used.
-
-Because the slub allocator tends to inline the allocations whenever
-it can, those functions need to be exported so modules can make use
-of it properly.
-
-This code is inspired by the code written by Suleiman Souhlal,
-but heavily changed.
+The kmalloc_no_account variant is patched so the base
+function is used and we don't even try to do cache
+selection.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
 CC: Christoph Lameter <cl@linux.com>
 CC: Pekka Enberg <penberg@cs.helsinki.fi>
 CC: Michal Hocko <mhocko@suse.cz>
 CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 CC: Johannes Weiner <hannes@cmpxchg.org>
+CC: Suleiman Souhlal <suleiman@google.com>
 ---
- include/linux/memcontrol.h |   80 +++++++++
- init/Kconfig               |    2 +-
- mm/memcontrol.c            |  386 +++++++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 466 insertions(+), 2 deletions(-)
+ include/linux/slub_def.h |   39 ++++++++++++++++++---
+ mm/slub.c                |   87 +++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 112 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index f93021a..fbc5ba1 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -21,6 +21,7 @@
- #define _LINUX_MEMCONTROL_H
- #include <linux/cgroup.h>
- #include <linux/vm_event_item.h>
-+#include <linux/hardirq.h>
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index f822ca2..ba9c68b 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -13,6 +13,8 @@
+ #include <linux/kobject.h>
  
- struct mem_cgroup;
- struct page_cgroup;
-@@ -447,6 +448,19 @@ void mem_cgroup_register_cache(struct mem_cgroup *memcg,
- void mem_cgroup_release_cache(struct kmem_cache *cachep);
- extern char *mem_cgroup_cache_name(struct mem_cgroup *memcg,
- 				   struct kmem_cache *cachep);
-+
-+void mem_cgroup_flush_cache_create_queue(void);
-+bool __mem_cgroup_charge_slab(struct kmem_cache *cachep, gfp_t gfp,
-+			      size_t size);
-+void __mem_cgroup_uncharge_slab(struct kmem_cache *cachep, size_t size);
-+
-+bool __mem_cgroup_new_kmem_page(struct page *page, gfp_t gfp);
-+void __mem_cgroup_free_kmem_page(struct page *page);
-+
-+struct kmem_cache *
-+__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp);
-+
-+#define mem_cgroup_kmem_on 1
- #else
- static inline void mem_cgroup_register_cache(struct mem_cgroup *memcg,
- 					     struct kmem_cache *s)
-@@ -463,6 +477,72 @@ static inline void sock_update_memcg(struct sock *sk)
- static inline void sock_release_memcg(struct sock *sk)
+ #include <linux/kmemleak.h>
++#include <linux/memcontrol.h>
++#include <linux/mm.h>
+ 
+ enum stat_item {
+ 	ALLOC_FASTPATH,		/* Allocation from cpu slab */
+@@ -228,27 +230,54 @@ static __always_inline int kmalloc_index(size_t size)
+  * This ought to end up with a global pointer to the right cache
+  * in kmalloc_caches.
+  */
+-static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
++static __always_inline struct kmem_cache *kmalloc_slab(gfp_t flags, size_t size)
  {
- }
-+
-+static inline void
-+mem_cgroup_flush_cache_create_queue(void)
-+{
-+}
-+
-+static inline void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
-+{
-+}
-+
-+#define mem_cgroup_kmem_on 0
-+#define __mem_cgroup_get_kmem_cache(a, b) a
-+#define __mem_cgroup_charge_slab(a, b, c) false
-+#define __mem_cgroup_new_kmem_page(a, gfp) false
-+#define __mem_cgroup_uncharge_slab(a, b)
-+#define __mem_cgroup_free_kmem_page(b)
- #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-+static __always_inline struct kmem_cache *
-+mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp)
-+{
-+	if (!mem_cgroup_kmem_on)
-+		return cachep;
-+	if (!current->mm)
-+		return cachep;
-+	if (in_interrupt())
-+		return cachep;
-+	if (gfp & __GFP_NOFAIL)
-+		return cachep;
-+
-+	return __mem_cgroup_get_kmem_cache(cachep, gfp);
-+}
-+
-+static __always_inline bool
-+mem_cgroup_charge_slab(struct kmem_cache *cachep, gfp_t gfp, size_t size)
-+{
-+	if (mem_cgroup_kmem_on)
-+		return __mem_cgroup_charge_slab(cachep, gfp, size);
-+	return true;
-+}
-+
-+static __always_inline void
-+mem_cgroup_uncharge_slab(struct kmem_cache *cachep, size_t size)
-+{
-+	if (mem_cgroup_kmem_on)
-+		__mem_cgroup_uncharge_slab(cachep, size);
-+}
-+
-+static __always_inline
-+bool mem_cgroup_new_kmem_page(struct page *page, gfp_t gfp)
-+{
-+	if (!mem_cgroup_kmem_on)
-+		return true;
-+	if (!current->mm)
-+		return true;
-+	if (in_interrupt())
-+		return true;
-+	if (gfp & __GFP_NOFAIL)
-+		return true;
-+	return __mem_cgroup_new_kmem_page(page, gfp);
-+}
-+
-+static __always_inline
-+void mem_cgroup_free_kmem_page(struct page *page)
-+{
-+	if (mem_cgroup_kmem_on)
-+		__mem_cgroup_free_kmem_page(page);
-+}
- #endif /* _LINUX_MEMCONTROL_H */
++	struct kmem_cache *s;
+ 	int index = kmalloc_index(size);
  
-diff --git a/init/Kconfig b/init/Kconfig
-index 72f33fa..071b7e3 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -696,7 +696,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
- 	  then swapaccount=0 does the trick).
- config CGROUP_MEM_RES_CTLR_KMEM
- 	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
--	depends on CGROUP_MEM_RES_CTLR && EXPERIMENTAL
-+	depends on CGROUP_MEM_RES_CTLR && EXPERIMENTAL && !SLOB
- 	default n
- 	help
- 	  The Kernel Memory extension for Memory Resource Controller can limit
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4689034..44589fb 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -10,6 +10,10 @@
-  * Copyright (C) 2009 Nokia Corporation
-  * Author: Kirill A. Shutemov
-  *
-+ * Kernel Memory Controller
-+ * Copyright (C) 2012 Parallels Inc. and Google Inc.
-+ * Authors: Glauber Costa and Suleiman Souhlal
-+ *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2 of the License, or
-@@ -321,6 +325,11 @@ struct mem_cgroup {
- #ifdef CONFIG_INET
- 	struct tcp_memcontrol tcp_mem;
- #endif
+ 	if (index == 0)
+ 		return NULL;
+ 
+-	return kmalloc_caches[index];
++	s = kmalloc_caches[index];
++
++	rcu_read_lock();
++	s = mem_cgroup_get_kmem_cache(s, flags);
++	rcu_read_unlock();
++
++	return s;
+ }
+ 
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+ void *__kmalloc(size_t size, gfp_t flags);
+ 
+ static __always_inline void *
+-kmalloc_order(size_t size, gfp_t flags, unsigned int order)
++kmalloc_order_base(size_t size, gfp_t flags, unsigned int order)
+ {
+ 	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
+ 	kmemleak_alloc(ret, size, 1, flags);
+ 	return ret;
+ }
+ 
++static __always_inline void *
++kmalloc_order(size_t size, gfp_t flags, unsigned int order)
++{
++	void *ret = NULL;
++	struct page *page;
++
++	ret = kmalloc_order_base(size, flags, order);
++	if (!ret)
++		return ret;
++
++	page = virt_to_head_page(ret);
++
++	if (!mem_cgroup_new_kmem_page(page, flags)) {
++		put_page(page);
++		return NULL;
++	}
++
++	return ret;
++}
++
+ /**
+  * Calling this on allocated memory will check that the memory
+  * is expected to be in use, and print warnings if not.
+@@ -293,7 +322,7 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+ 			return kmalloc_large(size, flags);
+ 
+ 		if (!(flags & SLUB_DMA)) {
+-			struct kmem_cache *s = kmalloc_slab(size);
++			struct kmem_cache *s = kmalloc_slab(flags, size);
+ 
+ 			if (!s)
+ 				return ZERO_SIZE_PTR;
+@@ -326,7 +355,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ {
+ 	if (__builtin_constant_p(size) &&
+ 		size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
+-			struct kmem_cache *s = kmalloc_slab(size);
++			struct kmem_cache *s = kmalloc_slab(flags, size);
+ 
+ 		if (!s)
+ 			return ZERO_SIZE_PTR;
+diff --git a/mm/slub.c b/mm/slub.c
+index 640872f..730e69f 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1283,11 +1283,39 @@ static inline struct page *alloc_slab_page(gfp_t flags, int node,
+ 		return alloc_pages_exact_node(node, flags, order);
+ }
+ 
++static inline unsigned long size_in_bytes(unsigned int order)
++{
++	return (1 << order) << PAGE_SHIFT;
++}
 +
 +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+	/* Slab accounting */
-+	struct kmem_cache *slabs[MAX_KMEM_CACHE_TYPES];
++static void kmem_cache_inc_ref(struct kmem_cache *s)
++{
++	if (s->memcg_params.memcg)
++		atomic_inc(&s->memcg_params.refcnt);
++}
++static void kmem_cache_drop_ref(struct kmem_cache *s)
++{
++	if (s->memcg_params.memcg)
++		atomic_dec(&s->memcg_params.refcnt);
++}
++#else
++static inline void kmem_cache_inc_ref(struct kmem_cache *s)
++{
++}
++static inline void kmem_cache_drop_ref(struct kmem_cache *s)
++{
++}
 +#endif
- };
- 
- int memcg_css_id(struct mem_cgroup *memcg)
-@@ -414,6 +423,9 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
- #include <net/ip.h>
- 
- static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
-+static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta);
-+static void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta);
 +
- void sock_update_memcg(struct sock *sk)
++
++
+ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
  {
- 	if (mem_cgroup_sockets_enabled) {
-@@ -484,7 +496,14 @@ char *mem_cgroup_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
- 	return name;
- }
+-	struct page *page;
++	struct page *page = NULL;
+ 	struct kmem_cache_order_objects oo = s->oo;
+ 	gfp_t alloc_gfp;
++	unsigned int memcg_allowed = oo_order(oo);
  
-+static inline bool mem_cgroup_kmem_enabled(struct mem_cgroup *memcg)
-+{
-+	return !mem_cgroup_disabled() && memcg &&
-+	       !mem_cgroup_is_root(memcg) && memcg->kmem_accounted;
-+}
-+
- struct ida cache_types;
-+static DEFINE_MUTEX(memcg_cache_mutex);
+ 	flags &= gfp_allowed_mask;
  
- void mem_cgroup_register_cache(struct mem_cgroup *memcg,
- 			       struct kmem_cache *cachep)
-@@ -501,9 +520,304 @@ void mem_cgroup_register_cache(struct mem_cgroup *memcg,
+@@ -1296,13 +1324,29 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
  
- void mem_cgroup_release_cache(struct kmem_cache *cachep)
- {
-+	mem_cgroup_flush_cache_create_queue();
- 	if (cachep->memcg_params.id != -1)
- 		ida_simple_remove(&cache_types, cachep->memcg_params.id);
- }
+ 	flags |= s->allocflags;
+ 
+-	/*
+-	 * Let the initial higher-order allocation fail under memory pressure
+-	 * so we fall-back to the minimum order allocation.
+-	 */
+-	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
++	memcg_allowed = oo_order(oo);
++	if (!mem_cgroup_charge_slab(s, flags, size_in_bytes(memcg_allowed))) {
 +
-+static struct kmem_cache *memcg_create_kmem_cache(struct mem_cgroup *memcg,
-+						  struct kmem_cache *cachep)
-+{
-+	struct kmem_cache *new_cachep;
-+	int idx;
-+
-+	BUG_ON(!mem_cgroup_kmem_enabled(memcg));
-+
-+	idx = cachep->memcg_params.id;
-+
-+	mutex_lock(&memcg_cache_mutex);
-+	new_cachep = memcg->slabs[idx];
-+	if (new_cachep)
-+		goto out;
-+
-+	new_cachep = kmem_cache_dup(memcg, cachep);
-+
-+	if (new_cachep == NULL) {
-+		new_cachep = cachep;
-+		goto out;
-+	}
-+
-+	mem_cgroup_get(memcg);
-+	memcg->slabs[idx] = new_cachep;
-+	new_cachep->memcg_params.memcg = memcg;
-+	atomic_set(&new_cachep->memcg_params.refcnt, 1);
-+out:
-+	mutex_unlock(&memcg_cache_mutex);
-+	return new_cachep;
-+}
-+
-+struct create_work {
-+	struct mem_cgroup *memcg;
-+	struct kmem_cache *cachep;
-+	struct list_head list;
-+};
-+
-+/* Use a single spinlock for destruction and creation, not a frequent op */
-+static DEFINE_SPINLOCK(cache_queue_lock);
-+static LIST_HEAD(create_queue);
-+
-+/*
-+ * Flush the queue of kmem_caches to create, because we're creating a cgroup.
-+ *
-+ * We might end up flushing other cgroups' creation requests as well, but
-+ * they will just get queued again next time someone tries to make a slab
-+ * allocation for them.
-+ */
-+void mem_cgroup_flush_cache_create_queue(void)
-+{
-+	struct create_work *cw, *tmp;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_for_each_entry_safe(cw, tmp, &create_queue, list) {
-+		list_del(&cw->list);
-+		kfree(cw);
-+	}
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+}
-+
-+static void memcg_create_cache_work_func(struct work_struct *w)
-+{
-+	struct create_work *cw, *tmp;
-+	unsigned long flags;
-+	LIST_HEAD(create_unlocked);
-+
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_for_each_entry_safe(cw, tmp, &create_queue, list)
-+		list_move(&cw->list, &create_unlocked);
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+
-+	list_for_each_entry_safe(cw, tmp, &create_unlocked, list) {
-+		list_del(&cw->list);
-+		memcg_create_kmem_cache(cw->memcg, cw->cachep);
-+		/* Drop the reference gotten when we enqueued. */
-+		css_put(&cw->memcg->css);
-+		kfree(cw);
-+	}
-+}
-+
-+static DECLARE_WORK(memcg_create_cache_work, memcg_create_cache_work_func);
-+
-+/*
-+ * Enqueue the creation of a per-memcg kmem_cache.
-+ * Called with rcu_read_lock.
-+ */
-+static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
-+				       struct kmem_cache *cachep)
-+{
-+	struct create_work *cw;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_for_each_entry(cw, &create_queue, list) {
-+		if (cw->memcg == memcg && cw->cachep == cachep) {
-+			spin_unlock_irqrestore(&cache_queue_lock, flags);
-+			return;
++		memcg_allowed = oo_order(s->min);
++		if (!mem_cgroup_charge_slab(s, flags,
++					    size_in_bytes(memcg_allowed))) {
++			if (flags & __GFP_WAIT)
++				local_irq_disable();
++			return NULL;
 +		}
 +	}
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
 +
-+	/* The corresponding put will be done in the workqueue. */
-+	if (!css_tryget(&memcg->css))
-+		return;
-+
-+	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
-+	if (cw == NULL) {
-+		css_put(&memcg->css);
-+		return;
-+	}
-+
-+	cw->memcg = memcg;
-+	cw->cachep = cachep;
-+	spin_lock_irqsave(&cache_queue_lock, flags);
-+	list_add_tail(&cw->list, &create_queue);
-+	spin_unlock_irqrestore(&cache_queue_lock, flags);
-+
-+	schedule_work(&memcg_create_cache_work);
-+}
-+
-+/*
-+ * Return the kmem_cache we're supposed to use for a slab allocation.
-+ * We try to use the current memcg's version of the cache.
-+ *
-+ * If the cache does not exist yet, if we are the first user of it,
-+ * we either create it immediately, if possible, or create it asynchronously
-+ * in a workqueue.
-+ * In the latter case, we will let the current allocation go through with
-+ * the original cache.
-+ *
-+ * Can't be called in interrupt context or from kernel threads.
-+ * This function needs to be called with rcu_read_lock() held.
-+ */
-+struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
-+					     gfp_t gfp)
-+{
-+	struct mem_cgroup *memcg;
-+	int idx;
-+	struct task_struct *p;
-+
-+	gfp |=  cachep->allocflags;
-+
-+	if (cachep->memcg_params.memcg)
-+		return cachep;
-+
-+	idx = cachep->memcg_params.id;
-+	VM_BUG_ON(idx == -1);
-+
-+	p = rcu_dereference(current->mm->owner);
-+	memcg = mem_cgroup_from_task(p);
-+
-+	if (!mem_cgroup_kmem_enabled(memcg))
-+		return cachep;
-+
-+	if (memcg->slabs[idx] == NULL) {
-+		memcg_create_cache_enqueue(memcg, cachep);
-+		return cachep;
-+	}
-+
-+	return memcg->slabs[idx];
-+}
-+EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
-+
-+bool __mem_cgroup_new_kmem_page(struct page *page, gfp_t gfp)
-+{
-+	struct mem_cgroup *memcg;
-+	struct page_cgroup *pc;
-+	bool ret = true;
-+	size_t size;
-+	struct task_struct *p;
-+
-+	if (!current->mm || in_interrupt())
-+		return true;
-+
-+	rcu_read_lock();
-+	p = rcu_dereference(current->mm->owner);
-+	memcg = mem_cgroup_from_task(p);
-+
-+	if (!mem_cgroup_kmem_enabled(memcg))
-+		goto out;
-+
-+	mem_cgroup_get(memcg);
-+
-+	size = (1 << compound_order(page)) << PAGE_SHIFT;
-+
-+	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
-+	if (!ret) {
-+		mem_cgroup_put(memcg);
-+		goto out;
-+	}
-+
-+	pc = lookup_page_cgroup(page);
-+	lock_page_cgroup(pc);
-+	pc->mem_cgroup = memcg;
-+	SetPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+
-+out:
-+	rcu_read_unlock();
-+	return ret;
-+}
-+EXPORT_SYMBOL(__mem_cgroup_new_kmem_page);
-+
-+void __mem_cgroup_free_kmem_page(struct page *page)
-+{
-+	struct mem_cgroup *memcg;
-+	size_t size;
-+	struct page_cgroup *pc;
-+
-+	if (mem_cgroup_disabled())
-+		return;
-+
-+	pc = lookup_page_cgroup(page);
-+	lock_page_cgroup(pc);
-+	memcg = pc->mem_cgroup;
-+	pc->mem_cgroup = NULL;
-+	if (!PageCgroupUsed(pc)) {
-+		unlock_page_cgroup(pc);
-+		return;
-+	}
-+	ClearPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+
-+	/*
-+	 * The classical disabled check won't work
-+	 * for uncharge, since it is possible that the user enabled
-+	 * kmem tracking, allocated, and then disabled.
-+	 *
-+	 * We trust if there is a memcg associated with the page,
-+	 * it is a valid allocation
-+	 */
-+
-+	if (!memcg)
-+		return;
-+
-+	WARN_ON(mem_cgroup_is_root(memcg));
-+	size = (1 << compound_order(page)) << PAGE_SHIFT;
-+	memcg_uncharge_kmem(memcg, size);
-+	mem_cgroup_put(memcg);
-+}
-+EXPORT_SYMBOL(__mem_cgroup_free_kmem_page);
-+
-+bool __mem_cgroup_charge_slab(struct kmem_cache *cachep, gfp_t gfp, size_t size)
-+{
-+	struct mem_cgroup *memcg;
-+	bool ret = true;
-+
-+	/* mem_cgroup_get_kmem_cache should have ruled this out */
-+	WARN_ON(gfp & __GFP_NOFAIL);
-+
-+	rcu_read_lock();
-+	memcg = cachep->memcg_params.memcg;
-+	if (!mem_cgroup_kmem_enabled(memcg))
-+		goto out;
-+
-+	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
-+out:
-+	rcu_read_unlock();
-+	return ret;
-+}
-+EXPORT_SYMBOL(__mem_cgroup_charge_slab);
-+
-+void __mem_cgroup_uncharge_slab(struct kmem_cache *cachep, size_t size)
-+{
-+	struct mem_cgroup *memcg;
-+
-+	rcu_read_lock();
-+	memcg = cachep->memcg_params.memcg;
-+	rcu_read_unlock();
-+
-+	/*
-+	 * The classical disabled check won't work
-+	 * for uncharge, since it is possible that the user enabled
-+	 * kmem tracking, allocated, and then disabled.
-+	 *
-+	 * We trust if there is a memcg associated with the slab,
-+	 * it is a valid allocation
-+	 */
-+	if (!memcg)
-+		return;
-+
-+	memcg_uncharge_kmem(memcg, size);
-+}
-+EXPORT_SYMBOL(__mem_cgroup_uncharge_slab);
-+
-+static void memcg_slab_init(struct mem_cgroup *memcg)
-+{
-+	int i;
-+
-+	for (i = 0; i < MAX_KMEM_CACHE_TYPES; i++)
-+		memcg->slabs[i] = NULL;
-+}
- #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
- 
- static void drain_all_stock_async(struct mem_cgroup *memcg);
-@@ -4760,7 +5074,11 @@ static struct cftype kmem_cgroup_files[] = {
- 
- static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- {
--	return mem_cgroup_sockets_init(memcg, ss);
-+	int ret = mem_cgroup_sockets_init(memcg, ss);
-+
-+	if (!ret)
-+		memcg_slab_init(memcg);
-+	return ret;
- };
- 
- static void kmem_cgroup_destroy(struct mem_cgroup *memcg)
-@@ -5776,3 +6094,69 @@ static int __init enable_swap_account(char *s)
- __setup("swapaccount=", enable_swap_account);
- 
- #endif
-+
-+#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-+int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, s64 delta)
-+{
-+	struct res_counter *fail_res;
-+	struct mem_cgroup *_memcg;
-+	int may_oom, ret;
-+	bool nofail = false;
-+
-+	may_oom = (gfp & __GFP_WAIT) && (gfp & __GFP_FS) &&
-+	    !(gfp & __GFP_NORETRY);
-+
-+	ret = 0;
-+
-+	if (!memcg)
-+		return ret;
-+
-+	_memcg = memcg;
-+	ret = __mem_cgroup_try_charge(NULL, gfp, delta / PAGE_SIZE,
-+	    &_memcg, may_oom);
-+
-+	if (ret == -EINTR)  {
-+		nofail = true;
++	if (memcg_allowed == oo_order(oo)) {
 +		/*
-+		 * __mem_cgroup_try_charge() chose to bypass to root due
-+		 * to OOM kill or fatal signal.
-+		 * Since our only options are to either fail the
-+		 * allocation or charge it to this cgroup, do it as
-+		 * a temporary condition. But we can't fail. From a kmem/slab
-+		 * perspective, the cache has already been selected, by
-+		 * mem_cgroup_get_kmem_cache(), so it is too late to change our
-+		 * minds
++		 * Let the initial higher-order allocation fail under memory
++		 * pressure so we fall-back to the minimum order allocation.
 +		 */
-+		res_counter_charge_nofail(&memcg->res, delta, &fail_res);
-+		if (do_swap_account)
-+			res_counter_charge_nofail(&memcg->memsw, delta,
-+						  &fail_res);
-+		ret = 0;
-+	} else if (ret == -ENOMEM)
-+		return ret;
++		alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) &
++			     ~__GFP_NOFAIL;
 +
-+	if (nofail)
-+		res_counter_charge_nofail(&memcg->kmem, delta, &fail_res);
-+	else
-+		ret = res_counter_charge(&memcg->kmem, delta, &fail_res);
-+
-+	if (ret) {
-+		res_counter_uncharge(&memcg->res, delta);
-+		if (do_swap_account)
-+			res_counter_uncharge(&memcg->memsw, delta);
++		page = alloc_slab_page(alloc_gfp, node, oo);
++	}
+ 
+-	page = alloc_slab_page(alloc_gfp, node, oo);
+ 	if (unlikely(!page)) {
+ 		oo = s->min;
+ 		/*
+@@ -1313,13 +1357,25 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 
+ 		if (page)
+ 			stat(s, ORDER_FALLBACK);
++		/*
++		 * We reserved more than we used, time to give it back
++		 */
++		if (page && memcg_allowed != oo_order(oo)) {
++			unsigned long delta;
++			delta = memcg_allowed - oo_order(oo);
++			mem_cgroup_uncharge_slab(s, size_in_bytes(delta));
++		}
+ 	}
+ 
+ 	if (flags & __GFP_WAIT)
+ 		local_irq_disable();
+ 
+-	if (!page)
++	if (!page) {
++		mem_cgroup_uncharge_slab(s, size_in_bytes(memcg_allowed));
+ 		return NULL;
 +	}
 +
-+	return ret;
-+}
++	kmem_cache_inc_ref(s);
+ 
+ 	if (kmemcheck_enabled
+ 		&& !(s->flags & (SLAB_NOTRACK | DEBUG_DEFAULT_FLAGS))) {
+@@ -1419,6 +1475,9 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+ 	__free_pages(page, order);
 +
-+void memcg_uncharge_kmem(struct mem_cgroup *memcg, s64 delta)
-+{
-+	if (!memcg)
-+		return;
++	mem_cgroup_uncharge_slab(s, (1 << order) << PAGE_SHIFT);
++	kmem_cache_drop_ref(s);
+ }
+ 
+ #define need_reserve_slab_rcu						\
+@@ -2310,6 +2369,9 @@ static __always_inline void *slab_alloc(struct kmem_cache *s,
+ 	if (slab_pre_alloc_hook(s, gfpflags))
+ 		return NULL;
+ 
++	rcu_read_lock();
++	s = mem_cgroup_get_kmem_cache(s, gfpflags);
++	rcu_read_unlock();
+ redo:
+ 
+ 	/*
+@@ -3372,9 +3434,15 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
+ 
+ 	flags |= __GFP_COMP | __GFP_NOTRACK;
+ 	page = alloc_pages_node(node, flags, get_order(size));
+-	if (page)
++	if (!page)
++		goto out;
 +
-+	res_counter_uncharge(&memcg->kmem, delta);
-+	res_counter_uncharge(&memcg->res, delta);
-+	if (do_swap_account)
-+		res_counter_uncharge(&memcg->memsw, delta);
-+}
-+#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++	if (!mem_cgroup_new_kmem_page(page, flags))
++		put_page(page);
++	else
+ 		ptr = page_address(page);
+ 
++out:
+ 	kmemleak_alloc(ptr, size, 1, flags);
+ 	return ptr;
+ }
+@@ -3476,6 +3544,7 @@ void kfree(const void *x)
+ 	if (unlikely(!PageSlab(page))) {
+ 		BUG_ON(!PageCompound(page));
+ 		kmemleak_free(x);
++		mem_cgroup_free_kmem_page(page);
+ 		put_page(page);
+ 		return;
+ 	}
 -- 
 1.7.7.6
 
