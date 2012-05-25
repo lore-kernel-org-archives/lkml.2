@@ -1,136 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab2EYNIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:08:01 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:33439 "EHLO mx2.netapp.com"
+	id S1753539Ab2EYNVs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:21:48 -0400
+Received: from mga11.intel.com ([192.55.52.93]:19916 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753528Ab2EYNHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:07:33 -0400
-X-IronPort-AV: E=Sophos;i="4.75,656,1330934400"; 
-   d="scan'208";a="650440053"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-CC: Dave Jones <davej@redhat.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.4. sunrpc oops during shutdown
-Thread-Topic: 3.4. sunrpc oops during shutdown
-Thread-Index: AQHNN3wvtXMDx9rJ3kyqfagGDPb51pbaoqcAgABSZwA=
-Date: Fri, 25 May 2012 13:07:30 +0000
-Message-ID: <1337951250.2535.5.camel@lade.trondhjem.org>
-References: <20120521171411.GA15562@redhat.com>
-	 <1337623475.9583.13.camel@lade.trondhjem.org>
-	 <4FBF3EF2.4090804@parallels.com>
-In-Reply-To: <4FBF3EF2.4090804@parallels.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <98BD2B5271126B4F8A81411A4CA91D08@tahoe.netapp.com>
-MIME-Version: 1.0
+	id S1752097Ab2EYNVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:21:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="asc'?scan'208";a="171292567"
+Message-ID: <1337952271.30969.37.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH] UBIFS: compute KSA size and store in superblock
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joel Reardon <joel@clambassador.com>
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Fri, 25 May 2012 16:24:31 +0300
+In-Reply-To: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-KPmpepioGWYnejquzGV+"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4PDG5FK006282
 
-On Fri, 2012-05-25 at 12:12 +0400, Stanislav Kinsbursky wrote:
-> On 21.05.2012 22:03, Myklebust, Trond wrote:
-> > On Mon, 2012-05-21 at 13:14 -0400, Dave Jones wrote:
-> >> Tried to shutdown a machine, got this, and a bunch of hung processes.
-> >> There was one NFS mount mounted at the time.
-> >>
-> >> 	Dave
-> >>
-> >> BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-> >> IP: [<ffffffffa01191df>] svc_destroy+0x1f/0x140 [sunrpc]
-> >> PGD 1434c4067 PUD 144964067 PMD 0
-> >> Oops: 0000 [#1] PREEMPT SMP
-> >> CPU 4
-> >> Modules linked in: ip6table_filter(-) ip6_tables nfsd nfs fscache auth_rpcgss nfs_acl lockd ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
-> >>
-> >> Pid: 6946, comm: ntpd Not tainted 3.4.0+ #13
-> >> RIP: 0010:[<ffffffffa01191df>]  [<ffffffffa01191df>] svc_destroy+0x1f/0x140 [sunrpc]
-> >> RSP: 0018:ffff880143c65c48  EFLAGS: 00010286
-> >> RAX: 0000000000000000 RBX: ffff880142cd41a0 RCX: 0000000000000006
-> >> RDX: 0000000000000040 RSI: ffff880143105028 RDI: ffff880142cd41a0
-> >> RBP: ffff880143c65c58 R08: 0000000000000000 R09: 0000000000000001
-> >> R10: 0000000000000000 R11: 0000000000000000 R12: ffff88013bc5a148
-> >> R13: ffff880140981658 R14: ffff880142cd41a0 R15: ffff880146c88000
-> >> FS:  00007fdc0382a740(0000) GS:ffff880149400000(0000) knlGS:0000000000000000
-> >> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> >> CR2: 0000000000000028 CR3: 0000000036cbb000 CR4: 00000000001407e0
-> >> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> >> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> >> Process ntpd (pid: 6946, threadinfo ffff880143c64000, task ffff880143104940)
-> >> Stack:
-> >>   ffff880140981660 ffff88013bc5a148 ffff880143c65c88 ffffffffa01193a6
-> >>   0000000000000000 ffff88013e566020 ffff88013e565f28 ffff880146ee6ac0
-> >>   ffff880143c65ca8 ffffffffa024f403 ffff880143c65ca8 ffff880143d3a4f8
-> >> Call Trace:
-> >>   [<ffffffffa01193a6>] svc_exit_thread+0xa6/0xb0 [sunrpc]
-> >>   [<ffffffffa024f403>] nfs_callback_down+0x53/0x90 [nfs]
-> >>   [<ffffffffa021642e>] nfs_free_client+0xfe/0x120 [nfs]
-> >>   [<ffffffffa02185df>] nfs_put_client+0x29f/0x420 [nfs]
-> >>   [<ffffffffa02184e0>] ? nfs_put_client+0x1a0/0x420 [nfs]
-> >>   [<ffffffffa021962f>] nfs_free_server+0x16f/0x2e0 [nfs]
-> >>   [<ffffffffa02194e3>] ? nfs_free_server+0x23/0x2e0 [nfs]
-> >>   [<ffffffffa022363c>] nfs4_kill_super+0x3c/0x50 [nfs]
-> >>   [<ffffffff811ad67c>] deactivate_locked_super+0x3c/0xa0
-> >>   [<ffffffff811ae29e>] deactivate_super+0x4e/0x70
-> >>   [<ffffffff811ccba4>] mntput_no_expire+0xb4/0x100
-> >>   [<ffffffff811ccc16>] mntput+0x26/0x40
-> >>   [<ffffffff811cd597>] release_mounts+0x77/0x90
-> >>   [<ffffffff811cefc6>] put_mnt_ns+0x66/0x80
-> >>   [<ffffffff81078dff>] free_nsproxy+0x1f/0xb0
-> >>   [<ffffffff8107905e>] switch_task_namespaces+0x5e/0x70
-> >>   [<ffffffff81079080>] exit_task_namespaces+0x10/0x20
-> >>   [<ffffffff8104e90e>] do_exit+0x4ee/0xb80
-> >>   [<ffffffff81639c0a>] ? retint_swapgs+0xe/0x13
-> >>   [<ffffffff8104f2ef>] do_group_exit+0x4f/0xc0
-> >>   [<ffffffff8104f377>] sys_exit_group+0x17/0x20
-> >>   [<ffffffff81641352>] system_call_fastpath+0x16/0x1b
-> >> Code: 48 8b 5d f0 4c 8b 65 f8 c9 c3 66 90 55 48 89 e5 41 54 53 66 66 66 66 90 65 48 8b 04 25 80 ba 00 00 48 8b 80 50 05 00 00 48 89 fb<4c>  8b 60 28 8b 47 58 85 c0 0f 84 ec 00 00 00 83 e8 01 85 c0 89
-> >
-> > Aside from the fact that the current net_namespace is not guaranteed to
-> > exist when we are called from free_nsproxy, svc_destroy() looks
-> > seriously broken:
-> 
-> Trond, looks like you are mistaken here.
-> Any process holds references to all namespaces it belong to (copy_net_ns() 
-> increase usage counter). And network namespace is released after mount namespace 
-> in free_nsproxy.
 
-That doesn't help you though. switch_task_namespaces will have already
-set current->nsproxy to NULL, which is why we Oops when we try to read
-current->nsproxy->net_ns in svc_exit_thread().
+--=-KPmpepioGWYnejquzGV+
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> >
-> >        * On the one hand it is trying to free struct svc_serv (and
-> >          presumably all structures owned by struct svc_serv).
-> >        * On the other hand, it tries to pass a parameter to
-> >          svc_close_net() saying "please don't free structures on my
-> >          sv_tempsocks, or sv_permsocks list unless they match this net
-> >          namespace".
-> >
-> 
-> I've sent patches, which moves svc_shutdown_net() from svc_destroy() ("SUNRPC: 
-> separate per-net data creation from service").
-> with this patch set it's assumed, that per-net resources will be created or 
-> released prior to service creation and destruction.
+On Fri, 2012-05-25 at 15:10 +0200, Joel Reardon wrote:
+> This patch makes the super block reserve space for the KSA. It computes t=
+he
+> number of KSA LEBs and adds the ksa_lebs to on-medium superblock. The val=
+ue is
+> read off the media. The decision to use a KSA is controlled by use_ubifse=
+c
+> switch, also added to the superblock, ubifs_info, and is controlled as a =
+mount
+> option.
+>=20
+> This is tested by creating a drive and checking the mount debug output. T=
+he
+> number of LEBS assigned during create_default_filesystem was changed to e=
+nsure
+> that remounting does infact read the old value. When the use_ubifsec opti=
+on
+> was not enabled, no LEBs were assigned. Integck was run and the drive was
+> filled to capacity. The LEBs in the KSA were not used when filled.
+>=20
+> Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
 
-Are those patches appropriate for inclusion in the stable kernel series
-so that we can fix 3.4?
+I do not have to time to review it now, but please, make sure that the
+KSA size is according to 'max_leb_cnt' (see the --max-leb-cnt of the
+mkfs.ubifs tool). Also, think about this use-case in general: you have
+UBI volume of size X, then the volume is resized to Y > X, then mounted
+- UBIFS should work and resize itself to Y, up to the 'max_leb_cnt'. If
+Y > 'max_leb_cnt', we resize only to 'max_leb_cnt'.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+>  struct ubifs_sb_node {
+>  	struct ubifs_ch ch;
+> @@ -649,7 +651,9 @@ struct ubifs_sb_node {
+>  	__le32 time_gran;
+>  	__u8 uuid[16];
+>  	__le32 ro_compat_version;
+> -	__u8 padding2[3968];
+> +	__le32 ksa_lebs;
+> +	__u8 use_ubifsec;
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+If it is only one bit, document that only one bit (LSB?) is used. In the
+future someone can add more bits there, and rename it, theoretically
+(unlikely though).
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-KPmpepioGWYnejquzGV+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABAgAGBQJPv4gPAAoJECmIfjd9wqK0MB8P/3XKw3VkYSMRNgyr9it6GRvA
+dUMi4hyu9GROVuEQakxkbdAMDtP1R/vepIhCbECyq8UrIQjyLwo078ILFvo6T+zm
+DGqnOiKgYp3WN8mWWZQ2aUCSRYmP2PYgRSuBW1496irGJg+8TGfxZXUIX1o7NCA8
+OtTfrYvdOiUfytlI/BEwbkzzFajdB5JLHDgrmXDXlxPczGYYIVlZ3OT3VvC70uYr
+Y8vzWeh1O/kaT0sIOtmiuE4WYGiIteilr2a/TtYBFl6p+VygXz8HmmBtW5ScoCK8
+yaSRxHcxMtgb5Qgd6hFaItlOSCNrPxuWXZb3AadA7py8GCaZHo2W1EJWIe42nEBY
+lReKBjebeKgn4T5FbPeOgh2uOm07RaLDz4q/WhfWQV62+wAxbIslLWZDaX31IOB0
+39KW2z3mI/a3J3WaEGH3fg4G4TNZi3Zvz2zks3w5guVUSogvc3qgCMbI7234MeHJ
+vGrPaulhupPeorawOurxNwIIQOT9pe+qEy2xcOZcZJoOZJIO2aruj6Lld06rvclB
+OsNGf/G5XJ/QTpKnDcxlQkMWDkLEEIsmlJ5sljTt+6bnsKnFw0+6VHgse5L0mwGt
+hEoMJo6a7/a9MQITcIi/SSd6WU/vfm1bq+epVMYqx3OHxjaFI+r3ukgMB6i4ZLOU
+UVEGN85iwPtLWwY1W/ux
+=lCPV
+-----END PGP SIGNATURE-----
+
+--=-KPmpepioGWYnejquzGV+--
+
