@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab2EYOWm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:22:42 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38844 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755297Ab2EYOWk (ORCPT
+	id S1756068Ab2EYOXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:23:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46857 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab2EYOXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:22:40 -0400
-Date: Fri, 25 May 2012 16:22:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Sverdlin <asv@sysgo.com>
-cc: David Daney <ddaney@caviumnetworks.com>,
-        Venkat Subbiah <venkat.subbiah@cavium.com>,
+	Fri, 25 May 2012 10:23:48 -0400
+Subject: Re: [PATCH] x86/tlb: replace INVALIDATE_TLB_VECTOR by
+ CALL_FUNCTION_VECTOR
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        seto.hidetoshi@jp.fujitsu.com, borislav.petkov@amd.com,
+        tony.luck@intel.com, luto@mit.edu, jbeulich@suse.com,
+        rostedt@goodmis.org, ak@linux.intel.com, akpm@linux-foundation.org,
+        eric.dumazet@gmail.com, akinobu.mita@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: Possible race in request_irq() (__setup_irq())
-In-Reply-To: <4FBF90B9.7010902@sysgo.com>
-Message-ID: <alpine.LFD.2.02.1205251611090.3231@ionos>
-References: <4FB39EDA.3030807@sysgo.com> <alpine.LFD.2.02.1205161512270.3231@ionos> <4FBF90B9.7010902@sysgo.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <4FB7004B.4010806@intel.com>
+References: <1337353963-8294-1-git-send-email-alex.shi@intel.com>
+	 <4FB7004B.4010806@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 16:23:41 +0200
+Message-ID: <1337955821.9783.208.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Alexander Sverdlin wrote:
-> Hello Thomas, David, Venkat,
-> 
-> On 05/16/2012 03:44 PM, Thomas Gleixner wrote:
-> > Your irq is using handle_percpu_irq() as the flow handler.
-> > 
-> > handle_percpu_irq() is a special flow handler which does not take the
-> > irq descriptor lock for performance reasons. It's a single interrupt
-> > number which has a percpu dev_id and can be handled on all cores in
-> > parallel.
-> > 
-> > The interrupts need to be marked as such and requested with
-> > request_percpu_irq(). Those interrupts are either marked as
-> > NOAUTOENABLE or set up by the low level setup code, which runs on the
-> > boot cpu with interrupt enabled.
-> > 
-> > Those interrupts are marked as percpu and can only be requested with
-> > request_percpu_irq().
-> > 
-> 
-> Could someone comment please, why exactly this happens in current linux-next for Octeon:
-> 
-> In arch/mips/cavium-octeon/octeon-irq.c MBOX IRQs are set up to be handled by handle_percpu_irq():
-> 
-> static void __init octeon_irq_init_ciu(void)
-> {
-> ...
-> 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX0, 0, 32, chip_mbox, handle_percpu_irq);
-> 	octeon_irq_set_ciu_mapping(OCTEON_IRQ_MBOX1, 0, 33, chip_mbox, handle_percpu_irq);
-> 
-> But in arch/mips/cavium-octeon/smp.c it's requested as normal IRQ:
-> 
-> void octeon_prepare_cpus(unsigned int max_cpus)
-> {
-> ...
-> 	if (request_irq(OCTEON_IRQ_MBOX0, mailbox_interrupt,
-> 			IRQF_PERCPU | IRQF_NO_THREAD, "SMP-IPI",
-> 			mailbox_interrupt)) {
-> 		panic("Cannot request_irq(OCTEON_IRQ_MBOX0)");
-> 	}
-> 
-> Is it a bug, or some kind of special case?
+On Sat, 2012-05-19 at 10:07 +0800, Alex Shi wrote:
+>  
+>  /*
+> - *
+> - * The flush IPI assumes that a thread switch happens in this order:
+> - * [cpu0: the cpu that switches]
+> - * 1) switch_mm() either 1a) or 1b)
+> - * 1a) thread switch to a different mm
+> - * 1a1) cpu_clear(cpu, old_mm->cpu_vm_mask);
+> - *     Stop ipi delivery for the old mm. This is not synchronized with
+> - *     the other cpus, but smp_invalidate_interrupt ignore flush ipis
+> - *     for the wrong mm, and in the worst case we perform a superfluous
+> - *     tlb flush.
+> - * 1a2) set cpu mmu_state to TLBSTATE_OK
+> - *     Now the smp_invalidate_interrupt won't call leave_mm if cpu0
+> - *     was in lazy tlb mode.
+> - * 1a3) update cpu active_mm
+> - *     Now cpu0 accepts tlb flushes for the new mm.
+> - * 1a4) cpu_set(cpu, new_mm->cpu_vm_mask);
+> - *     Now the other cpus will send tlb flush ipis.
+> - * 1a4) change cr3.
+> - * 1b) thread switch without mm change
+> - *     cpu active_mm is correct, cpu0 already handles
+> - *     flush ipis.
+> - * 1b1) set cpu mmu_state to TLBSTATE_OK
+> - * 1b2) test_and_set the cpu bit in cpu_vm_mask.
+> - *     Atomically set the bit [other cpus will start sending flush ipis],
+> - *     and test the bit.
+> - * 1b3) if the bit was 0: leave_mm was called, flush the tlb.
+> - * 2) switch %%esp, ie current
+> - *
+> - * The interrupt must handle 2 special cases:
+> - * - cr3 is changed before %%esp, ie. it cannot use current->{active_,}mm.
+> - * - the cpu performs speculative tlb reads, i.e. even if the cpu only
+> - *   runs in kernel space, the cpu could load tlb entries for user space
+> - *   pages.
+> - *
+> - * The good news is that cpu mmu_state is local to each cpu, no
+> - * write/read ordering problems.
+> - */ 
 
-I forgot the other case where a simple dev_id is used. That one is a
-simple per cpu interrupt, which has a regular dev_id. Note the flag:
-IRQF_PERCPU. So yes we have two variants, but both are dealing with
-per cpu interrupts. The subtle difference is how the dev_id is handled
-and how the enable/disable mechanism works.
+It would be nice to update that comment instead of removing it.
 
-What are you trying to do/solve ?
-
-Thanks,
-
-	tglx
