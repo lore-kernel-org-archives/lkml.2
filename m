@@ -1,42 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab2EYB4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 21:56:40 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:43943 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab2EYB4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 21:56:38 -0400
-Date: Fri, 25 May 2012 02:56:30 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        randy.dunlap@oracle.com, gregkh@suse.de, trenn@suse.de,
-        Valdis.Kletnieks@vt.edu, Dennis.Jansen@web.de, airlied@redhat.com,
-        eric@anholt.net, alexdeucher@gmail.com, bskeggs@redhat.com,
-        chris@chris-wilson.co.uk
-Subject: Re: [PATCH] gpu: remove gma500 stub driver
-Message-ID: <20120525015630.GA610@srcf.ucam.org>
-References: <1337910644-21694-1-git-send-email-jlee@suse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337910644-21694-1-git-send-email-jlee@suse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S932533Ab2EYCKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 22:10:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752220Ab2EYCKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 22:10:17 -0400
+From: Asias He <asias@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Asias He <asias@redhat.com>
+Subject: [PATCH] block: Fix lock unbalance caused by lock disconnect
+Date: Fri, 25 May 2012 10:10:59 +0800
+Message-Id: <1337911859-22913-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 09:50:44AM +0800, Lee, Chun-Yi wrote:
-> In v3.3, the gma500 drm driver moved from staging to drm group by
-> Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
-> brightness well and don't need gma500 stub driver anymore.
+Commit 777eb1bf15b8532c396821774bf6451e563438f5 disconnects externally
+supplied queue_lock before blk_drain_queue(). This would introduce lock
+unbalance because theads which have taken the external lock might unlock
+the internal lock in the during the queue drain.
 
-Looks good to me.
+This patch fixes this by disconnecting the lock after the queue drain.
 
+ =====================================
+ [ BUG: bad unlock balance detected! ]
+ 3.4.0+ #288 Not tainted
+ -------------------------------------
+ fio/17706 is trying to release lock (&(&q->__queue_lock)->rlock) at:
+ [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
+ but there are no more locks to release!
+
+ other info that might help us debug this:
+ 1 lock held by fio/17706:
+  #0:  (&(&vblk->lock)->rlock){......}, at: [<ffffffff81327f1a>]
+ get_request_wait+0x19a/0x250
+
+ stack backtrace:
+ Pid: 17706, comm: fio Not tainted 3.4.0+ #288
+ Call Trace:
+  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
+  [<ffffffff810dea49>] print_unlock_inbalance_bug+0xf9/0x100
+  [<ffffffff810dfe4f>] lock_release_non_nested+0x1df/0x330
+  [<ffffffff811dae24>] ? dio_bio_end_aio+0x34/0xc0
+  [<ffffffff811d6935>] ? bio_check_pages_dirty+0x85/0xe0
+  [<ffffffff811daea1>] ? dio_bio_end_aio+0xb1/0xc0
+  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
+  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
+  [<ffffffff810e0079>] lock_release+0xd9/0x250
+  [<ffffffff81a74553>] _raw_spin_unlock_irq+0x23/0x40
+  [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
+  [<ffffffff81328faa>] generic_make_request+0xca/0x100
+  [<ffffffff81329056>] submit_bio+0x76/0xf0
+  [<ffffffff8115470c>] ? set_page_dirty_lock+0x3c/0x60
+  [<ffffffff811d69e1>] ? bio_set_pages_dirty+0x51/0x70
+  [<ffffffff811dd1a8>] do_blockdev_direct_IO+0xbf8/0xee0
+  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
+  [<ffffffff811dd4e5>] __blockdev_direct_IO+0x55/0x60
+  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
+  [<ffffffff811d92e7>] blkdev_direct_IO+0x57/0x60
+  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
+  [<ffffffff8114c6ae>] generic_file_aio_read+0x70e/0x760
+  [<ffffffff810df7c5>] ? __lock_acquire+0x215/0x5a0
+  [<ffffffff811e9924>] ? aio_run_iocb+0x54/0x1a0
+  [<ffffffff8114bfa0>] ? grab_cache_page_nowait+0xc0/0xc0
+  [<ffffffff811e82cc>] aio_rw_vect_retry+0x7c/0x1e0
+  [<ffffffff811e8250>] ? aio_fsync+0x30/0x30
+  [<ffffffff811e9936>] aio_run_iocb+0x66/0x1a0
+  [<ffffffff811ea9b0>] do_io_submit+0x6f0/0xb80
+  [<ffffffff8134de2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff811eae50>] sys_io_submit+0x10/0x20
+  [<ffffffff81a7c9e9>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ block/blk-core.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1f61b74..7b4f6fe 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -416,15 +416,10 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	/* mark @q DEAD, no new request or merges will be allowed afterwards */
+ 	mutex_lock(&q->sysfs_lock);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+-
+ 	spin_lock_irq(lock);
+ 	queue_flag_set(QUEUE_FLAG_NOMERGES, q);
+ 	queue_flag_set(QUEUE_FLAG_NOXMERGES, q);
+ 	queue_flag_set(QUEUE_FLAG_DEAD, q);
+-
+-	if (q->queue_lock != &q->__queue_lock)
+-		q->queue_lock = &q->__queue_lock;
+-
+ 	spin_unlock_irq(lock);
+ 	mutex_unlock(&q->sysfs_lock);
+ 
+@@ -440,6 +435,11 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+ 	blk_sync_queue(q);
+ 
++	spin_lock_irq(lock);
++	if (q->queue_lock != &q->__queue_lock)
++		q->queue_lock = &q->__queue_lock;
++	spin_unlock_irq(lock);
++
+ 	/* @q is and will stay empty, shutdown and put */
+ 	blk_put_queue(q);
+ }
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.10.2
+
