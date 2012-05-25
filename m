@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2EYMU4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 08:20:56 -0400
-Received: from mga03.intel.com ([143.182.124.21]:22937 "EHLO mga03.intel.com"
+	id S1754256Ab2EYMYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 08:24:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44958 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab2EYMUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 08:20:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="147756635"
-Message-ID: <1337948678.30969.31.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] UBIFS: introduce struct ubifs_keymap
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Fri, 25 May 2012 15:24:38 +0300
-In-Reply-To: <alpine.DEB.2.00.1205250947210.1340@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205211640320.3833@eristoteles.iwoars.net>
-	 <1337769818.2483.202.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1205250947210.1340@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-x1s2xCuPahR6RpUBs2/Z"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1751272Ab2EYMYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 08:24:15 -0400
+Message-ID: <4FBF7B34.2080506@suse.cz>
+Date: Fri, 25 May 2012 14:29:40 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/4] [-next] Makefile: Do not call cc-option before including
+ the arch's Makefile
+References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org> <20120520092744.GA21341@merkur.ravnborg.org>
+In-Reply-To: <20120520092744.GA21341@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dne 20.5.2012 11:27, Sam Ravnborg napsal(a):
+> On Sat, May 12, 2012 at 10:39:05PM +0200, Geert Uytterhoeven wrote:
+>> On architectures that setup CROSS_COMPILE in their arch/*/Makefile
+>> (blackfin, h8300, m68k, mips, parisc, score, sh, tile, unicore32, xtensa),
+>> cc-option may check against the wrong compiler, causing errors like
+>>
+>> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+>>
+>> if the host gcc supports -fno-ipa-cp-clone, while the cross compiler
+>> doesn't support that option.
+>>
+>> Move the CONFIG_READABLE_ASM section below the inclusion of the arch's
+>> Makefile to fix this.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Cc: Andi Kleen <ak@linux.intel.com>
+>> Cc: H. Peter Anvin <hpa@zytor.com>
+>> Cc: Michal Marek <mmarek@suse.cz>
+>> Cc: linux-kbuild@vger.kernel.org
+> 
+> Michal - was this serie ever applied to kbuild?
 
---=-x1s2xCuPahR6RpUBs2/Z
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The first patch has to go to the tip tree, where the CONFIG_READABLE_ASM
+option is introduced. The remaining patches can go to the individual
+arch trees, I see Geert already pushed the m68k one.
 
-On Fri, 2012-05-25 at 09:49 +0200, Joel Reardon wrote:
-> This patch introduces struct ubifs_keymap, the entity responsible for key
-> generation, distribution, and lifetime management for ubifs's secure dele=
-tion.
-> In addition to the struct's (partial) definition, it is added as a field =
-to
-> ubifs_info. The alloc routines are provided. More fields and functions
-> will come in following patches.
->=20
-> This is tested using local unit tests for the functions: alloc,
-> and checking couple/decouple is sound. UBIFS integck is also run to ensur=
-e
-> UBIFS is not effected.
-
-Pushed to the "joel" branch with a minor amendment, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-x1s2xCuPahR6RpUBs2/Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPv3oGAAoJECmIfjd9wqK0mX4QAJq1y73HE0QrzTXrRwIPyrF/
-HnMs4nxN4UjEZOLt5faLNORahiupauRfyJZPRCFaalUC2/D8kisBM/wW1wroQy69
-pgHshqoh1pN1TdDUby6m99MWLYl3BV/CrH1g1kSIVeb8gkSMeDtvKjOV6rj/Qg9q
-bOwC5/d99t44sTXhTUtcdOfFqUqBss7ze1V74WmRnqfH5iiEensh5crPJgq15VVG
-i/FeaMJxi6i5PxUw8FrnT6AdawGsFXUXa7zP5f7ji9woyH52jYGQOdgrVi2Ur2Ko
-VQiDtD98Yd/qOPb/nKlMMLMY42nUDrB2M01MKzcHsd40Yq7X2enpER81QV5bXuKP
-oWIug/o260dczJ0DBrLGAJf12T8n3FqcxQoU1VJhh5E67HutCWZLGOXUSWrHWK82
-OQ7vMTXaEnMsEfEe5AuMOwxTEdg7lmC/N2/01P3qG9jwer/hbAAr2CvEt3vMWXEs
-0x4m5d+E7Tl7rBp8G/Il3pORAN7oLm65WF+RSW4SelX1TNwfI7COQrdJzhxZ1rWb
-14+ElsKSvXG6P+/d7k12Q640kyNCm38+Zduwov2eJlbf7HfFrSbXUJulNvN8QvBg
-adPQuk/klS15NwplFoiljlBIO+C2nUQQw3Uecb+IYfeT0TKI3BjmRJCfM5jv9v8U
-3XvzCZBM/DmgoZq7tPo5
-=EMqy
------END PGP SIGNATURE-----
-
---=-x1s2xCuPahR6RpUBs2/Z--
-
+Michal
