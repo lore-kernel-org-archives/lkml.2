@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab2EYDCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 23:02:22 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:42586 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753373Ab2EYDCU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 23:02:20 -0400
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org> <201205211518.39137.rjw@sisk.pl> <882dce83-b79e-4470-af25-edb8429fb7e5@email.android.com> <201205212353.42639.rjw@sisk.pl> <1337637359.1647.67.camel@shrek.rexursive.com> <20120524145122.GA26743@x1.osrc.amd.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120524145122.GA26743@x1.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-From: Bojan Smojver <bojan@rexursive.com>
-Date: Fri, 25 May 2012 12:02:15 +1000
-To: Borislav Petkov <bp@alien8.de>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Message-ID: <07f1a575-ec44-40b7-bd36-576f883f188d@email.android.com>
+	id S1757188Ab2EYDJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 23:09:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753370Ab2EYDJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 23:09:43 -0400
+From: Asias He <asias@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Cc: Asias He <asias@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
+Date: Fri, 25 May 2012 11:10:21 +0800
+Message-Id: <1337915422-24988-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@alien8.de> wrote:
+1) This function is not used anywhere.
 
->Let me ask again, can you send the last version of that patch so that I
->can give it a run pls?
+2) Using the blk_abort_queue() to abort the queue seems not correct.
+blk_abort_queue() is used for timeout handling (block/blk-timeout.c).
 
+Cc: Chris Mason <chris.mason@oracle.com>
+Cc: linux-btrfs@vger.kernel.org
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ fs/btrfs/disk-io.c |   13 -------------
+ fs/btrfs/disk-io.h |    1 -
+ 2 files changed, 14 deletions(-)
 
-Sorry. That patch is here (pretty much the original with signed-off):
-
-http://marc.info/?l=linux-kernel&m=133651588229850&w=2
-
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index e1fe74a..3521866 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -2902,19 +2902,6 @@ int write_ctree_super(struct btrfs_trans_handle *trans,
+ 	return ret;
+ }
+ 
+-/* Kill all outstanding I/O */
+-void btrfs_abort_devices(struct btrfs_root *root)
+-{
+-	struct list_head *head;
+-	struct btrfs_device *dev;
+-	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
+-	head = &root->fs_info->fs_devices->devices;
+-	list_for_each_entry_rcu(dev, head, dev_list) {
+-		blk_abort_queue(dev->bdev->bd_disk->queue);
+-	}
+-	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
+-}
+-
+ void btrfs_free_fs_root(struct btrfs_fs_info *fs_info, struct btrfs_root *root)
+ {
+ 	spin_lock(&fs_info->fs_roots_radix_lock);
+diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
+index ab1830a..05b3fab 100644
+--- a/fs/btrfs/disk-io.h
++++ b/fs/btrfs/disk-io.h
+@@ -89,7 +89,6 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
+ int btrfs_cleanup_transaction(struct btrfs_root *root);
+ void btrfs_cleanup_one_transaction(struct btrfs_transaction *trans,
+ 				  struct btrfs_root *root);
+-void btrfs_abort_devices(struct btrfs_root *root);
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ void btrfs_init_lockdep(void);
 -- 
-Bojan
+1.7.10.2
+
