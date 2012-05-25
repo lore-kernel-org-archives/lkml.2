@@ -1,35 +1,503 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab2EYJid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:38:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58142 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752897Ab2EYJib (ORCPT
+	id S1756946Ab2EYJio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:38:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36986 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756773Ab2EYJii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:38:31 -0400
-Subject: Re: [PATCH v6 0/4] CPU hotplug, cpusets, suspend/resume: Fixes,
- cleanups and optimizations
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, pjt@google.com, paul@paulmenage.org,
-        akpm@linux-foundation.org, rjw@sisk.pl, nacc@us.ibm.com,
-        rientjes@google.com, paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
-        seto.hidetoshi@jp.fujitsu.com, tj@kernel.org, mschmidt@redhat.com,
-        berrange@redhat.com, nikunj@linux.vnet.ibm.com,
-        vatsa@linux.vnet.ibm.com, liuj97@gmail.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-In-Reply-To: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com>
-References: <20120524141510.3692.64549.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain
-Date: Fri, 25 May 2012 11:38:27 +0200
-Message-ID: <1337938707.9783.171.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 May 2012 05:38:38 -0400
+Date: Fri, 25 May 2012 02:38:22 -0700
+From: tip-bot for Magnus Damm <magnus.damm@gmail.com>
+Message-ID: <tip-b9dbf9517784084ee9496f9f17f9754c1d021a9e@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        damm@opensource.se, tglx@linutronix.de, magnus.damm@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        damm@opensource.se, tglx@linutronix.de, magnus.damm@gmail.com
+In-Reply-To: <20120525070344.23443.69756.sendpatchset@w520>
+References: <20120525070344.23443.69756.sendpatchset@w520>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] clocksource: em_sti: Emma Mobile STI driver
+Git-Commit-ID: b9dbf9517784084ee9496f9f17f9754c1d021a9e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 25 May 2012 02:38:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  b9dbf9517784084ee9496f9f17f9754c1d021a9e
+Gitweb:     http://git.kernel.org/tip/b9dbf9517784084ee9496f9f17f9754c1d021a9e
+Author:     Magnus Damm <magnus.damm@gmail.com>
+AuthorDate: Fri, 25 May 2012 16:03:44 +0900
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 25 May 2012 11:32:06 +0200
 
-Thanks, queued them.
+clocksource: em_sti: Emma Mobile STI driver
 
+The STI hardware is based on a single 48-bit 32kHz
+counter that together with two individual compare
+registers can generate interrupts. There are no
+timer operating modes selectable which means that
+the timer can not clear on match.
+
+This driver is providing clocksource support for the
+48-bit counter. Clockevents are also supported using
+the same timer in oneshot mode.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Cc: horms@verge.net.au
+Cc: arnd@arndb.de
+Cc: johnstul@us.ibm.com
+Cc: rjw@sisk.pl
+Cc: lethal@linux-sh.org
+Cc: gregkh@linuxfoundation.org
+Cc: olof@lixom.net
+Link: http://lkml.kernel.org/r/20120525070344.23443.69756.sendpatchset@w520
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/arm/mach-shmobile/Kconfig |    6 +
+ drivers/clocksource/Makefile   |    1 +
+ drivers/clocksource/em_sti.c   |  399 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 406 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
+index f31383c..df33909 100644
+--- a/arch/arm/mach-shmobile/Kconfig
++++ b/arch/arm/mach-shmobile/Kconfig
+@@ -186,6 +186,12 @@ config SH_TIMER_TMU
+ 	help
+ 	  This enables build of the TMU timer driver.
+ 
++config EM_TIMER_STI
++	bool "STI timer driver"
++	default y
++	help
++	  This enables build of the STI timer driver.
++
+ endmenu
+ 
+ config SH_CLK_CPG
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 8d81a1d..dd3e661 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -6,6 +6,7 @@ obj-$(CONFIG_CS5535_CLOCK_EVENT_SRC)	+= cs5535-clockevt.o
+ obj-$(CONFIG_SH_TIMER_CMT)	+= sh_cmt.o
+ obj-$(CONFIG_SH_TIMER_MTU2)	+= sh_mtu2.o
+ obj-$(CONFIG_SH_TIMER_TMU)	+= sh_tmu.o
++obj-$(CONFIG_EM_TIMER_STI)	+= em_sti.o
+ obj-$(CONFIG_CLKBLD_I8253)	+= i8253.o
+ obj-$(CONFIG_CLKSRC_MMIO)	+= mmio.o
+ obj-$(CONFIG_DW_APB_TIMER)	+= dw_apb_timer.o
+diff --git a/drivers/clocksource/em_sti.c b/drivers/clocksource/em_sti.c
+new file mode 100644
+index 0000000..719584a
+--- /dev/null
++++ b/drivers/clocksource/em_sti.c
+@@ -0,0 +1,399 @@
++/*
++ * Emma Mobile Timer Support - STI
++ *
++ *  Copyright (C) 2012 Magnus Damm
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/spinlock.h>
++#include <linux/interrupt.h>
++#include <linux/ioport.h>
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/irq.h>
++#include <linux/err.h>
++#include <linux/delay.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++
++enum { USER_CLOCKSOURCE, USER_CLOCKEVENT, USER_NR };
++
++struct em_sti_priv {
++	void __iomem *base;
++	struct clk *clk;
++	struct platform_device *pdev;
++	unsigned int active[USER_NR];
++	unsigned long rate;
++	raw_spinlock_t lock;
++	struct clock_event_device ced;
++	struct clocksource cs;
++};
++
++#define STI_CONTROL 0x00
++#define STI_COMPA_H 0x10
++#define STI_COMPA_L 0x14
++#define STI_COMPB_H 0x18
++#define STI_COMPB_L 0x1c
++#define STI_COUNT_H 0x20
++#define STI_COUNT_L 0x24
++#define STI_COUNT_RAW_H 0x28
++#define STI_COUNT_RAW_L 0x2c
++#define STI_SET_H 0x30
++#define STI_SET_L 0x34
++#define STI_INTSTATUS 0x40
++#define STI_INTRAWSTATUS 0x44
++#define STI_INTENSET 0x48
++#define STI_INTENCLR 0x4c
++#define STI_INTFFCLR 0x50
++
++static inline unsigned long em_sti_read(struct em_sti_priv *p, int offs)
++{
++	return ioread32(p->base + offs);
++}
++
++static inline void em_sti_write(struct em_sti_priv *p, int offs,
++				unsigned long value)
++{
++	iowrite32(value, p->base + offs);
++}
++
++static int em_sti_enable(struct em_sti_priv *p)
++{
++	int ret;
++
++	/* enable clock */
++	ret = clk_enable(p->clk);
++	if (ret) {
++		dev_err(&p->pdev->dev, "cannot enable clock\n");
++		return ret;
++	}
++
++	/* configure channel, periodic mode and maximum timeout */
++	p->rate = clk_get_rate(p->clk);
++
++	/* reset the counter */
++	em_sti_write(p, STI_SET_H, 0x40000000);
++	em_sti_write(p, STI_SET_L, 0x00000000);
++
++	/* mask and clear pending interrupts */
++	em_sti_write(p, STI_INTENCLR, 3);
++	em_sti_write(p, STI_INTFFCLR, 3);
++
++	/* enable updates of counter registers */
++	em_sti_write(p, STI_CONTROL, 1);
++
++	return 0;
++}
++
++static void em_sti_disable(struct em_sti_priv *p)
++{
++	/* mask interrupts */
++	em_sti_write(p, STI_INTENCLR, 3);
++
++	/* stop clock */
++	clk_disable(p->clk);
++}
++
++static cycle_t em_sti_count(struct em_sti_priv *p)
++{
++	cycle_t ticks;
++	unsigned long flags;
++
++	/* the STI hardware buffers the 48-bit count, but to
++	 * break it out into two 32-bit access the registers
++	 * must be accessed in a certain order.
++	 * Always read STI_COUNT_H before STI_COUNT_L.
++	 */
++	raw_spin_lock_irqsave(&p->lock, flags);
++	ticks = (cycle_t)(em_sti_read(p, STI_COUNT_H) & 0xffff) << 32;
++	ticks |= em_sti_read(p, STI_COUNT_L);
++	raw_spin_unlock_irqrestore(&p->lock, flags);
++
++	return ticks;
++}
++
++static cycle_t em_sti_set_next(struct em_sti_priv *p, cycle_t next)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&p->lock, flags);
++
++	/* mask compare A interrupt */
++	em_sti_write(p, STI_INTENCLR, 1);
++
++	/* update compare A value */
++	em_sti_write(p, STI_COMPA_H, next >> 32);
++	em_sti_write(p, STI_COMPA_L, next & 0xffffffff);
++
++	/* clear compare A interrupt source */
++	em_sti_write(p, STI_INTFFCLR, 1);
++
++	/* unmask compare A interrupt */
++	em_sti_write(p, STI_INTENSET, 1);
++
++	raw_spin_unlock_irqrestore(&p->lock, flags);
++
++	return next;
++}
++
++static irqreturn_t em_sti_interrupt(int irq, void *dev_id)
++{
++	struct em_sti_priv *p = dev_id;
++
++	p->ced.event_handler(&p->ced);
++	return IRQ_HANDLED;
++}
++
++static int em_sti_start(struct em_sti_priv *p, unsigned int user)
++{
++	unsigned long flags;
++	int used_before;
++	int ret = 0;
++
++	raw_spin_lock_irqsave(&p->lock, flags);
++	used_before = p->active[USER_CLOCKSOURCE] | p->active[USER_CLOCKEVENT];
++	if (!used_before)
++		ret = em_sti_enable(p);
++
++	if (!ret)
++		p->active[user] = 1;
++	raw_spin_unlock_irqrestore(&p->lock, flags);
++
++	return ret;
++}
++
++static void em_sti_stop(struct em_sti_priv *p, unsigned int user)
++{
++	unsigned long flags;
++	int used_before, used_after;
++
++	raw_spin_lock_irqsave(&p->lock, flags);
++	used_before = p->active[USER_CLOCKSOURCE] | p->active[USER_CLOCKEVENT];
++	p->active[user] = 0;
++	used_after = p->active[USER_CLOCKSOURCE] | p->active[USER_CLOCKEVENT];
++
++	if (used_before && !used_after)
++		em_sti_disable(p);
++	raw_spin_unlock_irqrestore(&p->lock, flags);
++}
++
++static struct em_sti_priv *cs_to_em_sti(struct clocksource *cs)
++{
++	return container_of(cs, struct em_sti_priv, cs);
++}
++
++static cycle_t em_sti_clocksource_read(struct clocksource *cs)
++{
++	return em_sti_count(cs_to_em_sti(cs));
++}
++
++static int em_sti_clocksource_enable(struct clocksource *cs)
++{
++	int ret;
++	struct em_sti_priv *p = cs_to_em_sti(cs);
++
++	ret = em_sti_start(p, USER_CLOCKSOURCE);
++	if (!ret)
++		__clocksource_updatefreq_hz(cs, p->rate);
++	return ret;
++}
++
++static void em_sti_clocksource_disable(struct clocksource *cs)
++{
++	em_sti_stop(cs_to_em_sti(cs), USER_CLOCKSOURCE);
++}
++
++static void em_sti_clocksource_resume(struct clocksource *cs)
++{
++	em_sti_clocksource_enable(cs);
++}
++
++static int em_sti_register_clocksource(struct em_sti_priv *p)
++{
++	struct clocksource *cs = &p->cs;
++
++	memset(cs, 0, sizeof(*cs));
++	cs->name = dev_name(&p->pdev->dev);
++	cs->rating = 200;
++	cs->read = em_sti_clocksource_read;
++	cs->enable = em_sti_clocksource_enable;
++	cs->disable = em_sti_clocksource_disable;
++	cs->suspend = em_sti_clocksource_disable;
++	cs->resume = em_sti_clocksource_resume;
++	cs->mask = CLOCKSOURCE_MASK(48);
++	cs->flags = CLOCK_SOURCE_IS_CONTINUOUS;
++
++	dev_info(&p->pdev->dev, "used as clock source\n");
++
++	/* Register with dummy 1 Hz value, gets updated in ->enable() */
++	clocksource_register_hz(cs, 1);
++	return 0;
++}
++
++static struct em_sti_priv *ced_to_em_sti(struct clock_event_device *ced)
++{
++	return container_of(ced, struct em_sti_priv, ced);
++}
++
++static void em_sti_clock_event_mode(enum clock_event_mode mode,
++				    struct clock_event_device *ced)
++{
++	struct em_sti_priv *p = ced_to_em_sti(ced);
++
++	/* deal with old setting first */
++	switch (ced->mode) {
++	case CLOCK_EVT_MODE_ONESHOT:
++		em_sti_stop(p, USER_CLOCKEVENT);
++		break;
++	default:
++		break;
++	}
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_ONESHOT:
++		dev_info(&p->pdev->dev, "used for oneshot clock events\n");
++		em_sti_start(p, USER_CLOCKEVENT);
++		clockevents_config(&p->ced, p->rate);
++		break;
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	case CLOCK_EVT_MODE_UNUSED:
++		em_sti_stop(p, USER_CLOCKEVENT);
++		break;
++	default:
++		break;
++	}
++}
++
++static int em_sti_clock_event_next(unsigned long delta,
++				   struct clock_event_device *ced)
++{
++	struct em_sti_priv *p = ced_to_em_sti(ced);
++	cycle_t next;
++	int safe;
++
++	next = em_sti_set_next(p, em_sti_count(p) + delta);
++	safe = em_sti_count(p) < (next - 1);
++
++	return !safe;
++}
++
++static void em_sti_register_clockevent(struct em_sti_priv *p)
++{
++	struct clock_event_device *ced = &p->ced;
++
++	memset(ced, 0, sizeof(*ced));
++	ced->name = dev_name(&p->pdev->dev);
++	ced->features = CLOCK_EVT_FEAT_ONESHOT;
++	ced->rating = 200;
++	ced->cpumask = cpumask_of(0);
++	ced->set_next_event = em_sti_clock_event_next;
++	ced->set_mode = em_sti_clock_event_mode;
++
++	dev_info(&p->pdev->dev, "used for clock events\n");
++
++	/* Register with dummy 1 Hz value, gets updated in ->set_mode() */
++	clockevents_config_and_register(ced, 1, 2, 0xffffffff);
++}
++
++static int __devinit em_sti_probe(struct platform_device *pdev)
++{
++	struct em_sti_priv *p;
++	struct resource *res;
++	int irq, ret;
++
++	p = kzalloc(sizeof(*p), GFP_KERNEL);
++	if (p == NULL) {
++		dev_err(&pdev->dev, "failed to allocate driver data\n");
++		ret = -ENOMEM;
++		goto err0;
++	}
++
++	p->pdev = pdev;
++	platform_set_drvdata(pdev, p);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "failed to get I/O memory\n");
++		ret = -EINVAL;
++		goto err0;
++	}
++
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
++		dev_err(&pdev->dev, "failed to get irq\n");
++		ret = -EINVAL;
++		goto err0;
++	}
++
++	/* map memory, let base point to the STI instance */
++	p->base = ioremap_nocache(res->start, resource_size(res));
++	if (p->base == NULL) {
++		dev_err(&pdev->dev, "failed to remap I/O memory\n");
++		ret = -ENXIO;
++		goto err0;
++	}
++
++	/* get hold of clock */
++	p->clk = clk_get(&pdev->dev, "sclk");
++	if (IS_ERR(p->clk)) {
++		dev_err(&pdev->dev, "cannot get clock\n");
++		ret = PTR_ERR(p->clk);
++		goto err1;
++	}
++
++	if (request_irq(irq, em_sti_interrupt,
++			IRQF_TIMER | IRQF_IRQPOLL | IRQF_NOBALANCING,
++			dev_name(&pdev->dev), p)) {
++		dev_err(&pdev->dev, "failed to request low IRQ\n");
++		ret = -ENOENT;
++		goto err2;
++	}
++
++	raw_spin_lock_init(&p->lock);
++	em_sti_register_clockevent(p);
++	em_sti_register_clocksource(p);
++	return 0;
++
++err2:
++	clk_put(p->clk);
++err1:
++	iounmap(p->base);
++err0:
++	kfree(p);
++	return ret;
++}
++
++static int __devexit em_sti_remove(struct platform_device *pdev)
++{
++	return -EBUSY; /* cannot unregister clockevent and clocksource */
++}
++
++static struct platform_driver em_sti_device_driver = {
++	.probe		= em_sti_probe,
++	.remove		= __devexit_p(em_sti_remove),
++	.driver		= {
++		.name	= "em_sti",
++	}
++};
++
++module_platform_driver(em_sti_device_driver);
++
++MODULE_AUTHOR("Magnus Damm");
++MODULE_DESCRIPTION("Renesas Emma Mobile STI Timer Driver");
++MODULE_LICENSE("GPL v2");
