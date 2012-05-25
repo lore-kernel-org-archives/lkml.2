@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab2EYJ4h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:56:37 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:44714 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab2EYJ4f (ORCPT
+	id S1757222Ab2EYKBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 06:01:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35833 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab2EYKBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:56:35 -0400
-From: <jgq516@gmail.com>
-To: <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <rob.herring@calxeda.com>,
-        <grant.likely@secretlab.ca>, <rnayak@ti.com>, <tony@atomide.com>,
-        <wim@iguana.be>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: [PATCH 0/3] omap3/omap4: add device tree support for wdt
-Date: Fri, 25 May 2012 18:42:29 +0800
-Message-ID: <1337942552-28218-1-git-send-email-jgq516@gmail.com>
-X-Mailer: git-send-email 1.7.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 25 May 2012 06:01:44 -0400
+Subject: Re: [PATCH 02/16] perf: Add ability to attach registers dump to
+ sample
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>, acme@redhat.com, mingo@elte.hu,
+        paulus@samba.org, cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        gorcunov@openvz.org, tzanussi@gmail.com, mhiramat@redhat.com,
+        robert.richter@amd.com, fche@redhat.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, drepper@gmail.com, asharma@fb.com,
+        benjamin.redelings@nescent.org
+In-Reply-To: <20120524115206.GB1775@m.brq.redhat.com>
+References: <1337801535-12865-1-git-send-email-jolsa@redhat.com>
+	 <1337801535-12865-3-git-send-email-jolsa@redhat.com>
+	 <1337853048.9783.92.camel@laptop>
+	 <CABPqkBR9hewjNUJf9ByD-jHc42e_qwQiKoP68RyL7BU8Q7BGgQ@mail.gmail.com>
+	 <1337856142.9783.104.camel@laptop> <20120524115206.GB1775@m.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 12:01:23 +0200
+Message-ID: <1337940083.9783.177.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Jiang <jgq516@gmail.com>
+On Thu, 2012-05-24 at 13:52 +0200, Jiri Olsa wrote:
+> 
+> My intention was to make this general. I could just add
+> bitmask for each type (user regs mask for now) but I wanted
+> to be consistent with other SAMPLE_* stuff..
+> 
+> So current patch adds PERF_SAMPLE_REGS sample_type bit.
+> Once it is set, the 'sample_regs' value is checked for what
+> type of registers you want for sample.
+> 
+> Each type then has separate bitmask in case you want different
+> registers for each type. Allowing whatever combination of regs dump
+> being added to the sample, since it seems there's no firm
+> decision on what combination might be needed.
+> 
+> Sure we can make the same with bitmasks for each regs type,
+> and check the presence in sample by bitmask being not empty. 
 
-This series can be applied to dt branch of linux-omap tree.
+Right, I don't know. But none of this was in the changelog.
 
-Since omap24xx series has different wdt base addr (omap2420: 0x48022000 and
-omap2430: 0x49016000) per commit 2817142f31bfbf26c216bf4f9192540c81b2d071, so
-I don't add wdt node in omap2.dtsi just like omap3 and omap4, maybe different
-dts files are needed for omap2420 and omap2430.
+Also, I just checked, there's architectures with more than 64 GP
+registers ;-) (IA64 has 128 64bit integer registers for instance).
 
-Tested with omap4430 blaze board.
+Now IA64 is the only one I could find, and we don't actually support
+perf for it, and seeing how 'popular' IA64 is we might never, but still.
 
-Xiao Jiang (3):
-  arm/dts: add wdt node for omap3 and omap4
-  OMAP: wdt: add device tree support
-  watchdog: omap_wdt: add device tree support
 
- arch/arm/boot/dts/omap3.dtsi  |    5 +++++
- arch/arm/boot/dts/omap4.dtsi  |    5 +++++
- arch/arm/mach-omap2/devices.c |    2 +-
- drivers/watchdog/omap_wdt.c   |    8 ++++++++
- 4 files changed, 19 insertions(+), 1 deletions(-)
 
--- 
-1.7.3
+
 
