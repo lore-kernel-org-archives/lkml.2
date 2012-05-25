@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964961Ab2EYT7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 15:59:41 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38978 "EHLO
+	id S965031Ab2EYT7y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 15:59:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38977 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758538Ab2EYT73 (ORCPT
+	with ESMTP id S1758536Ab2EYT73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 15:59:29 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>, Franck Bui-Huu <fbuihuu@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/4] perf tools: Reconstruct event with modifiers from perf_event_attr
-Date: Fri, 25 May 2012 16:59:18 -0300
-Message-Id: <1337975958-24047-5-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 0/4] perf/urgent fixes
+Date: Fri, 25 May 2012 16:59:14 -0300
+Message-Id: <1337975958-24047-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1337975958-24047-1-git-send-email-acme@infradead.org>
-References: <1337975958-24047-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,236 +29,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-The modifiers:
+	Please consider pulling,
 
-  k		kernel space
-  u		user space
-  h		hypervisor
-  G		guest
-  H		host
-  p, pp, ppp    precision level (PEBS)
+- Arnaldo
 
-that can be suffixed to an event were lost when tools used event_name()
-to reconstruct them from the perf_event_attr entries in a perf.data
-file.
+The following changes since commit eaec12d7f526694f24d581a4ad23de6ce0315cd2:
 
-Fix it by following the defaults used for these modifiers in the current
-codebase, so:
+  tools lib traceevent: Fix signature of create_arg_item() (2012-05-24 11:36:05 -0300)
 
- $ perf record -e instructions:u usleep 1 2> /dev/null
- $ perf evlist
- instructions:u
- $ perf record -e cycles:k usleep 1 2> /dev/null
- $ perf evlist
- cycles:k
- $ perf record -e cycles:kh usleep 1 2> /dev/null
- $ perf evlist
- cycles:kh
- $ perf record -e cache-misses:G usleep 1 2> /dev/null
- $ perf evlist
- cache-misses:G
- $ perf record -e cycles:ppk usleep 1 2> /dev/null
- $ perf evlist
- cycles:kpp
- $
+are available in the git repository at:
 
-Also works with 'top', 'report', etc.
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
 
-More work needed to cover tracepoints and software events while not
-dragging lots of baggage to the python binding, this is a minimal fix
-for v3.5.
+for you to fetch changes up to a44fa3fa69d2f5023b85d4d86faa9ab8945df260:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-4hl5glle0hxlklw4usva1mkt@git.kernel.org
+  perf top: Fix counter name fixup when fallbacking to cpu-clock (2012-05-25 14:49:51 -0300)
+
+----------------------------------------------------------------
+Fixes for perf/urgent.
+
+. Fix build on newer distros where _FORTIFY_SOURCE needs optimization enable.
+
+. Fix event name caching when fallbacking to cpu-clock
+
+. Event name reconstruction from perf_event_attr now include modifiers.
+
+. Elliminate leak on error path when parsing pid/tid list, From Franck Bui-Huu.
+
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evsel.c        |   90 ++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evsel.h        |    3 ++
- tools/perf/util/parse-events.c |   27 +++++-------
- 3 files changed, 104 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 57e4ce5..91d1913 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -15,6 +15,7 @@
- #include "cpumap.h"
- #include "thread_map.h"
- #include "target.h"
-+#include "../../include/linux/perf_event.h"
- 
- #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
- #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
-@@ -64,6 +65,95 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
- 	return evsel;
- }
- 
-+static const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
-+	"cycles",
-+	"instructions",
-+	"cache-references",
-+	"cache-misses",
-+	"branches",
-+	"branch-misses",
-+	"bus-cycles",
-+	"stalled-cycles-frontend",
-+	"stalled-cycles-backend",
-+	"ref-cycles",
-+};
-+
-+const char *__perf_evsel__hw_name(u64 config)
-+{
-+	if (config < PERF_COUNT_HW_MAX && perf_evsel__hw_names[config])
-+		return perf_evsel__hw_names[config];
-+
-+	return "unknown-hardware";
-+}
-+
-+static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
-+{
-+	int colon = 0;
-+	struct perf_event_attr *attr = &evsel->attr;
-+	int r = scnprintf(bf, size, "%s", __perf_evsel__hw_name(attr->config));
-+	bool exclude_guest_default = false;
-+
-+#define MOD_PRINT(context, mod)	do {					\
-+		if (!attr->exclude_##context) {				\
-+			if (!colon) colon = r++;			\
-+			r += scnprintf(bf + r, size - r, "%c", mod);	\
-+		} } while(0)
-+
-+	if (attr->exclude_kernel || attr->exclude_user || attr->exclude_hv) {
-+		MOD_PRINT(kernel, 'k');
-+		MOD_PRINT(user, 'u');
-+		MOD_PRINT(hv, 'h');
-+		exclude_guest_default = true;
-+	}
-+
-+	if (attr->precise_ip) {
-+		if (!colon)
-+			colon = r++;
-+		r += scnprintf(bf + r, size - r, "%.*s", attr->precise_ip, "ppp");
-+		exclude_guest_default = true;
-+	}
-+
-+	if (attr->exclude_host || attr->exclude_guest == exclude_guest_default) {
-+		MOD_PRINT(host, 'H');
-+		MOD_PRINT(guest, 'G');
-+	}
-+#undef MOD_PRINT
-+	if (colon)
-+		bf[colon] = ':';
-+	return r;
-+}
-+
-+int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
-+{
-+	int ret;
-+
-+	switch (evsel->attr.type) {
-+	case PERF_TYPE_RAW:
-+		ret = scnprintf(bf, size, "raw 0x%" PRIx64, evsel->attr.config);
-+		break;
-+
-+	case PERF_TYPE_HARDWARE:
-+		ret = perf_evsel__hw_name(evsel, bf, size);
-+		break;
-+	default:
-+		/*
-+		 * FIXME
-+ 		 *
-+		 * This is the minimal perf_evsel__name so that we can
-+		 * reconstruct event names taking into account event modifiers.
-+		 *
-+		 * The old event_name uses it now for raw anr hw events, so that
-+		 * we don't drag all the parsing stuff into the python binding.
-+		 *
-+		 * On the next devel cycle the rest of the event naming will be
-+		 * brought here.
-+ 		 */
-+		return 0;
-+	}
-+
-+	return ret;
-+}
-+
- void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
- 			struct perf_evsel *first)
- {
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index 3d6b3e4..4ba8b56 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -83,6 +83,9 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 			struct perf_record_opts *opts,
- 			struct perf_evsel *first);
- 
-+const char* __perf_evsel__hw_name(u64 config);
-+int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size);
-+
- int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
- int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index fac7d59..05dbc8b 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -62,19 +62,6 @@ static struct event_symbol event_symbols[] = {
- #define PERF_EVENT_TYPE(config)		__PERF_EVENT_FIELD(config, TYPE)
- #define PERF_EVENT_ID(config)		__PERF_EVENT_FIELD(config, EVENT)
- 
--static const char *hw_event_names[PERF_COUNT_HW_MAX] = {
--	"cycles",
--	"instructions",
--	"cache-references",
--	"cache-misses",
--	"branches",
--	"branch-misses",
--	"bus-cycles",
--	"stalled-cycles-frontend",
--	"stalled-cycles-backend",
--	"ref-cycles",
--};
--
- static const char *sw_event_names[PERF_COUNT_SW_MAX] = {
- 	"cpu-clock",
- 	"task-clock",
-@@ -300,6 +287,16 @@ const char *event_name(struct perf_evsel *evsel)
- 	u64 config = evsel->attr.config;
- 	int type = evsel->attr.type;
- 
-+	if (type == PERF_TYPE_RAW || type == PERF_TYPE_HARDWARE) {
-+		/*
-+ 		 * XXX minimal fix, see comment on perf_evsen__name, this static buffer
-+ 		 * will go away together with event_name in the next devel cycle.
-+ 		 */
-+		static char bf[128];
-+		perf_evsel__name(evsel, bf, sizeof(bf));
-+		return bf;
-+	}
-+
- 	if (evsel->name)
- 		return evsel->name;
- 
-@@ -317,9 +314,7 @@ const char *__event_name(int type, u64 config)
- 
- 	switch (type) {
- 	case PERF_TYPE_HARDWARE:
--		if (config < PERF_COUNT_HW_MAX && hw_event_names[config])
--			return hw_event_names[config];
--		return "unknown-hardware";
-+		return __perf_evsel__hw_name(config);
- 
- 	case PERF_TYPE_HW_CACHE: {
- 		u8 cache_type, cache_op, cache_result;
--- 
-1.7.9.2.358.g22243
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (3):
+      perf tools: Do not use _FORTIFY_SOURCE when DEBUG=1 is specified
+      perf evsel: Adopt the hardware event names
+      perf top: Fix counter name fixup when fallbacking to cpu-clock
 
+Franck Bui-Huu (1):
+      perf tools: fix thread_map__new_by_pid_str() memory leak in error path
+
+ tools/perf/Makefile            |    4 ++--
+ tools/perf/builtin-top.c       |    2 +-
+ tools/perf/util/evsel.c        |   21 +++++++++++++++++++++
+ tools/perf/util/evsel.h        |    2 ++
+ tools/perf/util/parse-events.c |   17 +----------------
+ tools/perf/util/thread_map.c   |   21 ++++++++++-----------
+ 6 files changed, 37 insertions(+), 30 deletions(-)
