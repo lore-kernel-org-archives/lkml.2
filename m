@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757171Ab2EYRAg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:00:36 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:52230 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756330Ab2EYRAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:00:34 -0400
-From: Chris Boot <bootc@bootc.net>
-To: linux-mmc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Chris Boot <bootc@bootc.net>
-Subject: [PATCH] mmc: Fix EINVAL if an mmc_spi controller has no IRQ
-Date: Fri, 25 May 2012 18:00:30 +0100
-Message-Id: <1337965230-4589-1-git-send-email-bootc@bootc.net>
-X-Mailer: git-send-email 1.7.10
+	id S1756865Ab2EYRDX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:03:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53537 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754194Ab2EYRDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:03:21 -0400
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: [PATCH 22/35] autonuma: sched_set_autonuma_need_balance
+Date: Fri, 25 May 2012 19:02:26 +0200
+Message-Id: <1337965359-29725-23-git-send-email-aarcange@redhat.com>
+In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_of_parse_and_map() returns EINVAL if there is no interrupt
-information available in device tree, not NO_IRQ. mmc_spi_get_pdata()
-doesn't account for error returns, and ends up trying to
-request_threaded_irq() with -22 as the IRQ value.
+Invoke autonuma_balance only on the busy CPUs at the same frequency of
+the CFS load balance.
 
-This patch checks for negative returns from irq_of_parse_and_map() as
-well as NO_IRQ, and uses polled mode in those cases.
-
-Signed-off-by: Chris Boot <bootc@bootc.net>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- drivers/mmc/host/of_mmc_spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/fair.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/host/of_mmc_spi.c b/drivers/mmc/host/of_mmc_spi.c
-index 1534b58..d3e882a 100644
---- a/drivers/mmc/host/of_mmc_spi.c
-+++ b/drivers/mmc/host/of_mmc_spi.c
-@@ -146,7 +146,7 @@ struct mmc_spi_platform_data *mmc_spi_get_pdata(struct spi_device *spi)
- 		oms->pdata.get_ro = of_mmc_spi_get_ro;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 99d1d33..1357938 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4893,6 +4893,9 @@ static void run_rebalance_domains(struct softirq_action *h)
  
- 	oms->detect_irq = irq_of_parse_and_map(np, 0);
--	if (oms->detect_irq != NO_IRQ) {
-+	if (oms->detect_irq != NO_IRQ && oms->detect_irq > 0) {
- 		oms->pdata.init = of_mmc_spi_init;
- 		oms->pdata.exit = of_mmc_spi_exit;
- 	} else {
--- 
-1.7.10
-
+ 	rebalance_domains(this_cpu, idle);
+ 
++	if (!this_rq->idle_balance)
++		sched_set_autonuma_need_balance();
++
+ 	/*
+ 	 * If this cpu has a pending nohz_balance_kick, then do the
+ 	 * balancing on behalf of the other idle cpus whose ticks are
