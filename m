@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab2EYJXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:23:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51201 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab2EYJXi convert rfc822-to-8bit (ORCPT
+	id S1754397Ab2EYJZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:25:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51259 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2EYJZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:23:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120524155121.20241.68413.stgit@bob.linux.org.uk>
-References: <20120524155121.20241.68413.stgit@bob.linux.org.uk>
-Date: Fri, 25 May 2012 17:23:38 +0800
-Message-ID: <CACVXFVO2bwuPXTzUvY2Vkq9SsF=zqdfV+p-OQjSFL04nBmzywg@mail.gmail.com>
-Subject: Re: [PATCH] tty: fix ldisc lock inversion trace
-From: Ming Lei <tom.leiming@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 May 2012 05:25:55 -0400
+Subject: Re: [RFC PATCH 0/4 V2] introduce: livedump
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Kevin Hilman <khilman@ti.com>,
+        Prarit Bhargava <prarit@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp>
+References: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 11:25:42 +0200
+Message-ID: <1337937942.9783.170.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 11:51 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> From: Alan Cox <alan@linux.intel.com>
->
-> This is caused by tty_release using tty_lock_pair to lock both
-> sides of the pty/tty pair, and then tty_ldisc_release dropping
-> and relocking one side only. We can drop both fine, so drop both
-> to avoid any lock ordering concerns.
->
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> ---
->
->  drivers/tty/tty_ldisc.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
->
->
-> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-> index 173a900..833e851 100644
-> --- a/drivers/tty/tty_ldisc.c
-> +++ b/drivers/tty/tty_ldisc.c
-> @@ -912,10 +912,13 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
->         * race with the set_ldisc code path.
->         */
->
-> -       tty_unlock(tty);
-> +       /* We don't give a monkeys' about the o_tty lock here but we
-> +          must do both to avoid lock inversions against another single
-> +          locking case */
-> +       tty_unlock_pair(tty, o_tty);
->        tty_ldisc_halt(tty);
->        tty_ldisc_flush_works(tty);
-> -       tty_lock(tty);
-> +       tty_lock_pair(tty, o_tty);
+On Fri, 2012-05-25 at 18:12 +0900, YOSHIDA Masanori wrote:
+> Live Dump is based on Copy-on-write technique. Basically processing is
+> performed in the following order.
+> (1) Suspends processing of all CPUs.
+> (2) Makes pages (which you want to dump) read-only.
+> (3) Resumes all CPUs
+> (4) On page fault, dumps a page including a fault address.
 
-This still may cause lockdep warning by the following line:
+Suppose a PF is in progress when all this happens, you mark all RO, then
+an NMI happens, from the NMI context we'll generate another PF to update
+a vmap area, this will again PF because you mucked about and marked
+things RO.
 
-             if (o_tty)
-                    tty_ldisc_release(o_tty, NULL);
+You're now at 3 PFs, which is instant reboot.
 
-The tty_unlock_pair in 'tty_ldisc_release(o_tty, NULL)'  may
-not match the previous tty_lock_pair. If tty > o_tty, then lockdep
-warning will be triggered since the lock to be released is not
-at the top of current lock stack.
+I don't think this is going to work.
 
-Thanks,
--- 
-Ming Lei
