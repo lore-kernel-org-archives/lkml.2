@@ -1,96 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab2EYPL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:11:29 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:42451 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab2EYPL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:11:26 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 00/16] vfs: atomic open v4 (part 1)
-References: <6422.1337872046@redhat.com>
-	<1335357857-16416-1-git-send-email-miklos@szeredi.hu>
-	<7204.1337874722@redhat.com>
-Date: Fri, 25 May 2012 17:12:01 +0200
-In-Reply-To: <7204.1337874722@redhat.com> (David Howells's message of "Thu, 24
-	May 2012 16:52:02 +0100")
-Message-ID: <87fwaoi9by.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755991Ab2EYPQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:16:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22423 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753387Ab2EYPQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 11:16:56 -0400
+Date: Fri, 25 May 2012 17:15:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [PATCH -mm]
+	pidns-guarantee-that-the-pidns-init-will-be-the-last-pidns-process-r
+	eaped-v2-fix-fix
+Message-ID: <20120525151526.GA13111@redhat.com>
+References: <20120516183920.GA19975@redhat.com> <878vgrsv7q.fsf@xmission.com> <20120517170015.GA12436@redhat.com> <87d3628oqa.fsf@xmission.com> <20120518123911.GA417@redhat.com> <87zk95kper.fsf@xmission.com> <20120521124414.GA20391@redhat.com> <87d35x5ank.fsf_-_@xmission.com> <20120522122315.c3f2118c.akpm@linux-foundation.org> <20120523145239.GA20378@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120523145239.GA20378@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
+So. Eric, Andrew, will you agree with this cleanup on top of
+pidns-guarantee-that-the-pidns-init-will-be-the-last-pidns-process-reaped-v2-fix.patch
+?
 
-> I'd also recommend changing the "ok" and "common" labels in do_last() to
-> something a bit more meaningful, perhaps:
->
-> 	common -> finish_open
-> 	ok -> finish_open_may_want_write
+1. Update the comments in zap_pid_ns_processes() and __unhash_process()
 
-Okay.  I'll do a separate label cleanup patch.
+2. Move the wake-up-reaper code in __unhash_process() under IS_ENABLED()
 
->
-> Also, does it make sense to combine:
->
-> 	if (!S_ISREG(nd->inode->i_mode))
-> 		will_truncate = 0;
->
-> with:
->
-> 	int will_truncate = open_flag & O_TRUNC;
->
-> up at the top of the function.
+3. Re-structure the wait-for-empty-children code in zap_pid_ns_processes()
 
-We need to check nd->inode->i_mode *after* the lookup.  So top of the
-function is not a good place.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/exit.c          |   17 +++++++++--------
+ kernel/pid_namespace.c |   21 ++++++++++++++-------
+ 2 files changed, 23 insertions(+), 15 deletions(-)
 
->
-> As the code stands, if ->atomic_open() opens the file but does not create it,
-> handle_truncate() will be called on it even if it is not a regular file,
-> whereas by the normal path, it won't.
+diff --git a/kernel/exit.c b/kernel/exit.c
+index 231decb..b3e6e0e 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -65,8 +65,6 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+ {
+ 	nr_threads--;
+ 	if (group_dead) {
+-		struct task_struct *parent;
+-
+ 		detach_pid(p, PIDTYPE_PGID);
+ 		detach_pid(p, PIDTYPE_SID);
+ 
+@@ -76,13 +74,16 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+ 
+ 		/*
+ 		 * If we are the last child process in a pid namespace to be
+-		 * reaped, notify the child_reaper.
++		 * reaped, notify the child_reaper, see zap_pid_ns_processes().
+ 		 */
+-		parent = p->real_parent;
+-		if ((task_active_pid_ns(p)->child_reaper == parent) &&
+-		    list_empty(&parent->children) &&
+-		    (parent->flags & PF_EXITING))
+-			wake_up_process(parent);
++		if (IS_ENABLED(CONFIG_PID_NS)) {
++			struct task_struct *parent = p->real_parent;
++
++			if ((task_active_pid_ns(p)->child_reaper == parent) &&
++			    list_empty(&parent->children) &&
++			    (parent->flags & PF_EXITING))
++				wake_up_process(parent);
++		}
+ 	}
+ 	detach_pid(p, PIDTYPE_PID);
+ 	list_del_rcu(&p->thread_group);
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index 723c948..c2b0df3 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -184,17 +184,24 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+ 		rc = sys_wait4(-1, NULL, __WALL, NULL);
+ 	} while (rc != -ECHILD);
+ 
+-	read_lock(&tasklist_lock);
++	/*
++	 * sys_wait4() above can't reap the TASK_DEAD children we may
++	 * have. Make sure they all go away, see __unhash_process().
++	 */
+ 	for (;;) {
+-		__set_current_state(TASK_UNINTERRUPTIBLE);
+-		if (list_empty(&current->children))
+-			break;
++		bool need_wait = false;
++
++		read_lock(&tasklist_lock);
++		if (!list_empty(&current->children)) {
++			__set_current_state(TASK_UNINTERRUPTIBLE);
++			need_wait = true;
++		}
+ 		read_unlock(&tasklist_lock);
++
++		if (!need_wait)
++			break;
+ 		schedule();
+-		read_lock(&tasklist_lock);
+ 	}
+-	read_unlock(&tasklist_lock);
+-	set_current_state(TASK_RUNNING);
+ 
+ 	if (pid_ns->reboot)
+ 		current->signal->group_exit_code = pid_ns->reboot;
 
-Right, that appears to be a bug.  Thanks for spotting.
-
->
-> I would also be tempted to move the body of:
->
-> 	if (filp == ERR_PTR(-EOPENSTALE) && save_parent.dentry && !retried) {
-> 		BUG_ON(save_parent.dentry != dir);
-> 		path_put(&nd->path);
-> 		nd->path = save_parent;
-> 		nd->inode = dir->d_inode;
-> 		save_parent.mnt = NULL;
-> 		save_parent.dentry = NULL;
-> 		if (want_write) {
-> 			mnt_drop_write(nd->path.mnt);
-> 			want_write = 0;
-> 		}
-> 		retried = true;
-> 		goto retry_lookup;
-> 	}
->
-> before the retry_lookup label and then goto around it from the preceding
-> if-else statement or place it at the bottom to make the "common:" block simpler
-> to read.  Also, you could nest the if (filp == ERR_PTR(-EOPENSTALE)...) inside
-> if (IS_ERR(filp)).
-
-Yeah, moving to the bottom sounds like a good cleanup.
-
->
-> Can I also suggest being consistent about the use of int v bool?  "created"
-> and "retried" are bool, but "will_truncate", "want_write" and "symlink_ok" are
-> not.  Granted some of this is likely inherited from the previous
-> incarnation.
-
-Yes, will do a cleanup patch.
-
-Thanks,
-Miklos
