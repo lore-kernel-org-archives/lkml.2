@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435Ab2EYQ3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 12:29:49 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:52632 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab2EYQ3r convert rfc822-to-8bit (ORCPT
+	id S933451Ab2EYQb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 12:31:56 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:25924 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755139Ab2EYQby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 12:29:47 -0400
+	Fri, 25 May 2012 12:31:54 -0400
+Message-ID: <4FBFB3F3.1000606@hp.com>
+Date: Fri, 25 May 2012 10:31:47 -0600
+From: Thavatchai Makphaibulcboke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAJivULpmLp9JK+PQZ9RkrvvYHNk=uA33=A-ffftroigivy1_NQ@mail.gmail.com>
-References: <1337934071-29342-1-git-send-email-qasimj@gmail.com>
-	<CAEFj985HxSrOwOoevDjG1jxPxobLda-X_LZUtj6LgwXZwozBog@mail.gmail.com>
-	<CAJivULpmLp9JK+PQZ9RkrvvYHNk=uA33=A-ffftroigivy1_NQ@mail.gmail.com>
-Date: Sat, 26 May 2012 00:29:46 +0800
-Message-ID: <CAEFj984efuO12nSPsZ2A0Q0nwPLesYJ8gDHwgh=0e1VO3_UtGw@mail.gmail.com>
-Subject: Re: [RFC] mac80211: Use correct originator sequence number in a Path Reply
-From: Yeoh Chun-Yeow <yeohchunyeow@gmail.com>
-To: devel@lists.open80211s.org
-Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ravip@utdallas.edu
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Lasse Collin <lasse.collin@tukaani.org>
+CC: "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kaloz@openwrt.org" <kaloz@openwrt.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>
+Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper functions
+References: <1337875436-27640-1-git-send-email-tmac@hp.com> <20120525113432.3beea6ed@tukaani.org>
+In-Reply-To: <20120525113432.3beea6ed@tukaani.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No. I am referring to the originator sequence number in PREP because
-> when the PREP reaches the originator of the PREQ, the originator
-> sequence number in the PREP and the value of the metric is used to
-> determine which PREP will be accepted. If the originator sequence
-> numbers in the PREPs are different, then the PREP with the higher
-> sequence number will be accepted irrespective of the value of the
-> metric. Only if the originator sequence numbers in the PREP are equal
-> will the metric values in the PREPs be examined.
+On 05/25/2012 02:34 AM, Lasse Collin wrote:
+> On 2012-05-24 T Makphaibulchoke wrote:
+>> The patch cleans up the file lib/decompress_unxz.c by removing all
+>> memory helper functions, e.g., memmove.  By doing so, any
+>> architecture's preboot environment supporting the XZ decompression
+>> needs to define its own copy of any of the missing memory helper
+>> functions.
+> 
+> Is it best to copy these functions to each arch, or would it be better
+> to have a shared file from which these functions could be pulled for
+> multiple archs? I wasn't sure when I wrote decompress_unxz.c, which is
+> why I put the extra functions there as a temporary solution.
+> 
 
-Based on the "Table 11C-17—Contents of a PREP element in Case A", the
-originator HWMP sequence number is the HWMP sequence number of the
-originator mesh STA. So this value (orig_sn in
-hwmp_preq_frame_process) is unchanged in the generated PREP element
-upon receiving the PREQ element.
+Yes, I agree that having a shared file would be the best solution.
+Unfortunately with the current preboot architecture and infra structure,
+it would not be a trivial task. I believe defining these functions for
+each arch would give a better code modularity compared to including them
+in the decompressor file.
 
-The target HWMP sequence number is the HWMP sequence number of the
-target mesh STA or target proxy mesh gate after it has been updated
-according to 11C.9.8.3. So this value is changed based on target_sn in
-hwmp_preq_frame_process.
+>> Adding both the missing memmove and memcmp functions, required by the
+>> XZ decompressor, to the sh preboot environment.
+>>
+>> Adding the missing memmove function, required by XZ decompressor, to
+>> the x86 preboot environment.
+> 
+> These already have memcpy. It can save a few bytes if one reused
+> memmove as memcpy when using XZ compression. I got a difference of 48
+> bytes on x86_64.
+> 
 
-I think that the confusion is in the hwmp_route_info_get,
+We could do that.  But according to the comment in the original
+implementation, there seems to be a concern regarding its performance
+speed. If you believe all archs' memcpy would give comparable
+performance to the memmove. then I could do that.
 
-case MPATH_PREP:
-                /* Originator here refers to the MP that was the target in the
-                 * Path Request. We divert from the nomenclature in the draft
-                 * so that we can easily use a single function to gather path
-                 * information from both PREQ and PREP frames.
-                 */
-                orig_sn = PREP_IE_TARGET_SN(hwmp_ie);
+> Adding memmove to string.c on x86 means that memmove is included in the
+> kernel image even when memmove isn't needed. With gzip compression I
+> got 128 bytes bigger image on x86_64 after adding the unneeded memmove
+> to string.c.
+> 
+> I don't know if those size increases matter in practice.
+> 
+>> + * To support XZ-decompressed file in preboot environment, the
+> 
+> s/XZ-decompressed/XZ-compressed/ :-)
+> 
 
-orig_sn here is actually the target HWMP sequence number of PREP
-element generated by hwmp_preq_frame_process.
+For x86, I think I could move memmove to the misc.c file and put an
+ifdef XZ_PREBOOT around it.  This way it should not impact other
+decompressor.  I could also do this for s390 and sh.  But if we decide
+to replace memmove with memcpy this would be necessart.
 
-> Please notice that in hwmp_preq_frame_process, target_sn ends up being
-> used as orig_sn for the PREP. This is probably what is causing the
-> confusion in your case.
+Thank you very for your comment.  Please let me know what you think.
+I'll redo and send out a new patch.  Thanks in advance.
 
-I think that the PREQ element has originator sequence number at the
-end but the PREQ element has the target sequence number at the end.
-This is what mesh_path_sel_frame_tx is doing.
+Thanks,
+Mak.
 
-> Your patch is definitely not what I was pointing out, in fact it
-> diverts from the standard functionality since it removes the check for
-> HWMPNetDiameterTraversalTime.
 
-I thought that this is only for originator sequence number which is
-done by mesh_path_start_discovery.
-
-Regards,
-Chun-Yeow
