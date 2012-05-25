@@ -1,102 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab2EYJRd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:17:33 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:57827 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab2EYJRb convert rfc822-to-8bit (ORCPT
+	id S1754771Ab2EYJSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:18:23 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:11827 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab2EYJSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:17:31 -0400
+	Fri, 25 May 2012 05:18:21 -0400
+X-IronPort-AV: E=Sophos;i="4.75,655,1330905600"; 
+   d="scan'208";a="12665656"
+Date: Fri, 25 May 2012 10:18:05 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 4/4] xen/events: Add WARN_ON when quick lookup
+ found invalid type.
+In-Reply-To: <20120524182817.GM24934@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1205251016370.26786@kaball-desktop>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com> <1337795222-29946-5-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.00.1205241154150.26786@kaball-desktop> <20120524182817.GM24934@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAO_48GFE3=yQjKS4w7=pGjNe3yENbRrd4bcMTfADJSn7LKekPQ@mail.gmail.com>
-References: <CAO_48GFE3=yQjKS4w7=pGjNe3yENbRrd4bcMTfADJSn7LKekPQ@mail.gmail.com>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Fri, 25 May 2012 14:47:10 +0530
-Message-ID: <CAO_48GGRRvCKVyY_s=oFgTb1vfjf8pSkHRf3jA8iFcdEHhwxVg@mail.gmail.com>
-Subject: Re: [GIT PULL]: dma-buf updates for 3.5
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org
-Cc: Jesse Barker <jesse.barker@linaro.org>, akpm@linux-foundation.org,
-        Daniel Vetter <daniel@ffwll.ch>, Arnd Bergmann <arnd@arndb.de>,
-        Dave Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 24 May 2012, Konrad Rzeszutek Wilk wrote:
+> On Thu, May 24, 2012 at 11:58:11AM +0100, Stefano Stabellini wrote:
+> > On Wed, 23 May 2012, Konrad Rzeszutek Wilk wrote:
+> > > All of the bind_XYZ_to_irq do a quick lookup to see if the
+> > > event exists. And if they that value is returned instead of
+> > 
+> >                            ^
+> 
+> ... snip. How about this:
+> 
+> >From 5963cc2699db7b2893e7925bd2e68ada9d97e8ef Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Wed, 23 May 2012 13:28:44 -0400
+> Subject: [PATCH] xen/events: Add WARN_ON when quick lookup found invalid
+>  type.
+> 
+> All of the bind_XYZ_to_irq do a quick lookup to see if the
+> event exists. And if it does, then the initialized IRQ number
+> is returned instead of initializing a new IRQ number.
+> 
+> This patch adds an extra logic to check that the type returned
+> is proper one and that there is an IRQ handler setup for it.
+> 
+> This patch has the benefit of being able to find drivers that
+> are doing something naught.
+> 
+> [v1: Enhanced based on Stefano's review]
+>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>  drivers/xen/events.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index faae2f9..81f338a 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -827,6 +827,9 @@ int bind_evtchn_to_irq(unsigned int evtchn)
+>  					      handle_edge_irq, "event");
+>  
+>  		xen_irq_info_evtchn_init(irq, evtchn);
+> +	} else {
+> +		struct irq_info *info = info_for_irq(irq);
+> +		WARN_ON(info == NULL || info->type != IRQT_EVTCHN);
+>  	}
+>  
+>  out:
+> @@ -862,8 +865,10 @@ static int bind_ipi_to_irq(unsigned int ipi, unsigned int cpu)
+>  		xen_irq_info_ipi_init(cpu, irq, evtchn, ipi);
+>  
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+> +	} else {
+> +		struct irq_info *info = info_for_irq(irq);
+> +		WARN_ON(info == NULL || info->type != IRQT_IPI);
+>  	}
+> -
+>   out:
+>  	mutex_unlock(&irq_mapping_update_lock);
+>  	return irq;
+> @@ -939,8 +944,10 @@ int bind_virq_to_irq(unsigned int virq, unsigned int cpu)
+>  		xen_irq_info_virq_init(cpu, irq, evtchn, virq);
+>  
+>  		bind_evtchn_to_cpu(evtchn, cpu);
+> +	} else {
+> +		struct irq_info *info = info_for_irq(irq);
+> +		WARN_ON(info == NULL || info->type != IRQT_VIRQ);
+>  	}
+> -
+>  out:
+>  	mutex_unlock(&irq_mapping_update_lock);
+>  
 
-On 25 May 2012 13:25, Sumit Semwal <sumit.semwal@linaro.org> wrote:
-> Hi Linus,
->
-> Here's the first signed-tag pull request for dma-buf framework.
->
-> Could you please pull the dma-buf updates for 3.5? This includes the
-> following key items:
-> - mmap support
-> - vmap support
-> - related documentation updates
->
-> These are needed by various drivers to allow mmap/vmap of dma-buf
-> shared buffers. Dave Airlie has some prime patches dependent on the
-> vmap pull as well.
->
-> Thanks and best regards,
-> ~Sumit.
->
->
-> The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
->
->  Linux 3.4 (2012-05-20 15:29:13 -0700)
->
-> are available in the git repository at:
->
->  ssh://sumitsemwal@git.linaro.org/~/public_git/linux-dma-buf.git
-> tags/tag-for-linus-3.5
-I am really sorry - I goofed up in the git URL (sent the ssh URL
-instead). Could you please use
+I don't want to nitpick but you removed 2 out of 3 spaced before the out
+label.
+In any case:
 
-git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git tags/tag-for-linus-3.5
-
-instead, or should I send a new pull request with the corrected URL?
-
-Thanks, and best regards,
-~Sumit.
->
-> for you to fetch changes up to b25b086d23eb852bf3cfdeb60409b4967ebb3c0c:
->
->  dma-buf: add initial vmap documentation (2012-05-25 12:51:11 +0530)
->
-> ----------------------------------------------------------------
-> dma-buf updates for 3.5
->
-> ----------------------------------------------------------------
-> Daniel Vetter (1):
->      dma-buf: mmap support
->
-> Dave Airlie (2):
->      dma-buf: add vmap interface
->      dma-buf: add initial vmap documentation
->
-> Sumit Semwal (1):
->      dma-buf: minor documentation fixes.
->
->  Documentation/dma-buf-sharing.txt |  109 ++++++++++++++++++++++++++++++++++---
->  drivers/base/dma-buf.c            |   99 ++++++++++++++++++++++++++++++++-
->  include/linux/dma-buf.h           |   33 +++++++++++
->  3 files changed, 233 insertions(+), 8 deletions(-)
-
-
-
--- 
-Thanks and regards,
-
-Sumit Semwal
-
-Linaro Kernel Engineer - Graphics working group
-
-Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro: Facebook | Twitter | Blog
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
