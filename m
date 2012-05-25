@@ -1,101 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2EYP3J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:29:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14988 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab2EYP3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:29:07 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=LjBlXQQp-u8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=D_lWP2BdmwKiLwPvjKsA:9 a=PUjeQqilurYA:10 a=v8b_qJdt7Dls0uHt:21 a=afGoZCSUHPBgFJXr:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337959746.13348.264.camel@gandalf.stny.rr.com>
-Subject: Re: BUG - function tracing with breakpoints (was: Re: tracing
- ring_buffer_resize oops.)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Date: Fri, 25 May 2012 11:29:06 -0400
-In-Reply-To: <1337956262.13348.257.camel@gandalf.stny.rr.com>
-References: <20120524160146.GA6226@redhat.com>
-	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
-	 <20120524172223.GA10689@redhat.com>
-	 <1337902816.13348.224.camel@gandalf.stny.rr.com>
-	 <4FBEC9E6.8040301@linux.intel.com>
-	 <1337909963.13348.232.camel@gandalf.stny.rr.com>
-	 <1337910106.13348.234.camel@gandalf.stny.rr.com>
-	 <1337956262.13348.257.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	id S1757388Ab2EYP3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:29:40 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:52819 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753625Ab2EYP3j convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Fri, 25 May 2012 11:29:39 -0400
+Message-Id: <4FBFC1A3020000780008638F@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 25 May 2012 16:30:11 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Matthew Garrett" <mjg59@srcf.ucam.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <matt.fleming@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
+References: <4FBFBF5F020000780008637F@nat28.tlf.novell.com>
+ <20120525152414.GA16704@srcf.ucam.org>
+In-Reply-To: <20120525152414.GA16704@srcf.ucam.org>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 10:31 -0400, Steven Rostedt wrote:
+>>> On 25.05.12 at 17:24, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Fri, May 25, 2012 at 04:20:31PM +0100, Jan Beulich wrote:
+> 
+>> Also make the two EFI functions in question here static - they're not
+>> being referenced elsewhere.
+> 
+> Looks good, but should we also be changing get_time to return in UTC? 
 
-> Looks like we set RSP to code. Again pointing to a corrupted iretq.
-> Maybe we are having nested debug stack usage, where we are hitting a
-> breakpoint before setting the idt to not change the stack?
+Imo that would be a separate change though.
 
-Another clue. If I do not trace the following functions:
+> What are the expected semantics for get_wallclock?
 
-func_ptr_is_kernel_text
-kprobe_exceptions_notify
-hw_breakpoint_exceptions_notify
-notifier_call_chain*
+Not sure - I think both are permitted (just like for the legacy RTC),
+with the expectation that early user mode would tell the kernel.
 
-it works fine.
-
-# echo func_ptr_is_kernel_text kprobe_exceptions_notify \
- hw_breakpoint_exceptions_notify notifier_call_chain* > set_ftrace_notrace
-# echo function > current_tracer
-
-works!
-
-These notifiers are being called by the breakpoint. So perhaps the
-breakpoint is still being called by int3 when it shouldn't be. It
-shouldn't because we have:
-
-
-dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_code)
-{
-#ifdef CONFIG_DYNAMIC_FTRACE
-	/* ftrace must be first, everything else may cause a recursive crash */
-	if (unlikely(modifying_ftrace_code) && ftrace_int3_handler(regs))
-		return;
-#endif
-
-The fix I added (but hasn't fixed it completely) was:
-
- void arch_ftrace_update_code(int command)
- {
-        modifying_ftrace_code++;
-+       /*
-+        * Make sure that all CPUs see this before we start
-+        * adding breakpoints.
-+        */
-+       smp_mb();
- 
-        ftrace_modify_all_code(command);
- 
-+       /* Finish all breakpoints before clearing */
-+       smp_mb();
-+
-        modifying_ftrace_code--;
- }
-
-
-This would make sense for this bug, as if modifying_ftrace_code was not
-seen by other CPUs, it wouldn't go into the ftrace_int3_handler() path.
-That would cause this issue. But the bug remains after the smp_mb()'s
-were put in place. Although it behaves a little differently not. Maybe
-there's something else I missed?
-
--- Steve
-
+Jan
 
