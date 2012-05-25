@@ -1,100 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab2EXX7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 19:59:17 -0400
-Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:35349 "EHLO
-	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933380Ab2EXX7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 19:59:14 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Colin Cross <ccross@android.com>, Magnus Damm <magnus.damm@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: Re: [Update 2x][RFC][PATCH 2/2] PM / Domains: Add preliminary cpuidle support
-Organization: Texas Instruments, Inc.
-References: <201205092340.26561.rjw@sisk.pl> <201205162229.38252.rjw@sisk.pl>
-	<87sjeqzge3.fsf@ti.com> <201205241817.43541.rjw@sisk.pl>
-Date: Thu, 24 May 2012 16:59:11 -0700
-In-Reply-To: <201205241817.43541.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Thu, 24 May 2012 18:17:43 +0200")
-Message-ID: <87zk8xp1v4.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1759406Ab2EYAO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 20:14:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20448 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394Ab2EYAOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 May 2012 20:14:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="148173931"
+Date: Thu, 24 May 2012 17:14:07 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: tracing ring_buffer_resize oops.
+Message-ID: <20120525001407.GC12234@tassilo.jf.intel.com>
+References: <20120524160146.GA6226@redhat.com>
+ <1337876398.13348.178.camel@gandalf.stny.rr.com>
+ <20120524172223.GA10689@redhat.com>
+ <1337902816.13348.224.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337902816.13348.224.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Thu, May 24, 2012 at 07:40:16PM -0400, Steven Rostedt wrote:
+> On Thu, 2012-05-24 at 13:22 -0400, Dave Jones wrote:
+> 
+> I found a clue!
+> 
+> 
+> > [ 1013.243754] BUG: unable to handle kernel NULL pointer dereference at 0000000000000002
+> > [ 1013.272665] IP: [<ffff880145cc0000>] 0xffff880145cbffff
+> > [ 1013.285186] PGD 1401b2067 PUD 14324c067 PMD 0 
+> > [ 1013.298832] Oops: 0010 [#1] PREEMPT SMP 
+> > [ 1013.310600] CPU 2 
+> > [ 1013.317904] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clmulni_intel microcode usb_debug serio_raw pcspkr iTCO_wdt i2c_i801 iTCO_vendor_support e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> > [ 1013.401848] 
+> > [ 1013.407399] Pid: 112, comm: kworker/2:1 Not tainted 3.4.0+ #30 
+> > [ 1013.437943] RIP: 8eb8:[<ffff88014630a000>]  [<ffff88014630a000>] 0xffff880146309fff
+> 
+> RIP is always near the GS segment. As GS points to the per_cpu area, we
+> may somehow be getting our GS screwed up. I'm not sure why that would
+> affect the RIP. Maybe stacks are not being processed properly somewhere?
+> 
+> It's strange because I can either trigger it on the first try, or it
+> never triggers at all??
 
-> On Thursday, May 24, 2012, Kevin Hilman wrote:
->> Hi Rafael,
->> 
->> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> 
->> > From: Rafael J. Wysocki <rjw@sisk.pl>
->> >
->> > On some systems there are CPU cores located in the same power
->> > domains as I/O devices.  Then, power can only be removed from the
->> > domain if all I/O devices in it are not in use and the CPU core
->> > is idle.  Add preliminary support for that to the generic PM domains
->> > framework.
->> >
->> > First, the platform is expected to provide a cpuidle driver with one
->> > extra state designated for use with the generic PM domains code.
->> > This state should be initially disabled and its exit_latency value
->> > should be set to whatever time is needed to bring up the CPU core
->> > itself after restoring power to it, not including the domain's
->> > power on latency.  Its .enter() callback should point to a procedure
->> > that will remove power from the domain containing the CPU core at
->> > the end of the CPU power transition.
->> >
->> > The remaining characteristics of the extra cpuidle state, referred to
->> > as the "domain" cpuidle state below, (e.g. power usage, target
->> > residency) should be populated in accordance with the properties of
->> > the hardware.
->> >
->> > Next, the platform should execute genpd_attach_cpuidle() on the PM
->> > domain containing the CPU core.  That will cause the generic PM
->> > domains framework to treat that domain in a special way such that:
->> >
->> >  * When all devices in the domain have been suspended and it is about
->> >    to be turned off, the states of the devices will be saved, but
->> >    power will not be removed from the domain.  Instead, the "domain"
->> >    cpuidle state will be enabled so that power can be removed from
->> >    the domain when the CPU core is idle and the state has been chosen
->> >    as the target by the cpuidle governor.
->> >
->> >  * When the first I/O device in the domain is resumed and
->> >    __pm_genpd_poweron(() is called for the first time after
->> >    power has been removed from the domain, the "domain" cpuidle
->> >    state will be disabled to avoid subsequent surprise power removals
->> >    via cpuidle.
->> 
->> This looks like a good approach.  I like that it keeps a pretty clean
->> separation between CPUidle and PM domains.
->> 
->> My only comment would be that the recalc of the exit_latency should be
->> described a bit more.  Specifically, I'm not sure why it's adjused at
->> every genpd poweron.  At first I thought it was just supposed to be
->> adjusted upon attach, then adjusted back on detatch, but with the recalc
->> also in every poweron, I'm a little confused.  Care to clarify?
->
-> The problem is that the PM domains code measures the time it takes to
-> power off a domain and updates its power on latency parameter if the
-> measured time is greater.  This is done for PM QoS to operate on realistic
-> numbers (most of the time at least).
+I think this could happen if you get your SWAPGS state screwed up
+(so you do a mismatched swapgs) In the early days of the port I fought a 
+lot with this.
 
-OK, I see.  Maybe clarifying that in the changelog would help make that
-clearer.
+One easy way to debug it is to read the GS msr early and double
+check it's as expected.
 
-> Of course, this also affects the CPU wakeup latency if the wakeup involves
-> turning a domain on.
-
-Right.
-
-Kevin
+-Andi
