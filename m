@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab2EYPaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:30:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1972 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab2EYP3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:29:44 -0400
-From: Lukas Czerner <lczerner@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, mbroz@redhat.com,
-        Lukas Czerner <lczerner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 2/2] vfs: Do not copy_tree() unnecessarily while mounting
-Date: Fri, 25 May 2012 17:29:36 +0200
-Message-Id: <1337959776-16564-2-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1337959776-16564-1-git-send-email-lczerner@redhat.com>
-References: <1337959776-16564-1-git-send-email-lczerner@redhat.com>
+	id S1757500Ab2EYPaj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:30:39 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41910 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756038Ab2EYPah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 11:30:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1337934071-29342-1-git-send-email-qasimj@gmail.com>
+References: <1337934071-29342-1-git-send-email-qasimj@gmail.com>
+Date: Fri, 25 May 2012 23:30:36 +0800
+Message-ID: <CAEFj985HxSrOwOoevDjG1jxPxobLda-X_LZUtj6LgwXZwozBog@mail.gmail.com>
+Subject: Re: [RFC] mac80211: Use correct originator sequence number in a Path Reply
+From: Yeoh Chun-Yeow <yeohchunyeow@gmail.com>
+To: devel@lists.open80211s.org
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ravip@utdallas.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While mounting propagate_mnt() would walk through propagation tree
-cloning the mount for every every mount the root propagates to.
-Even for mounts which parents are not parents of the directory you're
-trying to mount to.
+Hi, Qasim Javed
 
-Then before the propagate_mnt() is left it will clean the unneeded
-cloned mounts (those which parent root is not parent of your new mount
-point).
+I think that you are referring to the target HWMP sequence number in
+PREP element.
 
-I think this whole operation is unnecessary and can be avoided by
-skipping the copy_tree() if the propagated mount root is not
-subdirectory of the directory you're mounting to. Such cloned mount
-would be cleaned up later anyway.
+Based on the 802.11s standard, it has specified that
+dot11MeshHWMPnetDiameterTraversalTime is only applied to original HWMP
+sequence number for PREQ as mentioned in the "Contents of a PREQ
+element" in section 11C.
 
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
----
- fs/pnode.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+For PREP element, it should be based on the description in section 11C.9.8.3:
+"If it is a target mesh STA, it shall update its own HWMP sequence
+number to maximum (current HWMP sequence number, target HWMP sequence
+number in the PREQ) + 1 immediately before it generates a PREP in
+response to a PREQ. The target HWMP sequence number of the PREQ is
+relevant when a link was broken along the path and the stored sequence
+number was increased at an intermediate mesh STA."
 
-diff --git a/fs/pnode.c b/fs/pnode.c
-index ab5fa9e..3ebf63d 100644
---- a/fs/pnode.c
-+++ b/fs/pnode.c
-@@ -237,22 +237,22 @@ int propagate_mnt(struct mount *dest_mnt, struct dentry *dest_dentry,
- 
- 		source =  get_source(m, prev_dest_mnt, prev_src_mnt, &type);
- 
--		if (!(child = copy_tree(source, source->mnt.mnt_root, type))) {
--			ret = -ENOMEM;
--			list_splice(tree_list, tmp_list.prev);
--			goto out;
--		}
--
- 		if (is_subdir(dest_dentry, m->mnt.mnt_root)) {
-+			if (!(child = copy_tree(source,
-+						source->mnt.mnt_root, type))) {
-+				ret = -ENOMEM;
-+				list_splice(tree_list, tmp_list.prev);
-+				goto out;
-+			}
-+
- 			mnt_set_mountpoint(m, dest_dentry, child);
- 			list_add_tail(&child->mnt_hash, tree_list);
--		} else {
-+		} else
- 			/*
- 			 * This can happen if the parent mount was bind mounted
- 			 * on some subdirectory of a shared/slave mount.
- 			 */
--			list_add_tail(&child->mnt_hash, &tmp_list);
--		}
-+			continue;
- 		prev_dest_mnt = m;
- 		prev_src_mnt  = child;
- 	}
--- 
-1.7.7.6
+So the target HWMP sequence number should be modified as follow:
 
+diff --git a/net/mac80211/mesh_hwmp.c b/net/mac80211/mesh_hwmp.c
+index 70ac7d1..5988e82 100644
+--- a/net/mac80211/mesh_hwmp.c
++++ b/net/mac80211/mesh_hwmp.c
+@@ -538,12 +538,10 @@ static void hwmp_preq_frame_process(struct
+ieee80211_sub_if_data *sdata,
+                forward = false;
+                reply = true;
+                metric = 0;
+-               if (time_after(jiffies, ifmsh->last_sn_update +
+-                                       net_traversal_jiffies(sdata)) ||
+-                   time_before(jiffies, ifmsh->last_sn_update)) {
+-                       target_sn = ++ifmsh->sn;
+-                       ifmsh->last_sn_update = jiffies;
+-               }
++               if (SN_LT(ifmsh->sn, target_sn))
++                       ifmsh->sn = target_sn;
++               target_sn = ++ifmsh->sn;
++               ifmsh->last_sn_update = jiffies;
+
+Comments.
+
+Regards,
+Chun-Yeow
