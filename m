@@ -1,155 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538Ab2EYPub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:50:31 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:51476 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932577Ab2EYPsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:48:31 -0400
-Date: Fri, 25 May 2012 17:48:00 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linux-kernel@vger.kernel.org
-Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Russell King <linux@arm.linux.org.uk>,
-        x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: [PATCH 1/6] sizes.h: move from asm-generic to <linux/sizes.h>
-Message-ID: <1ae7f300a5cd23f89007e06e68713bb7075146de.1337959750.git.rubini@gnudd.com>
+	id S933598Ab2EYPvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:51:01 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:63443 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577Ab2EYPu7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 11:50:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-References: <cover.1337959750.git.rubini@gnudd.com>
-In-Reply-To: <cover.1337959750.git.rubini@gnudd.com>
+In-Reply-To: <CAEFj985HxSrOwOoevDjG1jxPxobLda-X_LZUtj6LgwXZwozBog@mail.gmail.com>
+References: <1337934071-29342-1-git-send-email-qasimj@gmail.com>
+	<CAEFj985HxSrOwOoevDjG1jxPxobLda-X_LZUtj6LgwXZwozBog@mail.gmail.com>
+Date: Fri, 25 May 2012 10:50:56 -0500
+Message-ID: <CAJivULpmLp9JK+PQZ9RkrvvYHNk=uA33=A-ffftroigivy1_NQ@mail.gmail.com>
+Subject: Re: [RFC] mac80211: Use correct originator sequence number in a Path Reply
+From: Qasim Javed <qasimj@gmail.com>
+To: devel@lists.open80211s.org
+Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ravip@utdallas.edu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sizes.h is used throughout the AMBA code and drivers, so the header
-should be available to everyone in order to driver AMBA/PrimeCell
-peripherals behind a PCI bridge where the host can be any platform
-(I'm doing it under x86).
+Please see my comments below.
 
-At this step <asm-generic/sizes.h> includes <linux/sizes.h>,
-to allow a grace period for both in-tree and out-of-tree drivers.
+On Fri, May 25, 2012 at 10:30 AM, Yeoh Chun-Yeow <yeohchunyeow@gmail.com> wrote:
+> Hi, Qasim Javed
+>
+> I think that you are referring to the target HWMP sequence number in
+> PREP element.
 
-Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
----
- include/asm-generic/sizes.h |   49 +-----------------------------------------
- include/linux/sizes.h       |   47 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 47 deletions(-)
- create mode 100644 include/linux/sizes.h
+No. I am referring to the originator sequence number in PREP because
+when the PREP reaches the originator of the PREQ, the originator
+sequence number in the PREP and the value of the metric is used to
+determine which PREP will be accepted. If the originator sequence
+numbers in the PREPs are different, then the PREP with the higher
+sequence number will be accepted irrespective of the value of the
+metric. Only if the originator sequence numbers in the PREP are equal
+will the metric values in the PREPs be examined.
 
-diff --git a/include/asm-generic/sizes.h b/include/asm-generic/sizes.h
-index ea5d4ef..1dcfad9 100644
---- a/include/asm-generic/sizes.h
-+++ b/include/asm-generic/sizes.h
-@@ -1,47 +1,2 @@
--/*
-- * linux/include/asm-generic/sizes.h
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#ifndef __ASM_GENERIC_SIZES_H__
--#define __ASM_GENERIC_SIZES_H__
--
--#define SZ_1				0x00000001
--#define SZ_2				0x00000002
--#define SZ_4				0x00000004
--#define SZ_8				0x00000008
--#define SZ_16				0x00000010
--#define SZ_32				0x00000020
--#define SZ_64				0x00000040
--#define SZ_128				0x00000080
--#define SZ_256				0x00000100
--#define SZ_512				0x00000200
--
--#define SZ_1K				0x00000400
--#define SZ_2K				0x00000800
--#define SZ_4K				0x00001000
--#define SZ_8K				0x00002000
--#define SZ_16K				0x00004000
--#define SZ_32K				0x00008000
--#define SZ_64K				0x00010000
--#define SZ_128K				0x00020000
--#define SZ_256K				0x00040000
--#define SZ_512K				0x00080000
--
--#define SZ_1M				0x00100000
--#define SZ_2M				0x00200000
--#define SZ_4M				0x00400000
--#define SZ_8M				0x00800000
--#define SZ_16M				0x01000000
--#define SZ_32M				0x02000000
--#define SZ_64M				0x04000000
--#define SZ_128M				0x08000000
--#define SZ_256M				0x10000000
--#define SZ_512M				0x20000000
--
--#define SZ_1G				0x40000000
--#define SZ_2G				0x80000000
--
--#endif /* __ASM_GENERIC_SIZES_H__ */
-+/* This is a placeholder, to be removed over time */
-+#include <linux/sizes.h>
-diff --git a/include/linux/sizes.h b/include/linux/sizes.h
-new file mode 100644
-index 0000000..ce3e815
---- /dev/null
-+++ b/include/linux/sizes.h
-@@ -0,0 +1,47 @@
-+/*
-+ * include/linux/sizes.h
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef __LINUX_SIZES_H__
-+#define __LINUX_SIZES_H__
-+
-+#define SZ_1				0x00000001
-+#define SZ_2				0x00000002
-+#define SZ_4				0x00000004
-+#define SZ_8				0x00000008
-+#define SZ_16				0x00000010
-+#define SZ_32				0x00000020
-+#define SZ_64				0x00000040
-+#define SZ_128				0x00000080
-+#define SZ_256				0x00000100
-+#define SZ_512				0x00000200
-+
-+#define SZ_1K				0x00000400
-+#define SZ_2K				0x00000800
-+#define SZ_4K				0x00001000
-+#define SZ_8K				0x00002000
-+#define SZ_16K				0x00004000
-+#define SZ_32K				0x00008000
-+#define SZ_64K				0x00010000
-+#define SZ_128K				0x00020000
-+#define SZ_256K				0x00040000
-+#define SZ_512K				0x00080000
-+
-+#define SZ_1M				0x00100000
-+#define SZ_2M				0x00200000
-+#define SZ_4M				0x00400000
-+#define SZ_8M				0x00800000
-+#define SZ_16M				0x01000000
-+#define SZ_32M				0x02000000
-+#define SZ_64M				0x04000000
-+#define SZ_128M				0x08000000
-+#define SZ_256M				0x10000000
-+#define SZ_512M				0x20000000
-+
-+#define SZ_1G				0x40000000
-+#define SZ_2G				0x80000000
-+
-+#endif /* __LINUX_SIZES_H__ */
--- 
-1.7.7.2
+>
+> Based on the 802.11s standard, it has specified that
+> dot11MeshHWMPnetDiameterTraversalTime is only applied to original HWMP
+> sequence number for PREQ as mentioned in the "Contents of a PREQ
+> element" in section 11C.
+>
+> For PREP element, it should be based on the description in section 11C.9.8.3:
+> "If it is a target mesh STA, it shall update its own HWMP sequence
+> number to maximum (current HWMP sequence number, target HWMP sequence
+> number in the PREQ) + 1 immediately before it generates a PREP in
+> response to a PREQ. The target HWMP sequence number of the PREQ is
+> relevant when a link was broken along the path and the stored sequence
+> number was increased at an intermediate mesh STA."
+>
+> So the target HWMP sequence number should be modified as follow:
+>
+> diff --git a/net/mac80211/mesh_hwmp.c b/net/mac80211/mesh_hwmp.c
+> index 70ac7d1..5988e82 100644
+> --- a/net/mac80211/mesh_hwmp.c
+> +++ b/net/mac80211/mesh_hwmp.c
+> @@ -538,12 +538,10 @@ static void hwmp_preq_frame_process(struct
+> ieee80211_sub_if_data *sdata,
+>                forward = false;
+>                reply = true;
+>                metric = 0;
+> -               if (time_after(jiffies, ifmsh->last_sn_update +
+> -                                       net_traversal_jiffies(sdata)) ||
+> -                   time_before(jiffies, ifmsh->last_sn_update)) {
+> -                       target_sn = ++ifmsh->sn;
+> -                       ifmsh->last_sn_update = jiffies;
+> -               }
+> +               if (SN_LT(ifmsh->sn, target_sn))
+> +                       ifmsh->sn = target_sn;
+> +               target_sn = ++ifmsh->sn;
+> +               ifmsh->last_sn_update = jiffies;
+>
+> Comments.
+
+I agree with the description in the standard but you seem to be
+misinterpreting it. Please note that the function being considered
+here is hwmp_preq_frame_process, which evidently processes a PREQ.
+However, because a PREP is generated in response to a PREQ, this
+function also checks whether a PREP needs to be generated and then
+calls mesh_path_sel_frame_tx with frame type being MPATH_PREP. This
+function is also passed the originator and target sequence numbers.
+
+What I am saying is that, in the scenario described in my original
+email, the wrong originator sequence number is being used for the
+PREP.
+
+Please notice that in hwmp_preq_frame_process, target_sn ends up being
+used as orig_sn for the PREP. This is probably what is causing the
+confusion in your case.
+
+Your patch is definitely not what I was pointing out, in fact it
+diverts from the standard functionality since it removes the check for
+HWMPNetDiameterTraversalTime.
+
+>
+> Regards,
+> Chun-Yeow
+> _______________________________________________
+> Devel mailing list
+> Devel@lists.open80211s.org
+> http://lists.open80211s.org/cgi-bin/mailman/listinfo/devel
