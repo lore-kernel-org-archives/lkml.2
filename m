@@ -1,105 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752586Ab2EYNCd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:02:33 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:44071 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab2EYNCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:02:31 -0400
-Date: Fri, 25 May 2012 15:02:27 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        jespern@axis.com
-Subject: [GIT PULL] CRIS updates for v3.5
-Message-ID: <20120525130227.GB19174@axis.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753404Ab2EYNH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:07:28 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:44913 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998Ab2EYNH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:07:27 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v3 00/28] kmem limitation for memcg
+Date: Fri, 25 May 2012 17:03:20 +0400
+Message-Id: <1337951028-3427-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tjo!
+Hello All,
 
-I've tried the signed tag approach for this pull-request,
-I hope I did it right.
+This is my new take for the memcg kmem accounting. This should merge
+all of the previous comments from you, plus fix a bunch of bugs.
 
-No major changes here, but fixes some compile errors for CRIS,
-some small style issues, some documentation and as a
-bonus nukes a couple of obsolete rtc-files and related code.
+At this point, I consider the series pretty mature. Since last submission
+2 weeks ago, I focused on broadening the testing coverage. Some bugs were
+fixed, but that of course doesn't mean no bugs exist.
 
+I believe some of the early patches here are already in some trees around.
+I don't know who should pick this, so if everyone agrees with what's in here,
+please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
+and I'll rebase it.
 
-Best regards,
+I should point out again that most, if not all, of the code in the caches
+are wrapped in static_key areas, meaning they will be completely patched out
+until the first limit is set. Enabling and disabling of static_keys incorporate
+the last fixes for sock memcg, and should be pretty robust.
 
-/Jesper
+I also put a lot of effort, as you will all see, in the proper separation
+of the patches, so the review process is made as easy as the complexity of
+the work allows to.
 
+[ v3 ]
+ * fixed lockdep bugs in slab (ordering of get_online_cpus() vs slab_mutex)
+ * improved style in slab and slub with less #ifdefs in-code
+ * tested and fixed hierarchical accounting (memcg: propagate kmem limiting...)
+ * some more small bug fixes
+ * No longer using res_counter_charge_nofail for GFP_NOFAIL submissions. Those
+   go to the root memcg directly.
+ * reordered tests in mem_cgroup_get_kmem_cache so we exit even earlier for
+   tasks in root memcg
+ * no more memcg state for slub initialization
+ * do_tune_cpucache will always (only after FULL) propagate to children when
+   they exist.
+ * slab itself will destroy the kmem_cache string for chained caches, so we
+   don't need to bother with consistency between them.
+ * other minor issues
+[ v2 ]
+ * memcgs can be properly removed.
+ * We are not charging based on current->mm->owner instead of current
+ * kmem_large allocations for slub got some fixes, specially for the free case
+ * A cache that is registered can be properly removed (common module case)
+   even if it spans memcg children. Slab had some code for that, now it works
+   well with both
+ * A new mechanism for skipping allocations is proposed (patch posted
+   separately already). Now instead of having kmalloc_no_account, we mark
+   a region as non-accountable for memcg.
 
-The following changes since commit 7d6e1cb7aed231b58acd71bdbe67fc03221373e4:
+Glauber Costa (25):
+  slab: move FULL state transition to an initcall
+  memcg: Always free struct memcg through schedule_work()
+  slab: rename gfpflags to allocflags
+  slab: use obj_size field of struct kmem_cache when not debugging
+  memcg: change defines to an enum
+  res_counter: don't force return value checking in
+    res_counter_charge_nofail
+  kmem slab accounting basic infrastructure
+  slab/slub: struct memcg_params
+  slub: consider a memcg parameter in kmem_create_cache
+  slab: pass memcg parameter to kmem_cache_create
+  slub: create duplicate cache
+  slab: create duplicate cache
+  slub: always get the cache from its page in kfree
+  memcg: kmem controller charge/uncharge infrastructure
+  skip memcg kmem allocations in specified code regions
+  slub: charge allocation to a memcg
+  slab: per-memcg accounting of slab caches
+  memcg: disable kmem code when not in use.
+  memcg: destroy memcg caches
+  memcg/slub: shrink dead caches
+  slab: Track all the memcg children of a kmem_cache.
+  slub: create slabinfo file for memcg
+  slub: track all children of a kmem cache
+  memcg: propagate kmem limiting information to children
+  Documentation: add documentation for slab tracker for memcg
 
-  Merge branch 'drm-prime-dmabuf-initial' of git://people.freedesktop.org/~airlied/linux (2012-04-02 17:58:04 -0700)
+Suleiman Souhlal (3):
+  memcg: Make it possible to use the stock for more than one page.
+  memcg: Reclaim when more than one page needed.
+  memcg: Per-memcg memory.kmem.slabinfo file.
 
-are available in the git repository at:
+ Documentation/cgroups/memory.txt |   33 ++
+ include/linux/memcontrol.h       |  101 +++++
+ include/linux/res_counter.h      |    2 +-
+ include/linux/sched.h            |    1 +
+ include/linux/slab.h             |   32 ++
+ include/linux/slab_def.h         |   79 ++++-
+ include/linux/slub_def.h         |   68 +++-
+ init/Kconfig                     |    2 +-
+ mm/memcontrol.c                  |  897 ++++++++++++++++++++++++++++++++++++--
+ mm/slab.c                        |  423 +++++++++++++++---
+ mm/slub.c                        |  282 +++++++++++-
+ 11 files changed, 1787 insertions(+), 133 deletions(-)
 
-
-  git://jni.nu/cris.git tags/cris-for-linus
-
-for you to fetch changes up to 7b91747d42a1012e3781dd09fa638d113809e3fd:
-
-  cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile (2012-04-19 11:17:04 +0200)
-
-----------------------------------------------------------------
-CRIS changes for 3.5
-
-----------------------------------------------------------------
-Jesper Nilsson (5):
-      CRISv32: Correct name of read_mostly section.
-      cris/arch-v32: cryptocop: Use kzalloc
-      CRIS: Update documentation
-      CRIS: Add _sdata to vmlinux.lds.S
-      CRIS: Remove legacy RTC drivers
-
-Jiri Slaby (1):
-      cris: posix_types.h, include asm-generic/posix_types.h
-
-Kautuk Consul (1):
-      cris/mm/fault.c: Port OOM changes to do_page_fault
-
-Paul Gortmaker (1):
-      cris: Remove old legacy "-traditional" flag from arch-v10/lib/Makefile
-
-Wanlong Gao (3):
-      cris:removed the unused variable
-      net:removed the unused variable
-      cris:fix the wrong function declear
-
- Documentation/cris/README               |   62 ++--
- arch/cris/arch-v10/drivers/ds1302.c     |  515 -------------------------------
- arch/cris/arch-v10/drivers/pcf8563.c    |  380 -----------------------
- arch/cris/arch-v10/kernel/fasttimer.c   |    2 -
- arch/cris/arch-v10/kernel/kgdb.c        |    2 +-
- arch/cris/arch-v10/kernel/time.c        |    9 -
- arch/cris/arch-v10/lib/Makefile         |    3 -
- arch/cris/arch-v32/drivers/cryptocop.c  |    6 +-
- arch/cris/arch-v32/kernel/ptrace.c      |    2 -
- arch/cris/arch-v32/kernel/time.c        |    7 -
- arch/cris/include/arch-v32/arch/cache.h |    2 +-
- arch/cris/include/asm/Kbuild            |    1 -
- arch/cris/include/asm/posix_types.h     |    2 +
- arch/cris/include/asm/rtc.h             |  107 -------
- arch/cris/kernel/time.c                 |   76 +----
- arch/cris/kernel/vmlinux.lds.S          |    1 +
- arch/cris/mm/fault.c                    |   31 +-
- drivers/net/cris/eth_v10.c              |    1 -
- 18 files changed, 71 insertions(+), 1138 deletions(-)
- delete mode 100644 arch/cris/arch-v10/drivers/ds1302.c
- delete mode 100644 arch/cris/arch-v10/drivers/pcf8563.c
- delete mode 100644 arch/cris/include/asm/rtc.h
-
-
-/^JN - Jesper Nilsson
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+1.7.7.6
+
