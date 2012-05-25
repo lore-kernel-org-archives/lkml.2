@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964991Ab2EYRHy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:07:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31262 "EHLO mx1.redhat.com"
+	id S964870Ab2EYRHx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:07:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933524Ab2EYRDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933546Ab2EYRDj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 13:03:39 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -23,69 +23,56 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 08/35] autonuma: introduce kthread_bind_node()
-Date: Fri, 25 May 2012 19:02:12 +0200
-Message-Id: <1337965359-29725-9-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 16/35] autonuma: autonuma_enter/exit
+Date: Fri, 25 May 2012 19:02:20 +0200
+Message-Id: <1337965359-29725-17-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function makes it easy to bind the per-node knuma_migrated
-threads to their respective NUMA nodes. Those threads take memory from
-the other nodes (in round robin with a incoming queue for each remote
-node) and they move that memory to their local node.
+The first gear in the whole AutoNUMA algorithm is knuma_scand. If
+knuma_scand doesn't run AutoNUMA is a full bypass. If knuma_scand is
+stopped, soon all other AutoNUMA gears will settle down too.
+
+knuma_scand is the daemon that sets the pmd_numa and pte_numa and
+allows the NUMA hinting page faults to start and then all other
+actions follows as a reaction to that.
+
+knuma_scand scans a list of "mm" and this is where we register and
+unregister the "mm" into AutoNUMA for knuma_scand to scan them.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- include/linux/kthread.h |    1 +
- kernel/kthread.c        |   23 +++++++++++++++++++++++
- 2 files changed, 24 insertions(+), 0 deletions(-)
+ kernel/fork.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index 0714b24..e733f97 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -33,6 +33,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- })
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 98db8b0..237c34e 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -70,6 +70,7 @@
+ #include <linux/khugepaged.h>
+ #include <linux/signalfd.h>
+ #include <linux/uprobes.h>
++#include <linux/autonuma.h>
  
- void kthread_bind(struct task_struct *k, unsigned int cpu);
-+void kthread_bind_node(struct task_struct *p, int nid);
- int kthread_stop(struct task_struct *k);
- int kthread_should_stop(void);
- bool kthread_freezable_should_stop(bool *was_frozen);
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 3d3de63..48b36f9 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -234,6 +234,29 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
- EXPORT_SYMBOL(kthread_bind);
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -539,6 +540,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	if (likely(!mm_alloc_pgd(mm))) {
+ 		mm->def_flags = 0;
+ 		mmu_notifier_mm_init(mm);
++		autonuma_enter(mm);
+ 		return mm;
+ 	}
  
- /**
-+ * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
-+ * @p: thread created by kthread_create().
-+ * @nid: node (might not be online, must be possible) for @k to run on.
-+ *
-+ * Description: This function is equivalent to set_cpus_allowed(),
-+ * except that @nid doesn't need to be online, and the thread must be
-+ * stopped (i.e., just returned from kthread_create()).
-+ */
-+void kthread_bind_node(struct task_struct *p, int nid)
-+{
-+	/* Must have done schedule() in kthread() before we set_task_cpu */
-+	if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
-+	/* It's safe because the task is inactive. */
-+	do_set_cpus_allowed(p, cpumask_of_node(nid));
-+	p->flags |= PF_THREAD_BOUND;
-+}
-+EXPORT_SYMBOL(kthread_bind_node);
-+
-+/**
-  * kthread_stop - stop a thread created by kthread_create().
-  * @k: thread created by kthread_create().
-  *
+@@ -607,6 +609,7 @@ void mmput(struct mm_struct *mm)
+ 		exit_aio(mm);
+ 		ksm_exit(mm);
+ 		khugepaged_exit(mm); /* must run before exit_mmap */
++		autonuma_exit(mm); /* must run before exit_mmap */
+ 		exit_mmap(mm);
+ 		set_mm_exe_file(mm, NULL);
+ 		if (!list_empty(&mm->mmlist)) {
