@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757381Ab2EYNIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:08:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:27226 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757042Ab2EYNI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:08:28 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH v3 03/28] slab: rename gfpflags to allocflags
-Date: Fri, 25 May 2012 17:03:23 +0400
-Message-Id: <1337951028-3427-4-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
+	id S1757535Ab2EYNIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:08:36 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:34109 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab2EYNIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:08:32 -0400
+Date: Fri, 25 May 2012 14:08:26 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: Josh Boyer <jwboyer@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lantianyu1986@gmail.com
+Subject: Re: USB device PM oddity in 3.5
+Message-ID: <20120525130826.GA13258@srcf.ucam.org>
+References: <20120524203655.GK1143@zod.bos.redhat.com>
+ <Pine.LNX.4.44L0.1205241646080.1186-100000@iolanthe.rowland.org>
+ <20120525113936.GA23824@zod.bos.redhat.com>
+ <4FBF826B.1040101@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBF826B.1040101@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A consistent name with slub saves us an acessor function.
-In both caches, this field represents the same thing. We would
-like to use it from the mem_cgroup code.
+udev is being a little too aggressive in enabling autosuspend. I've just 
+sent a patch upstream, but here it is:
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-Acked-by: Christoph Lameter <cl@linux.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>
----
- include/linux/slab_def.h |    2 +-
- mm/slab.c                |   10 +++++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+commit 35c62663b93adb6ab321ca1e6ac6f1ba580b37aa
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Fri May 25 08:00:05 2012 -0400
 
-diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-index fbd1117..d41effe 100644
---- a/include/linux/slab_def.h
-+++ b/include/linux/slab_def.h
-@@ -39,7 +39,7 @@ struct kmem_cache {
- 	unsigned int gfporder;
+    rules: Limit USB autosuspend on USB HID devices
+    
+    Some USB ports on external hubs may be reported as "fixed". We only want
+    to auto-enable this on ports that are internal to the machine, so check
+    the parent state as well.
+
+diff --git a/rules/42-usb-hid-pm.rules b/rules/42-usb-hid-pm.rules
+index d5d5897..fc44b94 100644
+--- a/rules/42-usb-hid-pm.rules
++++ b/rules/42-usb-hid-pm.rules
+@@ -46,4 +46,10 @@ ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="04b3", ATTR{idProduct}=="4012
+ ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="14dd", ATTR{idProduct}="0002", TEST=="power/control", ATTR{power/control}="auto"
  
- 	/* force GFP flags, e.g. GFP_DMA */
--	gfp_t gfpflags;
-+	gfp_t allocflags;
- 
- 	size_t colour;			/* cache colouring range */
- 	unsigned int colour_off;	/* colour offset */
-diff --git a/mm/slab.c b/mm/slab.c
-index 8658d72..1057a32 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1798,7 +1798,7 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
- 	flags |= __GFP_COMP;
- #endif
- 
--	flags |= cachep->gfpflags;
-+	flags |= cachep->allocflags;
- 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
- 		flags |= __GFP_RECLAIMABLE;
- 
-@@ -2508,9 +2508,9 @@ kmem_cache_create (const char *name, size_t size, size_t align,
- 	cachep->colour = left_over / cachep->colour_off;
- 	cachep->slab_size = slab_size;
- 	cachep->flags = flags;
--	cachep->gfpflags = 0;
-+	cachep->allocflags = 0;
- 	if (CONFIG_ZONE_DMA_FLAG && (flags & SLAB_CACHE_DMA))
--		cachep->gfpflags |= GFP_DMA;
-+		cachep->allocflags |= GFP_DMA;
- 	cachep->buffer_size = size;
- 	cachep->reciprocal_buffer_size = reciprocal_value(size);
- 
-@@ -2857,9 +2857,9 @@ static void kmem_flagcheck(struct kmem_cache *cachep, gfp_t flags)
- {
- 	if (CONFIG_ZONE_DMA_FLAG) {
- 		if (flags & GFP_DMA)
--			BUG_ON(!(cachep->gfpflags & GFP_DMA));
-+			BUG_ON(!(cachep->allocflags & GFP_DMA));
- 		else
--			BUG_ON(cachep->gfpflags & GFP_DMA);
-+			BUG_ON(cachep->allocflags & GFP_DMA);
- 	}
- }
- 
+ # USB HID devices that are internal to the machine should also be safe to autosuspend
++
++ACTION=="add", SUBSYSTEM=="usb", SUBSYSTEMS=="usb", ATTRS{removable}=="removable", GOTO="usb_hid_pm_end"
++ACTION=="add", SUBSYSTEM=="usb", SUBSYSTEMS=="usb", ATTRS{removable}=="unknown", GOTO="usb_hid_pm_end"        
++
+ ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", ATTRS{removable}=="fixed", TEST=="../power/control", ATTR{../power/control}="auto"
++
++LABEL="usb_add_pm_end"
+
 -- 
-1.7.7.6
-
+Matthew Garrett | mjg59@srcf.ucam.org
