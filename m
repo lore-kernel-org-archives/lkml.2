@@ -1,234 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab2EYH1A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 03:27:00 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:45907 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab2EYH04 (ORCPT
+	id S1751933Ab2EYHbl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 03:31:41 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56491 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab2EYHbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 03:26:56 -0400
-Date: Fri, 25 May 2012 15:23:42 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-Subject: [PATCH v1] PCI,IA64: free associated resources when removing host
- bridges
-X-Originating-IP: [10.107.208.49]
-To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Message-id: <1337930622-7696-1-git-send-email-jiang.liu@huawei.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.8.msysgit.0
-Content-type: text/plain
-Content-transfer-encoding: 7BIT
-X-CFilter-Loop: Reflected
+	Fri, 25 May 2012 03:31:39 -0400
+Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched
+ domain support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tony Luck <tony.luck@intel.com>
+Cc: mingo@kernel.org, torvalds@linux-foundation.org, cmetcalf@tilera.com,
+        sivanich@sgi.com, akpm@linux-foundation.org, ralf@linux-mips.org,
+        greg.pearson@hp.com, ink@jurassic.park.msu.ru, tglx@linutronix.de,
+        rth@twiddle.net, kamezawa.hiroyu@jp.fujitsu.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, anton@samba.org,
+        lethal@linux-sh.org, davem@davemloft.net, benh@kernel.crashing.org,
+        dhowells@redhat.com, mattst88@gmail.com, fenghua.yu@intel.com
+In-Reply-To: <CA+8MBbJknmrUXG7U_hBaTs4vJ-1Fa-ENq5g3Qzzh6EmsNiSfXg@mail.gmail.com>
+References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
+	 <CA+8MBbJknmrUXG7U_hBaTs4vJ-1Fa-ENq5g3Qzzh6EmsNiSfXg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 09:31:20 +0200
+Message-ID: <1337931080.9783.154.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some resources associated with PCI host bridges on
-IA 64 platforms, they should be released when removing host
-bridges. Otherwise it will cause memory leak and other strange
-behavior.
+On Thu, 2012-05-24 at 14:23 -0700, Tony Luck wrote:
+> Changing both the kzalloc_node() calls in sched_init_numa()
+> into plain kzalloc() calls seems to fix things. So it looks like we are trying
+> to allocate on a node before the node has been fully set up. 
 
-For example, PCI IO port address space are mapped into memory
-address space on IA64. Those IO port resource should be released
-when removing PCI host bridges. Otherwise host bridge hotplug
-may cause duplicated entries in the iomem resource pool.
-All "1fffffe400000-1fffffffffffe" are duplicated entries.
+Right,.. and its not too important either, so lets just use regular
+allocations.
 
-30fc000000-30ffffffff : reserved
-1fffffc000000-1fffffc33dcf7 : PCI Bus 0000:00 I/O Ports 00000000-00000cf7
-1fffffc400000-1fffffe3fffff : PCI Bus 0000:00 I/O Ports 00001000-00008fff
-30fc000000-30ffffffff : reserved
-1fffffc000000-1fffffc33dcf7 : PCI Bus 0000:00 I/O Ports 00000000-00000cf7
-1fffffc400000-1fffffe3fffff : PCI Bus 0000:00 I/O Ports 00001000-00008fff
-1fffffe400000-1fffffffffffe : PCI Bus 0000:40 I/O Ports 00009000-0000fffe
-  1fffffe400000-1fffffffffffe : PCI Bus 0000:40 I/O Ports 00009000-0000fffe
-    1fffffe400000-1fffffffffffe : PCI Bus 0000:40 I/O Ports 00009000-0000fffe
+That said, I can only find the 1 alloc_node() in sched_init_numa()
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
-
-This patch applies to
-git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/next-3.5
 
 ---
- arch/ia64/include/asm/pci.h |    6 +++
- arch/ia64/pci/pci.c         |   80 +++++++++++++++++++++++++++++++++++--------
- 2 files changed, 71 insertions(+), 15 deletions(-)
+Subject: sched: Don't try allocating memory from offline nodes
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri May 25 09:26:43 CEST 2012
 
-diff --git a/arch/ia64/include/asm/pci.h b/arch/ia64/include/asm/pci.h
-index 5e04b59..3939f00 100644
---- a/arch/ia64/include/asm/pci.h
-+++ b/arch/ia64/include/asm/pci.h
-@@ -94,6 +94,11 @@ struct pci_window {
- 	u64 offset;
- };
+Allocators don't appreciate it when you try and allocate memory from
+offline nodes.
+
+Reported-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/sched/core.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/kernel/sched/core.c
+===================================================================
+--- linux-2.6.orig/kernel/sched/core.c
++++ linux-2.6/kernel/sched/core.c
+@@ -6449,7 +6449,7 @@ static void sched_init_numa(void)
+ 			return;
  
-+struct iospace_resource {
-+	struct list_head list;
-+	struct resource res;
-+};
-+
- struct pci_controller {
- 	void *acpi_handle;
- 	void *iommu;
-@@ -102,6 +107,7 @@ struct pci_controller {
+ 		for (j = 0; j < nr_node_ids; j++) {
+-			struct cpumask *mask = kzalloc_node(cpumask_size(), GFP_KERNEL, j);
++			struct cpumask *mask = kzalloc(cpumask_size(), GFP_KERNEL);
+ 			if (!mask)
+ 				return;
  
- 	unsigned int windows;
- 	struct pci_window *window;
-+	struct list_head io_resources;
- 
- 	void *platform_data;
- };
-diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
-index d173a88..a66cba4 100644
---- a/arch/ia64/pci/pci.c
-+++ b/arch/ia64/pci/pci.c
-@@ -168,25 +168,20 @@ new_space (u64 phys_base, int sparse)
- static u64 __devinit
- add_io_space (struct pci_root_info *info, struct acpi_resource_address64 *addr)
- {
-+	struct iospace_resource *iospace;
- 	struct resource *resource;
- 	char *name;
- 	unsigned long base, min, max, base_port;
- 	unsigned int sparse = 0, space_nr, len;
- 
--	resource = kzalloc(sizeof(*resource), GFP_KERNEL);
--	if (!resource) {
-+	len = strlen(info->name) + 32;
-+	iospace = kzalloc(sizeof(*iospace) + len, GFP_KERNEL);
-+	if (!iospace) {
- 		printk(KERN_ERR "PCI: No memory for %s I/O port space\n",
- 			info->name);
- 		goto out;
- 	}
--
--	len = strlen(info->name) + 32;
--	name = kzalloc(len, GFP_KERNEL);
--	if (!name) {
--		printk(KERN_ERR "PCI: No memory for %s I/O port space name\n",
--			info->name);
--		goto free_resource;
--	}
-+	name = (char *)(iospace + 1);
- 
- 	min = addr->minimum;
- 	max = min + addr->address_length - 1;
-@@ -195,7 +190,7 @@ add_io_space (struct pci_root_info *info, struct acpi_resource_address64 *addr)
- 
- 	space_nr = new_space(addr->translation_offset, sparse);
- 	if (space_nr == ~0)
--		goto free_name;
-+		goto free_resource;
- 
- 	base = __pa(io_space[space_nr].mmio_base);
- 	base_port = IO_SPACE_BASE(space_nr);
-@@ -210,18 +205,24 @@ add_io_space (struct pci_root_info *info, struct acpi_resource_address64 *addr)
- 	if (space_nr == 0)
- 		sparse = 1;
- 
-+	resource = &iospace->res;
- 	resource->name  = name;
- 	resource->flags = IORESOURCE_MEM;
- 	resource->start = base + (sparse ? IO_SPACE_SPARSE_ENCODING(min) : min);
- 	resource->end   = base + (sparse ? IO_SPACE_SPARSE_ENCODING(max) : max);
--	insert_resource(&iomem_resource, resource);
-+	if (insert_resource(&iomem_resource, resource)) {
-+		dev_err(&info->bridge->dev,
-+			"can't allocate host bridge io space resource  %pR\n",
-+			resource);
-+		goto free_resource;
-+	}
-+
-+	list_add_tail(&iospace->list, &info->controller->io_resources);
- 
- 	return base_port;
- 
--free_name:
--	kfree(name);
- free_resource:
--	kfree(resource);
-+	kfree(iospace);
- out:
- 	return ~0;
- }
-@@ -325,6 +326,51 @@ static __devinit acpi_status add_window(struct acpi_resource *res, void *data)
- 	return AE_OK;
- }
- 
-+static void shutdown_pci_controller(struct pci_host_bridge *bridge)
-+{
-+	unsigned int i;
-+	struct resource *resource;
-+	struct iospace_resource *iospace;
-+	struct pci_controller *controller = bridge->release_data;
-+
-+	if (!controller)
-+		return;
-+
-+	/* release io space resource */
-+	list_for_each_entry(iospace, &controller->io_resources, list)
-+		release_resource(&iospace->res);
-+
-+	/* release root bus resource */
-+	for (i = 0; i < controller->windows; i++) {
-+		resource = &controller->window[i].resource;
-+		if (resource->flags & (IORESOURCE_MEM | IORESOURCE_IO))
-+			if (resource->parent)
-+				release_resource(resource);
-+	}
-+}
-+
-+static void free_pci_controller(struct pci_host_bridge *bridge)
-+{
-+	struct resource *resource;
-+	struct iospace_resource *iospace, *tmp;
-+	struct pci_controller *controller = bridge->release_data;
-+
-+	if (!controller)
-+		return;
-+
-+	shutdown_pci_controller(bridge);
-+
-+	list_for_each_entry_safe(iospace, tmp, &controller->io_resources, list)
-+		kfree(iospace);
-+
-+	if (controller->window) {
-+		kfree(controller->window->resource.name);
-+		kfree(controller->window);
-+	}
-+
-+	kfree(controller);
-+}
-+
- struct pci_bus * __devinit
- pci_acpi_scan_root(struct acpi_pci_root *root)
- {
-@@ -343,6 +389,7 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
- 		goto out1;
- 
- 	controller->acpi_handle = device->handle;
-+	INIT_LIST_HEAD(&controller->io_resources);
- 
- 	pxm = acpi_get_pxm(controller->acpi_handle);
- #ifdef CONFIG_NUMA
-@@ -386,6 +433,9 @@ pci_acpi_scan_root(struct acpi_pci_root *root)
- 		return NULL;
- 	}
- 
-+	pci_set_host_bridge_release(to_pci_host_bridge(pbus->bridge),
-+			free_pci_controller, controller);
-+
- 	pci_scan_child_bus(pbus);
- 	return pbus;
- 
--- 
-1.7.1
 
 
