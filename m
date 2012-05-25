@@ -1,90 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab2EYIsa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:48:30 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55831 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755944Ab2EYIs0 (ORCPT
+	id S1751721Ab2EYIzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:55:35 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60204 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab2EYIzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:48:26 -0400
-Message-ID: <1337935700.2932.18.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH 1/4] async: introduce 'async_domain' type
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: mroos@linux.ee, linux-scsi@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Liam Girdwood <lrg@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Fri, 25 May 2012 09:48:20 +0100
-In-Reply-To: <CABE8wwtfW0FusNuOEmwMxZLVMTVSj0R9HCA5xLWidrgj_7Ax+A@mail.gmail.com>
-References: <20120525074813.21933.91876.stgit@dwillia2-linux.jf.intel.com>
-	 <20120525075027.21933.75815.stgit@dwillia2-linux.jf.intel.com>
-	 <1337932267.2932.7.camel@dabdike.int.hansenpartnership.com>
-	 <CABE8wwtfW0FusNuOEmwMxZLVMTVSj0R9HCA5xLWidrgj_7Ax+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Fri, 25 May 2012 04:55:32 -0400
+Message-ID: <4FBF3CD1.7030603@linux.vnet.ibm.com>
+Date: Fri, 25 May 2012 13:33:29 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: eranian@google.com, Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH] perf record: Fixing record option data type in parse_branch_stack
+References: <4FBDFDA6.5010304@linux.vnet.ibm.com> <4FBF185F.4060007@linux.vnet.ibm.com>
+In-Reply-To: <4FBF185F.4060007@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12052508-4790-0000-0000-000002F017A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 01:18 -0700, Dan Williams wrote:
-> On Fri, May 25, 2012 at 12:51 AM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
-> > On Fri, 2012-05-25 at 00:50 -0700, Dan Williams wrote:
-> >> This is in preparation for teaching async_synchronize_full() to sync all
-> >> pending async work, and not just on the async_running domain.  This
-> >> conversion is functionally equivalent, just embedding the existing list
-> >> in a new async_domain type.
-> >
-> > This looks good, but I want Arjan and others who invented the async code
-> > to speed up boot to comment on all of this.  What was the intention of
-> > async_synchronize_full() and if it wasn't to synchronise all domains,
-> > should we fix the documentation and add a new primitive to do that,
-> > since boot clearly assumes the all domains behaviour.
-> >
-> > In the mean time, this is probably all a bit much for a merge window, so
-> > I'll revert
-> >
-> > commit a7a20d103994fd760766e6c9d494daa569cbfe06
-> > Author: Dan Williams <dan.j.williams@intel.com>
-> > Date:   Thu Mar 22 17:05:11 2012 -0700
-> >
-> >    [SCSI] sd: limit the scope of the async probe domain
-> >
-> > And we'll put whatever is chosen in early for the next merge window.
-> >
+perf record: Fixing record option data type in parse_branch_stack
+
+	Currently parse_branch_stack does not update record.opts.branch_stack
+	value in powerpc architecture. opt->value is declared as int in struct
+	perf_record_opts. But is worked on as uint64_t isnide the function.
+	This breaks functionality in poweprc due to bit representation
+	of uint64_t which is inaccessible as int.
+
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ tools/perf/builtin-record.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index e5cb084..161c0f1 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -677,7 +677,7 @@ parse_branch_stack(const struct option *opt, const char *str, int unset)
+ 	 PERF_SAMPLE_BRANCH_KERNEL	|\
+ 	 PERF_SAMPLE_BRANCH_HV)
+ 
+-	uint64_t *mode = (uint64_t *)opt->value;
++	int *mode = (int *)opt->value;
+ 	const struct branch_mode *br;
+ 	char *s, *os = NULL, *p;
+ 	int ret = -1;
+-- 
+1.7.9.5
+
+
+
+On Friday 25 May 2012 10:57 AM, Anshuman Khandual wrote:
+
+> This code is breaking in powerpc systems.
 > 
-> Makes sense... but could also go ahead with the smaller fix I posted
-> for 3.5.  Meelis confirms it is working.
-
-OK, that's what I hadn't seen.  I can't think of another way we could
-fail at the moment, except in suspend/resume because the
-scsi_complete_async_scans will be a nop. Can someone test the
-suspend/resume case?
-
-
-There is actually one good thing to come out of this:  Rafael's commit
-
-commit c751085943362143f84346d274e0011419c84202
-Author: Rafael J. Wysocki <rjw@sisk.pl>
-Date:   Sun Apr 12 20:06:56 2009 +0200
-
-    PM/Hibernate: Wait for SCSI devices scan to complete during resume
-
-Actually broke the scsi_wait_scan module, because for modular SCSI
-(which is effectively all distributions) its scsi_complete_async_scans()
-is also a nop.  I assume this means that no distributions rely on it any
-more and we can remove it?
-
-> Otherwise this leaves the pending libsas suspend/resume support in
-> limbo, since it will certainly deadlock in the case where any device
-> fails, or is slow to come back from resume.
-
-I appreciate this is a bug, but it's not quite as serious as breaking
-suspend and hibernate ... can we demonstrate they're still working?
-
-James
+> (1) 'opt->value' gets updated inside the function parse_branch_stack via
+>     dereferencing a (uint64_t *) type casted pointer.
+> 
+> (2) But the value is not accessible when we again use opt->value via 
+>     dereferencing a (int *) type casted pointer.
+> 
+> (3) As a result record.opts.branch_stack remains 0 and unchanged by parse_branch_stack
+> 
+> This is caused by bit representation of 'uint64_t' and 'int' in powerpc systems. Bytes update
+> for the data (when accessed trough (uint64_t *) casting) is no longer available to the
+> data when accessed through (int *) type casting. Verified this from bit representation of
+> the data (accessed through both type casting methods).
+> 
+> However this problem does not seem to be present on an Intel box. Integer dereferencing of
+> the opt->value still gives the value which was updated as (uint64_t).
+> 
+> All this problem would not have been there if we had used (int *) instead of (uint64_t *) in
+> the first place inside parse_branch_stack function.
+> 
+> On Thursday 24 May 2012 02:51 PM, Anshuman Khandual wrote:
+> 
+>> Hey Stephane,
+>>
+>> Just wondering why we used the type casting of (uint64_t *) on a data 
+>> which is defined as "int" in the structure of "perf_record_opts".
+>>
+>> struct perf_record_opts {
+>>         struct perf_target target;
+>>         bool         call_graph;
+>>         bool         group;
+>>         bool         inherit_stat;
+>>         bool         no_delay;
+>>         bool         no_inherit;
+>>         bool         no_samples;
+>>         bool         pipe_output;
+>>         bool         raw_samples;
+>>         bool         sample_address;
+>>         bool         sample_time;
+>>         bool         sample_id_all_missing;
+>>         bool         exclude_guest_missing;
+>>         bool         period;
+>>         unsigned int freq;
+>>         unsigned int mmap_pages;
+>>         unsigned int user_freq;
+>>         int          branch_stack;
+>>         u64          default_interval;
+>>         u64          user_interval;
+>> };
+>>
+>> static int
+>> parse_branch_stack(const struct option *opt, const char *str, int unset)
+>> {
+>> #define ONLY_PLM \
+>>         (PERF_SAMPLE_BRANCH_USER        |\
+>>          PERF_SAMPLE_BRANCH_KERNEL      |\
+>>          PERF_SAMPLE_BRANCH_HV)
+>>
+>>         uint64_t *mode = (uint64_t *)opt->value;
+>> --
+>> Regards
+>> Anshuman Khandual
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
 
