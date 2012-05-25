@@ -1,37 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab2EYHz3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 03:55:29 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:36897 "EHLO smtp2.it.da.ut.ee"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926Ab2EYHz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 03:55:27 -0400
-Date: Fri, 25 May 2012 10:55:24 +0300 (EEST)
-From: mroos@linux.ee
-To: Dan Williams <dan.j.williams@intel.com>
-cc: James Bottomley <jejbbe@hansenpartnership.com>,
-        David Miller <davem@davemloft.net>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, stern@rowland.harvard.edu
-Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not
- recognized
-In-Reply-To: <1337826142.6877.7.camel@dwillia2-mobl>
-Message-ID: <alpine.SOC.1.00.1205251053390.17096@math.ut.ee>
-References: <alpine.SOC.1.00.1205221200050.9585@math.ut.ee>  <20120522.151217.278388169416093561.davem@davemloft.net>  <alpine.SOC.1.00.1205231945480.12326@math.ut.ee>  <20120523.140451.386112705611304887.davem@davemloft.net> 
- <1337813770.3013.37.camel@dabdike.int.hansenpartnership.com> <1337826142.6877.7.camel@dwillia2-mobl>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1755610Ab2EYH4E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 03:56:04 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:39062 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab2EYH4C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 03:56:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Fri, 25 May 2012 13:25:40 +0530
+Message-ID: <CAO_48GFE3=yQjKS4w7=pGjNe3yENbRrd4bcMTfADJSn7LKekPQ@mail.gmail.com>
+Subject: [GIT PULL]: dma-buf updates for 3.5
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org
+Cc: Jesse Barker <jesse.barker@linaro.org>, akpm@linux-foundation.org,
+        Daniel Vetter <daniel@ffwll.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Dave Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ...so it seems scsi_complete_async_scans() should take care to flush sd
-> probe actions as well... here is a test patch:
+Hi Linus,
 
-Just finished testing it against 3.4.0-05722-gf936991. Without the 
-patch, this version fails to boot and with it, it boots fine. Now going 
-to test your 4-patch series.
+Here's the first signed-tag pull request for dma-buf framework.
 
--- 
-Meelis Roos (mroos@linux.ee)
+Could you please pull the dma-buf updates for 3.5? This includes the
+following key items:
+- mmap support
+- vmap support
+- related documentation updates
+
+These are needed by various drivers to allow mmap/vmap of dma-buf
+shared buffers. Dave Airlie has some prime patches dependent on the
+vmap pull as well.
+
+Thanks and best regards,
+~Sumit.
+
+
+The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
+
+  Linux 3.4 (2012-05-20 15:29:13 -0700)
+
+are available in the git repository at:
+
+  ssh://sumitsemwal@git.linaro.org/~/public_git/linux-dma-buf.git
+tags/tag-for-linus-3.5
+
+for you to fetch changes up to b25b086d23eb852bf3cfdeb60409b4967ebb3c0c:
+
+  dma-buf: add initial vmap documentation (2012-05-25 12:51:11 +0530)
+
+----------------------------------------------------------------
+dma-buf updates for 3.5
+
+----------------------------------------------------------------
+Daniel Vetter (1):
+      dma-buf: mmap support
+
+Dave Airlie (2):
+      dma-buf: add vmap interface
+      dma-buf: add initial vmap documentation
+
+Sumit Semwal (1):
+      dma-buf: minor documentation fixes.
+
+ Documentation/dma-buf-sharing.txt |  109 ++++++++++++++++++++++++++++++++++---
+ drivers/base/dma-buf.c            |   99 ++++++++++++++++++++++++++++++++-
+ include/linux/dma-buf.h           |   33 +++++++++++
+ 3 files changed, 233 insertions(+), 8 deletions(-)
