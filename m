@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755558Ab2EYIBy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:01:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1080 "EHLO mga09.intel.com"
+	id S1755979Ab2EYICw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:02:52 -0400
+Received: from mga14.intel.com ([143.182.124.37]:50426 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab2EYIBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:01:53 -0400
+	id S1755580Ab2EYICC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 04:02:02 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="148286848"
-Message-ID: <4FBF3C17.1090000@intel.com>
-Date: Fri, 25 May 2012 16:00:23 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
-        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/2] x86 mce: use new printk recursion disabling interface
-References: <4FBC444A.6060500@intel.com> <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com> <20120524061145.GA18284@liondog.tnic> <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com> <4FBF3295.7090608@intel.com> <4FBF32E8.90101@intel.com> <20120525074114.GA5417@liondog.tnic>
-In-Reply-To: <20120525074114.GA5417@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104180085"
+Subject: Re: [PATCH] dmaengine: pl330: dont complete descriptor for cyclic
+ dma
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+Cc: Tushar Behera <tushar.behera@linaro.org>, linux-kernel@vger.kernel.org,
+        dan.j.williams@intel.com, patches@linaro.org,
+        Thomas Abraham <thomas.abraham@linaro.org>
+In-Reply-To: <CAJe_ZhfV6F-X7+M+NYoH4cG1WWU45MTpHsUiWtK406nhjLPHRg@mail.gmail.com>
+References: <1337771851-3431-1-git-send-email-tushar.behera@linaro.org>
+	 <4FBDB812.9060407@linaro.org>
+	 <CAJe_ZhfV6F-X7+M+NYoH4cG1WWU45MTpHsUiWtK406nhjLPHRg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 13:26:07 +0530
+Message-ID: <1337932567.1580.4.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012年05月25日 15:41, Borislav Petkov wrote:
-
-> On Fri, May 25, 2012 at 03:21:12PM +0800, ShuoX Liu wrote:
->> From: ShuoX Liu <shuox.liu@intel.com>
->>
->> Disable printk recursion to make sure MCE logs printed out.
->>
->> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
->> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
->> ---
->>  arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
->> index 2afcbd2..365c35d 100644
->> --- a/arch/x86/kernel/cpu/mcheck/mce.c
->> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
->> @@ -1015,6 +1015,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->>  	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
->>  	char *msg = "Unknown";
->>  
->> +	printk_recursion_check_disable();
->>  	atomic_inc(&mce_entry);
->>  
->>  	this_cpu_inc(mce_exception_count);
->> @@ -1144,6 +1145,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
->>  	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
->>  out:
->>  	atomic_dec(&mce_entry);
->> +	printk_recursion_check_enable();
+On Thu, 2012-05-24 at 10:34 +0530, Jassi Brar wrote:
+> On 24 May 2012 09:54, Tushar Behera <tushar.behera@linaro.org> wrote:
+> > Forgot to add driver author in the original mail, adding now.
+> >
+> > On 05/23/2012 04:47 PM, Tushar Behera wrote:
+> >> Commit eab215855803 ("dmaengine: pl330: dont complete descriptor for
+> >> cyclic dma") wrongly completes descriptor for cyclic dma, hence following
+> >> BUG_ON is still hit with cyclic DMA operations.
+> >>
+> >> kernel BUG at drivers/dma/dmaengine.h:53!
+> >>
+> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> >> ---
+> >>  drivers/dma/pl330.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+> >> index fa3fb21..8c44f17 100644
+> >> --- a/drivers/dma/pl330.c
+> >> +++ b/drivers/dma/pl330.c
+> >> @@ -2322,7 +2322,7 @@ static void pl330_tasklet(unsigned long data)
+> >>       /* Pick up ripe tomatoes */
+> >>       list_for_each_entry_safe(desc, _dt, &pch->work_list, node)
+> >>               if (desc->status == DONE) {
+> >> -                     if (pch->cyclic)
+> >> +                     if (!pch->cyclic)
+> >>                               dma_cookie_complete(&desc->txd);
+> >>                       list_move_tail(&desc->node, &list);
+> >>               }
+> >
+> Acked-by: Jassi Brar <jaswinder.singh@linaro.org>
 > 
-> Looks like those should be at the beginning and the end of print_mce() -
-> do_machine_check() could exit without printing an MCE and disabling the
-> recursion check then is superfluous, methinks.
+> Obviously a typo, but the commit eab2158 had a tested-by, so I hope
+> this doesn't break something else.
+Precisely my worry as well. Thomas?
 
-Thanks for comment. It seems you are right. I will check the code next
-Monday.
+>From the code this looks as the right one.
 
-> 
-> Thanks.
-> 
-
+-- 
+~Vinod
 
