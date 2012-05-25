@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758993Ab2EYW7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 18:59:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38292 "EHLO mx1.redhat.com"
+	id S932525Ab2EYXCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 19:02:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29985 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755340Ab2EYW7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 18:59:14 -0400
-Date: Fri, 25 May 2012 23:58:52 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-        drbd-dev@lists.linbit.com, bharrosh@panasas.com, vgoyal@redhat.com,
-        mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v3 13/16] Make generic_make_request handle arbitrarily
-	large bios
-Message-ID: <20120525225852.GG5761@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kent Overstreet <koverstreet@google.com>,
-	linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-	dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
-	axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
-	drbd-dev@lists.linbit.com, bharrosh@panasas.com, vgoyal@redhat.com,
-	mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com> <1337977539-16977-14-git-send-email-koverstreet@google.com>
+	id S1751136Ab2EYXCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 19:02:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="144799402"
+From: Andi Kleen <andi@firstfloor.org>
+To: daniel.santos@pobox.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Generic Red-Black Trees (status update)
+References: <4FC00C50.3000907@att.net>
+Date: Fri, 25 May 2012 16:02:41 -0700
+In-Reply-To: <4FC00C50.3000907@att.net> (Daniel Santos's message of "Fri, 25
+	May 2012 17:48:48 -0500")
+Message-ID: <m2fwanlv8u.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337977539-16977-14-git-send-email-koverstreet@google.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: 64 Baker Street, 4th floor, London,
-	W1U 7DF.
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 01:25:36PM -0700, Kent Overstreet wrote:
-> But this approach becomes unwieldy and eventually breaks down with
-> stacked devices and devices with dynamic limits, and it adds a lot of
-> complexity. If the block layer could split bios as needed, we could
+Daniel Santos <danielfsantos@att.net> writes:
 
-Complexity - yes - but if people didn't observe a genuine benefit, why
-did they go to the trouble of writing this and getting it included?
+> For anybody that's keeping up with this, I've gone through multiple
+> iterations and tests with 9 different gcc versions and concluded that
+> the search, insert & remove cores need to be coded in rbtree.h, using
+> the traditional interface (i.e., passing struct rb_node & rb_root
+> pointers instead of pointers to your specific object types).  The reason
+> is that gcc can't handle the cool fully-generic code until 4.6.  In gcc
+> 4.5.x, optimization completely breaks expanding the inline functions
 
-> eliminate a lot of complexity elsewhere - particularly in stacked
-> drivers. 
+Can you post details?
 
-> Code that creates bios can then create whatever size bios are
-> convenient, and more importantly stacked drivers don't have to deal with
-> both their own bio size limitations and the limitations of the
-> (potentially multiple) devices underneath them.
+> into huge bloated  monsters.  Also, while I'm re-coding it all, I'm
+> adding find_near & insert_near, for more efficient insertion & retrieval
+> when you already have a node that should be close to the one you want
+> (which is often the case when inserting many objects at once).
+>
+> So after I'm done with this, I'll start on a new header file (grbtree.h
+> probably) using the "grb_" prefix for it's functions that implements the
+> gcc 4.6.x+ fully generic & type safe interface, but using cute
+> pre-processor tricks for pre-4.6.x compatibility (basically, something
+> to consider using once gcc 4.6+ is more widely used).
 
-A theoretical argument.  Perhaps it's the right assessment of this
-issue.  Perhaps it's not.  Or perhaps it depends on the use-case.
+That doesn't make sense. Either it's used or it's not used,
+but if it's available it should work with all compilers.
 
-I made a theoretical argument from a different point of view in my last email.
+Otherwise you would end up with drivers or subsystems that
+are compiler specific.
 
-I think a body of *empirical* evidence should provide the justification
-for this particular change, and until such evidence is forthcoming we
-should keep the status quo.
+It's ok to be somewhat slower or bigger on older compilers.
 
-Alasdair
 
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
