@@ -1,96 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756556Ab2EYJNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:13:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35459 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab2EYJMr (ORCPT
+	id S1756149Ab2EYJOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:14:06 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:43601 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751890Ab2EYJOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:12:47 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: herbert@gondor.hengli.com.au, nicolas.ferre@atmel.com, jamie@jamieiles.com,
-        linux-kernel@vger.kernel.org, GPontis@z9.com
-Cc: Peter Korsgaard <jacmet@sunsite.dk>, stable@vger.kernel.org
-Subject: [PATCH] hw_random: atmel-rng: fix race condition leading to repeated bits
-Date: Fri, 25 May 2012 11:12:38 +0200
-Message-Id: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
-X-Mailer: git-send-email 1.7.10
+	Fri, 25 May 2012 05:14:04 -0400
+X-IronPort-AV: E=Sophos;i="4.75,655,1330905600"; 
+   d="scan'208";a="12665535"
+Date: Fri, 25 May 2012 10:13:47 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 3/4] xen/hvc: Check HVM_PARAM_CONSOLE_[EVTCHN|PFN]
+ for correctness.
+In-Reply-To: <20120524182403.GL24934@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1205251013250.26786@kaball-desktop>
+References: <1337795222-29946-1-git-send-email-konrad.wilk@oracle.com> <1337795222-29946-4-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.00.1205241148080.26786@kaball-desktop> <20120524182403.GL24934@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Data valid gets cleared by reading the ISR (status register) and NOT from
-reading ODATA (data register). A new data word can become available between
-checking ISR and reading ODATA, causing us to reuse the same data word next
-time atmel_trng_read() gets called, if that happens before the following
-data word is ready.
+On Thu, 24 May 2012, Konrad Rzeszutek Wilk wrote:
+> > I think that we should add a comment stating that even though mfn = 0
+> > and evtchn = 0 are theoretically correct values, in practice they never
+> > are and they mean that a legacy toolstack hasn't initialized the pv
+> > console correctly.
+> 
+> Like this?
 
-With this fixed, rngtest no longer complains of 'Continous run' errors.
-Before:
+Yep
 
-rngtest -c 1000 < /dev/hwrng
-rngtest 3
-Copyright (c) 2004 by Henrique de Moraes Holschuh
-This is free software; see the source for copying conditions.  There is NO warr.
+> >From 5842f5768599094758931b74190cdf93641a8e35 Mon Sep 17 00:00:00 2001
+> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date: Wed, 23 May 2012 12:56:59 -0400
+> Subject: [PATCH] xen/hvc: Check HVM_PARAM_CONSOLE_[EVTCHN|PFN] for
+>  correctness.
+> 
+> We need to make sure that those parameters are setup to be correct.
+> As such the value of 0 is deemed invalid and we find that we
+> bail out. The hypervisor sets by default all of them to be zero
+> and when the hypercall is done does a simple:
+> 
+>  a.value = d->arch.hvm_domain.params[a.index];
+> 
+> Which means that if the Xen toolstack forgot to setup the proper
+> HVM_PARAM_CONSOLE_EVTCHN (or the PFN one), we would get the
+> default value of 0 and use that.
+> 
+> CC: stable@kernel.org
+> Fixes-Oracle-Bug: 14091238
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-rngtest: starting FIPS tests...
-rngtest: bits received from input: 20000032
-rngtest: FIPS 140-2 successes: 923
-rngtest: FIPS 140-2 failures: 77
-rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-rngtest: FIPS 140-2(2001-10-10) Poker: 0
-rngtest: FIPS 140-2(2001-10-10) Runs: 1
-rngtest: FIPS 140-2(2001-10-10) Long run: 0
-rngtest: FIPS 140-2(2001-10-10) Continuous run: 76
-rngtest: input channel speed: (min=721.402; avg=46003.510; max=49321.338)Kibitss
-rngtest: FIPS tests speed: (min=11.442; avg=12.714; max=12.801)Mibits/s
-rngtest: Program run time: 1931860 microseconds
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-After:
-
-rngtest -c 1000 < /dev/hwrng
-rngtest 3
-Copyright (c) 2004 by Henrique de Moraes Holschuh
-This is free software; see the source for copying conditions.  There is NO warr.
-
-rngtest: starting FIPS tests...
-rngtest: bits received from input: 20000032
-rngtest: FIPS 140-2 successes: 1000
-rngtest: FIPS 140-2 failures: 0
-rngtest: FIPS 140-2(2001-10-10) Monobit: 0
-rngtest: FIPS 140-2(2001-10-10) Poker: 0
-rngtest: FIPS 140-2(2001-10-10) Runs: 0
-rngtest: FIPS 140-2(2001-10-10) Long run: 0
-rngtest: FIPS 140-2(2001-10-10) Continuous run: 0
-rngtest: input channel speed: (min=777.518; avg=36988.482; max=43115.342)Kibitss
-rngtest: FIPS tests speed: (min=11.951; avg=12.715; max=12.887)Mibits/s
-rngtest: Program run time: 2035543 microseconds
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Peter Korsgaard <jacmet@sunsite.dk>
-Reported-by: George Pontis <GPontis@z9.com>
----
- drivers/char/hw_random/atmel-rng.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/char/hw_random/atmel-rng.c b/drivers/char/hw_random/atmel-rng.c
-index d7ab920..731c904 100644
---- a/drivers/char/hw_random/atmel-rng.c
-+++ b/drivers/char/hw_random/atmel-rng.c
-@@ -36,6 +36,13 @@ static int atmel_trng_read(struct hwrng *rng, void *buf, size_t max,
- 	/* data ready? */
- 	if (readl(trng->base + TRNG_ISR) & 1) {
- 		*data = readl(trng->base + TRNG_ODATA);
-+		/*
-+		  ensure data ready is only set again AFTER the next data
-+		  word is ready in case it got set between checking ISR
-+		  and reading ODATA, so we don't risk re-reading the
-+		  same word
-+		*/
-+		readl(trng->base + TRNG_ISR);
- 		return 4;
- 	} else
- 		return 0;
--- 
-1.7.10
-
+> ---
+>  drivers/tty/hvc/hvc_xen.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+> index 3277f0e..944eaeb 100644
+> --- a/drivers/tty/hvc/hvc_xen.c
+> +++ b/drivers/tty/hvc/hvc_xen.c
+> @@ -214,14 +214,19 @@ static int xen_hvm_console_init(void)
+>  	/* already configured */
+>  	if (info->intf != NULL)
+>  		return 0;
+> -
+> +	/*
+> +	 * If the toolstack (or the hypervisor) hasn't set these values, the
+> +	 * default value is 0. Even though mfn = 0 and evtchn = 0 are
+> +	 * theoretically correct values, in practice they never are and they
+> +	 * mean that a legacy toolstack hasn't initialized the pv console correctly.
+> +	 */
+>  	r = hvm_get_parameter(HVM_PARAM_CONSOLE_EVTCHN, &v);
+> -	if (r < 0)
+> +	if (r < 0 || v == 0)
+>  		goto err;
+>  	info->evtchn = v;
+>  	v = 0;
+>  	r = hvm_get_parameter(HVM_PARAM_CONSOLE_PFN, &v);
+> -	if (r < 0)
+> +	if (r < 0 || v == 0)
+>  		goto err;
+>  	mfn = v;
+>  	info->intf = ioremap(mfn << PAGE_SHIFT, PAGE_SIZE);
+> -- 
+> 1.7.7.5
+> 
