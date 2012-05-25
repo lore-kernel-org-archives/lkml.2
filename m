@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab2EYOIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:08:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34156 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab2EYOIv (ORCPT
+	id S1754905Ab2EYOLb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:11:31 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60274 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab2EYOL3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:08:51 -0400
-Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in
- tty_lock_pair(v1)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Alan Cox <alan@linux.intel.com>, Ming Lei <ming.lei@canonical.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <20120525150141.7a099aa3@pyramind.ukuu.org.uk>
-References: <1337651931-5301-1-git-send-email-ming.lei@canonical.com>
-	 <CACVXFVP290dwgJVhgMf9girR9h0yU_mjxcN2Po0u1c1y4=QL0w@mail.gmail.com>
-	 <1337952533.9783.195.camel@laptop>
-	 <20120525144713.6946df1e@bob.linux.org.uk>
-	 <1337953922.9783.205.camel@laptop>
-	 <20120525150141.7a099aa3@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 25 May 2012 16:08:40 +0200
-Message-ID: <1337954920.9783.207.camel@laptop>
+	Fri, 25 May 2012 10:11:29 -0400
+Date: Fri, 25 May 2012 15:13:54 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
+        randy.dunlap@oracle.com, mjg59@srcf.ucam.org, gregkh@suse.de,
+        trenn@suse.de, Valdis.Kletnieks@vt.edu, Dennis.Jansen@web.de,
+        airlied@redhat.com, eric@anholt.net, alexdeucher@gmail.com,
+        bskeggs@redhat.com, chris@chris-wilson.co.uk
+Subject: Re: [PATCH] gpu: schedule gma500 stub driver for feature removal
+Message-ID: <20120525151354.4912e458@pyramind.ukuu.org.uk>
+In-Reply-To: <20120524195350.GA11545@kroah.com>
+References: <1337613816-12953-1-git-send-email-jlee@suse.com>
+	<20120524195350.GA11545@kroah.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 15:01 +0100, Alan Cox wrote:
+On Fri, 25 May 2012 04:53:50 +0900
+Greg KH <gregkh@linuxfoundation.org> wrote:
+
+> On Mon, May 21, 2012 at 11:23:36PM +0800, Lee, Chun-Yi wrote:
+> > In v3.3, the gma500 drm driver moved from staging to drm group by
+> > Alan Cox's 3abcf41fb patch. the gma500 drm driver should control
+> > brightness well and don't need gma500 stub driver anymore.
+> > 
+> > So, my plan is remove gma500 stub driver at Dec. 2012.
 > 
-> It applies on top of the other patches being tested in the thread on the
-> lockdep warning.
+> Why not just remove it right now as it's not needed at all anymore?
 
-You're really going to make me hunt and peck patches from lkml?
-
-/me looses interest and gets on with reducing his inbox.
-
+If there are distros not currently ahipping the GMA500 driver or people
+updating old kernels using vesa and not having the right server bits it
+might cause them problems - giving it 6 months isn't a bad idea IMHO
