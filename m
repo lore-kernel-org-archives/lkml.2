@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab2EYKut (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 06:50:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40290 "EHLO mx2.suse.de"
+	id S932194Ab2EYKw5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 06:52:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40490 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362Ab2EYKus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 06:50:48 -0400
-Date: Fri, 25 May 2012 12:50:47 +0200
-Message-ID: <s5hobpc5ybc.wl%tiwai@suse.de>
+	id S1755541Ab2EYKwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 06:52:55 -0400
+Date: Fri, 25 May 2012 12:52:54 +0200
+Message-ID: <s5hlikg5y7t.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] HD-audio vga_switcheroo support for 3.5-rc1
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] yet another sound for 3.5-rc1
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -23,33 +24,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-please pull updates of sound tree for v3.5-rc1 from:
+The following changes since commit 85e184e4c3cd3e2285ceab91ff8f0cac094e8a85:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git tags/hda-switcheroo
+  Merge tag 'asoc-3.5' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound into for-linus (2012-05-22 02:58:55 +0200)
 
-The topmost commit is adcc70b249ca77c1197eb62b1645146721ba6e5b
-
-This contains only the commits for supporting HD-audio vga-switcheroo
-client depending on the DRM update you've already applied.
+are available in the git repository at:
 
 
-Thanks!
+  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git tags/sound-3.5
 
-Takashi
+for you to fetch changes up to adcc70b249ca77c1197eb62b1645146721ba6e5b:
 
-===
+  ALSA: hda/realtek - Add new codec support for ALC269VD (2012-05-25 08:08:38 +0200)
 
-Dan Carpenter (1):
-      ALSA: hda - unlock on error in azx_interrupt()
+----------------------------------------------------------------
+Sound updates #2 for 3.5-rc1
 
-Takashi Iwai (3):
-      ALSA: hda - Check the dead HDMI audio controller by vga-switcheroo
-      ALSA: hda - Export snd_hda_lock_devices()
-      ALSA: hda - Support VGA-switcheroo
+This is the second updates for 3.5-rc1.  It's mainly for OMAP4 HDMI
+updates and the device tree updates for OMAP, in addition to a couple
+of PCM accuray improvement and Realtek ALC269VD codec support.
 
----
- sound/pci/hda/hda_codec.c |   66 ++++++----
- sound/pci/hda/hda_codec.h |    3 +
- sound/pci/hda/hda_intel.c |  314 +++++++++++++++++++++++++++++++++++++++------
- 3 files changed, 316 insertions(+), 67 deletions(-)
+----------------------------------------------------------------
+Kailang Yang (1):
+      ALSA: hda/realtek - Add new codec support for ALC269VD
 
+Peter Ujfalusi (9):
+      ASoC: omap-mcbsp: Use DMA packet mode for non mono streams on OMAP3+
+      ASoC: omap-mcbsp: Remove unused FRAME dma_op_mode
+      ASoC: omap-mcbsp: Use the common interrupt line if supported by the SoC
+      ASoC: omap-mcbsp: buffer size constraint only applies to playback stream
+      ASoC: omap-mcpdm: Add device tree bindings
+      ASoC: omap-dmic: Add device tree bindings
+      ASoC: omap-abe-twl6040: Keep only one snd_soc_dai_link structure
+      ASoC: omap-abe-twl6040: Move Digital Mic widget into dapm table
+      ASoC: omap-abe-twl6040: Introduce driver data for runtime parameters
+
+Pierre-Louis Bossart (1):
+      ALSA: core: group read of pointer, tstamp and jiffies
+
+Ricardo Neri (10):
+      ASoC: OMAP: HDMI: Update the platform device names
+      ASoC: OMAP: HDMI: Change error values in HDMI CPU DAI
+      ASoC: OMAP: HDMI: Create a structure for private data of the CPU DAI
+      ASoC: OMAP: HDMI: Use the DSS audio interface
+      ASoC: OMAP: HDMI: Expand configuration of hw_params
+      ASoC: OMAP: HDMI: Improve how the display state is verified
+      ASoC: OMAP: HDMI: Expand capabilities of the HDMI DAI
+      ASoC: OMAP: HDMI: Make build config options more generic
+      ASoC: OMAP: HDMI: Make sound card naming more generic
+      ASoC: OMAP: HDMI: Rename sound card source file
+
+Takashi Iwai (1):
+      Merge branch 'for-3.5' of git://git.kernel.org/.../lrg/asoc into topic/asoc
+
+ .../devicetree/bindings/sound/omap-dmic.txt        |   21 ++
+ .../devicetree/bindings/sound/omap-mcpdm.txt       |   21 ++
+ sound/core/pcm_lib.c                               |   23 +-
+ sound/pci/hda/patch_realtek.c                      |   38 +++-
+ sound/soc/omap/Kconfig                             |    7 +-
+ sound/soc/omap/Makefile                            |    4 +-
+ sound/soc/omap/mcbsp.c                             |  115 ++++++++--
+ sound/soc/omap/mcbsp.h                             |    8 +-
+ sound/soc/omap/omap-abe-twl6040.c                  |   68 +++---
+ sound/soc/omap/omap-dmic.c                         |    8 +
+ sound/soc/omap/omap-hdmi-card.c                    |   87 +++++++
+ sound/soc/omap/omap-hdmi.c                         |  238 ++++++++++++++++++--
+ sound/soc/omap/omap-hdmi.h                         |    4 +-
+ sound/soc/omap/omap-mcbsp.c                        |   45 ++--
+ sound/soc/omap/omap-mcpdm.c                        |    8 +
+ sound/soc/omap/omap4-hdmi-card.c                   |  121 ----------
+ 16 files changed, 582 insertions(+), 234 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/omap-dmic.txt
+ create mode 100644 Documentation/devicetree/bindings/sound/omap-mcpdm.txt
+ create mode 100644 sound/soc/omap/omap-hdmi-card.c
+ delete mode 100644 sound/soc/omap/omap4-hdmi-card.c
