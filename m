@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932932Ab2EYVEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 17:04:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:39983 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab2EYVEb (ORCPT
+	id S1755868Ab2EYVJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 17:09:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57613 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab2EYVJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 17:04:31 -0400
-Date: Fri, 25 May 2012 23:04:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-cc: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Mike Frysinger <vapier@gentoo.org>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Christoph Lameter <cl@linux.com>, Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org
-Subject: Re: [PATCH v1 1/6] timer: make __next_timer_interrupt explicit about
- no future event
-In-Reply-To: <4FBFF1F0.6050802@tilera.com>
-Message-ID: <alpine.LFD.2.02.1205252301160.3231@ionos>
-References: <1336056962-10465-1-git-send-email-gilad@benyossef.com> <1336056962-10465-2-git-send-email-gilad@benyossef.com> <alpine.LFD.2.02.1205251846520.3231@ionos> <4FBFF1F0.6050802@tilera.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 25 May 2012 17:09:48 -0400
+Date: Fri, 25 May 2012 14:09:44 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        yehuda@hq.newdream.net, mpatocka@redhat.com, vgoyal@redhat.com,
+        bharrosh@panasas.com, tj@kernel.org, sage@newdream.net, agk@redhat.com,
+        drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>,
+        tytso@google.com
+Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
+Message-ID: <20120525210944.GB14196@google.com>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-15-git-send-email-koverstreet@google.com>
+ <20120525204651.GA24246@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120525204651.GA24246@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Chris Metcalf wrote:
+On Fri, May 25, 2012 at 04:46:51PM -0400, Mike Snitzer wrote:
+> I'd love to see the merge_bvec stuff go away but it does serve a
+> purpose: filesystems benefit from accurately building up much larger
+> bios (based on underlying device limits).  XFS has leveraged this for
+> some time and ext4 adopted this (commit bd2d0210cf) because of the
+> performance advantage.
 
-> On 5/25/2012 4:48 PM, Thomas Gleixner wrote:
-> >> I've noticed a similar but slightly different fix to the
-> >> > same problem in the Tilera kernel tree from Chris M. (I've
-> >> > wrote this before seeing that one), so some variation of this
-> >> > fix is in use on real hardware for some time now.
-> > Sigh, why can't people post their fixes instead of burying them in
-> > their private trees?
-> 
-> The tree was never really ready for review.  I pushed the tree just for
-> reference to the nohz cpusets work, and so that I have something I can
-> refer people to when I start participating more actively in that discussion.
-> 
-> It didn't seem useful to post a single patch by itself without more
-> motivating examples behind it (i.e. without the entirety of the tree).
+That commit only talks about skipping buffer heads, from the patch
+description I don't see how merge_bvec_fn would have anything to do with
+what it's after.
 
-The code does the Wrong Thing. Independent of nohz cpusets or
-whatever.
+> So if you don't have a mechanism for the filesystem's IO to have
+> accurate understanding of the limits of the device the filesystem is
+> built on (merge_bvec was the mechanism) and are leaning on late
+> splitting does filesystem performance suffer?
 
-Aside of that this is also relevant for power saving stuff.
+So is the issue that it may take longer for an IO to complete, or is it
+CPU utilization/scalability?
 
-Thanks,
+If it's the former, we've got a real problem. If it's the latter - it
+might be a problem in the interim (I don't expect generic_make_request()
+to be splitting bios in the common case long term), but I doubt it's
+going to be much of an issue.
 
-	tglx
+> Would be nice to see before and after XFS and ext4 benchmarks against a
+> RAID device (level 5 or 6).  I'm especially interested to get Dave
+> Chinner's and Ted's insight here.
+
+Yeah.
+
+I can't remember who it was, but Ted knows someone who was able to
+benchmark on a 48 core system. I don't think we need numbers from a 48
+core machine for these patches, but whatever workloads they were testing
+that were problematic CPU wise would be useful to test.
