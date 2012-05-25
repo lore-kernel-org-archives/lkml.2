@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab2EYP3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:29:40 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:52819 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab2EYP3j convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Fri, 25 May 2012 11:29:39 -0400
-Message-Id: <4FBFC1A3020000780008638F@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 25 May 2012 16:30:11 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matthew Garrett" <mjg59@srcf.ucam.org>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <matt.fleming@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
-References: <4FBFBF5F020000780008637F@nat28.tlf.novell.com>
- <20120525152414.GA16704@srcf.ucam.org>
-In-Reply-To: <20120525152414.GA16704@srcf.ucam.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932978Ab2EYP3p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 11:29:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932090Ab2EYP3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 11:29:42 -0400
+From: Lukas Czerner <lczerner@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, mbroz@redhat.com,
+        Lukas Czerner <lczerner@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 1/2] vfs: Do not allow mnt_longterm to go negative
+Date: Fri, 25 May 2012 17:29:35 +0200
+Message-Id: <1337959776-16564-1-git-send-email-lczerner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.05.12 at 17:24, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Fri, May 25, 2012 at 04:20:31PM +0100, Jan Beulich wrote:
-> 
->> Also make the two EFI functions in question here static - they're not
->> being referenced elsewhere.
-> 
-> Looks good, but should we also be changing get_time to return in UTC? 
+Currently when someone calls __mnt_make_shortterm() and the mnt_longterm
+is already zero, it will come negative which is exactly opposite of what
+the function should to. So fix this by decrementing mnt_longterm only in
+case that it's not zero. Note that mnt_longterm should not be touched
+directly, but rather via __mnt_make_shortterm() and mnt_make_shortterm()
+functions - the former does not have this problem.
 
-Imo that would be a separate change though.
+Moreover this will fix very nasty bug which might cause file systems not
+being properly cleaned up while unmounting. Specifically it might cause
+deactivate_super() not being called at all, hence the file system would
+be still up and running even after successful unmount without user even
+noticing it.
 
-> What are the expected semantics for get_wallclock?
+The following scenario leads to a bug. While mounting propagate_mnt()
+would walk through propagation tree cloning the mount for every every
+mount the root propagates to. Even for mounts which parents are not
+parents of the directory you're trying to mount to. So it will bump up
+the s_active counter.
 
-Not sure - I think both are permitted (just like for the legacy RTC),
-with the expectation that early user mode would tell the kernel.
+However before the propagate_mnt() is left it will clean the unneeded
+cloned mounts (those which parent root is not parent of your new mount
+point), but it will _NOT_ decrement the s_active because umount_tree()
+would decrement mnt_longterm causing it to underflow, hence
+mntput_no_expire() would bail out before actually calling mntfree() and
+releasing the super block (decreasing s_active). At this point super
+block will never get released.
 
-Jan
+User can not directly observe this (aside from seeing running file system
+processes even after unmount), but it can be easily reproduced with loop
+device.
+
+mount --bind /tmp/one /tmp/two
+losetup /dev/loop0 /mnt/test/file0
+mount /dev/loop0 /mnt/test1
+umount /mnt/test1
+losetup -d /dev/loop0
+^^^^^^^^^^^^^^^^^^^^^
+This will fail because the device is still busy (super block is still
+active and s_active is non zero).
+
+This commit fixes this issue.
+
+Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+Reported-by: Milan Broz <mbroz@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+---
+ fs/namespace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index e608199..e72fec7 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -632,7 +632,7 @@ static inline void __mnt_make_longterm(struct mount *mnt)
+ static inline void __mnt_make_shortterm(struct mount *mnt)
+ {
+ #ifdef CONFIG_SMP
+-	atomic_dec(&mnt->mnt_longterm);
++	atomic_add_unless(&mnt->mnt_longterm, -1, 0);
+ #endif
+ }
+ 
+-- 
+1.7.7.6
 
