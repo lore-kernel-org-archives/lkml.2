@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2EYM1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 08:27:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37555 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab2EYM1f convert rfc822-to-8bit (ORCPT
+	id S1752452Ab2EYMhY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 08:37:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37418 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab2EYMhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 08:27:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
-Date: Fri, 25 May 2012 17:57:35 +0530
-Message-ID: <CAKew6eXsf5UKe4t5m3MAuU1OUSZcUPBoSRUCjyR-gKRmDC8MOw@mail.gmail.com>
-Subject: Re: [PATCH v4] regulator: MAX77686: Add Maxim 77686 regulator driver
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chiwoong Byun <woong.byun@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 May 2012 08:37:22 -0400
+From: Wanpeng Li <liwp.linux@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Wanpeng Li <liwp.linux@gmail.com>,
+        Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: remove repeat implementation of page_referenced
+Date: Fri, 25 May 2012 20:37:10 +0800
+Message-Id: <1337949430-24626-1-git-send-email-liwp.linux@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonghwa,
+From: Wanpeng Li <liwp@linux.vnet.ibm.com>
 
-> +
-> +       if (pdata)
-> +               max77686->opmode_data = pdata->opmode_data;
+page_referenced function just called from mm/vmscan.c to handle paging
+out.It is realized in mm/rmap.c and has an interface exported in rmap.h.
 
-I think this is unused(unwanted) now.
+Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+---
+ include/linux/rmap.h |    8 --------
+ 1 file changed, 8 deletions(-)
 
-> +
-> +       for (i = 0; i < MAX77686_REGULATORS; i++) {
-> +               if (pdata)
-> +                       init_data[pdata->regulators[i].id] =
-> +                                                pdata->regulators[i].initdata;
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index fd07c45..ee0c005 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -234,14 +234,6 @@ int rmap_walk(struct page *page, int (*rmap_one)(struct page *,
+ #define anon_vma_prepare(vma)	(0)
+ #define anon_vma_link(vma)	do {} while (0)
+ 
+-static inline int page_referenced(struct page *page, int is_locked,
+-				  struct mem_cgroup *memcg,
+-				  unsigned long *vm_flags)
+-{
+-	*vm_flags = 0;
+-	return 0;
+-}
+-
+ #define try_to_unmap(page, refs) SWAP_FAIL
+ 
+ static inline int page_mkclean(struct page *page)
+-- 
+1.7.9.5
 
-I  think we can directly use  pdata->regulators[i].initdata instead of
-init_data[i].
-In case if pdata is not their we can use same instance of
-init_data(default)  for all regulators.
-
-> +
-> +               config.init_data = init_data[i];
-> +               rdev[i] = regulator_register(&regulators[i], &config);
-> +
-
-> +
-> +       for (i = 0; i < 8; i++) {
-> +               if (pdata->buck2_voltage[i] > 0)
-> +                       ret = regulator_map_voltage_linear(
-> +                                       rdev[MAX77686_LDOS+1],
-> +                                       pdata->buck2_voltage[i],
-> +                                       pdata->buck2_voltage[i]
-> +                                       + MAX77686_DVS_UVSTEP);
-> +               /* 1.1V as default for safety */
-> +               if (pdata->buck2_voltage[i] <= 0 || ret < 0)
-> +                       max77686->buck2_vol[i] = 0x28;
-> +               else
-> +                       max77686->buck2_vol[i] = ret;
-> +               regmap_write(max77686->iodev->regmap,
-> +                        MAX77686_REG_BUCK2DVS1 + i, max77686->buck2_vol[i]);
-> +
-> +               if (pdata->buck3_voltage[i] > 0)
-> +                       ret = regulator_map_voltage_linear(
-> +                                       rdev[MAX77686_LDOS+1],
-> +                                       pdata->buck3_voltage[i],
-> +                                       pdata->buck3_voltage[i]
-> +                                       + MAX77686_DVS_UVSTEP);
-> +               /* 1.1V as default for safety */
-> +               if (pdata->buck3_voltage[i] <= 0 || ret < 0)
-> +                       max77686->buck3_vol[i] = 0x28;
-> +               else
-> +                       max77686->buck3_vol[i] = ret;
-> +               regmap_write(max77686->iodev->regmap,
-> +                        MAX77686_REG_BUCK3DVS1 + i, max77686->buck3_vol[i]);
-> +
-> +               if (pdata->buck4_voltage[i] > 0)
-> +                       ret = regulator_map_voltage_linear(
-> +                                       rdev[MAX77686_LDOS+1],
-> +                                       pdata->buck4_voltage[i],
-> +                                       pdata->buck4_voltage[i]
-> +                                       + MAX77686_DVS_UVSTEP);
-> +               /* 1.1V as default for safety */
-> +               if (pdata->buck4_voltage[i] <= 0 || ret < 0)
-> +                       max77686->buck4_vol[i] = 0x28;
-> +               else
-> +                       max77686->buck4_vol[i] = ret;
-> +               regmap_write(max77686->iodev->regmap,
-> +                        MAX77686_REG_BUCK4DVS1 + i, max77686->buck4_vol[i]);
-> +       }
-
-Why do we need to initialize the 8 voltage registers of BUCK2/3/4  ?
-
-
-Regards,
-Yadwinder.
