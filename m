@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758106Ab2EYP7r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 11:59:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59475 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab2EYP7p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 11:59:45 -0400
+	id S1758142Ab2EYQBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 12:01:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1916 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab2EYQBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 12:01:13 -0400
+Date: Fri, 25 May 2012 17:59:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: [PATCH -mm 0/1] pidns: find_new_reaper() can no longer switch to
+	init_pid_ns.child_reaper
+Message-ID: <20120525155941.GA16885@redhat.com>
+References: <878vgrsv7q.fsf@xmission.com> <20120517170015.GA12436@redhat.com> <87d3628oqa.fsf@xmission.com> <20120518123911.GA417@redhat.com> <87zk95kper.fsf@xmission.com> <20120521124414.GA20391@redhat.com> <87d35x5ank.fsf_-_@xmission.com> <20120522122315.c3f2118c.akpm@linux-foundation.org> <20120523145239.GA20378@redhat.com> <20120525151526.GA13111@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120525154249.GC2082@localhost.localdomain>
-References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
-	<20120525154249.GC2082@localhost.localdomain>
-Date: Fri, 25 May 2012 17:59:45 +0200
-Message-ID: <CAB9VWqDGgWE8S4dS5izkzUGEWkUbFSanWCV5trm7VWB0=r-tXQ@mail.gmail.com>
-Subject: Re: atime and filesystems with snapshots (especially Btrfs)
-From: Alexander Block <ablock84@googlemail.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120525151526.GA13111@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 5:42 PM, Josef Bacik <josef@redhat.com> wrote:
-> On Fri, May 25, 2012 at 05:35:37PM +0200, Alexander Block wrote:
->> Hello,
->>
->> (this is a resend with proper CC for linux-fsdevel and linux-kernel)
->>
->> I would like to start a discussion on atime in Btrfs (and other
->> filesystems with snapshot support).
->>
->> As atime is updated on every access of a file or directory, we get
->> many changes to the trees in btrfs that as always trigger cow
->> operations. This is no problem as long as the changed tree blocks are
->> not shared by other subvolumes. Performance is also not a problem, no
->> matter if shared or not (thanks to relatime which is the default).
->> The problems start when someone starts to use snapshots. If you for
->> example snapshot your root and continue working on your root, after
->> some time big parts of the tree will be cowed and unshared. In the
->> worst case, the whole tree gets unshared and thus takes up the double
->> space. Normally, a user would expect to only use extra space for a
->> tree if he changes something.
->> A worst case scenario would be if someone took regular snapshots for
->> backup purposes and later greps the contents of all snapshots to find
->> a specific file. This would touch all inodes in all trees and thus
->> make big parts of the trees unshared.
->>
->> relatime (which is the default) reduces this problem a little bit, as
->> it by default only updates atime once a day. This means, if anyone
->> wants to test this problem, mount with relatime disabled or change the
->> system date before you try to update atime (that's the way i tested
->> it).
->>
->> As a solution, I would suggest to make noatime the default for btrfs.
->> I'm however not sure if it is allowed in linux to have different
->> default mount options for different filesystem types. I know this
->> discussion pops up every few years (last time it resulted in making
->> relatime the default). But this is a special case for btrfs. atime is
->> already bad on other filesystems, but it's much much worse in btrfs.
->>
+On 05/25, Oleg Nesterov wrote:
 >
-> Just mount with -o noatime, there's no chance of turning something like that on
-> by default since it will break some applications (notably mutt).  Thanks,
->
-> Josef
+> So. Eric, Andrew, will you agree with this cleanup on top of
+> pidns-guarantee-that-the-pidns-init-will-be-the-last-pidns-process-reaped-v2-fix.patch
+> ?
 
-I know about the discussions regarding compatibility with existing
-applications. The problem here is, that it is not only a compatibility
-problem. Having atime enabled by default, may give you ENOSPC
-for reasons that a normal user does not understand or expect.
-As a normal user, I would think: If I never change something, why
-does it then take up more space just by reading it?
+And I think we need another subtle fix.
+
+Compile-only tested, please review.
+
+Oleg.
+
