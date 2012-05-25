@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab2EYU0X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:26:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48893 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757130Ab2EYU0N (ORCPT
+	id S965065Ab2EYU3o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:29:44 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:23713 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932932Ab2EYU3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:26:13 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: [PATCH v3 03/16] block: Add bio_reset()
-Date: Fri, 25 May 2012 13:25:26 -0700
-Message-Id: <1337977539-16977-4-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.9.3.327.g2980b
-In-Reply-To: <1337977539-16977-1-git-send-email-koverstreet@google.com>
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+	Fri, 25 May 2012 16:29:40 -0400
+Date: Fri, 25 May 2012 22:29:37 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 1/4] [-next] Makefile: Do not call cc-option before
+	including the arch's Makefile
+Message-ID: <20120525202937.GA22903@merkur.ravnborg.org>
+References: <1336855148-18817-1-git-send-email-geert@linux-m68k.org> <20120520092744.GA21341@merkur.ravnborg.org> <4FBF7B34.2080506@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBF7B34.2080506@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reusing bios is something that's been highly frowned upon in the past,
-but driver code keeps doing it anyways. If it's going to happen anyways,
-we should provide a generic method.
+On Fri, May 25, 2012 at 02:29:40PM +0200, Michal Marek wrote:
+> Dne 20.5.2012 11:27, Sam Ravnborg napsal(a):
+> > On Sat, May 12, 2012 at 10:39:05PM +0200, Geert Uytterhoeven wrote:
+> >> On architectures that setup CROSS_COMPILE in their arch/*/Makefile
+> >> (blackfin, h8300, m68k, mips, parisc, score, sh, tile, unicore32, xtensa),
+> >> cc-option may check against the wrong compiler, causing errors like
+> >>
+> >> cc1: error: unrecognized command line option "-fno-ipa-cp-clone"
+> >>
+> >> if the host gcc supports -fno-ipa-cp-clone, while the cross compiler
+> >> doesn't support that option.
+> >>
+> >> Move the CONFIG_READABLE_ASM section below the inclusion of the arch's
+> >> Makefile to fix this.
+> >>
+> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> >> Cc: Andi Kleen <ak@linux.intel.com>
+> >> Cc: H. Peter Anvin <hpa@zytor.com>
+> >> Cc: Michal Marek <mmarek@suse.cz>
+> >> Cc: linux-kbuild@vger.kernel.org
+> > 
+> > Michal - was this serie ever applied to kbuild?
+> 
+> The first patch has to go to the tip tree, where the CONFIG_READABLE_ASM
+> option is introduced.
+OK - I had not seen this.
 
-This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
-was open coding it, by doing a bio_init() and resetting bi_destructor.
+So tip-folks - please apply this.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-Change-Id: Ib0a43dfcb3f6c22a54da513d4a86be544b5ffd95
----
- fs/bio.c                  |    8 ++++++++
- include/linux/bio.h       |    1 +
- include/linux/blk_types.h |    6 ++++++
- 3 files changed, 15 insertions(+)
-
-diff --git a/fs/bio.c b/fs/bio.c
-index 3667cef..240da21 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -259,6 +259,14 @@ void bio_init(struct bio *bio)
- }
- EXPORT_SYMBOL(bio_init);
- 
-+void bio_reset(struct bio *bio)
-+{
-+	memset(bio, 0, BIO_RESET_BYTES);
-+	bio->bi_flags = 1 << BIO_UPTODATE;
-+
-+}
-+EXPORT_SYMBOL(bio_reset);
-+
- /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 4d94eb8..e5c2504 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -226,6 +226,7 @@ extern void __bio_clone(struct bio *, struct bio *);
- extern struct bio *bio_clone(struct bio *, gfp_t);
- 
- extern void bio_init(struct bio *);
-+extern void bio_reset(struct bio *);
- 
- extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
- extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index dc0e399..6b7daf3 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -57,6 +57,10 @@ struct bio {
- 	unsigned int		bi_seg_front_size;
- 	unsigned int		bi_seg_back_size;
- 
-+	/*
-+	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
-+	 */
-+
- 	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
- 
- 	atomic_t		bi_cnt;		/* pin count */
-@@ -83,6 +87,8 @@ struct bio {
- 	struct bio_vec		bi_inline_vecs[0];
- };
- 
-+#define BIO_RESET_BYTES		offsetof(struct bio, bi_max_vecs)
-+
- /*
-  * bio flags
-  */
--- 
-1.7.9.3.327.g2980b
-
+	Sam
