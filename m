@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab2EYIFt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 04:05:49 -0400
+	id S1756200Ab2EYIHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 04:07:00 -0400
 Received: from smtp3.mundo-r.com ([212.51.32.191]:43364 "EHLO
 	smtp4.mundo-r.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751926Ab2EYIFn (ORCPT
+	with ESMTP id S1755800Ab2EYIFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 04:05:43 -0400
+	Fri, 25 May 2012 04:05:48 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwEAIo8v09bdWOb/2dsb2JhbABEtRCBB4JDUoE+E4gRu0iQRwOVGI9wgmI
+X-IronPort-Anti-Spam-Result: Av0EAIo8v09bdWOb/2dsb2JhbABEtRCBB4IWAQUnQBIQUVcGE4gRu0iQRwOVGI9wgmI
 X-IronPort-AV: E=Sophos;i="4.75,655,1330902000"; 
-   d="scan'208";a="995215616"
+   d="scan'208";a="995215620"
 From: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Samuel Iglesias Gonsalvez <siglesias@igalia.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] Staging: ipack: use idr interface for numbering buses
-Date: Fri, 25 May 2012 10:03:01 +0200
-Message-Id: <1337932985-10668-1-git-send-email-siglesias@igalia.com>
+Subject: [PATCH 3/5] Staging: ipack/devices/ipoctal: avoid kernel oops when uninstalling
+Date: Fri, 25 May 2012 10:03:03 +0200
+Message-Id: <1337932985-10668-3-git-send-email-siglesias@igalia.com>
 X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1337932985-10668-1-git-send-email-siglesias@igalia.com>
+References: <1337932985-10668-1-git-send-email-siglesias@igalia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use idr interface to give the bus number. That way, we remove the
-limitation of 64 buses.
+When uninstalling a device, there is a loop of calls that produces, at the end,
+two calls to __ipoctal_remove() function with the same ipack_device argument.
 
-The mutex is removed because the ida interface uses spinlocks inside, so it is
-not needed an extra lock.
+The first time works fine, but the second will fail in tty_unregister_driver()
+
+To avoid this situation, the call to __ipoctal_remove() it is done only from the
+ipack bus driver and not from the ipack device driver.
 
 Signed-off-by: Samuel Iglesias Gonsalvez <siglesias@igalia.com>
 ---
- drivers/staging/ipack/ipack.c |   40 ++++++----------------------------------
- 1 file changed, 6 insertions(+), 34 deletions(-)
+ drivers/staging/ipack/devices/ipoctal.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/staging/ipack/ipack.c b/drivers/staging/ipack/ipack.c
-index e6dc21a..e97be99 100644
---- a/drivers/staging/ipack/ipack.c
-+++ b/drivers/staging/ipack/ipack.c
-@@ -12,22 +12,14 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/drivers/staging/ipack/devices/ipoctal.c b/drivers/staging/ipack/devices/ipoctal.c
+index 29f6fa8..a6f424e 100644
+--- a/drivers/staging/ipack/devices/ipoctal.c
++++ b/drivers/staging/ipack/devices/ipoctal.c
+@@ -853,11 +853,6 @@ static void __ipoctal_remove(struct ipoctal *ipoctal)
  
- #include <linux/module.h>
--#include <linux/mutex.h>
- #include <linux/slab.h>
-+#include <linux/idr.h>
- #include "ipack.h"
- 
- #define to_ipack_dev(device) container_of(device, struct ipack_device, dev)
- #define to_ipack_driver(drv) container_of(drv, struct ipack_driver, driver)
- 
--/* used when allocating bus numbers */
--#define IPACK_MAXBUS              64
+ 	tty_unregister_driver(ipoctal->tty_drv);
+ 	put_tty_driver(ipoctal->tty_drv);
 -
--static DEFINE_MUTEX(ipack_mutex);
+-	/* Tell the carrier board to free all the resources for this device */
+-	if (ipoctal->dev->bus->ops->remove_device != NULL)
+-		ipoctal->dev->bus->ops->remove_device(ipoctal->dev);
 -
--struct ipack_busmap {
--	unsigned long busmap[IPACK_MAXBUS / (8*sizeof(unsigned long))];
--};
--static struct ipack_busmap busmap;
-+static DEFINE_IDA(ipack_ida);
- 
- static void ipack_device_release(struct device *dev)
- {
-@@ -79,26 +71,6 @@ static struct bus_type ipack_bus_type = {
- 	.remove = ipack_bus_remove,
- };
- 
--static int ipack_assign_bus_number(void)
--{
--	int busnum;
--
--	mutex_lock(&ipack_mutex);
--	busnum = find_next_zero_bit(busmap.busmap, IPACK_MAXBUS, 1);
--
--	if (busnum >= IPACK_MAXBUS) {
--		pr_err("too many buses\n");
--		busnum = -1;
--		goto error_find_busnum;
--	}
--
--	set_bit(busnum, busmap.busmap);
--
--error_find_busnum:
--	mutex_unlock(&ipack_mutex);
--	return busnum;
--}
--
- struct ipack_bus_device *ipack_bus_register(struct device *parent, int slots,
- 					    struct ipack_bus_ops *ops)
- {
-@@ -109,7 +81,7 @@ struct ipack_bus_device *ipack_bus_register(struct device *parent, int slots,
- 	if (!bus)
- 		return NULL;
- 
--	bus_nr = ipack_assign_bus_number();
-+	bus_nr = ida_simple_get(&ipack_ida, 0, 0, GFP_KERNEL);
- 	if (bus_nr < 0) {
- 		kfree(bus);
- 		return NULL;
-@@ -125,9 +97,7 @@ EXPORT_SYMBOL_GPL(ipack_bus_register);
- 
- int ipack_bus_unregister(struct ipack_bus_device *bus)
- {
--	mutex_lock(&ipack_mutex);
--	clear_bit(bus->bus_nr, busmap.busmap);
--	mutex_unlock(&ipack_mutex);
-+	ida_simple_remove(&ipack_ida, bus->bus_nr);
- 	kfree(bus);
- 	return 0;
+ 	list_del(&ipoctal->list);
+ 	kfree(ipoctal);
  }
-@@ -189,12 +159,14 @@ EXPORT_SYMBOL_GPL(ipack_device_unregister);
+@@ -889,7 +884,7 @@ static void __exit ipoctal_exit(void)
+ 	struct ipoctal *p, *next;
  
- static int __init ipack_init(void)
- {
-+	ida_init(&ipack_ida);
- 	return bus_register(&ipack_bus_type);
+ 	list_for_each_entry_safe(p, next, &ipoctal_list, list)
+-		__ipoctal_remove(p);
++		p->dev->bus->ops->remove_device(p->dev);
+ 
+ 	ipack_driver_unregister(&driver);
  }
- 
- static void __exit ipack_exit(void)
- {
- 	bus_unregister(&ipack_bus_type);
-+	ida_destroy(&ipack_ida);
- }
- 
- module_init(ipack_init);
 -- 
 1.7.10
 
