@@ -1,100 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab2EYK4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 06:56:24 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:60006 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756807Ab2EYK4X (ORCPT
+	id S1757299Ab2EYLAI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 07:00:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:65207 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab2EYLAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 06:56:23 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] tty: remove recursive implementation of tty_ldisc_release
-To: levinsasha928@gmail.com, linux-kernel@vger.kernel.org
-Date: Fri, 25 May 2012 12:11:54 +0100
-Message-ID: <20120525111152.7239.99793.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Fri, 25 May 2012 07:00:06 -0400
+Date: Fri, 25 May 2012 12:59:44 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Laxman Dewangan <ldewangan@nvidia.com>
+cc: Vinod Koul <vinod.koul@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/9 v3] dmaengine: add an shdma-base library
+In-Reply-To: <4FBF5EA9.704@nvidia.com>
+Message-ID: <Pine.LNX.4.64.1205251255310.13353@axis700.grange>
+References: <1336576161-27082-1-git-send-email-g.liakhovetski@gmx.de> 
+ <1336576161-27082-2-git-send-email-g.liakhovetski@gmx.de> 
+ <1337055734.16185.5360.camel@vkoul-udesk3>  <Pine.LNX.4.64.1205171912140.10086@axis700.grange>
+ <1337933737.1580.8.camel@vkoul-udesk3> <4FBF5EA9.704@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:uRVTHpLqr3CaYKelJahLHAP6AejwuJFJnv5ALBrKM6k
+ mnX+Ajac9Sm1pRPgNUbiyUCgIn1rtHvKhwJCQrRt7Owr8EUrDK
+ OCNcCCoxa85WESZtrt6vHPWM8HLjaE8FarbKN12Pn5R6GaiJfa
+ QS6x4pS1XKcfeS+7QIabbN6TBogdY/0V0g3GulLA1G+OclX+Oe
+ JWI2JQTpxI3f8z8YuXsgyJqV9T0GSF9UDTtixM+53tHC8eJ955
+ 65ncF1a1zXGRc7FvE9RpRW+4A7VjfIN8AmYK+CmSSA0jEJ+5ih
+ NYT9En1Ffp/x+b/vEsR0BaoRarNudnUhoTIe3hJgnLRFLUy335
+ KqPKiPvycMR/lHSlz2AfTKPAr4n+B6RcgsFCTRgrdc9b3MpcUJ
+ OuGpNhWOFTpDQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Hi Laxman
 
-We need to do this in one pass with the locking requirements we now
-have.
+On Fri, 25 May 2012, Laxman Dewangan wrote:
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+> On Friday 25 May 2012 01:45 PM, Vinod Koul wrote:
+> > On Fri, 2012-05-18 at 10:21 +0200, Guennadi Liakhovetski wrote:
+> 
+> > +/*
+> > > > > + * Drivers, using this library are expected to embed struct
+> > > > > shdma_dev,
+> > > > > + * struct shdma_chan, struct shdma_desc, and struct shdma_slave
+> > > > > + * in their respective device, channel, descriptor and slave objects.
+> > > > > + */
+> > > > > +
+> > > > > +struct shdma_slave {
+> > > > > +	unsigned int slave_id;
+> > > > this should be moved to struct dma_slave_config
+> > > Again, this would be a functional change. And struct dma_slave_config
+> > > doesn't have a slave-ID field in it, which is the only thing we need for
+> > > now. Instead it has a bunch of other fields, of which none is so far used
+> > > by this driver.
+> > > 
+> 
+> In Nvidia's tegra SOC also require to pass the slave id from client to dma
+> driver. I have pushed the change to make it part of struct dma_slave_config
+> on the patch
+> [PATCH V4 1/2] dma: dmaengine: add slave req id in slave_config
+> 
+> So hope you can use the same if that patch get merged.
+
+Thanks for letting me know. After both our series get merged, when working 
+on removal of .private use, switching to your new .slave_id will really be 
+the way to go for us.
+
+Thanks
+Guennadi
 ---
-
- drivers/tty/tty_ldisc.c |   40 +++++++++++++++++++++++-----------------
- 1 files changed, 23 insertions(+), 17 deletions(-)
-
-
-diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
-index 833e851..ecfaef5 100644
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -894,6 +894,23 @@ int tty_ldisc_setup(struct tty_struct *tty, struct tty_struct *o_tty)
- 	tty_ldisc_enable(tty);
- 	return 0;
- }
-+
-+static int tty_ldisc_kill(struct tty_struct *tty)
-+{
-+	mutex_lock(&tty->ldisc_mutex);
-+	/*
-+	 * Now kill off the ldisc
-+	 */
-+	tty_ldisc_close(tty, tty->ldisc);
-+	tty_ldisc_put(tty->ldisc);
-+	/* Force an oops if we mess this up */
-+	tty->ldisc = NULL;
-+
-+	/* Ensure the next open requests the N_TTY ldisc */
-+	tty_set_termios_ldisc(tty, N_TTY);
-+	mutex_unlock(&tty->ldisc_mutex);
-+}
-+
- /**
-  *	tty_ldisc_release		-	release line discipline
-  *	@tty: tty being shut down
-@@ -912,30 +929,19 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 	 * race with the set_ldisc code path.
- 	 */
- 
--	/* We don't give a monkeys' about the o_tty lock here but we
--	   must do both to avoid lock inversions against another single
--	   locking case */
- 	tty_unlock_pair(tty, o_tty);
- 	tty_ldisc_halt(tty);
- 	tty_ldisc_flush_works(tty);
-+	if (o_tty) {
-+		tty_ldisc_halt(o_tty);
-+		tty_ldisc_flush_works(o_tty);
-+	}
- 	tty_lock_pair(tty, o_tty);
- 
--	mutex_lock(&tty->ldisc_mutex);
--	/*
--	 * Now kill off the ldisc
--	 */
--	tty_ldisc_close(tty, tty->ldisc);
--	tty_ldisc_put(tty->ldisc);
--	/* Force an oops if we mess this up */
--	tty->ldisc = NULL;
--
--	/* Ensure the next open requests the N_TTY ldisc */
--	tty_set_termios_ldisc(tty, N_TTY);
--	mutex_unlock(&tty->ldisc_mutex);
- 
--	/* This will need doing differently if we need to lock */
-+	tty_ldisc_kill(tty);
- 	if (o_tty)
--		tty_ldisc_release(o_tty, NULL);
-+		tty_ldisc_kill(o_tty);
- 
- 	/* And the memory resources remaining (buffers, termios) will be
- 	   disposed of when the kref hits zero */
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
