@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab2EYRKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:10:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26799 "EHLO mx1.redhat.com"
+	id S933708Ab2EYRKV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:10:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16406 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932165Ab2EYRDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932345Ab2EYRDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 13:03:30 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -23,45 +23,86 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 07/35] autonuma: teach gup_fast about pte_numa
-Date: Fri, 25 May 2012 19:02:11 +0200
-Message-Id: <1337965359-29725-8-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 09/35] autonuma: mm_autonuma and sched_autonuma data structures
+Date: Fri, 25 May 2012 19:02:13 +0200
+Message-Id: <1337965359-29725-10-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gup_fast will skip over non present ptes (pte_numa requires the pte to
-be non present). So no explicit check is needed for pte_numa in the
-pte case.
-
-gup_fast will also automatically skip over THP when the trans huge pmd
-is non present (pmd_numa requires the pmd to be non present).
-
-But for the special pmd mode scan of knuma_scand
-(/sys/kernel/mm/autonuma/knuma_scand/pmd == 1), the pmd may be of numa
-type (so non present too), the pte may be present. gup_pte_range
-wouldn't notice the pmd is of numa type. So to avoid losing a NUMA
-hinting page fault with gup_fast we need an explicit check for
-pmd_numa() here to be sure it will fault through gup ->
-handle_mm_fault.
+Define the two data structures that collect the per-process (in the
+mm) and per-thread (in the task_struct) statistical information that
+are the input of the CPU follow memory algorithms in the NUMA
+scheduler.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/x86/mm/gup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/autonuma_types.h |   57 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 57 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/autonuma_types.h
 
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..bf36575 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -164,7 +164,7 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 		 * wait_split_huge_page() would never return as the
- 		 * tlb flush IPI wouldn't run.
- 		 */
--		if (pmd_none(pmd) || pmd_trans_splitting(pmd))
-+		if (pmd_none(pmd) || pmd_trans_splitting(pmd) || pmd_numa(pmd))
- 			return 0;
- 		if (unlikely(pmd_large(pmd))) {
- 			if (!gup_huge_pmd(pmd, addr, next, write, pages, nr))
+diff --git a/include/linux/autonuma_types.h b/include/linux/autonuma_types.h
+new file mode 100644
+index 0000000..65b175b
+--- /dev/null
++++ b/include/linux/autonuma_types.h
+@@ -0,0 +1,57 @@
++#ifndef _LINUX_AUTONUMA_TYPES_H
++#define _LINUX_AUTONUMA_TYPES_H
++
++#ifdef CONFIG_AUTONUMA
++
++#include <linux/numa.h>
++
++struct mm_autonuma {
++	struct list_head mm_node;
++	struct mm_struct *mm;
++	unsigned long numa_fault_tot; /* reset from here */
++	unsigned long numa_fault_pass;
++	unsigned long numa_fault[0];
++};
++
++extern int alloc_mm_autonuma(struct mm_struct *mm);
++extern void free_mm_autonuma(struct mm_struct *mm);
++extern void __init mm_autonuma_init(void);
++
++#define SCHED_AUTONUMA_FLAG_STOP_ONE_CPU	(1<<0)
++#define SCHED_AUTONUMA_FLAG_NEED_BALANCE	(1<<1)
++
++struct sched_autonuma {
++	int autonuma_node;
++	unsigned int autonuma_flags; /* zeroed from here */
++	unsigned long numa_fault_pass;
++	unsigned long numa_fault_tot;
++	unsigned long numa_fault[0];
++};
++
++extern int alloc_sched_autonuma(struct task_struct *tsk,
++				struct task_struct *orig,
++				int node);
++extern void __init sched_autonuma_init(void);
++extern void free_sched_autonuma(struct task_struct *tsk);
++
++#else /* CONFIG_AUTONUMA */
++
++static inline int alloc_mm_autonuma(struct mm_struct *mm)
++{
++	return 0;
++}
++static inline void free_mm_autonuma(struct mm_struct *mm) {}
++static inline void mm_autonuma_init(void) {}
++
++static inline int alloc_sched_autonuma(struct task_struct *tsk,
++				       struct task_struct *orig,
++				       int node)
++{
++	return 0;
++}
++static inline void sched_autonuma_init(void) {}
++static inline void free_sched_autonuma(struct task_struct *tsk) {}
++
++#endif /* CONFIG_AUTONUMA */
++
++#endif /* _LINUX_AUTONUMA_TYPES_H */
