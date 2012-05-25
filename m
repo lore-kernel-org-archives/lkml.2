@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab2EYKQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 06:16:09 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:39106 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab2EYKQH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 06:16:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <DB904C5425BA6F4E8424B3B51A1414D170230E5AF6@NWD2CMBX1.ad.analog.com>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
-	<1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
-	<CAM=Q2csSuQ3R9U=XKwj9F0xijTxx_ULperAiQYD_X3a5GKVjFg@mail.gmail.com>
-	<DB904C5425BA6F4E8424B3B51A1414D170230E5ADF@NWD2CMBX1.ad.analog.com>
-	<CAM=Q2cveBrYUiNYEbUgXyTnK2JhVD8UyhGgYJ=Zr86YnMMJ6Dg@mail.gmail.com>
-	<DB904C5425BA6F4E8424B3B51A1414D170230E5AF6@NWD2CMBX1.ad.analog.com>
-Date: Fri, 25 May 2012 15:46:06 +0530
-Message-ID: <CAM=Q2cvUVuOMQ+Q=uLUkHN+ioqVtQ=bhPgrcnbyuUavAjES1-g@mail.gmail.com>
-Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
- Macro to head file.
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: "Zhang, Sonic" <Sonic.Zhang@analog.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754492Ab2EYKUd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 06:20:33 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58539 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab2EYKUc convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Fri, 25 May 2012 06:20:32 -0400
+Message-Id: <4FBF792D02000078000861BD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 25 May 2012 11:21:01 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Thomas Gleixner" <tglx@linutronix.de>
+Cc: <mingo@elte.hu>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86: clear HPET configuration registers on startup
+References: <4F79D0BB020000780007C02D@nat28.tlf.novell.com>
+ <alpine.LFD.2.02.1205242352460.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205242352460.3231@ionos>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 3:42 PM, Zhang, Sonic <Sonic.Zhang@analog.com> wrote:
->
->
->>-----Original Message-----
->>From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
->>Sent: Friday, May 25, 2012 6:10 PM
->>To: Zhang, Sonic
->>Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux-dist-
->>devel@blackfin.uclinux.org
->>Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
->>Macro to head file.
->>
->>Hi ,
->>On Fri, May 25, 2012 at 3:24 PM, Zhang, Sonic <Sonic.Zhang@analog.com>
->>wrote:
->>>
->>>
->>>>-----Original Message-----
->>>>From: Shubhrajyoti Datta [mailto:omaplinuxkernel@gmail.com]
->>>>Sent: Friday, May 25, 2012 5:48 PM
->>>>To: Zhang, Sonic
->>>>Cc: Ben Dooks; Wolfram Sang; linux-i2c@vger.kernel.org; LKML; uclinux-dist-
->>>>devel@blackfin.uclinux.org
->>>>Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
->>>>Macro to head file.
->>>>
->>>>Hi ,
->>>>Some minor comments/ doubts.
->>>>On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
->>>>> From: Sonic Zhang <sonic.zhang@analog.com>
->>>>>
->>>>
->>>>A small description may be helpful.
->>>>Also the $SUBJECT says move the patch looks more like the remove.
->>>>Am I missing something.
->>>
->>> The subject says these definitions are moved to a head file by the other patch
->>for Blackfin architecture.
->>
->>Got it thanks.
->>
->>You may want to add a dependency otherwise it might lead to a compilation break?
->>
->
-> That patch for Blackfin architecture has already been merged into mainline.
-Great,
+>>> On 25.05.12 at 00:06, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 2 Apr 2012, Jan Beulich wrote:
+> 
+> Sorry for ignoring this for so long.
+> 
+>> +	cfg = hpet_readl(HPET_CFG);
+>> +	hpet_boot_cfg = kmalloc((last + 2) * sizeof(*hpet_boot_cfg),
+>> +				GFP_KERNEL);
+>> +	if (hpet_boot_cfg)
+>> +		*hpet_boot_cfg = cfg;
+>> +	else
+>> +		pr_warn("HPET initial state will not be saved\n");
+>> +	cfg &= ~(HPET_CFG_ENABLE | HPET_CFG_LEGACY);
+>> +	hpet_writel(cfg, HPET_Tn_CFG(i));
+> 
+> This wants to be  
+> 
+>> +	hpet_writel(cfg, HPET_CFG);
+> 
+> Right ?
 
-Apologies for the noise.
+Oh yes, absolutely.
+
+>> @@ -923,14 +952,28 @@ fs_initcall(hpet_late_init);
+>>  void hpet_disable(void)
+>>  {
+>>  	if (is_hpet_capable() && hpet_virt_address) {
+>> -		unsigned int cfg = hpet_readl(HPET_CFG);
+>> +		unsigned int cfg = hpet_readl(HPET_CFG), id, last;
+>>  
+>> -		if (hpet_legacy_int_enabled) {
+>> +		if (hpet_boot_cfg)
+>> +			cfg = *hpet_boot_cfg;
+> 
+> That restores the setting which you recorded at init time. Why do you
+> want to do that? There is no point to restore to an eventually borked
+> state. If we shut down the thing, then we better leave it in a
+> consistent state rather than something dubious, really.
+
+The problem is that we can't - forward compatibly - say what
+is "borked" and what is merely beyond the knowledge of the
+kernel. Given the system was able to boot with the original
+settings, restoring them seems the safest approach to me.
+
+Besides that it's not the purpose of the patch to get around
+firmware bugs, but instead to get the hardware back into
+boot-time like state. So I'd really like to merely correct the
+error above that you pointed out (which also would seem to
+be the most appropriate route given that Linus already
+merged the patch), and leave a decision whether you agree
+with my position here (or whether you want to further
+tweak that code) to you.
+
+Jan
+
