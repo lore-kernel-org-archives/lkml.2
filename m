@@ -1,73 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab2EYNJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 09:09:25 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:59873 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758003Ab2EYNJT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 09:09:19 -0400
-Message-ID: <1337951294.2351.34.camel@falcor>
-Subject: Re: [PATCH 00/23] Crypto keys and module signing
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, kyle@mcmartin.ca,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org
-Date: Fri, 25 May 2012 09:08:14 -0400
-In-Reply-To: <6426.1337945879@redhat.com>
-References: <CALLzPKYVahsgcsyF0zMP+wLNAp5TeiGeofy5KJyMHkjsdyvo9Q@mail.gmail.com>
-	 <87obpfxdpr.fsf@rustcorp.com.au>
-	 <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
-	 <7474.1337782847@redhat.com> <8762blyedn.fsf@rustcorp.com.au>
-	 <6426.1337945879@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12052513-4242-0000-0000-000001C6E83F
+	id S933068Ab2EYNL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 09:11:58 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:7580 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932357Ab2EYNJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 09:09:26 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: [PATCH v3 19/28] slab: per-memcg accounting of slab caches
+Date: Fri, 25 May 2012 17:03:39 +0400
+Message-Id: <1337951028-3427-20-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1337951028-3427-1-git-send-email-glommer@parallels.com>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 12:37 +0100, David Howells wrote:
-> Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
-> 
-> > > In some ways that is cleaner, but it's also nice to avoid adding another
-> > > syscall.
-> > 
-> > There is no additional syscall.
-> > signature is passed is 'ima=' parameter to init_module()
-> > like
-> 
-> Exactly what I was thinking of, though I wouldn't call it "ima=" as that
-> doesn't seem specific enough.
+This patch charges allocation of a slab object to a particular
+memcg.
 
-IMA-appraisal maintains the file integrity metadata.
+The cache is selected with mem_cgroup_get_kmem_cache(),
+which is the biggest overhead we pay here, because
+it happens at all allocations. However, other than forcing
+a function call, this function is not very expensive, and
+try to return as soon as we realize we are not a memcg cache.
 
-> You could also append it to the binary image and have the kernel extract it
-> from there as if the module file had had the signature attached during the
-> build.
-> 
-> I don't particularly favour holding the signature in an xattr, though, as that
-> assumes that underlying fs has the capability to hold it and means that the
-> package installation mechanism must know how to fill in xattrs.
+The charge/uncharge functions are heavier, but are only called
+for new page allocations.
 
-Labeling files for integrity is a general issue, not limited to kernel
-modules/ELF files.  For this reason, we need a generic mechanism that
-works for all files, not only those that are executables.  For local
-files, such as configuration files, which are system specific, files are
-labeled with hashes(IMA-appraisal) and HMAC(EVM).
+Code is heavily inspired by Suleiman's, with adaptations to
+the patchset and minor simplifications by me.
 
-Yes, the package update mechanisms will need to be modified to install
-both the file data and the associated file metadata - hash, signature.
-Tar supports xattrs.  The original CPIO format doesn't, but there are
-extensions that do.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>
+---
+ include/linux/slab_def.h |   62 +++++++++++++++++++++++++++++
+ mm/slab.c                |   98 +++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 151 insertions(+), 9 deletions(-)
 
-The issue here is whether we want the integrity metadata for kernel
-modules to be stored differently than for all other files.
-
-Mimi
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index 7c0cdd6..ea9054a 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -225,4 +225,66 @@ found:
+ 
+ #endif	/* CONFIG_NUMA */
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++
++void kmem_cache_drop_ref(struct kmem_cache *cachep);
++
++static inline void
++kmem_cache_get_ref(struct kmem_cache *cachep)
++{
++	if (cachep->memcg_params.id == -1 &&
++	    unlikely(!atomic_add_unless(&cachep->memcg_params.refcnt, 1, 0)))
++		BUG();
++}
++
++static inline void
++mem_cgroup_put_kmem_cache(struct kmem_cache *cachep)
++{
++	rcu_read_unlock();
++}
++
++static inline void
++mem_cgroup_kmem_cache_prepare_sleep(struct kmem_cache *cachep)
++{
++	/*
++	 * Make sure the cache doesn't get freed while we have interrupts
++	 * enabled.
++	 */
++	kmem_cache_get_ref(cachep);
++}
++
++static inline void
++mem_cgroup_kmem_cache_finish_sleep(struct kmem_cache *cachep)
++{
++	kmem_cache_drop_ref(cachep);
++}
++
++#else /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
++static inline void
++kmem_cache_get_ref(struct kmem_cache *cachep)
++{
++}
++
++static inline void
++kmem_cache_drop_ref(struct kmem_cache *cachep)
++{
++}
++
++static inline void
++mem_cgroup_put_kmem_cache(struct kmem_cache *cachep)
++{
++}
++
++static inline void
++mem_cgroup_kmem_cache_prepare_sleep(struct kmem_cache *cachep)
++{
++}
++
++static inline void
++mem_cgroup_kmem_cache_finish_sleep(struct kmem_cache *cachep)
++{
++}
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
+ #endif	/* _LINUX_SLAB_DEF_H */
+diff --git a/mm/slab.c b/mm/slab.c
+index e2227de..16ad229 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1845,20 +1845,28 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+ 		flags |= __GFP_RECLAIMABLE;
+ 
++	nr_pages = (1 << cachep->gfporder);
++	if (!mem_cgroup_charge_slab(cachep, flags, nr_pages * PAGE_SIZE))
++		return NULL;
++
+ 	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
+ 	if (!page) {
+ 		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
+ 			slab_out_of_memory(cachep, flags, nodeid);
++
++		mem_cgroup_uncharge_slab(cachep, nr_pages * PAGE_SIZE);
+ 		return NULL;
+ 	}
+ 
+-	nr_pages = (1 << cachep->gfporder);
+ 	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+ 		add_zone_page_state(page_zone(page),
+ 			NR_SLAB_RECLAIMABLE, nr_pages);
+ 	else
+ 		add_zone_page_state(page_zone(page),
+ 			NR_SLAB_UNRECLAIMABLE, nr_pages);
++
++	kmem_cache_get_ref(cachep);
++
+ 	for (i = 0; i < nr_pages; i++)
+ 		__SetPageSlab(page + i);
+ 
+@@ -1874,6 +1882,14 @@ static void *kmem_getpages(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ 	return page_address(page);
+ }
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++void kmem_cache_drop_ref(struct kmem_cache *cachep)
++{
++	if (cachep->memcg_params.id == -1)
++		atomic_dec(&cachep->memcg_params.refcnt);
++}
++#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
++
+ /*
+  * Interface to system's page release.
+  */
+@@ -1891,6 +1907,8 @@ static void kmem_freepages(struct kmem_cache *cachep, void *addr)
+ 	else
+ 		sub_zone_page_state(page_zone(page),
+ 				NR_SLAB_UNRECLAIMABLE, nr_freed);
++	mem_cgroup_uncharge_slab(cachep, i * PAGE_SIZE);
++	kmem_cache_drop_ref(cachep);
+ 	while (i--) {
+ 		BUG_ON(!PageSlab(page));
+ 		__ClearPageSlab(page);
+@@ -2855,7 +2873,6 @@ void kmem_cache_destroy(struct kmem_cache *cachep)
+ 	if (cachep->memcg_params.id == -1)
+ 		kfree(cachep->name);
+ #endif
+-
+ 	__kmem_cache_destroy(cachep);
+ 	mutex_unlock(&cache_chain_mutex);
+ 	put_online_cpus();
+@@ -3061,8 +3078,10 @@ static int cache_grow(struct kmem_cache *cachep,
+ 
+ 	offset *= cachep->colour_off;
+ 
+-	if (local_flags & __GFP_WAIT)
++	if (local_flags & __GFP_WAIT) {
+ 		local_irq_enable();
++		mem_cgroup_kmem_cache_prepare_sleep(cachep);
++	}
+ 
+ 	/*
+ 	 * The test for missing atomic flag is performed here, rather than
+@@ -3091,8 +3110,10 @@ static int cache_grow(struct kmem_cache *cachep,
+ 
+ 	cache_init_objs(cachep, slabp);
+ 
+-	if (local_flags & __GFP_WAIT)
++	if (local_flags & __GFP_WAIT) {
+ 		local_irq_disable();
++		mem_cgroup_kmem_cache_finish_sleep(cachep);
++	}
+ 	check_irq_off();
+ 	spin_lock(&l3->list_lock);
+ 
+@@ -3105,8 +3126,10 @@ static int cache_grow(struct kmem_cache *cachep,
+ opps1:
+ 	kmem_freepages(cachep, objp);
+ failed:
+-	if (local_flags & __GFP_WAIT)
++	if (local_flags & __GFP_WAIT) {
+ 		local_irq_disable();
++		mem_cgroup_kmem_cache_finish_sleep(cachep);
++	}
+ 	return 0;
+ }
+ 
+@@ -3867,11 +3890,15 @@ static inline void __cache_free(struct kmem_cache *cachep, void *objp,
+  */
+ void *kmem_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
+ {
+-	void *ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
++	void *ret;
++
++	rcu_read_lock();
++	cachep = mem_cgroup_get_kmem_cache(cachep, flags);
++	rcu_read_unlock();
++	ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
+ 
+ 	trace_kmem_cache_alloc(_RET_IP_, ret,
+ 			       obj_size(cachep), cachep->buffer_size, flags);
+-
+ 	return ret;
+ }
+ EXPORT_SYMBOL(kmem_cache_alloc);
+@@ -3882,6 +3909,10 @@ kmem_cache_alloc_trace(size_t size, struct kmem_cache *cachep, gfp_t flags)
+ {
+ 	void *ret;
+ 
++	rcu_read_lock();
++	cachep = mem_cgroup_get_kmem_cache(cachep, flags);
++	rcu_read_unlock();
++
+ 	ret = __cache_alloc(cachep, flags, __builtin_return_address(0));
+ 
+ 	trace_kmalloc(_RET_IP_, ret,
+@@ -3894,13 +3925,17 @@ EXPORT_SYMBOL(kmem_cache_alloc_trace);
+ #ifdef CONFIG_NUMA
+ void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ {
+-	void *ret = __cache_alloc_node(cachep, flags, nodeid,
++	void *ret;
++
++	rcu_read_lock();
++	cachep = mem_cgroup_get_kmem_cache(cachep, flags);
++	rcu_read_unlock();
++	ret  = __cache_alloc_node(cachep, flags, nodeid,
+ 				       __builtin_return_address(0));
+ 
+ 	trace_kmem_cache_alloc_node(_RET_IP_, ret,
+ 				    obj_size(cachep), cachep->buffer_size,
+ 				    flags, nodeid);
+-
+ 	return ret;
+ }
+ EXPORT_SYMBOL(kmem_cache_alloc_node);
+@@ -3913,6 +3948,9 @@ void *kmem_cache_alloc_node_trace(size_t size,
+ {
+ 	void *ret;
+ 
++	rcu_read_lock();
++	cachep = mem_cgroup_get_kmem_cache(cachep, flags);
++	rcu_read_unlock();
+ 	ret = __cache_alloc_node(cachep, flags, nodeid,
+ 				  __builtin_return_address(0));
+ 	trace_kmalloc_node(_RET_IP_, ret,
+@@ -4021,9 +4059,33 @@ void kmem_cache_free(struct kmem_cache *cachep, void *objp)
+ 
+ 	local_irq_save(flags);
+ 	debug_check_no_locks_freed(objp, obj_size(cachep));
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++	{
++		struct kmem_cache *actual_cachep;
++
++		actual_cachep = virt_to_cache(objp);
++		if (actual_cachep != cachep) {
++			VM_BUG_ON(actual_cachep->memcg_params.id != -1);
++			cachep = actual_cachep;
++		}
++		/*
++		 * Grab a reference so that the cache is guaranteed to stay
++		 * around.
++		 * If we are freeing the last object of a dead memcg cache,
++		 * the kmem_cache_drop_ref() at the end of this function
++		 * will end up freeing the cache.
++		 */
++		kmem_cache_get_ref(cachep);
++	}
++#endif
++
+ 	if (!(cachep->flags & SLAB_DEBUG_OBJECTS))
+ 		debug_check_no_obj_freed(objp, obj_size(cachep));
+ 	__cache_free(cachep, objp, __builtin_return_address(0));
++
++	kmem_cache_drop_ref(cachep);
++
+ 	local_irq_restore(flags);
+ 
+ 	trace_kmem_cache_free(_RET_IP_, objp);
+@@ -4051,9 +4113,19 @@ void kfree(const void *objp)
+ 	local_irq_save(flags);
+ 	kfree_debugcheck(objp);
+ 	c = virt_to_cache(objp);
++
++	/*
++	 * Grab a reference so that the cache is guaranteed to stay around.
++	 * If we are freeing the last object of a dead memcg cache, the
++	 * kmem_cache_drop_ref() at the end of this function will end up
++	 * freeing the cache.
++	 */
++	kmem_cache_get_ref(c);
++
+ 	debug_check_no_locks_freed(objp, obj_size(c));
+ 	debug_check_no_obj_freed(objp, obj_size(c));
+ 	__cache_free(c, (void *)objp, __builtin_return_address(0));
++	kmem_cache_drop_ref(c);
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL(kfree);
+@@ -4322,6 +4394,13 @@ static void cache_reap(struct work_struct *w)
+ 	list_for_each_entry(searchp, &cache_chain, next) {
+ 		check_irq_on();
+ 
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
++		/* For memcg caches, make sure we only reap the active ones. */
++		if (searchp->memcg_params.id == -1 &&
++		    !atomic_add_unless(&searchp->memcg_params.refcnt, 1, 0))
++			continue;
++#endif
++
+ 		/*
+ 		 * We only take the l3 lock if absolutely necessary and we
+ 		 * have established with reasonable certainty that
+@@ -4354,6 +4433,7 @@ static void cache_reap(struct work_struct *w)
+ 			STATS_ADD_REAPED(searchp, freed);
+ 		}
+ next:
++		kmem_cache_drop_ref(searchp);
+ 		cond_resched();
+ 	}
+ 	check_irq_on();
+-- 
+1.7.7.6
 
