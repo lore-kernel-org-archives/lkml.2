@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab2EYGOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 02:14:33 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:44799 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751124Ab2EYGOc (ORCPT
+	id S1753295Ab2EYGQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 02:16:18 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:40253 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab2EYGQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 02:14:32 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX189FFt0XYA9oHTsltUxiKg2tPOb6PIBiik6fAMI5o
-	UrpWYoMouB31CV
-Message-ID: <1337926468.5415.48.camel@marge.simpson.net>
-Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
-Date: Fri, 25 May 2012 08:14:28 +0200
-In-Reply-To: <1337865641.9783.149.camel@laptop>
-References: <1337857490.7300.19.camel@marge.simpson.net>
-	 <1337865431.9783.148.camel@laptop> <1337865641.9783.149.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Fri, 25 May 2012 02:16:17 -0400
+Date: Fri, 25 May 2012 08:16:48 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chen Gong <gong.chen@linux.intel.com>,
+        tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 1/2] x86: mce Cleanup timer mess
+Message-ID: <20120525061647.GA3179@aftab.osrc.amd.com>
+References: <20120524174943.989990966@linutronix.de>
+ <20120524175056.391516712@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524175056.391516712@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 15:20 +0200, Peter Zijlstra wrote: 
-> On Thu, 2012-05-24 at 15:17 +0200, Peter Zijlstra wrote:
-> > For power7 with 4 smt it would end up as 1230 I guess.
+On Thu, May 24, 2012 at 05:54:51PM +0000, Thomas Gleixner wrote:
+> Use unsigned long for dealing with jiffies not int. Rename the
+> callback to something sensible. Use __this_cpu_read/write for
+> accessing per cpu data.
 > 
-> One more thing, in light of that, can't you simplify the core stuff to
-> be a simple shift as well? map them 123450, does it really matter to
-> pair them off like 103254 ?
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-In my head it does.  Buddies need to be glued together so we can use
-them as a team to convert overlap and kick butt on ramp up.
+Looks good to me,
 
--Mike
+thanks.
 
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
