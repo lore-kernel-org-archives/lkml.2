@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759002Ab2EYXlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 19:41:53 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51533 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab2EYXlv (ORCPT
+	id S933280Ab2EYXn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 19:43:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45673 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab2EYXnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 19:41:51 -0400
-Subject: [RESEND][PATCH] pcmcia: move unbind/rebind into dev_pm_ops.complete
-Cc: linux-kernel@vger.kernel.org, chunkeey@googlemail.com,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        alan@lxorguk.ukuu.org.uk, gregkh@linuxfoundation.org
-To: linux-pcmcia@lists.infradead.org
-From: Christian Lamparter <chunkeey@googlemail.com>
-Date: Sat, 26 May 2012 01:41:43 +0200
+	Fri, 25 May 2012 19:43:55 -0400
+Date: Sat, 26 May 2012 00:43:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 13/20] arm: Do not call try_to_freeze() in do_signal()
+Message-ID: <20120525234345.GA32000@n2100.arm.linux.org.uk>
+References: <1337983476-22081-1-git-send-email-richard@nod.at> <1337983476-22081-13-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205260141.44498.chunkeey@googlemail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337983476-22081-13-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idea of moving rebind procedure into pm.complete
-was taken from the usb-subsystem, which has similar
-problems with reattaching devices during/after
-resume.
+On Sat, May 26, 2012 at 12:04:29AM +0200, Richard Weinberger wrote:
+> get_signal_to_deliver() already calls try_to_freeze(), there is no
+> need to call it directly.
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
----
-Note: I have submitted this patch before in march.
-But as far as I can tell it was neither rejected
-nor accepted?!
- 
-Regards,
-	Chr
+NAK.  Please check linux-next (okay, viro's patches haven't appeared
+there yet) but a lot of this stuff is covered by a truckload of work
+that Al's done.
 
-PS: I'm not on the pcmcia/kernel list, so please keep the
-'CC'.
----
- drivers/pcmcia/cs.c |   22 ++++++++++++++++++----
- 1 files changed, 18 insertions(+), 4 deletions(-)
+Please don't work across Al.
 
-diff --git a/drivers/pcmcia/cs.c b/drivers/pcmcia/cs.c
-index d9ea192..503596f 100644
---- a/drivers/pcmcia/cs.c
-+++ b/drivers/pcmcia/cs.c
-@@ -512,6 +512,13 @@ static int socket_late_resume(struct pcmcia_socket *skt)
- 		return socket_insert(skt);
- 	}
+commit d9be5ea6f9b6a51535ccdd9881ffb3be2dbd48e9
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Fri Apr 27 01:18:52 2012 -0400
+
+    arm: don't call try_to_freeze() from do_signal()
+    
+    get_signal_to_deliver() will handle it itself
+    
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index a6c4e78..3b37c14 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -642,9 +642,6 @@ static void do_signal(struct pt_regs *regs, int syscall)
+                }
+        }
  
-+	if (!(skt->state & SOCKET_CARDBUS) && (skt->callback))
-+		skt->callback->early_resume(skt);
-+	return 0;
-+}
-+
-+static int socket_complete_resume(struct pcmcia_socket *skt)
-+{
- #ifdef CONFIG_CARDBUS
- 	if (skt->state & SOCKET_CARDBUS) {
- 		/* We can't be sure the CardBus card is the same
-@@ -519,11 +526,8 @@ static int socket_late_resume(struct pcmcia_socket *skt)
- 		 * and re-add... */
- 		cb_free(skt);
- 		cb_alloc(skt);
--		return 0;
- 	}
- #endif
--	if (!(skt->state & SOCKET_CARDBUS) && (skt->callback))
--		skt->callback->early_resume(skt);
- 	return 0;
- }
+-       if (try_to_freeze())
+-               goto no_signal;
+-
+        /*
+         * Get the signal to deliver.  When running under ptrace, at this
+         * point the debugger may change all our registers ...
+@@ -684,7 +681,6 @@ static void do_signal(struct pt_regs *regs, int syscall)
+                return;
+        }
  
-@@ -534,11 +538,15 @@ static int socket_late_resume(struct pcmcia_socket *skt)
-  */
- static int socket_resume(struct pcmcia_socket *skt)
- {
-+	int err;
- 	if (!(skt->state & SOCKET_SUSPEND))
- 		return -EBUSY;
- 
- 	socket_early_resume(skt);
--	return socket_late_resume(skt);
-+	err = socket_late_resume(skt);
-+	if (!err)
-+		socket_complete_resume(skt);
-+	return err;
- }
- 
- static void socket_remove(struct pcmcia_socket *skt)
-@@ -849,6 +857,11 @@ static int __used pcmcia_socket_dev_resume(struct device *dev)
- 	return __pcmcia_pm_op(dev, socket_late_resume);
- }
- 
-+static void __used pcmcia_socket_dev_complete(struct device *dev)
-+{
-+	__pcmcia_pm_op(dev, socket_complete_resume);
-+}
-+
- static const struct dev_pm_ops pcmcia_socket_pm_ops = {
- 	/* dev_resume may be called with IRQs enabled */
- 	SET_SYSTEM_SLEEP_PM_OPS(NULL,
-@@ -863,6 +876,7 @@ static const struct dev_pm_ops pcmcia_socket_pm_ops = {
- 	.resume_noirq = pcmcia_socket_dev_resume_noirq,
- 	.thaw_noirq = pcmcia_socket_dev_resume_noirq,
- 	.restore_noirq = pcmcia_socket_dev_resume_noirq,
-+	.complete = pcmcia_socket_dev_complete,
- };
- 
- #define PCMCIA_SOCKET_CLASS_PM_OPS (&pcmcia_socket_pm_ops)
--- 
-1.7.9.1
+- no_signal:
+        if (syscall) {
+                /*
+                 * Handle restarting a different system call.  As above,
 
