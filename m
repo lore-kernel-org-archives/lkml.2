@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964935Ab2EYRE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:04:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933847Ab2EYRDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:03:50 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: [PATCH 14/35] autonuma: knuma_migrated per NUMA node queues
-Date: Fri, 25 May 2012 19:02:18 +0200
-Message-Id: <1337965359-29725-15-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	id S964972Ab2EYRFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:05:15 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57143 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964791Ab2EYRFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:05:12 -0400
+Message-ID: <1337965507.2932.39.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [PATCH] scsi: fix async probe regression
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Meelis Roos <mroos@linux.ee>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Date: Fri, 25 May 2012 18:05:07 +0100
+In-Reply-To: <20120525163529.28315.92813.stgit@dwillia2-linux.jf.intel.com>
+References: <20120525163529.28315.92813.stgit@dwillia2-linux.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements the knuma_migrated queues. The pages are added to
-these queues through the NUMA hinting page faults (memory follow CPU
-algorithm with false sharing evaluation) and knuma_migrated then is
-waken with a certain hysteresis to migrate the memory in round robin
-from all remote nodes to its local node.
+On Fri, 2012-05-25 at 09:39 -0700, Dan Williams wrote:
+> Commit a7a20d1 "[SCSI] sd: limit the scope of the async probe domain"
+> moved sd probe work out of reach of wait_for_device_probe().  Allow it
+> to be synced via scsi_complete_async_scans().
+> 
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Reported-by: Meelis Roos <mroos@linux.ee>
+> Tested-by: Meelis Roos <mroos@linux.ee>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> ---
+> 
+>  So this is the stop gap that allows us to keep a7a20d1 as a fix for a
+>  resume deadlock, and gives us time to figure out how to clarify
+>  async_synchronize_full() properly in the 3.6 timeframe.
+> 
+>  drivers/scsi/scsi_scan.c |   12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+> index 01b0374..41f9192 100644
+> --- a/drivers/scsi/scsi_scan.c
+> +++ b/drivers/scsi/scsi_scan.c
+> @@ -141,13 +141,13 @@ struct async_scan_data {
+>   * started scanning after this function was called may or may not have
+>   * finished.
+>   */
+> -int scsi_complete_async_scans(void)
+> +static void __scsi_complete_async_scans(void)
 
-The head that belongs to the local node that knuma_migrated runs on,
-for now must be empty and it's not being used.
+Rather than wrappering the function, can we just fix it?
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/mmzone.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Put the async_synchronize_full_domain(&scsi_sd_probe_domain); at the
+bottom with an out: label and make the only other return in the function
+become a goto out;
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 41aa49b..8e578e6 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -666,6 +666,12 @@ typedef struct pglist_data {
- 	struct task_struct *kswapd;
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
-+#ifdef CONFIG_AUTONUMA
-+	spinlock_t autonuma_lock;
-+	struct list_head autonuma_migrate_head[MAX_NUMNODES];
-+	unsigned long autonuma_nr_migrate_pages;
-+	wait_queue_head_t autonuma_knuma_migrated_wait;
-+#endif
- } pg_data_t;
- 
- #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
+Thanks,
+
+James
+
+
+
+
