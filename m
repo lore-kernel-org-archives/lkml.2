@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab2EYLfT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 07:35:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53677 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab2EYLfR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 07:35:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPXgP10bzpJ1vEX9SqddV2qr9AuNY-fgZN444S-pYNM21ByBOA@mail.gmail.com>
-References: <20120426001529.GA14006@kroah.com> <Pine.LNX.4.44L0.1204261103120.1530-100000@iolanthe.rowland.org>
- <20120426151242.GA14774@kroah.com> <CAAJw_Zug=xFjzaguqfq+-HYBjmwDPJ+5Ntj=otMY4MJk2UWxDQ@mail.gmail.com>
- <20120524215249.GA17936@kroah.com> <CAAJw_ZtaeAV2nZU7LcyngJTN15YVn+8y2dMPxtBqTGn750Tjdg@mail.gmail.com>
- <20120525060124.GA18035@kroah.com> <CAAJw_Ztke1NqY6Jm2fqyPOWzeVAqK=pKv=6bPhhdGaNVHaHM+g@mail.gmail.com>
- <20120525071643.GA9105@kroah.com> <CAPXgP10bzpJ1vEX9SqddV2qr9AuNY-fgZN444S-pYNM21ByBOA@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 25 May 2012 13:34:56 +0200
-Message-ID: <CAPXgP10j_bj4Z_EhvLu7iZHBW5JcdFG0zf9mMt8t5t-kWmh59g@mail.gmail.com>
-Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757438Ab2EYLiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 07:38:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47876 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754325Ab2EYLiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 07:38:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CALLzPKYVahsgcsyF0zMP+wLNAp5TeiGeofy5KJyMHkjsdyvo9Q@mail.gmail.com>
+References: <CALLzPKYVahsgcsyF0zMP+wLNAp5TeiGeofy5KJyMHkjsdyvo9Q@mail.gmail.com> <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <7474.1337782847@redhat.com> <8762blyedn.fsf@rustcorp.com.au>
+To: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+Cc: dhowells@redhat.com, Rusty Russell <rusty@rustcorp.com.au>,
+        kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+Date: Fri, 25 May 2012 12:37:59 +0100
+Message-ID: <6426.1337945879@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 11:01 AM, Kay Sievers <kay@vrfy.org> wrote:
-> On Fri, May 25, 2012 at 9:16 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
->> On Fri, May 25, 2012 at 03:06:33PM +0800, Jeff Chua wrote:
->
->>> >> VMware USB Arbitration Service Version 8.4.19
->>> >> USB: Unable to open "/proc/bus/usb/devices" (No such file or directory).
->
-> I think vmware tries to open the usual /dev/bus/usb/ nodes directly
-> after it has tried the deprecated /proc nodes.
->
-> Udev would create the /dev/bus/ nodes.
->
-> Or the kernel would create them itself if:
->  CONFIG_DEVTMPFS=y
->  CONFIG_DEVTMPFS_MOUNT=y
-> is used.
+Kasatkin, Dmitry <dmitry.kasatkin@intel.com> wrote:
 
-Jeff,
+> > In some ways that is cleaner, but it's also nice to avoid adding another
+> > syscall.
+> 
+> There is no additional syscall.
+> signature is passed is 'ima=' parameter to init_module()
+> like
 
-if you still need to keep your static /dev setup, can you please try:
-  $ mkdir /dev/bus
-  $ mount -t devtmpfs none /dev/bus
-  $ mount --bind /dev/bus/bus /dev/bus
+Exactly what I was thinking of, though I wouldn't call it "ima=" as that
+doesn't seem specific enough.
 
-This should replace the yucky usbfs nodes at /proc/bus/ with the usual
-/dev/bus/ kernel-managed device nodes. It tricks the usually used /dev
-devtmpfs, into just providing /dev/bus/ on top of your static /dev.
+You could also append it to the binary image and have the kernel extract it
+from there as if the module file had had the signature attached during the
+build.
 
-VMWare should pick up this directory, just like it works for all usual
-distro-like setups, and find the dynamically managed USB devices.
+I don't particularly favour holding the signature in an xattr, though, as that
+assumes that underlying fs has the capability to hold it and means that the
+package installation mechanism must know how to fill in xattrs.
 
-Kay
+David
