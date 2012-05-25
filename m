@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab2EYC0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 22:26:06 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:11817 "EHLO
+	id S1757614Ab2EYC0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 22:26:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:12234 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab2EYC0C (ORCPT
+	with ESMTP id S1752582Ab2EYC0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 22:26:02 -0400
-X-AuditID: cbfee61b-b7faf6d000001f49-6d-4fbeedb96b78
+	Thu, 24 May 2012 22:26:50 -0400
+X-AuditID: cbfee61b-b7faf6d000001f49-d7-4fbeede9f3e6
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Alberto Panizzo'" <alberto@amarulasolutions.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 05/13] backlight: ili9320: use devm_ functions
-Date: Fri, 25 May 2012 11:26:01 +0900
-Message-id: <001001cd3a1d$ba3f0fd0$2ebd2f70$%han@samsung.com>
+Subject: [PATCH 06/13] backlight: l4f00242t03: use devm_ functions
+Date: Fri, 25 May 2012 11:26:49 +0900
+Message-id: <001101cd3a1d$d6864a00$8392de00$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac06HboljXHqCOHfTVK6RA8ttywBvw==
+Thread-index: Ac06HdZysy1Jpu61SDKQrtISPAbDtQ==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQd2db/f5G0z+ZGZxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyNn08xlSwj6fi5KW/TA2M87i6GDk5JARMJC7Nu8UCYYtJXLi3
-	nq2LkYtDSGA6o8T5aTvYIZzZTBK7GlYygVSxCahJfPlymB3EFhGIkGieMYsZxGYWKJS48/sx
-	2CRhATuJ1qdLwOIsAqoSi148A+rl4OAVsJU4cMYKJMwrICjxY/I9FohWLYnN25pYIWx5ic1r
-	3jKDlEsIqEs8+qsLsUlP4uLmW4wQJSIS+168Y5zAKDALyaRZSCbNQjJpFpKWBYwsqxhFUwuS
-	C4qT0nON9IoTc4tL89L1kvNzNzGCw/KZ9A7GVQ0WhxgFOBiVeHgD3uzzF2JNLCuuzD3EKMHB
-	rCTCKxgJFOJNSaysSi3Kjy8qzUktPsQozcGiJM77ZMkOfyGB9MSS1OzU1ILUIpgsEwenVAPj
-	xFaXWYu9b30Sb/ezLg7bZPg4avFJ5QUxy7VeXVsyva/h61LvnccUfHRWcxkIKkp8K6qJX2j4
-	w74sT/1o1Ry31JolwuuaDu2Qnde+3+Dnla1NAp/Dgnzur/pz70zP6/eCR7tnPgx7wv9I3id4
-	X+pGyb+nlFYJVDFzPP0kW1d4kNVLcbFWd/5HJZbijERDLeai4kQAVikxZ0cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t9jAd2Xb/f5G8xrFLG4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZH06uYS14I1bxprWFtYFxn1AXIyeHhICJxL5pzewQtpjEhXvr
+	2boYuTiEBBYxSky9upMdwpnNJDHh7hJGkCo2ATWJL18Og3WICERINM+YxQxSxCzQxCjx9kUb
+	G0hCWMBJ4vb3RywgNouAqsSzf42sIDavgK1E/98WKFtQ4sfke2A1zAJaEpu3NbFC2PISm9e8
+	BRrKAXSSusSjv7oQu/QkTnevZoMoEZHY9+Id4wRGgVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBc
+	UJyUnmukV5yYW1yal66XnJ+7iREcms+kdzCuarA4xCjAwajEwxvwZp+/EGtiWXFl7iFGCQ5m
+	JRFewUigEG9KYmVValF+fFFpTmrxIUZpDhYlcd4nS3b4CwmkJ5akZqemFqQWwWSZODilGhi7
+	Ei/8SDfbeydQi/P87Vd7939XNhf3Zq1kNVHwczx5USesIEGqqG+XcnlNYsOa5zuafH5s8DhU
+	dHnSicoZyt638h2kjK6+bfe6HmIutKgm4u/WbDntRkuBlz1NcX/4KxS8UqMPlsVnHm49e7Hj
+	KsclzuetO1ziH1ZPkQl5q/onkj9+nUVMmBJLcUaioRZzUXEiAGKe+KBJAgAA
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,54 +41,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 The devm_ functions allocate memory that is released when a driver
 detaches. This patch uses devm_kzalloc of these functions.
 
-Cc: Ben Dooks <ben-linux@fluff.org>
+Cc: Alberto Panizzo <alberto@amarulasolutions.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ili9320.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+ drivers/video/backlight/l4f00242t03.c |   25 +++++++++++--------------
+ 1 files changed, 11 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
-index 5118a9f..6c93993 100644
---- a/drivers/video/backlight/ili9320.c
-+++ b/drivers/video/backlight/ili9320.c
-@@ -220,7 +220,7 @@ int __devinit ili9320_probe_spi(struct spi_device *spi,
- 
- 	/* allocate and initialse our state */
- 
--	ili = kzalloc(sizeof(struct ili9320), GFP_KERNEL);
-+	ili = devm_kzalloc(&spi->dev, sizeof(struct ili9320), GFP_KERNEL);
- 	if (ili == NULL) {
- 		dev_err(dev, "no memory for device\n");
- 		return -ENOMEM;
-@@ -240,8 +240,7 @@ int __devinit ili9320_probe_spi(struct spi_device *spi,
- 	lcd = lcd_device_register("ili9320", dev, ili, &ili9320_ops);
- 	if (IS_ERR(lcd)) {
- 		dev_err(dev, "failed to register lcd device\n");
--		ret = PTR_ERR(lcd);
--		goto err_free;
-+		return PTR_ERR(lcd);
+diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+index 6022b67..9ec3b3e 100644
+--- a/drivers/video/backlight/l4f00242t03.c
++++ b/drivers/video/backlight/l4f00242t03.c
+@@ -159,7 +159,8 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 		return -EINVAL;
  	}
  
- 	ili->lcd = lcd;
-@@ -259,9 +258,6 @@ int __devinit ili9320_probe_spi(struct spi_device *spi,
-  err_unregister:
- 	lcd_device_unregister(lcd);
+-	priv = kzalloc(sizeof(struct l4f00242t03_priv), GFP_KERNEL);
++	priv = devm_kzalloc(&spi->dev, sizeof(struct l4f00242t03_priv),
++				GFP_KERNEL);
  
-- err_free:
--	kfree(ili);
--
- 	return ret;
- }
+ 	if (priv == NULL) {
+ 		dev_err(&spi->dev, "No memory for this device.\n");
+@@ -177,7 +178,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 	if (ret) {
+ 		dev_err(&spi->dev,
+ 			"Unable to get the lcd l4f00242t03 reset gpio.\n");
+-		goto err;
++		return ret;
+ 	}
  
-@@ -272,7 +268,6 @@ int __devexit ili9320_remove(struct ili9320 *ili)
- 	ili9320_power(ili, FB_BLANK_POWERDOWN);
+ 	ret = gpio_request_one(pdata->data_enable_gpio, GPIOF_OUT_INIT_LOW,
+@@ -185,7 +186,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 	if (ret) {
+ 		dev_err(&spi->dev,
+ 			"Unable to get the lcd l4f00242t03 data en gpio.\n");
+-		goto err2;
++		goto err;
+ 	}
  
- 	lcd_device_unregister(ili->lcd);
--	kfree(ili);
+ 	priv->io_reg = regulator_get(&spi->dev, "vdd");
+@@ -193,7 +194,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 		ret = PTR_ERR(priv->io_reg);
+ 		dev_err(&spi->dev, "%s: Unable to get the IO regulator\n",
+ 		       __func__);
+-		goto err3;
++		goto err2;
+ 	}
+ 
+ 	priv->core_reg = regulator_get(&spi->dev, "vcore");
+@@ -201,14 +202,14 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 		ret = PTR_ERR(priv->core_reg);
+ 		dev_err(&spi->dev, "%s: Unable to get the core regulator\n",
+ 		       __func__);
+-		goto err4;
++		goto err3;
+ 	}
+ 
+ 	priv->ld = lcd_device_register("l4f00242t03",
+ 					&spi->dev, priv, &l4f_ops);
+ 	if (IS_ERR(priv->ld)) {
+ 		ret = PTR_ERR(priv->ld);
+-		goto err5;
++		goto err4;
+ 	}
+ 
+ 	/* Init the LCD */
+@@ -220,16 +221,14 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
  
  	return 0;
+ 
+-err5:
+-	regulator_put(priv->core_reg);
+ err4:
+-	regulator_put(priv->io_reg);
++	regulator_put(priv->core_reg);
+ err3:
+-	gpio_free(pdata->data_enable_gpio);
++	regulator_put(priv->io_reg);
+ err2:
+-	gpio_free(pdata->reset_gpio);
++	gpio_free(pdata->data_enable_gpio);
+ err:
+-	kfree(priv);
++	gpio_free(pdata->reset_gpio);
+ 
+ 	return ret;
  }
+@@ -250,8 +249,6 @@ static int __devexit l4f00242t03_remove(struct spi_device *spi)
+ 	regulator_put(priv->io_reg);
+ 	regulator_put(priv->core_reg);
+ 
+-	kfree(priv);
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.1
 
