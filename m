@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab2EYJsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:48:22 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:61579 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab2EYJsU convert rfc822-to-8bit (ORCPT
+	id S1757285Ab2EYJvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:51:44 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36401 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756778Ab2EYJvk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:48:20 -0400
+	Fri, 25 May 2012 05:51:40 -0400
+From: <jgq516@gmail.com>
+To: <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <rnayak@ti.com>, <tony@atomide.com>,
+        <wim@iguana.be>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-watchdog@vger.kernel.org>
+Subject: [PATCH 3/3] watchdog: omap_wdt: add device tree support
+Date: Fri, 25 May 2012 18:42:32 +0800
+Message-ID: <1337942552-28218-4-git-send-email-jgq516@gmail.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1337942552-28218-1-git-send-email-jgq516@gmail.com>
+References: <1337942552-28218-1-git-send-email-jgq516@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
-References: <1337152826-9850-1-git-send-email-sonic.zhang@analog.com>
-	<1337152826-9850-8-git-send-email-sonic.zhang@analog.com>
-Date: Fri, 25 May 2012 15:18:19 +0530
-Message-ID: <CAM=Q2csSuQ3R9U=XKwj9F0xijTxx_ULperAiQYD_X3a5GKVjFg@mail.gmail.com>
-Subject: Re: [PATCH 8/8] i2c: i2c-bfin-twi: Move blackfin TWI register access
- Macro to head file.
-From: Shubhrajyoti Datta <omaplinuxkernel@gmail.com>
-To: sonic.zhang@analog.com
-Cc: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi ,
-Some minor comments/ doubts.
-On Wed, May 16, 2012 at 12:50 PM,  <sonic.zhang@analog.com> wrote:
-> From: Sonic Zhang <sonic.zhang@analog.com>
->
+From: Xiao Jiang <jgq516@gmail.com>
 
-A small description may be helpful.
-Also the $SUBJECT says move the patch looks more like the remove.
-Am I missing something.
+Add device table for omap_wdt to support dt.
 
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> ---
->  drivers/i2c/busses/i2c-bfin-twi.c |   45 -------------------------------------
->  1 files changed, 0 insertions(+), 45 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-bfin-twi.c b/drivers/i2c/busses/i2c-bfin-twi.c
-> index b2ca317..e6a0cba 100644
-> --- a/drivers/i2c/busses/i2c-bfin-twi.c
-> +++ b/drivers/i2c/busses/i2c-bfin-twi.c
-> @@ -33,51 +33,6 @@
->  #define TWI_I2C_MODE_COMBINED          3
->  #define TWI_I2C_MODE_REPEAT            4
->
-> -struct bfin_twi_iface {
-> -       int                     irq;
-> -       spinlock_t              lock;
-> -       char                    read_write;
-> -       u8                      command;
-> -       u8                      *transPtr;
-> -       int                     readNum;
-> -       int                     writeNum;
-> -       int                     cur_mode;
-> -       int                     manual_stop;
-> -       int                     result;
-> -       struct i2c_adapter      adap;
-> -       struct completion       complete;
-> -       struct i2c_msg          *pmsg;
-> -       int                     msg_num;
-> -       int                     cur_msg;
-> -       u16                     saved_clkdiv;
-> -       u16                     saved_control;
-> -       void __iomem            *regs_base;
-> -};
-> -
-> -
-> -#define DEFINE_TWI_REG(reg, off) \
-> -static inline u16 read_##reg(struct bfin_twi_iface *iface) \
-> -       { return bfin_read16(iface->regs_base + (off)); } \
-> -static inline void write_##reg(struct bfin_twi_iface *iface, u16 v) \
-> -       { bfin_write16(iface->regs_base + (off), v); }
-> -
-> -DEFINE_TWI_REG(CLKDIV, 0x00)
-> -DEFINE_TWI_REG(CONTROL, 0x04)
-> -DEFINE_TWI_REG(SLAVE_CTL, 0x08)
-> -DEFINE_TWI_REG(SLAVE_STAT, 0x0C)
-> -DEFINE_TWI_REG(SLAVE_ADDR, 0x10)
-> -DEFINE_TWI_REG(MASTER_CTL, 0x14)
-> -DEFINE_TWI_REG(MASTER_STAT, 0x18)
-> -DEFINE_TWI_REG(MASTER_ADDR, 0x1C)
-> -DEFINE_TWI_REG(INT_STAT, 0x20)
-> -DEFINE_TWI_REG(INT_MASK, 0x24)
-> -DEFINE_TWI_REG(FIFO_CTL, 0x28)
-> -DEFINE_TWI_REG(FIFO_STAT, 0x2C)
-> -DEFINE_TWI_REG(XMT_DATA8, 0x80)
-> -DEFINE_TWI_REG(XMT_DATA16, 0x84)
-> -DEFINE_TWI_REG(RCV_DATA8, 0x88)
-> -DEFINE_TWI_REG(RCV_DATA16, 0x8C)
-> -
->  static void bfin_twi_handle_interrupt(struct bfin_twi_iface *iface,
->                                        unsigned short twi_int_status)
->  {
-> --
-> 1.7.0.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Xiao Jiang <jgq516@gmail.com>
+---
+ drivers/watchdog/omap_wdt.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+index 8285d65..d98c615 100644
+--- a/drivers/watchdog/omap_wdt.c
++++ b/drivers/watchdog/omap_wdt.c
+@@ -430,6 +430,13 @@ static int omap_wdt_resume(struct platform_device *pdev)
+ #define	omap_wdt_resume		NULL
+ #endif
+ 
++static const struct of_device_id omap_wdt_of_match[] = {
++	{ .compatible = "ti,omap3-wdt", },
++	{ .compatible = "ti,omap4-wdt", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
++
+ static struct platform_driver omap_wdt_driver = {
+ 	.probe		= omap_wdt_probe,
+ 	.remove		= __devexit_p(omap_wdt_remove),
+@@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
+ 	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "omap_wdt",
++		.of_match_table = omap_wdt_of_match,
+ 	},
+ };
+ 
+-- 
+1.7.3
+
