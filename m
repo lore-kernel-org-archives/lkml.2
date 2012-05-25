@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab2EYRkx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:40:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19631 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab2EYRkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:40:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="147867696"
-Message-ID: <4FBFC421.3020901@linux.intel.com>
-Date: Fri, 25 May 2012 10:40:49 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932165Ab2EYRtu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:49:50 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:13918 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2EYRts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:49:48 -0400
+X-RZG-AUTH: :P24BfVKtdewSqNxKJHA7pzS3qMJDcjZcfhyLxL2IOTrSfPdWpt8NAU6Rd4owBwqu9S/CLYgB
+X-RZG-CLASS-ID: mo00
+Message-ID: <4FBFC63B.6050403@giantdisaster.de>
+Date: Fri, 25 May 2012 19:49:47 +0200
+From: Stefan Behrens <sbehrens@giantdisaster.de>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: BUG - function tracing with breakpoints
-References: <20120524160146.GA6226@redhat.com>  <1337876398.13348.178.camel@gandalf.stny.rr.com>  <20120524172223.GA10689@redhat.com>  <1337902816.13348.224.camel@gandalf.stny.rr.com>  <4FBEC9E6.8040301@linux.intel.com>  <1337909963.13348.232.camel@gandalf.stny.rr.com>  <1337910106.13348.234.camel@gandalf.stny.rr.com>  <1337956262.13348.257.camel@gandalf.stny.rr.com> <1337959746.13348.264.camel@gandalf.stny.rr.com>
-In-Reply-To: <1337959746.13348.264.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Christoph Hellwig <hch@infradead.org>
+CC: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/3] Btrfs: add IO error device stats
+References: <1337954770-10086-1-git-send-email-sbehrens@giantdisaster.de> <20120525151854.GA23362@infradead.org>
+In-Reply-To: <20120525151854.GA23362@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 08:29 AM, Steven Rostedt wrote:
-> 
-> This would make sense for this bug, as if modifying_ftrace_code was not
-> seen by other CPUs, it wouldn't go into the ftrace_int3_handler() path.
-> That would cause this issue. But the bug remains after the smp_mb()'s
-> were put in place. Although it behaves a little differently not. Maybe
-> there's something else I missed?
-> 
+It would be helpful if already the generic block layer would offer 
+device error counters. Then btrfs could read them, add own counters for 
+its checksum detected errors, and store everything persistently in the 
+filesystem.
 
-Perhaps you should make the modifying_ftrace_code modification atomic...
-it seems odd to have it not be atomic when it is clearly accessed across
-CPUs that way.
-
-	-hpa
+The goal is to replace disks that have an increased error rate with 
+spare disks, and the goal is to repair this degenerated RAID state quickly.
 
 
+On 05/25/2012 17:18, Christoph Hellwig wrote:
+> Can you explain why the device error counters should be in a filesystem
+> instead of generic block layer code?
+>
+> On Fri, May 25, 2012 at 04:06:07PM +0200, Stefan Behrens wrote:
+[...]
+>> The goal is to detect when drives start to get an increased error rate,
+>> when drives should be replaced soon. Therefore statistic counters are
+>> added that count IO errors (read, write and flush). Additionally, the
+>> software detected errors like checksum errors and corrupted blocks are
+>> counted.
+>>
+>> An ioctl interface is added to get the device statistic counters.
+>> A second ioctl is added to atomically get and reset these counters.
+>>
+>> The device statistics are written into the device tree with each
+>> transaction commit. Only modified statistics are written.
+>> When a filesystem is mounted, the device statistics for each involved
+>> device are read from the device tree and used to initialize the
+>> counters.
+>>
+>> A patch for the btrfs-progs world will also be sent.
+>>
+>> Stefan Behrens (3):
+>>    Btrfs: add device counters for detected IO and checksum errors
+>>    Btrfs: add ioctl to get and reset the device stats
+>>    Btrfs: read device stats on mount, write modified ones during commit
+>>
+>>   fs/btrfs/ctree.h       |   38 ++++++
+>>   fs/btrfs/disk-io.c     |   20 +++-
+>>   fs/btrfs/extent_io.c   |   18 ++-
+>>   fs/btrfs/ioctl.c       |   26 +++++
+>>   fs/btrfs/ioctl.h       |   33 ++++++
+>>   fs/btrfs/print-tree.c  |    3 +
+>>   fs/btrfs/scrub.c       |   65 ++++++++---
+>>   fs/btrfs/transaction.c |    4 +
+>>   fs/btrfs/volumes.c     |  304 +++++++++++++++++++++++++++++++++++++++++++++++-
+>>   fs/btrfs/volumes.h     |   52 +++++++++
+>>   10 files changed, 539 insertions(+), 24 deletions(-)
+>>
+>> --
+>> 1.7.10.2
