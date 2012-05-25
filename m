@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab2EYRMZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:12:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45244 "EHLO mx1.redhat.com"
+	id S933788Ab2EYRMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:12:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62567 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756905Ab2EYRD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756989Ab2EYRD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 25 May 2012 13:03:26 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
@@ -23,61 +23,43 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 04/35] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
-Date: Fri, 25 May 2012 19:02:08 +0200
-Message-Id: <1337965359-29725-5-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 20/35] autonuma: avoid CFS select_task_rq_fair to return -1
+Date: Fri, 25 May 2012 19:02:24 +0200
+Message-Id: <1337965359-29725-21-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We will set these bitflags only when the pmd and pte is non present.
+Fix to avoid -1 retval.
 
-They work like PROT_NONE but they identify a request for the numa
-hinting page fault to trigger.
-
-Because we want to be able to set these bitflag in any established pte
-or pmd (while clearing the present bit at the same time) without
-losing information, these bitflags must never be set when the pte and
-pmd are present.
-
-For _PAGE_NUMA_PTE the pte bitflag used is _PAGE_PSE, which cannot be
-set on ptes and it also fits in between _PAGE_FILE and _PAGE_PROTNONE
-which avoids having to alter the swp entries format.
-
-For _PAGE_NUMA_PMD, we use a reserved bitflag. pmds never contain
-swap_entries but if in the future we'll swap transparent hugepages, we
-must keep in mind not to use the _PAGE_UNUSED2 bitflag in the swap
-entry format and to start the swap entry offset above it.
-
-PAGE_UNUSED2 is used by Xen but only on ptes established by ioremap,
-but it's never used on pmds so there's no risk of collision with Xen.
+Includes fixes from Hillf Danton <dhillf@gmail.com>.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- arch/x86/include/asm/pgtable_types.h |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ kernel/sched/fair.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index b74cac9..6e2d954 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -71,6 +71,17 @@
- #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
- #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 940e6d1..137119f 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2789,6 +2789,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		if (new_cpu == -1 || new_cpu == cpu) {
+ 			/* Now try balancing at a lower domain level of cpu */
+ 			sd = sd->child;
++			if (new_cpu < 0)
++				/* Return prev_cpu is find_idlest_cpu failed */
++				new_cpu = prev_cpu;
+ 			continue;
+ 		}
  
-+/*
-+ * Cannot be set on pte. The fact it's in between _PAGE_FILE and
-+ * _PAGE_PROTNONE avoids having to alter the swp entries.
-+ */
-+#define _PAGE_NUMA_PTE	_PAGE_PSE
-+/*
-+ * Cannot be set on pmd, if transparent hugepages will be swapped out
-+ * the swap entry offset must start above it.
-+ */
-+#define _PAGE_NUMA_PMD	_PAGE_UNUSED2
-+
- #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
- 			 _PAGE_ACCESSED | _PAGE_DIRTY)
- #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
+@@ -2807,6 +2810,7 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ unlock:
+ 	rcu_read_unlock();
+ 
++	BUG_ON(new_cpu < 0);
+ 	return new_cpu;
+ }
+ #endif /* CONFIG_SMP */
