@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965302Ab2EYUsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 16:48:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64480 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934104Ab2EYUsn convert rfc822-to-8bit (ORCPT
+	id S1758757Ab2EYUvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 16:51:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11829 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab2EYUv3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 16:48:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAB9VWqAnv2vyQDmw6+JKzj61+W-mWWV3ZmX-PNECm2RMEpkyqQ@mail.gmail.com>
-References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
-	<CAB9VWqAV+TohoMP0pcP6D6SEWB4o40XbHQssO1_Mbz3d_kUHaA@mail.gmail.com>
-	<4FBFEB49.7050901@brockmann-consult.de>
-	<CAB9VWqAnv2vyQDmw6+JKzj61+W-mWWV3ZmX-PNECm2RMEpkyqQ@mail.gmail.com>
-Date: Fri, 25 May 2012 22:48:41 +0200
-Message-ID: <CAB9VWqAk5mKVJy4reiTyKDcq7HgwQmnTVj5qNEqg84-mQgynvQ@mail.gmail.com>
-Subject: Re: atime and filesystems with snapshots (especially Btrfs)
-From: Alexander Block <ablock84@googlemail.com>
-To: Peter Maloney <peter.maloney@brockmann-consult.de>
-Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 25 May 2012 16:51:29 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Aua4qMZyJ18A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=e_sQblxPdNk3Y3Kc7iQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1337979086.13348.269.camel@gandalf.stny.rr.com>
+Subject: Re: BUG - function tracing with breakpoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Date: Fri, 25 May 2012 16:51:26 -0400
+In-Reply-To: <1337971575.13348.268.camel@gandalf.stny.rr.com>
+References: <20120524160146.GA6226@redhat.com>
+	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
+	 <20120524172223.GA10689@redhat.com>
+	 <1337902816.13348.224.camel@gandalf.stny.rr.com>
+	 <4FBEC9E6.8040301@linux.intel.com>
+	 <1337909963.13348.232.camel@gandalf.stny.rr.com>
+	 <1337910106.13348.234.camel@gandalf.stny.rr.com>
+	 <1337956262.13348.257.camel@gandalf.stny.rr.com>
+	 <1337959746.13348.264.camel@gandalf.stny.rr.com>
+	 <4FBFC421.3020901@linux.intel.com>
+	 <1337971575.13348.268.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 10:42 PM, Alexander Block
-<ablock84@googlemail.com> wrote:
-> On Fri, May 25, 2012 at 10:27 PM, Peter Maloney
-> <peter.maloney@brockmann-consult.de> wrote:
->> On 05/25/2012 09:10 PM, Alexander Block wrote:
->>> Just to show some numbers I made a simple test on a fresh btrfs fs. I
->>> copied my hosts /usr (4 gig) folder to that fs and checked metadata
->>> usage with "btrfs fi df /mnt", which was around 300m. Then I created
->>> 10 snapshots and checked metadata usage again, which didn't change
->>> much. Then I run "grep foobar /mnt -R" to update all files atime.
->>> After this was finished, metadata usage was 2.59 gig. So I lost 2.2
->>> gig just because I searched for something. If someone already has
->>> nearly no space left, he probably won't be able to move some data to
->>> another disk, as he may get ENOSPC while copying the data.
->>>
->>> Here is the output of the final "btrfs fi df":
->>>
->>> # btrfs fi df /mnt
->>> Data: total=6.01GB, used=4.19GB
->>> System, DUP: total=8.00MB, used=4.00KB
->>> System: total=4.00MB, used=0.00
->>> Metadata, DUP: total=3.25GB, used=2.59GB
->>> Metadata: total=8.00MB, used=0.00
->>>
->>> I don't know much about other filesystems that support snapshots, but
->>> I have the feeling that most of them would have the same problem. Also
->>> all other filesystems in combination with LVM snapshots may cause
->>> problems (I'm not very familiar with LVM). Filesystem image formats,
->>> like qcow, vmdk, vbox and so on may also have problems with atime.
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Did you run the recursive grep after each snapshot (which I would expect
->> would result in 11 times as many metadata blocks, max 3.3 GB), or just
->> once after all 10 snapshots (which I think would mean only 2x as many
->> metadata blocks, max 600 MB)?
->>
->
-> I've run it only once after creating all snapshots. My expectation is that
-> in both cases the result is the same. If all snapshots have the file /foo/bar,
-> then each individual snapshotted copy of it would have a different atime
-> and thus an own metadata block for it. As this happens with all files, no
-> matter how i iterated the files, then nearly all metadata blocks get their
-> own copy.
+On Fri, 2012-05-25 at 14:46 -0400, Steven Rostedt wrote:
+> On Fri, 2012-05-25 at 10:40 -0700, H. Peter Anvin wrote:
+> > On 05/25/2012 08:29 AM, Steven Rostedt wrote:
+> > > 
+> > > This would make sense for this bug, as if modifying_ftrace_code was not
+> > > seen by other CPUs, it wouldn't go into the ftrace_int3_handler() path.
+> > > That would cause this issue. But the bug remains after the smp_mb()'s
+> > > were put in place. Although it behaves a little differently not. Maybe
+> > > there's something else I missed?
+> > > 
+> > 
+> > Perhaps you should make the modifying_ftrace_code modification atomic...
+> > it seems odd to have it not be atomic when it is clearly accessed across
+> > CPUs that way.
+> 
+> I guess I can make it atomic. Not really a big deal as this (and soon
+> one other place) is the only place that changes its value.
+> 
+> I've found another place that may be causing harm, and I'm currently
+> working on fixing it. Hopefully after that's done, this problem will go
+> away.
 
-Hmm, you did maybe assume the snapshots were r/o. In my test, the
-snapshots were all r/w. In the r/o case, I would have to do the recursive
-grep after each snapshot creation to get the same result.
+Grumble, still faults, and the notifier that I was tracking down
+happened to be for DIE_OOPS :-p
+
+
+/me continues his search.
+
+-- Steve
+
+
