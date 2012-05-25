@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756745Ab2EYJUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 05:20:32 -0400
-Received: from www.linutronix.de ([62.245.132.108]:34488 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab2EYJU1 (ORCPT
+	id S1756254Ab2EYJXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 05:23:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51201 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2EYJXi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 05:20:27 -0400
-Date: Fri, 25 May 2012 11:20:19 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gong <gong.chen@linux.intel.com>
-cc: Borislav Petkov <bp@amd64.org>, LKML <linux-kernel@vger.kernel.org>,
-        tony.luck@intel.com, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel
- machines
-In-Reply-To: <4FBF3561.4040805@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1205251119390.3231@ionos>
-References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de> <20120525062426.GB3179@aftab.osrc.amd.com> <4FBF3561.4040805@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 25 May 2012 05:23:38 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1604097789-1337937620=:3231"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20120524155121.20241.68413.stgit@bob.linux.org.uk>
+References: <20120524155121.20241.68413.stgit@bob.linux.org.uk>
+Date: Fri, 25 May 2012 17:23:38 +0800
+Message-ID: <CACVXFVO2bwuPXTzUvY2Vkq9SsF=zqdfV+p-OQjSFL04nBmzywg@mail.gmail.com>
+Subject: Re: [PATCH] tty: fix ldisc lock inversion trace
+From: Ming Lei <tom.leiming@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, May 24, 2012 at 11:51 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> From: Alan Cox <alan@linux.intel.com>
+>
+> This is caused by tty_release using tty_lock_pair to lock both
+> sides of the pty/tty pair, and then tty_ldisc_release dropping
+> and relocking one side only. We can drop both fine, so drop both
+> to avoid any lock ordering concerns.
+>
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+>
+>  drivers/tty/tty_ldisc.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+>
+>
+> diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+> index 173a900..833e851 100644
+> --- a/drivers/tty/tty_ldisc.c
+> +++ b/drivers/tty/tty_ldisc.c
+> @@ -912,10 +912,13 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+>         * race with the set_ldisc code path.
+>         */
+>
+> -       tty_unlock(tty);
+> +       /* We don't give a monkeys' about the o_tty lock here but we
+> +          must do both to avoid lock inversions against another single
+> +          locking case */
+> +       tty_unlock_pair(tty, o_tty);
+>        tty_ldisc_halt(tty);
+>        tty_ldisc_flush_works(tty);
+> -       tty_lock(tty);
+> +       tty_lock_pair(tty, o_tty);
 
---8323328-1604097789-1337937620=:3231
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+This still may cause lockdep warning by the following line:
 
-On Fri, 25 May 2012, Chen Gong wrote:
+             if (o_tty)
+                    tty_ldisc_release(o_tty, NULL);
 
-> äºŽ 2012/5/25 14:24, Borislav Petkov å†™é“:
-> > On Thu, May 24, 2012 at 05:54:52PM +0000, Thomas Gleixner wrote:
-> >> Intentionally left blank to be filled out by someone who wants
-> >> that and can explain the reason for this better than me.
-> > 
-> > That'll be Intel folk :)
-> > 
-> >> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> > 
-> > Looks good to me too, thanks Thomas for doing this!
-> > 
-> > I'll run it next week just in case.
-> > 
-> > Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> 
-> Oh, Oh, wait. First I need to thank Thomas to improve it. I don't
-> reply you at the first time because I have some thoughts and now
-> I'm testing it. The basic test shows it hangs the system after
-> sb_edac is removed and when error count increases to the threshold
-> it hangs again, and when trying to reboot the system no hang happnes
-> (not reach the threshold) the system oops. I need to time to debug
-> and give the valid feedback. Please be patient :-). Of course,
+The tty_unlock_pair in 'tty_ldisc_release(o_tty, NULL)'  may
+not match the previous tty_lock_pair. If tty > o_tty, then lockdep
+warning will be triggered since the lock to be released is not
+at the top of current lock stack.
 
-As I said it's completely untested. I just made sure it compiles :)
---8323328-1604097789-1337937620=:3231--
+Thanks,
+-- 
+Ming Lei
