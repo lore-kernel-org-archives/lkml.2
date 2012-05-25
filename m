@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933829Ab2EYRDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 13:03:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9120 "EHLO mx1.redhat.com"
+	id S933872Ab2EYRFz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 13:05:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43766 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933517Ab2EYRDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 13:03:37 -0400
+	id S933783Ab2EYRDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 13:03:48 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
@@ -23,42 +23,43 @@ Cc: Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: [PATCH 32/35] autonuma: link mm/autonuma.o and kernel/sched/numa.o
-Date: Fri, 25 May 2012 19:02:36 +0200
-Message-Id: <1337965359-29725-33-git-send-email-aarcange@redhat.com>
+Subject: [PATCH 28/35] autonuma: retain page last_nid information in khugepaged
+Date: Fri, 25 May 2012 19:02:32 +0200
+Message-Id: <1337965359-29725-29-git-send-email-aarcange@redhat.com>
 In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Link the AutoNUMA core and scheduler object files in the kernel if
-CONFIG_AUTONUMA=y.
+When pages are collapsed try to keep the last_nid information from one
+of the original pages.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- kernel/sched/Makefile |    1 +
- mm/Makefile           |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+ mm/huge_memory.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index 173ea52..783a840 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -16,3 +16,4 @@ obj-$(CONFIG_SMP) += cpupri.o
- obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
- obj-$(CONFIG_SCHEDSTATS) += stats.o
- obj-$(CONFIG_SCHED_DEBUG) += debug.o
-+obj-$(CONFIG_AUTONUMA) += numa.o
-diff --git a/mm/Makefile b/mm/Makefile
-index 50ec00e..67c77bd 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
- obj-$(CONFIG_HAS_DMA)	+= dmapool.o
- obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
- obj-$(CONFIG_NUMA) 	+= mempolicy.o
-+obj-$(CONFIG_AUTONUMA) 	+= autonuma.o
- obj-$(CONFIG_SPARSEMEM)	+= sparse.o
- obj-$(CONFIG_SPARSEMEM_VMEMMAP) += sparse-vmemmap.o
- obj-$(CONFIG_SLOB) += slob.o
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index d388517..76bdc48 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1805,7 +1805,18 @@ static bool __collapse_huge_page_copy(pte_t *pte, struct page *page,
+ 			clear_user_highpage(page, address);
+ 			add_mm_counter(vma->vm_mm, MM_ANONPAGES, 1);
+ 		} else {
++#ifdef CONFIG_AUTONUMA
++			int autonuma_last_nid;
++#endif
+ 			src_page = pte_page(pteval);
++#ifdef CONFIG_AUTONUMA
++			/* pick the last one, better than nothing */
++			autonuma_last_nid =
++				ACCESS_ONCE(src_page->autonuma_last_nid);
++			if (autonuma_last_nid >= 0)
++				ACCESS_ONCE(page->autonuma_last_nid) =
++					autonuma_last_nid;
++#endif
+ 			copy_user_highpage(page, src_page, address, vma);
+ 			VM_BUG_ON(page_mapcount(src_page) != 1);
+ 			VM_BUG_ON(page_count(src_page) != 2);
