@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab2EYBcZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 May 2012 21:32:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9661 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab2EYBcY (ORCPT
+	id S1755089Ab2EYBeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 May 2012 21:34:19 -0400
+Received: from mail19h.g19.rapidsite.net ([204.202.242.57]:43714 "EHLO
+	mail19h.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab2EYBeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 May 2012 21:32:24 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=irseqbIK9hsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=uBGzXIQ1gwx6YJvmt1MA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1337909543.13348.227.camel@gandalf.stny.rr.com>
-Subject: Re: tracing ring_buffer_resize oops.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Date: Thu, 24 May 2012 21:32:23 -0400
-In-Reply-To: <4FBEC9E6.8040301@linux.intel.com>
-References: <20120524160146.GA6226@redhat.com>
-	  <1337876398.13348.178.camel@gandalf.stny.rr.com>
-	  <20120524172223.GA10689@redhat.com>
-	 <1337902816.13348.224.camel@gandalf.stny.rr.com>
-	 <4FBEC9E6.8040301@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Thu, 24 May 2012 21:34:17 -0400
+thread-index: Ac06FnuPa+Yfssn8TgSZ3ckb0DLZZw==
+Thread-Topic: The $1,549 per day ZERO traffic system (UPDATE) Recommends Advanced Sports to you
+From: <sniperxsystem@support.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: The $1,549 per day ZERO traffic system (UPDATE) Recommends Advanced Sports to you
+Date: Thu, 24 May 2012 21:34:10 -0400
+Message-ID: <E24325F80B63437FBF0AA37B8BDA5F71@g19.win.smewh.net>
+MIME-Version: 1.0
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052434)]
+X-MAIL-FROM: <sniperxsystem@support.com>
+X-SOURCE-IP: [199.239.254.58]
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 16:53 -0700, H. Peter Anvin wrote:
+>From         :The $1,549 per day ZERO traffic system (UPDATE)
+Email        :sniperxsystem@support.com
+Friend Name  :Friend
+Friend Email :linux-kernel@vger.kernel.org
+comment      :
 
-> Waitaminute... this isn't related to your using R12 to save a pointer to
-> something, is it?
+Listen to this... pretty crazy...
 
-We talked about using r12, but that patch hasn't made it out into the
-wild yet. I haven't even pushed it into git yet. It still lives on a
-quilt queue. Unless someone else abused r12, it wasn't from what I was
-going to use it for.
+So many people rushed to download this 
+$530k/year system yesterday...
 
--- Steve
+That they crashed the ENTIRE server!
 
-> 
-> > [ 1013.459871] RSP: ffffffff8165e919:ffff88014780f408  EFLAGS: 00010046
-> 
-> 	-hpa
+=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+
+(The site was down ALL day) Pretty crazy. 
+
+... The "ghetto" video alone has sent shockwaves 
+through the Clickbank community.
+
+Can you believe THIS guy's one of Clickbanks
+biggest super affiliates?
+
+=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+
+Talk soon
+
+P.S. This is **BRAND NEW**...
+
+It works and it's made $1,549.87 a DAY for 
+the past 739 days in a ROW!
+
+No PPC, no PPV, no CPA, no so-called 'push
+button softwares' scams, no 'loopholes'...
+
+Something TOTALLY different.
+
+Check it out (fast, while it's still open):
+
+=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+
+
 
 
