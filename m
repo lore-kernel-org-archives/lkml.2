@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab2EYOeu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:34:50 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:30046 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751808Ab2EYOet (ORCPT
+	id S1754822Ab2EYOhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:37:53 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:44336 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639Ab2EYOhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:34:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: o9qWe0IVM1lMW5Dyvr.gMsB_pnmA.X0oLZBQfGKjOikFEDe
- de7PGtAUKg0zzsGeb4ZJfGmXoOGkykLrNwkFnWD13BTKy3kwRkRSLk6AhdxA
- l_n3pfrFrItfQMfZ8thAnaPNucf_a9FBcb1ZkMVv42n1SXmGAEmZU68A5qdI
- qudi1sBqBITJEXvXd79AIIBGi6Mzh3LA9mpBWYrHlJl0NLMUlba5g92PFFSh
- iR39EJA7MNsXCt2dRz9zl4aylSCX2Y.UTSJckUop02b8BKTHgJ6dbZjRNCYX
- 9XGu1ejy3.sl.YLn9lSFNqlT2DOIz6BxKF18RL4Q4X9BgHdfBJsvbkqnYgzV
- tRYeOrYPVarW0nmS6QaEc0_gaYL0Dq5PAghTwb2kNM0pc2cWmnibCC5QxzBI
- c
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 25 May 2012 09:34:43 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Michal Hocko <mhocko@suse.cz>
-cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
-In-Reply-To: <20120525133441.GB30527@tiehlicka.suse.cz>
-Message-ID: <alpine.DEB.2.00.1205250933170.22597@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120525133441.GB30527@tiehlicka.suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 25 May 2012 10:37:52 -0400
+Date: Fri, 25 May 2012 11:37:45 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: andrei.emeltchenko.news@gmail.com
+Cc: linux-kernel@vger.kernel.org, joe@perches.com,
+        linux-bluetooth@vger.kernel.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+Subject: Re: [RFC] vsprintf: Add %pMR for Bluetooth MAC address
+Message-ID: <20120525143745.GE31623@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	andrei.emeltchenko.news@gmail.com, linux-kernel@vger.kernel.org,
+	joe@perches.com, linux-bluetooth@vger.kernel.org,
+	Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+References: <1336778486.16292.0.camel@joe2Laptop>
+ <1337956368-30621-1-git-send-email-andrei.emeltchenko.news@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337956368-30621-1-git-send-email-andrei.emeltchenko.news@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Michal Hocko wrote:
+Hi Andrei,
 
-> On Fri 25-05-12 17:03:20, Glauber Costa wrote:
-> > I believe some of the early patches here are already in some trees around.
-> > I don't know who should pick this, so if everyone agrees with what's in here,
-> > please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
-> > and I'll rebase it.
->
-> memcg-devel tree is only to make development easier. Everything that
-> applies on top of this tree should be applicable to both -mm and
-> linux-next.
-> So the patches should go via traditional Andrew's channel.
+* andrei.emeltchenko.news@gmail.com <andrei.emeltchenko.news@gmail.com> [2012-05-25 17:32:48 +0300]:
 
-It would be best to merge these with my patchset to extract common code
-from the allocators. The modifications of individual slab allocators would
-then be not necessary anymore and it would save us a lot of work.
+> From: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+> 
+> Bluetooth uses mostly LE byte order which is reversed for visual
+> interpretation. Currently in Bluetooth in use unsafe batostr function.
+> 
+> This is slightly modified version of Joe Perches <joe@perches.com>
+> patch (sent Sat, Dec 4, 2010).
+> 
+> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+> ---
+>  lib/vsprintf.c |   22 +++++++++++++++++-----
+>  1 file changed, 17 insertions(+), 5 deletions(-)
 
+Please resend this using the get-maintainers scripts in the --cc too (akpm et al)
+so we can get this to the right people.
+
+
+	Gustavo
