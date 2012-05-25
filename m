@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab2EYFLA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 01:11:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57960 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065Ab2EYFK7 (ORCPT
+	id S1752018Ab2EYF2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 01:28:21 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:45212 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2EYF2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 01:10:59 -0400
-Date: Fri, 25 May 2012 14:10:51 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: "lkml, " <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        =?iso-8859-1?Q?=C9ric?= Piel <eric.piel@tremplin-utc.net>,
-        Carmine Iascone <carmine.iascone@st.com>,
-        Matteo Dameno <matteo.dameno@st.com>
-Subject: Re: LIS331DLH accelerometer driver, IIO or not?
-Message-ID: <20120525051051.GA3135@kroah.com>
-References: <4FBF0AC1.6030406@linux.intel.com>
+	Fri, 25 May 2012 01:28:20 -0400
+Message-ID: <4FBF185F.4060007@linux.vnet.ibm.com>
+Date: Fri, 25 May 2012 10:57:59 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBF0AC1.6030406@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: eranian@google.com, Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: perf record: why we used type casting of (uint64_t *) instead
+ of int
+References: <4FBDFDA6.5010304@linux.vnet.ibm.com>
+In-Reply-To: <4FBDFDA6.5010304@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052419-1396-0000-0000-0000014ADABD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 09:29:53PM -0700, Darren Hart wrote:
-> I'm working to enable the LIS331DLH accelerometer on the Fish River
-> Island II embedded atom development kit.
-> 
-> http://www.st.com/internet/analog/product/218132.jsp
-> 
-> http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
-> 
-> This device is attached to an i2c bus implemented in a CPLD (complex
-> programmable logic device) integrated on the compute module. I found an
-> IIO driver for the device written for 2.6.34. I've rewritten most of the
-> driver to work with the 3.2 kernel's IIO subsystem (and had planned to
-> next port it all the way to git HEAD and push it upstream).
-> 
-> However, I've since stumbled across a couple of things which cloud the
-> issue for me.
-> 
-> First, Carmine Iascone submitted a driver (driver/misc, not iio) for the
-> LIS331DLH back in Nov 2010.
-> 
-> http://lkml.org/lkml/2010/11/9/369
-> 
-> It was suggested that this driver be merged with the existing lis3lv02d
-> driver which listed support for a similar chip in the header, LIS331DL,
-> but it also lists LIS331DLF as not supported. The current git HEAD still
-> does not list LIS331DLH, and there is not a compatible register map in
-> the header.
-> 
-> Second, I came across the following TI document for porting the
-> LIS331DLH driver for Android:
-> 
-> http://processors.wiki.ti.com/index.php/TI-Android-GingerBread-2.3.4-DevKit-2.1_PortingGuides
-> 
-> This references a lis331dlh.c driver which I do not find in Linus' git
-> repository nor in linux-next.
-> 
-> So there are 3 ways I can go about this, and I'd appreciate any
-> direction on which would be the most acceptable for merging upstream.
-> 
-> 1) Continue with my IIO version. This subsystem seems well suited to the
-> accelerometer. The iio_chan_spec simplifies the task of exposing the
-> event capabilities of the device, which the drivers/misc/lis3lv02d
-> driver mostly glosses over. It only supports events on free-fall for
-> example, while with IIO it is straight forward to enable interrupts for
-> rising and/or falling thresholds for each axis independently.
-> 
-> 2) Attempt to merge Carmine's drivers/misc/lis331dlh driver with the
-> existing lis3lv02d driver as suggested in the thread mentioned above.
-> This driver isn't as fully functional.
-> 
-> 3) Try and dig up the lis331dlh driver referenced in the TI document and
-> work to get that upstream. Like option 2, this driver is not likely to
-> be as configurable as the IIO driver.
-> 
-> I am more interested in enabling people to do bizarre and interesting
-> things with the device, so I'm leaning toward continuing with my IIO
-> implementation.
+This code is breaking in powerpc systems.
 
-Make it an IIO driver and then we can delete the misc driver, which
-shouldn't have snuck in there in the first place :)
+(1) 'opt->value' gets updated inside the function parse_branch_stack via
+    dereferencing a (uint64_t *) type casted pointer.
 
-greg k-h
+(2) But the value is not accessible when we again use opt->value via 
+    dereferencing a (int *) type casted pointer.
+
+(3) As a result record.opts.branch_stack remains 0 and unchanged by parse_branch_stack
+
+This is caused by bit representation of 'uint64_t' and 'int' in powerpc systems. Bytes update
+for the data (when accessed trough (uint64_t *) casting) is no longer available to the
+data when accessed through (int *) type casting. Verified this from bit representation of
+the data (accessed through both type casting methods).
+
+However this problem does not seem to be present on an Intel box. Integer dereferencing of
+the opt->value still gives the value which was updated as (uint64_t).
+
+All this problem would not have been there if we had used (int *) instead of (uint64_t *) in
+the first place inside parse_branch_stack function.
+
+On Thursday 24 May 2012 02:51 PM, Anshuman Khandual wrote:
+
+> Hey Stephane,
+> 
+> Just wondering why we used the type casting of (uint64_t *) on a data 
+> which is defined as "int" in the structure of "perf_record_opts".
+> 
+> struct perf_record_opts {
+>         struct perf_target target;
+>         bool         call_graph;
+>         bool         group;
+>         bool         inherit_stat;
+>         bool         no_delay;
+>         bool         no_inherit;
+>         bool         no_samples;
+>         bool         pipe_output;
+>         bool         raw_samples;
+>         bool         sample_address;
+>         bool         sample_time;
+>         bool         sample_id_all_missing;
+>         bool         exclude_guest_missing;
+>         bool         period;
+>         unsigned int freq;
+>         unsigned int mmap_pages;
+>         unsigned int user_freq;
+>         int          branch_stack;
+>         u64          default_interval;
+>         u64          user_interval;
+> };
+> 
+> static int
+> parse_branch_stack(const struct option *opt, const char *str, int unset)
+> {
+> #define ONLY_PLM \
+>         (PERF_SAMPLE_BRANCH_USER        |\
+>          PERF_SAMPLE_BRANCH_KERNEL      |\
+>          PERF_SAMPLE_BRANCH_HV)
+> 
+>         uint64_t *mode = (uint64_t *)opt->value;
+> --
+> Regards
+> Anshuman Khandual
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
