@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2EYOrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 10:47:16 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52970 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab2EYOrP (ORCPT
+	id S1756105Ab2EYOt1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 10:49:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34739 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2EYOtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 10:47:15 -0400
-Date: Fri, 25 May 2012 11:47:10 -0300
-From: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf record: Fixing record option data type in
- parse_branch_stack
-Message-ID: <20120525144710.GG2336@infradead.org>
-References: <4FBDFDA6.5010304@linux.vnet.ibm.com>
- <4FBF185F.4060007@linux.vnet.ibm.com>
- <4FBF3CD1.7030603@linux.vnet.ibm.com>
- <CABPqkBS6cdUkKgC1Jp_pzMWxDKZYJtomoZUx6g2z739y=TkPAw@mail.gmail.com>
- <4FBF5FAF.4010906@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FBF5FAF.4010906@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 25 May 2012 10:49:25 -0400
+Subject: Re: [PATCH] sched: unthrottle rt_rq in migrate_tasks()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Peter Boonstoppel <pboonstoppel@nvidia.com>
+Cc: "mingo@kernel.org" <mingo@kernel.org>, "pjt@google.com" <pjt@google.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "seto.hidetoshi@jp.fujitsu.com" <seto.hidetoshi@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+In-Reply-To: <5FBF8E85CA34454794F0F7ECBA79798F379AD507F2@HQMAIL04.nvidia.com>
+References: <5FBF8E85CA34454794F0F7ECBA79798F379AD507F2@HQMAIL04.nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 25 May 2012 16:49:21 +0200
+Message-ID: <1337957361.9783.213.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, May 25, 2012 at 04:02:15PM +0530, Anshuman Khandual escreveu:
-> On Friday 25 May 2012 02:14 PM, Stephane Eranian wrote:
+On Fri, 2012-05-18 at 11:56 -0700, Peter Boonstoppel wrote:
+> migrate_tasks() uses _pick_next_task_rt() to get tasks from the
+> real-time runqueue to be migrated. When rt_rq is throttled
+> _pick_next_task_rt() won't return anything, in which case
+> migrate_tasks() can't move all threads over and gets stuck in an
+> infinite loop.
 > 
-> > Hi,
-> > 
-> > It should be something like that instead:
-> > 
-> > diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> > index 8a9687e..c9ca7c4 100644
-> > --- a/tools/perf/perf.h
-> > +++ b/tools/perf/perf.h
-> > @@ -228,7 +228,7 @@ struct perf_record_opts {
-> >         unsigned int freq;
-> >         unsigned int mmap_pages;
-> >         unsigned int user_freq;
-> > -       int          branch_stack;
-> > +       u64          branch_stack;
-> >         u64          default_interval;
-> >         u64          user_interval;
-> >  };
-> > 
+> Instead unthrottle rt_rq before migrating tasks.
 > 
+> Signed-off-by: Peter Boonstoppel <pboonstoppel@nvidia.com>
+> ---
+>  kernel/sched/core.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> 
-> Agreed. I just tried to fix the problem where it was more evident because
-> of the data type mismatch.
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index 9236a48..b37e0b3 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5159,6 +5159,12 @@ static void migrate_tasks(unsigned int dead_cpu)
+>  	/* Ensure any throttled groups are reachable by pick_next_task */
+>  	unthrottle_offline_cfs_rqs(rq);
+>  
+> +	/*
+> +	 * Ensure rt_rq is not throttled so its threads can be migrated using
+> +	 * pick_next_task_rt
+> +	 */
+> +	rq->rt.rt_throttled = 0;
+> +
+>  	for ( ; ; ) {
+>  		/*
+>  		 * There's this thread running, bail when that's the only
 
-Can you send an updated patch on a message just for that?
+OK, so there's two things:
 
-- Arnaldo
+ - there's a set_rq_offline() call in CPU_DYING right before calling
+migrate_tasks(). This would end up calling rq_offline_rt() which should
+disable all the runtime muck.
+
+ - If the above doesn't unthrottle rqs (looks like it doesn't, should
+it?) you still only unthrottle the root and 'forgot' to deal with
+cgroups.
+
+So I think I'm going to ask you to make rq_offline_rt() dtrt, and while
+you're at it, move unthrottle_offline_cfs_rqs() to rq_offline_fair().
+
