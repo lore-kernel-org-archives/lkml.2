@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab2EZDjr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 23:39:47 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35437 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab2EZDjp (ORCPT
+	id S1755209Ab2EZDmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 23:42:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46586 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab2EZDmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 23:39:45 -0400
-Subject: Re: [PATCH] net: compute a more reasonable default ip6_rt_max_size
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4FC02777.5070003@fb.com>
-References: <4FC0063E.8080209@fb.com>
-	 <20120525.185131.2017517041016424794.davem@davemloft.net>
-	 <4FC01F1B.1080009@fb.com>
-	 <20120525.201150.1782581593120395710.davem@davemloft.net>
-	 <4FC02777.5070003@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 May 2012 05:39:40 +0200
-Message-ID: <1338003580.10135.6.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 25 May 2012 23:42:00 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tools libtraceevent: Silence compiler warning on 32bit build
+Date: Sat, 26 May 2012 12:41:31 +0900
+Message-Id: <1338003691-3141-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 17:44 -0700, Arun Sharma wrote:
-> On 5/25/12 5:11 PM, David Miller wrote:
-> 
-> >> These were not admin configured routes. They were discovered via ipv6
-> >> neighbor discovery.
-> >
-> > Then such default routes should either be:
-> >
-> > 1) Passed over by GC
-> >
-> > 2) Trigger neighbour discovery when GC'd
-> 
-> It's possible that there is a bug somewhere - we didn't get a chance to 
-> dig deeper. What we observed is that as we got close to the 4096 limit, 
-> some hosts were becoming unreachable. A modest increase in the routing 
-> table size made things better.
-> 
->   -Arun
+The gcc complains about casting a pointer to unsigned long long directly:
 
-But your patch is not a  "modest increase", so whats the deal ?
+    SUBDIR ../lib/traceevent/
+  CC FPIC            event-parse.o
+  CC FPIC            trace-seq.o
+  CC FPIC            parse-filter.o
+/home/namhyung/project/linux/tools/lib/traceevent/parse-filter.c: In function ‘get_value’:
+/home/namhyung/project/linux/tools/lib/traceevent/parse-filter.c:1588: warning: cast from pointer to integer of different size
+  CC FPIC            parse-utils.o
+  BUILD STATIC LIB   libtraceevent.a
 
-A modest increase would be 8192 instead of 4096, regardless of RAM size.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ tools/lib/traceevent/parse-filter.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
+diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+index 2d40c5e..aa30b43 100644
+--- a/tools/lib/traceevent/parse-filter.c
++++ b/tools/lib/traceevent/parse-filter.c
+@@ -1585,7 +1585,7 @@ get_value(struct event_format *event,
+ 		const char *name;
+ 
+ 		name = get_comm(event, record);
+-		return (unsigned long long)name;
++		return (unsigned long)name;
+ 	}
+ 
+ 	pevent_read_number_field(field, record->data, &val);
+-- 
+1.7.2.2
 
