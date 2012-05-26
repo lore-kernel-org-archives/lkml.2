@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2EZNjt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:39:49 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60967 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab2EZNjs convert rfc822-to-8bit (ORCPT
+	id S1753342Ab2EZNlO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:41:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34850 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab2EZNlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:39:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANQmPXhyAavikU=861nVA3WjPsMjBt+XOTUJ08VAoinZ1gCRzQ@mail.gmail.com>
-References: <CANQmPXhyAavikU=861nVA3WjPsMjBt+XOTUJ08VAoinZ1gCRzQ@mail.gmail.com>
-Date: Sat, 26 May 2012 21:39:47 +0800
-Message-ID: <CANQmPXgdaiSUV89Vk_xR3dRAyKeGK6x=CJwaSLTC_gv_ocNP1A@mail.gmail.com>
-Subject: Re: [ANNOUNCE][PATCH 5/26]Rotary Interactivity Favor Scheduler
- Version 3(Brain-Eating) Update.
-From: Chen <hi3766691@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+	Sat, 26 May 2012 09:41:13 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 1/5] tracing: Fix initialization failure path in tracing_set_tracer()
+Date: Sat, 26 May 2012 06:39:05 -0700
+Message-Id: <1338039549-24498-1-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <20120526133412.GA18001@lizard>
+References: <20120526133412.GA18001@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 9:38 PM, Chen <hi3766691@gmail.com> wrote:
-> Hi everyone.
-> RIFS v3 has been released.
-> This version make a big change from RIFS v2(Algorithm).
-> Actually it solves problems that V2 left.
-> On my box I can play 320K MP3 music without any skipping(SMOOTH!).Also
-> I can shake my windows frequently.
->
-> 1.latt benchmark
-> Parameters: min_wait=100ms, max_wait=500ms, clients=1
-> Entries logged: 108
->
-> Wakeup averages
-> -------------------------------------
->        Max                   25 usec
->        Avg                   10 usec
->        Stdev                  2 usec
->        Stdev mean             0 usec
->
-> Work averages
-> -------------------------------------
->        Max                21183 usec
->        Avg                20129 usec
->        Stdev                246 usec
->        Stdev mean            24 usec
->
->
-> 2.latt benchmark
-> Parameters: min_wait=100ms, max_wait=500ms, clients=1
-> Entries logged: 108
->
-> Wakeup averages
-> -------------------------------------
-> Max 22 usec
-> Avg 8 usec
-> Stdev 2 usec
-> Stdev mean 0 usec
->
-> Work averages
-> -------------------------------------
-> Max 20326 usec
-> Avg 20016 usec
-> Stdev 85 usec
-> Stdev mean 8 usec
->
-> ~~~ :-)
-> Enjoy the interactive feels.
-> 享受交互性带来的感觉把
->                                                               Chen
+If tracer->init() fails, current code will leave current_tracer pointing
+to an unusable tracer, which at best makes 'current_tracer' report
+inaccurate value.
 
-Rotating priority for cpu intensive task does not exist anymore. :-)
+Fix the issue by pointing current_tracer to nop tracer, and only update
+current_tracer with the new one after all the initialization succeeds.
+
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ kernel/trace/trace.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 68032c6..5cf7e67 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3172,10 +3172,10 @@ static int tracing_set_tracer(const char *buf)
+ 	}
+ 	destroy_trace_option_files(topts);
+ 
+-	current_trace = t;
++	current_trace = &nop_trace;
+ 
+-	topts = create_trace_option_files(current_trace);
+-	if (current_trace->use_max_tr) {
++	topts = create_trace_option_files(t);
++	if (t->use_max_tr) {
+ 		int cpu;
+ 		/* we need to make per cpu buffer sizes equivalent */
+ 		for_each_tracing_cpu(cpu) {
+@@ -3195,6 +3195,7 @@ static int tracing_set_tracer(const char *buf)
+ 			goto out;
+ 	}
+ 
++	current_trace = t;
+ 	trace_branch_enable(tr);
+  out:
+ 	mutex_unlock(&trace_types_lock);
+-- 
+1.7.9.2
+
