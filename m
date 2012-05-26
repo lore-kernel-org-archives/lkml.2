@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab2EZJX6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 05:23:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43237 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887Ab2EZJX4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 05:23:56 -0400
+	id S1752320Ab2EZJ3m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 05:29:42 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:50372 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab2EZJ3j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 05:29:39 -0400
+Date: Sat, 26 May 2012 11:27:12 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux@arm.linux.org.uk
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, x86@kernel.org, gregkh@linuxfoundation.org,
+        arnd@arndb.de, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 6/6] serial: add amba-pl011-pci
+Message-ID: <20120526092712.GA4092@mail.gnudd.com>
 MIME-Version: 1.0
-In-Reply-To: <1338016564.14636.4.camel@twins>
-References: <1338000869-15129-1-git-send-email-ming.lei@canonical.com>
-	<1338016564.14636.4.camel@twins>
-Date: Sat, 26 May 2012 17:23:53 +0800
-Message-ID: <CACVXFVNBiXxVvRWxnXiKPRm5dkj6qziFtXA_OH5kYFg4GZ+-pQ@mail.gmail.com>
-Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in tty_lock_pair(v3)
-From: Ming Lei <ming.lei@canonical.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <20120526084328.GE24149@n2100.arm.linux.org.uk>
+References: <20120526084328.GE24149@n2100.arm.linux.org.uk>
+  <cover.1337959750.git.rubini@gnudd.com>
+ <b166cb0fce2a67b24da5808604553b4196258f45.1337959750.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 3:16 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> +	default y if STA2X11
+> 
+> I don't think we want to encourage an ever growing list of platforms
+> here.  If we did this on ARM, this would be hellishly long.
 
->
->
-> I've still to hear what's wrong with a simple:
->
->
->  if (!tty2 || tty == tty2) {
->        tty_lock(tty);
->        return;
->  }
->
->  if (tty > tty2)
->        swap(tty, tty2);
->
->  tty_lock(tty);
->  tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
+Ok.
 
-I remember that the patch may cause kernel hang in
-my test. I will test it again to see if it is good.
+> NAK.  We have interfaces in the AMBA code for dynamically allocating
+> AMBA devices now - please use them instead of coding your own.  They
+> avoid bugs.
 
->
->
-> That's a lot more readable than the proposed code.
->
->> @@ -55,8 +64,13 @@ EXPORT_SYMBOL(tty_lock_pair);
->>  void __lockfunc tty_unlock_pair(struct tty_struct *tty,
->>                                               struct tty_struct *tty2)
->>  {
->> -     tty_unlock(tty);
->> -     if (tty2 && tty2 != tty)
->> +     if (tty < tty2) {
->>               tty_unlock(tty2);
->> +             tty_unlock(tty);
->> +     } else {
->> +             tty_unlock(tty);
->> +             if (tty2 && tty2 != tty)
->> +                     tty_unlock(tty2);
->> +     }
->>  }
->>  EXPORT_SYMBOL(tty_unlock_pair);
->
-> This is complete crap, unlock order doesn't matter.
+Sure. Thanks for noting. Maybe it wasn't there when I coded this
+initially. Will do.
 
-You mean that the below is good usage of lock?
+>> +	printk(KERN_INFO "%s %i\n", __func__, __LINE__);
+> 
+> This looks like debugging.
 
-        LOCK A
-        LOCK B
+Yes. After sending I noted this and another point. I apologize.
+Version 2 will be fixed in all respects.
 
-        UNLOCK A
-        UNLOCK B
+> This comes nowhere close to being sane with the driver model. [...]
+> In other words, save off the platform data pointer, unregister the struct
+> device, and then free the platform data (it will not be used at that point.)
 
+Thanks a lot for this and also the comments on APB/AHB in the other message.
 
-Thanks,
---
-Ming Lei
+/alessandro
