@@ -1,107 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2EZNy3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:54:29 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:62370 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751593Ab2EZNy2 (ORCPT
+	id S1753407Ab2EZN42 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:56:28 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33033 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752578Ab2EZN41 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:54:28 -0400
-Message-ID: <1338040464.2525.38.camel@koala>
-Subject: Re: [PATCH] mtd: dc21285.c: handle nw_gpio_lock correctly
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        vamos-dev@lists.cs.fau.de
-Date: Sat, 26 May 2012 16:54:24 +0300
-In-Reply-To: <20120525082812.GA12238@faui49q.informatik.uni-erlangen.de>
-References: <20120525082812.GA12238@faui49q.informatik.uni-erlangen.de>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-gFP5b7tVR8t/h+tIbSOf"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	Sat, 26 May 2012 09:56:27 -0400
+Date: Sat, 26 May 2012 14:59:14 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: =?ISO-8859-1?B?yXJpYw==?= Piel <eric.piel@tremplin-utc.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "lkml, " <linux-kernel@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Carmine Iascone <carmine.iascone@st.com>,
+        Matteo Dameno <matteo.dameno@st.com>
+Subject: Re: LIS331DLH accelerometer driver, IIO or not?
+Message-ID: <20120526145914.47b7812d@pyramind.ukuu.org.uk>
+In-Reply-To: <4FC0C422.8080605@tremplin-utc.net>
+References: <4FBF0AC1.6030406@linux.intel.com>
+	<20120525051051.GA3135@kroah.com>
+	<4FC0C422.8080605@tremplin-utc.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > Make it an IIO driver and then we can delete the misc driver, which
+> > shouldn't have snuck in there in the first place :)
+> >
+> 
+> To be more fair to the misc driver, I wouldn't say it snucked in there, 
+> but more "it ended up there as the least worse place" ;-)
 
---=-gFP5b7tVR8t/h+tIbSOf
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Because IIO spent forever in staging, as well as blocking lots of other
+driver work and meaning tons of drivers are now not to be found anywhere
+but obscure git trees. Thankfully they didn't manage to block the LIS
+driver during this mess.
 
-On Fri, 2012-05-25 at 10:28 +0200, Christian Dietrich wrote:
-> nw_gpio_lock is a raw_spinlock_t, therefore raw_spin_lock_irqsave should =
-be
-> used. it doesn't make a difference, while rlock is the first element of
-> spinlock_t.
->=20
-> Also the check for machine_is_netwinder() is a double check of
-> CONFIG_ARCH_NETWINDER.
->=20
-> Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erla=
-ngen.de>
+Until all the needed support for the LIS IIO driver exists outside of
+staging the driver needs to stay where it is and without IIO
+dependancies. It is not acceptable to cripple existing working code with
+staging tree dependancies.
 
-I do not understand this commit message. Please, split your patch on 2
-patches and put a better to each one. Thanks!
+Hopefully commit a980e046098b0a40eaff5e4e7fcde6cf035b7c06 has finally set
+the basis for this happening when it hits mainline.
 
-> ---
->  drivers/mtd/maps/dc21285.c |   13 +++++--------
->  1 files changed, 5 insertions(+), 8 deletions(-)
->=20
-> diff --git a/drivers/mtd/maps/dc21285.c b/drivers/mtd/maps/dc21285.c
-> index 080f060..38fbf23 100644
-> --- a/drivers/mtd/maps/dc21285.c
-> +++ b/drivers/mtd/maps/dc21285.c
-> @@ -38,9 +38,9 @@ static void nw_en_write(void)
->  	 * we want to write a bit pattern XXX1 to Xilinx to enable
->  	 * the write gate, which will be open for about the next 2ms.
->  	 */
-> -	spin_lock_irqsave(&nw_gpio_lock, flags);
-> +	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
-
-Please, make this to be a separate patch.
-
-And surely there are many other places in the kernel which need this
-conversion?
-
->  static void dc21285_write8(struct map_info *map, const map_word d, unsig=
-ned long adr)
->  {
-> -	if (machine_is_netwinder())
-> -		nw_en_write();
-> +	nw_en_write();
->  	*CSR_ROMWRITEREG =3D adr & 3;
-
-I do not understand why this "if" statement is not needed? Why it was
-there in the first place and why you remove it? Please, describe this in
-the commit message.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-gFP5b7tVR8t/h+tIbSOf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPwOCQAAoJECmIfjd9wqK0DdAP/R5armRIrJ40XiESi68SUCgK
-IjZxX5/JtUG8ux0zElinfYAgyfjjd/8/BpJkDY0337q0fvDq4tr5DHbvWR4yEqso
-e2nIzB5u106f1wVPwCB5xOASEEOVcWmNSMRoJ7/Go5K+HVRGbWrO+QXaklHTZI+C
-q5H4mlOuDXiQQsLyS8Z2ADTzI6lD40090tL7HDlD2a6bv0sVaAFwUmfLRrR0nWEN
-C0nQv0R4TsNnlJ73KjTvo+sbPXqzXYx7OLmsW39QSemeIIdlciEfJ2DQGO0GbYEo
-I9pfIO7fL4AoTb5ZZejVf13TuQwGoe7J0GEkuAKYVX71tuaCLdh5OKq3pPNKKFHT
-9UFXiZ6eTEyEXm7/BybsHTSH7NcoQkPrqGOWMhZNcuTY9m+PNlDYYUHSxYKh4WBf
-G5281nu7pMpcdVrCxVgFI+UmAOWdEeEj1VFKQxgt3Ns5ribX5/20bd5qghUKiSJB
-7nBr9ZjkRU+kNa1Y9rBwE7Cz4jXsio5z+UDQa7kEb+4bTynRN+zd28tXRVDXT1Eg
-Z1Bj65ckw7EMqoLhgGcz0KSf4HGPA87kwPjYtVIY5qC5Ksrm0EYM/mDBgUGLW1Wa
-pYjUnDEJdf1ZQIZ/IAGcT/5bblsUfioyFC/TaRG+TD0BlyBl/TLMcacodmc3+Nsn
-G8cGKDzxb4EFbN8ftoLc
-=oL7u
------END PGP SIGNATURE-----
-
---=-gFP5b7tVR8t/h+tIbSOf--
-
+Alan
