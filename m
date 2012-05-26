@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab2EZLxP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 07:53:15 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43735 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab2EZLxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 07:53:14 -0400
-Message-ID: <4FC0C422.8080605@tremplin-utc.net>
-Date: Sat, 26 May 2012 13:53:06 +0200
-From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752213Ab2EZMjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 08:39:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751208Ab2EZMjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 08:39:31 -0400
+Date: Sat, 26 May 2012 14:38:58 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
+Message-ID: <20120526123858.GA1679@m.brq.redhat.com>
+References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
+ <20120525223646.GL27374@one.firstfloor.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Darren Hart <dvhart@linux.intel.com>,
-        "lkml, " <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Carmine Iascone <carmine.iascone@st.com>,
-        Matteo Dameno <matteo.dameno@st.com>
-Subject: Re: LIS331DLH accelerometer driver, IIO or not?
-References: <4FBF0AC1.6030406@linux.intel.com> <20120525051051.GA3135@kroah.com>
-In-Reply-To: <20120525051051.GA3135@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120525223646.GL27374@one.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25-05-12 07:10, Greg Kroah-Hartman wrote:
-> On Thu, May 24, 2012 at 09:29:53PM -0700, Darren Hart wrote:
->> I'm working to enable the LIS331DLH accelerometer on the Fish River
->> Island II embedded atom development kit.
->>
->> I am more interested in enabling people to do bizarre and interesting
->> things with the device, so I'm leaning toward continuing with my IIO
->> implementation.
->
-> Make it an IIO driver and then we can delete the misc driver, which
-> shouldn't have snuck in there in the first place :)
->
+On Sat, May 26, 2012 at 12:36:46AM +0200, Andi Kleen wrote:
+> On Wed, Apr 04, 2012 at 11:16:08PM +0200, Jiri Olsa wrote:
+> > hi,
+> > adding support for creating event groups based on the way they
+> > are specified on the command line. 
+> 
+> Any updates on this patchkit? We have a situation here where better 
+> group management is needed to avoid problems with inconsistent
+> counters that depend on each others.
 
-To be more fair to the misc driver, I wouldn't say it snucked in there, 
-but more "it ended up there as the least worse place" ;-) Actually, the 
-main problem is that there seemed to be no maintainer interested in 
-taking care of accelerometer devices. Now that the IIO subsystem is out 
-of staging, it might be a right place. That said, I don't know much 
-about the user interface to IIO. I know that I liked the idea of having 
-an joystick device created for an accelerometer because that allows to 
-get many programs to access the device almost without any modifications.
+The startup patches just got in recently
+http://marc.info/?l=linux-kernel&m=133758460912306&w=2
 
-I'd happy to help merge the lis3lv02d driver into IIO. IMHO, the main 
-steps are:
-  * make sure all the various buses are supported (e.g., I²C, SPI, and 
-also "ACPI-HP")
-  * ensure the various versions of the accelerometer are supported 
-(there are 3 supported currently)
-  * check that the driver is automatically loaded on HP laptops (via 
-ACPI entry)
-  * for each of the current interfaces decide if they should be ported 
-or dropped (/dev/js*, /dev/freefall, sysfs...)
+so I'll continue on this shortly.. 
 
-What do you think Jonathan?
+If you have some ideas on this or real world examples,
+that would really help.. so far, here's the latest discussion:
+http://marc.info/?t=133357436900005&r=1&w=2
 
-Cheers,
-Éric
+and here's some thought on hows the display's going to look like:
+http://marc.info/?l=linux-kernel&m=133458636513108&w=2
+
+
+jirka
