@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab2EZNb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:31:28 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:63786 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751694Ab2EZNb1 (ORCPT
+	id S1752715Ab2EZNfs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:35:48 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45600 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab2EZNfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:31:27 -0400
-Message-ID: <1338039083.2525.27.camel@koala>
-Subject: Re: [PATCH] UBIFS: compute KSA size and store in superblock
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Sat, 26 May 2012 16:31:23 +0300
-In-Reply-To: <alpine.DEB.2.00.1205261303000.9892@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net>
-	 <1337952271.30969.37.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1205261303000.9892@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-RhALlU5TcFxPQsPFj7VQ"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Sat, 26 May 2012 09:35:47 -0400
+Date: Sat, 26 May 2012 06:34:13 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 0/5] Function tracing support for pstore
+Message-ID: <20120526133412.GA18001@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
---=-RhALlU5TcFxPQsPFj7VQ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+With this support kernel can save functions call chain log into a
+persistent ram buffer that can be decoded and dumped after reboot
+through pstore filesystem. It can be used to determine what function
+was last called before a hang or an unexpected reset (caused by, for
+example, a buggy driver that abuses HW).
 
-BTW! While I remember this. You had a concern about bad blocks. I was
-thinking that UBI can notify UBIFS every time it marks a block as bad
-using the linux notifiers mechanism. UBI would tell UBIFS the volume id
-and leb number. Then UBIFS could asynchronously do all the security
-stuff which is required in the background thread, or by submitting a
-work. I think this is doable, but certainly not a priority.
+Here's a "nano howto", to get the idea:
 
-On Sat, 2012-05-26 at 13:21 +0200, Joel Reardon wrote:
-> >
-> > I do not have to time to review it now, but please, make sure that the
-> > KSA size is according to 'max_leb_cnt' (see the --max-leb-cnt of the
-> > mkfs.ubifs tool).
->=20
-> Ahh, I see now I also need to add the min number of lebs to min_leb_cnt i=
-f
-> the feature is enabled.
+ # mount -t debugfs debugfs /sys/kernel/debug/
+ # cd /sys/kernel/debug/tracing
+ # echo persistent > current_tracer
+ # reboot -f
+ [...]
+ # mount -t pstore pstore /mnt/
+ # tail /mnt/ftrace-ramoops
+ 0 ffffffff8101ea64  ffffffff8101bcda  native_apic_mem_read <- disconnect_bsp_APIC+0x6a/0xc0
+ 0 ffffffff8101ea44  ffffffff8101bcf6  native_apic_mem_write <- disconnect_bsp_APIC+0x86/0xc0
+ 0 ffffffff81020084  ffffffff8101a4b5  hpet_disable <- native_machine_shutdown+0x75/0x90
+ 0 ffffffff81005f94  ffffffff8101a4bb  iommu_shutdown_noop <- native_machine_shutdown+0x7b/0x90
+ 0 ffffffff8101a6a1  ffffffff8101a437  native_machine_emergency_restart <- native_machine_restart+0x37/0x40
+ 0 ffffffff811f9876  ffffffff8101a73a  acpi_reboot <- native_machine_emergency_restart+0xaa/0x1e0
+ 0 ffffffff8101a514  ffffffff8101a772  mach_reboot_fixups <- native_machine_emergency_restart+0xe2/0x1e0
+ 0 ffffffff811d9c54  ffffffff8101a7a0  __const_udelay <- native_machine_emergency_restart+0x110/0x1e0
+ 0 ffffffff811d9c34  ffffffff811d9c80  __delay <- __const_udelay+0x30/0x40
+ 0 ffffffff811d9d14  ffffffff811d9c3f  delay_tsc <- __delay+0xf/0x20
 
-Not sure what you mean...
+Mostly the code comes from trace_persistent.c driver found in the
+Android git tree, written by Colin Cross <ccross@android.com>
+(according to sign-off history). I reworked the driver a little bit,
+and ported it to pstore subsystem.
 
-> > Also, think about this use-case in general: you have
-> > UBI volume of size X, then the volume is resized to Y > X, then mounted
-> > - UBIFS should work and resize itself to Y, up to the 'max_leb_cnt'. If
-> > Y > 'max_leb_cnt', we resize only to 'max_leb_cnt'.
->=20
-> For this case, it should be fine if the KSA is sized to maxlebcnt.
-> However, it will remain that size regardless of the real leb_cnt.
+The patches depend on a pile of other pstore-related work, so
+if anyone is willing to try the patches, they would rather grab
+the whole git tree:
+	git://git.infradead.org/users/cbou/linux-pstore.git
+or gitweb:
+	http://git.infradead.org/users/cbou/linux-pstore.git
 
-Yes, that's the idea. The lprops area behaves the same. This area stores
-a small object for each LEB, so the more LEBs we have, the larger lprops
-area is. And 'max_leb_cnt' defines lprops size. We can easily resize up
-to 'max_leb_cnt' but re-sizing more than that is currently impossible.
 
-> In general, removing KSA blocks is possible, but if datanodes are
-> encrypted with keys on those blocks, then they must be re-encrypted with =
-a
-> different key on the smaller set (or somehow write the new last KSA block
-> containing all the used keys from the removed KSA blocks along with a
-> relocation table, but this seems like alot of coding if removing LEBs fro=
-m
-> the KSA isn't that important.)
+Note that so far I've tried to not change the original idea, but if
+we consider inclusion, there are some open questions:
 
-Sure, no need to remove. Create them according to 'max_leb_cnt' and
-that's it.
+1. Should we merge persistent tracer with normal function tracer,
+   i.e. add some flag that makes function tracer to duplicate the
+   events into pstore (via a callback to pstore)?
 
---=20
-Best Regards,
-Artem Bityutskiy
+2. If we keep the two separate, should the code live in fs/pstore
+   or kernel/trace?.. I can see valid points for both approaches.
 
---=-RhALlU5TcFxPQsPFj7VQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+---
+ Documentation/ramoops.txt  |   24 +++++++++
+ fs/pstore/Kconfig          |   12 +++++
+ fs/pstore/Makefile         |    6 +++
+ fs/pstore/ftrace.c         |  122 ++++++++++++++++++++++++++++++++++++++++++++
+ fs/pstore/inode.c          |  111 ++++++++++++++++++++++++++++++++++++++--
+ fs/pstore/internal.h       |   49 ++++++++++++++++++
+ fs/pstore/platform.c       |   13 ++++-
+ fs/pstore/ram.c            |   54 +++++++++++++++-----
+ include/linux/pstore.h     |    5 ++
+ include/linux/pstore_ram.h |    1 +
+ kernel/trace/trace.c       |    7 +--
+ 11 files changed, 384 insertions(+), 20 deletions(-)
 
-iQIcBAABAgAGBQJPwNsrAAoJECmIfjd9wqK0cZoQAMuv/10qy3ky+wj2DFhlW4b5
-PYQMdWQx70g37DLkgOa/HdkR+rRH/ewYN53BBDhRsCVYvSyzLERLljPPxjniug3f
-tosyWeq3NbMyn/uCTyYS5yEJCVw8damBYLYvobD6mLwT/zNAt3fLIl7d5qdo7Wfi
-cXBp46XoLV5qXQv2D3AwuvzJoER1eRTP3B+PE++qg8bAqrOUsNqN6zR7J4dzWfTX
-aIARLkH5t1BBc1JRT6qL+bwCv1tosjxFjjqzCBmXWHEOqKbJWN0Om7U71/XtFnPS
-xeqmH/RXcUr8e0yZiT5f33FxOaGcW9YUf5pikKW5tCB/jPhQHULay7NefS/FTLXY
-5AZ2jnSkvLYBei1cZkmoTqQ2NohRHpIZBUPtZjH3nCOqsNWlF4pfBlMVnO/VkPot
-TY/itH9hdkmQQ/NvmylM7YfcItPU32nB3fbpxEsOpPbJQec1R2Tl2GCNIpGj6cd/
-XKidF3pHCSf0MPCWKBE/cjPUKXJMN4q+TgQOIqpN+OwlGiw++SiNZjQohPoV7Xfo
-yvWF68piVxmuCoh+PKwcQrdXIdFStlnCwtF96sHfy7G6xeeSGYQO3n1yH75dLFox
-+TpO22xmFrnX/1tPFYcFkfndhpIlhIIoXQ42uZsq8kr5924Pc8vBOA3Zclc8Kavx
-12X+R+rlLjltlP4t2a0H
-=jAO5
------END PGP SIGNATURE-----
-
---=-RhALlU5TcFxPQsPFj7VQ--
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
