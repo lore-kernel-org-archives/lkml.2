@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2EZHXZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 03:23:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52354 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab2EZHXM (ORCPT
+	id S1751489Ab2EZHX3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 03:23:29 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37603 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab2EZHXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 03:23:12 -0400
+	Sat, 26 May 2012 03:23:15 -0400
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 6/8] arm-soc: device tree conversions, part 2
-Date: Sat, 26 May 2012 00:22:36 -0700
-Message-Id: <1338016958-7887-7-git-send-email-olof@lixom.net>
+Subject: [GIT PULL 8/8] arm-soc: sweeping late_initcall cleanup
+Date: Sat, 26 May 2012 00:22:38 -0700
+Message-Id: <1338016958-7887-9-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 In-Reply-To: <1338016958-7887-1-git-send-email-olof@lixom.net>
 References: <1338016958-7887-1-git-send-email-olof@lixom.net>
@@ -21,205 +21,228 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These continue the device tree work from part 1, this set is for the
-tegra, mxs and imx platforms, all of which have dependencies on clock
-or pinctrl changes submitted earlier.
+This is a patch series from Shawn Guo that moves from individual
+late_initcalls() to using a member in the machine structure to invoke
+a platform's late initcalls.
+
+This cleanup is a step in the move towards multiplatform kernels since
+it would reduce the need to check for compatible platforms in each and
+every initcall.
 
 ----------------------------------------------------------------
 
-The following changes since commit 672b9ea0bd2e9c8ac957b888cdb08d1f29d332e8:
+The following changes since commit 7ff2e2e928102ba1bd0d375a649dec5980c3a130:
 
-  Merge tag 'stmp-dev' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
+  Merge tag 'soc2' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt2
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/cleanup-initcall
 
-for you to fetch changes up to deb88cc3c69975cbd9875ed9fac259b351f6b64d:
+for you to fetch changes up to 80b9abf973462499c1a0110df47f62cc90361e2c:
 
-  Merge branch 'drivers/mmc' into next/dt2
+  Merge branch 'clean/late_initcall_v2' of git://git.linaro.org/people/shawnguo/linux-2.6 into staging/cleanup
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (4):
-      Merge branch 'imx/pinctrl' into imx/dt
-      Merge branch 'imx/dt/for-3.5' of git://git.linaro.org/people/shawnguo/linux-2.6.git into next/dt2
-      Merge branch 'for-3.5/dt2' of git://git.kernel.org/.../swarren/linux-tegra into for-next
-      Merge branch 'drivers/mmc' into next/dt2
+Olof Johansson (1):
+      Merge branch 'clean/late_initcall_v2' of git://git.linaro.org/people/shawnguo/linux-2.6 into staging/cleanup
 
-Dirk Behme (1):
-      ARM: imx6: Add UART2 for low-level debug
-
-Dong Aisheng (6):
-      ARM: dts: imx6q-arm2: add pinctrl state for usdhc
-      ARM: mxs: add initial device tree support for imx28-evk board
-      dma: mxs-dma: use global stmp_device functionality
-      dma: mxs-dma: add device tree probe support
-      ARM: mxs: do not add dma device by default
-      ARM: mxs: add mxs-dma dt support
-
-Fabio Estevam (4):
-      ARM: dts: imx: Remove bootargs field
-      ARM: imx6q-arm2: Remove hardcoded mac address
-      ARM: dts: Add basic support for imx6q-sabresd
-      ARM: dts: imx6q-sabrelite: Add SPI NOR support
-
-Hiroshi DOYU (1):
-      ARM: dt: tegra: Add device tree support for AHB
-
-Laxman Dewangan (2):
-      ARM: dt: tegra: enable als and proximity sensor
-      ARM: dt: tegra: cardhu: register core regulator tps62361
-
-Olof Johansson (3):
-      ARM: dt: tegra seaboard: add i2c devices
-      Merge branch 'for-3.5/dt' of git://git.kernel.org/.../swarren/linux-tegra into next/dt2
-      Merge branch 'mxs/dt/for-3.5' of git://git.linaro.org/people/shawnguo/linux-2.6 into next/dt2
-
-Richard Zhao (9):
-      ARM: imx6q: move imx6q_sabrelite specific code to a dedicated function
-      ARM: dts: imx6q-sabrelite: add ssi device
-      ARM: dts: imx6q-sabrelite: add audmux device
-      ARM: dts: imx6q-sabrelite: add i2c1 pinctrl support
-      ARM: dts: imx6q-sabrelite: add audmux pinctrl support
-      ARM: imx6q: add ssi1_ipg clk_lookup
-      ARM: imx6q_sabrelite: clk_register_clkdev cko1 for sgtl5000
-      ARM: dts: imx6q-sabrelite: add sound device imx6q-sabrelite-sgtl5000
-      ARM: dts: imx6q-sabrelite: add serial2 pinctrl support
-
-Shawn Guo (29):
-      ARM: imx: rename uart and fec device tree nodes
-      ARM: imx6q: register phy fixup only when CONFIG_PHYLIB is enabled
-      ARM: imx: add more imx5 ssi clocks
-      ARM: imx: add audmux pad setting for imx51-babbage
-      ARM: imx: add audio codec clk lookup for imx53-qsb
-      ARM: dts: imx51-babbage: enable audio support
-      ARM: dts: imx53-qsb: enable audio support
-      Merge branches 'clk/mxs' and 'imx/pinctrl/for-3.5' into mxs/dt/for-3.5
-      ARM: mxs: add initial device tree support for imx23-evk board
-      ARM: mxs: always build in device tree support
-      dma: mxs-dma: let dma_is_apbh and apbh_is_old take parameter
-      dma: mxs-dma: make platform_device_id more generic
-      gpio/mxs: use devm_* helpers to make error handling simple
-      gpio/mxs: get rid of the use of cpu_is_xxx
-      gpio/mxs: add device tree probe
-      ARM: mxs: add gpio support for device tree boot
-      mmc: mxs-mmc: use global stmp_device functionality
-      mmc: mxs-mmc: let ssp_is_old take host as parameter
-      mmc: mxs-mmc: get rid of the use of cpu_is_xxx
-      mmc: mxs-mmc: move header from mach into linux folder
-      mmc: mxs-mmc: use devm_* helper to make cleanup simpler
-      mmc: mxs-mmc: have dma_channel than dma_res in mxs_mmc_host
-      mmc: mxs-mmc: copy wp_gpio in struct mxs_mmc_host
-      mmc: mxs-mmc: add device tree support
-      ARM: dts: enable mmc for imx23-evk
-      ARM: dts: enable mmc for imx28-evk
-      i2c: mxs: add device tree probe support
-      ARM: dts: enable i2c device for imx28-evk
-      ARM: dts: enable audio support for imx28-evk
-
-Stephen Warren (17):
-      ARM: dt: tegra seaboard: fix I2C2 SCL rate
-      ARM: dt: tegra seaboard: configure I2C2 pinmux
-      ARM: dt: tegra trimslice: add RTC I2C device
-      ARM: dt: tegra trimslice: enable SDHCI1 controller
-      ARM: dt: tegra trimslice: add support for audio
-      Merge branch 'for-3.5/usb-ulpi' into for-3.5/dt2-new
-      Merge branch 'for-3.5/dt' into for-3.5/dt2-new
-      ARM: dt: tegra cardhu: fix typo in SDHCI node name
-      ARM: dt: tegra: whitespace cleanup
-      ARM: dt: tegra: remove unnecessary unit addresses
-      ARM: dt: tegra: gpio comment cleanup
-      ARM: dt: tegra: format regs properties consistently
-      ARM: dt: tegra: consistenly use lower-case for hex constants
-      ARM: dt: tegra: remove duplicate device_type property
-      ARM: dt: tegra: sort nodes based on bus order
-      ARM: dt: tegra: consistent basic property ordering
-      ARM: dt: tegra: invert status=disable vs status=okay
-
-Ying-Chun Liu (PaulLiu) (2):
-      ARM: dts: imx6q: add anatop regulators
-      ARM: dts: imx53-qsb: Add Dialog DA9053 PMIC support
-
-hdoyu@nvidia.com (4):
-      ARM: dt: tegra20.dtsi: Add Memory Controller(MC) nodes
-      ARM: dt: tegra30.dtsi: Add Memory Controller(MC) nodes
-      ARM: dt: tegra20.dtsi: Add GART node
-      ARM: dt: tegra30.dtsi: Add SMMU node
+Shawn Guo (15):
+      ARM: provide a late_initcall hook for platform initialization
+      ARM: davinci: use machine specific hook for late init
+      ARM: ep93xx: use machine specific hook for late init
+      ARM: exynos: use machine specific hook for late init
+      ARM: imx: use machine specific hook for late init
+      ARM: msm: use machine specific hook for late init
+      ARM: omap1: use machine specific hook for late init
+      ARM: omap2: use machine specific hook for late init
+      ARM: pnx4008: use machine specific hook for late init
+      ARM: prima2: use machine specific hook for late init
+      ARM: s3c64xx: use machine specific hook for late init
+      ARM: sa1100: use machine specific hook for late init
+      ARM: shmobile: use machine specific hook for late init
+      ARM: tegra: use machine specific hook for late init
+      ARM: ux500: use machine specific hook for late init
 
 
- Documentation/devicetree/bindings/arm/fsl.txt   |  12 +
- .../devicetree/bindings/dma/fsl-mxs-dma.txt     |  19 +
- .../devicetree/bindings/gpio/gpio-mxs.txt       |  87 ++++
- .../devicetree/bindings/i2c/i2c-mxs.txt         |  16 +
- .../devicetree/bindings/mmc/mxs-mmc.txt         |  25 +
- .../devicetree/bindings/net/fsl-fec.txt         |   2 +-
- .../bindings/tty/serial/fsl-imx-uart.txt        |   2 +-
- arch/arm/Kconfig                                |   1 +
- arch/arm/Kconfig.debug                          |   8 +
- arch/arm/boot/dts/imx23-evk.dts                 |  43 ++
- arch/arm/boot/dts/imx23.dtsi                    | 295 +++++++++++
- arch/arm/boot/dts/imx27-phytec-phycore.dts      |   8 +-
- arch/arm/boot/dts/imx27.dtsi                    |  14 +-
- arch/arm/boot/dts/imx28-evk.dts                 | 114 +++++
- arch/arm/boot/dts/imx28.dtsi                    | 497 +++++++++++++++++++
- arch/arm/boot/dts/imx51-babbage.dts             |  40 +-
- arch/arm/boot/dts/imx51.dtsi                    |  41 +-
- arch/arm/boot/dts/imx53-ard.dts                 |   6 +-
- arch/arm/boot/dts/imx53-evk.dts                 |   8 +-
- arch/arm/boot/dts/imx53-qsb.dts                 | 121 ++++-
- arch/arm/boot/dts/imx53-smd.dts                 |  12 +-
- arch/arm/boot/dts/imx53.dtsi                    |  45 +-
- arch/arm/boot/dts/imx6q-arm2.dts                |  13 +-
- arch/arm/boot/dts/imx6q-sabrelite.dts           |  50 +-
- arch/arm/boot/dts/imx6q-sabresd.dts             |  53 ++
- arch/arm/boot/dts/imx6q.dtsi                    | 171 ++++++-
- arch/arm/boot/dts/tegra-cardhu.dts              |  85 ++--
- arch/arm/boot/dts/tegra-harmony.dts             | 104 ++--
- arch/arm/boot/dts/tegra-paz00.dts               | 112 ++---
- arch/arm/boot/dts/tegra-seaboard.dts            | 213 ++++----
- arch/arm/boot/dts/tegra-trimslice.dts           |  83 ++--
- arch/arm/boot/dts/tegra-ventana.dts             | 102 ++--
- arch/arm/boot/dts/tegra20.dtsi                  | 275 +++++-----
- arch/arm/boot/dts/tegra30.dtsi                  | 292 ++++++-----
- arch/arm/configs/mxs_defconfig                  |   1 +
- arch/arm/mach-imx/Makefile.boot                 |   3 +-
- arch/arm/mach-imx/clk-imx51-imx53.c             |  40 ++
- arch/arm/mach-imx/clk-imx6q.c                   |  35 +-
- arch/arm/mach-imx/imx53-dt.c                    |  19 +
- arch/arm/mach-imx/lluart.c                      |   6 +
- arch/arm/mach-imx/mach-imx6q.c                  |  55 +-
- arch/arm/mach-imx/mach-mx51_babbage.c           |   6 +
- arch/arm/mach-mxs/Kconfig                       |  10 +
- arch/arm/mach-mxs/Makefile                      |   1 +
- arch/arm/mach-mxs/devices/Kconfig               |   1 -
- arch/arm/mach-mxs/devices/platform-dma.c        |  21 +-
- arch/arm/mach-mxs/devices/platform-gpio-mxs.c   |  24 +-
- arch/arm/mach-mxs/devices/platform-mxs-mmc.c    |  21 +-
- arch/arm/mach-mxs/include/mach/common.h         |   7 +-
- arch/arm/mach-mxs/include/mach/devices-common.h |   3 +-
- arch/arm/mach-mxs/mach-mxs.c                    | 121 +++++
- arch/arm/mach-mxs/mm.c                          |  16 +
- arch/arm/plat-mxc/include/mach/debug-macro.S    |   2 +
- arch/arm/plat-mxc/include/mach/mx6q.h           |   2 +
- drivers/clk/mxs/clk-imx23.c                     |   9 +-
- drivers/clk/mxs/clk-imx28.c                     |  13 +-
- drivers/dma/Kconfig                             |   1 +
- drivers/dma/mxs-dma.c                           | 188 ++++---
- drivers/gpio/gpio-mxs.c                         | 156 +++---
- drivers/i2c/busses/i2c-mxs.c                    |  13 +
- drivers/mmc/host/mxs-mmc.c                      | 197 ++++----
- include/linux/fsl/mxs-dma.h                     |  12 +-
- .../mach/mmc.h => include/linux/mmc/mxs-mmc.h   |   7 +-
- 63 files changed, 2972 insertions(+), 987 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/dma/fsl-mxs-dma.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-mxs.txt
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-mxs.txt
- create mode 100644 Documentation/devicetree/bindings/mmc/mxs-mmc.txt
- create mode 100644 arch/arm/boot/dts/imx23-evk.dts
- create mode 100644 arch/arm/boot/dts/imx23.dtsi
- create mode 100644 arch/arm/boot/dts/imx28-evk.dts
- create mode 100644 arch/arm/boot/dts/imx28.dtsi
- create mode 100644 arch/arm/boot/dts/imx6q-sabresd.dts
- create mode 100644 arch/arm/mach-mxs/mach-mxs.c
- rename arch/arm/mach-mxs/include/mach/mmc.h => include/linux/mmc/mxs-mmc.h (81%)
+ arch/arm/include/asm/mach/arch.h             |  1 +
+ arch/arm/kernel/setup.c                      |  8 +++
+ arch/arm/mach-davinci/board-da830-evm.c      |  1 +
+ arch/arm/mach-davinci/board-da850-evm.c      |  1 +
+ arch/arm/mach-davinci/board-dm355-evm.c      |  1 +
+ arch/arm/mach-davinci/board-dm355-leopard.c  |  1 +
+ arch/arm/mach-davinci/board-dm365-evm.c      |  1 +
+ arch/arm/mach-davinci/board-dm644x-evm.c     |  1 +
+ arch/arm/mach-davinci/board-dm646x-evm.c     |  2 +
+ arch/arm/mach-davinci/board-mityomapl138.c   |  1 +
+ arch/arm/mach-davinci/board-neuros-osd2.c    |  1 +
+ arch/arm/mach-davinci/board-omapl138-hawk.c  |  1 +
+ arch/arm/mach-davinci/board-sffsdr.c         |  1 +
+ arch/arm/mach-davinci/board-tnetv107x-evm.c  |  1 +
+ arch/arm/mach-davinci/clock.c                |  3 +-
+ arch/arm/mach-davinci/common.c               |  7 +++
+ arch/arm/mach-davinci/cpufreq.c              |  3 +-
+ arch/arm/mach-davinci/include/mach/common.h  | 19 +++++++
+ arch/arm/mach-davinci/pm.c                   |  3 +-
+ arch/arm/mach-ep93xx/adssphere.c             |  1 +
+ arch/arm/mach-ep93xx/core.c                  |  5 ++
+ arch/arm/mach-ep93xx/crunch.c                |  4 +-
+ arch/arm/mach-ep93xx/edb93xx.c               |  8 +++
+ arch/arm/mach-ep93xx/gesbc9312.c             |  1 +
+ arch/arm/mach-ep93xx/include/mach/platform.h |  7 +++
+ arch/arm/mach-ep93xx/micro9.c                |  4 ++
+ arch/arm/mach-ep93xx/simone.c                |  1 +
+ arch/arm/mach-ep93xx/snappercl15.c           |  1 +
+ arch/arm/mach-ep93xx/ts72xx.c                |  1 +
+ arch/arm/mach-ep93xx/vision_ep9307.c         |  1 +
+ arch/arm/mach-exynos/common.c                |  5 ++
+ arch/arm/mach-exynos/common.h                |  7 +++
+ arch/arm/mach-exynos/mach-armlex4210.c       |  1 +
+ arch/arm/mach-exynos/mach-exynos4-dt.c       |  1 +
+ arch/arm/mach-exynos/mach-exynos5-dt.c       |  1 +
+ arch/arm/mach-exynos/mach-nuri.c             |  1 +
+ arch/arm/mach-exynos/mach-origen.c           |  1 +
+ arch/arm/mach-exynos/mach-smdk4x12.c         |  1 +
+ arch/arm/mach-exynos/mach-smdkv310.c         |  1 +
+ arch/arm/mach-exynos/mach-universal_c210.c   |  1 +
+ arch/arm/mach-exynos/pm_domains.c            |  3 +-
+ arch/arm/mach-imx/cpu-imx5.c                 |  6 +--
+ arch/arm/mach-imx/imx51-dt.c                 |  1 +
+ arch/arm/mach-imx/mach-cpuimx51sd.c          |  1 +
+ arch/arm/mach-imx/mach-mx51_3ds.c            |  1 +
+ arch/arm/mach-imx/mach-mx51_babbage.c        |  1 +
+ arch/arm/mach-imx/mach-mx51_efikamx.c        | 42 ++++++++-------
+ arch/arm/mach-imx/mach-mx51_efikasb.c        | 28 +++++-----
+ arch/arm/mach-imx/mach-pcm037.c              |  6 +++
+ arch/arm/mach-imx/mach-pcm037_eet.c          |  5 +-
+ arch/arm/mach-imx/mm-imx5.c                  |  5 ++
+ arch/arm/mach-imx/pcm037.h                   |  6 +++
+ arch/arm/mach-msm/board-halibut.c            |  6 +++
+ arch/arm/mach-msm/board-mahimahi.c           |  6 +++
+ arch/arm/mach-msm/board-msm7x27.c            |  9 ++++
+ arch/arm/mach-msm/board-msm7x30.c            |  8 +++
+ arch/arm/mach-msm/board-msm8960.c            |  7 +++
+ arch/arm/mach-msm/board-msm8x60.c            | 10 ++++
+ arch/arm/mach-msm/board-qsd8x50.c            |  7 +++
+ arch/arm/mach-msm/board-sapphire.c           |  6 +++
+ arch/arm/mach-msm/board-trout.c              |  6 +++
+ arch/arm/mach-msm/include/mach/board.h       |  6 +++
+ arch/arm/mach-msm/smd_debug.c                |  3 +-
+ arch/arm/mach-omap1/board-ams-delta.c        |  8 ++-
+ arch/arm/mach-omap1/board-fsample.c          |  1 +
+ arch/arm/mach-omap1/board-generic.c          |  1 +
+ arch/arm/mach-omap1/board-h2.c               |  1 +
+ arch/arm/mach-omap1/board-h3.c               |  1 +
+ arch/arm/mach-omap1/board-htcherald.c        |  1 +
+ arch/arm/mach-omap1/board-innovator.c        |  1 +
+ arch/arm/mach-omap1/board-nokia770.c         |  1 +
+ arch/arm/mach-omap1/board-osk.c              |  1 +
+ arch/arm/mach-omap1/board-palmte.c           |  1 +
+ arch/arm/mach-omap1/board-palmtt.c           |  1 +
+ arch/arm/mach-omap1/board-palmz71.c          |  1 +
+ arch/arm/mach-omap1/board-perseus2.c         |  1 +
+ arch/arm/mach-omap1/board-sx1.c              |  1 +
+ arch/arm/mach-omap1/board-voiceblue.c        |  1 +
+ arch/arm/mach-omap1/common.h                 | 10 ++++
+ arch/arm/mach-omap1/io.c                     |  5 ++
+ arch/arm/mach-omap1/serial.c                 |  3 +-
+ arch/arm/mach-omap2/board-2430sdp.c          |  1 +
+ arch/arm/mach-omap2/board-3430sdp.c          |  1 +
+ arch/arm/mach-omap2/board-3630sdp.c          |  1 +
+ arch/arm/mach-omap2/board-4430sdp.c          |  1 +
+ arch/arm/mach-omap2/board-am3517crane.c      |  1 +
+ arch/arm/mach-omap2/board-am3517evm.c        |  1 +
+ arch/arm/mach-omap2/board-apollon.c          |  1 +
+ arch/arm/mach-omap2/board-cm-t35.c           |  2 +
+ arch/arm/mach-omap2/board-cm-t3517.c         |  1 +
+ arch/arm/mach-omap2/board-devkit8000.c       |  1 +
+ arch/arm/mach-omap2/board-generic.c          |  1 +
+ arch/arm/mach-omap2/board-h4.c               |  1 +
+ arch/arm/mach-omap2/board-igep0020.c         |  2 +
+ arch/arm/mach-omap2/board-ldp.c              |  1 +
+ arch/arm/mach-omap2/board-n8x0.c             |  3 ++
+ arch/arm/mach-omap2/board-omap3beagle.c      |  1 +
+ arch/arm/mach-omap2/board-omap3evm.c         |  1 +
+ arch/arm/mach-omap2/board-omap3logic.c       |  2 +
+ arch/arm/mach-omap2/board-omap3pandora.c     |  1 +
+ arch/arm/mach-omap2/board-omap3stalker.c     |  1 +
+ arch/arm/mach-omap2/board-omap3touchbook.c   |  1 +
+ arch/arm/mach-omap2/board-omap4panda.c       |  1 +
+ arch/arm/mach-omap2/board-overo.c            |  1 +
+ arch/arm/mach-omap2/board-rm680.c            |  2 +
+ arch/arm/mach-omap2/board-rx51.c             |  1 +
+ arch/arm/mach-omap2/board-ti8168evm.c        |  2 +
+ arch/arm/mach-omap2/board-zoom.c             |  2 +
+ arch/arm/mach-omap2/common.h                 | 47 +++++++++++++++++
+ arch/arm/mach-omap2/io.c                     | 63 +++++++++++++++++++++++
+ arch/arm/mach-omap2/mux.c                    |  3 +-
+ arch/arm/mach-omap2/pm.c                     |  3 +-
+ arch/arm/mach-omap2/pm24xx.c                 | 17 ++----
+ arch/arm/mach-omap2/pm34xx.c                 |  7 +--
+ arch/arm/mach-omap2/pm44xx.c                 |  6 +--
+ arch/arm/mach-pnx4008/core.c                 | 12 +++++
+ arch/arm/mach-pnx4008/pm.c                   |  4 +-
+ arch/arm/mach-prima2/common.h                |  6 +++
+ arch/arm/mach-prima2/pm.c                    |  3 +-
+ arch/arm/mach-prima2/prima2.c                |  6 +++
+ arch/arm/mach-s3c64xx/common.c               |  5 ++
+ arch/arm/mach-s3c64xx/common.h               |  7 +++
+ arch/arm/mach-s3c64xx/mach-anw6410.c         |  1 +
+ arch/arm/mach-s3c64xx/mach-crag6410.c        |  1 +
+ arch/arm/mach-s3c64xx/mach-hmt.c             |  1 +
+ arch/arm/mach-s3c64xx/mach-mini6410.c        |  1 +
+ arch/arm/mach-s3c64xx/mach-ncp.c             |  1 +
+ arch/arm/mach-s3c64xx/mach-real6410.c        |  1 +
+ arch/arm/mach-s3c64xx/mach-smartq5.c         |  1 +
+ arch/arm/mach-s3c64xx/mach-smartq7.c         |  1 +
+ arch/arm/mach-s3c64xx/mach-smdk6400.c        |  1 +
+ arch/arm/mach-s3c64xx/mach-smdk6410.c        |  1 +
+ arch/arm/mach-s3c64xx/pm.c                   |  3 +-
+ arch/arm/mach-sa1100/assabet.c               |  1 +
+ arch/arm/mach-sa1100/badge4.c                |  1 +
+ arch/arm/mach-sa1100/cerf.c                  |  1 +
+ arch/arm/mach-sa1100/collie.c                |  1 +
+ arch/arm/mach-sa1100/generic.c               |  4 ++
+ arch/arm/mach-sa1100/generic.h               |  7 +++
+ arch/arm/mach-sa1100/h3100.c                 |  1 +
+ arch/arm/mach-sa1100/h3600.c                 |  1 +
+ arch/arm/mach-sa1100/hackkit.c               |  1 +
+ arch/arm/mach-sa1100/jornada720.c            |  1 +
+ arch/arm/mach-sa1100/lart.c                  |  1 +
+ arch/arm/mach-sa1100/nanoengine.c            |  1 +
+ arch/arm/mach-sa1100/pleb.c                  |  1 +
+ arch/arm/mach-sa1100/pm.c                    |  4 +-
+ arch/arm/mach-sa1100/shannon.c               |  1 +
+ arch/arm/mach-sa1100/simpad.c                |  1 +
+ arch/arm/mach-shmobile/Makefile              |  2 +-
+ arch/arm/mach-shmobile/board-ag5evm.c        |  1 +
+ arch/arm/mach-shmobile/board-ap4evb.c        |  1 +
+ arch/arm/mach-shmobile/board-bonito.c        |  1 +
+ arch/arm/mach-shmobile/board-g3evm.c         |  1 +
+ arch/arm/mach-shmobile/board-g4evm.c         |  1 +
+ arch/arm/mach-shmobile/board-kota2.c         |  1 +
+ arch/arm/mach-shmobile/board-mackerel.c      |  1 +
+ arch/arm/mach-shmobile/board-marzen.c        |  1 +
+ arch/arm/mach-shmobile/common.c              | 24 +++++++++
+ arch/arm/mach-shmobile/cpuidle.c             |  3 +-
+ arch/arm/mach-shmobile/include/mach/common.h | 14 +++++
+ arch/arm/mach-shmobile/suspend.c             |  3 +-
+ arch/arm/mach-tegra/board-dt-tegra20.c       |  1 +
+ arch/arm/mach-tegra/board-dt-tegra30.c       |  1 +
+ arch/arm/mach-tegra/board-harmony.c          |  1 +
+ arch/arm/mach-tegra/board-paz00.c            |  1 +
+ arch/arm/mach-tegra/board-seaboard.c         |  3 ++
+ arch/arm/mach-tegra/board-trimslice.c        |  1 +
+ arch/arm/mach-tegra/board.h                  | 14 +++++
+ arch/arm/mach-tegra/clock.c                  |  3 +-
+ arch/arm/mach-tegra/common.c                 |  6 +++
+ arch/arm/mach-tegra/powergate.c              |  4 +-
+ arch/arm/mach-ux500/board-mop500.c           |  4 ++
+ arch/arm/mach-ux500/clock.c                  |  6 +--
+ arch/arm/mach-ux500/clock.h                  | 12 +++++
+ arch/arm/mach-ux500/cpu.c                    |  6 +++
+ arch/arm/mach-ux500/include/mach/setup.h     |  1 +
+ arch/arm/plat-mxc/include/mach/common.h      |  7 +++
+ 178 files changed, 614 insertions(+), 106 deletions(-)
+ create mode 100644 arch/arm/mach-shmobile/common.c
