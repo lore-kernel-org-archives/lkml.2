@@ -1,55 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab2EZN42 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:56:28 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:33033 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab2EZN41 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:56:27 -0400
-Date: Sat, 26 May 2012 14:59:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: =?ISO-8859-1?B?yXJpYw==?= Piel <eric.piel@tremplin-utc.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        "lkml, " <linux-kernel@vger.kernel.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Carmine Iascone <carmine.iascone@st.com>,
-        Matteo Dameno <matteo.dameno@st.com>
-Subject: Re: LIS331DLH accelerometer driver, IIO or not?
-Message-ID: <20120526145914.47b7812d@pyramind.ukuu.org.uk>
-In-Reply-To: <4FC0C422.8080605@tremplin-utc.net>
-References: <4FBF0AC1.6030406@linux.intel.com>
-	<20120525051051.GA3135@kroah.com>
-	<4FC0C422.8080605@tremplin-utc.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753481Ab2EZOCG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 10:02:06 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097Ab2EZOCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 10:02:04 -0400
+Message-ID: <4FC0E257.1030403@nod.at>
+Date: Sat, 26 May 2012 16:01:59 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Artem Bityutskiy <dedekind1@gmail.com>
+CC: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        Heinz.Egger@linutronix.de, tim.bird@am.sony.com
+Subject: Re: [RFC v7] UBI: Fastmap support (aka checkpointing)
+References: <1337771191-95358-1-git-send-email-richard@nod.at> <1338036094.2525.7.camel@koala>
+In-Reply-To: <1338036094.2525.7.camel@koala>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigCA31536FD7E4D417086CA183"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Make it an IIO driver and then we can delete the misc driver, which
-> > shouldn't have snuck in there in the first place :)
-> >
-> 
-> To be more fair to the misc driver, I wouldn't say it snucked in there, 
-> but more "it ended up there as the least worse place" ;-)
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigCA31536FD7E4D417086CA183
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Because IIO spent forever in staging, as well as blocking lots of other
-driver work and meaning tons of drivers are now not to be found anywhere
-but obscure git trees. Thankfully they didn't manage to block the LIS
-driver during this mess.
+Hi Artem!
 
-Until all the needed support for the LIS IIO driver exists outside of
-staging the driver needs to stay where it is and without IIO
-dependancies. It is not acceptable to cripple existing working code with
-staging tree dependancies.
+Am 26.05.2012 14:41, schrieb Artem Bityutskiy:
+> while my daughters are sleeping, I have a chance to quickly review the
+> code. I just start from the attaching path and add TODOs.
+>=20
+> Can we change our workflow a bit. I will create a branch for fastmap in=
 
-Hopefully commit a980e046098b0a40eaff5e4e7fcde6cf035b7c06 has finally set
-the basis for this happening when it hits mainline.
+> the UBI tree taking v7 as the base. I'll add my TODOs there and commit,=
 
-Alan
+> and send them also as a patch to the mailing list. You then send
+> incremental patches which fix TODOs or anything else.
+>=20
+> We can discuss my notes and if some of them make no sens - the patch
+> would just kill the TODO.
+>=20
+> In any case, I feel a need to switch to incremental development and get=
+
+> incremental patches instead of code drops. You can send entire fastmap
+> work to the list from time to time, of course, for people to look.
+>=20
+> How does this sound?
+
+Sounds sane to me.
+
+> Also, I'd like you to document the tests you do. I'd like to start
+> making sure that we never break anything.
+>=20
+> We can start with the UBI tests from the mtd-utils plust the integck
+> test. And whatever goes to my branch should never break them. Do these
+> tests pass now? If not, let's make them pass.
+>=20
+
+What is "integck" test?
+
+UBI tests from mtd-utils pass now.
+The io_paral triggered a race condition on my very fast qemu-kvm test sys=
+tem.
+On my test board with real NAND flash this race never happened.
+Anyway, it's fixed now.
+
+I'm mostly testing with custom scripts, shall I send a patch against UBI =
+tests?
+These tests test fastmap corner cases.
+E.g. Recovery from fastmap with an empty or full pool, etc...
+
+> At some later points we'll start to move pieces to the master branch.
+>=20
+> Shmulik, is it fine with you?
+>=20
+> I'll publush the 'fastmap' branch a bit later and send you the patch
+> with my TODO comments, if this is fine.
+
+Perfectly fine.
+I really appreciate your help!
+
+Thanks,
+//richard
+
+
+--------------enigCA31536FD7E4D417086CA183
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPwOJYAAoJEN9758yqZn9ejSUIAKjpSzlEverSnZahl0t9cqYX
+bTBJJoJV2NdK0uV2dZzoiXgZPIRAf8HtW3VMY9DsziKT3jv8AbhnBKOHZ/ojiF0o
+91srKwuaeog5tbr2H6VXd4yQLK1h7RFDBjii+CyI42I49kQ7cWvoLbKyjEJNb4Dq
+ZfIoJvg8NlQraIXkpl0krgiHWXg3vONPWXfpBdLyXKYkZDmR772AL/ME0YcZgwP0
+4KlhHyUsuJrvxU5ts+o8rU0M4fsrqPpXkXdQz8h0f2CCA/YDyV0/7f4QvPdLC2Mp
+3PHL6JCVTA+CjZVFhbRysPPUQgF+T49flRuAbjarPSbjIpxXf+txr7GZ66nvrMY=
+=YDBN
+-----END PGP SIGNATURE-----
+
+--------------enigCA31536FD7E4D417086CA183--
