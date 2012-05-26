@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab2EZHQN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 03:16:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45352 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab2EZHQM convert rfc822-to-8bit (ORCPT
+	id S1751437Ab2EZHXE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 03:23:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52354 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2EZHXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 03:16:12 -0400
-Message-ID: <1338016564.14636.4.camel@twins>
-Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in tty_lock_pair(v3)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Ming Lei <tom.leiming@gmail.com>,
-        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-Date: Sat, 26 May 2012 09:16:04 +0200
-In-Reply-To: <1338000869-15129-1-git-send-email-ming.lei@canonical.com>
-References: <1338000869-15129-1-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Sat, 26 May 2012 03:23:02 -0400
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [GIT PULL 0/8] Second batch of arm-soc branches for 3.5
+Date: Sat, 26 May 2012 00:22:30 -0700
+Message-Id: <1338016958-7887-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-26 at 10:54 +0800, Ming Lei wrote:
-> From: Ming Lei <tom.leiming@gmail.com>
+Hi Linus,
 
-> Cc: Alan Cox <alan@linux.intel.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+This is the second and last large set of arm-soc branches for the 3.5
+merge window. There will likely be a couple of small pull requests next
+week (and thereafter fixes).
 
-Oh very much not!
+Descriptions of each branch are in the corresponding request.
 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
-> v3:
-> 	fix unlock order in tty_unlock_pair
-> 
->  drivers/tty/tty_mutex.c |   28 +++++++++++++++++++++-------
->  1 file changed, 21 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/tty/tty_mutex.c b/drivers/tty/tty_mutex.c
-> index 69adc80..c7f4523 100644
+Most of them have some trivial merge conflicts with earlier branches or
+other code that has gone in since they were staged. Notes below are for
+the slightly trickier cases. Just like with the last batch I've pushed
+up resolved/<tagname> branches with proposed resolutions if you want
+to compare.
 
-> @@ -43,11 +49,14 @@ void __lockfunc tty_lock_pair(struct tty_struct *tty,
->  {
->  	if (tty < tty2) {
->  		tty_lock(tty);
-> -		tty_lock(tty2);
-> +		tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
->  	} else {
-> -		if (tty2 && tty2 != tty)
-> +		int nested = 0;
-> +		if (tty2 && tty2 != tty) {
->  			tty_lock(tty2);
-> -		tty_lock(tty);
-> +			nested = SINGLE_DEPTH_NESTING;
-> +		}
-> +		tty_lock_nested(tty, nested);
->  	}
->  }
->  EXPORT_SYMBOL(tty_lock_pair);
+cleanup2 branch:
+omap_init_clocksource_32k(): Keep the version from this branch but add
+in the register_persistent_clock() addition from bd0493e.
+
+clock branch:
+An awkward add/remove conflict in mach-kirkwood/common.c. Code is removed
+here that was fixed in one of our earlier branches. The right thing to
+do is to still just remove the code.
+
+dt2 branch:
+gpio-mxs.c: Keep the (port) side but change false -> 0 on the last arg.
+
+soc2 branch:
+gpio-samsung.c: Slightly awkward move/change conflict. Essentially
+re-apply the second hunk of f10590c9 in the moved function
+(exynos5_gpiolib_init()).
+
+cleanup-initcall branch:
+Trivial conflict deltas and a deleted file conflict. The removed file
+should remain removed.
 
 
-I've still to hear what's wrong with a simple:
+Thanks!
 
-
-  if (!tty2 || tty == tty2) {
-	tty_lock(tty);
-	return;
-  }
-
-  if (tty > tty2)
-	swap(tty, tty2);
-
-  tty_lock(tty);
-  tty_lock_nested(tty2, SINGLE_DEPTH_NESTING);
-
-
-That's a lot more readable than the proposed code.
-
-> @@ -55,8 +64,13 @@ EXPORT_SYMBOL(tty_lock_pair);
->  void __lockfunc tty_unlock_pair(struct tty_struct *tty,
->  						struct tty_struct *tty2)
->  {
-> -	tty_unlock(tty);
-> -	if (tty2 && tty2 != tty)
-> +	if (tty < tty2) {
->  		tty_unlock(tty2);
-> +		tty_unlock(tty);
-> +	} else {
-> +		tty_unlock(tty);
-> +		if (tty2 && tty2 != tty)
-> +			tty_unlock(tty2);
-> +	}
->  }
->  EXPORT_SYMBOL(tty_unlock_pair);
-
-This is complete crap, unlock order doesn't matter.
-
+-Olof
