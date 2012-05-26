@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057Ab2EZQAJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 12:00:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab2EZQAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 12:00:06 -0400
-Date: Sat, 26 May 2012 17:59:12 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 03/35] xen: document Xen is using an unused bit for the
- pagetables
-Message-ID: <20120526155912.GA4054@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-4-git-send-email-aarcange@redhat.com>
- <20120525202656.GA23655@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120525202656.GA23655@phenom.dumpdata.com>
+	id S1753666Ab2EZQEF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 12:04:05 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:38910 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752393Ab2EZQED (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 12:04:03 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: kernel@pengutronix.de
+Cc: shawn.guo@freescale.com, Fabio Estevam <fabio.estevam@freescale.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 03/15] hw_random: mxc-rnga: Use clk_prepare_enable/clk_disable_unprepare
+Date: Sat, 26 May 2012 13:03:52 -0300
+Message-Id: <1338048232-3523-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1337987696-31728-4-git-send-email-festevam@gmail.com>
+References: <1337987696-31728-4-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konrad,
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-On Fri, May 25, 2012 at 04:26:56PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Fri, May 25, 2012 at 07:02:07PM +0200, Andrea Arcangeli wrote:
-> > Xen has taken over the last reserved bit available for the pagetables
-> > which is set through ioremap, this documents it and makes the code
-> > more readable.
-> 
-> Andrea, my previous respone had a question about this - was wondering
-> if you had a chance to look at that in your busy schedule and provide
-> some advice on how to remove the _PAGE_IOMAP altogether?
+Prepare the clock before enabling it.
 
-I read you response but I didn't look into the P2M tree and
-xen_val_pte code yet sorry. Thanks for looking into this, if it's
-possible to remove it without downsides, it would be a nice
-cleanup. It's not urgent though, we're not running out of reserved
-pte bits yet :).
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: <linux-kernel@vger.kernel.org>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v1:
+- Add missing clk_disable_unprepare(clk) in the remove path
+
+ drivers/char/hw_random/mxc-rnga.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/hw_random/mxc-rnga.c b/drivers/char/hw_random/mxc-rnga.c
+index 187c6be..430582c 100644
+--- a/drivers/char/hw_random/mxc-rnga.c
++++ b/drivers/char/hw_random/mxc-rnga.c
+@@ -154,7 +154,7 @@ static int __init mxc_rnga_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
+-	clk_enable(clk);
++	clk_prepare_enable(clk);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!res) {
+@@ -196,7 +196,7 @@ err_ioremap:
+ 	release_mem_region(res->start, resource_size(res));
+ 
+ err_region:
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
+ 	clk_put(clk);
+ 
+ out:
+@@ -215,7 +215,7 @@ static int __exit mxc_rnga_remove(struct platform_device *pdev)
+ 
+ 	release_mem_region(res->start, resource_size(res));
+ 
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
+ 	clk_put(clk);
+ 
+ 	return 0;
+-- 
+1.7.1
+
