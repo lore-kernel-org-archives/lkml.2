@@ -1,93 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab2EZOPu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 10:15:50 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54305 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752578Ab2EZOPt (ORCPT
+	id S1753624Ab2EZOSS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 10:18:18 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:62454 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666Ab2EZOSP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 10:15:49 -0400
-Message-ID: <1338041744.2525.46.camel@koala>
-Subject: Re: [RFC v7] UBI: Fastmap support (aka checkpointing)
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Shmulik Ladkani <shmulik.ladkani@gmail.com>, linux-mtd@lists.infradead.org,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Heinz.Egger@linutronix.de, tim.bird@am.sony.com
-Date: Sat, 26 May 2012 17:15:44 +0300
-In-Reply-To: <4FC0E257.1030403@nod.at>
-References: <1337771191-95358-1-git-send-email-richard@nod.at>
-	 <1338036094.2525.7.camel@koala> <4FC0E257.1030403@nod.at>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-20S/G86t3TDymXYh5elg"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	Sat, 26 May 2012 10:18:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFy9QysTkgPuy=GPxknRMoPTSTmp3FkHFJ+bs0G6CSh41g@mail.gmail.com>
+References: <CAO_48GFE3=yQjKS4w7=pGjNe3yENbRrd4bcMTfADJSn7LKekPQ@mail.gmail.com>
+ <CAO_48GGRRvCKVyY_s=oFgTb1vfjf8pSkHRf3jA8iFcdEHhwxVg@mail.gmail.com> <CA+55aFy9QysTkgPuy=GPxknRMoPTSTmp3FkHFJ+bs0G6CSh41g@mail.gmail.com>
+From: Sumit Semwal <sumit.semwal@linaro.org>
+Date: Sat, 26 May 2012 19:47:54 +0530
+Message-ID: <CAO_48GEzhmme8Evt9xiowgAwm_4496F9RTsO5ej3Fwtyr5VUVA@mail.gmail.com>
+Subject: Re: [GIT PULL]: dma-buf updates for 3.5
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
+        Jesse Barker <jesse.barker@linaro.org>, akpm@linux-foundation.org,
+        Daniel Vetter <daniel@ffwll.ch>, Arnd Bergmann <arnd@arndb.de>,
+        Dave Airlie <airlied@linux.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---=-20S/G86t3TDymXYh5elg
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 25 May 2012 22:14, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Fri, May 25, 2012 at 2:17 AM, Sumit Semwal <sumit.semwal@linaro.org> wrote:
+>>
+>> I am really sorry - I goofed up in the git URL (sent the ssh URL
+>> instead).
+>
+> I was going to send you an acerbic email asking for your private ssh
+> key, but then noticed that you had sent another email with the public
+> version of the git tree..
+Well, it was stupid indeed - learning for me; won't happen again.
+>
+>> Could you please use
+>>
+>> git://git.linaro.org/people/sumitsemwal/linux-dma-buf.git tags/tag-for-linus-3.5
+>>
+>> instead, or should I send a new pull request with the corrected URL?
+>
+> Done. However, while your tag seems to be signed, your key is not
+> available publicly:
+>
+>   [torvalds@i5 ~]$ gpg --recv-key 7126925D
+>   gpg: requesting key 7126925D from hkp server pgp.mit.edu
+>   gpgkeys: key 7126925D not found on keyserver
+>
+> so I can't check if it is signed by anybody.
+>
+> Please do something like
+>
+>   gpg --keyserver pgp.mit.edu --send-keys 7126925D
+>
+> to actually make your public key public.
+Thanks; it is done.
+>
+> Of course, if it isn't public, I assume it hasn't actually been signed
+> by anybody, which makes it largely useless. But any future signing
+> action will validate the pre-signing uses of the key, so that's
+> fixable.
 
-On Sat, 2012-05-26 at 16:01 +0200, Richard Weinberger wrote:
-> > We can start with the UBI tests from the mtd-utils plust the integck
-> > test. And whatever goes to my branch should never break them. Do these
-> > tests pass now? If not, let's make them pass.
-> >=20
->=20
-> What is "integck" test?
-
-It is a quite extensive FS check which we use for UBIFS. As UBIFS is the
-main UBI client - it makes sense to run it. It lives in the
-mtd-utils.git/tests/fs/integck
-
-./integck -n8 /mnt/ubifs
-
-would run in. /mnt/ubifs is the ubifs mount-point. -n8 means repeat 8
-times.
-
-> UBI tests from mtd-utils pass now.
-> The io_paral triggered a race condition on my very fast qemu-kvm test sys=
-tem.
-> On my test board with real NAND flash this race never happened.
-> Anyway, it's fixed now.
-
-Cool!
-
-> I'm mostly testing with custom scripts, shall I send a patch against UBI =
-tests?
-
-Yes, it would be great to integrate this, of course. I might also want
-to send you a patch, then I'd run it.
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-20S/G86t3TDymXYh5elg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPwOWQAAoJECmIfjd9wqK0ZCgP/3mqtNa+nR8Nz2IQjh2Nh4mE
-HPzE9EHSOlgglKFqe1Dn2FZptU9rjqYJQrGXkRztc4mtHHnEfRgjVdDim2T/e6RV
-xycI00Nj99Nv4kRiNV9vMSo7Bq6t6ekA0JXRkMx/UbXaHBnes8HOZGXxW/cCHc2s
-R8WfWB2X8S9VcdnE3iEZLFrdCmEvs817OymJVSTxeO0M0/qYBnDkEND7PMx7JZ1P
-OlIKMaXopQ7Ubc7FKPd9TkqA0h3hx98L7r7BLox7rFzA9mwgTTpKyoH7XEIMMnoj
-JDMXxsSUtmuuDA9HDP6alSbL9OvVqczJ/OLirqw7VB9gTDZgtndM9koK7po1GYiy
-LAmkZdAv2q8ga8Dfi1ACZpS1uI6EfGenNnGstFhDG6NGcoL42ZN1C3loR7/SbdcZ
-6CptR+nXgyWbTRwf28bt0L4virMGHRaleAiP5Cps7zVkyqSmoAp9BnuPuB9dtC9L
-C6YnlTVPKLxezgbTD6HGpHVcrBkVrwm8LlnCRBoAtUssG9M8d80wZ+lejlHl0Ugk
-akgrQVUvmMEQjsE2nhMlQcmV8rWA5ZMi3ZL1LMWK0ELYjwRq0dR7sMiEAQUOuawU
-ifQd5oxjrSuzj8C30O0BJT+1nilMs79mttDzcnBkJBXaoljna6dOY+igFX/8A/GK
-iIYynJ1QlEsHCjHAIY0N
-=/fPx
------END PGP SIGNATURE-----
-
---=-20S/G86t3TDymXYh5elg--
-
+Like Arnd has mentioned, we would do a key signing party here at the
+Linaro meeting, and make sure that relevant ones are signed.
+>
+>                     Linus
+-- 
+Thanks and best regards,
+~Sumit
