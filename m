@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225Ab2EZGhp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 02:37:45 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:56772 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750786Ab2EZGho (ORCPT
+	id S1751151Ab2EZGnK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 02:43:10 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44856 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab2EZGnI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 02:37:44 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX184+EVfDTg4EHjPOohzBQxAIMa4Dd7w1d4iWBurLf
-	VSKt6aWhRdR9K9
-Message-ID: <1338014259.7302.26.camel@marge.simpson.net>
-Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
-Date: Sat, 26 May 2012 08:37:39 +0200
-In-Reply-To: <1337926468.5415.48.camel@marge.simpson.net>
-References: <1337857490.7300.19.camel@marge.simpson.net>
-	 <1337865431.9783.148.camel@laptop> <1337865641.9783.149.camel@laptop>
-	 <1337926468.5415.48.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	Sat, 26 May 2012 02:43:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <001701cd3a1e$69c59a00$3d50ce00$%han@samsung.com>
+References: <001701cd3a1e$69c59a00$3d50ce00$%han@samsung.com>
+Date: Sat, 26 May 2012 10:43:07 +0400
+Message-ID: <CALT56yMro+2KPHPNdT4F+DdAjiK2e3QRUrx3CV8dVaoLhXa1Rw@mail.gmail.com>
+Subject: Re: [PATCH 12/13] backlight: tosa_bl: use devm_ functions
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 08:14 +0200, Mike Galbraith wrote: 
-> On Thu, 2012-05-24 at 15:20 +0200, Peter Zijlstra wrote: 
-> > On Thu, 2012-05-24 at 15:17 +0200, Peter Zijlstra wrote:
-> > > For power7 with 4 smt it would end up as 1230 I guess.
-> > 
-> > One more thing, in light of that, can't you simplify the core stuff to
-> > be a simple shift as well? map them 123450, does it really matter to
-> > pair them off like 103254 ?
-> 
-> In my head it does.  Buddies need to be glued together so we can use
-> them as a team to convert overlap and kick butt on ramp up.
+On Fri, May 25, 2012 at 6:30 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> The devm_ functions allocate memory that is released when a driver
+> detaches. This patch uses devm_kzalloc of these functions.
 
-Ew. 3.4 went broke for Q6600, and performance went... far far away.
+Strictly speaking I see no point in this changes. There are no
+'missing free' problems
+in these drivers, the code path is clean enough. Is devm_kzalloc usage some kind
+of policy, or it is just a future-proof change?
 
-[    0.200057] CPU0 attaching sched-domain:
-[    0.204016]  domain 0: span 0-3 level MC
-[    0.208015]   groups: 0 1 2 3
-[    0.210970] CPU1 attaching sched-domain:
-[    0.212014]  domain 0: span 0-3 level MC
-[    0.216016]   groups: 1 2 3 0
-[    0.220016] CPU2 attaching sched-domain:
-[    0.224015]  domain 0: span 0-3 level MC
-[    0.228016]   groups: 2 3 0 1
-[    0.232015] CPU3 attaching sched-domain:
-[    0.236016]  domain 0: span 0-3 level MC
-[    0.240017]   groups: 3 0 1 2
+>
+> Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+>  drivers/video/backlight/tosa_bl.c |   11 +++++------
+>  1 files changed, 5 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
+> index 2b241ab..0d54e60 100644
+> --- a/drivers/video/backlight/tosa_bl.c
+> +++ b/drivers/video/backlight/tosa_bl.c
+> @@ -82,8 +82,11 @@ static int __devinit tosa_bl_probe(struct i2c_client *client,
+>                const struct i2c_device_id *id)
+>  {
+>        struct backlight_properties props;
+> -       struct tosa_bl_data *data = kzalloc(sizeof(struct tosa_bl_data), GFP_KERNEL);
+> +       struct tosa_bl_data *data;
+>        int ret = 0;
+> +
+> +       data = devm_kzalloc(&client->dev, sizeof(struct tosa_bl_data),
+> +                               GFP_KERNEL);
+>        if (!data)
+>                return -ENOMEM;
+>
+> @@ -92,7 +95,7 @@ static int __devinit tosa_bl_probe(struct i2c_client *client,
+>        ret = gpio_request(TOSA_GPIO_BL_C20MA, "backlight");
+>        if (ret) {
+>                dev_dbg(&data->bl->dev, "Unable to request gpio!\n");
+> -               goto err_gpio_bl;
+> +               return ret;
+>        }
+>        ret = gpio_direction_output(TOSA_GPIO_BL_C20MA, 0);
+>        if (ret)
+> @@ -122,8 +125,6 @@ err_reg:
+>        data->bl = NULL;
+>  err_gpio_dir:
+>        gpio_free(TOSA_GPIO_BL_C20MA);
+> -err_gpio_bl:
+> -       kfree(data);
+>        return ret;
+>  }
+>
+> @@ -136,8 +137,6 @@ static int __devexit tosa_bl_remove(struct i2c_client *client)
+>
+>        gpio_free(TOSA_GPIO_BL_C20MA);
+>
+> -       kfree(data);
+> -
+>        return 0;
+>  }
+>
+> --
+> 1.7.1
+>
+>
 
-11.791806 usecs/loop -- avg 11.534552 173.4 KHz
 
-Cause: sometimes during boot, hw Siamese twins are 0-1 2-3, and
-sometimes, as in this boot, 0-3 1-2, so busted groups above does the
-worst thing possible.  When twins are 0-1 2-3, busted groups doesn't
-matter with $subject patch applied, it glues Siamese twins back
-together.  During this boot, it created Siamese aliens from hell.
 
--Mike
-
+-- 
+With best wishes
+Dmitry
