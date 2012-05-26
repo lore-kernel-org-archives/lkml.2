@@ -1,192 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751715Ab2EZHXT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 03:23:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:37603 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab2EZHXG (ORCPT
+	id S1751926Ab2EZHYy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 03:24:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52354 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab2EZHXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 03:23:06 -0400
+	Sat, 26 May 2012 03:23:04 -0400
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
-Subject: [GIT PULL 3/8] arm-soc: cleanups, part 2
-Date: Sat, 26 May 2012 00:22:33 -0700
-Message-Id: <1338016958-7887-4-git-send-email-olof@lixom.net>
+Subject: =?UTF-8?q?=5BGIT=20PULL=202/8=5D=20arm-soc=3A=20driver=20specific=20updates?=
+Date: Sat, 26 May 2012 00:22:32 -0700
+Message-Id: <1338016958-7887-3-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
 In-Reply-To: <1338016958-7887-1-git-send-email-olof@lixom.net>
 References: <1338016958-7887-1-git-send-email-olof@lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-More cleanups, continuing an earlier set with omap and samsung specific
-cleanups. These could not go into the first set because they have
-dependencies on various other series that in turn depend on the first
-cleanups.
+These changes are specific to some driver that may be used by multiple
+boards or socs. The most significant change in here is the move of the
+samsung iommu code from a platform specific in-kernel interface to the
+generic iommu subsystem.
 
 ----------------------------------------------------------------
 
-The following changes since commit 2f31a25ab6ccffb07990e36576fc47f4b6661ccf:
+The following changes since commit cfda982fa8b2affe2b42ab5bb7d5737736fa8caf:
 
-  Merge tag 'drivers' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
+  Merge tag 'defconfig' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc into HEAD
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/cleanup2
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/drivers
 
-for you to fetch changes up to 424663566c43ce87e8b33228860bf882f1ea61bf:
+for you to fetch changes up to 046fae440d32cc6dec8148c7e06a8b4b987f8a2f:
 
-  Merge branch 'next/cleanup-plat-s3c24xx-s5p' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into next/cleanup2
+  Merge branch 'next/devel-samsung-iommu' of git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into next/drivers
 
 ----------------------------------------------------------------
 
-Arnd Bergmann (2):
-      Merge branch 'exynos/sysmmu' into next/cleanup2
-      Merge branch 'next/cleanup-plat-s3c24xx-s5p' of git://git.kernel.org/.../kgene/linux-samsung into next/cleanup2
+Allen Martin (1):
+      ARM: tegra: Add pllc clock init table
 
-Heiko Stuebner (4):
-      ARM: S3C24XX: move plat-s3c24xx/cpu.c
-      ARM: S3C24XX: move plat-s3c24xx/dev-uart.c into common.c
-      ARM: S3C24XX: move common power-management code to mach-s3c24xx
-      ARM: S3C24XX: move common clock init into common.c
+Arnd Bergmann (7):
+      Merge branch 'keyboard' of git://github.com/hzhuang1/linux into next/drivers
+      Merge branch 'next/cleanup-samsung-iommu' of git://git.kernel.org/.../kgene/linux-samsung into next/drivers
+      Merge branch 'omap/dt-missed-3.4' into drivers/mmc
+      mmc: dt: Consolidate DT bindings
+      Merge branch 'for-3.5/ahb' of git://git.kernel.org/.../swarren/linux-tegra into next/drivers
+      Merge branch 'drivers/mmc' into next/drivers
+      Merge branch 'next/devel-samsung-iommu' of git://git.kernel.org/.../kgene/linux-samsung into next/drivers
 
-Kevin Hilman (4):
-      ARM: OMAP: AM35xx: remove redunant cpu_is checks for AM3505
-      ARM: OMAP: AM35xx: convert 3517 detection/flags to AM35xx
-      ARM: OMAP2+: Kconfig: convert SOC_OMAPTI81XX to SOC_TI81XX
-      ARM: OMAP2+: Kconfig: convert SOC_OMAPAM33XX to SOC_AM33XX
+Chao Xie (4):
+      Input: pxa27x_keypad keep clock on as wakeup source
+      Input: pxa27x_keypad bug fix for direct_key_mask
+      Input: pxa27x_keypad direct key may be low active
+      Input: pxa27x_keypad add choice to set direct_key_mask
 
-Kukjin Kim (9):
-      ARM: SAMSUNG: move clock part for common s5p into plat-samsung
-      ARM: SAMSUNG: move interrupt part for common s5p into plat-samsung
-      ARM: SAMSUNG: move pm part for common s5p into plat-samsung
-      ARM: SAMSUNG: move hr timer for common s5p into plat-samsung
-      ARM: SAMSUNG: move platform device for s5p uart into plat-samsung
-      ARM: SAMSUNG: move setup code for s5p mfc and mipiphy into plat-samsung
-      ARM: SAMSUNG: move options for common s5p into plat-samsung/Kconfig
-      ARM: SAMSUNG: merge plat-s5p into plat-samsung
-      Merge branch 'next/cleanup-plat-s3c24xx' into next/cleanup-plat-s3c24xx-s5p
+Hiroshi DOYU (2):
+      ARM: tegra: Add Tegra AHB driver
+      ARM: tegra: Add SMMU enabler in AHB
 
-Olof Johansson (4):
-      Merge tag 'omap-cleanup-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup2
-      Merge tag 'omap-cleanup-renames-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup2
-      Merge tag 'omap-cleanup-devices-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup2
-      Merge tag 'omap-cleanup-timer-for-v3.5' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup2
+KyongHo Cho (3):
+      S5P: SYSMMU: Remove System MMU device driver
+      ARM: EXYNOS: Change System MMU platform device definitions
+      iommu/exynos: Add iommu driver for EXYNOS Platforms
 
-R Sricharan (1):
-      ARM: OMAP2+: dma: Define dma capabilities register bitfields and use them.
+Olof Johansson (5):
+      Merge branch 'for-3.5/usb-ulpi' of git://git.kernel.org/.../swarren/linux-tegra into next/drivers
+      Merge branch 'for-3.5/tegra30-audio' of git://git.kernel.org/.../swarren/linux-tegra into next/drivers
+      Merge branch 'for-3.5/debug' of git://git.kernel.org/.../swarren/linux-tegra into next/drivers
+      Merge tag 'v3.5-soc' of git://gitorious.org/linux-davinci/linux-davinci into next/drivers
+      Merge tag 'ep93xx-fixes-for-3.5' of git://github.com/RyanMallon/linux-ep93xx into next/drivers
 
-Santosh Shilimkar (6):
-      ARM: OMAP4: Don't compile cm2xxx_3xxx.c for OMAP4 only builds.
-      ARM: OMAP2+: Clean up wrapping multiple objects in Makefile
-      ARM: OMAP4: Remove un-used WakeupGen register defines.
-      ARM: OMAP: dma: Make use of cpu_class_is_omap2() to avoid future patching.
-      ARM: All OMAP2PLUS machines use omap2 directory so just add one entry
-      ARM: OMAP4: Reduce the static IO mapping
+Peter De Schrijver (1):
+      ARM: tegra: Initialize pll_p_out1
 
-Tarun Kanti DebBarma (1):
-      ARM: OMAP2+: dmtimer: remove redundant sysconfig context restore
+Rafal Prylowski (2):
+      arm: ep93xx: Don't try to release not acquired GPIO lines
+      dmaengine/ep93xx_dma: Implement double buffering for M2M DMA channels
 
-Tony Lindgren (10):
-      Merge branch 'for_3.5/omap_misc_cleanup' of git://gitorious.org/omap-sw-develoment/linux-omap-dev into cleanup-soc
-      Merge branch 'devel-hwmod' into cleanup
-      Merge branch 'fixes-non-critical' into cleanup-devices
-      ARM: OMAP1: Move omap_init_audio() to keep the devices in alphabetical order
-      ARM: OMAP1: Move omap_init_uwire to mach-omap1
-      ARM: OMAP2+: Move omap_dsp_reserve_sdram_memblock() to mach-omap2
-      ARM: OMAP2: Use hwmod to initialize mmc for 2420
-      ARM: OMAP: Move omap_mmc_add() to mach-omap1
-      ARM: OMAP1: Pass dma request lines in platform data to MMC driver
-      Merge branch 'cleanup-soc' into cleanup
+Sebastian Andrzej Siewior (1):
+      ARM: davinci: optimize the DMA ISR
 
-Tushar Behera (1):
-      ARM: S3C24XX: Use common macro to define resources on dev-uart.c
+Stephen Warren (12):
+      ARM: tegra: uncompress.h: Implement TEGRA_DEBUG_UART_AUTO_ODMDATA
+      ARM: tegra: provide clock aliases for AHUB configlink
+      ARM: tegra: set up audio clocks for tegra30 dt
+      ARM: tegra: add AUXDATA required for audio
+      ARM: dt: tegra30.dtsi: Add audio-related nodes
+      ARM: dt: tegra cardhu: basic audio support
+      ARM: tegra: reparent sclk to pll_c_out1
+      ARM: tegra: fix pclk rate
+      ARM: tegra: change pll_p_out4's rate to 24MHz
+      ARM: tegra: don't hard-code USB ULPI PHY reset_gpio
+      ARM: tegra: add USB ULPI PHY reset GPIO to device tree
+      ARM: dt: tegra: pinmux changes for USB ULPI
 
-Vaibhav Hiremath (3):
-      ARM: OMAP1: Add checks for possible error condition in timer_init
-      ARM: OMAP2+: Replace space with underscore in the name field of system timers
-      ARM: OMAP: Make OMAP clocksource source selection using kernel param
-
-Yegor Yefremov (1):
-      GPMC: add ECC control definitions
+Uwe Kleine-König (1):
+      ARM: davinci: implement DEBUG_LL port choice
 
 
- arch/arm/Kconfig                                |   1 -
- arch/arm/Makefile                               |   6 +-
- arch/arm/mach-omap1/common.h                    |  11 +-
- arch/arm/mach-omap1/devices.c                   | 121 ++++++++++++--
- arch/arm/mach-omap1/time.c                      |  16 +-
- arch/arm/mach-omap1/timer32k.c                  |  28 +++-
- arch/arm/mach-omap2/Kconfig                     |   8 +-
- arch/arm/mach-omap2/Makefile                    | 167 +++++++++----------
- arch/arm/mach-omap2/common.h                    |   4 +-
- arch/arm/mach-omap2/devices.c                   |  19 ++-
- arch/arm/mach-omap2/dma.c                       |  11 +-
- arch/arm/mach-omap2/dsp.c                       |  27 ++-
- arch/arm/mach-omap2/gpmc.c                      |  30 +++-
- arch/arm/mach-omap2/hsmmc.c                     |   8 +-
- arch/arm/mach-omap2/id.c                        |   7 +-
- .../mach-omap2/include/mach/omap-wakeupgen.h    |   8 -
- arch/arm/mach-omap2/io.c                        |  38 +----
- arch/arm/mach-omap2/iomap.h                     |  28 ----
- arch/arm/mach-omap2/irq.c                       |   2 +-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c      |   2 +-
- arch/arm/mach-omap2/powerdomains3xxx_data.c     |   2 +-
- arch/arm/mach-omap2/timer.c                     | 118 ++++++++++---
- arch/arm/mach-omap2/usb-musb.c                  |   2 +-
- arch/arm/mach-omap2/voltagedomains3xxx_data.c   |   2 +-
- arch/arm/mach-s3c24xx/Makefile                  |   6 +
- .../cpu.c => mach-s3c24xx/common.c}             |  69 +++++++-
- .../arm/{plat-s3c24xx => mach-s3c24xx}/irq-pm.c |   0
- arch/arm/{plat-s3c24xx => mach-s3c24xx}/pm.c    |   0
- arch/arm/{plat-s3c24xx => mach-s3c24xx}/sleep.S |   0
- arch/arm/plat-omap/counter_32k.c                |  93 +++++------
- arch/arm/plat-omap/devices.c                    | 122 --------------
- arch/arm/plat-omap/dma.c                        |   4 +-
- arch/arm/plat-omap/dmtimer.c                    |   2 -
- arch/arm/plat-omap/include/plat/common.h        |   2 +-
- arch/arm/plat-omap/include/plat/cpu.h           |   8 +
- arch/arm/plat-omap/include/plat/dma.h           |   5 +
- arch/arm/plat-omap/include/plat/dmtimer.h       |   1 -
- arch/arm/plat-omap/include/plat/mmc.h           |   9 -
- arch/arm/plat-s3c24xx/Makefile                  |   6 -
- arch/arm/plat-s3c24xx/clock.c                   |  59 -------
- arch/arm/plat-s3c24xx/dev-uart.c                | 100 -----------
- arch/arm/plat-s5p/Kconfig                       | 132 ---------------
- arch/arm/plat-s5p/Makefile                      |  27 ---
- arch/arm/plat-samsung/Kconfig                   | 140 ++++++++++++++++
- arch/arm/plat-samsung/Makefile                  |  13 ++
- .../clock.c => plat-samsung/s5p-clock.c}        |   3 +-
- .../dev-mfc.c => plat-samsung/s5p-dev-mfc.c}    |   4 +-
- .../dev-uart.c => plat-samsung/s5p-dev-uart.c}  |  78 ++-------
- .../irq-eint.c => plat-samsung/s5p-irq-eint.c}  |   3 +-
- .../s5p-irq-gpioint.c}                          |   3 +-
- .../irq-pm.c => plat-samsung/s5p-irq-pm.c}      |   3 +-
- .../{plat-s5p/irq.c => plat-samsung/s5p-irq.c}  |   3 +-
- .../{plat-s5p/pm.c => plat-samsung/s5p-pm.c}    |   3 +-
- .../sleep.S => plat-samsung/s5p-sleep.S}        |   3 +-
- arch/arm/{plat-s5p => plat-samsung}/s5p-time.c  |   3 +-
- .../{plat-s5p => plat-samsung}/setup-mipiphy.c  |   0
- drivers/net/ethernet/ti/Kconfig                 |   2 +-
- 57 files changed, 720 insertions(+), 852 deletions(-)
- rename arch/arm/{plat-s3c24xx/cpu.c => mach-s3c24xx/common.c} (76%)
- rename arch/arm/{plat-s3c24xx => mach-s3c24xx}/irq-pm.c (100%)
- rename arch/arm/{plat-s3c24xx => mach-s3c24xx}/pm.c (100%)
- rename arch/arm/{plat-s3c24xx => mach-s3c24xx}/sleep.S (100%)
- delete mode 100644 arch/arm/plat-s3c24xx/clock.c
- delete mode 100644 arch/arm/plat-s3c24xx/dev-uart.c
- delete mode 100644 arch/arm/plat-s5p/Kconfig
- delete mode 100644 arch/arm/plat-s5p/Makefile
- rename arch/arm/{plat-s5p/clock.c => plat-samsung/s5p-clock.c} (99%)
- rename arch/arm/{plat-s5p/dev-mfc.c => plat-samsung/s5p-dev-mfc.c} (97%)
- rename arch/arm/{plat-s5p/dev-uart.c => plat-samsung/s5p-dev-uart.c} (57%)
- rename arch/arm/{plat-s5p/irq-eint.c => plat-samsung/s5p-irq-eint.c} (99%)
- rename arch/arm/{plat-s5p/irq-gpioint.c => plat-samsung/s5p-irq-gpioint.c} (99%)
- rename arch/arm/{plat-s5p/irq-pm.c => plat-samsung/s5p-irq-pm.c} (98%)
- rename arch/arm/{plat-s5p/irq.c => plat-samsung/s5p-irq.c} (96%)
- rename arch/arm/{plat-s5p/pm.c => plat-samsung/s5p-pm.c} (95%)
- rename arch/arm/{plat-s5p/sleep.S => plat-samsung/s5p-sleep.S} (98%)
- rename arch/arm/{plat-s5p => plat-samsung}/s5p-time.c (99%)
- rename arch/arm/{plat-s5p => plat-samsung}/setup-mipiphy.c (100%)
+ .../bindings/arm/tegra/nvidia,tegra20-ahb.txt   |   11 +
+ .../devicetree/bindings/mmc/fsl-esdhc.txt       |    6 +-
+ .../devicetree/bindings/mmc/fsl-imx-esdhc.txt   |    2 +-
+ .../devicetree/bindings/mmc/mmc-spi-slot.txt    |    3 +-
+ Documentation/devicetree/bindings/mmc/mmc.txt   |   27 +
+ .../devicetree/bindings/mmc/nvidia-sdhci.txt    |    4 +-
+ .../devicetree/bindings/mmc/ti-omap-hsmmc.txt   |    4 +-
+ .../devicetree/bindings/usb/tegra-usb.txt       |    3 +
+ arch/arm/Kconfig.debug                          |   29 +
+ arch/arm/boot/dts/imx53-smd.dts                 |    4 +-
+ arch/arm/boot/dts/imx6q-arm2.dts                |    2 +-
+ arch/arm/boot/dts/omap3-beagle.dts              |    2 +-
+ arch/arm/boot/dts/omap4-panda.dts               |    4 +-
+ arch/arm/boot/dts/omap4-sdp.dts                 |    6 +-
+ arch/arm/boot/dts/tegra-cardhu.dts              |   65 ++
+ arch/arm/boot/dts/tegra-harmony.dts             |   26 +-
+ arch/arm/boot/dts/tegra-paz00.dts               |   20 +-
+ arch/arm/boot/dts/tegra-seaboard.dts            |    6 +
+ arch/arm/boot/dts/tegra-trimslice.dts           |   22 +-
+ arch/arm/boot/dts/tegra-ventana.dts             |    6 +
+ arch/arm/boot/dts/tegra30.dtsi                  |   41 +
+ arch/arm/mach-davinci/dma.c                     |   69 +-
+ .../arm/mach-davinci/include/mach/debug-macro.S |   58 +-
+ arch/arm/mach-davinci/include/mach/hardware.h   |    2 +-
+ arch/arm/mach-davinci/include/mach/serial.h     |   10 -
+ arch/arm/mach-davinci/include/mach/uncompress.h |   30 +-
+ arch/arm/mach-ep93xx/core.c                     |    2 +-
+ arch/arm/mach-exynos/Kconfig                    |   10 +-
+ arch/arm/mach-exynos/Makefile                   |    2 +-
+ arch/arm/mach-exynos/clock-exynos4.c            |   79 +-
+ arch/arm/mach-exynos/clock-exynos4.h            |    2 +
+ arch/arm/mach-exynos/clock-exynos4210.c         |   11 +
+ arch/arm/mach-exynos/clock-exynos4212.c         |   28 +-
+ arch/arm/mach-exynos/clock-exynos5.c            |   90 ++
+ arch/arm/mach-exynos/dev-sysmmu.c               |  457 ++++----
+ arch/arm/mach-exynos/include/mach/irqs.h        |   25 +-
+ arch/arm/mach-exynos/include/mach/map.h         |   38 +
+ arch/arm/mach-exynos/include/mach/regs-clock.h  |    5 +
+ arch/arm/mach-exynos/include/mach/regs-sysmmu.h |   28 -
+ arch/arm/mach-exynos/include/mach/sysmmu.h      |   88 +-
+ arch/arm/mach-exynos/mach-armlex4210.c          |    1 -
+ arch/arm/mach-exynos/mach-smdkv310.c            |    1 -
+ arch/arm/mach-tegra/Kconfig                     |   37 +-
+ arch/arm/mach-tegra/board-dt-tegra30.c          |   10 +
+ arch/arm/mach-tegra/board-paz00.c               |    3 +-
+ arch/arm/mach-tegra/board-trimslice.c           |    2 +
+ arch/arm/mach-tegra/common.c                    |   22 +-
+ arch/arm/mach-tegra/devices.c                   |    5 +-
+ arch/arm/mach-tegra/devices.h                   |    4 +
+ arch/arm/mach-tegra/include/mach/tegra-ahb.h    |   19 +
+ arch/arm/mach-tegra/include/mach/uncompress.h   |  176 ++-
+ arch/arm/mach-tegra/include/mach/usb_phy.h      |    4 +-
+ arch/arm/mach-tegra/tegra2_clocks.c             |    4 +
+ arch/arm/mach-tegra/tegra30_clocks.c            |    9 +
+ arch/arm/mach-tegra/usb_phy.c                   |   15 +-
+ arch/arm/plat-pxa/include/plat/pxa27x_keypad.h  |    4 +
+ arch/arm/plat-s5p/Kconfig                       |    8 -
+ arch/arm/plat-s5p/Makefile                      |    1 -
+ arch/arm/plat-s5p/sysmmu.c                      |  313 -----
+ arch/arm/plat-samsung/include/plat/devs.h       |    1 -
+ arch/arm/plat-samsung/include/plat/sysmmu.h     |   95 --
+ arch/powerpc/boot/dts/mpc8569mds.dts            |    1 +
+ drivers/Makefile                                |    2 +-
+ drivers/amba/Makefile                           |    4 +-
+ drivers/amba/tegra-ahb.c                        |  293 +++++
+ drivers/dma/ep93xx_dma.c                        |  117 +-
+ drivers/input/keyboard/pxa27x_keypad.c          |   52 +-
+ drivers/iommu/Kconfig                           |   21 +
+ drivers/iommu/Makefile                          |    1 +
+ drivers/iommu/exynos-iommu.c                    | 1076 ++++++++++++++++++
+ drivers/mmc/host/omap_hsmmc.c                   |    2 +-
+ drivers/mmc/host/sdhci-esdhc-imx.c              |    2 +-
+ drivers/mmc/host/sdhci-pltfm.c                  |    8 +-
+ drivers/usb/host/ehci-tegra.c                   |    5 +-
+ 74 files changed, 2630 insertions(+), 1015 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra20-ahb.txt
+ create mode 100644 Documentation/devicetree/bindings/mmc/mmc.txt
+ delete mode 100644 arch/arm/mach-exynos/include/mach/regs-sysmmu.h
+ create mode 100644 arch/arm/mach-tegra/include/mach/tegra-ahb.h
+ delete mode 100644 arch/arm/plat-s5p/sysmmu.c
+ delete mode 100644 arch/arm/plat-samsung/include/plat/sysmmu.h
+ create mode 100644 drivers/amba/tegra-ahb.c
+ create mode 100644 drivers/iommu/exynos-iommu.c
