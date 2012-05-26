@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab2EZQj6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 12:39:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50057 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab2EZQj5 (ORCPT
+	id S1754100Ab2EZQku (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 12:40:50 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50978 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab2EZQkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 12:39:57 -0400
-Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in
- tty_lock_pair(v3)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <CACVXFVNBiXxVvRWxnXiKPRm5dkj6qziFtXA_OH5kYFg4GZ+-pQ@mail.gmail.com>
-References: <1338000869-15129-1-git-send-email-ming.lei@canonical.com>
-	 <1338016564.14636.4.camel@twins>
-	 <CACVXFVNBiXxVvRWxnXiKPRm5dkj6qziFtXA_OH5kYFg4GZ+-pQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 26 May 2012 18:39:45 +0200
-Message-ID: <1338050385.10390.2.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Sat, 26 May 2012 12:40:49 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4FC1159F.7090606@cam.ac.uk>
+Date: Sat, 26 May 2012 18:40:47 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        "lkml, " <linux-kernel@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Carmine Iascone <carmine.iascone@st.com>,
+        Matteo Dameno <matteo.dameno@st.com>
+Subject: Re: LIS331DLH accelerometer driver, IIO or not?
+References: <4FBF0AC1.6030406@linux.intel.com> <20120525051051.GA3135@kroah.com> <4FC0C422.8080605@tremplin-utc.net>
+In-Reply-To: <4FC0C422.8080605@tremplin-utc.net>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-26 at 17:23 +0800, Ming Lei wrote:
+On 05/26/2012 12:53 PM, Éric Piel wrote:
+> On 25-05-12 07:10, Greg Kroah-Hartman wrote:
+>> On Thu, May 24, 2012 at 09:29:53PM -0700, Darren Hart wrote:
+>>> I'm working to enable the LIS331DLH accelerometer on the Fish River
+>>> Island II embedded atom development kit.
+>>>
+>>> I am more interested in enabling people to do bizarre and interesting
+>>> things with the device, so I'm leaning toward continuing with my IIO
+>>> implementation.
+>>
+>> Make it an IIO driver and then we can delete the misc driver, which
+>> shouldn't have snuck in there in the first place :)
+>>
 > 
-> You mean that the below is good usage of lock?
+> To be more fair to the misc driver, I wouldn't say it snucked in there,
+> but more "it ended up there as the least worse place" ;-) Actually, the
+> main problem is that there seemed to be no maintainer interested in
+> taking care of accelerometer devices. Now that the IIO subsystem is out
+> of staging, it might be a right place. That said, I don't know much
+> about the user interface to IIO. I know that I liked the idea of having
+> an joystick device created for an accelerometer because that allows to
+> get many programs to access the device almost without any modifications.
+I agree that this sort of device should have an input interface. Not
+sure if a joystick is the right option, but that's more one for Dmitry
+to comment on.
 > 
->         LOCK A
->         LOCK B
+> I'd happy to help merge the lis3lv02d driver into IIO. IMHO, the main
+> steps are:
+>  * make sure all the various buses are supported (e.g., I²C, SPI, and
+> also "ACPI-HP")
+>  * ensure the various versions of the accelerometer are supported (there
+> are 3 supported currently)
+>  * check that the driver is automatically loaded on HP laptops (via ACPI
+> entry)
+>  * for each of the current interfaces decide if they should be ported or
+> dropped (/dev/js*, /dev/freefall, sysfs...)
 > 
->         UNLOCK A
->         UNLOCK B 
+> What do you think Jonathan?
+You've laid it out extremely clearly.  Thanks, I agree with these steps,
+though they may occur from a slightly different angle given Darren is
+interested in a part that is not (I believe) currently supported by
+your existing driver.   Hence he may initially want to do a separate
+driver with that (keeping in mind the aim of mergining in the existing
+driver).  I have an ancient driver for the lis3l02dq alone (in
+iio from the start) that will also get eaten up by Daren's new driver
+(and the ability to test on that part on spi).
+staging/iio/accel/lis3l02dq*.c
 
-Yep, nothing wrong with that. Its lock order that matters, unlock very
-much not so.
+Jonathan
+> 
+> Cheers,
+> Éric
 
