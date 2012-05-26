@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab2EZTxg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 15:53:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35804 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754478Ab2EZTxf convert rfc822-to-8bit (ORCPT
+	id S1754857Ab2EZT6L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 15:58:11 -0400
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:58640 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754383Ab2EZT6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 15:53:35 -0400
+	Sat, 26 May 2012 15:58:09 -0400
+X-manitu-Original-Sender-IP: 79.230.31.106
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <4FC135C6.5030206@grandegger.com>
+Date: Sat, 26 May 2012 21:57:58 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <CA+55aFyAj5GhuNd88AkxUpM72v-ZvvGjgaajD51fS4KHO2ovzg@mail.gmail.com>
-References: <1338016958-7887-1-git-send-email-olof@lixom.net>
-	<1338016958-7887-5-git-send-email-olof@lixom.net>
-	<CA+55aFyAj5GhuNd88AkxUpM72v-ZvvGjgaajD51fS4KHO2ovzg@mail.gmail.com>
-Date: Sat, 26 May 2012 12:53:34 -0700
-Message-ID: <CAOesGMjOH5N4DEOrfyuTK+GLy8i_RNZUz-Cv64c6=99oF=hvgg@mail.gmail.com>
-Subject: Re: [GIT PULL 4/8] arm-soc: clock driver changes
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>
+To: Federico Vaga <federico.vaga@gmail.com>
+CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] STA2X11 CAN: CAN driver for the STA2X11 board
+References: <1337288364-17572-1-git-send-email-federico.vaga@gmail.com> <4FB5E581.1090209@grandegger.com> <CAH5GJ0rFB4xaR7o-wVR3ze_UogeDW84dehh0rx5z+300ghB4uA@mail.gmail.com>
+In-Reply-To: <CAH5GJ0rFB4xaR7o-wVR3ze_UogeDW84dehh0rx5z+300ghB4uA@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 12:47 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, May 26, 2012 at 12:22 AM, Olof Johansson <olof@lixom.net> wrote:
+On 05/26/2012 10:36 AM, Federico Vaga wrote:
+>> Thanks for your contribution. At a first glance, this driver looks
+>> similar to the pch_can and the c_can driver. It seems that a C_CAN based
+>> controller is used on that board as well. If that's true, it should be
+>> handled by the C_CAN driver. To get ride of the obsolete pch_can driver,
+>> I sent some time ago the patch "[RFC/PATCH] c_can: add driver for the
+>> PCH CAN controller":
 >>
->>  151 files changed, 8310 insertions(+), 14192 deletions(-)
->
-> Judging by the diffstat, I think we resolved this differently.
->
-> I also removed the
->
->  #include <linux/of.h>
->
-> from mach-kirkwood/common.c, since the OF users all got removed. You
-> have one less lines deleted than I do, which makes me think you didn't
-> remove that header file include.
->
-> But I didn't actually check. I thought I'd mention it, just so that it
-> doesn't come back (or, assuming I did the wrong thing, you fix it up
-> and put it back)
+>>  http://marc.info/?t=132991563600003&r=1&w=4
+>>
+>> I could serve as base of a generic c_can_pci driver.
+> 
+> You are right, this is a C-CAN but it isn't specified on the board manual.
+> I compared the board manual with the Bosch C-CAN manual, and it is the same.
 
-Good catch. Yes, I did indeed keep it and there is no need to do so
-since it was only used in the code that got removed. Your resolution
-is good. Thanks for the heads up.
+Like with the Intel EG20T PCH CAN controller.
 
+> I'm working on a PCI module for this board, when it is ready we can think for
+> a generic c_can_pci
 
-Regards,
+That would be nice, thanks. You might have realized that AnilKumar has
+provided support for the D_CAN controllers to the C_CAN driver which
+will show up mainline soon.
 
--Olof
+Wolfgang.
+
