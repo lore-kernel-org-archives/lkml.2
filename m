@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab2EZPEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 11:04:09 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46892 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752987Ab2EZPEG (ORCPT
+	id S1753868Ab2EZPIT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 11:08:19 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57811 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab2EZPIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 11:04:06 -0400
+	Sat, 26 May 2012 11:08:17 -0400
+Date: Sat, 26 May 2012 17:07:51 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai
+ threshold
+Message-ID: <20120526150750.GA28116@netboy.at.omicron.at>
+References: <4FBA84EF.5040506@linaro.org>
+ <20120521190815.GA19812@netboy.at.omicron.at>
+ <20120522173953.GA4177@netboy.at.omicron.at>
+ <4FBBD591.1000103@linaro.org>
+ <20120523082916.GA15627@localhost.localdomain>
+ <4FBD1545.4070408@linaro.org>
+ <20120523191747.GA2348@netboy.at.omicron.at>
+ <4FBD4613.7040003@linaro.org>
+ <20120524064340.GA2180@netboy.at.omicron.at>
+ <20120524065726.GB2180@netboy.at.omicron.at>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.41.176]
-In-Reply-To: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 26 May 2012 18:03:44 +0300
-Message-ID: <CAK=WgbaXw04tEJSQUkCWByWw=yUwqkRxVW9dbFUK8w_64OZkkA@mail.gmail.com>
-Subject: Re: [RFC 0/6] remoteproc: custom fw handling
-To: sjur.brandeland@stericsson.com
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120524065726.GB2180@netboy.at.omicron.at>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+On Thu, May 24, 2012 at 08:57:28AM +0200, Richard Cochran wrote:
+> On Thu, May 24, 2012 at 08:43:40AM +0200, Richard Cochran wrote:
+> > BTW you can use the program I have been using to test this at
+> > 
+> >    git://github.com/richardcochran/leap.git
+> 
+> That program exposes another leap second bug, too, I think. It reads
+> the time via adjtimex in a tight loop, optionally sleeping using
+> 
+> 	clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
+> 
+> The program does not wake from this call during a leap second. It is
+> my expectation that CLOCK_MONOTONIC should always work. Why doesn't
+> it?
 
-On Tue, May 22, 2012 at 4:26 PM,  <sjur.brandeland@stericsson.com> wrote:
-> I have cooked a couple of patches for remoteproc. I was planning to
-> test and polish them some more, but figured that I might as well send
-> them and find out what you think.
+FWIW, the V1 of this patch series fixes this problem, but V2 doesn't.
 
-Thanks! I'll give it a good look this week.
-
-> The next five patches are about custom firmware handlers.
-> I have done this in small steps to facilitate review, but I
-> suspect you might want to squash them all together.
-
-Any chance you have the customer loader patch ready ? Can you submit it too ?
-
-Ideally we should review (and merge) the custom fw groundwork together
-with the new fw loader.
-
-> Note that the ELF loaders are not tested. I have no environment to test
-> this at the moment.
-
-That's ok, I'll test the ELF part before merging the patch set.
+Maybe that fact promotes my original idea?
 
 Thanks,
-Ohad.
+Richard
