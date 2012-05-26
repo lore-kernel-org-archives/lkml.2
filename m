@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab2EZNWa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:22:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58205 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab2EZNW0 (ORCPT
+	id S1753181Ab2EZNWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:22:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44590 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2EZNWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:22:26 -0400
+	Sat, 26 May 2012 09:22:22 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 04/11] pstore/ram: Factor ramoops_get_next_prz() out of ramoops_pstore_read()
-Date: Sat, 26 May 2012 06:20:22 -0700
-Message-Id: <1338038429-21945-4-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 03/11] pstore/ram: Factor dmesg przs initialization out of probe()
+Date: Sat, 26 May 2012 06:20:21 -0700
+Message-Id: <1338038429-21945-3-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <20120526131747.GA15054@lizard>
 References: <20120526131747.GA15054@lizard>
@@ -34,79 +34,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This will help make code clearer when we'll add support for other
 message types.
 
-The patch also changes return value from -EINVAL to 0 in case of
-end-of-records. The exact value doesn't matter for pstore (it should
-be just <= 0), but 0 feels more correct.
+This also makes probe() much shorter and understandable, plus
+makes mem/record size checking a bit easier.
+
+Implementation detail: we now use a paddr pointer, this will
+be used for allocating persistent ram zones for other message
+types.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+Acked-by: Kees Cook <keescook@chromium.org>
 ---
- fs/pstore/ram.c |   41 ++++++++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 9 deletions(-)
+ fs/pstore/ram.c |   99 ++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 62 insertions(+), 37 deletions(-)
 
 diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 6b76767..d770d72 100644
+index 9b274b9..6b76767 100644
 --- a/fs/pstore/ram.c
 +++ b/fs/pstore/ram.c
-@@ -85,6 +85,33 @@ static int ramoops_pstore_open(struct pstore_info *psi)
- 	return 0;
- }
+@@ -202,13 +202,65 @@ static struct ramoops_context oops_cxt = {
+ 	},
+ };
  
-+static struct persistent_ram_zone *
-+ramoops_get_next_prz(struct persistent_ram_zone *przs[], uint *c, uint max,
-+		     u64 *id,
-+		     enum pstore_type_id *typep, enum pstore_type_id type,
-+		     bool update)
++static void ramoops_free_przs(struct ramoops_context *cxt)
 +{
-+	struct persistent_ram_zone *prz;
-+	int i = (*c)++;
++	int i;
 +
-+	if (i >= max)
-+		return NULL;
++	if (!cxt->przs)
++		return;
 +
-+	prz = przs[i];
-+
-+	if (update) {
-+		/* Update old/shadowed buffer. */
-+		persistent_ram_save_old(prz);
-+		if (!persistent_ram_old_size(prz))
-+			return NULL;
-+	}
-+
-+	*typep = type;
-+	*id = i;
-+
-+	return prz;
++	for (i = 0; cxt->przs[i]; i++)
++		persistent_ram_free(cxt->przs[i]);
++	kfree(cxt->przs);
 +}
 +
- static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 				   struct timespec *time,
- 				   char **buf,
-@@ -94,20 +121,16 @@ static ssize_t ramoops_pstore_read(u64 *id, enum pstore_type_id *type,
- 	struct ramoops_context *cxt = psi->data;
- 	struct persistent_ram_zone *prz;
- 
--	if (cxt->dump_read_cnt >= cxt->max_dump_cnt)
--		return -EINVAL;
--
--	*id = cxt->dump_read_cnt++;
--	prz = cxt->przs[*id];
-+	prz = ramoops_get_next_prz(cxt->przs, &cxt->dump_read_cnt,
-+				   cxt->max_dump_cnt, id, type,
-+				   PSTORE_TYPE_DMESG, 1);
-+	if (!prz)
++static int ramoops_init_przs(struct device *dev, struct ramoops_context *cxt,
++			      phys_addr_t *paddr, size_t dump_mem_sz)
++{
++	int err = -ENOMEM;
++	int i;
++
++	if (!cxt->record_size)
 +		return 0;
++
++	cxt->max_dump_cnt = dump_mem_sz / cxt->record_size;
++	if (!cxt->max_dump_cnt)
++		return -ENOMEM;
++
++	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_dump_cnt,
++			     GFP_KERNEL);
++	if (!cxt->przs) {
++		dev_err(dev, "failed to initialize a prz array for dumps\n");
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < cxt->max_dump_cnt; i++) {
++		size_t sz = cxt->record_size;
++
++		cxt->przs[i] = persistent_ram_new(*paddr, sz, cxt->ecc);
++		if (IS_ERR(cxt->przs[i])) {
++			err = PTR_ERR(cxt->przs[i]);
++			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
++				sz, (unsigned long long)*paddr, err);
++			goto fail_prz;
++		}
++		*paddr += sz;
++	}
++
++	return 0;
++fail_prz:
++	ramoops_free_przs(cxt);
++	return err;
++}
++
+ static int __init ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
+ 	struct ramoops_context *cxt = &oops_cxt;
++	size_t dump_mem_sz;
++	phys_addr_t paddr;
+ 	int err = -EINVAL;
+-	int i;
  
--	/* Only supports dmesg output so far. */
--	*type = PSTORE_TYPE_DMESG;
- 	/* TODO(kees): Bogus time for the moment. */
- 	time->tv_sec = 0;
- 	time->tv_nsec = 0;
+ 	/* Only a single ramoops area allowed at a time, so fail extra
+ 	 * probes.
+@@ -225,21 +277,6 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
+ 	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
  
--	/* Update old/shadowed buffer. */
--	persistent_ram_save_old(prz);
- 	size = persistent_ram_old_size(prz);
- 	*buf = kmalloc(size, GFP_KERNEL);
- 	if (*buf == NULL)
+-	/* Check for the minimum memory size */
+-	if (pdata->mem_size < MIN_MEM_SIZE &&
+-			pdata->record_size < MIN_MEM_SIZE) {
+-		pr_err("memory size too small, minimum is %lu\n",
+-			MIN_MEM_SIZE);
+-		goto fail_out;
+-	}
+-
+-	if (pdata->mem_size < pdata->record_size) {
+-		pr_err("The memory size must be larger than the "
+-			"records size\n");
+-		goto fail_out;
+-	}
+-
+-	cxt->max_dump_cnt = pdata->mem_size / pdata->record_size;
+ 	cxt->dump_read_cnt = 0;
+ 	cxt->size = pdata->mem_size;
+ 	cxt->phys_addr = pdata->mem_address;
+@@ -247,24 +284,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	cxt->dump_oops = pdata->dump_oops;
+ 	cxt->ecc = pdata->ecc;
+ 
+-	cxt->przs = kzalloc(sizeof(*cxt->przs) * cxt->max_dump_cnt, GFP_KERNEL);
+-	if (!cxt->przs) {
+-		err = -ENOMEM;
+-		dev_err(dev, "failed to initialize a prz array\n");
+-		goto fail_out;
+-	}
+-
+-	for (i = 0; i < cxt->max_dump_cnt; i++) {
+-		size_t sz = cxt->record_size;
+-		phys_addr_t start = cxt->phys_addr + sz * i;
++	paddr = cxt->phys_addr;
+ 
+-		cxt->przs[i] = persistent_ram_new(start, sz, cxt->ecc);
+-		if (IS_ERR(cxt->przs[i])) {
+-			err = PTR_ERR(cxt->przs[i]);
+-			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
+-				sz, (unsigned long long)start, err);
+-			goto fail_przs;
+-		}
++	dump_mem_sz = cxt->size;
++	err = ramoops_init_przs(dev, cxt, &paddr, dump_mem_sz);
++	if (err) {
++		pr_err("memory size too small, minimum is %lu\n",
++			cxt->record_size);
++		goto fail_count;
+ 	}
+ 
+ 	cxt->pstore.data = cxt;
+@@ -303,10 +330,8 @@ fail_buf:
+ fail_clear:
+ 	cxt->pstore.bufsize = 0;
+ 	cxt->max_dump_cnt = 0;
+-fail_przs:
+-	for (i = 0; cxt->przs[i]; i++)
+-		persistent_ram_free(cxt->przs[i]);
+-	kfree(cxt->przs);
++fail_count:
++	ramoops_free_przs(cxt);
+ fail_out:
+ 	return err;
+ }
 -- 
 1.7.9.2
 
