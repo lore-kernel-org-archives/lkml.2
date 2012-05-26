@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab2EZRQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 13:16:58 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:34831 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab2EZRQ4 (ORCPT
+	id S1754118Ab2EZRXF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 13:23:05 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:39467 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751353Ab2EZRXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 13:16:56 -0400
-Date: Sat, 26 May 2012 14:16:50 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tools libtraceevent: Silence compiler warning on 32bit
- build
-Message-ID: <20120526171650.GL2336@infradead.org>
-References: <1338003691-3141-1-git-send-email-namhyung@gmail.com>
+	Sat, 26 May 2012 13:23:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1338003691-3141-1-git-send-email-namhyung@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Sat, 26 May 2012 22:52:40 +0530
+Message-ID: <CAMQu2gwkcVXAp1iThQRn3Ff-AH33aM9CayJO6TQ109kdX=a0_w@mail.gmail.com>
+Subject: Re: [PATCH] mmc: core: Fix build warning with !CONFIG_SUSPEND
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-kernel@vger.kernel.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-mmc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, May 26, 2012 at 12:41:31PM +0900, Namhyung Kim escreveu:
-> The gcc complains about casting a pointer to unsigned long long directly:
-> 
->     SUBDIR ../lib/traceevent/
->   CC FPIC            event-parse.o
->   CC FPIC            trace-seq.o
->   CC FPIC            parse-filter.o
-> /home/namhyung/project/linux/tools/lib/traceevent/parse-filter.c: In function ‘get_value’:
-> /home/namhyung/project/linux/tools/lib/traceevent/parse-filter.c:1588: warning: cast from pointer to integer of different size
->   CC FPIC            parse-utils.o
->   BUILD STATIC LIB   libtraceevent.a
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Chris,
+
+On Sat, May 19, 2012 at 1:28 PM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> With !CONFIG_SUSPEND, mmc core layer throws below build warnings.
+>
+> drivers/mmc/core/bus.c:125: warning: 'mmc_bus_suspend' defined but not used
+> drivers/mmc/core/bus.c:136: warning: 'mmc_bus_resume' defined but not used
+> drivers/mmc/core/sdio_bus.c:197: warning: 'pm_no_operation' defined but not used
+>
+> Fix is by wrapping suspend hooks under CONFIG_SUSPEND
+>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Chris Ball <cjb@laptop.org>
 > ---
->  tools/lib/traceevent/parse-filter.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
-> index 2d40c5e..aa30b43 100644
-> --- a/tools/lib/traceevent/parse-filter.c
-> +++ b/tools/lib/traceevent/parse-filter.c
-> @@ -1585,7 +1585,7 @@ get_value(struct event_format *event,
->  		const char *name;
->  
->  		name = get_comm(event, record);
-> -		return (unsigned long long)name;
-> +		return (unsigned long)name;
-
-Thanks, applied to my perf/urgent branch,
-
-- Arnaldo
+Ping
