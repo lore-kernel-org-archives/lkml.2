@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256Ab2EZAJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 20:09:15 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:47911 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752474Ab2EZAJO (ORCPT
+	id S1753880Ab2EZALz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 20:11:55 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:54049 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972Ab2EZALy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 20:09:14 -0400
-Message-ID: <4FC01F1B.1080009@fb.com>
-Date: Fri, 25 May 2012 17:08:59 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
+	Fri, 25 May 2012 20:11:54 -0400
+Date: Fri, 25 May 2012 20:11:50 -0400 (EDT)
+Message-Id: <20120525.201150.1782581593120395710.davem@davemloft.net>
+To: asharma@fb.com
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] net: compute a more reasonable default ip6_rt_max_size
-References: <1337976934-18065-1-git-send-email-asharma@fb.com> <1337978820.10135.1.camel@edumazet-glaptop> <4FC0063E.8080209@fb.com> <20120525.185131.2017517041016424794.davem@davemloft.net>
-In-Reply-To: <20120525.185131.2017517041016424794.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4FC01F1B.1080009@fb.com>
+References: <4FC0063E.8080209@fb.com>
+	<20120525.185131.2017517041016424794.davem@davemloft.net>
+	<4FC01F1B.1080009@fb.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
- definitions=2012-05-25_06:2012-05-21,2012-05-25,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 25 May 2012 17:11:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/25/12 3:51 PM, David Miller wrote:
-> From: Arun Sharma<asharma@fb.com>
-> Date: Fri, 25 May 2012 15:22:54 -0700
->
->> On 5/25/12 1:47 PM, Eric Dumazet wrote:
->>> On Fri, 2012-05-25 at 13:15 -0700, Arun Sharma wrote:
->>>> The algorithm is based on ipv4 and alloc_large_system_hash().
+From: Arun Sharma <asharma@fb.com>
+Date: Fri, 25 May 2012 17:08:59 -0700
+
+> On 5/25/12 3:51 PM, David Miller wrote:
+>> From: Arun Sharma<asharma@fb.com>
+>> Date: Fri, 25 May 2012 15:22:54 -0700
+>>
+>>> On 5/25/12 1:47 PM, Eric Dumazet wrote:
+>>>> On Fri, 2012-05-25 at 13:15 -0700, Arun Sharma wrote:
+>>>>> The algorithm is based on ipv4 and alloc_large_system_hash().
+>>>>>
 >>>>
+>>>> Why is it needed at all ?
+>>>>
+>>>> IPv4 has a route cache with potentially millions of entries, not IPv6.
 >>>
->>> Why is it needed at all ?
+>>> With the default size of 4096 for the ipv6 routing table, entries can
+>>> get garbage collected and hosts could lose their default route and
+>>> therefore lose connectivity.
 >>>
->>> IPv4 has a route cache with potentially millions of entries, not IPv6.
+>>> We actually saw it happen.
 >>
->> With the default size of 4096 for the ipv6 routing table, entries can
->> get garbage collected and hosts could lose their default route and
->> therefore lose connectivity.
->>
->> We actually saw it happen.
->
-> Under no circumstances should administrator configured ipv6 routes be
-> garbage collected, that is a bug.
+>> Under no circumstances should administrator configured ipv6 routes be
+>> garbage collected, that is a bug.
+> 
+> These were not admin configured routes. They were discovered via ipv6
+> neighbor discovery.
 
-These were not admin configured routes. They were discovered via ipv6 
-neighbor discovery.
+Then such default routes should either be:
 
-  -Arun
+1) Passed over by GC
+
+2) Trigger neighbour discovery when GC'd
