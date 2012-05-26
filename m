@@ -1,53 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab2EZAc0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 20:32:26 -0400
-Received: from nm23-vm6.bullet.mail.ne1.yahoo.com ([98.138.91.116]:36100 "HELO
-	nm23-vm6.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750972Ab2EZAcZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 20:32:25 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 May 2012 20:32:25 EDT
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 980146.11331.bm@omp1024.access.mail.mud.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=cP+MuVjelRLuSL0I7diKXc94OTiNGTYxLbD3TCIlOYJQK65jR8xZ/NqnugAshztOid2jSF4jiyvRKWk7LxwcSrHRf7XRihFh76fVUjmE9yr5L//AdPXP9JOTPxw6KG5JONVnhhgRYTxW4BCc8v3X7EbIhTCOYlM+uy49Tn2U36A=;
-X-YMail-OSG: vpxaLW0VM1nxMTdDN8NV8WqHOpNOBtbEgH__R8_0ft5Vrql
- _hdLG1.W09Gmq40_9wvPOAc97mE6_QZRHpvOuNB26rnDnewmhzdPZtFeOAvq
- 9BQOUrleD4YjsiSGTDhWAvLuRU1ujHrLmsF9edxZFWWy7mfqi1DEyvtAptJQ
- 4aBwp299FSRUY90RCk4dHzV.FSOtpR5yyoac3jHjf6XV8NuF.ZU.t1t7L4g3
- bcGIYkqzG4rbk2mLDp5xOFFIxYqZwdt0Hy5Eig09r547ZPRf4kfHO8g0f61t
- C_4OY_DQluMktBPj3cPS.morbScT6DgQOEMKFQWEalfU9hGlgM7K7tFUBvYu
- p5GFIB1nwOYu8N3h01UyIpZCSz5OKO2_jRe.GVDYtZyIDzNht4aNIAYhprjB
- D7xqQnc1lqFPh_ECB9R9ACJWihjK0Gqvf1m28ocAtEVEzLfsNgcnKOTvxKz3
- h00YUm4Lhx7R8baMVSw--
-X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
-Message-ID: <1337992009.23813.YahooMailClassic@web84502.mail.ne1.yahoo.com>
-Date: Fri, 25 May 2012 17:26:49 -0700 (PDT)
-From: kd6lvw@yahoo.com
-Subject: Re: Regression Mounting /proc w/ kernel 3.4.0 - "uid" parameter no longer ignored.
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755855Ab2EZAjC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 20:39:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36579 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab2EZAjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 May 2012 20:39:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="157411055"
+Subject: Re: [PATCH V2] mm, x86, pat: Improve scaling of
+ pat_pagerange_is_ram()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: John Dykstra <jdykstra@cray.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 25 May 2012 17:37:39 -0700
+In-Reply-To: <1337980366.1979.6.camel@redwood>
+References: <1337027192.1604.9.camel@redwood>
+	 <1337208407.1997.49.camel@sbsiddha-desk.sc.intel.com>
+	 <1337980366.1979.6.camel@redwood>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1337992659.7938.39.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignoring "uid=#" is the documented behavior from the "mount(8)" man page for procfs.  That implies that the proposed patch should be [temporarily] installed.
+On Fri, 2012-05-25 at 16:12 -0500, John Dykstra wrote:
+> On Wed, 2012-05-16 at 15:46 -0700, Suresh Siddha wrote:
+> > Instead of duplicating what kernel/resource.c:walk_system_ram_range() is
+> > already doing, can we just provide a callback that can be used with
+> > walk_system_ram_range() and see if the expected RAM pages is what the
+> > callback also sees.
+> 
+> The resulting patch is a bit longer than V1.  
+> ---
+> 
+> Function pat_pagerange_is_ram() scales poorly to large address ranges,
+> because it probes the resource tree for each page.  On a 2.6 GHz
+> Opteron, this function consumes 34 ms. for a 1 GB range.  It is called
+> twice during untrack_pfn_vma(), slowing process cleanup and handicapping
+> the OOM killer.
+> 
+> This replacement consumes less than 1ms. under the same conditions.
+> 
+> Signed-off-by: John Dykstra <jdykstra@cray.com> on behalf of Cray Inc. 
+> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
 
-I personally don't care if the option is restored or not.  My issue was that this side effect was not documented in any way in the change that occurred -- which affected documented behavior.
+Looks good to me.
 
-I mount my /proc file system in a "mount -at nonfs" statement in an initialization script.  The "uid" optional parameter was in /etc/fstab.  I have removed "uid" in my "at home" copy of the configuration but haven't visited the remote server to fix it there (I can't log in from remote as a result of this issue).
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
---- On Fri, 5/25/12, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> If it is *only* uid, maybe we should just expressly ignore it. Like
-> the (completely untested) attached patch.
+> ---
+>  arch/x86/mm/pat.c |   58
+> ++++++++++++++++++++++++++++++++--------------------
+>  1 files changed, 36 insertions(+), 22 deletions(-)
+> 
+> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+> index f6ff57b..246cce8 100644
+> --- a/arch/x86/mm/pat.c
+> +++ b/arch/x86/mm/pat.c
+> @@ -158,31 +158,45 @@ static unsigned long pat_x_mtrr_type(u64 start,
+> u64 end, unsigned long req_type)
+>  	return req_type;
+>  }
+>  
+> +struct pagerange_is_ram_state {
+> +	unsigned long		cur_pfn;
+> +	int			ram;
+> +	int			not_ram;
+> +};
+> +
+> +static int pagerange_is_ram_callback(unsigned long initial_pfn,
+> +				unsigned long total_nr_pages, void *arg)
+> +{
+> +	struct pagerange_is_ram_state *state = arg;
+> +
+> +	state->not_ram |= initial_pfn > state->cur_pfn;
+> +	state->ram |= total_nr_pages > 0;
+> +	state->cur_pfn = initial_pfn + total_nr_pages;
+> +
+> +	return state->ram && state->not_ram;
+> +}
+> +
+>  static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
+>  {
+> -	int ram_page = 0, not_rampage = 0;
+> -	unsigned long page_nr;
+> +	int ret = 0;
+> +	unsigned long start_pfn = start >> PAGE_SHIFT;
+> +	unsigned long end_pfn = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> +	struct pagerange_is_ram_state state = {start_pfn, 0, 0};
+>  
+> -	for (page_nr = (start >> PAGE_SHIFT); page_nr < (end >> PAGE_SHIFT);
+> -	     ++page_nr) {
+> -		/*
+> -		 * For legacy reasons, physical address range in the legacy ISA
+> -		 * region is tracked as non-RAM. This will allow users of
+> -		 * /dev/mem to map portions of legacy ISA region, even when
+> -		 * some of those portions are listed(or not even listed) with
+> -		 * different e820 types(RAM/reserved/..)
+> -		 */
+> -		if (page_nr >= (ISA_END_ADDRESS >> PAGE_SHIFT) &&
+> -		    page_is_ram(page_nr))
+> -			ram_page = 1;
+> -		else
+> -			not_rampage = 1;
+> -
+> -		if (ram_page == not_rampage)
+> -			return -1;
+> -	}
+> +	/*
+> +	 * For legacy reasons, physical address range in the legacy ISA
+> +	 * region is tracked as non-RAM. This will allow users of
+> +	 * /dev/mem to map portions of legacy ISA region, even when
+> +	 * some of those portions are listed(or not even listed) with
+> +	 * different e820 types(RAM/reserved/..)
+> +	 */
+> +	if (start_pfn < ISA_END_ADDRESS >> PAGE_SHIFT)
+> +		start_pfn = ISA_END_ADDRESS >> PAGE_SHIFT;
+>  
+> -	return ram_page;
+> +	if (start_pfn < end_pfn)
+> +		ret = walk_system_ram_range(start_pfn, end_pfn - start_pfn,
+> +				&state, pagerange_is_ram_callback);
+> +	return (ret > 0) ? -1 : (state.ram ? 1 : 0);
+>  }
+>  
+>  /*
 
 
