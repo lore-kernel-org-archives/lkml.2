@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab2EZNWp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:22:45 -0400
+	id S1753699Ab2EZNWv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:22:51 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:44590 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab2EZNWl (ORCPT
+	with ESMTP id S1753585Ab2EZNWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:22:41 -0400
+	Sat, 26 May 2012 09:22:45 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -21,9 +21,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 08/11] staging/android: Remove ram_console driver
-Date: Sat, 26 May 2012 06:20:26 -0700
-Message-Id: <1338038429-21945-8-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 09/11] pstore/ram_core: Remove now unused code
+Date: Sat, 26 May 2012 06:20:27 -0700
+Message-Id: <1338038429-21945-9-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <20120526131747.GA15054@lizard>
 References: <20120526131747.GA15054@lizard>
@@ -31,231 +31,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the functionality is now supported by pstore and pstore_ram drivers.
+The code tried to maintain the global list of persistent ram zones,
+which isn't a great idea overall, plus since Android's ram_console
+is no longer there, we can remove some unused functions.
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 Acked-by: Kees Cook <keescook@chromium.org>
 Acked-by: Colin Cross <ccross@android.com>
 ---
- drivers/staging/android/Kconfig       |    5 -
- drivers/staging/android/Makefile      |    1 -
- drivers/staging/android/ram_console.c |  179 ---------------------------------
- 3 files changed, 185 deletions(-)
- delete mode 100644 drivers/staging/android/ram_console.c
+ fs/pstore/ram_core.c       |   77 --------------------------------------------
+ include/linux/pstore_ram.h |   19 -----------
+ 2 files changed, 96 deletions(-)
 
-diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 0e16b59..0ce50d1 100644
---- a/drivers/staging/android/Kconfig
-+++ b/drivers/staging/android/Kconfig
-@@ -25,11 +25,6 @@ config ANDROID_LOGGER
- 	tristate "Android log driver"
- 	default n
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index 78f6d4b..0fd8161 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -35,8 +35,6 @@ struct persistent_ram_buffer {
  
--config ANDROID_RAM_CONSOLE
--	bool "Android RAM buffer console"
--	depends on !S390 && !UML && HAVE_MEMBLOCK && PSTORE_RAM=y
--	default n
+ #define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
+ 
+-static __initdata LIST_HEAD(persistent_ram_list);
 -
- config ANDROID_TIMED_OUTPUT
- 	bool "Timed output class driver"
- 	default y
-diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
-index 98711e2..e16fcd5 100644
---- a/drivers/staging/android/Makefile
-+++ b/drivers/staging/android/Makefile
-@@ -1,7 +1,6 @@
- obj-$(CONFIG_ANDROID_BINDER_IPC)	+= binder.o
- obj-$(CONFIG_ASHMEM)			+= ashmem.o
- obj-$(CONFIG_ANDROID_LOGGER)		+= logger.o
--obj-$(CONFIG_ANDROID_RAM_CONSOLE)	+= ram_console.o
- obj-$(CONFIG_ANDROID_TIMED_OUTPUT)	+= timed_output.o
- obj-$(CONFIG_ANDROID_TIMED_GPIO)	+= timed_gpio.o
- obj-$(CONFIG_ANDROID_LOW_MEMORY_KILLER)	+= lowmemorykiller.o
-diff --git a/drivers/staging/android/ram_console.c b/drivers/staging/android/ram_console.c
-deleted file mode 100644
-index 82323bb..0000000
---- a/drivers/staging/android/ram_console.c
-+++ /dev/null
-@@ -1,179 +0,0 @@
--/* drivers/android/ram_console.c
-- *
-- * Copyright (C) 2007-2008 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- */
+ static inline size_t buffer_size(struct persistent_ram_zone *prz)
+ {
+ 	return atomic_read(&prz->buffer->size);
+@@ -462,78 +460,3 @@ err:
+ 	kfree(prz);
+ 	return ERR_PTR(ret);
+ }
 -
--#include <linux/console.h>
--#include <linux/init.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/proc_fs.h>
--#include <linux/string.h>
--#include <linux/uaccess.h>
--#include <linux/io.h>
--#include <linux/pstore_ram.h>
--#include "ram_console.h"
--
--static struct persistent_ram_zone *ram_console_zone;
--static const char *bootinfo;
--static size_t bootinfo_size;
--
--static void
--ram_console_write(struct console *console, const char *s, unsigned int count)
+-#ifndef MODULE
+-static int __init persistent_ram_buffer_init(const char *name,
+-		struct persistent_ram_zone *prz)
 -{
--	struct persistent_ram_zone *prz = console->data;
--	persistent_ram_write(prz, s, count);
--}
+-	int i;
+-	struct persistent_ram *ram;
+-	struct persistent_ram_descriptor *desc;
+-	phys_addr_t start;
 -
--static struct console ram_console = {
--	.name	= "ram",
--	.write	= ram_console_write,
--	.flags	= CON_PRINTBUFFER | CON_ENABLED | CON_ANYTIME,
--	.index	= -1,
--};
--
--void ram_console_enable_console(int enabled)
--{
--	if (enabled)
--		ram_console.flags |= CON_ENABLED;
--	else
--		ram_console.flags &= ~CON_ENABLED;
--}
--
--static int __init ram_console_probe(struct platform_device *pdev)
--{
--	struct ram_console_platform_data *pdata = pdev->dev.platform_data;
--	struct persistent_ram_zone *prz;
--
--	prz = persistent_ram_init_ringbuffer(&pdev->dev, true);
--	if (IS_ERR(prz))
--		return PTR_ERR(prz);
--
--
--	if (pdata) {
--		bootinfo = kstrdup(pdata->bootinfo, GFP_KERNEL);
--		if (bootinfo)
--			bootinfo_size = strlen(bootinfo);
+-	list_for_each_entry(ram, &persistent_ram_list, node) {
+-		start = ram->start;
+-		for (i = 0; i < ram->num_descs; i++) {
+-			desc = &ram->descs[i];
+-			if (!strcmp(desc->name, name))
+-				return persistent_ram_buffer_map(start,
+-						desc->size, prz);
+-			start += desc->size;
+-		}
 -	}
 -
--	ram_console_zone = prz;
--	ram_console.data = prz;
--
--	register_console(&ram_console);
--
--	return 0;
+-	return -EINVAL;
 -}
 -
--static struct platform_driver ram_console_driver = {
--	.driver		= {
--		.name	= "ram_console",
--	},
--};
--
--static int __init ram_console_module_init(void)
+-static  __init
+-struct persistent_ram_zone *__persistent_ram_init(struct device *dev, bool ecc)
 -{
--	return platform_driver_probe(&ram_console_driver, ram_console_probe);
+-	struct persistent_ram_zone *prz;
+-	int ret = -ENOMEM;
+-
+-	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
+-	if (!prz) {
+-		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
+-		goto err;
+-	}
+-
+-	ret = persistent_ram_buffer_init(dev_name(dev), prz);
+-	if (ret) {
+-		pr_err("persistent_ram: failed to initialize buffer\n");
+-		goto err;
+-	}
+-
+-	persistent_ram_post_init(prz, ecc);
+-
+-	return prz;
+-err:
+-	kfree(prz);
+-	return ERR_PTR(ret);
 -}
 -
--#ifndef CONFIG_PRINTK
--#define dmesg_restrict	0
--#endif
--
--static ssize_t ram_console_read_old(struct file *file, char __user *buf,
--				    size_t len, loff_t *offset)
+-struct persistent_ram_zone * __init
+-persistent_ram_init_ringbuffer(struct device *dev, bool ecc)
 -{
--	loff_t pos = *offset;
--	ssize_t count;
--	struct persistent_ram_zone *prz = ram_console_zone;
--	size_t old_log_size = persistent_ram_old_size(prz);
--	const char *old_log = persistent_ram_old(prz);
--	char *str;
+-	return __persistent_ram_init(dev, ecc);
+-}
+-
+-int __init persistent_ram_early_init(struct persistent_ram *ram)
+-{
 -	int ret;
 -
--	if (dmesg_restrict && !capable(CAP_SYSLOG))
--		return -EPERM;
--
--	/* Main last_kmsg log */
--	if (pos < old_log_size) {
--		count = min(len, (size_t)(old_log_size - pos));
--		if (copy_to_user(buf, old_log + pos, count))
--			return -EFAULT;
--		goto out;
+-	ret = memblock_reserve(ram->start, ram->size);
+-	if (ret) {
+-		pr_err("Failed to reserve persistent memory from %08lx-%08lx\n",
+-			(long)ram->start, (long)(ram->start + ram->size - 1));
+-		return ret;
 -	}
 -
--	/* ECC correction notice */
--	pos -= old_log_size;
--	count = persistent_ram_ecc_string(prz, NULL, 0);
--	if (pos < count) {
--		str = kmalloc(count, GFP_KERNEL);
--		if (!str)
--			return -ENOMEM;
--		persistent_ram_ecc_string(prz, str, count + 1);
--		count = min(len, (size_t)(count - pos));
--		ret = copy_to_user(buf, str + pos, count);
--		kfree(str);
--		if (ret)
--			return -EFAULT;
--		goto out;
--	}
+-	list_add_tail(&ram->node, &persistent_ram_list);
 -
--	/* Boot info passed through pdata */
--	pos -= count;
--	if (pos < bootinfo_size) {
--		count = min(len, (size_t)(bootinfo_size - pos));
--		if (copy_to_user(buf, bootinfo + pos, count))
--			return -EFAULT;
--		goto out;
--	}
+-	pr_info("Initialized persistent memory from %08lx-%08lx\n",
+-		(long)ram->start, (long)(ram->start + ram->size - 1));
 -
--	/* EOF */
 -	return 0;
--
--out:
--	*offset += count;
--	return count;
 -}
--
--static const struct file_operations ram_console_file_ops = {
--	.owner = THIS_MODULE,
--	.read = ram_console_read_old,
+-#endif
+diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
+index 9385d41..2470bb5 100644
+--- a/include/linux/pstore_ram.h
++++ b/include/linux/pstore_ram.h
+@@ -25,21 +25,6 @@
+ 
+ struct persistent_ram_buffer;
+ 
+-struct persistent_ram_descriptor {
+-	const char	*name;
+-	phys_addr_t	size;
 -};
 -
--static int __init ram_console_late_init(void)
--{
--	struct proc_dir_entry *entry;
--	struct persistent_ram_zone *prz = ram_console_zone;
+-struct persistent_ram {
+-	phys_addr_t	start;
+-	phys_addr_t	size;
 -
--	if (!prz)
--		return 0;
+-	int					num_descs;
+-	struct persistent_ram_descriptor	*descs;
 -
--	if (persistent_ram_old_size(prz) == 0)
--		return 0;
+-	struct list_head node;
+-};
 -
--	entry = create_proc_entry("last_kmsg", S_IFREG | S_IRUGO, NULL);
--	if (!entry) {
--		printk(KERN_ERR "ram_console: failed to create proc entry\n");
--		persistent_ram_free_old(prz);
--		return 0;
--	}
+ struct persistent_ram_zone {
+ 	phys_addr_t paddr;
+ 	size_t size;
+@@ -63,15 +48,11 @@ struct persistent_ram_zone {
+ 	size_t old_log_size;
+ };
+ 
+-int persistent_ram_early_init(struct persistent_ram *ram);
 -
--	entry->proc_fops = &ram_console_file_ops;
--	entry->size = persistent_ram_old_size(prz) +
--		persistent_ram_ecc_string(prz, NULL, 0) +
--		bootinfo_size;
--
--	return 0;
--}
--
--late_initcall(ram_console_late_init);
--postcore_initcall(ram_console_module_init);
+ struct persistent_ram_zone * __init persistent_ram_new(phys_addr_t start,
+ 						       size_t size,
+ 						       bool ecc);
+ void persistent_ram_free(struct persistent_ram_zone *prz);
+ void persistent_ram_zap(struct persistent_ram_zone *prz);
+-struct persistent_ram_zone *persistent_ram_init_ringbuffer(struct device *dev,
+-		bool ecc);
+ 
+ int persistent_ram_write(struct persistent_ram_zone *prz, const void *s,
+ 	unsigned int count);
 -- 
 1.7.9.2
 
