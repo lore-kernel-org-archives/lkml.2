@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2EZT6L (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 15:58:11 -0400
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:58640 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383Ab2EZT6J (ORCPT
+	id S1754626Ab2EZU1T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 16:27:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54747 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754510Ab2EZU1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 15:58:09 -0400
-X-manitu-Original-Sender-IP: 79.230.31.106
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <4FC135C6.5030206@grandegger.com>
-Date: Sat, 26 May 2012 21:57:58 +0200
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sat, 26 May 2012 16:27:17 -0400
+Date: Sat, 26 May 2012 13:26:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, viro <viro@zeniv.linux.org.uk>,
+        oleg@redhat.com, "a.p.zijlstra" <a.p.zijlstra@chello.nl>,
+        mingo <mingo@kernel.org>, Dave Jones <davej@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: mm: kernel BUG at mm/memory.c:1230
+In-Reply-To: <CA+1xoqcbZWLpvHkOsZY7rijsaryFDvh=pqq=QyDDgo_NfPyCpA@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1205261317310.2488@eggly.anvils>
+References: <1337884054.3292.22.camel@lappy> <20120524120727.6eab2f97.akpm@linux-foundation.org> <CA+1xoqcbZWLpvHkOsZY7rijsaryFDvh=pqq=QyDDgo_NfPyCpA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Marc Kleine-Budde <mkl@pengutronix.de>, linux-can@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH] STA2X11 CAN: CAN driver for the STA2X11 board
-References: <1337288364-17572-1-git-send-email-federico.vaga@gmail.com> <4FB5E581.1090209@grandegger.com> <CAH5GJ0rFB4xaR7o-wVR3ze_UogeDW84dehh0rx5z+300ghB4uA@mail.gmail.com>
-In-Reply-To: <CAH5GJ0rFB4xaR7o-wVR3ze_UogeDW84dehh0rx5z+300ghB4uA@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1719037168-1338064015=:2488"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2012 10:36 AM, Federico Vaga wrote:
->> Thanks for your contribution. At a first glance, this driver looks
->> similar to the pch_can and the c_can driver. It seems that a C_CAN based
->> controller is used on that board as well. If that's true, it should be
->> handled by the C_CAN driver. To get ride of the obsolete pch_can driver,
->> I sent some time ago the patch "[RFC/PATCH] c_can: add driver for the
->> PCH CAN controller":
->>
->>  http://marc.info/?t=132991563600003&r=1&w=4
->>
->> I could serve as base of a generic c_can_pci driver.
-> 
-> You are right, this is a C-CAN but it isn't specified on the board manual.
-> I compared the board manual with the Bosch C-CAN manual, and it is the same.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Like with the Intel EG20T PCH CAN controller.
+--8323584-1719037168-1338064015=:2488
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-> I'm working on a PCI module for this board, when it is ready we can think for
-> a generic c_can_pci
+On Thu, 24 May 2012, Sasha Levin wrote:
+> On Thu, May 24, 2012 at 9:07 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Thu, 24 May 2012 20:27:34 +0200
+> > Sasha Levin <levinsasha928@gmail.com> wrote:
+> >
+> >> Hi all,
+> >>
+> >> During fuzzing with trinity inside a KVM tools guest, using latest lin=
+ux-next, I've stumbled on the following:
+> >>
+> >> [ 2043.098949] ------------[ cut here ]------------
+> >> [ 2043.099014] kernel BUG at mm/memory.c:1230!
+> >
+> > That's
+> >
+> > =A0 =A0 =A0 =A0VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+> >
+> > in zap_pmd_range()?
+>=20
+> Yup.
+>=20
+> > The assertion was added in Jan 2011 by 14d1a55cd26f1860 ("thp: add
+> > debug checks for mapcount related invariants"). =A0AFAICT it's just wro=
+ng
+> > on the exit path. =A0Unclear why it's triggering now...
 
-That would be nice, thanks. You might have realized that AnilKumar has
-provided support for the D_CAN controllers to the C_CAN driver which
-will show up mainline soon.
+I've been round this loop before with that particular VM_BUG_ON.
 
-Wolfgang.
+At first I thought like Andrew, that it's glaringly wrong on the exit
+path; but then changed my mind.
 
+When munmapping, we certainly can arrive here with an unaligned addr
+and next; but in that case rwsem_is_locked.
+
+Whereas in exiting, rwsem is not locked, but we're going linearly upwards,
+and whenever we walk into a pmd_trans_huge area, both addr and next should
+be hpage aligned: the vma bounds are unsuited to THP if they're unaligned.
+
+Other cases equally should not arise: madvise MADV_DONTNEED should
+have rwsem_is_locked; and truncation or hole-punching shouldn't be
+possible on a pure-anonymous (!vma->vm_ops) area considered for THP.
+
+But I cannot remember what brought me here before: a crash in testing
+on one of my machines, which further investigation root-caused elsewhere?
+or a report from someone else? or noticed when auditing another problem?
+I'm frustrated not to recall.
+
+>=20
+> I'm not sure if that's indeed the issue or not, but note that this is
+> the first time I've managed to trigger that with the fuzzer, and it's
+> not that easy to reproduce. Which is a bit odd for code that was there
+> for 4 months...
+
+I'm keeping off the linux-next for the moment; I'll worry about this
+more if it shows up when we try 3.5-rc1.  Your fuzzing tells that my
+logic above is wrong, but maybe it's just a passing defect in next.
+
+Hugh
+--8323584-1719037168-1338064015=:2488--
