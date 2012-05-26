@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab2EZHkO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 03:40:14 -0400
-Received: from smtp-vbr10.xs4all.nl ([194.109.24.30]:3355 "EHLO
-	smtp-vbr10.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750886Ab2EZHkL (ORCPT
+	id S1751528Ab2EZHsr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 03:48:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:53581 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2EZHsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 03:40:11 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: "linux-media" <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [GIT PULL FOR v3.5] Move sta2x11_vip to staging
-Date: Sat, 26 May 2012 09:39:58 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc7-tschai; KDE/4.7.4; x86_64; ; )
-Cc: Federico Vaga <federico.vaga@gmail.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+	Sat, 26 May 2012 03:48:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL]: dma-buf updates for 3.5
+Date: Sat, 26 May 2012 07:48:29 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: Sumit Semwal <sumit.semwal@linaro.org>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linaro-mm-sig@lists.linaro.org, linux-media@vger.kernel.org,
+        Jesse Barker <jesse.barker@linaro.org>, akpm@linux-foundation.org,
+        Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@linux.ie>
+References: <CAO_48GFE3=yQjKS4w7=pGjNe3yENbRrd4bcMTfADJSn7LKekPQ@mail.gmail.com> <CAO_48GGRRvCKVyY_s=oFgTb1vfjf8pSkHRf3jA8iFcdEHhwxVg@mail.gmail.com> <CA+55aFy9QysTkgPuy=GPxknRMoPTSTmp3FkHFJ+bs0G6CSh41g@mail.gmail.com>
+In-Reply-To: <CA+55aFy9QysTkgPuy=GPxknRMoPTSTmp3FkHFJ+bs0G6CSh41g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205260939.58100.hverkuil@xs4all.nl>
+Message-Id: <201205260748.29800.arnd@arndb.de>
+X-Provags-ID: V02:K0:OvHmS9CLjuiqiRiW3cn+rYsNz9PXMVent8vMUb6+2q8
+ G3svUscIG5d6KeZCexDzNnzr8fex3hnt5yVnZ1BVK47+Au5ezk
+ XtfQCQ1phIAqHjoBxRY5vvZBf/rtW8XdD/YkL5WPysDTHnPGwz
+ zRSg5nQGDWKENVgEMIeGFOUy2HwZP8INSyut59EBlSUK0lyzTr
+ eZJbYgeCX09zqtFop3MN3gwfTU6rJLZ3xoHcowJY2Q4tHauomz
+ TLz58g8aeA1z3UkWOaeLR56mgphFCkhi6nSLctZjmz/56Jqh+2
+ CBdgSniaBxic1CeGLRG/lPFovH51wfOyIu6J2+xf+/hu8A3Dqs
+ UqB7mfA6U1LY62KD0BoM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
+On Friday 25 May 2012, Linus Torvalds wrote:
+> Please do something like
+> 
+>    gpg --keyserver pgp.mit.edu --send-keys 7126925D
+> 
+> to actually make your public key public.
+> 
+> Of course, if it isn't public, I assume it hasn't actually been signed
+> by anybody, which makes it largely useless. But any future signing
+> action will validate the pre-signing uses of the key, so that's
+> fixable.
 
-This patch moves the sta2x11_vip driver to the staging directory. In my opinion
-this driver is not ready for prime-time.
+We have a Linaro meeting this week, so we will make sure to get this
+key and other relevant ones signed by everyone who is here and in the
+kernel keyring.
 
-As I mentioned a week ago, I never saw this driver when it was posted as that
-was during a period were I was unavoidably absent from the list. The problem
-with this driver is that it doesn't use any of the new frameworks (the control
-framework and videobuf2 in particular), and this should be corrected first.
-
-In addition it has a clear V4L2 API violation in that only one filehandle at
-a time can open the video node. Developers really *must* run v4l2-compliance
-before posting a new driver! Almost all of this would be caught by that tool
-(except for using videobuf instead of vb2). Personally I think showing the
-output of v4l2-compliance should be a requirement for getting a driver merged
-under drivers/media/video.
-
-I didn't get any reply from Federico when I posted my concerns last week, so
-that makes me unhappy as well.
-
-I hope the author will fix these issues, but in the meantime this will move
-it to staging waiting for further developments.
-
-Regards,
-
-	Hans
-
-The following changes since commit 5472d3f17845c4398c6a510b46855820920c2181:
-
-  [media] mt9m032: Implement V4L2_CID_PIXEL_RATE control (2012-05-24 09:27:24 -0300)
-
-are available in the git repository at:
-
-  git://linuxtv.org/hverkuil/media_tree.git sta2x11
-
-for you to fetch changes up to 66e2c2572a2b59df5d9f6043c5706a73ce624f89:
-
-  sta2x11_vip: move to staging. (2012-05-26 09:27:15 +0200)
-
-----------------------------------------------------------------
-Hans Verkuil (1):
-      sta2x11_vip: move to staging.
-
- drivers/media/video/Kconfig                                  |   13 -------------
- drivers/media/video/Makefile                                 |    1 -
- drivers/staging/media/Kconfig                                |    2 ++
- drivers/staging/media/Makefile                               |    1 +
- drivers/staging/media/sta2x11/Kconfig                        |   12 ++++++++++++
- drivers/staging/media/sta2x11/Makefile                       |    1 +
- drivers/{media/video => staging/media/sta2x11}/sta2x11_vip.c |    0
- drivers/{media/video => staging/media/sta2x11}/sta2x11_vip.h |    0
- 8 files changed, 16 insertions(+), 14 deletions(-)
- create mode 100644 drivers/staging/media/sta2x11/Kconfig
- create mode 100644 drivers/staging/media/sta2x11/Makefile
- rename drivers/{media/video => staging/media/sta2x11}/sta2x11_vip.c (100%)
- rename drivers/{media/video => staging/media/sta2x11}/sta2x11_vip.h (100%)
+	Arnd
