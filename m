@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2EZNMe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:12:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61402 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab2EZNMa (ORCPT
+	id S1753319Ab2EZNMT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:12:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61401 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2EZNMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:12:30 -0400
+	Sat, 26 May 2012 09:12:12 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH-RESEND] GPIO/TCA6424: merge I2C transactions, remove cast
-To: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        linus.walleij@stericsson.com
-Cc: linux-kernel@vger.kernel.org,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
-In-Reply-To: <0LrHzA-1S4duI0urs-013Ke8@mrelayeu.kundenserver.de>
-References: <0LrHzA-1S4duI0urs-013Ke8@mrelayeu.kundenserver.de>
-Date: Fri, 25 May 2012 18:52:21 -0600
-Message-Id: <20120526005221.5FE113E20AE@localhost>
+Subject: Re: [PATCH 3/3] gpio: exynos4: skip gpiolib registration if pinctrl driver is used
+To: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        linus.walleij@linaro.org, kgene.kim@samsung.com,
+        kyungmin.park@samsung.com, patches@linaro.org
+In-Reply-To: <1337816857-14694-4-git-send-email-thomas.abraham@linaro.org>
+References: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org> <1337816857-14694-4-git-send-email-thomas.abraham@linaro.org>
+Date: Fri, 25 May 2012 18:44:09 -0600
+Message-Id: <20120526004409.A59FD3E1E15@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 09:52:43 +0200, Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com> wrote:
-> This is a follow-up to "[PATCH v2] Add support for TCA6424":
-> - Use 3 byte transfers instead of two separate transfers (2+1 byte)
-> - An unnecessary cast removed
+On Thu, 24 May 2012 05:17:37 +0530, Thomas Abraham <thomas.abraham@linaro.org> wrote:
+> Pinctrl driver, when enabled, registers all the gpio pins and hence the
+> registration of gpio pins by this driver can be skipped.
 > 
-> Signed-off-by: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
 
-Applied, thanks.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-g.
-
-> 
 > ---
->  drivers/gpio/gpio-pca953x.c |   27 ++++++++++++++++-----------
->  1 files changed, 16 insertions(+), 11 deletions(-)
+>  drivers/gpio/gpio-samsung.c |   21 +++++++++++++++++++++
+>  1 files changed, 21 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-> index 1c313c7..5eee524 100644
-> --- a/drivers/gpio/gpio-pca953x.c
-> +++ b/drivers/gpio/gpio-pca953x.c
-> @@ -98,12 +98,11 @@ static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
->  	if (chip->gpio_chip.ngpio <= 8)
->  		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
->  	else if (chip->gpio_chip.ngpio == 24) {
-> -		ret = i2c_smbus_write_word_data(chip->client,
-> +		cpu_to_le32s(&val);
-> +		ret = i2c_smbus_write_i2c_block_data(chip->client,
->  						(reg << 2) | REG_ADDR_AI,
-> -						val & 0xffff);
-> -		ret = i2c_smbus_write_byte_data(chip->client,
-> -						(reg << 2) + 2,
-> -						(val & 0xff0000) >> 16);
-> +						3,
-> +						(u8 *) &val);
->  	}
->  	else {
->  		switch (chip->chip_type) {
-> @@ -135,22 +134,27 @@ static int pca953x_read_reg(struct pca953x_chip *chip, int reg, u32 *val)
->  {
->  	int ret;
+> diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
+> index 19d6fc0..34a9638 100644
+> --- a/drivers/gpio/gpio-samsung.c
+> +++ b/drivers/gpio/gpio-samsung.c
+> @@ -2788,6 +2788,27 @@ static __init int samsung_gpiolib_init(void)
+>  #ifdef CONFIG_CPU_EXYNOS4210
+>  		void __iomem *gpx_base;
 >  
-> -	if (chip->gpio_chip.ngpio <= 8)
-> +	if (chip->gpio_chip.ngpio <= 8) {
->  		ret = i2c_smbus_read_byte_data(chip->client, reg);
-> +		*val = ret;
-> +	}
->  	else if (chip->gpio_chip.ngpio == 24) {
-> -		ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
-> -		ret |= (i2c_smbus_read_byte_data(chip->client,
-> -						 (reg << 2) + 2)<<16);
-> +		*val = 0;
-> +		ret = i2c_smbus_read_i2c_block_data(chip->client,
-> +						(reg << 2) | REG_ADDR_AI,
-> +						3,
-> +						(u8 *) val);
-> +		le32_to_cpus(val);
-> -	}
-> -	else
-> +	} else {
->  		ret = i2c_smbus_read_word_data(chip->client, reg << 1);
-> +		*val = ret;
-> +	}
->  
->  	if (ret < 0) {
->  		dev_err(&chip->client->dev, "failed reading register\n");
->  		return ret;
->  	}
->  
-> -	*val = (u32)ret;
->  	return 0;
->  }
->  
+> +#ifdef CONFIG_OF
+> +		/*
+> +		 * This gpio driver includes support for device tree support and
+> +		 * there are platforms using it. In order to maintain
+> +		 * compatibility with those platforms, and to allow non-dt
+> +		 * Exynos4210 platforms to use this gpiolib support, a check
+> +		 * is added to find out if there is a active pin-controller
+> +		 * driver support available. If it is available, this gpiolib
+> +		 * support is ignored and the gpiolib support available in
+> +		 * pin-controller driver is used. This is a temporary check and
+> +		 * will go away when all of the Exynos4210 platforms have
+> +		 * switched to using device tree and the pin-ctrl driver.
+> +		 */
+> +		struct device_node *pctrl_np;
+> +		const char *pctrl_compat = "samsung,pinctrl-exynos4210";
+> +		pctrl_np = of_find_compatible_node(NULL, NULL, pctrl_compat);
+> +		if (pctrl_np)
+> +			if (of_device_is_available(pctrl_np))
+> +				return -ENODEV;
+> +#endif
+> +
+>  		/* gpio part1 */
+>  		gpio_base1 = ioremap(EXYNOS4_PA_GPIO1, SZ_4K);
+>  		if (gpio_base1 == NULL) {
 > -- 
-> 1.7.3.4
+> 1.6.6.rc2
 > 
 
 -- 
