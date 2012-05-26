@@ -1,126 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2EZNNA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:13:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64870 "EHLO
+	id S1752788Ab2EZNTX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:19:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43128 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120Ab2EZNMP (ORCPT
+	with ESMTP id S1752120Ab2EZNTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:12:15 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/2] irqdomain: Support for static IRQ mapping and association.
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <1337576792-5347-2-git-send-email-lethal@linux-sh.org>
-References: <1337576792-5347-1-git-send-email-lethal@linux-sh.org> <1337576792-5347-2-git-send-email-lethal@linux-sh.org>
-Date: Fri, 25 May 2012 19:50:49 -0600
-Message-Id: <20120526015049.1616D3E2336@localhost>
+	Sat, 26 May 2012 09:19:22 -0400
+Date: Sat, 26 May 2012 06:17:48 -0700
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
+        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH v5 0/11] Merge ram_console into pstore
+Message-ID: <20120526131747.GA15054@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 14:06:32 +0900, Paul Mundt <lethal@linux-sh.org> wrote:
-> +/**
-> + * irq_domain_associate_many() - Associate a range of hw irqs with linux irqs
-> + * @domain: domain owning the interrupt range
-> + * @irq_base: beginning of linux IRQ range
-> + * @hwirq_base: beginning of hardware IRQ range
-> + * @count: Number of interrupts to associate
-> + *
-> + * This routine takes care of creating an association between a range of
-> + * hardware and linux IRQs using pre-existing IRQ allocations. For use by
-> + * controllers that do their own irq_desc management.
-> + */
-> +int irq_domain_associate_many(struct irq_domain *domain, unsigned int irq_base,
-> +			      irq_hw_number_t hwirq_base, int count)
-> +{
-> +	int i, ret;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		ret = irq_domain_associate(domain, irq_base + i,
-> +					   hwirq_base + i);
-> +		if (unlikely(ret))
-> +			goto unmap;
-> +	}
-> +
-> +	return 0;
-> +
-> +unmap:
-> +	while (--i >= 0) {
-> +		if (domain->ops->unmap)
-> +			domain->ops->unmap(domain, irq_base + i);
-> +
-> +		irq_set_status_flags(irq_base + i, IRQ_NOREQUEST);
-> +	}
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(irq_domain_associate_many);
+Hi all,
 
-Looks good, but I've flipped around the patch to make
-irq_domain_associate() a simple wrapper around
-irq_domain_associate_many() instead of the other way around.  It makes
-for a bigger change to the existing irq_setup_virq() code, but in the
-end I think it makes more to keep all the logic in one place.  I'll
-post my revised version.
+And another respin, v5 this time:
 
-I've also added sanity checks to make sure only allocated irq_descs
-can get associated.  Otherwise the kernel will oops.
+- Split out fixes into a separate series;
+- Added proper spinlock protection to the pstore/console interface
+  (the bug I found when was adding ftrace interface);
+- And as I'm about to add ftrace support to pstore, to not touch
+  the same lines of code twice, I reworked 'Factor ramoops_get_dump_prz()
+  out of ramoops_pstore_read()' patch into 'Factor ramoops_get_next_prz()
+  out of ramoops_pstore_read()'. This is just a more generic interface
+  that will work for both console and ftrace przs.
+  Since the patch changed drastically, it lost Kees' ack, so it needs a
+  re-ack.
+- The same as above happened w/ 'Introduce ramoops_context.max_dump_count'
+  patch, it turned into 'Give proper names to dump-related variables', it
+  also needs a re-ack.
+- If anyone is willing to try the patches, for convenience they are now
+  available in the git repository:
+  	git://git.infradead.org/users/cbou/linux-pstore.git
+  or gitweb:
+  	http://git.infradead.org/users/cbou/linux-pstore.git
 
-> +/**
-> + * irq_create_strict_mappings() - Map a range of hw irqs to fixed linux irqs
-> + * @domain: domain owning the interrupt range
-> + * @irq_base: beginning of linux IRQ range
-> + * @hwirq_base: beginning of hardware IRQ range
-> + * @count: Number of interrupts to map
-> + *
-> + * This routine is used for allocating and mapping a range of hardware
-> + * irqs to linux irqs where the linux irq numbers are at pre-defined
-> + * locations. For use by controllers that already have static mappings
-> + * to insert in to the domain.
-> + *
-> + * Non-linear users can use irq_create_identity_mapping() for IRQ-at-a-time
-> + * domain insertion.
-> + *
-> + * 0 is returned upon success, while any failure to establish a static
-> + * mapping is treated as an error.
-> + */
-> +int irq_create_strict_mappings(struct irq_domain *domain, unsigned int irq_base,
-> +			       irq_hw_number_t hwirq_base, int count)
-> +{
-> +	int ret;
-> +
-> +	ret = irq_alloc_descs(irq_base, irq_base, count,
-> +			      of_node_to_nid(domain->of_node));
-> +	if (unlikely(ret < 0))
-> +		return ret;
-> +
-> +	ret = irq_domain_associate_many(domain, irq_base, hwirq_base, count);
-> +	if (unlikely(ret < 0)) {
-> +		irq_free_descs(irq_base, count);
-> +		return ret;
-> +	}
+In v4:
 
-It would be really good to make sure the hwirqs aren't already
-associated before trying to associate them again.  Unfortunately that
-can't be done (nicely) until I get rid of the slow path lookup.  I've
-got a patch for that which I'll rebase on top of this one and post soon.
+- Per Kees Cook's comments, the patches no longer remove an automatic
+  updates feature, but instead make the it configurable; plus disable
+  it by default (in a separate patch);
+- Fixed some bugs noticed by Colin Cross;
+- Documented new continuous ramoops-console log behaviour (also
+  noticed by Colin Cross).
 
-g.
+In v3:
 
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(irq_create_strict_mappings);
-> +
->  unsigned int irq_create_of_mapping(struct device_node *controller,
->  				   const u32 *intspec, unsigned int intsize)
->  {
-> -- 
-> 1.7.9.rc0.28.g0e1cf
-> 
+- Rebased on top of current staging-next;
+- The series are getting bigger. This is partly because we now support
+  different persistent zone sizes for oops records and console log,
+  per Colin Cross' request.
+  And I believe the code is now more manageable for further enhancements
+  (e.g. if we'd want to add other message types, e.g. tracing);
+- Addressed Kees Cook's comments on the unlinking matters;
+- Removed automatic updates support. Please see the last patch
+  description for rationale;
+- A new fixup for pstore/inode, just getting rid of a sparse warning.
+
+In v2:
+
+- Updated documentation per Colin Cross' comments;
+- Corrected return value in ramoops_pstore_write() (noticed by Kees Cook);
+- Fixed large writes handling in pstore_console_write(), i.e. when
+  log_buf write is larger than pstore bufsize. Also Noticed by Kees Cook.
+
+
+And a boilerplate for the series:
+
+Currently pstore doesn't support logging kernel messages in run-time,
+it only dumps dmesg when kernel oopses/panics. This makes pstore
+useless for debugging hangs caused by HW issues or improper use of HW
+(e.g. weird device inserted -> driver tried to write reserved bits ->
+SoC hanged. In that case we don't get any messages in the pstore.
+
+This series add a new message type for pstore, i.e. PSTORE_TYPE_CONSOLE,
+plus make pstore/ram.c handle the new messages.
+
+The old ram_console driver is removed. This might probably cause
+some pain for out-of-tree code, as it would need to be adjusted...
+but "no pain, no gain"? :-) Though, if there's some serious resistance,
+we can probably postpone the last two patches.
+
+Thanks!
+
+--- 
+ Documentation/ramoops.txt             |   14 ++
+ drivers/staging/android/Kconfig       |    5 -
+ drivers/staging/android/Makefile      |    1 -
+ drivers/staging/android/ram_console.c |  179 ------------------------
+ fs/pstore/Kconfig                     |    7 +
+ fs/pstore/inode.c                     |    3 +
+ fs/pstore/platform.c                  |   54 +++++++-
+ fs/pstore/ram.c                       |  246 ++++++++++++++++++++++++---------
+ fs/pstore/ram_core.c                  |   81 +----------
+ include/linux/pstore.h                |    1 +
+ include/linux/pstore_ram.h            |   20 +--
+ 11 files changed, 261 insertions(+), 350 deletions(-)
 
 -- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
