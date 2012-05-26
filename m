@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab2EZNlO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:41:14 -0400
+	id S1753514Ab2EZNlT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:41:19 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:34850 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab2EZNlN (ORCPT
+	with ESMTP id S1753356Ab2EZNlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:41:13 -0400
+	Sat, 26 May 2012 09:41:16 -0400
 From: Anton Vorontsov <anton.vorontsov@linaro.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
@@ -23,9 +23,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
         WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
         patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 1/5] tracing: Fix initialization failure path in tracing_set_tracer()
-Date: Sat, 26 May 2012 06:39:05 -0700
-Message-Id: <1338039549-24498-1-git-send-email-anton.vorontsov@linaro.org>
+Subject: [PATCH 2/5] pstore: Introduce write_buf backend callback
+Date: Sat, 26 May 2012 06:39:06 -0700
+Message-Id: <1338039549-24498-2-git-send-email-anton.vorontsov@linaro.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <20120526133412.GA18001@lizard>
 References: <20120526133412.GA18001@lizard>
@@ -33,44 +33,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If tracer->init() fails, current code will leave current_tracer pointing
-to an unusable tracer, which at best makes 'current_tracer' report
-inaccurate value.
+For function tracing we need to stop using pstore.buf directly, since
+in a tracing callback we can't use spinlocks, and thus we can't safely
+use the global buffer.
 
-Fix the issue by pointing current_tracer to nop tracer, and only update
-current_tracer with the new one after all the initialization succeeds.
+With write_buf callback, backends no longer need to access pstore.buf
+directly, and thus we can pass any buffers (e.g. allocated on stack).
 
 Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
 ---
- kernel/trace/trace.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ fs/pstore/platform.c   |   10 ++++++++++
+ include/linux/pstore.h |    4 ++++
+ 2 files changed, 14 insertions(+)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 68032c6..5cf7e67 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3172,10 +3172,10 @@ static int tracing_set_tracer(const char *buf)
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index be4614f..e7c0a52 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -198,6 +198,14 @@ static void pstore_register_console(void)
+ static void pstore_register_console(void) {}
+ #endif
+ 
++static int pstore_write_compat(enum pstore_type_id type,
++			       enum kmsg_dump_reason reason,
++			       u64 *id, unsigned int part,
++			       size_t size, struct pstore_info *psi)
++{
++	return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
++}
++
+ /*
+  * platform specific persistent storage driver registers with
+  * us here. If pstore is already mounted, call the platform
+@@ -222,6 +230,8 @@ int pstore_register(struct pstore_info *psi)
+ 		return -EINVAL;
  	}
- 	destroy_trace_option_files(topts);
  
--	current_trace = t;
-+	current_trace = &nop_trace;
- 
--	topts = create_trace_option_files(current_trace);
--	if (current_trace->use_max_tr) {
-+	topts = create_trace_option_files(t);
-+	if (t->use_max_tr) {
- 		int cpu;
- 		/* we need to make per cpu buffer sizes equivalent */
- 		for_each_tracing_cpu(cpu) {
-@@ -3195,6 +3195,7 @@ static int tracing_set_tracer(const char *buf)
- 			goto out;
- 	}
- 
-+	current_trace = t;
- 	trace_branch_enable(tr);
-  out:
- 	mutex_unlock(&trace_types_lock);
++	if (!psi->write)
++		psi->write = pstore_write_compat;
+ 	psinfo = psi;
+ 	mutex_init(&psinfo->read_mutex);
+ 	spin_unlock(&pstore_lock);
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 1bd014b..b107484 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -48,6 +48,10 @@ struct pstore_info {
+ 	int		(*write)(enum pstore_type_id type,
+ 			enum kmsg_dump_reason reason, u64 *id,
+ 			unsigned int part, size_t size, struct pstore_info *psi);
++	int		(*write_buf)(enum pstore_type_id type,
++			enum kmsg_dump_reason reason, u64 *id,
++			unsigned int part, const char *buf, size_t size,
++			struct pstore_info *psi);
+ 	int		(*erase)(enum pstore_type_id type, u64 id,
+ 			struct pstore_info *psi);
+ 	void		*data;
 -- 
 1.7.9.2
 
