@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab2EZBn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 21:43:56 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46580 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab2EZBnz (ORCPT
+	id S1752714Ab2EZCVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 22:21:36 -0400
+Received: from mail19c.g19.rapidsite.net ([204.202.242.56]:59660 "EHLO
+	mail19c.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab2EZCVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 21:43:55 -0400
-Message-ID: <4FBFCB39.6000101@landley.net>
-Date: Fri, 25 May 2012 13:11:05 -0500
-From: Rob Landley <rob@landley.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Fri, 25 May 2012 22:21:35 -0400
+thread-index: Ac065kROeCej5hIgQmaq9F9yFvTNqA==
+Thread-Topic: The $1,549 per day ZERO traffic system (UPDATE) Recommends Advanced Sports to you
+From: <sniperxsystem@support.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: The $1,549 per day ZERO traffic system (UPDATE) Recommends Advanced Sports to you
+Date: Fri, 25 May 2012 22:21:32 -0400
+Message-ID: <1F4A688D58BB413BAB66E2C47F5F3B51@g19.win.smewh.net>
 MIME-Version: 1.0
-To: Igor Mammedov <imammedo@redhat.com>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, luto@mit.edu, suresh.b.siddha@intel.com,
-        avi@redhat.com, a.p.zijlstra@chello.nl, johnstul@us.ibm.com,
-        arjan@linux.intel.com
-Subject: Re: [RFC v2] [x86]: abort secondary cpu bringup gracefully
-References: <27b5952f-0f5f-418a-9e22-e6ea12980eee@zmail16.collab.prod.int.phx2.redhat.com> <1336993769-15272-1-git-send-email-imammedo@redhat.com> <4FBE56C6.1020901@redhat.com>
-In-Reply-To: <4FBE56C6.1020901@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052524)]
+X-MAIL-FROM: <sniperxsystem@support.com>
+X-SOURCE-IP: [199.239.254.58]
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2012 10:41 AM, Igor Mammedov wrote:
-> ping for reviewers.
-> 
-> Please review patch.
+>From         :The $1,549 per day ZERO traffic system (UPDATE)
+Email        :sniperxsystem@support.com
+Friend Name  :Friend
+Friend Email :linux-kernel@vger.kernel.org
+comment      :
 
-I can't hugely comment on the guts of what the patch is doing, but:
+Listen to this... pretty crazy...
 
->> --- a/arch/x86/kernel/smpboot.c
->> +++ b/arch/x86/kernel/smpboot.c
->> @@ -136,6 +136,10 @@ EXPORT_PER_CPU_SYMBOL(cpu_info);
->>
->>   atomic_t init_deasserted;
->>
->> +#ifdef CONFIG_HOTPLUG_CPU
->> +static void remove_siblinginfo(int cpu);
->> +#endif
->> +
+So many people rushed to download this 
+$530k/year system yesterday...
 
-#ifdefs should almost never be in C code, they should be in header
-files. You can stub out functions with empty inline versions.  For a
-random example, see kernel/smpboot.h
+That they crashed the ENTIRE server!
 
-Rob
--- 
-GNU/Linux isn't: Linux=GPLv2, GNU=GPLv3+, they can't share code.
-Either it's "mere aggregation", or a license violation.  Pick one.
+=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+
+(The site was down ALL day) Pretty crazy. 
+
+... The "ghetto" video alone has sent shockwaves 
+through the Clickbank community.
+
+Can you believe THIS guy's one of Clickbanks
+biggest super affiliates?
+
+=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+
+Talk soon
+
+P.S. This is **BRAND NEW**...
+
+It works and it's made $1,549.87 a DAY for 
+the past 739 days in a ROW!
+
+No PPC, no PPV, no CPA, no so-called 'push
+button softwares' scams, no 'loopholes'...
+
+Something TOTALLY different.
+
+Check it out (fast, while it's still open):
+
+=>>http://www.sniperxsystem.com/?code=4fbea9cb964f6<<=
+
+
+
+
