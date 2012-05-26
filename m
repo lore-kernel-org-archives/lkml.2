@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2EZNMW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 09:12:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33279 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752578Ab2EZNMN (ORCPT
+	id S1753458Ab2EZNMe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 09:12:34 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61402 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab2EZNMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 09:12:13 -0400
+	Sat, 26 May 2012 09:12:30 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v4 3/6] of: release node fix for of_parse_phandle_with_args
-To: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        swarren@wwwdotorg.org, devicetree-discuss@lists.ozlabs.org,
-        rob.herring@calxeda.com, b29396@freescale.com
-In-Reply-To: <1337952980-14621-3-git-send-email-b29396@freescale.com>
-References: <1337952980-14621-1-git-send-email-b29396@freescale.com> <1337952980-14621-3-git-send-email-b29396@freescale.com>
-Date: Fri, 25 May 2012 18:09:57 -0600
-Message-Id: <20120526000957.ED6BD3E13EF@localhost>
+Subject: Re: [PATCH-RESEND] GPIO/TCA6424: merge I2C transactions, remove cast
+To: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        linus.walleij@stericsson.com
+Cc: linux-kernel@vger.kernel.org,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
+In-Reply-To: <0LrHzA-1S4duI0urs-013Ke8@mrelayeu.kundenserver.de>
+References: <0LrHzA-1S4duI0urs-013Ke8@mrelayeu.kundenserver.de>
+Date: Fri, 25 May 2012 18:52:21 -0600
+Message-Id: <20120526005221.5FE113E20AE@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012 21:36:17 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> From: Dong Aisheng <dong.aisheng@linaro.org>
+On Mon, 21 May 2012 09:52:43 +0200, Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com> wrote:
+> This is a follow-up to "[PATCH v2] Add support for TCA6424":
+> - Use 3 byte transfers instead of two separate transfers (2+1 byte)
+> - An unnecessary cast removed
 > 
-> Since this API requires user to call of_node_put for the node
-> it returned via outargs, if no outargs provided, user have no
-> chance to release it, so release it internally if no outargs
-> provided.
-> 
-> Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
+> Signed-off-by: Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>
 
 Applied, thanks.
 
 g.
 
+> 
 > ---
->  drivers/of/base.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  drivers/gpio/gpio-pca953x.c |   27 ++++++++++++++++-----------
+>  1 files changed, 16 insertions(+), 11 deletions(-)
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index d9bfd49..91c1fb4 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -961,6 +961,8 @@ int of_parse_phandle_with_args(struct device_node *np, const char *list_name,
->  				out_args->args_count = count;
->  				for (i = 0; i < count; i++)
->  					out_args->args[i] = be32_to_cpup(list++);
-> +			} else {
-> +				of_node_put(node);
->  			}
->  			return 0;
->  		}
+> diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
+> index 1c313c7..5eee524 100644
+> --- a/drivers/gpio/gpio-pca953x.c
+> +++ b/drivers/gpio/gpio-pca953x.c
+> @@ -98,12 +98,11 @@ static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
+>  	if (chip->gpio_chip.ngpio <= 8)
+>  		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
+>  	else if (chip->gpio_chip.ngpio == 24) {
+> -		ret = i2c_smbus_write_word_data(chip->client,
+> +		cpu_to_le32s(&val);
+> +		ret = i2c_smbus_write_i2c_block_data(chip->client,
+>  						(reg << 2) | REG_ADDR_AI,
+> -						val & 0xffff);
+> -		ret = i2c_smbus_write_byte_data(chip->client,
+> -						(reg << 2) + 2,
+> -						(val & 0xff0000) >> 16);
+> +						3,
+> +						(u8 *) &val);
+>  	}
+>  	else {
+>  		switch (chip->chip_type) {
+> @@ -135,22 +134,27 @@ static int pca953x_read_reg(struct pca953x_chip *chip, int reg, u32 *val)
+>  {
+>  	int ret;
+>  
+> -	if (chip->gpio_chip.ngpio <= 8)
+> +	if (chip->gpio_chip.ngpio <= 8) {
+>  		ret = i2c_smbus_read_byte_data(chip->client, reg);
+> +		*val = ret;
+> +	}
+>  	else if (chip->gpio_chip.ngpio == 24) {
+> -		ret =  i2c_smbus_read_word_data(chip->client, reg << 2);
+> -		ret |= (i2c_smbus_read_byte_data(chip->client,
+> -						 (reg << 2) + 2)<<16);
+> +		*val = 0;
+> +		ret = i2c_smbus_read_i2c_block_data(chip->client,
+> +						(reg << 2) | REG_ADDR_AI,
+> +						3,
+> +						(u8 *) val);
+> +		le32_to_cpus(val);
+> -	}
+> -	else
+> +	} else {
+>  		ret = i2c_smbus_read_word_data(chip->client, reg << 1);
+> +		*val = ret;
+> +	}
+>  
+>  	if (ret < 0) {
+>  		dev_err(&chip->client->dev, "failed reading register\n");
+>  		return ret;
+>  	}
+>  
+> -	*val = (u32)ret;
+>  	return 0;
+>  }
+>  
 > -- 
-> 1.7.0.4
-> 
+> 1.7.3.4
 > 
 
 -- 
