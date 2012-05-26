@@ -1,143 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab2EZTXH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 15:23:07 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41335 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab2EZTXF (ORCPT
+	id S1754315Ab2EZTXT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 15:23:19 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45917 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab2EZTXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 15:23:05 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
-        davem@davemloft.net
-Cc: linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] Bluetooth: Really fix registering hci with duplicate name
-Date: Sat, 26 May 2012 21:23:51 +0200
-Message-Id: <1338060231-31108-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	Sat, 26 May 2012 15:23:17 -0400
+Date: Sat, 26 May 2012 21:23:11 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, paulus@samba.org, cjashfor@linux.vnet.ibm.com,
+        fweisbec@gmail.com, linux-kernel@vger.kernel.org, tglx@linutronix.de
+Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
+Message-ID: <20120526192311.GM27374@one.firstfloor.org>
+References: <1333574176-11388-1-git-send-email-jolsa@redhat.com> <20120525223646.GL27374@one.firstfloor.org> <20120526123858.GA1679@m.brq.redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120526123858.GA1679@m.brq.redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit fc50744 ("Bluetooth: Fix registering hci with duplicate name") didn't
-fully fix the duplicate naming issue with devices, and duplicate device names
-could still be created:
+On Sat, May 26, 2012 at 02:38:58PM +0200, Jiri Olsa wrote:
+> The startup patches just got in recently
+> http://marc.info/?l=linux-kernel&m=133758460912306&w=2
+> 
+> so I'll continue on this shortly.. 
 
-[  142.484097] device: 'hci1': device_add
-[...]
-[  150.545263] device: 'hci1': device_add
-[  150.550128] kobject: 'hci1' (ffff880014cc4e58): kobject_add_internal: parent: 'bluetooth', set: 'devices'
-[  150.558979] ------------[ cut here ]------------
-[  150.561438] WARNING: at fs/sysfs/dir.c:529 sysfs_add_one+0xb0/0xd0()
-[  150.572974] Hardware name: Bochs
-[  150.580502] sysfs: cannot create duplicate filename '/devices/virtual/bluetooth/hci1'
-[  150.584444] Pid: 7563, comm: trinity-child1 Tainted: G        W    3.4.0-next-20120524-sasha #296
-[...]
+Great.
 
-Instead of the weird logic and the attempt at keeping the device list sorted,
-just use an IDA.
+> If you have some ideas on this or real world examples,
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- net/bluetooth/hci_core.c |   30 ++++++++++++++++--------------
- 1 files changed, 16 insertions(+), 14 deletions(-)
+Any of the proposed syntaxes looked fine for me. The important
+part is that it works in some form.
 
-diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
-index 9c586fb..eca6dd1 100644
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -26,6 +26,7 @@
- /* Bluetooth HCI core. */
- 
- #include <linux/export.h>
-+#include <linux/idr.h>
- 
- #include <linux/rfkill.h>
- 
-@@ -46,6 +47,9 @@ DEFINE_RWLOCK(hci_dev_list_lock);
- LIST_HEAD(hci_cb_list);
- DEFINE_RWLOCK(hci_cb_list_lock);
- 
-+/* HCI ID Numbering */
-+static DEFINE_IDA(hci_index_ida);
-+
- /* ---- HCI notifications ---- */
- 
- static void hci_notify(struct hci_dev *hdev, int event)
-@@ -1689,7 +1693,6 @@ EXPORT_SYMBOL(hci_free_dev);
- /* Register HCI device */
- int hci_register_dev(struct hci_dev *hdev)
- {
--	struct list_head *head, *p;
- 	int id, error;
- 
- 	if (!hdev->open || !hdev->close)
-@@ -1701,25 +1704,19 @@ int hci_register_dev(struct hci_dev *hdev)
- 	 * so the index can be used as the AMP controller ID.
- 	 */
- 	id = (hdev->dev_type == HCI_BREDR) ? 0 : 1;
--	head = &hci_dev_list;
- 
--	/* Find first available device id */
--	list_for_each(p, &hci_dev_list) {
--		int nid = list_entry(p, struct hci_dev, list)->id;
--		if (nid > id)
--			break;
--		if (nid == id)
--			id++;
--		head = p;
--	}
-+	error = ida_simple_get(&hci_index_ida, id, 0, GFP_KERNEL);
-+	if (error < 0)
-+		return error;
- 
-+	id = error;
- 	sprintf(hdev->name, "hci%d", id);
- 	hdev->id = id;
- 
- 	BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
- 
--	list_add(&hdev->list, head);
--
-+	write_lock(&hci_dev_list_lock);
-+	list_add(&hdev->list, &hci_dev_list);
- 	write_unlock(&hci_dev_list_lock);
- 
- 	hdev->workqueue = alloc_workqueue(hdev->name, WQ_HIGHPRI | WQ_UNBOUND |
-@@ -1755,6 +1752,7 @@ int hci_register_dev(struct hci_dev *hdev)
- err_wqueue:
- 	destroy_workqueue(hdev->workqueue);
- err:
-+	ida_simple_remove(&hci_index_ida, hdev->id);
- 	write_lock(&hci_dev_list_lock);
- 	list_del(&hdev->list);
- 	write_unlock(&hci_dev_list_lock);
-@@ -1766,12 +1764,14 @@ EXPORT_SYMBOL(hci_register_dev);
- /* Unregister HCI device */
- void hci_unregister_dev(struct hci_dev *hdev)
- {
--	int i;
-+	int i, id;
- 
- 	BT_DBG("%p name %s bus %d", hdev, hdev->name, hdev->bus);
- 
- 	set_bit(HCI_UNREGISTER, &hdev->dev_flags);
- 
-+	id = hdev->id;
-+
- 	write_lock(&hci_dev_list_lock);
- 	list_del(&hdev->list);
- 	write_unlock(&hci_dev_list_lock);
-@@ -1812,6 +1812,8 @@ void hci_unregister_dev(struct hci_dev *hdev)
- 	hci_dev_unlock(hdev);
- 
- 	hci_dev_put(hdev);
-+
-+	ida_simple_remove(&hci_index_ida, id);
- }
- EXPORT_SYMBOL(hci_unregister_dev);
- 
+> that would really help.. so far, here's the latest discussion:
+> http://marc.info/?t=133357436900005&r=1&w=2
+
+For example you want to measure sandy bridge frontend contention in a 
+more useful way than the dubious event in standard perf.
+
+The formula for this is 
+
+N = 4*CPU_CLK_UNHALTED.THREAD           (4 execution slots) 
+Percent_FE_bound = 100*(IDQ_UOPS_NOT_DELIVERED.CORE / N)
+
+Translated into perf this is 
+
+-e r53003c -e r53019c
+
+and some glue to compute the formula:
+
+#!/usr/bin/python
+import sys
+
+cyc, e1 = sys.stdin.readline().split(",")
+uops, e2 = sys.stdin.readline().split(",")
+
+N = 4 * float(cyc) 
+P_FE = 100.0 * (float(uops) / N)
+print "percent frontend bound: %.2f" % (P_FE)
+
+
+perf stat -x, -e r53003c -e r53019c /bin/ls 2>log
+./frontend.py < log
+percent frontend bound: 41.53
+
+My /bin/ls is 42% frontend bound.
+
+Now you see we always have to measure the CPU_CLK_UNHALTED and 
+IDQ_UOPS_NOT_DELIVERED.CORE together. Otherwise there is no useful output
+from the formula.
+
+The problem happens when we want to measure other things too. You tend
+to quickly run out of 4 counters per CPU thread, so have to multiplex.
+And that is where the groups are needed. Without the groups we have
+to do multiple runs, instead of one that measures this all time sliced.
+
+This is pretty common with all kinds of measurements.
+
+-Andi
+
 -- 
-1.7.8.6
-
+ak@linux.intel.com -- Speaking for myself only.
