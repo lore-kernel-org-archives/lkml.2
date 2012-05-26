@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab2EZLaz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 07:30:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36413 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab2EZLax (ORCPT
+	id S1751760Ab2EZLxP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 07:53:15 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43735 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab2EZLxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 07:30:53 -0400
-Date: Sat, 26 May 2012 13:30:46 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: kernel@pengutronix.de, shawn.guo@freescale.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/15] dma: imx-sdma: Use
- clk_prepare_enable/clk_disable_unprepare
-Message-ID: <20120526113046.GX30400@pengutronix.de>
-References: <1337987696-31728-1-git-send-email-festevam@gmail.com>
- <1337987696-31728-4-git-send-email-festevam@gmail.com>
+	Sat, 26 May 2012 07:53:14 -0400
+Message-ID: <4FC0C422.8080605@tremplin-utc.net>
+Date: Sat, 26 May 2012 13:53:06 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337987696-31728-4-git-send-email-festevam@gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 13:30:14 up 195 days, 19:17, 39 users,  load average: 6.22, 5.26,
- 3.35
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Darren Hart <dvhart@linux.intel.com>,
+        "lkml, " <linux-kernel@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Carmine Iascone <carmine.iascone@st.com>,
+        Matteo Dameno <matteo.dameno@st.com>
+Subject: Re: LIS331DLH accelerometer driver, IIO or not?
+References: <4FBF0AC1.6030406@linux.intel.com> <20120525051051.GA3135@kroah.com>
+In-Reply-To: <20120525051051.GA3135@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 08:14:45PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> Prepare the clock before enabling it.
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: <linux-kernel@vger.kernel.org>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
->  drivers/dma/imx-sdma.c |   28 ++++++++++++++--------------
->  1 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index fb4f499..b6174e6 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -868,8 +868,8 @@ static int sdma_alloc_chan_resources(struct dma_chan *chan)
->  	sdmac->peripheral_type = data->peripheral_type;
->  	sdmac->event_id0 = data->dma_request;
->  
-> -	clk_enable(sdmac->sdma->clk_ipg);
-> -	clk_enable(sdmac->sdma->clk_ahb);
-> +	clk_prepare_enable(sdmac->sdma->clk_ipg);
-> +	clk_prepare_enable(sdmac->sdma->clk_ahb);
+On 25-05-12 07:10, Greg Kroah-Hartman wrote:
+> On Thu, May 24, 2012 at 09:29:53PM -0700, Darren Hart wrote:
+>> I'm working to enable the LIS331DLH accelerometer on the Fish River
+>> Island II embedded atom development kit.
+>>
+>> I am more interested in enabling people to do bizarre and interesting
+>> things with the device, so I'm leaning toward continuing with my IIO
+>> implementation.
+>
+> Make it an IIO driver and then we can delete the misc driver, which
+> shouldn't have snuck in there in the first place :)
+>
 
-No, the clock already is prepared, see the probe function.
+To be more fair to the misc driver, I wouldn't say it snucked in there, 
+but more "it ended up there as the least worse place" ;-) Actually, the 
+main problem is that there seemed to be no maintainer interested in 
+taking care of accelerometer devices. Now that the IIO subsystem is out 
+of staging, it might be a right place. That said, I don't know much 
+about the user interface to IIO. I know that I liked the idea of having 
+an joystick device created for an accelerometer because that allows to 
+get many programs to access the device almost without any modifications.
 
-Sascha
+I'd happy to help merge the lis3lv02d driver into IIO. IMHO, the main 
+steps are:
+  * make sure all the various buses are supported (e.g., I²C, SPI, and 
+also "ACPI-HP")
+  * ensure the various versions of the accelerometer are supported 
+(there are 3 supported currently)
+  * check that the driver is automatically loaded on HP laptops (via 
+ACPI entry)
+  * for each of the current interfaces decide if they should be ported 
+or dropped (/dev/js*, /dev/freefall, sysfs...)
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+What do you think Jonathan?
+
+Cheers,
+Éric
