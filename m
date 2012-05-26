@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752978Ab2EZLVo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 07:21:44 -0400
-Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:59311
-	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with SMTP id S1752647Ab2EZLVn (ORCPT
+	id S1753079Ab2EZLWe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 07:22:34 -0400
+Received: from out5-smtp.messagingengine.com ([66.111.4.29]:55602 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752992Ab2EZLWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 07:21:43 -0400
-Date: Sat, 26 May 2012 13:21:38 +0200 (CEST)
-From: Joel Reardon <joel@clambassador.com>
-X-X-Sender: joel@eristoteles.iwoars.net
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UBIFS: compute KSA size and store in superblock
-In-Reply-To: <1337952271.30969.37.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.00.1205261303000.9892@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net> <1337952271.30969.37.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sat, 26 May 2012 07:22:12 -0400
+X-Sasl-enc: 63Te05+4E21r9Esvq/rFU7UYmv0vA7Ey9YJonrMUFJyp 1338031331
+Message-ID: <4FC0BCE1.6070601@fastmail.fm>
+Date: Sat, 26 May 2012 12:22:09 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+References: <4FBFEACC.8040601@fastmail.fm>  <1337978725.10135.0.camel@edumazet-glaptop> <1337979331.10135.2.camel@edumazet-glaptop>
+In-Reply-To: <1337979331.10135.2.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> I do not have to time to review it now, but please, make sure that the
-> KSA size is according to 'max_leb_cnt' (see the --max-leb-cnt of the
-> mkfs.ubifs tool).
+On 05/25/2012 09:55 PM, Eric Dumazet wrote:
+> On Fri, 2012-05-25 at 22:45 +0200, Eric Dumazet wrote:
+>> On Fri, 2012-05-25 at 21:25 +0100, Jack Stone wrote:
+>>> Hi All,
+>>>
+>>> The following warning keeps hitting me. I couldn't get the first one - it had already left dmesg hence the W taint.
+>>> The C taint is from r8712u from staging.
+>>>
+>>> I've seen it with 3.4.0-076444-g07acfc2 (recent Linus tree) and 3.4.0-rc3-00089-gc6f5c93.
+>>>
+>>> I am going to attempt to bisect it now.
+>>
+>> No need, update your tree.
+>>
+>>
+> 
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=1ca7ee30630e1022dbcf1b51be20580815ffab73
+> 
+> 
+> 
 
-Ahh, I see now I also need to add the min number of lebs to min_leb_cnt if
-the feature is enabled.
+I'm still getting this with da89fb1 which includes the above
 
-> Also, think about this use-case in general: you have
-> UBI volume of size X, then the volume is resized to Y > X, then mounted
-> - UBIFS should work and resize itself to Y, up to the 'max_leb_cnt'. If
-> Y > 'max_leb_cnt', we resize only to 'max_leb_cnt'.
-
-For this case, it should be fine if the KSA is sized to maxlebcnt.
-However, it will remain that size regardless of the real leb_cnt.
-
-In general, removing KSA blocks is possible, but if datanodes are
-encrypted with keys on those blocks, then they must be re-encrypted with a
-different key on the smaller set (or somehow write the new last KSA block
-containing all the used keys from the removed KSA blocks along with a
-relocation table, but this seems like alot of coding if removing LEBs from
-the KSA isn't that important.)
-
-Adding LEBs to the KSA is very simple, just add a new entry on the list
-and set all the key states to deleted--after purging will be random data;
-but KSA LEBs are logically-sequential, so if it comes from used main LEBs
-the data nodes need to be relocated. or some complicated code structure
-involved in determining where a key for an out-of-range KSA block is
-remapped.
-
-Cheers,
-Joel Reardon
+Linux hover1 3.4.0-07797-gda89fb1 #4 SMP Fri May 25 22:23:14 BST 2012 x86_64 x86_64 x86_64 GNU/Linux
