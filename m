@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759090Ab2EYXpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 May 2012 19:45:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45679 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752812Ab2EYXpq (ORCPT
+	id S1756256Ab2EZAJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 May 2012 20:09:15 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:47911 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752474Ab2EZAJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 May 2012 19:45:46 -0400
-Date: Sat, 26 May 2012 00:45:38 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 01/20] arm: Do not call do_signal() with irqs disabled
-Message-ID: <20120525234538.GB32000@n2100.arm.linux.org.uk>
-References: <1337983476-22081-1-git-send-email-richard@nod.at>
+	Fri, 25 May 2012 20:09:14 -0400
+Message-ID: <4FC01F1B.1080009@fb.com>
+Date: Fri, 25 May 2012 17:08:59 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337983476-22081-1-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: David Miller <davem@davemloft.net>
+CC: <eric.dumazet@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+References: <1337976934-18065-1-git-send-email-asharma@fb.com> <1337978820.10135.1.camel@edumazet-glaptop> <4FC0063E.8080209@fb.com> <20120525.185131.2017517041016424794.davem@davemloft.net>
+In-Reply-To: <20120525.185131.2017517041016424794.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
+ definitions=2012-05-25_06:2012-05-21,2012-05-25,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 12:04:17AM +0200, Richard Weinberger wrote:
-> get_signal_to_deliver() calls try_to_freeze() which might sleep.
+On 5/25/12 3:51 PM, David Miller wrote:
+> From: Arun Sharma<asharma@fb.com>
+> Date: Fri, 25 May 2012 15:22:54 -0700
+>
+>> On 5/25/12 1:47 PM, Eric Dumazet wrote:
+>>> On Fri, 2012-05-25 at 13:15 -0700, Arun Sharma wrote:
+>>>> The algorithm is based on ipv4 and alloc_large_system_hash().
+>>>>
+>>>
+>>> Why is it needed at all ?
+>>>
+>>> IPv4 has a route cache with potentially millions of entries, not IPv6.
+>>
+>> With the default size of 4096 for the ipv6 routing table, entries can
+>> get garbage collected and hosts could lose their default route and
+>> therefore lose connectivity.
+>>
+>> We actually saw it happen.
+>
+> Under no circumstances should administrator configured ipv6 routes be
+> garbage collected, that is a bug.
 
-True enough, and this problem has been around for some time, and it's
-not as simple to fix as "lets just ignore everything else and enable
-interrupts to shutup the warning".
+These were not admin configured routes. They were discovered via ipv6 
+neighbor discovery.
 
-There's bigger issues here with syscall restarting that should be
-resolved first, and there's work in progress to do that.  Again,
-like I said in my previous email, Al's done a great deal of work
-in this area and I get the impression that you're redoing some of
-that.
+  -Arun
