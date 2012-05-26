@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752033Ab2EZI3l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 04:29:41 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62059 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab2EZI3g (ORCPT
+	id S1752092Ab2EZIeQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 04:34:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45783 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab2EZIeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 04:29:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	Sat, 26 May 2012 04:34:11 -0400
+Date: Sat, 26 May 2012 09:33:56 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Alessandro Rubini <rubini@gnudd.com>
-Subject: Re: [PATCH 6/6] serial: add amba-pl011-pci
-Date: Sat, 26 May 2012 08:29:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux@arm.linux.org.uk, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
+Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, x86@kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
-References: <201205260739.31653.arnd@arndb.de> <b166cb0fce2a67b24da5808604553b4196258f45.1337959750.git.rubini@gnudd.com> <20120526075855.GA1702@mail.gnudd.com>
-In-Reply-To: <20120526075855.GA1702@mail.gnudd.com>
+Subject: Re: [PATCH 2/6] amba: use the new linux/sizes.h
+Message-ID: <20120526083356.GD24149@n2100.arm.linux.org.uk>
+References: <cover.1337959750.git.rubini@gnudd.com> <0e1b40d651ffbc654616173f2c3bf89888db21a5.1337959750.git.rubini@gnudd.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205260829.19232.arnd@arndb.de>
-X-Provags-ID: V02:K0:hqy7tZ4v5MnQ1dIPiC2fUw49oW1CygvK4AHPeAHeU53
- VdXRSFU2Te5UxejWByRvyZlsfBXIIHZpVm09Kq5Dy+pfADXa6u
- ARInBmfqSGu9LUai4VFsXhgZXPIsyic4SsOGvjtenN6Ku8OZQX
- tRnt/hEZUviIkV/ey5FUS4/8A7A01YhoXMa/XKDH9fRcixqD3n
- E4wtYwsgMYH6ext+8qfK2laWWnY7qKbsaVelncZagT4yEJSkZc
- EPUEdAxLNY7FFuDIGpix0H5cL/4KY84xsxaTYaezS26oY+gS33
- CuLH0HufHbSQu6FQqWXR038B0WlhFsYHh/s3HxuIdiqOdoi3EC
- RVx5tUUXrXy0CvL6pN9E=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0e1b40d651ffbc654616173f2c3bf89888db21a5.1337959750.git.rubini@gnudd.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 26 May 2012, Alessandro Rubini wrote:
-> > Aside from the dma mask, this looks almost entirely generic. Would it
-> > be possible to make this a generic pci-amba driver that lives under
-> > drivers/amba/ and does not care about the type of device behind it?
+On Fri, May 25, 2012 at 05:48:12PM +0200, Alessandro Rubini wrote:
+> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
+>  drivers/amba/bus.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Yes, it's possible. Actually, this was my longer-time plan: propose a
-> factorization when more of those were ready.  So I'll remove the
-> special name in the device and offer an implementation as generic
-> as possible.
-> 
-> BTW, are the prerequisite patches of with you?
-> 
+> diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+> index b7e7285..e29bfa7 100644
+> --- a/drivers/amba/bus.c
+> +++ b/drivers/amba/bus.c
+> @@ -18,7 +18,7 @@
+>  #include <linux/amba/bus.h>
+>  
+>  #include <asm/irq.h>
+> -#include <asm/sizes.h>
+> +#include <linux/sizes.h>
 
-Yes, they all look good to me, although patch 5 would have to change
-if you do patch 6 the way we discussed here.
-
-	Arnd
+Please move this up alongside the other linux/ includes.
