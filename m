@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab2EZHXE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 03:23:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52354 "EHLO
+	id S1751523Ab2EZHXG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 03:23:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63447 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab2EZHXC (ORCPT
+	with ESMTP id S1750930Ab2EZHXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 03:23:02 -0400
+	Sat, 26 May 2012 03:23:03 -0400
 From: Olof Johansson <olof@lixom.net>
 To: torvalds@linux-foundation.org
 Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [GIT PULL 0/8] Second batch of arm-soc branches for 3.5
-Date: Sat, 26 May 2012 00:22:30 -0700
-Message-Id: <1338016958-7887-1-git-send-email-olof@lixom.net>
+        linux-arm-kernel@lists.infradead.org, Olof Johansson <olof@lixom.net>
+Subject: [GIT PULL 1/8] arm-soc: defconfig updates
+Date: Sat, 26 May 2012 00:22:31 -0700
+Message-Id: <1338016958-7887-2-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.10.1.488.g05fbf7a
+In-Reply-To: <1338016958-7887-1-git-send-email-olof@lixom.net>
+References: <1338016958-7887-1-git-send-email-olof@lixom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+For the first time, we have one branch that collects just updates to
+defconfig files, mostly for adapting to changes in other subsystems.
 
-This is the second and last large set of arm-soc branches for the 3.5
-merge window. There will likely be a couple of small pull requests next
-week (and thereafter fixes).
+----------------------------------------------------------------
 
-Descriptions of each branch are in the corresponding request.
+The following changes since commit 786f02b719f2285e2c0350b6a04dab4a1a0871a1:
 
-Most of them have some trivial merge conflicts with earlier branches or
-other code that has gone in since they were staged. Notes below are for
-the slightly trickier cases. Just like with the last batch I've pushed
-up resolved/<tagname> branches with proposed resolutions if you want
-to compare.
+  Merge tag 'x86-mce-merge' of git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras
 
-cleanup2 branch:
-omap_init_clocksource_32k(): Keep the version from this branch but add
-in the register_persistent_clock() addition from bd0493e.
+are available in the git repository at:
 
-clock branch:
-An awkward add/remove conflict in mach-kirkwood/common.c. Code is removed
-here that was fixed in one of our earlier branches. The right thing to
-do is to still just remove the code.
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/defconfig
 
-dt2 branch:
-gpio-mxs.c: Keep the (port) side but change false -> 0 on the last arg.
+for you to fetch changes up to 4a230408e83698a3d7ff0a9988a58675c2c92cb9:
 
-soc2 branch:
-gpio-samsung.c: Slightly awkward move/change conflict. Essentially
-re-apply the second hunk of f10590c9 in the moved function
-(exynos5_gpiolib_init()).
+  ARM: PRIMA2: add prima2_defconfig for CSR SiRFprimaII
 
-cleanup-initcall branch:
-Trivial conflict deltas and a deleted file conflict. The removed file
-should remain removed.
+----------------------------------------------------------------
+
+Arnd Bergmann (2):
+      Merge tag 'imx-defconfig' of git://git.pengutronix.de/git/imx/linux-2.6 into next/defconfig
+      Merge branch 'for-3.5/defconfig2' of git://git.kernel.org/.../swarren/linux-tegra into next/defconfig
+
+Barry Song (1):
+      ARM: PRIMA2: add prima2_defconfig for CSR SiRFprimaII
+
+Fabio Estevam (2):
+      ARM: imx_v4_v5_defconfig: Let CONFIG_MACH_IMX27_DT be built by default
+      ARM: imx_v6_v7_defconfig: Add SPI NOR support
+
+Laxman Dewangan (1):
+      ARM: tegra: update defconfig
+
+Olof Johansson (1):
+      Merge branch 'for-3.5/defconfig' of git://git.kernel.org/.../swarren/linux-tegra into next/defconfig
+
+Stephen Warren (1):
+      ARM: tegra: update defconfig
 
 
-Thanks!
-
--Olof
+ arch/arm/configs/imx_v4_v5_defconfig |  1 +
+ arch/arm/configs/imx_v6_v7_defconfig |  6 +++
+ arch/arm/configs/prima2_defconfig    | 69 +++++++++++++++++++++++++++++++
+ arch/arm/configs/tegra_defconfig     | 11 ++++-
+ 4 files changed, 86 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/configs/prima2_defconfig
