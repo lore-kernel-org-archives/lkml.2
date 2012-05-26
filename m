@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab2EZR3E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 13:29:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65071 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab2EZR3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 13:29:02 -0400
-Message-ID: <4FC112AB.1040605@redhat.com>
-Date: Sat, 26 May 2012 13:28:11 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754230Ab2EZSHS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 14:07:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57900 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754136Ab2EZSHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 14:07:15 -0400
+Date: Sat, 26 May 2012 11:06:47 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Sam Portolla <samportolla@yahoo.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, "kaber@trash.net" <kaber@trash.net>,
+        "jarkao2@gmail.com" <jarkao2@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: exit_mmap BUG_ON in 2.6.23 (and Add qdisc __NET_XMIT_STOLEN)
+In-Reply-To: <1337992130.90506.YahooMailNeo@web121305.mail.ne1.yahoo.com>
+Message-ID: <alpine.LSU.2.00.1205261033500.2033@eggly.anvils>
+References: <1337406674.48432.YahooMailNeo@web121303.mail.ne1.yahoo.com> <alpine.LSU.2.00.1205191301430.10539@eggly.anvils> <1337992130.90506.YahooMailNeo@web121305.mail.ne1.yahoo.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 00/35] AutoNUMA alpha14
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1719654220-1338055614=:2033"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 01:02 PM, Andrea Arcangeli wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> I believe (realistically speaking) nobody is going to change
-> applications to specify which thread is using which memory (for
-> threaded apps) with the only exception of QEMU and a few others.
+--8323584-1719654220-1338055614=:2033
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-This is the point of contention.  I believe that for some
-programs these kinds of modifications might happen, but
-that for some other programs - managed runtimes like JVMs -
-it is fundamentally impossible to do proper NUMA hinting,
-because the programming languages that run on top of the
-runtimes have no concept of pointers or memory ranges, making
-it impossible to do those kinds of hints without fundamentally
-changing the programming languages in question.
+On Fri, 25 May 2012, Sam Portolla wrote:
+>=20
+> commit 378a2f090f7a478704a372a4869b8a9ac206234e
+> Date:=A0=A0 Mon Aug 4 22:31:03 2008 -0700
+> net_sched: Add qdisc __NET_XMIT_STOLEN flag
+=2E..
+>=20
+> =A0I wonder if the lack of above patch in our code base could explain the
+>  exit_mmap() BUG_ON as well due to memory corruption causing MMU to not
+>  be able to locate the page(s) it had to free. NR_PTES keeps track of
+>  that? Could you explain that more?
 
-It would be good to get everybody's ideas out there on this
-topic, because this is the fundamental factor in deciding
-between Peter's approach to NUMA and Andrea's approach.
+I concur with Eric in thinking it unlikely - though (unlike Eric)
+I know far too little about networking to comment with authority.
 
-Ingo? Andrew? Linus? Paul?
+I'd guess that there have been literally hundreds of fixes gone into
+the kernel since 2.6.23, each more likely to be the fix to such memory
+corruption than this one.  And I could also be wrong in attributing
+your BUG to memory corruption: perhaps I'm forgetting an mm fix.
 
-> For not threaded apps that fits in a NUMA node, there's no way a blind
-> home node can perform nearly as good as AutoNUMA:
+You ask me to explain more: mm->nr_ptes keeps track of the number of
+page tables that have been allocated; when we free the mm, we should
+be freeing exactly the number of page tables we allocated earlier,
+but a bug in the code maintaining the vmas or the page tables might
+break that, hence the BUG_ON to test.  But equally, if there has been
+memory corruption of vmas or of higher-level page tables, we may now
+be unable to locate all the page tables we allocated earlier, and so
+hit the BUG_ON for that reason.
 
-The small tasks are easy. I suspect that either implementation
-can be tuned to produce good results there.
+Would I be unfair to characterize this as a problem seen once at a
+customer site in the 4.5 years since 2.6.23 was released?
 
-It is the large programs (that do not fit in a NUMA node, either
-due to too much memory, or due to too many threads) that will
-force our hand in deciding whether to go with Peter's approach
-or your approach.
+As I said before, please just change that BUG_ON to WARN_ON, and
+wait to see if more such issues come up: if they do, then you can
+start to look for a pattern.
 
-I believe we do need to carefully think about this issue, decide
-on a NUMA approach based on the fundamental technical properties of
-each approach.
-
-After we figure out what we want to do, we can nit-pick on the
-codebase in question, and make sure it gets completely fixed.
-I am sure neither codebase is perfect right now, but both are
-entirely fixable.
-
--- 
-All rights reversed
+Hugh
+--8323584-1719654220-1338055614=:2033--
