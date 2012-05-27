@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab2E0A63 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:58:29 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977Ab2E0A6Z (ORCPT
+	id S1755102Ab2E0A6c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 20:58:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42162 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754985Ab2E0A63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:58:25 -0400
-Message-Id: <20120527002616.567845529@linuxfoundation.org>
+	Sat, 26 May 2012 20:58:29 -0400
+Message-Id: <20120527002616.733067203@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:31 +0900
+Date: Sun, 27 May 2012 09:26:32 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Maxim Levitsky <maximlevitsky@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 18/55] mtd: sm_ftl: fix typo in major number.
+        alan@lxorguk.ukuu.org.uk, Matt Johnson <johnso87@illinois.edu>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 19/55] ahci: Detect Marvell 88SE9172 SATA controller
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maxim Levitsky <maximlevitsky@gmail.com>
+From: Matt Johnson <johnso87@illinois.edu>
 
-commit 452380efbd72d8d41f53ea64c8a6ea1fedc4394d upstream.
+commit 642d89252201c4155fc3946bf9cdea409e5d263e upstream.
 
-major == 0 allocates dynamic major, not major == -1
+The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
+once it was detected, but was missing an ahci_pci_tbl entry.
 
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
+
+Signed-off-by: Matt Johnson <johnso87@illinois.edu>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/sm_ftl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/mtd/sm_ftl.c
-+++ b/drivers/mtd/sm_ftl.c
-@@ -1256,7 +1256,7 @@ static void sm_remove_dev(struct mtd_blk
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -392,6 +392,8 @@ static const struct pci_device_id ahci_p
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
+ 	{ PCI_DEVICE(0x1b4b, 0x9125),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
++	{ PCI_DEVICE(0x1b4b, 0x917a),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
  
- static struct mtd_blktrans_ops sm_ftl_ops = {
- 	.name		= "smblk",
--	.major		= -1,
-+	.major		= 0,
- 	.part_bits	= SM_FTL_PARTN_BITS,
- 	.blksize	= SM_SECTOR_SIZE,
- 	.getgeo		= sm_getgeo,
 
 
