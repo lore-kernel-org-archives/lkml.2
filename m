@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934019Ab2E0BRI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:17:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	id S1422700Ab2E0BRV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:17:21 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43902 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422675Ab2E0BQ7 (ORCPT
+	with ESMTP id S1422656Ab2E0BRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:16:59 -0400
-Message-Id: <20120527002514.521649769@linuxfoundation.org>
+	Sat, 26 May 2012 21:17:15 -0400
+Message-Id: <20120527002516.173378347@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:41 +0900
+Date: Sun, 27 May 2012 09:25:49 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oliver@neukum.org>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 35/91] USB: cdc-wdm: remove from device list on disconnect
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>
+Subject: [ 43/91] USB: ftdi-sio: add support for Physik Instrumente E-861
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,62 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Éric Piel <piel@delmic.com>
 
-commit 6286d85e8efdb59252d1ceb99a56fa6b0b11526c upstream.
+commit b69cc672052540e8efb1368420f10d7d4d8b8a3d upstream.
 
-Prevents dereferencing an invalid struct usb_interface
-pointer.
+This adds VID/PID for the PI E-861. Without it, I had to do:
+modprobe -q ftdi-sio product=0x1008 vendor=0x1a72
 
-Always delete entry from device list whether or not the
-rest of the device state cleanup is postponed. The device
-list uses desc->intf as key, and wdm_open will dereference
-this key while searching for a matching device.  A device
-should not appear in the list unless probe() has succeeded
-and disconnect() has not finished.
+http://www.physikinstrumente.com/en/products/prdetail.php?sortnr=900610
 
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Éric Piel <piel@delmic.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    8 ++++++++
+ 2 files changed, 9 insertions(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -309,9 +309,6 @@ static void free_urbs(struct wdm_device
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -809,6 +809,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
+ 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
++	{ USB_DEVICE(PI_VID, PI_E861_PID) },
+ 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -785,6 +785,14 @@
+ #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+ #define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
  
- static void cleanup(struct wdm_device *desc)
- {
--	spin_lock(&wdm_device_list_lock);
--	list_del(&desc->device_list);
--	spin_unlock(&wdm_device_list_lock);
- 	kfree(desc->sbuf);
- 	kfree(desc->inbuf);
- 	kfree(desc->orq);
-@@ -778,6 +775,9 @@ static int wdm_create(struct usb_interfa
- out:
- 	return rv;
- err:
-+	spin_lock(&wdm_device_list_lock);
-+	list_del(&desc->device_list);
-+	spin_unlock(&wdm_device_list_lock);
- 	cleanup(desc);
- 	return rv;
- }
-@@ -903,6 +903,12 @@ static void wdm_disconnect(struct usb_in
- 	cancel_work_sync(&desc->rxwork);
- 	mutex_unlock(&desc->wlock);
- 	mutex_unlock(&desc->rlock);
 +
-+	/* the desc->intf pointer used as list key is now invalid */
-+	spin_lock(&wdm_device_list_lock);
-+	list_del(&desc->device_list);
-+	spin_unlock(&wdm_device_list_lock);
++/*
++ * Physik Instrumente
++ * http://www.physikinstrumente.com/en/products/
++ */
++#define PI_VID              0x1a72  /* Vendor ID */
++#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
 +
- 	if (!desc->count)
- 		cleanup(desc);
- 	mutex_unlock(&wdm_mutex);
+ /*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
+  * http://winglucofacts.com/cables/
 
 
