@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab2E0BAI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:00:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
+	id S1755764Ab2E0BAR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:00:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755711Ab2E0BAB (ORCPT
+	with ESMTP id S932159Ab2E0BAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:00:01 -0400
-Message-Id: <20120527002619.597925581@linuxfoundation.org>
+	Sat, 26 May 2012 21:00:10 -0400
+Message-Id: <20120527002619.894687425@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:51 +0900
+Date: Sun, 27 May 2012 09:26:53 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Steffen=20M=C3=BCller?= <steffen.mueller@radio-frei.de>,
-        Stefan Seyfried <seife+kernel@b1-systems.com>
-Subject: [ 38/55] usb: add USB_QUIRK_RESET_RESUME for M-Audio 88es
+        alan@lxorguk.ukuu.org.uk, Hans de Goede <hdegoede@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 40/55] usb-xhci: Handle COMP_TX_ERR for isoc tds
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,30 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Steffen=20M=C3=BCller?= <steffen.mueller@radio-frei.de>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 166cb70e97bd83d7ae9bbec6ae59a178fd9bb823 upstream.
+commit 9c745995ae5c4ff787f34a359de908facc11ee00 upstream.
 
-Tested-by: Steffen Müller <steffen.mueller@radio-frei.de>
-Signed-off-by: Steffen Müller <steffen.mueller@radio-frei.de>
-Signed-off-by: Stefan Seyfried <seife+kernel@b1-systems.com>
+While testing unplugging an UVC HD webcam with usb-redirection (so through
+usbdevfs), my userspace usb-redir code was getting a value of -1 in
+iso_frame_desc[n].status, which according to Documentation/usb/error-codes.txt
+is not a valid value.
+
+The source of this -1 is the default case in xhci-ring.c:process_isoc_td()
+adding a kprintf there showed the value of trb_comp_code to be COMP_TX_ERR
+in this case, so this patch adds handling for that completion code to
+process_isoc_td().
+
+This was observed and tested with the following xhci controller:
+1033:0194 NEC Corporation uPD720200 USB 3.0 Host Controller (rev 04)
+
+Note: I also wonder if setting frame->status to -1 (-EPERM) is the best we can
+do, but since I cannot come up with anything better I've left that as is.
+
+This patch should be backported to kernels as old as 2.6.36, which contain the
+commit 04e51901dd44f40a5a385ced897f6bca87d5f40a "USB: xHCI: Isochronous
+transfer implementation".
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/host/xhci-ring.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -123,6 +123,9 @@ static const struct usb_device_id usb_qu
- 	/* Guillemot Webcam Hercules Dualpix Exchange*/
- 	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Midiman M-Audio Keystation 88es */
-+	{ USB_DEVICE(0x0763, 0x0192), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* M-Systems Flash Disk Pioneers */
- 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1756,6 +1756,7 @@ static int process_isoc_td(struct xhci_h
+ 		break;
+ 	case COMP_DEV_ERR:
+ 	case COMP_STALL:
++	case COMP_TX_ERR:
+ 		frame->status = -EPROTO;
+ 		skip_td = true;
+ 		break;
 
 
