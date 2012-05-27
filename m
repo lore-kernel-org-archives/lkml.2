@@ -1,57 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab2E0TqS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 15:46:18 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:59408 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab2E0TqO (ORCPT
+	id S1752863Ab2E0Trw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 15:47:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45799 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab2E0Tru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 15:46:14 -0400
-Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1338147374.3786.43.camel@edumazet-glaptop>
-References: <4FBFEACC.8040601@fastmail.fm>
-	 <1337978725.10135.0.camel@edumazet-glaptop>
-	 <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>
-	 <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm>
-	 <1338140156.3786.10.camel@edumazet-glaptop>  <4FC27CE7.20604@fastmail.fm>
-	 <1338147374.3786.43.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 May 2012 21:46:11 +0200
-Message-ID: <1338147971.3786.55.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 27 May 2012 15:47:50 -0400
+Date: Sun, 27 May 2012 16:47:44 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 12/94] net/wireless: ipw2200: Fix WARN_ON occurring in
+ wiphy_register called by ipw_pci_probe
+Message-ID: <20120527194743.GB2638@herton-Z68MA-D2H-B3>
+References: <20120527010332.GA11170@kroah.com>
+ <20120527010425.489792331@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120527010425.489792331@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-27 at 21:36 +0200, Eric Dumazet wrote:
-> pied elsewhere, so we can double check.
+On Sun, May 27, 2012 at 10:04:35AM +0900, Greg KH wrote:
+> 3.3-stable review patch.  If anyone has any objections, please let me know.
 > 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 3ba605f..22e4c9a 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -1606,8 +1606,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
->  			if (tcp_hdr(skb)->fin)
->  				goto found_fin_ok;
->  			WARN(!(flags & MSG_PEEK),
-> -			     "recvmsg bug 2: copied %X seq %X rcvnxt %X fl %X\n",
-> -			     *seq, TCP_SKB_CB(skb)->seq, tp->rcv_nxt, flags);
-> +			     "recvmsg bug 2: copied %X seq %X end_seq %X rcvnxt %X fl %X offset %u len %u syn %d tcp_flags %X\n",
-> +			     *seq, TCP_SKB_CB(skb)->seq, TCP_SKB_CB(skb)->end_seq,
-> +			     tp->rcv_nxt, flags, offset, skb->len, tcp_hdr(skb)->syn,
-> +				 TCP_SKB_CB(skb)->tcp_flags);
->  		}
+> ------------------
+
+Same as what I commented on this being proposed for 3.4.y, this would
+only be needed if "ipw2200: Fix order of device registration" was
+applied to 3.3 kernels.
+
+> 
+> From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+> 
+> commit 7ed85b65ab611ba841d508ae4ff8c45fa0c48c80 upstream.
+> 
+> The problem was found by Stefan Lippers-Hollmann
+> http://marc.info/?l=linux-wireless&m=132720334512946&w=2
+> 
+> WARNING: at /tmp/buildd/linux-aptosid-3.2/debian/build/source_i386_none/net/wireless/core.c:562 wiphy_register+0x45/0x38d [cfg80211]()
+> Hardware name: TravelMate 290 \xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff
+> Modules linked in: ipw2200(+) iTCO_wdt libipw joydev drm snd_seq snd_timer snd_seq_device iTCO_vendor_support yenta_socket snd intel_agp i2c_i801 pcmcia_rsrc cfg80211 soundcore parport_pc psmouse parport rng_core snd_page_alloc serio_raw pcspkr i2c_algo_bit intel_gtt pcmcia_core evdev irda crc_ccitt rfkill lib80211 processor container ac battery shpchp pci_hotplug button ext4 mbcache jbd2 crc16 dm_mod sd_mod sr_mod crc_t10dif cdrom ata_generic pata_acpi ata_piix libata scsi_mod firewire_ohci firewire_core crc_itu_t 8139too 8139cp mii uhci_hcd ehci_hcd usbcore usb_common [last unloaded: scsi_wait_scan]
+> Pid: 328, comm: modprobe Not tainted 3.2-1.slh.4-aptosid-686 #1
+> Call Trace:
+> [<c012eaf4>] ? warn_slowpath_common+0x7c/0x8f
+> [<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+> [<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+> [<c012eb22>] ? warn_slowpath_null+0x1b/0x1f
+> [<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+> [<c01f89d7>] ? internal_create_group+0xf5/0xff
+> [<e0a2de1c>] ? ipw_pci_probe+0xa9a/0xbd0 [ipw2200]
+> [<c01519f4>] ? arch_local_irq_save+0xf/0x14
+> [<c0252986>] ? pci_device_probe+0x53/0x9a
+> [<c02c2820>] ? driver_probe_device+0x94/0x124
+> [<c0252871>] ? pci_match_id+0x15/0x34
+> [<c02c28f0>] ? __driver_attach+0x40/0x5b
+> [<c02c1d81>] ? bus_for_each_dev+0x37/0x60
+> [<c02c25aa>] ? driver_attach+0x17/0x1a
+> [<c02c28b0>] ? driver_probe_device+0x124/0x124
+> [<c02c22c4>] ? bus_add_driver+0x92/0x1d1
+> [<e099d000>] ? 0xe099cfff
+> [<c02c2cb8>] ? driver_register+0x7d/0xd4
+> [<c017cd50>] ? jump_label_module_notify+0xec/0x167
+> [<e099d000>] ? 0xe099cfff
+> [<c0253017>] ? __pci_register_driver+0x32/0x87
+> [<e099d000>] ? 0xe099cfff
+> [<e099d02e>] ? ipw_init+0x2e/0x72 [ipw2200]
+> [<c0101173>] ? do_one_initcall+0x7d/0x132
+> [<c0145016>] ? __blocking_notifier_call_chain+0x47/0x4f
+> [<c0154a73>] ? sys_init_module+0x13a4/0x159c
+> [<c03a639f>] ? sysenter_do_call+0x12/0x28
+> 
+> This warning appears only if we apply Ben Hutchings' fix
+> http://marc.info/?l=linux-wireless&m=132720195012653&w=2
+> for the bug reported by Cesare Leonardi
+> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=656813
+> with cfg80211 warning during device registration
+> ("cfg80211: failed to add phy80211 symlink to netdev!").
+> 
+> We separate device bring up and registration with network stack
+> to avoid the problem.
+> 
+> After that Ben Hutchings' fix can be applied to fix the bug.
+> 
+> Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+> Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  drivers/net/wireless/ipw2x00/ipw2200.c |   21 ++++++---------------
+>  1 file changed, 6 insertions(+), 15 deletions(-)
+> 
+> --- a/drivers/net/wireless/ipw2x00/ipw2200.c
+> +++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+> @@ -11443,20 +11443,6 @@ static void ipw_bg_down(struct work_stru
+>  	mutex_unlock(&priv->mutex);
+>  }
 >  
->  		/* Well, if we have backlog, try to process it now yet. */
+> -/* Called by register_netdev() */
+> -static int ipw_net_init(struct net_device *dev)
+> -{
+> -	int rc = 0;
+> -	struct ipw_priv *priv = libipw_priv(dev);
+> -
+> -	mutex_lock(&priv->mutex);
+> -	if (ipw_up(priv))
+> -		rc = -EIO;
+> -	mutex_unlock(&priv->mutex);
+> -
+> -	return rc;
+> -}
+> -
+>  static int ipw_wdev_init(struct net_device *dev)
+>  {
+>  	int i, rc = 0;
+> @@ -11722,7 +11708,6 @@ static void ipw_prom_free(struct ipw_pri
+>  #endif
+>  
+>  static const struct net_device_ops ipw_netdev_ops = {
+> -	.ndo_init		= ipw_net_init,
+>  	.ndo_open		= ipw_net_open,
+>  	.ndo_stop		= ipw_net_stop,
+>  	.ndo_set_rx_mode	= ipw_net_set_multicast_list,
+> @@ -11849,6 +11834,12 @@ static int __devinit ipw_pci_probe(struc
+>  		goto out_release_irq;
+>  	}
+>  
+> +	if (ipw_up(priv)) {
+> +		mutex_unlock(&priv->mutex);
+> +		err = -EIO;
+> +		goto out_remove_sysfs;
+> +	}
+> +
+>  	mutex_unlock(&priv->mutex);
+>  	err = register_netdev(net_dev);
+>  	if (err) {
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 
-Oh well, ignore this, as tcp_flags is only set in output path.
-
-
-
+-- 
+[]'s
+Herton
