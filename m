@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965779Ab2E0B0Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:26:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35469 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945912Ab2E0BSy (ORCPT
+	id S965790Ab2E0B0y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:26:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756774Ab2E0BSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:18:54 -0400
-Message-Id: <20120527002520.694560712@linuxfoundation.org>
+	Sat, 26 May 2012 21:18:40 -0400
+Message-Id: <20120527002518.942388471@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:09 +0900
+Date: Sun, 27 May 2012 09:26:01 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 63/91] usbcore: enable USB2 LPM if port suspend fails
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Steffen=20M=C3=BCller?= <steffen.mueller@radio-frei.de>,
+        Stefan Seyfried <seife+kernel@b1-systems.com>
+Subject: [ 55/91] usb: add USB_QUIRK_RESET_RESUME for M-Audio 88es
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@gmail.com>
+From: =?UTF-8?q?Steffen=20M=C3=BCller?= <steffen.mueller@radio-frei.de>
 
-commit c3e751e4f4754793bb52bd5ae30e9cc027edbb12 upstream.
+commit 166cb70e97bd83d7ae9bbec6ae59a178fd9bb823 upstream.
 
-USB2 LPM is disabled when device begin to suspend and enabled after device
-is resumed. That's because USB spec does not define the transition from
-U1/U2 state to U3 state.
-
-If usb_port_suspend() fails, usb_port_resume() is never called, and USB2 LPM
-is disabled in this situation. Enable USB2 LPM if port suspend fails.
-
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set USB2
-hardware LPM".
-
-Signed-off-by: Andiry Xu <andiry.xu@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: Steffen Müller <steffen.mueller@radio-frei.de>
+Signed-off-by: Steffen Müller <steffen.mueller@radio-frei.de>
+Signed-off-by: Stefan Seyfried <seife+kernel@b1-systems.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2499,6 +2499,10 @@ int usb_port_suspend(struct usb_device *
- 				NULL, 0,
- 				USB_CTRL_SET_TIMEOUT);
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -123,6 +123,9 @@ static const struct usb_device_id usb_qu
+ 	/* Guillemot Webcam Hercules Dualpix Exchange*/
+ 	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
  
-+		/* Try to enable USB2 hardware LPM again */
-+		if (udev->usb2_hw_lpm_capable == 1)
-+			usb_set_usb2_hardware_lpm(udev, 1);
++	/* Midiman M-Audio Keystation 88es */
++	{ USB_DEVICE(0x0763, 0x0192), .driver_info = USB_QUIRK_RESET_RESUME },
 +
- 		/* System sleep transitions should never fail */
- 		if (!PMSG_IS_AUTO(msg))
- 			status = 0;
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
 
