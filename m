@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965518Ab2E0BeV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:34:21 -0400
+	id S934007Ab2E0Bes (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:34:48 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965513Ab2E0BOq (ORCPT
+	with ESMTP id S1756521Ab2E0BOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:14:46 -0400
-Message-Id: <20120527002509.673387964@linuxfoundation.org>
+	Sat, 26 May 2012 21:14:31 -0400
+Message-Id: <20120527002509.136616751@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:19 +0900
+Date: Sun, 27 May 2012 09:25:16 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jiang <dave.jiang@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Subject: [ 13/91] isci: fix oem parameter validation on single controller skus
+        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [ 10/91] Fix blocking allocations called very early during bootup
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit fc25f79af321c01a739150ba2c09435cf977a63d upstream.
+commit 31a67102f4762df5544bc2dfb34a931233d2a5b2 upstream.
 
-OEM parameters [1] are parsed from the platform option-rom / efi
-driver.  By default the driver was validating the parameters for the
-dual-controller case, but in single-controller case only the first set
-of parameters may be valid.
+During early boot, when the scheduler hasn't really been fully set up,
+we really can't do blocking allocations because with certain (dubious)
+configurations the "might_resched()" calls can actually result in
+scheduling events.
 
-Limit the validation to the number of actual controllers detected
-otherwise the driver may fail to parse the valid parameters leading to
-driver-load or runtime failures.
+We could just make such users always use GFP_ATOMIC, but quite often the
+code that does the allocation isn't really aware of the fact that the
+scheduler isn't up yet, and forcing that kind of random knowledge on the
+initialization code is just annoying and not good for anybody.
 
-[1] the platform specific set of phy address, configuration,and analog
-    tuning values
+And we actually have a the 'gfp_allowed_mask' exactly for this reason:
+it's just that the kernel init sequence happens to set it to allow
+blocking allocations much too early.
 
-Reported-by: Dave Jiang <dave.jiang@intel.com>
-Tested-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+So move the 'gfp_allowed_mask' initialization from 'start_kernel()'
+(which is some of the earliest init code, and runs with preemption
+disabled for good reasons) into 'kernel_init()'.  kernel_init() is run
+in the newly created thread that will become the 'init' process, as
+opposed to the early startup code that runs within the context of what
+will be the first idle thread.
+
+So by the time we reach 'kernel_init()', we know that the scheduler must
+be at least limping along, because we've already scheduled from the idle
+thread into the init thread.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/isci/init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ init/main.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/isci/init.c
-+++ b/drivers/scsi/isci/init.c
-@@ -476,7 +476,7 @@ static int __devinit isci_pci_probe(stru
- 	if (!orom)
- 		orom = isci_request_oprom(pdev);
+--- a/init/main.c
++++ b/init/main.c
+@@ -560,9 +560,6 @@ asmlinkage void __init start_kernel(void
+ 	early_boot_irqs_disabled = false;
+ 	local_irq_enable();
  
--	for (i = 0; orom && i < ARRAY_SIZE(orom->ctrl); i++) {
-+	for (i = 0; orom && i < num_controllers(pdev); i++) {
- 		if (sci_oem_parameters_validate(&orom->ctrl[i],
- 						orom->hdr.version)) {
- 			dev_warn(&pdev->dev,
+-	/* Interrupts are enabled now so all GFP allocations are safe. */
+-	gfp_allowed_mask = __GFP_BITS_MASK;
+-
+ 	kmem_cache_init_late();
+ 
+ 	/*
+@@ -842,6 +839,10 @@ static int __init kernel_init(void * unu
+ 	 * Wait until kthreadd is all set-up.
+ 	 */
+ 	wait_for_completion(&kthreadd_done);
++
++	/* Now the scheduler is fully set up and can do blocking allocations */
++	gfp_allowed_mask = __GFP_BITS_MASK;
++
+ 	/*
+ 	 * init can allocate pages on any node
+ 	 */
 
 
