@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934070Ab2E0BSW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:18:22 -0400
+	id S934108Ab2E0BS3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:18:29 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756673Ab2E0BSR (ORCPT
+	with ESMTP id S934077Ab2E0BSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:18:17 -0400
-Message-Id: <20120527002519.172218382@linuxfoundation.org>
+	Sat, 26 May 2012 21:18:25 -0400
+Message-Id: <20120527002519.381690179@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:02 +0900
+Date: Sun, 27 May 2012 09:26:03 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 56/91] xhci: Add Lynx Point to list of Intel switchable hosts.
+        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@amd.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 57/91] xHCI: keep track of ports being resumed and indicate in hub_status_data
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,76 +26,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Andiry Xu <andiry.xu@amd.com>
 
-commit 1c12443ab8eba71a658fae4572147e56d1f84f66 upstream.
+commit f370b9968a220a3d79d870dd7dee674cc0ff3d10 upstream.
 
-The upcoming Intel Lynx Point chipset includes an xHCI host controller
-that can have ports switched from the EHCI host controller, just like
-the Intel Panther Point xHCI host.  This time, ports from both EHCI
-hosts can be switched to the xHCI host controller.  The PCI config
-registers to do the port switching are in the exact same place in the
-xHCI PCI configuration registers, with the same semantics.
+This commit adds a bit-array to xhci bus_state for keeping track of
+which ports are undergoing a resume transition. If any of the bits
+are set when xhci_hub_status_data() is called, the routine will return
+a non-zero value even if no ports have any status changes pending.
+This will allow usbcore to handle races between root-hub suspend and
+port wakeup.
 
-Hooray for shipping patches for next-gen hardware before the current gen
-hardware is even available for purchase!
+This patch should be backported to kernels as old as 3.4, that contain
+the commit 879d38e6bc36d73b0ac40ec9b0d839fda9fa8b1a "USB: fix race
+between root-hub suspend and remote wakeup".
 
-This patch should be backported to stable kernels as old as 3.0,
-that contain commit 69e848c2090aebba5698a1620604c7dccb448684
-"Intel xhci: Support EHCI/xHCI port switching."
-
+Signed-off-by: Andiry Xu <andiry.xu@amd.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-pci.c   |    4 +++-
- drivers/usb/host/pci-quirks.c |   18 +++++++++++++++++-
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-hub.c  |   22 ++++++++++++----------
+ drivers/usb/host/xhci-ring.c |    1 +
+ drivers/usb/host/xhci.c      |   12 ++++++++++--
+ drivers/usb/host/xhci.h      |    2 ++
+ 4 files changed, 25 insertions(+), 12 deletions(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -368,7 +368,9 @@ static bool usb_is_intel_switchable_ehci
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -558,6 +558,7 @@ int xhci_hub_control(struct usb_hcd *hcd
+ 				xhci_dbg(xhci, "Resume USB2 port %d\n",
+ 					wIndex + 1);
+ 				bus_state->resume_done[wIndex] = 0;
++				clear_bit(wIndex, &bus_state->resuming_ports);
+ 				xhci_set_link_state(xhci, port_array, wIndex,
+ 							XDEV_U0);
+ 				xhci_dbg(xhci, "set port %d resume\n",
+@@ -845,7 +846,12 @@ int xhci_hub_status_data(struct usb_hcd
+ 	/* Initial status is no changes */
+ 	retval = (max_ports + 8) / 8;
+ 	memset(buf, 0, retval);
+-	status = 0;
++
++	/*
++	 * Inform the usbcore about resume-in-progress by returning
++	 * a non-zero value even if there are no status changes.
++	 */
++	status = bus_state->resuming_ports;
+ 
+ 	mask = PORT_CSC | PORT_PEC | PORT_OCC | PORT_PLC | PORT_WRC;
+ 
+@@ -885,15 +891,11 @@ int xhci_bus_suspend(struct usb_hcd *hcd
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 
+ 	if (hcd->self.root_hub->do_remote_wakeup) {
+-		port_index = max_ports;
+-		while (port_index--) {
+-			if (bus_state->resume_done[port_index] != 0) {
+-				spin_unlock_irqrestore(&xhci->lock, flags);
+-				xhci_dbg(xhci, "suspend failed because "
+-						"port %d is resuming\n",
+-						port_index + 1);
+-				return -EBUSY;
+-			}
++		if (bus_state->resuming_ports) {
++			spin_unlock_irqrestore(&xhci->lock, flags);
++			xhci_dbg(xhci, "suspend failed because "
++						"a port is resuming\n");
++			return -EBUSY;
+ 		}
+ 	}
+ 
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1377,6 +1377,7 @@ static void handle_port_status(struct xh
+ 			xhci_dbg(xhci, "resume HS port %d\n", port_id);
+ 			bus_state->resume_done[faked_port_index] = jiffies +
+ 				msecs_to_jiffies(20);
++			set_bit(faked_port_index, &bus_state->resuming_ports);
+ 			mod_timer(&hcd->rh_timer,
+ 				  bus_state->resume_done[faked_port_index]);
+ 			/* Do the rest in GetPortStatus */
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -152,7 +152,7 @@ int xhci_reset(struct xhci_hcd *xhci)
  {
- 	return pdev->class == PCI_CLASS_SERIAL_USB_EHCI &&
- 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
--		pdev->device == 0x1E26;
-+		(pdev->device == 0x1E26 ||
-+		 pdev->device == 0x8C2D ||
-+		 pdev->device == 0x8C26);
+ 	u32 command;
+ 	u32 state;
+-	int ret;
++	int ret, i;
+ 
+ 	state = xhci_readl(xhci, &xhci->op_regs->status);
+ 	if ((state & STS_HALT) == 0) {
+@@ -175,7 +175,15 @@ int xhci_reset(struct xhci_hcd *xhci)
+ 	 * xHCI cannot write to any doorbells or operational registers other
+ 	 * than status until the "Controller Not Ready" flag is cleared.
+ 	 */
+-	return handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
++	ret = handshake(xhci, &xhci->op_regs->status, STS_CNR, 0, 250 * 1000);
++
++	for (i = 0; i < 2; ++i) {
++		xhci->bus_state[i].port_c_suspend = 0;
++		xhci->bus_state[i].suspended_ports = 0;
++		xhci->bus_state[i].resuming_ports = 0;
++	}
++
++	return ret;
  }
  
- static void ehci_enable_xhci_companion(void)
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -712,12 +712,28 @@ static int handshake(void __iomem *ptr,
- 	return -ETIMEDOUT;
- }
+ #ifdef CONFIG_PCI
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1362,6 +1362,8 @@ struct xhci_bus_state {
+ 	u32			suspended_ports;
+ 	u32			port_remote_wakeup;
+ 	unsigned long		resume_done[USB_MAXCHILDREN];
++	/* which ports have started to resume */
++	unsigned long		resuming_ports;
+ };
  
--bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
-+#define PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI	0x8C31
-+
-+bool usb_is_intel_ppt_switchable_xhci(struct pci_dev *pdev)
- {
- 	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
- 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
- 		pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI;
- }
-+
-+/* The Intel Lynx Point chipset also has switchable ports. */
-+bool usb_is_intel_lpt_switchable_xhci(struct pci_dev *pdev)
-+{
-+	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
-+		pdev->vendor == PCI_VENDOR_ID_INTEL &&
-+		pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI;
-+}
-+
-+bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
-+{
-+	return usb_is_intel_ppt_switchable_xhci(pdev) ||
-+		usb_is_intel_lpt_switchable_xhci(pdev);
-+}
- EXPORT_SYMBOL_GPL(usb_is_intel_switchable_xhci);
- 
- /*
+ static inline unsigned int hcd_index(struct usb_hcd *hcd)
 
 
