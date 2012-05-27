@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab2E0BL2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:11:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965309Ab2E0BLS (ORCPT
+	id S1754547Ab2E0BLg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:11:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933719Ab2E0BL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:11:18 -0400
-Message-Id: <20120527010432.518376385@linuxfoundation.org>
+	Sat, 26 May 2012 21:11:28 -0400
+Message-Id: <20120527010433.487440775@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:25 +0900
+Date: Sun, 27 May 2012 10:05:32 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Sergio Correia <lists@uece.net>
-Subject: [ 62/94] xhci: Add new short TX quirk for Fresco Logic host.
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 69/94] drm/i915: dont clobber the pipe param in sanitize_modesetting
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,123 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 1530bbc6272d9da1e39ef8e06190d42c13a02733 upstream.
+commit a9dcf84b14ef4e9a609910367576995e6f32f3dc upstream.
 
-Sergio reported that when he recorded audio from a USB headset mic
-plugged into the USB 3.0 port on his ASUS N53SV-DH72, the audio sounded
-"robotic".  When plugged into the USB 2.0 port under EHCI on the same
-laptop, the audio sounded fine.  The device is:
+... we need it later on in the function to clean up pipe <-> plane
+associations. This regression has been introduced in
 
-Bus 002 Device 004: ID 046d:0a0c Logitech, Inc. Clear Chat Comfort USB Headset
+commit f47166d2b0001fcb752b40c5a2d4db986dfbea68
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Mar 22 15:00:50 2012 +0000
 
-The problem was tracked down to the Fresco Logic xHCI host controller
-not correctly reporting short transfers on isochronous IN endpoints.
-The driver would submit a 96 byte transfer, the device would only send
-88 or 90 bytes, and the xHCI host would report the transfer had a
-"successful" completion code, with an untransferred buffer length of 8
-or 6 bytes.
+    drm/i915: Sanitize BIOS debugging bits from PIPECONF
 
-The successful completion code and non-zero untransferred length is a
-contradiction.  The xHCI host is supposed to only mark a transfer as
-successful if all the bytes are transferred.  Otherwise, the transfer
-should be marked with a short packet completion code.  Without the EHCI
-bus trace, we wouldn't know whether the xHCI driver should trust the
-completion code or the untransferred length.  With it, we know to trust
-the untransferred length.
+Spotted by staring at debug output of an (as it turns out) totally
+unrelated bug.
 
-Add a new xHCI quirk for the Fresco Logic host controller.  If a
-transfer is reported as successful, but the untransferred length is
-non-zero, print a warning.  For the Fresco Logic host, change the
-completion code to COMP_SHORT_TX and process the transfer like a short
-transfer.
+v2: I've totally failed to do the s/pipe/i/ correctly, spotted by
+Chris Wilson.
 
-This should be backported to stable kernels that contain the commit
-f5182b4155b9d686c5540a6822486400e34ddd98 "xhci: Disable MSI for some
-Fresco Logic hosts."  That commit was marked for stable kernels as old
-as 2.6.36.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Sergio Correia <lists@uece.net>
-Tested-by: Sergio Correia <lists@uece.net>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c  |    1 +
- drivers/usb/host/xhci-ring.c |   20 +++++++++++++++++---
- drivers/usb/host/xhci.h      |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -72,6 +72,7 @@ static void xhci_pci_quirks(struct devic
- 		xhci_dbg(xhci, "QUIRK: Fresco Logic revision %u "
- 				"has broken MSI implementation\n",
- 				pdev->revision);
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7496,10 +7496,11 @@ static void intel_sanitize_modesetting(s
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 reg, val;
++	int i;
+ 
+ 	/* Clear any frame start delays used for debugging left by the BIOS */
+-	for_each_pipe(pipe) {
+-		reg = PIPECONF(pipe);
++	for_each_pipe(i) {
++		reg = PIPECONF(i);
+ 		I915_WRITE(reg, I915_READ(reg) & ~PIPECONF_FRAME_START_DELAY_MASK);
  	}
  
- 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1722,8 +1722,12 @@ static int process_isoc_td(struct xhci_h
- 	/* handle completion code */
- 	switch (trb_comp_code) {
- 	case COMP_SUCCESS:
--		frame->status = 0;
--		break;
-+		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
-+			frame->status = 0;
-+			break;
-+		}
-+		if ((xhci->quirks & XHCI_TRUST_TX_LENGTH))
-+			trb_comp_code = COMP_SHORT_TX;
- 	case COMP_SHORT_TX:
- 		frame->status = td->urb->transfer_flags & URB_SHORT_NOT_OK ?
- 				-EREMOTEIO : 0;
-@@ -1820,13 +1824,16 @@ static int process_bulk_intr_td(struct x
- 	switch (trb_comp_code) {
- 	case COMP_SUCCESS:
- 		/* Double check that the HW transferred everything. */
--		if (event_trb != td->last_trb) {
-+		if (event_trb != td->last_trb ||
-+				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
- 			xhci_warn(xhci, "WARN Successful completion "
- 					"on short TX\n");
- 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
- 				*status = -EREMOTEIO;
- 			else
- 				*status = 0;
-+			if ((xhci->quirks & XHCI_TRUST_TX_LENGTH))
-+				trb_comp_code = COMP_SHORT_TX;
- 		} else {
- 			*status = 0;
- 		}
-@@ -1985,6 +1992,13 @@ static int handle_tx_event(struct xhci_h
- 	 * transfer type
- 	 */
- 	case COMP_SUCCESS:
-+		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
-+			break;
-+		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
-+			trb_comp_code = COMP_SHORT_TX;
-+		else
-+			xhci_warn(xhci, "WARN Successful completion on short TX: "
-+					"needs XHCI_TRUST_TX_LENGTH quirk?\n");
- 	case COMP_SHORT_TX:
- 		break;
- 	case COMP_STOP:
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1466,6 +1466,7 @@ struct xhci_hcd {
- #define XHCI_RESET_ON_RESUME	(1 << 7)
- #define	XHCI_SW_BW_CHECKING	(1 << 8)
- #define XHCI_AMD_0x96_HOST	(1 << 9)
-+#define XHCI_TRUST_TX_LENGTH	(1 << 10)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
 
 
