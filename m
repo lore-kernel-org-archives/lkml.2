@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965738Ab2E0Bbf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:31:35 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43902 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab2E0BQN (ORCPT
+	id S1945905Ab2E0BcA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:32:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965701Ab2E0BP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:16:13 -0400
-Message-Id: <20120527002513.630212029@linuxfoundation.org>
+	Sat, 26 May 2012 21:15:58 -0400
+Message-Id: <20120527002512.918423614@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:37 +0900
+Date: Sun, 27 May 2012 09:25:34 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
-Subject: [ 31/91] USB: cdc-wdm: sanitize error returns
+        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>
+Subject: [ 28/91] um: Implement a custom pte_same() function
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Richard Weinberger <richard@nod.at>
 
-commit 24a85bae5da2b43fed423859c09c5a81ab359473 upstream.
+commit f15b9000eb1d09bbaa4b0a6b2089d7e1f64e84b3 upstream.
 
-wdm_flush() returns unsanitized USB error codes.
-They must be cleaned up to before being anded to user space
+UML uses the _PAGE_NEWPAGE flag to mark pages which are not jet
+installed on the host side using mmap().
+pte_same() has to ignore this flag, otherwise unuse_pte_range()
+is unable to unuse the page because two identical
+page tables entries with different _PAGE_NEWPAGE flags would not
+match and swapoff() would never return.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Analyzed-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/um/include/asm/pgtable.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -534,7 +534,7 @@ static int wdm_flush(struct file *file,
- 		dev_err(&desc->intf->dev, "Error in flush path: %d\n",
- 			desc->werr);
- 
--	return desc->werr;
-+	return usb_translate_errors(desc->werr);
+--- a/arch/um/include/asm/pgtable.h
++++ b/arch/um/include/asm/pgtable.h
+@@ -273,6 +273,12 @@ static inline void set_pte(pte_t *pteptr
  }
+ #define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
  
- static unsigned int wdm_poll(struct file *file, struct poll_table_struct *wait)
++#define __HAVE_ARCH_PTE_SAME
++static inline int pte_same(pte_t pte_a, pte_t pte_b)
++{
++	return !((pte_val(pte_a) ^ pte_val(pte_b)) & ~_PAGE_NEWPAGE);
++}
++
+ /*
+  * Conversion functions: convert a page and protection to a page entry,
+  * and a page entry and page directory to the page they refer to.
 
 
