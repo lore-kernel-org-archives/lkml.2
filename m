@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2E0DPV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 23:15:21 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5281 "EHLO mga02.intel.com"
+	id S1753345Ab2E0DRV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 23:17:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37804 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752078Ab2E0DPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 23:15:18 -0400
+	id S1752078Ab2E0DRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 23:17:20 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="148853921"
-Message-ID: <4FC19C0B.8080809@linux.intel.com>
-Date: Sat, 26 May 2012 20:14:19 -0700
+   d="scan'208";a="148854182"
+Message-ID: <4FC19C86.7040904@linux.intel.com>
+Date: Sat, 26 May 2012 20:16:22 -0700
 From: Darren Hart <dvhart@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@cam.ac.uk>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
 CC: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "lkml, " <linux-kernel@vger.kernel.org>,
@@ -23,82 +23,45 @@ CC: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>,
         Carmine Iascone <carmine.iascone@st.com>,
         Matteo Dameno <matteo.dameno@st.com>
 Subject: Re: LIS331DLH accelerometer driver, IIO or not?
-References: <4FBF0AC1.6030406@linux.intel.com> <20120525051051.GA3135@kroah.com> <4FC0C422.8080605@tremplin-utc.net> <4FC1159F.7090606@cam.ac.uk>
-In-Reply-To: <4FC1159F.7090606@cam.ac.uk>
+References: <4FBF0AC1.6030406@linux.intel.com> <20120525051051.GA3135@kroah.com> <4FC0C422.8080605@tremplin-utc.net> <20120526145914.47b7812d@pyramind.ukuu.org.uk>
+In-Reply-To: <20120526145914.47b7812d@pyramind.ukuu.org.uk>
 X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 05/26/2012 10:40 AM, Jonathan Cameron wrote:
-> On 05/26/2012 12:53 PM, Éric Piel wrote:
->> On 25-05-12 07:10, Greg Kroah-Hartman wrote:
->>> On Thu, May 24, 2012 at 09:29:53PM -0700, Darren Hart wrote:
->>>> I'm working to enable the LIS331DLH accelerometer on the Fish River
->>>> Island II embedded atom development kit.
->>>>
->>>> I am more interested in enabling people to do bizarre and interesting
->>>> things with the device, so I'm leaning toward continuing with my IIO
->>>> implementation.
->>>
+On 05/26/2012 06:59 AM, Alan Cox wrote:
 >>> Make it an IIO driver and then we can delete the misc driver, which
 >>> shouldn't have snuck in there in the first place :)
 >>>
 >>
->> To be more fair to the misc driver, I wouldn't say it snucked in there,
->> but more "it ended up there as the least worse place" ;-) Actually, the
->> main problem is that there seemed to be no maintainer interested in
->> taking care of accelerometer devices. Now that the IIO subsystem is out
->> of staging, it might be a right place. That said, I don't know much
->> about the user interface to IIO. I know that I liked the idea of having
->> an joystick device created for an accelerometer because that allows to
->> get many programs to access the device almost without any modifications.
-> I agree that this sort of device should have an input interface. Not
-> sure if a joystick is the right option, but that's more one for Dmitry
-> to comment on.
->>
->> I'd happy to help merge the lis3lv02d driver into IIO. IMHO, the main
->> steps are:
->>  * make sure all the various buses are supported (e.g., I²C, SPI, and
->> also "ACPI-HP")
->>  * ensure the various versions of the accelerometer are supported (there
->> are 3 supported currently)
->>  * check that the driver is automatically loaded on HP laptops (via ACPI
->> entry)
->>  * for each of the current interfaces decide if they should be ported or
->> dropped (/dev/js*, /dev/freefall, sysfs...)
->>
->> What do you think Jonathan?
-> You've laid it out extremely clearly.  Thanks, I agree with these steps,
-> though they may occur from a slightly different angle given Darren is
-> interested in a part that is not (I believe) currently supported by
-> your existing driver.   Hence he may initially want to do a separate
-> driver with that (keeping in mind the aim of mergining in the existing
-> driver).  I have an ancient driver for the lis3l02dq alone (in
-> iio from the start) that will also get eaten up by Daren's new driver
-> (and the ability to test on that part on spi).
-> staging/iio/accel/lis3l02dq*.c
+>> To be more fair to the misc driver, I wouldn't say it snucked in there, 
+>> but more "it ended up there as the least worse place" ;-)
+> 
+> Because IIO spent forever in staging, as well as blocking lots of other
+> driver work and meaning tons of drivers are now not to be found anywhere
+> but obscure git trees. Thankfully they didn't manage to block the LIS
+> driver during this mess.
+> 
+> Until all the needed support for the LIS IIO driver exists outside of
+> staging the driver needs to stay where it is and without IIO
+> dependancies. It is not acceptable to cripple existing working code with
+> staging tree dependencies.
 
-I think I should start with getting the lis331dlh support completed, if
-for no other reason than to keep the scope manageable as I write my
-first real driver. From that I would like to merge in Jonathan's IIO
-lis3l02dq driver to get the multi-chip support part right. Then we
-should look at expanding the scope of the interface and finally merging
-with misc/lis3102dq. I believe that should meet with everyone's suggestions.
+Agreed. There will be a few iterations of this driver necessary before
+it can replace the existing one.
 
-One thing I would like to understand better is what sort of interface
-does userspace current expect. Phone Gap, for example, provides a very
-high level interface to applications in m/s^2 for each axis. Is there
-some interface we should ensure all accelerometer driver's implement?
+> 
+> Hopefully commit a980e046098b0a40eaff5e4e7fcde6cf035b7c06 has finally set
+> the basis for this happening when it hits mainline.
 
-I suspect a /dev/accel interface that reads out xyz values in ms/s^2
-would make sense. We would need to ensure that allows for polled as well
-as event driven. Thoughts?
-
+Yes, after dusting off the 2.6.34 based IIO driver I started with and
+moving it forward to 3.2, I am THRILLED to see the IIO core now in
+mainline :-)
 
 -- 
 Darren Hart
