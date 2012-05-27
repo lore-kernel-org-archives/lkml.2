@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965050Ab2E0Bov (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:44:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964929Ab2E0BJ0 (ORCPT
+	id S933386Ab2E0BJP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:09:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933182Ab2E0BJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:09:26 -0400
-Message-Id: <20120527010430.113217653@linuxfoundation.org>
+	Sat, 26 May 2012 21:09:06 -0400
+Message-Id: <20120527010428.695418450@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:08 +0900
+Date: Sun, 27 May 2012 10:04:58 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>
-Subject: [ 45/94] tty: Allow uart_register/unregister/register
+        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>
+Subject: [ 35/94] um: Implement a custom pte_same() function
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 1e66cded334e6cea596c72f6f650eec351b1e959 upstream.
+commit f15b9000eb1d09bbaa4b0a6b2089d7e1f64e84b3 upstream.
 
-This is legitimate but because we don't clear the drv->state pointer in the
-unregister code causes a bogus BUG().
+UML uses the _PAGE_NEWPAGE flag to mark pages which are not jet
+installed on the host side using mmap().
+pte_same() has to ignore this flag, otherwise unuse_pte_range()
+is unable to unuse the page because two identical
+page tables entries with different _PAGE_NEWPAGE flags would not
+match and swapoff() would never return.
 
-Resolves-bug: https://bugzilla.kernel.org/show_bug.cgi?id=42880
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Analyzed-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/serial_core.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/um/include/asm/pgtable.h |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2283,6 +2283,7 @@ void uart_unregister_driver(struct uart_
- 	tty_unregister_driver(p);
- 	put_tty_driver(p);
- 	kfree(drv->state);
-+	drv->state = NULL;
- 	drv->tty_driver = NULL;
+--- a/arch/um/include/asm/pgtable.h
++++ b/arch/um/include/asm/pgtable.h
+@@ -271,6 +271,12 @@ static inline void set_pte(pte_t *pteptr
  }
+ #define set_pte_at(mm,addr,ptep,pteval) set_pte(ptep,pteval)
  
++#define __HAVE_ARCH_PTE_SAME
++static inline int pte_same(pte_t pte_a, pte_t pte_b)
++{
++	return !((pte_val(pte_a) ^ pte_val(pte_b)) & ~_PAGE_NEWPAGE);
++}
++
+ /*
+  * Conversion functions: convert a page and protection to a page entry,
+  * and a page entry and page directory to the page they refer to.
 
 
