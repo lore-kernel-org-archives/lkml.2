@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab2E0BJx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:09:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
+	id S933635Ab2E0BoR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:44:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933412Ab2E0BJl (ORCPT
+	with ESMTP id S965043Ab2E0BJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:09:41 -0400
-Message-Id: <20120527010430.537411175@linuxfoundation.org>
+	Sat, 26 May 2012 21:09:51 -0400
+Message-Id: <20120527010430.814436135@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:11 +0900
+Date: Sun, 27 May 2012 10:05:13 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matthias Fend <matthias.fend@wolfvision.net>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: [ 48/94] USB: ffs-test: fix length argument of out function call
+        alan@lxorguk.ukuu.org.uk,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Scott Teel <scott.teel@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 50/94] SCSI: hpsa: Fix problem with MSA2xxx devices
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthias Fend <Matthias.Fend@wolfvision.net>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit eb9c5836384cd2a276254df6254ed71117983626 upstream.
+commit 9bc3711cbb67ac620bf09b4a147cbab45b2c36c0 upstream.
 
-The out functions should only handle actual available data instead of the complete buffer.
-Otherwise for example the ep0_consume function will report ghost events since it tries to decode
-the complete buffer - which may contain partly invalid data.
+Upgraded firmware on Smart Array P7xx (and some others) made them show up as
+SCSI revision 5 devices and this caused the driver to fail to map MSA2xxx
+logical drives to the correct bus/target/lun.  A symptom of this would be that
+the target ID of the logical drives as presented by the external storage array
+is ignored, and all such logical drives are assigned to target zero,
+differentiated only by LUN.  Some multipath software reportedly does not deal
+well with this behavior, failing to recognize different paths to the same
+device as such.
 
-Signed-off-by: Matthias Fend <matthias.fend@wolfvision.net>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Scott Teel <scott.teel@hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/usb/ffs-test.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/hpsa.c |   34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
 
---- a/tools/usb/ffs-test.c
-+++ b/tools/usb/ffs-test.c
-@@ -324,7 +324,7 @@ static void *start_thread_helper(void *a
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1676,30 +1676,26 @@ static void figure_bus_target_lun(struct
  
- 		ret = t->in(t, t->buf, t->buf_size);
- 		if (ret > 0) {
--			ret = t->out(t, t->buf, t->buf_size);
-+			ret = t->out(t, t->buf, ret);
- 			name = out_name;
- 			op = "write";
+ 	if (is_logical_dev_addr_mode(lunaddrbytes)) {
+ 		/* logical device */
+-		if (unlikely(is_scsi_rev_5(h))) {
+-			/* p1210m, logical drives lun assignments
+-			 * match SCSI REPORT LUNS data.
++		lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
++		if (is_msa2xxx(h, device)) {
++			/* msa2xxx way, put logicals on bus 1
++			 * and match target/lun numbers box
++			 * reports.
+ 			 */
+-			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
+-			*bus = 0;
+-			*target = 0;
+-			*lun = (lunid & 0x3fff) + 1;
++			*bus = 1;
++			*target = (lunid >> 16) & 0x3fff;
++			*lun = lunid & 0x00ff;
  		} else {
+-			/* not p1210m... */
+-			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
+-			if (is_msa2xxx(h, device)) {
+-				/* msa2xxx way, put logicals on bus 1
+-				 * and match target/lun numbers box
+-				 * reports.
+-				 */
+-				*bus = 1;
+-				*target = (lunid >> 16) & 0x3fff;
+-				*lun = lunid & 0x00ff;
++			if (likely(is_scsi_rev_5(h))) {
++				/* All current smart arrays (circa 2011) */
++				*bus = 0;
++				*target = 0;
++				*lun = (lunid & 0x3fff) + 1;
+ 			} else {
+-				/* Traditional smart array way. */
++				/* Traditional old smart array way. */
+ 				*bus = 0;
+-				*lun = 0;
+ 				*target = lunid & 0x3fff;
++				*lun = 0;
+ 			}
+ 		}
+ 	} else {
 
 
