@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2E0BGi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:06:38 -0400
+	id S1756139Ab2E0BGt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:06:49 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab2E0BGa (ORCPT
+	with ESMTP id S1755587Ab2E0BGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:06:30 -0400
-Message-Id: <20120527010424.497889951@linuxfoundation.org>
+	Sat, 26 May 2012 21:06:40 -0400
+Message-Id: <20120527010425.489792331@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:28 +0900
+Date: Sun, 27 May 2012 10:04:35 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
-Subject: [ 05/94] PARISC: fix PA1.1 oops on boot
+        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 12/94] net/wireless: ipw2200: Fix WARN_ON occurring in wiphy_register called by ipw_pci_probe
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 
-commit 5e185581d7c46ddd33cd9c01106d1fc86efb9376 upstream.
+commit 7ed85b65ab611ba841d508ae4ff8c45fa0c48c80 upstream.
 
-All PA1.1 systems have been oopsing on boot since
+The problem was found by Stefan Lippers-Hollmann
+http://marc.info/?l=linux-wireless&m=132720334512946&w=2
 
-commit f311847c2fcebd81912e2f0caf8a461dec28db41
-Author: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date:   Wed Dec 22 10:22:11 2010 -0600
+WARNING: at /tmp/buildd/linux-aptosid-3.2/debian/build/source_i386_none/net/wireless/core.c:562 wiphy_register+0x45/0x38d [cfg80211]()
+Hardware name: TravelMate 290 \xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff
+Modules linked in: ipw2200(+) iTCO_wdt libipw joydev drm snd_seq snd_timer snd_seq_device iTCO_vendor_support yenta_socket snd intel_agp i2c_i801 pcmcia_rsrc cfg80211 soundcore parport_pc psmouse parport rng_core snd_page_alloc serio_raw pcspkr i2c_algo_bit intel_gtt pcmcia_core evdev irda crc_ccitt rfkill lib80211 processor container ac battery shpchp pci_hotplug button ext4 mbcache jbd2 crc16 dm_mod sd_mod sr_mod crc_t10dif cdrom ata_generic pata_acpi ata_piix libata scsi_mod firewire_ohci firewire_core crc_itu_t 8139too 8139cp mii uhci_hcd ehci_hcd usbcore usb_common [last unloaded: scsi_wait_scan]
+Pid: 328, comm: modprobe Not tainted 3.2-1.slh.4-aptosid-686 #1
+Call Trace:
+[<c012eaf4>] ? warn_slowpath_common+0x7c/0x8f
+[<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+[<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+[<c012eb22>] ? warn_slowpath_null+0x1b/0x1f
+[<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+[<c01f89d7>] ? internal_create_group+0xf5/0xff
+[<e0a2de1c>] ? ipw_pci_probe+0xa9a/0xbd0 [ipw2200]
+[<c01519f4>] ? arch_local_irq_save+0xf/0x14
+[<c0252986>] ? pci_device_probe+0x53/0x9a
+[<c02c2820>] ? driver_probe_device+0x94/0x124
+[<c0252871>] ? pci_match_id+0x15/0x34
+[<c02c28f0>] ? __driver_attach+0x40/0x5b
+[<c02c1d81>] ? bus_for_each_dev+0x37/0x60
+[<c02c25aa>] ? driver_attach+0x17/0x1a
+[<c02c28b0>] ? driver_probe_device+0x124/0x124
+[<c02c22c4>] ? bus_add_driver+0x92/0x1d1
+[<e099d000>] ? 0xe099cfff
+[<c02c2cb8>] ? driver_register+0x7d/0xd4
+[<c017cd50>] ? jump_label_module_notify+0xec/0x167
+[<e099d000>] ? 0xe099cfff
+[<c0253017>] ? __pci_register_driver+0x32/0x87
+[<e099d000>] ? 0xe099cfff
+[<e099d02e>] ? ipw_init+0x2e/0x72 [ipw2200]
+[<c0101173>] ? do_one_initcall+0x7d/0x132
+[<c0145016>] ? __blocking_notifier_call_chain+0x47/0x4f
+[<c0154a73>] ? sys_init_module+0x13a4/0x159c
+[<c03a639f>] ? sysenter_do_call+0x12/0x28
 
-    parisc: flush pages through tmpalias space
+This warning appears only if we apply Ben Hutchings' fix
+http://marc.info/?l=linux-wireless&m=132720195012653&w=2
+for the bug reported by Cesare Leonardi
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=656813
+with cfg80211 warning during device registration
+("cfg80211: failed to add phy80211 symlink to netdev!").
 
-because a PA2.0 instruction was accidentally introduced into the PA1.1 TLB
-insertion interruption path when it was consolidated with the do_alias macro.
-Fix the do_alias macro only to use PA2.0 instructions if compiled for 64 bit.
+We separate device bring up and registration with network stack
+to avoid the problem.
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+After that Ben Hutchings' fix can be applied to fix the bug.
+
+Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/entry.S |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/net/wireless/ipw2x00/ipw2200.c |   21 ++++++---------------
+ 1 file changed, 6 insertions(+), 15 deletions(-)
 
---- a/arch/parisc/kernel/entry.S
-+++ b/arch/parisc/kernel/entry.S
-@@ -581,7 +581,11 @@
- 	 */
- 	cmpiclr,=	0x01,\tmp,%r0
- 	ldi		(_PAGE_DIRTY|_PAGE_READ|_PAGE_WRITE),\prot
-+#ifdef CONFIG_64BIT
- 	depd,z		\prot,8,7,\prot
-+#else
-+	depw,z		\prot,8,7,\prot
-+#endif
- 	/*
- 	 * OK, it is in the temp alias region, check whether "from" or "to".
- 	 * Check "subtle" note in pacache.S re: r23/r26.
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -11443,20 +11443,6 @@ static void ipw_bg_down(struct work_stru
+ 	mutex_unlock(&priv->mutex);
+ }
+ 
+-/* Called by register_netdev() */
+-static int ipw_net_init(struct net_device *dev)
+-{
+-	int rc = 0;
+-	struct ipw_priv *priv = libipw_priv(dev);
+-
+-	mutex_lock(&priv->mutex);
+-	if (ipw_up(priv))
+-		rc = -EIO;
+-	mutex_unlock(&priv->mutex);
+-
+-	return rc;
+-}
+-
+ static int ipw_wdev_init(struct net_device *dev)
+ {
+ 	int i, rc = 0;
+@@ -11722,7 +11708,6 @@ static void ipw_prom_free(struct ipw_pri
+ #endif
+ 
+ static const struct net_device_ops ipw_netdev_ops = {
+-	.ndo_init		= ipw_net_init,
+ 	.ndo_open		= ipw_net_open,
+ 	.ndo_stop		= ipw_net_stop,
+ 	.ndo_set_rx_mode	= ipw_net_set_multicast_list,
+@@ -11849,6 +11834,12 @@ static int __devinit ipw_pci_probe(struc
+ 		goto out_release_irq;
+ 	}
+ 
++	if (ipw_up(priv)) {
++		mutex_unlock(&priv->mutex);
++		err = -EIO;
++		goto out_remove_sysfs;
++	}
++
+ 	mutex_unlock(&priv->mutex);
+ 	err = register_netdev(net_dev);
+ 	if (err) {
 
 
