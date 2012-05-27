@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588Ab2E0Mfq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 08:35:46 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:51630 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab2E0Mfo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 08:35:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120524122854.GD11860@linux-sh.org>
-References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
- <1337252085-22039-4-git-send-email-m.szyprowski@samsung.com>
- <4FBB3B41.8010102@kernel.org> <01e501cd39a8$67f34ea0$37d9ebe0$%szyprowski@samsung.com>
- <20120524122854.GD11860@linux-sh.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sun, 27 May 2012 08:35:23 -0400
-Message-ID: <CAHGf_=qmBMFfV=UhXFtepO8styaQonfBA0E0+FO0qSi7RLfJFA@mail.gmail.com>
-Subject: Re: [PATCHv2 3/4] mm: vmalloc: add VM_DMA flag to indicate areas used
- by dma-mapping framework
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Krishna Reddy <vdumpa@nvidia.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Hiroshi Doyu <hdoyu@nvidia.com>, Subash Patel <subashrp@gmail.com>,
-        Nick Piggin <npiggin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751935Ab2E0NEA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 09:04:00 -0400
+Received: from plane.gmane.org ([80.91.229.3]:47903 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468Ab2E0ND7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 09:03:59 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>
+Subject: Re: Linux 3.4 released
+Date: Sun, 27 May 2012 15:03:41 +0200
+Message-ID: <4FC2262D.2040105@web.de>
+References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com> <4FBBB11D.7020904@web.de> <20120522155345.GC14339@google.com> <4FBBC461.4060008@web.de> <20120522170320.GD14339@google.com> <jpglns$1uj$1@dough.gmane.org> <CAOS58YPMh_hbJ4a49j4p9H68n8U1LzMUuaxmHx57gVTkmfxF6A@mail.gmail.com> <4FBBEDF2.8060803@web.de> <20120523182457.GD18143@google.com> <4FBD40F4.4090201@web.de> <20120523202657.GB3933@htj.dyndns.org> <s5hehq87meg.wl%tiwai@suse.de> <4FBFA637.6000704@web.de> <s5hhav45jpo.wl%tiwai@suse.de> <4FBFD263.60908@web.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+X-Gmane-NNTP-Posting-Host: p5b3717bc.dip.t-dialin.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+In-Reply-To: <4FBFD263.60908@web.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 8:28 AM, Paul Mundt <lethal@linux-sh.org> wrote:
-> On Thu, May 24, 2012 at 02:26:12PM +0200, Marek Szyprowski wrote:
->> On Tuesday, May 22, 2012 9:08 AM Minchan Kim wrote:
->> > Hmm, VM_DMA would become generic flag?
->> > AFAIU, maybe VM_DMA would be used only on ARM arch.
->>
->> Right now yes, it will be used only on ARM architecture, but maybe other architecture will
->> start using it once it is available.
->>
-> There's very little about the code in question that is ARM-specific to
-> begin with. I plan to adopt similar changes on SH once the work has
-> settled one way or the other, so we'll probably use the VMA flag there,
-> too.
+Hello,
 
-I don't think VM_DMA is good idea because x86_64 has two dma zones. x86 unaware
-patches make no sense.
+meanwhile I tried the support of vga-switcheroo for HD-audio from your git tree
+without success.
+
+Since I'm not familiar with git I'll describe what I did:
+
+$ git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+$ cd linux
+$ git reset --keep v3.4
+$ git pull git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound.git
+tags/hda-switcheroo
+
+This resulted in a merge conflict for file
+drivers/gpu/drm/i915/intel_ringbuffer.c which I didn't resolve since both of my
+GPU are AMD radeon chips.
+
+$ cp -p /boot/config-3.4.0 .config
+$ make oldconfig
+$ make
+$ make modules_install
+
+After installing kernel and system map (I don't use an initrd) , I restarted the
+notebook. Before starting X, when I call the script which should mount debugfs
+and switche off the discrete GPU, the system freezes.
+I haven't written down all of the text on the console. It seems to be a sequence
+of bugs, but I couldn't scroll back. The last stack trace begins with
+
+... wq_worker_sleeping+0x8/0x80
+... __scheduler+0x35b/0x510
+... do_exit+0x542/0x830
+
+-- 
+Best regards,
+Jörg-Volker.
+
+
