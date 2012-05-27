@@ -1,97 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750913Ab2E0EIz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 00:08:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58862 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab2E0EIv (ORCPT
+	id S1751089Ab2E0EhL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 00:37:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44661 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774Ab2E0EhJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 00:08:51 -0400
-Message-ID: <1338091732.2658.404.camel@shawn-ssd>
-Subject: Re: git-unnoticed merge conflicts breaking arm cross-building
-From: shawn <shawnlandden@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Date: Sat, 26 May 2012 21:08:52 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Sun, 27 May 2012 00:37:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338050385.10390.2.camel@laptop>
+References: <1338000869-15129-1-git-send-email-ming.lei@canonical.com>
+	<1338016564.14636.4.camel@twins>
+	<CACVXFVNBiXxVvRWxnXiKPRm5dkj6qziFtXA_OH5kYFg4GZ+-pQ@mail.gmail.com>
+	<1338050385.10390.2.camel@laptop>
+Date: Sun, 27 May 2012 12:37:06 +0800
+Message-ID: <CACVXFVNfAc-SwPMhf1RwNEEWY_4jZEEx3kMk_MV=pY02d750Kw@mail.gmail.com>
+Subject: Re: [PATCH] tty: tty_mutex: fix lockdep warning in tty_lock_pair(v3)
+From: Ming Lei <ming.lei@canonical.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hmm, nv,. 
+Hi,
 
-guess i just needed to run
+On Sun, May 27, 2012 at 12:39 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Sat, 2012-05-26 at 17:23 +0800, Ming Lei wrote:
+>>
+>> You mean that the below is good usage of lock?
+>>
+>>         LOCK A
+>>         LOCK B
+>>
+>>         UNLOCK A
+>>         UNLOCK B
+>
+> Yep, nothing wrong with that. Its lock order that matters, unlock very
+> much not so.
 
-ARCH=arm make clean
--------
+OK.
 
+Also I tested your patch in the link below again and it is OK.
 
-HOSTCC  scripts/mod/mk_elfconfig
-cc1: error: unrecognized command line option â€˜-mlittle-endianâ€™
-cc1: error: unrecognized command line option â€˜-mno-thumb-interworkâ€™
-scripts/mod/empty.c:1:0: error: unknown ABI (aapcs-linux) for -mabi= switch
-scripts/mod/empty.c:1:0: error: bad value (armv4t) for -march= switch
-scripts/mod/empty.c:1:0: error: bad value (xscale) for -mtune= switch
+     http://marc.info/?l=linux-kernel&m=133728068726465&w=2
 
------
-I checked out git master and tried to cross compile an arm kernel for my
-sheevaplug
+Sorry for my fault because the patch above can't be applied cleanly
+against -next and I edited it manually to cause the previous test
+mistake.
 
-It fails with linker errors:
+Greg and Peter, so I recall this patch and Peter may send a formal
+one for merge.
 
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-scripts/mod/file2alias.o: could not read symbols: File in wrong format
-collect2: ld returned 1 exit status
-
-where it appears that it isn't calling the cross-toolchain
-(/usr/bin/arm-linux-gnueabi-ld)
-
-I have 
-CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
-
-
-I did a full git bisect and
-
-good: 
-commit f08b9c2f8af0d61faa1170aeae4fbca1eff6a504
-Merge: d79ee93 0ab711a
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Tue May 22 18:38:11 2012 -0700
-
-    Merge branch 'x86-apic-for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-
-good: 
-commit 99ce58ddc4eadec8c35d9a1d64ff57703fdcfacc
-Merge: 56ccd18 44d27f7 4e52b53 ed13794
-Author: Jiri Kosina <jkosina@suse.cz>
-Date:   Tue May 22 11:33:42 2012 +0200
-
-    Merge branches 'upstream-fixes', 'wacom' and 'waltop' into for-linus
-
-first bad:
-commit 3c2c4b73aa79e4a1b601710b59e092441175f4bb
-Merge: f08b9c2 99ce58d
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Tue May 22 19:21:48 2012 -0700
-
-    Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
-
-
--- 
--Shawn Landden
-
-
-
+Thanks,
+--
+Ming Lei
