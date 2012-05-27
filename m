@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab2E0Gyx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 02:54:53 -0400
-Received: from filtromx9.unal.edu.co ([168.176.5.62]:54396 "EHLO
-	filtromx9.unal.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab2E0Gyw convert rfc822-to-8bit (ORCPT
+	id S1751766Ab2E0HHt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 03:07:49 -0400
+Received: from 188-142-86-119.FTTH.ispfabriek.nl ([188.142.86.119]:36754 "EHLO
+	srv2.net.home" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750798Ab2E0HHs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 02:54:52 -0400
-X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 May 2012 02:54:52 EDT
-X-AuditID: a8b0053d-b7b41ae000000e5a-41-4fc1cec52fd9
-To: undisclosed-recipients:;
-Date: Sat, 26 May 2012 23:39:48 -0700
-From: Andres Salcedo Fidalgo <asalcedofi@unal.edu.co>
-Subject: You Have a Transfer of 800,000.00 GBP
-Reply-to: microsft_clp@live.co.uk
-Message-id: <f99ee40f4438.4fc169c4@unal.edu.co>
-MIME-version: 1.0
-X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28 2007)
-Content-type: text/plain; charset=iso-8859-1
-Content-language: en
-Content-transfer-encoding: 8BIT
-Content-disposition: inline
-X-Accept-Language: en
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyYsNCft2j5w76G8z9pWhxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyLv/fxVRQVrFjwkO2BsaULkZODgkBE4llx8+yQNhiEhfurWfr
-	YuTiEBLYySjx/+diVpCEiICMxNzZj8FsIYEGJonVb8MhipoZJc7OWAKWYBFQldjy+QI7iM0m
-	YCrx6/ZRJhBbWEBPon/eEzCbSYBFYuOlaSwQgxQlDhy8zAxi8wroS+xYu44RwhaU+DH5HtRF
-	PhK9R5vAepkFdCR6v39jhrBFJNYe3sACYWtLPHl3gRXClpZ49HcGO0SvqMSsT4fBZgoICEgc
-	aJrIOoFRZBaSFbOQjJ2FZOwsJGNnIRm7gJF1FaNoWmZOSVF+boWFXikw/PVSU0r1kvM3MYLj
-	gdV2B2PnWdVDjAIcjEo8vJJxB/2FWBPLiitzDzFKcDArifDmbwAK8aYkVlalFuXHF5XmpBYf
-	YpTmYFES513svM9fSCA9sSQ1OzW1ILUIJsvEwSnVwKj/9M6rnbEnf2x2u7/w1YdV/74t7Y2Y
-	+GnGP22eX2KfrUyU5s2I9GOpznqbYivgFc3dvu749VZeW895JUvkjQ3qzxTy3O8x8jkw3zUu
-	xH6WG6+A8fnZGzXmlYru/aAXKGwmV7tE+F9SmzX3Mcst/JX6AW3rwvZaqq/oe8mzZ3mmx0n/
-	D+X1E5VYijMSDbWYi4oTAWfZPKmDAgAA
+	Sun, 27 May 2012 03:07:48 -0400
+X-Greylist: delayed 629 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 May 2012 03:07:48 EDT
+Message-ID: <1338101838.14619.12.camel@vovan.net.home>
+Subject: unable to boot with 3.4.0
+From: Vladimir Elisseev <vovan@vovan.nl>
+To: linux-kernel@vger.kernel.org
+Date: Sun, 27 May 2012 08:57:18 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+After upgrading to vanilla 3.4.0 system is unable to boot: system hangs
+almost instantly after boot with fancy flashing screen (it looks like
+video card is broken). Passing any pcie_aspm parameters doesn't help.
+Though I'm able to boot 3.4.0 using working kernel and then kexec'ing to
+3.4.0. I had exactly the same symptoms with 3.2.12, 3.2.13, and 3.3.0,
+so I thought it's related to
+https://bugzilla.kernel.org/show_bug.cgi?id=42979 , but Jonathan
+(jrnieder@gmail.com) suggested to sent email to this mailing list.
 
-You have won £ 800,000 pounds sterlings. Contact Mr Ivan Smith ( Email: microsft_clp@live.co.uk )
+Regards,
+Vlad.
+
