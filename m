@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946039Ab2E0BVG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:21:06 -0400
+	id S1946091Ab2E0BWH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:22:07 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946005Ab2E0BU5 (ORCPT
+	with ESMTP id S1946005Ab2E0BVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:20:57 -0400
-Message-Id: <20120527002525.891696936@linuxfoundation.org>
+	Sat, 26 May 2012 21:21:07 -0400
+Message-Id: <20120527002525.240085025@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:34 +0900
+Date: Sun, 27 May 2012 09:26:31 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Warren <swarren@nvidia.com>
-Subject: [ 88/91] ARM: dt: tegra cardhu: fix typo in SDHCI node name
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Youquan Song <youquan.song@intel.com>, walter harms <wharms@bfs.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 85/91] iommu: Fix off by one in dmar_get_fault_reason()
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 1dfebb426cfd16e2080f8c95e00ca2462f2325d4 upstream.
+commit fefe1ed1398b81e3fadc92d11d91162d343c8836 upstream.
 
-Cardhu's eMMC controller is on sdhci@78000600, not sdhci@78000400.
-Fix the typo. This roughly doubles the IO performance, since the
-support-8bit property actually takes effect.
+fault_reason - 0x20 == ARRAY_SIZE(irq_remap_fault_reasons) is
+one past the end of the array.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Youquan Song <youquan.song@intel.com>
+Cc: walter harms <wharms@bfs.de>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/20120513170938.GA4280@elgon.mountain
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2: s/irq_remap_fault_reasons/intr_remap_fault_reasons/]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arm/boot/dts/tegra-cardhu.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/iommu/dmar.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/tegra-cardhu.dts
-+++ b/arch/arm/boot/dts/tegra-cardhu.dts
-@@ -64,7 +64,7 @@
- 		status = "disable";
- 	};
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1056,8 +1056,8 @@ static const char *intr_remap_fault_reas
  
--	sdhci@78000400 {
-+	sdhci@78000600 {
- 		support-8bit;
- 	};
- };
+ const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
+ {
+-	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
+-				     ARRAY_SIZE(intr_remap_fault_reasons))) {
++	if (fault_reason >= 0x20 && (fault_reason - 0x20 <
++					ARRAY_SIZE(intr_remap_fault_reasons))) {
+ 		*fault_type = INTR_REMAP;
+ 		return intr_remap_fault_reasons[fault_reason - 0x20];
+ 	} else if (fault_reason < ARRAY_SIZE(dma_remap_fault_reasons)) {
 
 
