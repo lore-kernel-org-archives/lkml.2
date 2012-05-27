@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab2E0UvT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 16:51:19 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37973 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752786Ab2E0UvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 16:51:14 -0400
-Message-ID: <1338151872.28188.16.camel@joe2Laptop>
-Subject: Re: [PATCH] x86: kernel/early_printk.c simple_strtoul cleanup
-From: Joe Perches <joe@perches.com>
-To: shuahkhan@gmail.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 27 May 2012 13:51:12 -0700
-In-Reply-To: <1338137317.2968.27.camel@lorien2>
-References: <1338137317.2968.27.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753169Ab2E0Uym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 16:54:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46183 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871Ab2E0Uyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 16:54:40 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] [staging] bcm: Fix codingstyle problems
+Date: Mon, 28 May 2012 02:24:34 +0530
+Message-Id: <1338152074-30747-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-27 at 10:48 -0600, Shuah Khan wrote:
-> Change early_serial_init() to call kstrtoul() instead of calling obsoleted
-> simple_strtoul().
-[]
-> diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-[]
-> @@ -119,22 +119,27 @@ static __init void early_serial_init(char *s)
->  	unsigned char c;
->  	unsigned divisor;
->  	unsigned baud = DEFAULT_BAUD;
-> -	char *e;
-> +	unsigned long val;
-> +	ssize_t ret;
->  
->  	if (*s == ',')
->  		++s;
->  
->  	if (*s) {
-> -		unsigned port;
-> +		unsigned port = 0;
->  		if (!strncmp(s, "0x", 2)) {
-> -			early_serial_base = simple_strtoul(s, &e, 16);
-> +			ret = kstrtoul(s, 16, &val);
-> +			if (!ret)
-> +				early_serial_base = val;
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/staging/bcm/Debug.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-I believe none of the kstrto<foo> calls set
-the value in the pointer unless successful so
-you don't need a temporary and can simply use:
-
-		ret = kstrtoint(s, 16, &early_serial_base)
-		if (ret)
-
-etc...
-
+diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
+index 420382d..9b5ab4b 100644
+--- a/drivers/staging/bcm/Debug.h
++++ b/drivers/staging/bcm/Debug.h
+@@ -240,16 +240,16 @@ typedef struct _S_BCM_DEBUG_STATE {
+ 		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,	\
+ 			       16, 1, buffer, bufferlen, false);	\
+ 	}								\
+-} while(0)
++} while (0)
+ 
+ 
+ #define BCM_SHOW_DEBUG_BITMAP(Adapter)	do { \
+ 	int i;									\
+-	for (i=0; i<(NUMTYPES*2)+1; i++) {		\
++	for (i = 0; i < (NUMTYPES * 2) + 1; i++) {		\
+ 		if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {		\
+ 		/* CAUTION! Forcefully turn on ALL debug paths and subpaths!	\
+ 		Adapter->stDebugState.subtype[i] = 0xffffffff;	*/ \
+-		BCM_DEBUG_PRINT (Adapter, DBG_TYPE_PRINTK, 0, 0, "subtype[%d] = 0x%08x\n", 	\
++		BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0, "subtype[%d] = 0x%08x\n",	\
+ 		i, Adapter->stDebugState.subtype[i]);	\
+ 		}	\
+ 	}		\
+-- 
+1.7.9.5
 
