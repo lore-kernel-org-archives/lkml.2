@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab2E0BTj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:19:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab2E0BTd (ORCPT
+	id S1945972Ab2E0BTp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:19:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35469 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab2E0BTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:19:33 -0400
-Message-Id: <20120527002522.367563701@linuxfoundation.org>
+	Sat, 26 May 2012 21:19:38 -0400
+Message-Id: <20120527002522.601392563@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:17 +0900
+Date: Sun, 27 May 2012 09:26:18 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 71/91] hvc_xen: NULL dereference on allocation failure
+Subject: [ 72/91] xen: do not map the same GSI twice in PVHVM guests.
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +26,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 201a52bea928687b7557728b176ac4f8a37d5cbd upstream.
+commit 68c2c39a76b094e9b2773e5846424ea674bf2c46 upstream.
 
-If kzalloc() returns a NULL here, we pass a NULL to
-xencons_disconnect_backend() which will cause an Oops.
+PV on HVM guests map GSIs into event channels. At restore time the
+event channels are resumed by restore_pirqs.
 
-Also I removed the __GFP_ZERO while I was at it since kzalloc() implies
-__GFP_ZERO.
+Device drivers might try to register the same GSI again through ACPI at
+restore time, but the GSI has already been mapped and bound by
+restore_pirqs. This patch detects these situations and avoids
+ mapping the same GSI multiple times.
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Without this patch we get:
+(XEN) irq.c:2235: dom4: pirq 23 or emuirq 28 already mapped
+and waste a pirq.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/hvc/hvc_xen.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/pci/xen.c   |    4 ++++
+ drivers/xen/events.c |    5 +++--
+ include/xen/events.h |    3 +++
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/hvc/hvc_xen.c
-+++ b/drivers/tty/hvc/hvc_xen.c
-@@ -430,9 +430,9 @@ static int __devinit xencons_probe(struc
- 	if (devid == 0)
- 		return -ENODEV;
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -64,6 +64,10 @@ static int xen_register_pirq(u32 gsi, in
+ 	int shareable = 0;
+ 	char *name;
  
--	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
-+	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL);
- 	if (!info)
--		goto error_nomem;
-+		return -ENOMEM;
- 	dev_set_drvdata(&dev->dev, info);
- 	info->xbdev = dev;
- 	info->vtermno = xenbus_devid_to_vtermno(devid);
++	irq = xen_irq_from_gsi(gsi);
++	if (irq > 0)
++		return irq;
++
+ 	if (set_pirq)
+ 		pirq = gsi;
+ 
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -611,7 +611,7 @@ static void disable_pirq(struct irq_data
+ 	disable_dynirq(data);
+ }
+ 
+-static int find_irq_by_gsi(unsigned gsi)
++int xen_irq_from_gsi(unsigned gsi)
+ {
+ 	struct irq_info *info;
+ 
+@@ -625,6 +625,7 @@ static int find_irq_by_gsi(unsigned gsi)
+ 
+ 	return -1;
+ }
++EXPORT_SYMBOL_GPL(xen_irq_from_gsi);
+ 
+ /*
+  * Do not make any assumptions regarding the relationship between the
+@@ -644,7 +645,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gs
+ 
+ 	mutex_lock(&irq_mapping_update_lock);
+ 
+-	irq = find_irq_by_gsi(gsi);
++	irq = xen_irq_from_gsi(gsi);
+ 	if (irq != -1) {
+ 		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
+ 		       irq, gsi);
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -103,6 +103,9 @@ int xen_irq_from_pirq(unsigned pirq);
+ /* Return the pirq allocated to the irq. */
+ int xen_pirq_from_irq(unsigned irq);
+ 
++/* Return the irq allocated to the gsi */
++int xen_irq_from_gsi(unsigned gsi);
++
+ /* Determine whether to ignore this IRQ if it is passed to a guest. */
+ int xen_test_irq_shared(int irq);
+ 
 
 
