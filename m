@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab2E0Bkg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:40:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	id S965331Ab2E0BLY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:11:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965338Ab2E0BLd (ORCPT
+	with ESMTP id S965260Ab2E0BLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:11:33 -0400
-Message-Id: <20120527010433.618389573@linuxfoundation.org>
+	Sat, 26 May 2012 21:11:13 -0400
+Message-Id: <20120527010433.064806572@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:33 +0900
+Date: Sun, 27 May 2012 10:05:29 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Wucher <thwucher@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Felix Radensky <felix@embedded-sol.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 70/94] gpio: mpc8xxx: Prevent NULL pointer deref in demux handler
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 66/94] b43legacy: Fix error due to MMIO access with SSB unpowered
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit d6de85e85edcc38c9edcde45a0a568818fcddc13 upstream.
+commit 8f4b20388fa77226a3605627a33a23f90d559e50 upstream.
 
-commit cfadd838(powerpc/8xxx: Fix interrupt handling in MPC8xxx GPIO
-driver) added an unconditional call of chip->irq_eoi() to the demux
-handler.
+There is a dummy read of a PCI MMIO register that occurs before the SSB bus
+has been powered, which is an error. This bug has not been seen earlier,
+but was apparently exposed when udev was updated to version 182.
 
-This leads to a NULL pointer derefernce on MPC512x platforms which use
-this driver as well.
-
-Make it conditional.
-
-Reported-by: Thomas Wucher <thwucher@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Felix Radensky <felix@embedded-sol.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-mpc8xxx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/b43legacy/main.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -163,7 +163,8 @@ static void mpc8xxx_gpio_irq_cascade(uns
- 	if (mask)
- 		generic_handle_irq(irq_linear_revmap(mpc8xxx_gc->irq,
- 						     32 - ffs(mask)));
--	chip->irq_eoi(&desc->irq_data);
-+	if (chip->irq_eoi)
-+		chip->irq_eoi(&desc->irq_data);
- }
+--- a/drivers/net/wireless/b43legacy/main.c
++++ b/drivers/net/wireless/b43legacy/main.c
+@@ -1564,8 +1564,6 @@ static int b43legacy_request_firmware(st
+ 	const char *filename;
+ 	int err;
  
- static void mpc8xxx_irq_unmask(struct irq_data *d)
+-	/* do dummy read */
+-	ssb_read32(dev->dev, SSB_TMSHIGH);
+ 	if (!fw->ucode) {
+ 		if (rev == 2)
+ 			filename = "ucode2";
 
 
