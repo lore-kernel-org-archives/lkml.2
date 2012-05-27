@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934207Ab2E0BXr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:23:47 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422753Ab2E0BUL (ORCPT
+	id S934224Ab2E0BYI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:24:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934169Ab2E0BUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:20:11 -0400
-Message-Id: <20120527002524.030462589@linuxfoundation.org>
+	Sat, 26 May 2012 21:20:06 -0400
+Message-Id: <20120527002523.810022490@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:25 +0900
+Date: Sun, 27 May 2012 09:26:24 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [ 79/91] x86/mce: Fix check for processor context when machine check was taken.
+        alan@lxorguk.ukuu.org.uk, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 78/91] x86, relocs: Add jiffies and jiffies_64 to the relative whitelist
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 875e26648cf9b6db9d8dc07b7959d7c61fb3f49c upstream.
+commit ea17e7414bc62e8d3bde8d08e3df1d921c518c17 upstream.
 
-Linus pointed out that there was no value is checking whether m->ip
-was zero - because zero is a legimate value.  If we have a reliable
-(or faked in the VM86 case) "m->cs" we can use it to tell whether we
-were in user mode or kernelwhen the machine check hit.
+The symbol jiffies is created in the linker script as an alias to
+jiffies_64.  Unfortunately this is done outside any section, and
+apparently GNU ld 2.21 doesn't carry the section with it, so we end up
+with an absolute symbol and therefore a broken kernel.
 
-Reported-by: Linus Torvalds <torvalds@linuxfoundation.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Add jiffies and jiffies_64 to the whitelist.
+
+The most disturbing bit with this discovery is that it shows that we
+have had multiple linker bugs in this area crossing multiple
+generations, and have been silently building bad kernels for some time.
+
+Link: http://lkml.kernel.org/r/20120524171604.0d98284f3affc643e9714470@canb.auug.org.au
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/tools/relocs.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -165,15 +165,19 @@ static struct severity {
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -71,6 +71,7 @@ static const char * const sym_regex_kern
+ 	"__(start|stop)_notes|"
+ 	"__end_rodata|"
+ 	"__initramfs_start|"
++	"(jiffies|jiffies_64)|"
+ 	"_end)$"
  };
  
- /*
-- * If the EIPV bit is set, it means the saved IP is the
-- * instruction which caused the MCE.
-+ * If mcgstatus indicated that ip/cs on the stack were
-+ * no good, then "m->cs" will be zero and we will have
-+ * to assume the worst case (IN_KERNEL) as we actually
-+ * have no idea what we were executing when the machine
-+ * check hit.
-+ * If we do have a good "m->cs" (or a faked one in the
-+ * case we were executing in VM86 mode) we can use it to
-+ * distinguish an exception taken in user from from one
-+ * taken in the kernel.
-  */
- static int error_context(struct mce *m)
- {
--	if (m->mcgstatus & MCG_STATUS_EIPV)
--		return (m->ip && (m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
--	/* Unknown, assume kernel */
--	return IN_KERNEL;
-+	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
- }
- 
- int mce_severity(struct mce *m, int tolerant, char **msg)
 
 
