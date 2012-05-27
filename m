@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965025Ab2E0Bpj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:45:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	id S965084Ab2E0BqI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:46:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964826Ab2E0BJL (ORCPT
+	with ESMTP id S933318Ab2E0BIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:09:11 -0400
-Message-Id: <20120527010429.673256376@linuxfoundation.org>
+	Sat, 26 May 2012 21:08:52 -0400
+Message-Id: <20120527010429.110525398@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:05 +0900
+Date: Sun, 27 May 2012 10:05:01 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@fusionio.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [ 42/94] md: using GFP_NOIO to allocate bio for flush request
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
+Subject: [ 38/94] USB: cdc-wdm: sanitize error returns
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +24,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit b5e1b8cee7ad58a15d2fa79bcd7946acb592602d upstream.
+commit 24a85bae5da2b43fed423859c09c5a81ab359473 upstream.
 
-A flush request is usually issued in transaction commit code path, so
-using GFP_KERNEL to allocate memory for flush request bio falls into
-the classic deadlock issue.
+wdm_flush() returns unsanitized USB error codes.
+They must be cleaned up to before being anded to user space
 
-This is suitable for any -stable kernel to which it applies as it
-avoids a possible deadlock.
-
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    2 +-
+ drivers/usb/class/cdc-wdm.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -452,7 +452,7 @@ static void submit_flushes(struct work_s
- 			atomic_inc(&rdev->nr_pending);
- 			atomic_inc(&rdev->nr_pending);
- 			rcu_read_unlock();
--			bi = bio_alloc_mddev(GFP_KERNEL, 0, mddev);
-+			bi = bio_alloc_mddev(GFP_NOIO, 0, mddev);
- 			bi->bi_end_io = md_end_flush;
- 			bi->bi_private = rdev;
- 			bi->bi_bdev = rdev->bdev;
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -500,7 +500,7 @@ static int wdm_flush(struct file *file,
+ 		dev_err(&desc->intf->dev, "Error in flush path: %d\n",
+ 			desc->werr);
+ 
+-	return desc->werr;
++	return usb_translate_errors(desc->werr);
+ }
+ 
+ static unsigned int wdm_poll(struct file *file, struct poll_table_struct *wait)
 
 
