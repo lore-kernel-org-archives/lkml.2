@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab2E0BuK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:50:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab2E0BHF (ORCPT
+	id S932278Ab2E0Buz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:50:55 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab2E0BGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:07:05 -0400
-Message-Id: <20120527010426.187494231@linuxfoundation.org>
+	Sat, 26 May 2012 21:06:46 -0400
+Message-Id: <20120527010425.624389869@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:40 +0900
+Date: Sun, 27 May 2012 10:04:36 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 17/94] SCSI: mpt2sas: Fix for panic happening because of improper memory allocation
+        alan@lxorguk.ukuu.org.uk, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Youngsin Lee <youngsin@qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>,
+        Vipin Mehta <vipimeht@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <mcgrof@frijolero.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 13/94] cfg80211: warn if db.txt is empty with CONFIG_CFG80211_INTERNAL_REGDB
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
 
-commit e42fafc25fa86c61824e8d4c5e7582316415d24f upstream.
+commit 80007efeff0568375b08faf93c7aad65602cb97e upstream.
 
-The ioc->pfacts member in the IOC structure is getting set to zero
-following a call to _base_get_ioc_facts due to the memset in that routine.
-So if the ioc->pfacts was read after a host reset, there would be a NULL
-pointer dereference. The routine _base_get_ioc_facts is called from context
-of host reset.  The problem in _base_get_ioc_facts  is the size of
-Mpi2IOCFactsReply is 64, whereas the sizeof "struct mpt2sas_facts" is 60,
-so there is a four byte overflow resulting from the memset.
+It has happened twice now where elaborate troubleshooting has
+undergone on systems where CONFIG_CFG80211_INTERNAL_REGDB [0]
+has been set but yet net/wireless/db.txt was not updated.
 
-Also, there is memset in _base_get_port_facts using the incorrect structure,
-it should be "struct mpt2sas_port_facts" instead of Mpi2PortFactsReply.
+Despite the documentation on this it seems system integrators could
+use some more help with this, so throw out a kernel warning at boot time
+when their database is empty.
 
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This does mean that the error-prone system integrator won't likely
+realize the issue until they boot the machine but -- it does not seem
+to make sense to enable a build bug breaking random build testing.
+
+[0] http://wireless.kernel.org/en/developers/Regulatory/CRDA#CONFIG_CFG80211_INTERNAL_REGDB
+
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Youngsin Lee <youngsin@qualcomm.com>
+Cc: Raja Mani <rmani@qca.qualcomm.com>
+Cc: Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>
+Cc: Vipin Mehta <vipimeht@qca.qualcomm.com>
+Cc: yahuan@qca.qualcomm.com
+Cc: jjan@qca.qualcomm.com
+Cc: vthiagar@qca.qualcomm.com
+Cc: henrykim@qualcomm.com
+Cc: jouni@qca.qualcomm.com
+Cc: athiruve@qca.qualcomm.com
+Cc: cjkim@qualcomm.com
+Cc: philipk@qca.qualcomm.com
+Cc: sunnykim@qualcomm.com
+Cc: sskwak@qualcomm.com
+Cc: kkim@qualcomm.com
+Cc: mattbyun@qualcomm.com
+Cc: ryanlee@qualcomm.com
+Cc: simbap@qualcomm.com
+Cc: krislee@qualcomm.com
+Cc: conner@qualcomm.com
+Cc: hojinkim@qualcomm.com
+Cc: honglee@qualcomm.com
+Cc: johnwkim@qualcomm.com
+Cc: jinyong@qca.qualcomm.com
+Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/wireless/reg.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -3340,7 +3340,7 @@ _base_get_port_facts(struct MPT2SAS_ADAP
- 	}
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -388,7 +388,15 @@ static void reg_regdb_query(const char *
  
- 	pfacts = &ioc->pfacts[port];
--	memset(pfacts, 0, sizeof(Mpi2PortFactsReply_t));
-+	memset(pfacts, 0, sizeof(struct mpt2sas_port_facts));
- 	pfacts->PortNumber = mpi_reply.PortNumber;
- 	pfacts->VP_ID = mpi_reply.VP_ID;
- 	pfacts->VF_ID = mpi_reply.VF_ID;
-@@ -3382,7 +3382,7 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPT
- 	}
+ 	schedule_work(&reg_regdb_work);
+ }
++
++/* Feel free to add any other sanity checks here */
++static void reg_regdb_size_check(void)
++{
++	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
++	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
++}
+ #else
++static inline void reg_regdb_size_check(void) {}
+ static inline void reg_regdb_query(const char *alpha2) {}
+ #endif /* CONFIG_CFG80211_INTERNAL_REGDB */
  
- 	facts = &ioc->facts;
--	memset(facts, 0, sizeof(Mpi2IOCFactsReply_t));
-+	memset(facts, 0, sizeof(struct mpt2sas_facts));
- 	facts->MsgVersion = le16_to_cpu(mpi_reply.MsgVersion);
- 	facts->HeaderVersion = le16_to_cpu(mpi_reply.HeaderVersion);
- 	facts->VP_ID = mpi_reply.VP_ID;
-@@ -4259,7 +4259,7 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
- 		goto out_free_resources;
+@@ -2337,6 +2345,8 @@ int __init regulatory_init(void)
+ 	spin_lock_init(&reg_requests_lock);
+ 	spin_lock_init(&reg_pending_beacons_lock);
  
- 	ioc->pfacts = kcalloc(ioc->facts.NumberOfPorts,
--	    sizeof(Mpi2PortFactsReply_t), GFP_KERNEL);
-+	    sizeof(struct mpt2sas_port_facts), GFP_KERNEL);
- 	if (!ioc->pfacts) {
- 		r = -ENOMEM;
- 		goto out_free_resources;
++	reg_regdb_size_check();
++
+ 	cfg80211_regdomain = cfg80211_world_regdom;
+ 
+ 	user_alpha2[0] = '9';
 
 
