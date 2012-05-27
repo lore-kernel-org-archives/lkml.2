@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab2E0A6P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:58:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754840Ab2E0A6H (ORCPT
+	id S1754988Ab2E0Bzl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:55:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42162 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab2E0A5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:58:07 -0400
-Message-Id: <20120527002616.110737171@linuxfoundation.org>
+	Sat, 26 May 2012 20:57:53 -0400
+Message-Id: <20120527002615.642284130@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:28 +0900
+Date: Sun, 27 May 2012 09:26:25 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Paris <eparis@redhat.com>
-Subject: [ 15/55] SELinux: if sel_make_bools errors dont leave inconsistent state
+        alan@lxorguk.ukuu.org.uk,
+        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 12/55] SCSI: mpt2sas: Fix for panic happening because of improper memory allocation
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,31 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
 
-commit 154c50ca4eb9ae472f50b6a481213e21ead4457d upstream.
+commit e42fafc25fa86c61824e8d4c5e7582316415d24f upstream.
 
-We reset the bool names and values array to NULL, but do not reset the
-number of entries in these arrays to 0.  If we error out and then get back
-into this function we will walk these NULL pointers based on the belief
-that they are non-zero length.
+The ioc->pfacts member in the IOC structure is getting set to zero
+following a call to _base_get_ioc_facts due to the memset in that routine.
+So if the ioc->pfacts was read after a host reset, there would be a NULL
+pointer dereference. The routine _base_get_ioc_facts is called from context
+of host reset.  The problem in _base_get_ioc_facts  is the size of
+Mpi2IOCFactsReply is 64, whereas the sizeof "struct mpt2sas_facts" is 60,
+so there is a four byte overflow resulting from the memset.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Also, there is memset in _base_get_port_facts using the incorrect structure,
+it should be "struct mpt2sas_port_facts" instead of Mpi2PortFactsReply.
+
+Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- security/selinux/selinuxfs.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/security/selinux/selinuxfs.c
-+++ b/security/selinux/selinuxfs.c
-@@ -1241,6 +1241,7 @@ static int sel_make_bools(void)
- 		kfree(bool_pending_names[i]);
- 	kfree(bool_pending_names);
- 	kfree(bool_pending_values);
-+	bool_num = 0;
- 	bool_pending_names = NULL;
- 	bool_pending_values = NULL;
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -3056,7 +3056,7 @@ _base_get_port_facts(struct MPT2SAS_ADAP
+ 	}
  
+ 	pfacts = &ioc->pfacts[port];
+-	memset(pfacts, 0, sizeof(Mpi2PortFactsReply_t));
++	memset(pfacts, 0, sizeof(struct mpt2sas_port_facts));
+ 	pfacts->PortNumber = mpi_reply.PortNumber;
+ 	pfacts->VP_ID = mpi_reply.VP_ID;
+ 	pfacts->VF_ID = mpi_reply.VF_ID;
+@@ -3098,7 +3098,7 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPT
+ 	}
+ 
+ 	facts = &ioc->facts;
+-	memset(facts, 0, sizeof(Mpi2IOCFactsReply_t));
++	memset(facts, 0, sizeof(struct mpt2sas_facts));
+ 	facts->MsgVersion = le16_to_cpu(mpi_reply.MsgVersion);
+ 	facts->HeaderVersion = le16_to_cpu(mpi_reply.HeaderVersion);
+ 	facts->VP_ID = mpi_reply.VP_ID;
+@@ -3779,7 +3779,7 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
+ 		goto out_free_resources;
+ 
+ 	ioc->pfacts = kcalloc(ioc->facts.NumberOfPorts,
+-	    sizeof(Mpi2PortFactsReply_t), GFP_KERNEL);
++	    sizeof(struct mpt2sas_port_facts), GFP_KERNEL);
+ 	if (!ioc->pfacts) {
+ 		r = -ENOMEM;
+ 		goto out_free_resources;
 
 
