@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934060Ab2E0BgG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:36:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	id S965522Ab2E0Bgd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:36:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965510Ab2E0BNs (ORCPT
+	with ESMTP id S965498Ab2E0BNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:13:48 -0400
-Message-Id: <20120527002507.361702704@linuxfoundation.org>
+	Sat, 26 May 2012 21:13:39 -0400
+Message-Id: <20120527010436.725850474@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:08 +0900
+Date: Sun, 27 May 2012 10:05:55 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 02/91] isdn/gigaset: fix CAPI disconnect B3 handling
-In-Reply-To: <20120527010903.GA18244@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Andi Kleen <ak@linux.intel.com>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 92/94] MCE: Fix vm86 handling for 32bit mce handler
+In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 62a1cfe052346b96a552b6a9178d412c709711bb upstream.
+commit a129a7c84582629741e5fa6f40026efcd7a65bd4 upstream.
 
-If DISCONNECT_B3_IND was synthesized because of a DISCONNECT_REQ
-with existing logical connections, the connection state wasn't
-updated accordingly. Also the emitted DISCONNECT_B3_IND message
-wasn't included in the debug log as requested.
-This patch fixes both of these issues.
+When running on 32bit the mce handler could misinterpret
+vm86 mode as ring 0. This can affect whether it does recovery
+or not; it was possible to panic when recovery was actually
+possible.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix this by always forcing vm86 to look like ring 3.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/isdn/gigaset/capi.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/cpu/mcheck/mce.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -1887,6 +1887,9 @@ static void do_disconnect_req(struct gig
- 
- 	/* check for active logical connection */
- 	if (bcs->apconnstate >= APCONN_ACTIVE) {
-+		/* clear it */
-+		bcs->apconnstate = APCONN_SETUP;
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -437,6 +437,14 @@ static inline void mce_gather_info(struc
+ 		if (m->mcgstatus & (MCG_STATUS_RIPV|MCG_STATUS_EIPV)) {
+ 			m->ip = regs->ip;
+ 			m->cs = regs->cs;
 +
- 		/*
- 		 * emit DISCONNECT_B3_IND with cause 0x3301
- 		 * use separate cmsg structure, as the content of iif->acmsg
-@@ -1911,6 +1914,7 @@ static void do_disconnect_req(struct gig
++			/*
++			 * When in VM86 mode make the cs look like ring 3
++			 * always. This is a lie, but it's better than passing
++			 * the additional vm86 bit around everywhere.
++			 */
++			if (v8086_mode(regs))
++				m->cs |= 3;
  		}
- 		capi_cmsg2message(b3cmsg,
- 				  __skb_put(b3skb, CAPI_DISCONNECT_B3_IND_BASELEN));
-+		dump_cmsg(DEBUG_CMD, __func__, b3cmsg);
- 		kfree(b3cmsg);
- 		capi_ctr_handle_message(&iif->ctr, ap->id, b3skb);
- 	}
+ 		/* Use accurate RIP reporting if available. */
+ 		if (rip_msr)
 
 
