@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab2E0Qsk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 12:48:40 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:33427 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab2E0Qsj (ORCPT
+	id S1753141Ab2E0RBm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 13:01:42 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:50495 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab2E0RBk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 12:48:39 -0400
-Message-ID: <1338137317.2968.27.camel@lorien2>
-Subject: [PATCH] x86: kernel/early_printk.c simple_strtoul cleanup
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: shuahkhan@gmail.com, x86@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 27 May 2012 10:48:37 -0600
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 27 May 2012 13:01:40 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+References: <4FC22098.3070803@kernel.org> <4FC25048.109@wwwdotorg.org> <20120527161405.GA29360@n2100.arm.linux.org.uk>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20120527161405.GA29360@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: arm: Remaining issue with alignment of __log_buf in printk.c
+From: Jonathan Cameron <jic23@cam.ac.uk>
+Date: Sun, 27 May 2012 18:01:28 +0100
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>
+CC: Jonathan Cameron <jic23@kernel.org>, kay.sievers@vrfy.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Message-ID: <ff649cb2-d71d-4bea-adf7-1ec6d1de1207@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change early_serial_init() to call kstrtoul() instead of calling obsoleted
-simple_strtoul().
 
-Signed-off-by: Shuah Khan <shuahkhan@gmail.com>
----
- arch/x86/kernel/early_printk.c |   21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index 9b9f18b..a078f4d 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -119,22 +119,27 @@ static __init void early_serial_init(char *s)
- 	unsigned char c;
- 	unsigned divisor;
- 	unsigned baud = DEFAULT_BAUD;
--	char *e;
-+	unsigned long val;
-+	ssize_t ret;
- 
- 	if (*s == ',')
- 		++s;
- 
- 	if (*s) {
--		unsigned port;
-+		unsigned port = 0;
- 		if (!strncmp(s, "0x", 2)) {
--			early_serial_base = simple_strtoul(s, &e, 16);
-+			ret = kstrtoul(s, 16, &val);
-+			if (!ret)
-+				early_serial_base = val;
- 		} else {
- 			static const int __initconst bases[] = { 0x3f8, 0x2f8 };
- 
- 			if (!strncmp(s, "ttyS", 4))
- 				s += 4;
--			port = simple_strtoul(s, &e, 10);
--			if (port > 1 || s == e)
-+			ret = kstrtoul(s, 10, &val);
-+			if (!ret)
-+				port = val;
-+			if (port > 1)
- 				port = 0;
- 			early_serial_base = bases[port];
- 		}
-@@ -149,8 +154,10 @@ static __init void early_serial_init(char *s)
- 	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
- 
- 	if (*s) {
--		baud = simple_strtoul(s, &e, 0);
--		if (baud == 0 || s == e)
-+		ret = kstrtoul(s, 0, &val);
-+		if (!ret)
-+			baud = val;
-+		if (baud == 0)
- 			baud = DEFAULT_BAUD;
- 	}
- 
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+>On Sun, May 27, 2012 at 10:03:20AM -0600, Stephen Warren wrote:
+>> On 05/27/2012 06:39 AM, Jonathan Cameron wrote:
+>> > Hi All,
+>> > 
+>> > My stargate 2 board refused to start and after bisection I ended
+>> > up at the same patch that Stephen found an alignment issue in.
+>> > Unfortunately Stephen's patch doesn't seem to have fixed the
+>> > issue for me.
+>> > https://lkml.org/lkml/2012/5/10/510 is the thread.  Patch from
+>> > Stephen is : f8450fca6ecdea38b5a882fdf6cd097e3ec8651c
+>> > 
+>> > Increasing the alignement for 32 bit systems to 8 seems to do the
+>> > job but I can't immediately think why...
+>> > 
+>> > System is a pxa27x strong arm.
+>
+>First thing to point out is that PXA27x is Xscale, not StrongARM.
+Sorry my mistake!
+>
+>> The first element in the structure type that's actually stored in the
+>> __log_buf array is a u64; see struct log in kernel/printk.c.
+>Depending
+>> on alignment rules, a u64 and a struct containing it might require a
+>> 4-byte or 8-byte alignment. The following link implies this might
+>have
+>> changed over time:
+>> 
+>> http://wiki.debian.org/ArmEabiPort#Struct_packing_and_alignment
+>> 
+>> (see "64-bit data type alignment" a little below that anchor). I'm
+>not
+>> sure what ABI the kernel expects to use internally, or your compiler;
+>> perhaps you need the new EABI 8-byte alignment requirement for a u64
+>and
+>> hence the struct as a whole, but Tegra (or my toolchain?) is OK with
+>the
+>> older 4-byte alignment for a u64 or struct?
+>> 
+>> Further, I'm not sure if the following alignment selection logic:
+>> 
+>> > #if !defined(CONFIG_64BIT) ||
+>defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+>> > #define LOG_ALIGN 4
+>> > #else
+>> > #define LOG_ALIGN 8
+>> > #endif
+>> 
+>> ... uses the CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS for its intended
+>> purpose?
+>> 
+>> Russell, can you please comment here. Thanks.
+>
+>And most likely it's using EABI which does want 8 byte alignment. 
+Indeed I am using eabi.
+ So
+>this
+>should probably be fixed for EABI builds.
+
 -- 
-1.7.9.5
-
-
-
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
