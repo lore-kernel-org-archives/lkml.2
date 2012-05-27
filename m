@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965084Ab2E0BqI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:46:08 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933318Ab2E0BIw (ORCPT
+	id S933449Ab2E0Bqb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:46:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56176 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab2E0Bq1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:08:52 -0400
-Message-Id: <20120527010429.110525398@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:01 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
-Subject: [ 38/94] USB: cdc-wdm: sanitize error returns
-In-Reply-To: <20120527010332.GA11170@kroah.com>
+	Sat, 26 May 2012 21:46:27 -0400
+Message-ID: <1338083186.2658.401.camel@shawn-ssd>
+Subject: git-unnoticed merge conflicts breaking arm cross-building
+From: shawn <shawnlandden@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 26 May 2012 18:46:26 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+I checked out git master and tried to cross compile an arm kernel for my
+sheevaplug
 
-------------------
+It fails with linker errors:
 
-From: Oliver Neukum <oliver@neukum.org>
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+scripts/mod/file2alias.o: could not read symbols: File in wrong format
+collect2: ld returned 1 exit status
 
-commit 24a85bae5da2b43fed423859c09c5a81ab359473 upstream.
+where it appears that it isn't calling the cross-toolchain
+(/usr/bin/arm-linux-gnueabi-ld)
 
-wdm_flush() returns unsanitized USB error codes.
-They must be cleaned up to before being anded to user space
+I have 
+CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/usb/class/cdc-wdm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I did a full git bisect and
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -500,7 +500,7 @@ static int wdm_flush(struct file *file,
- 		dev_err(&desc->intf->dev, "Error in flush path: %d\n",
- 			desc->werr);
- 
--	return desc->werr;
-+	return usb_translate_errors(desc->werr);
- }
- 
- static unsigned int wdm_poll(struct file *file, struct poll_table_struct *wait)
+good: 
+commit f08b9c2f8af0d61faa1170aeae4fbca1eff6a504
+Merge: d79ee93 0ab711a
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue May 22 18:38:11 2012 -0700
 
+    Merge branch 'x86-apic-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+
+good: 
+commit 99ce58ddc4eadec8c35d9a1d64ff57703fdcfacc
+Merge: 56ccd18 44d27f7 4e52b53 ed13794
+Author: Jiri Kosina <jkosina@suse.cz>
+Date:   Tue May 22 11:33:42 2012 +0200
+
+    Merge branches 'upstream-fixes', 'wacom' and 'waltop' into for-linus
+
+first bad:
+commit 3c2c4b73aa79e4a1b601710b59e092441175f4bb
+Merge: f08b9c2 99ce58d
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue May 22 19:21:48 2012 -0700
+
+    Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
+
+
+-- 
+-Shawn Landden
 
