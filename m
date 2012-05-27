@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab2E0A7z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:59:55 -0400
+	id S1755701Ab2E0BAA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:00:00 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab2E0A7v (ORCPT
+	with ESMTP id S1755334Ab2E0A74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:59:51 -0400
-Message-Id: <20120527002619.303072103@linuxfoundation.org>
+	Sat, 26 May 2012 20:59:56 -0400
+Message-Id: <20120527002619.457895283@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:49 +0900
+Date: Sun, 27 May 2012 09:26:50 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
-        Al Borchers <alborchers@steinerpoint.com>,
-        Peter Berger <pberger@brimson.com>
-Subject: [ 36/55] USB: serial: ti_usb_3410_5052: Add support for the FRI2 serial console
+        alan@lxorguk.ukuu.org.uk, Peter Chen <peter.chen@freescale.com>,
+        Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 37/55] usb: gadget: fsl_udc_core: dTDs next dtd pointer need to be updated once written
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 975dc33b82cb887d75a29b1e3835c8eb063a8e99 upstream.
+commit 4d0947dec4db1224354e2f6f00ae22ce38e62a43 upstream.
 
-The Kontron M2M development board, also known as the Fish River Island II,
-has an optional daughter card providing access to the PCH_UART (EG20T) via
-a ti_usb_3410_5052 uart to usb chip.
+dTD's next dtd pointer need to be updated once CPU writes it, or this
+request may not be handled by controller, then host will get NAK from
+device forever.
 
-http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
+This problem occurs when there is a request is handling, we need to add
+a new request to dTD list, if this new request is added before the current
+one is finished, the new request is intended to added as next dtd pointer
+at current dTD, but without wmb(), the dTD's next dtd pointer may not be
+updated when the controller reads it. In that case, the controller will
+still get Terminate Bit is 1 at dTD's next dtd pointer, that means there is
+no next request, then this new request is missed by controller.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Al Borchers <alborchers@steinerpoint.com>
-CC: Peter Berger <pberger@brimson.com>
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |    6 ++++--
- drivers/usb/serial/ti_usb_3410_5052.h |    1 +
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/fsl_udc_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -165,7 +165,7 @@ static unsigned int product_5052_count;
- /* the array dimension is the number of default entries plus */
- /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
- /* null entry */
--static struct usb_device_id ti_id_table_3410[14+TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -180,6 +180,7 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
- 	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
- 
- static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
-@@ -189,7 +190,7 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
- };
- 
--static struct usb_device_id ti_id_table_combined[18+2*TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -208,6 +209,7 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
- 	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- 	{ }
- };
- 
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -37,6 +37,7 @@
- #define TI_5152_BOOT_PRODUCT_ID		0x5152	/* no EEPROM, no firmware */
- #define TI_5052_EEPROM_PRODUCT_ID	0x505A	/* EEPROM, no firmware */
- #define TI_5052_FIRMWARE_PRODUCT_ID	0x505F	/* firmware is running */
-+#define FRI2_PRODUCT_ID			0x5053  /* Fish River Island II */
- 
- /* Multi-Tech vendor and product ids */
- #define MTS_VENDOR_ID			0x06E0
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -717,6 +717,8 @@ static void fsl_queue_td(struct fsl_ep *
+ 		lastreq = list_entry(ep->queue.prev, struct fsl_req, queue);
+ 		lastreq->tail->next_td_ptr =
+ 			cpu_to_hc32(req->head->td_dma & DTD_ADDR_MASK);
++		/* Ensure dTD's next dtd pointer to be updated */
++		wmb();
+ 		/* Read prime bit, if 1 goto done */
+ 		if (fsl_readl(&dr_regs->endpointprime) & bitmask)
+ 			goto out;
 
 
