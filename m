@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab2E0BCy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:02:54 -0400
+	id S932595Ab2E0BDc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:03:32 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab2E0BA6 (ORCPT
+	with ESMTP id S932236Ab2E0BAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:00:58 -0400
-Message-Id: <20120527002621.250295871@linuxfoundation.org>
+	Sat, 26 May 2012 21:00:39 -0400
+Message-Id: <20120527002620.637695215@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:27:02 +0900
+Date: Sun, 27 May 2012 09:26:58 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Linus Torvalds <torvalds@linuxfoundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [ 49/55] x86/mce: Fix check for processor context when machine check was taken.
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 45/55] drm/i915: dont clobber the pipe param in sanitize_modesetting
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Luck <tony.luck@intel.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 875e26648cf9b6db9d8dc07b7959d7c61fb3f49c upstream.
+commit a9dcf84b14ef4e9a609910367576995e6f32f3dc upstream.
 
-Linus pointed out that there was no value is checking whether m->ip
-was zero - because zero is a legimate value.  If we have a reliable
-(or faked in the VM86 case) "m->cs" we can use it to tell whether we
-were in user mode or kernelwhen the machine check hit.
+... we need it later on in the function to clean up pipe <-> plane
+associations. This regression has been introduced in
 
-Reported-by: Linus Torvalds <torvalds@linuxfoundation.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+commit f47166d2b0001fcb752b40c5a2d4db986dfbea68
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Mar 22 15:00:50 2012 +0000
+
+    drm/i915: Sanitize BIOS debugging bits from PIPECONF
+
+Spotted by staring at debug output of an (as it turns out) totally
+unrelated bug.
+
+v2: I've totally failed to do the s/pipe/i/ correctly, spotted by
+Chris Wilson.
+
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -101,15 +101,19 @@ static struct severity {
- };
- 
- /*
-- * If the EIPV bit is set, it means the saved IP is the
-- * instruction which caused the MCE.
-+ * If mcgstatus indicated that ip/cs on the stack were
-+ * no good, then "m->cs" will be zero and we will have
-+ * to assume the worst case (IN_KERNEL) as we actually
-+ * have no idea what we were executing when the machine
-+ * check hit.
-+ * If we do have a good "m->cs" (or a faked one in the
-+ * case we were executing in VM86 mode) we can use it to
-+ * distinguish an exception taken in user from from one
-+ * taken in the kernel.
-  */
- static int error_context(struct mce *m)
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6579,10 +6579,11 @@ static void intel_sanitize_modesetting(s
  {
--	if (m->mcgstatus & MCG_STATUS_EIPV)
--		return (m->ip && (m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
--	/* Unknown, assume kernel */
--	return IN_KERNEL;
-+	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
- }
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 reg, val;
++	int i;
  
- int mce_severity(struct mce *a, int tolerant, char **msg)
+ 	/* Clear any frame start delays used for debugging left by the BIOS */
+-	for_each_pipe(pipe) {
+-		reg = PIPECONF(pipe);
++	for_each_pipe(i) {
++		reg = PIPECONF(i);
+ 		I915_WRITE(reg, I915_READ(reg) & ~PIPECONF_FRAME_START_DELAY_MASK);
+ 	}
+ 
 
 
