@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756802Ab2E0BT3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:19:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:43902 "EHLO
+	id S1756867Ab2E0BTj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:19:39 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945960Ab2E0BTY (ORCPT
+	with ESMTP id S1755788Ab2E0BTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:19:24 -0400
-Message-Id: <20120527002521.928952544@linuxfoundation.org>
+	Sat, 26 May 2012 21:19:33 -0400
+Message-Id: <20120527002522.367563701@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:15 +0900
+Date: Sun, 27 May 2012 09:26:17 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Wucher <thwucher@linutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Felix Radensky <felix@embedded-sol.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 69/91] gpio: mpc8xxx: Prevent NULL pointer deref in demux handler
+        alan@lxorguk.ukuu.org.uk,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [ 71/91] hvc_xen: NULL dereference on allocation failure
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,42 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit d6de85e85edcc38c9edcde45a0a568818fcddc13 upstream.
+commit 201a52bea928687b7557728b176ac4f8a37d5cbd upstream.
 
-commit cfadd838(powerpc/8xxx: Fix interrupt handling in MPC8xxx GPIO
-driver) added an unconditional call of chip->irq_eoi() to the demux
-handler.
+If kzalloc() returns a NULL here, we pass a NULL to
+xencons_disconnect_backend() which will cause an Oops.
 
-This leads to a NULL pointer derefernce on MPC512x platforms which use
-this driver as well.
+Also I removed the __GFP_ZERO while I was at it since kzalloc() implies
+__GFP_ZERO.
 
-Make it conditional.
-
-Reported-by: Thomas Wucher <thwucher@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Felix Radensky <felix@embedded-sol.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpio/gpio-mpc8xxx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/tty/hvc/hvc_xen.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -163,7 +163,8 @@ static void mpc8xxx_gpio_irq_cascade(uns
- 	if (mask)
- 		generic_handle_irq(irq_linear_revmap(mpc8xxx_gc->irq,
- 						     32 - ffs(mask)));
--	chip->irq_eoi(&desc->irq_data);
-+	if (chip->irq_eoi)
-+		chip->irq_eoi(&desc->irq_data);
- }
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -430,9 +430,9 @@ static int __devinit xencons_probe(struc
+ 	if (devid == 0)
+ 		return -ENODEV;
  
- static void mpc8xxx_irq_unmask(struct irq_data *d)
+-	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL | __GFP_ZERO);
++	info = kzalloc(sizeof(struct xencons_info), GFP_KERNEL);
+ 	if (!info)
+-		goto error_nomem;
++		return -ENOMEM;
+ 	dev_set_drvdata(&dev->dev, info);
+ 	info->xbdev = dev;
+ 	info->vtermno = xenbus_devid_to_vtermno(devid);
 
 
