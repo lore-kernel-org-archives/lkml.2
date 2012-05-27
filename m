@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab2E0Svf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 14:51:35 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35997 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751797Ab2E0Sve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 14:51:34 -0400
-X-Sasl-enc: 6Yszqfq2cw7l7Pk2ILQRDk8QnxbFysVz4axMWCezeX7t 1338144693
-Message-ID: <4FC277B2.6070507@fastmail.fm>
-Date: Sun, 27 May 2012 19:51:30 +0100
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752051Ab2E0THK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 15:07:10 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38273 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751433Ab2E0THJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 15:07:09 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: gregkh@linuxfoundation.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        alan@linux.intel.com
-Subject: Re: TTY Locking bug
-References: <4FC273FD.8050806@fastmail.fm> <20120527195137.058c4bcf@pyramind.ukuu.org.uk>
-In-Reply-To: <20120527195137.058c4bcf@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <87hav8vypc.fsf@xmission.com>
+References: <87hav8vypc.fsf@xmission.com>
+Date: Sun, 27 May 2012 21:07:07 +0200
+Message-ID: <CAFLxGvzZeNxQSHQRCzYiT+OkFO1fooGfANPMYs-sSB-eQtCcpA@mail.gmail.com>
+Subject: Re: [GIT PULL] user namespace enhancements for Linux 3.5-rc1
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux Containers <containers@lists.linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2012 07:51 PM, Alan Cox wrote:
-> On Sun, 27 May 2012 19:35:41 +0100
-> Jack Stone <jwjstone@fastmail.fm> wrote:
-> 
->> Hi All,
->>
->> This has cropped up a few times now. The kernel is based on 786f02b from Linus' tree with a couple of networking
->> patches from Eric Dumazet.
-> 
-> Known and fixed. Patches should get pushed in final form Monday
+On Tue, May 22, 2012 at 8:48 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> - Capabilities are localized to the current user namespace making it
+>  safe to give the initial user in a user namespace all capabilities.
 
-Thank you. I will ignore it.
+Today I've tried your patch set, but it looks like a root-user in a
+Linux container is still able to use /proc/sysrq-trigger.
+Am I misunderstanding user namespaces or is there still something missing?
+
+-- 
+Thanks,
+//richard
