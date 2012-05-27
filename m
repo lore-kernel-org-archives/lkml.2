@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab2E0BGX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:06:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab2E0BGT (ORCPT
+	id S1756037Ab2E0BGb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:06:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755571Ab2E0BGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:06:19 -0400
-Message-Id: <20120527010424.914912315@linuxfoundation.org>
+	Sat, 26 May 2012 21:06:25 -0400
+Message-Id: <20120527010425.056003519@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:31 +0900
+Date: Sun, 27 May 2012 10:04:32 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/94] isdn/gigaset: ratelimit CAPI message dumps
+        alan@lxorguk.ukuu.org.uk, Manish Honap <manish_honap_vit@yahoo.co.in>
+Subject: [ 09/94] vfs: make AIO use the proper rw_verify_area() area helpers
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,85 +24,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 8e618aad5348b6e6c5a90e8d97ea643197963b20 upstream.
+commit a70b52ec1aaeaf60f4739edb1b422827cb6f3893 upstream.
 
-Introduce a global ratelimit for CAPI message dumps to protect
-against possible log flood.
-Drop the ratelimit for ignored messages which is now covered by the
-global one.
+We had for some reason overlooked the AIO interface, and it didn't use
+the proper rw_verify_area() helper function that checks (for example)
+mandatory locking on the file, and that the size of the access doesn't
+cause us to overflow the provided offset limits etc.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Instead, AIO did just the security_file_permission() thing (that
+rw_verify_area() also does) directly.
+
+This fixes it to do all the proper helper functions, which not only
+means that now mandatory file locking works with AIO too, we can
+actually remove lines of code.
+
+Reported-by: Manish Honap <manish_honap_vit@yahoo.co.in>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/isdn/gigaset/capi.c |   22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ fs/aio.c |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -14,6 +14,7 @@
- #include "gigaset.h"
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
-+#include <linux/ratelimit.h>
- #include <linux/isdn/capilli.h>
- #include <linux/isdn/capicmd.h>
- #include <linux/isdn/capiutil.h>
-@@ -223,10 +224,14 @@ get_appl(struct gigaset_capi_ctr *iif, u
- static inline void dump_cmsg(enum debuglevel level, const char *tag, _cmsg *p)
- {
- #ifdef CONFIG_GIGASET_DEBUG
-+	/* dump at most 20 messages in 20 secs */
-+	static DEFINE_RATELIMIT_STATE(msg_dump_ratelimit, 20 * HZ, 20);
- 	_cdebbuf *cdb;
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -1477,6 +1477,10 @@ static ssize_t aio_setup_vectored_rw(int
+ 	if (ret < 0)
+ 		goto out;
  
- 	if (!(gigaset_debuglevel & level))
- 		return;
-+	if (!___ratelimit(&msg_dump_ratelimit, tag))
-+		return;
- 
- 	cdb = capi_cmsg2str(p);
- 	if (cdb) {
-@@ -2059,12 +2064,6 @@ static void do_reset_b3_req(struct gigas
++	ret = rw_verify_area(type, kiocb->ki_filp, &kiocb->ki_pos, ret);
++	if (ret < 0)
++		goto out;
++
+ 	kiocb->ki_nr_segs = kiocb->ki_nbytes;
+ 	kiocb->ki_cur_seg = 0;
+ 	/* ki_nbytes/left now reflect bytes instead of segs */
+@@ -1488,11 +1492,17 @@ out:
+ 	return ret;
  }
  
- /*
-- * dump unsupported/ignored messages at most twice per minute,
-- * some apps send those very frequently
-- */
--static unsigned long ignored_msg_dump_time;
--
--/*
-  * unsupported CAPI message handler
-  */
- static void do_unsupported(struct gigaset_capi_ctr *iif,
-@@ -2073,8 +2072,7 @@ static void do_unsupported(struct gigase
+-static ssize_t aio_setup_single_vector(struct kiocb *kiocb)
++static ssize_t aio_setup_single_vector(int type, struct file * file, struct kiocb *kiocb)
  {
- 	/* decode message */
- 	capi_message2cmsg(&iif->acmsg, skb->data);
--	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000))
--		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
-+	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
- 	send_conf(iif, ap, skb, CapiMessageNotSupportedInCurrentState);
- }
- 
-@@ -2085,11 +2083,9 @@ static void do_nothing(struct gigaset_ca
- 		       struct gigaset_capi_appl *ap,
- 		       struct sk_buff *skb)
- {
--	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000)) {
--		/* decode message */
--		capi_message2cmsg(&iif->acmsg, skb->data);
--		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
--	}
-+	/* decode message */
-+	capi_message2cmsg(&iif->acmsg, skb->data);
-+	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
- 	dev_kfree_skb_any(skb);
- }
- 
++	int bytes;
++
++	bytes = rw_verify_area(type, file, &kiocb->ki_pos, kiocb->ki_left);
++	if (bytes < 0)
++		return bytes;
++
+ 	kiocb->ki_iovec = &kiocb->ki_inline_vec;
+ 	kiocb->ki_iovec->iov_base = kiocb->ki_buf;
+-	kiocb->ki_iovec->iov_len = kiocb->ki_left;
++	kiocb->ki_iovec->iov_len = bytes;
+ 	kiocb->ki_nr_segs = 1;
+ 	kiocb->ki_cur_seg = 0;
+ 	return 0;
+@@ -1517,10 +1527,7 @@ static ssize_t aio_setup_iocb(struct kio
+ 		if (unlikely(!access_ok(VERIFY_WRITE, kiocb->ki_buf,
+ 			kiocb->ki_left)))
+ 			break;
+-		ret = security_file_permission(file, MAY_READ);
+-		if (unlikely(ret))
+-			break;
+-		ret = aio_setup_single_vector(kiocb);
++		ret = aio_setup_single_vector(READ, file, kiocb);
+ 		if (ret)
+ 			break;
+ 		ret = -EINVAL;
+@@ -1535,10 +1542,7 @@ static ssize_t aio_setup_iocb(struct kio
+ 		if (unlikely(!access_ok(VERIFY_READ, kiocb->ki_buf,
+ 			kiocb->ki_left)))
+ 			break;
+-		ret = security_file_permission(file, MAY_WRITE);
+-		if (unlikely(ret))
+-			break;
+-		ret = aio_setup_single_vector(kiocb);
++		ret = aio_setup_single_vector(WRITE, file, kiocb);
+ 		if (ret)
+ 			break;
+ 		ret = -EINVAL;
+@@ -1549,9 +1553,6 @@ static ssize_t aio_setup_iocb(struct kio
+ 		ret = -EBADF;
+ 		if (unlikely(!(file->f_mode & FMODE_READ)))
+ 			break;
+-		ret = security_file_permission(file, MAY_READ);
+-		if (unlikely(ret))
+-			break;
+ 		ret = aio_setup_vectored_rw(READ, kiocb, compat);
+ 		if (ret)
+ 			break;
+@@ -1563,9 +1564,6 @@ static ssize_t aio_setup_iocb(struct kio
+ 		ret = -EBADF;
+ 		if (unlikely(!(file->f_mode & FMODE_WRITE)))
+ 			break;
+-		ret = security_file_permission(file, MAY_WRITE);
+-		if (unlikely(ret))
+-			break;
+ 		ret = aio_setup_vectored_rw(WRITE, kiocb, compat);
+ 		if (ret)
+ 			break;
 
 
