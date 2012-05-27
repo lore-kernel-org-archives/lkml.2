@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2E0A6c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:58:32 -0400
+	id S1755185Ab2E0A6j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 20:58:39 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:42162 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754985Ab2E0A63 (ORCPT
+	with ESMTP id S1754411Ab2E0A6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:58:29 -0400
-Message-Id: <20120527002616.733067203@linuxfoundation.org>
+	Sat, 26 May 2012 20:58:34 -0400
+Message-Id: <20120527002616.885608407@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:32 +0900
+Date: Sun, 27 May 2012 09:26:33 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Johnson <johnso87@illinois.edu>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 19/55] ahci: Detect Marvell 88SE9172 SATA controller
+        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>
+Subject: [ 20/55] um: Fix __swp_type()
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Johnson <johnso87@illinois.edu>
+From: Richard Weinberger <richard@nod.at>
 
-commit 642d89252201c4155fc3946bf9cdea409e5d263e upstream.
+commit 2b76ebaa728f8a3967c52aa189261c72fe56a6f1 upstream.
 
-The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
-once it was detected, but was missing an ahci_pci_tbl entry.
+The current __swp_type() function uses a too small bitshift.
+Using more than one swap files causes bad pages because
+the type bits clash with other page flags.
 
-Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
-
-Signed-off-by: Matt Johnson <johnso87@illinois.edu>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Analyzed-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/um/include/asm/pgtable.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -392,6 +392,8 @@ static const struct pci_device_id ahci_p
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
- 	{ PCI_DEVICE(0x1b4b, 0x9125),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
-+	{ PCI_DEVICE(0x1b4b, 0x917a),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(0x1b4b, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
+--- a/arch/um/include/asm/pgtable.h
++++ b/arch/um/include/asm/pgtable.h
+@@ -346,11 +346,11 @@ extern pte_t *virt_to_pte(struct mm_stru
+ #define update_mmu_cache(vma,address,ptep) do ; while (0)
  
+ /* Encode and de-code a swap entry */
+-#define __swp_type(x)			(((x).val >> 4) & 0x3f)
++#define __swp_type(x)			(((x).val >> 5) & 0x1f)
+ #define __swp_offset(x)			((x).val >> 11)
+ 
+ #define __swp_entry(type, offset) \
+-	((swp_entry_t) { ((type) << 4) | ((offset) << 11) })
++	((swp_entry_t) { ((type) << 5) | ((offset) << 11) })
+ #define __pte_to_swp_entry(pte) \
+ 	((swp_entry_t) { pte_val(pte_mkuptodate(pte)) })
+ #define __swp_entry_to_pte(x)		((pte_t) { (x).val })
 
 
