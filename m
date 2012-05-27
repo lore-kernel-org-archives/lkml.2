@@ -1,135 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab2E0UXg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 16:23:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50510 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752369Ab2E0UXc (ORCPT
+	id S1753191Ab2E0U3J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 16:29:09 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46850 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab2E0U3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 16:23:32 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sage Ahn <syahn@gctsemi.com>, Ben Chan <benchan@chromium.org>,
-        Paul Stewart <pstew@chromium.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] [staging/gdm72xx]:  Remove version.h includes
-Date: Mon, 28 May 2012 01:53:22 +0530
-Message-Id: <1338150202-24542-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 27 May 2012 16:29:07 -0400
+Date: Mon, 28 May 2012 01:58:48 +0530
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, mgorman@suse.de,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, dhillf@gmail.com,
+        aarcange@redhat.com, mhocko@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V6 07/14] memcg: Add HugeTLB extension
+Message-ID: <20120527202848.GC7631@skywalker.linux.vnet.ibm.com>
+References: <1334573091-18602-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1334573091-18602-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1205241436180.24113@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205241436180.24113@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12052720-8256-0000-0000-000002B2E3F9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/gdm72xx/gdm_qos.c   |    1 -
- drivers/staging/gdm72xx/gdm_sdio.c  |    1 -
- drivers/staging/gdm72xx/gdm_usb.c   |    1 -
- drivers/staging/gdm72xx/gdm_wimax.c |    1 -
- drivers/staging/gdm72xx/gdm_wimax.h |    1 -
- drivers/staging/gdm72xx/netlink_k.c |    1 -
- drivers/staging/gdm72xx/sdio_boot.c |    1 -
- drivers/staging/gdm72xx/usb_boot.c  |    1 -
- 8 files changed, 8 deletions(-)
+On Thu, May 24, 2012 at 02:52:26PM -0700, David Rientjes wrote:
+> On Mon, 16 Apr 2012, Aneesh Kumar K.V wrote:
+> 
+> > This patch implements a memcg extension that allows us to control HugeTLB
+> > allocations via memory controller. The extension allows to limit the
+> > HugeTLB usage per control group and enforces the controller limit during
+> > page fault. Since HugeTLB doesn't support page reclaim, enforcing the limit
+> > at page fault time implies that, the application will get SIGBUS signal if it
+> > tries to access HugeTLB pages beyond its limit. This requires the application
+> > to know beforehand how much HugeTLB pages it would require for its use.
+> > 
+> > The charge/uncharge calls will be added to HugeTLB code in later patch.
+> > Support for memcg removal will be added in later patches.
+> > 
+> 
+> Again, I disagree with this approach because it's adding the functionality 
+> to memcg when it's unnecessary; it would be a complete legitimate usecase 
+> to want to limit the number of globally available hugepages to a set of 
+> tasks without incurring the per-page tracking from memcg.
+> 
+> This can be implemented as a seperate cgroup and as we move to a single 
+> hierarchy, you lose no functionality if you mount both cgroups from what 
+> is done here.
+> 
+> It would be much cleaner in terms of
+> 
+>  - build: not requiring ifdefs and dependencies on CONFIG_HUGETLB_PAGE, 
+>    which is a prerequisite for this functionality and is not for 
+>    CONFIG_CGROUP_MEM_RES_CTLR,
 
-diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
-index 0217680..e7134e2 100644
---- a/drivers/staging/gdm72xx/gdm_qos.c
-+++ b/drivers/staging/gdm72xx/gdm_qos.c
-@@ -11,7 +11,6 @@
-  * GNU General Public License for more details.
-  */
- 
--#include <linux/version.h>
- #include <linux/etherdevice.h>
- #include <asm/byteorder.h>
- 
-diff --git a/drivers/staging/gdm72xx/gdm_sdio.c b/drivers/staging/gdm72xx/gdm_sdio.c
-index e1a3dd2..5e19b09 100644
---- a/drivers/staging/gdm72xx/gdm_sdio.c
-+++ b/drivers/staging/gdm72xx/gdm_sdio.c
-@@ -14,7 +14,6 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
--#include <linux/version.h>
- 
- #include <linux/mmc/core.h>
- #include <linux/mmc/card.h>
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 1e9dc0d..880f67d 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -12,7 +12,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/kernel.h>
- #include <linux/usb.h>
- #include <asm/byteorder.h>
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index f1936b9..110bdbc 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -11,7 +11,6 @@
-  * GNU General Public License for more details.
-  */
- 
--#include <linux/version.h>
- #include <linux/etherdevice.h>
- #include <asm/byteorder.h>
- #include <linux/ip.h>
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.h b/drivers/staging/gdm72xx/gdm_wimax.h
-index 023e649..6ec0ab4 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.h
-+++ b/drivers/staging/gdm72xx/gdm_wimax.h
-@@ -15,7 +15,6 @@
- #define __GDM_WIMAX_H__
- 
- #include <linux/netdevice.h>
--#include <linux/version.h>
- #include <linux/types.h>
- #include "wm_ioctl.h"
- #if defined(CONFIG_WIMAX_GDM72XX_QOS)
-diff --git a/drivers/staging/gdm72xx/netlink_k.c b/drivers/staging/gdm72xx/netlink_k.c
-index 292af0f..1c74b08 100644
---- a/drivers/staging/gdm72xx/netlink_k.c
-+++ b/drivers/staging/gdm72xx/netlink_k.c
-@@ -11,7 +11,6 @@
-  * GNU General Public License for more details.
-  */
- 
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/etherdevice.h>
- #include <linux/netlink.h>
-diff --git a/drivers/staging/gdm72xx/sdio_boot.c b/drivers/staging/gdm72xx/sdio_boot.c
-index 6ff4dc3..760efee 100644
---- a/drivers/staging/gdm72xx/sdio_boot.c
-+++ b/drivers/staging/gdm72xx/sdio_boot.c
-@@ -12,7 +12,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/mm.h>
-diff --git a/drivers/staging/gdm72xx/usb_boot.c b/drivers/staging/gdm72xx/usb_boot.c
-index 5a0e030..c163bcc 100644
---- a/drivers/staging/gdm72xx/usb_boot.c
-+++ b/drivers/staging/gdm72xx/usb_boot.c
-@@ -13,7 +13,6 @@
- 
- #include <linux/uaccess.h>
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/usb.h>
--- 
-1.7.9.5
+I am not sure we have large number of #ifdef as you have outlined above.
+Most of the hugetlb limit code is well isolated already. If we were to
+split it as a seperate controller, we will be duplicating code related
+cgroup deletion,  migration support etc from memcg, because in case
+of memcg and hugetlb limit they depend on struct page. So I would expect
+we would be end up #ifdef around that code or duplicate them in the
+new controller if we were to do hugetlb limit as a seperate controller.
+
+Another reason for it to be part of memcg is, it is normal to look
+at hugetlb usage also as a memory usage. One of the feedback I got
+for the earlier post is to see if i can enhace the current code to
+make sure memory.usage_in_bytes can also account for hugetlb usage.
+People would also like to look at memory.limit_in_bytes to limit total
+usage. (inclusive of hugetlb).
+
+> 
+>  - code: seperating hugetlb bits out from memcg bits to avoid growing 
+>    mm/memcontrol.c beyond its current 5650 lines, and
+> 
+
+I can definitely look at spliting mm/memcontrol.c 
+
+
+>  - performance: not incurring any overhead of enabling memcg for per-
+>    page tracking that is unnecessary if users only want to limit hugetlb 
+>    pages.
+> 
+
+-aneesh
 
