@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755374Ab2E0A7F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:59:05 -0400
+	id S1755427Ab2E0A7O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 20:59:14 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab2E0A66 (ORCPT
+	with ESMTP id S1755380Ab2E0A7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:58:58 -0400
-Message-Id: <20120527002617.671149586@linuxfoundation.org>
+	Sat, 26 May 2012 20:59:08 -0400
+Message-Id: <20120527002617.191054146@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:38 +0900
+Date: Sun, 27 May 2012 09:26:35 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Stephen Wilson <wilsons@start.ca>, Christoph Lameter <cl@linux.com>
-Subject: [ 25/55] mm: mempolicy: Let vma_merge and vma_split handle
- vma->vm_policy linkages
+        alan@lxorguk.ukuu.org.uk, Kees Cook <keescook@chromium.org>
+Subject: [ 22/55] docs: update HOWTO for 2.6.x -> 3.x versioning
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,130 +24,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mel Gorman <mgorman@suse.de>
+From: Kees Cook <keescook@chromium.org>
 
-commit 05f144a0d5c2207a0349348127f996e104ad7404 upstream.
+commit 591bfc6bf9e5e25e464fd4c87d64afd5135667c4 upstream.
 
-Dave Jones' system call fuzz testing tool "trinity" triggered the
-following bug error with slab debugging enabled
+The HOWTO document needed updating for the new kernel versioning. The
+git URI for -next was updated as well.
 
-    =============================================================================
-    BUG numa_policy (Not tainted): Poison overwritten
-    -----------------------------------------------------------------------------
-
-    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
-    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
-     __slab_alloc+0x3d3/0x445
-     kmem_cache_alloc+0x29d/0x2b0
-     mpol_new+0xa3/0x140
-     sys_mbind+0x142/0x620
-     system_call_fastpath+0x16/0x1b
-    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
-     __slab_free+0x2e/0x1de
-     kmem_cache_free+0x25a/0x260
-     __mpol_put+0x27/0x30
-     remove_vma+0x68/0x90
-     exit_mmap+0x118/0x140
-     mmput+0x73/0x110
-     exit_mm+0x108/0x130
-     do_exit+0x162/0xb90
-     do_group_exit+0x4f/0xc0
-     sys_exit_group+0x17/0x20
-     system_call_fastpath+0x16/0x1b
-    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
-    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
-
-This implied a reference counting bug and the problem happened during
-mbind().
-
-mbind() applies a new memory policy to a range and uses mbind_range() to
-merge existing VMAs or split them as necessary.  In the event of splits,
-mpol_dup() will allocate a new struct mempolicy and maintain existing
-reference counts whose rules are documented in
-Documentation/vm/numa_memory_policy.txt .
-
-The problem occurs with shared memory policies.  The vm_op->set_policy
-increments the reference count if necessary and split_vma() and
-vma_merge() have already handled the existing reference counts.
-However, policy_vma() screws it up by replacing an existing
-vma->vm_policy with one that potentially has the wrong reference count
-leading to a premature free.  This patch removes the damage caused by
-policy_vma().
-
-With this patch applied Dave's trinity tool runs an mbind test for 5
-minutes without error.  /proc/slabinfo reported that there are no
-numa_policy or shared_policy_node objects allocated after the test
-completed and the shared memory region was deleted.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: Dave Jones <davej@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Stephen Wilson <wilsons@start.ca>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   41 +++++++++++++++++------------------------
- 1 file changed, 17 insertions(+), 24 deletions(-)
+ Documentation/HOWTO |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -606,27 +606,6 @@ check_range(struct mm_struct *mm, unsign
- 	return first;
- }
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -218,16 +218,16 @@ The development process
+ Linux kernel development process currently consists of a few different
+ main kernel "branches" and lots of different subsystem-specific kernel
+ branches.  These different branches are:
+-  - main 2.6.x kernel tree
+-  - 2.6.x.y -stable kernel tree
+-  - 2.6.x -git kernel patches
++  - main 3.x kernel tree
++  - 3.x.y -stable kernel tree
++  - 3.x -git kernel patches
+   - subsystem specific kernel trees and patches
+-  - the 2.6.x -next kernel tree for integration tests
++  - the 3.x -next kernel tree for integration tests
  
--/* Apply policy to a single VMA */
--static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
--{
--	int err = 0;
--	struct mempolicy *old = vma->vm_policy;
--
--	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
--		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
--		 vma->vm_ops, vma->vm_file,
--		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
--
--	if (vma->vm_ops && vma->vm_ops->set_policy)
--		err = vma->vm_ops->set_policy(vma, new);
--	if (!err) {
--		mpol_get(new);
--		vma->vm_policy = new;
--		mpol_put(old);
--	}
--	return err;
--}
--
- /* Step 2: apply policy to a range and do splits. */
- static int mbind_range(struct mm_struct *mm, unsigned long start,
- 		       unsigned long end, struct mempolicy *new_pol)
-@@ -666,9 +645,23 @@ static int mbind_range(struct mm_struct
- 			if (err)
- 				goto out;
- 		}
--		err = policy_vma(vma, new_pol);
--		if (err)
--			goto out;
-+
-+		/*
-+		 * Apply policy to a single VMA. The reference counting of
-+		 * policy for vma_policy linkages has already been handled by
-+		 * vma_merge and split_vma as necessary. If this is a shared
-+		 * policy then ->set_policy will increment the reference count
-+		 * for an sp node.
-+		 */
-+		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
-+			vma->vm_start, vma->vm_end, vma->vm_pgoff,
-+			vma->vm_ops, vma->vm_file,
-+			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
-+		if (vma->vm_ops && vma->vm_ops->set_policy) {
-+			err = vma->vm_ops->set_policy(vma, new_pol);
-+			if (err)
-+				goto out;
-+		}
- 	}
+-2.6.x kernel tree
++3.x kernel tree
+ -----------------
+-2.6.x kernels are maintained by Linus Torvalds, and can be found on
+-kernel.org in the pub/linux/kernel/v2.6/ directory.  Its development
++3.x kernels are maintained by Linus Torvalds, and can be found on
++kernel.org in the pub/linux/kernel/v3.x/ directory.  Its development
+ process is as follows:
+   - As soon as a new kernel is released a two weeks window is open,
+     during this period of time maintainers can submit big diffs to
+@@ -262,20 +262,20 @@ mailing list about kernel releases:
+ 	released according to perceived bug status, not according to a
+ 	preconceived timeline."
  
-  out:
+-2.6.x.y -stable kernel tree
++3.x.y -stable kernel tree
+ ---------------------------
+-Kernels with 4-part versions are -stable kernels. They contain
++Kernels with 3-part versions are -stable kernels. They contain
+ relatively small and critical fixes for security problems or significant
+-regressions discovered in a given 2.6.x kernel.
++regressions discovered in a given 3.x kernel.
+ 
+ This is the recommended branch for users who want the most recent stable
+ kernel and are not interested in helping test development/experimental
+ versions.
+ 
+-If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
++If no 3.x.y kernel is available, then the highest numbered 3.x
+ kernel is the current stable kernel.
+ 
+-2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
++3.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
+ are released as needs dictate.  The normal release period is approximately
+ two weeks, but it can be longer if there are no pressing problems.  A
+ security-related problem, instead, can cause a release to happen almost
+@@ -285,7 +285,7 @@ The file Documentation/stable_kernel_rul
+ documents what kinds of changes are acceptable for the -stable tree, and
+ how the release process works.
+ 
+-2.6.x -git patches
++3.x -git patches
+ ------------------
+ These are daily snapshots of Linus' kernel tree which are managed in a
+ git repository (hence the name.) These patches are usually released
+@@ -317,13 +317,13 @@ revisions to it, and maintainers can mar
+ accepted, or rejected.  Most of these patchwork sites are listed at
+ http://patchwork.kernel.org/.
+ 
+-2.6.x -next kernel tree for integration tests
++3.x -next kernel tree for integration tests
+ ---------------------------------------------
+-Before updates from subsystem trees are merged into the mainline 2.6.x
++Before updates from subsystem trees are merged into the mainline 3.x
+ tree, they need to be integration-tested.  For this purpose, a special
+ testing repository exists into which virtually all subsystem trees are
+ pulled on an almost daily basis:
+-	http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git
++	http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git
+ 	http://linux.f-seidel.de/linux-next/pmwiki/
+ 
+ This way, the -next kernel gives a summary outlook onto what will be
 
 
