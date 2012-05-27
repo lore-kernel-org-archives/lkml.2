@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2E0BEk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:04:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735Ab2E0BAG (ORCPT
+	id S932310Ab2E0BFU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:05:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab2E0A7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:00:06 -0400
-Message-Id: <20120527002618.869742917@linuxfoundation.org>
+	Sat, 26 May 2012 20:59:46 -0400
+Message-Id: <20120527002619.163601834@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:46 +0900
+Date: Sun, 27 May 2012 09:26:48 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Scott Teel <scott.teel@hp.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Jonathan Nieder <jrnieder@gmail.com>
-Subject: [ 33/55] SCSI: hpsa: Fix problem with MSA2xxx devices
+        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oncaphillis <oncaphillis@snafu.de>
+Subject: [ 35/55] USB: Remove races in devio.c
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,76 +26,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Huajun Li <huajun.li.lee@gmail.com>
 
-commit 9bc3711cbb67ac620bf09b4a147cbab45b2c36c0 upstream.
+commit 4e09dcf20f7b5358615514c2ec8584b248ab8874 upstream.
 
-Upgraded firmware on Smart Array P7xx (and some others) made them show up as
-SCSI revision 5 devices and this caused the driver to fail to map MSA2xxx
-logical drives to the correct bus/target/lun.  A symptom of this would be that
-the target ID of the logical drives as presented by the external storage array
-is ignored, and all such logical drives are assigned to target zero,
-differentiated only by LUN.  Some multipath software reportedly does not deal
-well with this behavior, failing to recognize different paths to the same
-device as such.
+There exist races in devio.c, below is one case,
+and there are similar races in destroy_async()
+and proc_unlinkurb().  Remove these races.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Scott Teel <scott.teel@hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>
+ cancel_bulk_urbs()        async_completed()
+-------------------                -----------------------
+ spin_unlock(&ps->lock);
+
+                           list_move_tail(&as->asynclist,
+		                    &ps->async_completed);
+
+                           wake_up(&ps->wait);
+
+                           Lead to free_async() be triggered,
+                           then urb and 'as' will be freed.
+
+ usb_unlink_urb(as->urb);
+ ===> refer to the freed 'as'
+
+Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oncaphillis <oncaphillis@snafu.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/hpsa.c |   34 +++++++++++++++-------------------
- 1 file changed, 15 insertions(+), 19 deletions(-)
+ drivers/usb/core/devio.c |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1654,30 +1654,26 @@ static void figure_bus_target_lun(struct
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -292,17 +292,14 @@ static struct async *async_getcompleted(
+ static struct async *async_getpending(struct dev_state *ps,
+ 					     void __user *userurb)
+ {
+-	unsigned long flags;
+ 	struct async *as;
  
- 	if (is_logical_dev_addr_mode(lunaddrbytes)) {
- 		/* logical device */
--		if (unlikely(is_scsi_rev_5(h))) {
--			/* p1210m, logical drives lun assignments
--			 * match SCSI REPORT LUNS data.
-+		lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
-+		if (is_msa2xxx(h, device)) {
-+			/* msa2xxx way, put logicals on bus 1
-+			 * and match target/lun numbers box
-+			 * reports.
- 			 */
--			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
--			*bus = 0;
--			*target = 0;
--			*lun = (lunid & 0x3fff) + 1;
-+			*bus = 1;
-+			*target = (lunid >> 16) & 0x3fff;
-+			*lun = lunid & 0x00ff;
- 		} else {
--			/* not p1210m... */
--			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
--			if (is_msa2xxx(h, device)) {
--				/* msa2xxx way, put logicals on bus 1
--				 * and match target/lun numbers box
--				 * reports.
--				 */
--				*bus = 1;
--				*target = (lunid >> 16) & 0x3fff;
--				*lun = lunid & 0x00ff;
-+			if (likely(is_scsi_rev_5(h))) {
-+				/* All current smart arrays (circa 2011) */
-+				*bus = 0;
-+				*target = 0;
-+				*lun = (lunid & 0x3fff) + 1;
- 			} else {
--				/* Traditional smart array way. */
-+				/* Traditional old smart array way. */
- 				*bus = 0;
--				*lun = 0;
- 				*target = lunid & 0x3fff;
-+				*lun = 0;
- 			}
+-	spin_lock_irqsave(&ps->lock, flags);
+ 	list_for_each_entry(as, &ps->async_pending, asynclist)
+ 		if (as->userurb == userurb) {
+ 			list_del_init(&as->asynclist);
+-			spin_unlock_irqrestore(&ps->lock, flags);
+ 			return as;
  		}
- 	} else {
+-	spin_unlock_irqrestore(&ps->lock, flags);
++
+ 	return NULL;
+ }
+ 
+@@ -357,6 +354,7 @@ static void cancel_bulk_urbs(struct dev_
+ __releases(ps->lock)
+ __acquires(ps->lock)
+ {
++	struct urb *urb;
+ 	struct async *as;
+ 
+ 	/* Mark all the pending URBs that match bulk_addr, up to but not
+@@ -379,8 +377,11 @@ __acquires(ps->lock)
+ 	list_for_each_entry(as, &ps->async_pending, asynclist) {
+ 		if (as->bulk_status == AS_UNLINK) {
+ 			as->bulk_status = 0;		/* Only once */
++			urb = as->urb;
++			usb_get_urb(urb);
+ 			spin_unlock(&ps->lock);		/* Allow completions */
+-			usb_unlink_urb(as->urb);
++			usb_unlink_urb(urb);
++			usb_put_urb(urb);
+ 			spin_lock(&ps->lock);
+ 			goto rescan;
+ 		}
+@@ -433,6 +434,7 @@ static void async_completed(struct urb *
+ 
+ static void destroy_async(struct dev_state *ps, struct list_head *list)
+ {
++	struct urb *urb;
+ 	struct async *as;
+ 	unsigned long flags;
+ 
+@@ -440,10 +442,13 @@ static void destroy_async(struct dev_sta
+ 	while (!list_empty(list)) {
+ 		as = list_entry(list->next, struct async, asynclist);
+ 		list_del_init(&as->asynclist);
++		urb = as->urb;
++		usb_get_urb(urb);
+ 
+ 		/* drop the spinlock so the completion handler can run */
+ 		spin_unlock_irqrestore(&ps->lock, flags);
+-		usb_kill_urb(as->urb);
++		usb_kill_urb(urb);
++		usb_put_urb(urb);
+ 		spin_lock_irqsave(&ps->lock, flags);
+ 	}
+ 	spin_unlock_irqrestore(&ps->lock, flags);
+@@ -1352,12 +1357,24 @@ static int proc_submiturb(struct dev_sta
+ 
+ static int proc_unlinkurb(struct dev_state *ps, void __user *arg)
+ {
++	struct urb *urb;
+ 	struct async *as;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&ps->lock, flags);
+ 	as = async_getpending(ps, arg);
+-	if (!as)
++	if (!as) {
++		spin_unlock_irqrestore(&ps->lock, flags);
+ 		return -EINVAL;
+-	usb_kill_urb(as->urb);
++	}
++
++	urb = as->urb;
++	usb_get_urb(urb);
++	spin_unlock_irqrestore(&ps->lock, flags);
++
++	usb_kill_urb(urb);
++	usb_put_urb(urb);
++
+ 	return 0;
+ }
+ 
 
 
