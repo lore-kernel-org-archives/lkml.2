@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab2E0BOQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:14:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	id S965548Ab2E0BOY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:14:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933830Ab2E0BOI (ORCPT
+	with ESMTP id S1756472Ab2E0BOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:14:08 -0400
-Message-Id: <20120527002508.211003301@linuxfoundation.org>
+	Sat, 26 May 2012 21:14:18 -0400
+Message-Id: <20120527002508.656364551@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:12 +0900
+Date: Sun, 27 May 2012 09:25:14 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        alan@lxorguk.ukuu.org.uk, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Youngsin Lee <youngsin@qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>,
+        Vipin Mehta <vipimeht@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <mcgrof@frijolero.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 06/91] iwlwifi: use correct released ucode version
+Subject: [ 08/91] cfg80211: warn if db.txt is empty with CONFIG_CFG80211_INTERNAL_REGDB
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,33 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
 
-commit e377a4fc768d7d477e58888bdbddd0103d6238bf upstream.
+commit 80007efeff0568375b08faf93c7aad65602cb97e upstream.
 
-Report correctly the latest released version
-of the iwlwifi firmware for all
-iwlwifi-supported devices.
+It has happened twice now where elaborate troubleshooting has
+undergone on systems where CONFIG_CFG80211_INTERNAL_REGDB [0]
+has been set but yet net/wireless/db.txt was not updated.
 
-Signed-off-by: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Despite the documentation on this it seems system integrators could
+use some more help with this, so throw out a kernel warning at boot time
+when their database is empty.
+
+This does mean that the error-prone system integrator won't likely
+realize the issue until they boot the machine but -- it does not seem
+to make sense to enable a build bug breaking random build testing.
+
+[0] http://wireless.kernel.org/en/developers/Regulatory/CRDA#CONFIG_CFG80211_INTERNAL_REGDB
+
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Youngsin Lee <youngsin@qualcomm.com>
+Cc: Raja Mani <rmani@qca.qualcomm.com>
+Cc: Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>
+Cc: Vipin Mehta <vipimeht@qca.qualcomm.com>
+Cc: yahuan@qca.qualcomm.com
+Cc: jjan@qca.qualcomm.com
+Cc: vthiagar@qca.qualcomm.com
+Cc: henrykim@qualcomm.com
+Cc: jouni@qca.qualcomm.com
+Cc: athiruve@qca.qualcomm.com
+Cc: cjkim@qualcomm.com
+Cc: philipk@qca.qualcomm.com
+Cc: sunnykim@qualcomm.com
+Cc: sskwak@qualcomm.com
+Cc: kkim@qualcomm.com
+Cc: mattbyun@qualcomm.com
+Cc: ryanlee@qualcomm.com
+Cc: simbap@qualcomm.com
+Cc: krislee@qualcomm.com
+Cc: conner@qualcomm.com
+Cc: hojinkim@qualcomm.com
+Cc: honglee@qualcomm.com
+Cc: johnwkim@qualcomm.com
+Cc: jinyong@qca.qualcomm.com
+Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-6000.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/wireless/reg.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/drivers/net/wireless/iwlwifi/iwl-6000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-6000.c
-@@ -336,7 +336,7 @@ static const struct iwl_bt_params iwl600
- #define IWL_DEVICE_6005						\
- 	.fw_name_pre = IWL6005_FW_PRE,				\
- 	.ucode_api_max = IWL6000G2_UCODE_API_MAX,		\
--	.ucode_api_ok = IWL6000G2_UCODE_API_OK,			\
-+	.ucode_api_ok = IWL6000G2B_UCODE_API_OK,		\
- 	.ucode_api_min = IWL6000G2_UCODE_API_MIN,		\
- 	.max_inst_size = IWL60_RTC_INST_SIZE,			\
- 	.max_data_size = IWL60_RTC_DATA_SIZE,			\
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -388,7 +388,15 @@ static void reg_regdb_query(const char *
+ 
+ 	schedule_work(&reg_regdb_work);
+ }
++
++/* Feel free to add any other sanity checks here */
++static void reg_regdb_size_check(void)
++{
++	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
++	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
++}
+ #else
++static inline void reg_regdb_size_check(void) {}
+ static inline void reg_regdb_query(const char *alpha2) {}
+ #endif /* CONFIG_CFG80211_INTERNAL_REGDB */
+ 
+@@ -2322,6 +2330,8 @@ int __init regulatory_init(void)
+ 	spin_lock_init(&reg_requests_lock);
+ 	spin_lock_init(&reg_pending_beacons_lock);
+ 
++	reg_regdb_size_check();
++
+ 	cfg80211_regdomain = cfg80211_world_regdom;
+ 
+ 	user_alpha2[0] = '9';
 
 
