@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752797Ab2E0Pyt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 11:54:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51288 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab2E0Pyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 11:54:45 -0400
-Message-ID: <4FC24E34.3000406@redhat.com>
-Date: Sun, 27 May 2012 12:54:28 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+	id S1752834Ab2E0QDq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 12:03:46 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57333 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab2E0QDW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 12:03:22 -0400
+Message-ID: <4FC25048.109@wwwdotorg.org>
+Date: Sun, 27 May 2012 10:03:20 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL for v3.5-rc1] media updates for v3.5
-References: <4FBE5518.5090705@redhat.com> <CA+55aFyt2OFOsr5uCpQ6nrur4zhHhmWUJrvMgLH_Wy1niTbC6w@mail.gmail.com> <4FBEB72D.4040905@redhat.com> <CA+55aFyYQkrtgvG99ZOOhAzoKi8w5rJfRgZQy3Dqs39p1n=FPA@mail.gmail.com> <4FBF773B.10408@redhat.com> <20120526003856.7e4efd77@stein> <4FC23E73.3080901@redhat.com>
-In-Reply-To: <4FC23E73.3080901@redhat.com>
-X-Enigmail-Version: 1.4.1
+To: Jonathan Cameron <jic23@kernel.org>, Russell King <rmk@arm.linux.org.uk>
+CC: kay.sievers@vrfy.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: arm: Remaining issue with alignment of __log_buf in printk.c
+References: <4FC22098.3070803@kernel.org>
+In-Reply-To: <4FC22098.3070803@kernel.org>
+X-Enigmail-Version: 1.5pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-05-2012 11:47, Mauro Carvalho Chehab escreveu:
-> Em 25-05-2012 19:38, Stefan Richter escreveu:
->> On May 25 Mauro Carvalho Chehab wrote:
->>> A simple way to solve it seems to make those options dependent on CONFIG_EXPERT.
->>>
->>> Not sure if all usual distributions disable it, but I guess most won't have
->>> EXPERT enabled.
->>>
->>> The enclosed patch does that. If nobody complains, I'll submit it together
->>> with the next git pull request.
->>
->> I only want dvb-core and firedtv.  But when I switch off
->> CONFIG_MEDIA_TUNER_CUSTOMISE, suddenly also
->>
->>   CC [M]  drivers/media/common/tuners/tuner-xc2028.o
->>   CC [M]  drivers/media/common/tuners/tuner-simple.o
->>   CC [M]  drivers/media/common/tuners/tuner-types.o
->>   CC [M]  drivers/media/common/tuners/mt20xx.o
->>   CC [M]  drivers/media/common/tuners/tda8290.o
->>   CC [M]  drivers/media/common/tuners/tea5767.o
->>   CC [M]  drivers/media/common/tuners/tea5761.o
->>   CC [M]  drivers/media/common/tuners/tda9887.o
->>   CC [M]  drivers/media/common/tuners/tda827x.o
->>   CC [M]  drivers/media/common/tuners/tda18271-maps.o
->>   CC [M]  drivers/media/common/tuners/tda18271-common.o
->>   CC [M]  drivers/media/common/tuners/tda18271-fe.o
->>   CC [M]  drivers/media/common/tuners/xc5000.o
->>   CC [M]  drivers/media/common/tuners/xc4000.o
->>   CC [M]  drivers/media/common/tuners/mc44s803.o
->>   LD [M]  drivers/media/common/tuners/tda18271.o
->>
->> are built.  Why is that?
+On 05/27/2012 06:39 AM, Jonathan Cameron wrote:
+> Hi All,
 > 
-> Those are the tuners supported by the tuner_core logic. The tuner_core module
-> is required by all TV drivers that have analog support.
+> My stargate 2 board refused to start and after bisection I ended
+> up at the same patch that Stephen found an alignment issue in.
+> Unfortunately Stephen's patch doesn't seem to have fixed the
+> issue for me.
+> https://lkml.org/lkml/2012/5/10/510 is the thread.  Patch from
+> Stephen is : f8450fca6ecdea38b5a882fdf6cd097e3ec8651c
 > 
-> After the tuner rework to allow a driver under drivers/media/dvb to use the
-> same tuner module as the ../v4l modules, there are now pure dvb drivers that
-> don't use tune_core.
+> Increasing the alignement for 32 bit systems to 8 seems to do the
+> job but I can't immediately think why...
 > 
-> So, it makes sense to add a new config for tuner_core that will be
-> selected only for devices with analog TV support.
+> System is a pxa27x strong arm.
 
-The correct fix for it seems to change the Kconfig menu to be like:
+The first element in the structure type that's actually stored in the
+__log_buf array is a u64; see struct log in kernel/printk.c. Depending
+on alignment rules, a u64 and a struct containing it might require a
+4-byte or 8-byte alignment. The following link implies this might have
+changed over time:
 
-<m> Multimedia support  --->
-   [ ]   Webcams and video grabbers support
-   [ ]   Analog TV API and drivers support
-   [ ]   Digital TV support
-   [ ]   AM/FM radio receivers/transmitters support
-   [ ]   Remote Controller support
+http://wiki.debian.org/ArmEabiPort#Struct_packing_and_alignment
 
-and only select the tuner-core drivers if analog TV is selected.
+(see "64-bit data type alignment" a little below that anchor). I'm not
+sure what ABI the kernel expects to use internally, or your compiler;
+perhaps you need the new EABI 8-byte alignment requirement for a u64 and
+hence the struct as a whole, but Tegra (or my toolchain?) is OK with the
+older 4-byte alignment for a u64 or struct?
 
-I'll write some RFC patches for it for 3.6, posting them at linux-media.
+Further, I'm not sure if the following alignment selection logic:
 
-Regards,
-Mauro
+> #if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+> #define LOG_ALIGN 4
+> #else
+> #define LOG_ALIGN 8
+> #endif
+
+... uses the CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS for its intended
+purpose?
+
+Russell, can you please comment here. Thanks.
