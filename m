@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751610Ab2E0LGS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 07:06:18 -0400
-Received: from mail19h.g19.rapidsite.net ([204.202.242.57]:34788 "EHLO
-	mail19h.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab2E0LGR (ORCPT
+	id S1751876Ab2E0LMi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 07:12:38 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:53035 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751034Ab2E0LMh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 07:06:17 -0400
-thread-index: Ac07+LvamCO3iPTjRYehy+GvtRpkig==
-Thread-Topic: The truth about " autopilot income "... Recommends Advanced Sports to you
-From: <bongo@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: The truth about " autopilot income "... Recommends Advanced Sports to you
-Date: Sun, 27 May 2012 07:06:15 -0400
-Message-ID: <9561BC9F990C41D8994F025158FC396B@g19.win.smewh.net>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sun, 27 May 2012 07:12:37 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX183mUc2nnA3+UbZ4cz/Vg4cJxcrybdAE8KtwFbGJ8
+	lsSVhn6LBHzPDb
+Message-ID: <1338117152.27146.24.camel@marge.simpson.net>
+Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Date: Sun, 27 May 2012 13:12:32 +0200
+In-Reply-To: <1338110259.7678.77.camel@marge.simpson.net>
+References: <1337857490.7300.19.camel@marge.simpson.net>
+	 <1337865431.9783.148.camel@laptop> <1337865641.9783.149.camel@laptop>
+	 <1337926468.5415.48.camel@marge.simpson.net>
+	 <1338014259.7302.26.camel@marge.simpson.net>
+	 <1338017364.14636.9.camel@twins>
+	 <1338020834.7747.8.camel@marge.simpson.net>
+	 <1338110259.7678.77.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft CDO for Windows 2000
-Content-Class: urn:content-classes:message
-Importance: normal
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
-X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052702)]
-X-MAIL-FROM: <bongo@gmail.com>
-X-SOURCE-IP: [199.239.254.58]
-X-SF-Loop: 1
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From         :The truth about " autopilot income "...
-Email        :bongo@gmail.com
-Friend Name  :Friend
-Friend Email :linux-kernel@vger.kernel.org
-comment      :
+On Sun, 2012-05-27 at 11:17 +0200, Mike Galbraith wrote: 
+> On Sat, 2012-05-26 at 10:27 +0200, Mike Galbraith wrote: 
+> > Hohum, back to finding out what happened to cpufreq.
+> 
+> Answer: nothing.. in mainline.
 
-Hi Friend,
+Aha.
 
-"DISCOVER HOW YOU CAN EASILY MAKE OVER $4000/WEEK ONLINE WITHOUT SELLING, 
-ADVERTISING, REFERRING OR OWNING A WEBSITE"
+http://lkml.indiana.edu/hypermail/linux/kernel/1010.0/00658.html
 
-http://www.marketsforexsignals.com/?code=4fb2f0c23f2e9 
-
-* No selling products - in any way shape or form
-
-* No advertising
-
-* No data entry
-
-* No Adsense
-
-* No mailing lists
-
-* No rebate processing
-
-* No recruiting new members - this is not MLM
-
-* No uplines or downlines
-
-* No gambling
-
-* No chain letters
-
-* No surveys or "paid to read" programs 
-
-Feel FREE To Check This Out Here:)
-
-http://www.marketsforexsignals.com/?code=4fb2f0c23f2e9 
-
-God Bless Us,
-
-Christian Bongo
-
-
-
-
+-Mike
 
