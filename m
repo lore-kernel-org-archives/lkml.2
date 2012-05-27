@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945909Ab2E0BSx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:18:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35469 "EHLO
+	id S1945925Ab2E0BS5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:18:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934127Ab2E0BSo (ORCPT
+	with ESMTP id S934144Ab2E0BSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:18:44 -0400
-Message-Id: <20120527002520.229734129@linuxfoundation.org>
+	Sat, 26 May 2012 21:18:49 -0400
+Message-Id: <20120527002520.466397889@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:07 +0900
+Date: Sun, 27 May 2012 09:26:08 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Sergio Correia <lists@uece.net>
-Subject: [ 61/91] xhci: Add new short TX quirk for Fresco Logic host.
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 62/91] USB: fix resource leak in xhci power loss path
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,123 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 1530bbc6272d9da1e39ef8e06190d42c13a02733 upstream.
+commit f8a9e72d125f4e00ec529ba67b674321a1f3bf31 upstream.
 
-Sergio reported that when he recorded audio from a USB headset mic
-plugged into the USB 3.0 port on his ASUS N53SV-DH72, the audio sounded
-"robotic".  When plugged into the USB 2.0 port under EHCI on the same
-laptop, the audio sounded fine.  The device is:
+Some more data structures must be freed and counters
+reset if an XHCI controller has lost power. The failure
+to do so renders some chips inoperative after a certain number
+of S4 cycles.
 
-Bus 002 Device 004: ID 046d:0a0c Logitech, Inc. Clear Chat Comfort USB Headset
+This patch should be backported to kernels as old as 3.2,
+that contain the commits c29eea621900f18287d50519f72cb9113746d75a
+"xhci: Implement HS/FS/LS bandwidth checking." and
+commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe
+"xhci: Implement HS/FS/LS bandwidth checking."
 
-The problem was tracked down to the Fresco Logic xHCI host controller
-not correctly reporting short transfers on isochronous IN endpoints.
-The driver would submit a 96 byte transfer, the device would only send
-88 or 90 bytes, and the xHCI host would report the transfer had a
-"successful" completion code, with an untransferred buffer length of 8
-or 6 bytes.
-
-The successful completion code and non-zero untransferred length is a
-contradiction.  The xHCI host is supposed to only mark a transfer as
-successful if all the bytes are transferred.  Otherwise, the transfer
-should be marked with a short packet completion code.  Without the EHCI
-bus trace, we wouldn't know whether the xHCI driver should trust the
-completion code or the untransferred length.  With it, we know to trust
-the untransferred length.
-
-Add a new xHCI quirk for the Fresco Logic host controller.  If a
-transfer is reported as successful, but the untransferred length is
-non-zero, print a warning.  For the Fresco Logic host, change the
-completion code to COMP_SHORT_TX and process the transfer like a short
-transfer.
-
-This should be backported to stable kernels that contain the commit
-f5182b4155b9d686c5540a6822486400e34ddd98 "xhci: Disable MSI for some
-Fresco Logic hosts."  That commit was marked for stable kernels as old
-as 2.6.36.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Sergio Correia <lists@uece.net>
-Tested-by: Sergio Correia <lists@uece.net>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c  |    1 +
- drivers/usb/host/xhci-ring.c |   20 +++++++++++++++++---
- drivers/usb/host/xhci.h      |    1 +
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci-mem.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -72,6 +72,7 @@ static void xhci_pci_quirks(struct devic
- 		xhci_dbg(xhci, "QUIRK: Fresco Logic revision %u "
- 				"has broken MSI implementation\n",
- 				pdev->revision);
-+		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1791,6 +1791,14 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ {
+ 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
+ 	struct dev_info	*dev_info, *next;
++	struct list_head *tt_list_head;
++	struct list_head *tt;
++	struct list_head *endpoints;
++	struct list_head *ep, *q;
++	struct xhci_tt_bw_info *tt_info;
++	struct xhci_interval_bw_table *bwt;
++	struct xhci_virt_ep *virt_ep;
++
+ 	unsigned long	flags;
+ 	int size;
+ 	int i;
+@@ -1850,8 +1858,26 @@ void xhci_mem_cleanup(struct xhci_hcd *x
  	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
  
- 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1787,8 +1787,12 @@ static int process_isoc_td(struct xhci_h
- 	/* handle completion code */
- 	switch (trb_comp_code) {
- 	case COMP_SUCCESS:
--		frame->status = 0;
--		break;
-+		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0) {
-+			frame->status = 0;
-+			break;
++	bwt = &xhci->rh_bw->bw_table;
++	for (i = 0; i < XHCI_MAX_INTERVAL; i++) {
++		endpoints = &bwt->interval_bw[i].endpoints;
++		list_for_each_safe(ep, q, endpoints) {
++			virt_ep = list_entry(ep, struct xhci_virt_ep, bw_endpoint_list);
++			list_del(&virt_ep->bw_endpoint_list);
++			kfree(virt_ep);
 +		}
-+		if ((xhci->quirks & XHCI_TRUST_TX_LENGTH))
-+			trb_comp_code = COMP_SHORT_TX;
- 	case COMP_SHORT_TX:
- 		frame->status = td->urb->transfer_flags & URB_SHORT_NOT_OK ?
- 				-EREMOTEIO : 0;
-@@ -1885,13 +1889,16 @@ static int process_bulk_intr_td(struct x
- 	switch (trb_comp_code) {
- 	case COMP_SUCCESS:
- 		/* Double check that the HW transferred everything. */
--		if (event_trb != td->last_trb) {
-+		if (event_trb != td->last_trb ||
-+				TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {
- 			xhci_warn(xhci, "WARN Successful completion "
- 					"on short TX\n");
- 			if (td->urb->transfer_flags & URB_SHORT_NOT_OK)
- 				*status = -EREMOTEIO;
- 			else
- 				*status = 0;
-+			if ((xhci->quirks & XHCI_TRUST_TX_LENGTH))
-+				trb_comp_code = COMP_SHORT_TX;
- 		} else {
- 			*status = 0;
- 		}
-@@ -2050,6 +2057,13 @@ static int handle_tx_event(struct xhci_h
- 	 * transfer type
- 	 */
- 	case COMP_SUCCESS:
-+		if (TRB_LEN(le32_to_cpu(event->transfer_len)) == 0)
-+			break;
-+		if (xhci->quirks & XHCI_TRUST_TX_LENGTH)
-+			trb_comp_code = COMP_SHORT_TX;
-+		else
-+			xhci_warn(xhci, "WARN Successful completion on short TX: "
-+					"needs XHCI_TRUST_TX_LENGTH quirk?\n");
- 	case COMP_SHORT_TX:
- 		break;
- 	case COMP_STOP:
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1481,6 +1481,7 @@ struct xhci_hcd {
- #define XHCI_RESET_ON_RESUME	(1 << 7)
- #define	XHCI_SW_BW_CHECKING	(1 << 8)
- #define XHCI_AMD_0x96_HOST	(1 << 9)
-+#define XHCI_TRUST_TX_LENGTH	(1 << 10)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
++	}
++
++	tt_list_head = &xhci->rh_bw->tts;
++	list_for_each_safe(tt, q, tt_list_head) {
++		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
++		list_del(tt);
++		kfree(tt_info);
++	}
++
+ 	xhci->num_usb2_ports = 0;
+ 	xhci->num_usb3_ports = 0;
++	xhci->num_active_eps = 0;
+ 	kfree(xhci->usb2_ports);
+ 	kfree(xhci->usb3_ports);
+ 	kfree(xhci->port_array);
 
 
