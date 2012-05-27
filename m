@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab2E0QDq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 12:03:46 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57333 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab2E0QDW (ORCPT
+	id S1752896Ab2E0QDt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 12:03:49 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:39930 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752740Ab2E0QD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 12:03:22 -0400
-Message-ID: <4FC25048.109@wwwdotorg.org>
-Date: Sun, 27 May 2012 10:03:20 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 27 May 2012 12:03:27 -0400
+Date: Sun, 27 May 2012 12:03:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Michal Nazarewicz <mina86@mina86.com>
+cc: Felipe Balbi <balbi@ti.com>, <panto@antoniou-consulting.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: f_mass_storage: change default value of
+ the removable parameter
+In-Reply-To: <9f033e3d3b2bcbdbf02253de540174479c0dd945.1338074060.git.mina86@mina86.com>
+Message-ID: <Pine.LNX.4.44L0.1205271201460.14937-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>, Russell King <rmk@arm.linux.org.uk>
-CC: kay.sievers@vrfy.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: arm: Remaining issue with alignment of __log_buf in printk.c
-References: <4FC22098.3070803@kernel.org>
-In-Reply-To: <4FC22098.3070803@kernel.org>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2012 06:39 AM, Jonathan Cameron wrote:
-> Hi All,
+On Sat, 26 May 2012, Michal Nazarewicz wrote:
+
+> This commit changes the default value of the removable module parameter
+> from “y” to “n”.  This comes with line with file_storag's default and
+> seems to be a better default.
 > 
-> My stargate 2 board refused to start and after bisection I ended
-> up at the same patch that Stephen found an alignment issue in.
-> Unfortunately Stephen's patch doesn't seem to have fixed the
-> issue for me.
-> https://lkml.org/lkml/2012/5/10/510 is the thread.  Patch from
-> Stephen is : f8450fca6ecdea38b5a882fdf6cd097e3ec8651c
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+> ---
+>  drivers/usb/gadget/f_mass_storage.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> Increasing the alignement for 32 bit systems to 8 seems to do the
-> job but I can't immediately think why...
-> 
-> System is a pxa27x strong arm.
+> Alternatively I can add a warning about the default being changed and
+> schedule the change for the future.  Dunno if it's worth it.
 
-The first element in the structure type that's actually stored in the
-__log_buf array is a u64; see struct log in kernel/printk.c. Depending
-on alignment rules, a u64 and a struct containing it might require a
-4-byte or 8-byte alignment. The following link implies this might have
-changed over time:
+I think this patch is good as it stands.
 
-http://wiki.debian.org/ArmEabiPort#Struct_packing_and_alignment
+Would you like to write a gadget-mass-storage.txt file for 
+Documentation/usb?  Putting all the instructions for using the 
+mass-storage gadget in a recognized place would help people to find it.
 
-(see "64-bit data type alignment" a little below that anchor). I'm not
-sure what ABI the kernel expects to use internally, or your compiler;
-perhaps you need the new EABI 8-byte alignment requirement for a u64 and
-hence the struct as a whole, but Tegra (or my toolchain?) is OK with the
-older 4-byte alignment for a u64 or struct?
+Alan Stern
 
-Further, I'm not sure if the following alignment selection logic:
-
-> #if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-> #define LOG_ALIGN 4
-> #else
-> #define LOG_ALIGN 8
-> #endif
-
-... uses the CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS for its intended
-purpose?
-
-Russell, can you please comment here. Thanks.
