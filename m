@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab2E0J74 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 05:59:56 -0400
-Received: from nm32-vm6.bullet.mail.sg3.yahoo.com ([106.10.151.213]:21790 "HELO
-	nm32-vm6.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751315Ab2E0J7z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 05:59:55 -0400
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 May 2012 05:59:55 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 569987.79059.bm@omp1016.mail.sg3.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=fbWrtFQ1rzzChFcV25haXXK5zN1kZxyxagxNAgmhJkJllb7STA7nFc3pGcB4ZYpZuh/rlkF0ChyArM3qtrGQQLX4O16NsX5FY7sPClnXz3cK3d1jWMkDrHPRLWa3BK5v4k6VI4BfHoZ8zY+F5xgW8yy4xkc8kGIVA6LLAQHfjpw=;
-X-YMail-OSG: Q4m_fgkVM1lFAXqcSMh7HIfG1yWeW6P9ASxcPAY9Ch0IUnf
- QLbj6IPrpMykzz3yBnX9WIJ3MBbiQqV.YjDcQ1.MSZJKW0sBTpoIWB5d88pm
- FeDJd9wkrCkbSHnpTjUV1fkIEXnTQmGKC.4XGtoXSmmHCcyLr.2Zwikbv.J6
- W3jp.9iTCpEjuBB_2ERF7xDLjySuF_BktRbZE5R9CDypktsxdSsWOC2SW6Pq
- 0Q24RlLaGswWxboNRFhgFTMNvCfAYgk6C9YMSZjoQLwsJ3rTt033Dibao4Hc
- UI9T2UPR_PN_oK2zhI94U98kBn6tS8GD_e.DHfFEF7qXmEHPJanr8p8TVvlK
- .datYSp0Mwu.sM4N71ySo6V6f1VpA3OWRP5ZUN1DclAKA_.Xuqr.INXL6EyC
- m0XfmAuMaU8Fu8XBdvZ7Up1Az6cjhL5G9BEmh5FkIvKVfFt3Qt7YW9gVt88j
- JxNfHGmW3vGl.lwLfJpaFk3ShaNIFgmpwc8A6sZLATwiHrjr.BAawuP1VNmX
- wqzXBnva5KT23g8JNHMn1WJL3ODmWJI1y
-X-Mailer: YahooMailWebService/0.8.118.349524
-Message-ID: <1338112478.91328.BPMail_high_noncarrier@web193405.mail.sg3.yahoo.com>
-Date: Sun, 27 May 2012 17:54:38 +0800 (SGT)
-From: "ramesh.g ram" <g.ramesh_2007@yahoo.co.in>
-To: riyajs1984@yahoo.co.in, vishnu@opson.com,
-        mba_marketing_jobs@googlegroups.com, madhus@logicsoftusa.com,
-        dailydose@sidailydose.org, tony.wilson@panzersolutions.com,
-        sap2job@googlegroups.com, rp_priya@yahoo.co.in,
-        linux-kernel@vger.kernel.org
+	id S1751146Ab2E0KXk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 06:23:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61449 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab2E0KXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 06:23:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Stigge <stigge@antcom.de>
+Subject: Re: [PATCH RFC] serial/8250: Adjusting FIFO parameters for LPC32xx
+Date: Sun, 27 May 2012 10:23:16 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: alan@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org
+References: <1338048678-23991-1-git-send-email-stigge@antcom.de> <201205270232.58253.arnd@arndb.de> <4FC1EEA7.2060109@antcom.de>
+In-Reply-To: <4FC1EEA7.2060109@antcom.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201205271023.16742.arnd@arndb.de>
+X-Provags-ID: V02:K0:3/+zuYtVN6nTNVjTBhdKaWQIePtX7VP3VrHtw4b198p
+ s0k0WmEcZnNSwPJ5G7mK/r/yXxtE4eCxDapglWIxpYp/w4uTwo
+ KRHXJPekf93GmtJQE6/TTzMRrmgqd7kZYVPtgCp7Aah2LZqcxZ
+ echjRYnkmyXTNwb8Ej09qqqnfe1piEIpgxCk2AAjl/D2UERktJ
+ /Xa8SxkykjmbU1xEqQLzvQ97Ag/78uBQK6mw0pWXdxZyQHrTLP
+ cFmvQkR0GCh0vVaJ7EdgY4htvTDzyoY3xYKsF97bsZaQ+tU6Kl
+ omIcZ07r9yjHcuXxqEfgWKjpcSNX7wbwEToCYirvJHaV1BvdwK
+ OZNFcyYZK9CTmfCsFiek=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sunday 27 May 2012, Roland Stigge wrote:
+> I did it via the following modification in of_serial.c:
+> 
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -179,6 +179,7 @@ static struct of_device_id __devinitdata of_platform_serial_table[] = {
+>         { .compatible = "ns16450",  .data = (void *)PORT_16450, },
+>         { .compatible = "ns16550a", .data = (void *)PORT_16550A, },
+>         { .compatible = "ns16550",  .data = (void *)PORT_16550, },
+> +       { .compatible = "ns16654",  .data = (void *)PORT_16654, },
+>         { .compatible = "ns16750",  .data = (void *)PORT_16750, },
+>         { .compatible = "ns16850",  .data = (void *)PORT_16850, },
+>         { .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
+> 
+> Works for now, will need to test more thoroughly with LPC32xx (note that
+> the manual explicitly mentions "downwards compatible with the INS16Cx50"
+> and "Register locations conform to ‘550 industry standard" but nothing
+> about an EFR register which 16654 is configured for in 8250.c).
+> 
+> The patch should be useful in of_serial anyway (even without the LPC32xx
+> case).
+> 
+> Wondering if it should rather be .compatible = "st16654"?
+> Will prepare a patch with adjustment of Documentation/.../of-serial.txt when
+> we agree on sth.
 
-http://squirrelsgolikethis.com/media/toneh.html
+I think st16654 would be better than ns16654 here, yes.
+
+Actually some of the other entries are wrong, too. The ns8250 entry should
+be i8250, and I guess the 16750 and 16850 were also not made by national.
+
+	Arnd
