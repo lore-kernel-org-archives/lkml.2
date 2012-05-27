@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965803Ab2E0B1t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:27:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
+	id S965806Ab2E0B2d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:28:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43902 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422727Ab2E0BSB (ORCPT
+	with ESMTP id S934054Ab2E0BRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:18:01 -0400
-Message-Id: <20120527002518.475804864@linuxfoundation.org>
+	Sat, 26 May 2012 21:17:42 -0400
+Message-Id: <20120527002517.542708096@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:59 +0900
+Date: Sun, 27 May 2012 09:25:55 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Darren Hart <dvhart@linux.intel.com>,
-        Al Borchers <alborchers@steinerpoint.com>,
-        Peter Berger <pberger@brimson.com>
-Subject: [ 53/91] USB: serial: ti_usb_3410_5052: Add support for the FRI2 serial console
+        alan@lxorguk.ukuu.org.uk, Russ Dill <Russ.Dill@ti.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 49/91] USB: EHCI: OMAP: Finish ehci omap phy reset cycle before adding hcd.
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,71 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Russ Dill <Russ.Dill@ti.com>
 
-commit 975dc33b82cb887d75a29b1e3835c8eb063a8e99 upstream.
+commit 3aa2ae74ba630ec9b98736d64aea8e4cb490861d upstream.
 
-The Kontron M2M development board, also known as the Fish River Island II,
-has an optional daughter card providing access to the PCH_UART (EG20T) via
-a ti_usb_3410_5052 uart to usb chip.
+'ARM: OMAP3: USB: Fix the EHCI ULPI PHY reset issue' (1fcb57d0f) created a regression
+with Beagleboard xM if booting the kernel after running 'usb start' under u-boot.
 
-http://us.kontron.com/products/systems+and+platforms/m2m/m2m+smart+services+developer+kit.html
+Finishing the reset before calling 'usb_add_hcd' fixes the regression. This is most likely due to
+usb_add_hcd calling the driver's reset and init functions which expect the hardware to be
+up and running.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Al Borchers <alborchers@steinerpoint.com>
-CC: Peter Berger <pberger@brimson.com>
+Signed-off-by: Russ Dill <Russ.Dill@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ti_usb_3410_5052.c |    6 ++++--
- drivers/usb/serial/ti_usb_3410_5052.h |    1 +
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-omap.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/serial/ti_usb_3410_5052.c
-+++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -165,7 +165,7 @@ static unsigned int product_5052_count;
- /* the array dimension is the number of default entries plus */
- /* TI_EXTRA_VID_PID_COUNT user defined entries plus 1 terminating */
- /* null entry */
--static struct usb_device_id ti_id_table_3410[14+TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_3410[15+TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -180,6 +180,7 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
- 	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- };
+--- a/drivers/usb/host/ehci-omap.c
++++ b/drivers/usb/host/ehci-omap.c
+@@ -242,15 +242,6 @@ static int ehci_hcd_omap_probe(struct pl
  
- static struct usb_device_id ti_id_table_5052[5+TI_EXTRA_VID_PID_COUNT+1] = {
-@@ -189,7 +190,7 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_5052_FIRMWARE_PRODUCT_ID) },
- };
+ 	ehci_reset(omap_ehci);
  
--static struct usb_device_id ti_id_table_combined[18+2*TI_EXTRA_VID_PID_COUNT+1] = {
-+static struct usb_device_id ti_id_table_combined[19+2*TI_EXTRA_VID_PID_COUNT+1] = {
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_PRODUCT_ID) },
- 	{ USB_DEVICE(TI_VENDOR_ID, TI_3410_EZ430_ID) },
- 	{ USB_DEVICE(MTS_VENDOR_ID, MTS_GSM_NO_FW_PRODUCT_ID) },
-@@ -208,6 +209,7 @@ static struct usb_device_id ti_id_table_
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454B_PRODUCT_ID) },
- 	{ USB_DEVICE(IBM_VENDOR_ID, IBM_454C_PRODUCT_ID) },
- 	{ USB_DEVICE(ABBOTT_VENDOR_ID, ABBOTT_PRODUCT_ID) },
-+	{ USB_DEVICE(TI_VENDOR_ID, FRI2_PRODUCT_ID) },
- 	{ }
- };
+-	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
+-	if (ret) {
+-		dev_err(dev, "failed to add hcd with err %d\n", ret);
+-		goto err_add_hcd;
+-	}
+-
+-	/* root ports should always stay powered */
+-	ehci_port_power(omap_ehci, 1);
+-
+ 	if (pdata->phy_reset) {
+ 		/* Hold the PHY in RESET for enough time till
+ 		 * PHY is settled and ready
+@@ -264,6 +255,15 @@ static int ehci_hcd_omap_probe(struct pl
+ 			gpio_set_value(pdata->reset_gpio_port[1], 1);
+ 	}
  
---- a/drivers/usb/serial/ti_usb_3410_5052.h
-+++ b/drivers/usb/serial/ti_usb_3410_5052.h
-@@ -37,6 +37,7 @@
- #define TI_5152_BOOT_PRODUCT_ID		0x5152	/* no EEPROM, no firmware */
- #define TI_5052_EEPROM_PRODUCT_ID	0x505A	/* EEPROM, no firmware */
- #define TI_5052_FIRMWARE_PRODUCT_ID	0x505F	/* firmware is running */
-+#define FRI2_PRODUCT_ID			0x5053  /* Fish River Island II */
++	ret = usb_add_hcd(hcd, irq, IRQF_SHARED);
++	if (ret) {
++		dev_err(dev, "failed to add hcd with err %d\n", ret);
++		goto err_add_hcd;
++	}
++
++	/* root ports should always stay powered */
++	ehci_port_power(omap_ehci, 1);
++
+ 	return 0;
  
- /* Multi-Tech vendor and product ids */
- #define MTS_VENDOR_ID			0x06E0
+ err_add_hcd:
 
 
