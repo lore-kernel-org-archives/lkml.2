@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965005Ab2E0BJh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:09:37 -0400
+	id S965035Ab2E0BJs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:09:48 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933381Ab2E0BJb (ORCPT
+	with ESMTP id S964977Ab2E0BJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:09:31 -0400
-Message-Id: <20120527010430.255515781@linuxfoundation.org>
+	Sat, 26 May 2012 21:09:36 -0400
+Message-Id: <20120527010429.536222003@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:09 +0900
+Date: Sun, 27 May 2012 10:05:04 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>
-Subject: [ 46/94] USB: ftdi-sio: add support for Physik Instrumente E-861
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Christoph Lameter <cl@linux.com>
+Subject: [ 41/94] mm: mempolicy: Let vma_merge and vma_split handle
+ vma->vm_policy linkages
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Éric Piel <piel@delmic.com>
+From: Mel Gorman <mgorman@suse.de>
 
-commit b69cc672052540e8efb1368420f10d7d4d8b8a3d upstream.
+commit 05f144a0d5c2207a0349348127f996e104ad7404 upstream.
 
-This adds VID/PID for the PI E-861. Without it, I had to do:
-modprobe -q ftdi-sio product=0x1008 vendor=0x1a72
+Dave Jones' system call fuzz testing tool "trinity" triggered the
+following bug error with slab debugging enabled
 
-http://www.physikinstrumente.com/en/products/prdetail.php?sortnr=900610
+    =============================================================================
+    BUG numa_policy (Not tainted): Poison overwritten
+    -----------------------------------------------------------------------------
 
-Signed-off-by: Éric Piel <piel@delmic.com>
+    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+     __slab_alloc+0x3d3/0x445
+     kmem_cache_alloc+0x29d/0x2b0
+     mpol_new+0xa3/0x140
+     sys_mbind+0x142/0x620
+     system_call_fastpath+0x16/0x1b
+    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+     __slab_free+0x2e/0x1de
+     kmem_cache_free+0x25a/0x260
+     __mpol_put+0x27/0x30
+     remove_vma+0x68/0x90
+     exit_mmap+0x118/0x140
+     mmput+0x73/0x110
+     exit_mm+0x108/0x130
+     do_exit+0x162/0xb90
+     do_group_exit+0x4f/0xc0
+     sys_exit_group+0x17/0x20
+     system_call_fastpath+0x16/0x1b
+    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
+
+This implied a reference counting bug and the problem happened during
+mbind().
+
+mbind() applies a new memory policy to a range and uses mbind_range() to
+merge existing VMAs or split them as necessary.  In the event of splits,
+mpol_dup() will allocate a new struct mempolicy and maintain existing
+reference counts whose rules are documented in
+Documentation/vm/numa_memory_policy.txt .
+
+The problem occurs with shared memory policies.  The vm_op->set_policy
+increments the reference count if necessary and split_vma() and
+vma_merge() have already handled the existing reference counts.
+However, policy_vma() screws it up by replacing an existing
+vma->vm_policy with one that potentially has the wrong reference count
+leading to a premature free.  This patch removes the damage caused by
+policy_vma().
+
+With this patch applied Dave's trinity tool runs an mbind test for 5
+minutes without error.  /proc/slabinfo reported that there are no
+numa_policy or shared_policy_node objects allocated after the test
+completed and the shared memory region was deleted.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Stephen Wilson <wilsons@start.ca>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    8 ++++++++
- 2 files changed, 9 insertions(+)
+ mm/mempolicy.c |   41 +++++++++++++++++------------------------
+ 1 file changed, 17 insertions(+), 24 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -809,6 +809,7 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E861_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -785,6 +785,14 @@
- #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
- #define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -607,27 +607,6 @@ check_range(struct mm_struct *mm, unsign
+ 	return first;
+ }
  
+-/* Apply policy to a single VMA */
+-static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
+-{
+-	int err = 0;
+-	struct mempolicy *old = vma->vm_policy;
+-
+-	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+-		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+-		 vma->vm_ops, vma->vm_file,
+-		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+-
+-	if (vma->vm_ops && vma->vm_ops->set_policy)
+-		err = vma->vm_ops->set_policy(vma, new);
+-	if (!err) {
+-		mpol_get(new);
+-		vma->vm_policy = new;
+-		mpol_put(old);
+-	}
+-	return err;
+-}
+-
+ /* Step 2: apply policy to a range and do splits. */
+ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 		       unsigned long end, struct mempolicy *new_pol)
+@@ -676,9 +655,23 @@ static int mbind_range(struct mm_struct
+ 			if (err)
+ 				goto out;
+ 		}
+-		err = policy_vma(vma, new_pol);
+-		if (err)
+-			goto out;
 +
-+/*
-+ * Physik Instrumente
-+ * http://www.physikinstrumente.com/en/products/
-+ */
-+#define PI_VID              0x1a72  /* Vendor ID */
-+#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
-+
- /*
-  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-  * http://winglucofacts.com/cables/
++		/*
++		 * Apply policy to a single VMA. The reference counting of
++		 * policy for vma_policy linkages has already been handled by
++		 * vma_merge and split_vma as necessary. If this is a shared
++		 * policy then ->set_policy will increment the reference count
++		 * for an sp node.
++		 */
++		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
++			vma->vm_start, vma->vm_end, vma->vm_pgoff,
++			vma->vm_ops, vma->vm_file,
++			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
++		if (vma->vm_ops && vma->vm_ops->set_policy) {
++			err = vma->vm_ops->set_policy(vma, new_pol);
++			if (err)
++				goto out;
++		}
+ 	}
+ 
+  out:
 
 
