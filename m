@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab2E0BAt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:00:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab2E0BAo (ORCPT
+	id S932348Ab2E0BAy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:00:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932306Ab2E0BAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:00:44 -0400
-Message-Id: <20120527002620.778894152@linuxfoundation.org>
+	Sat, 26 May 2012 21:00:49 -0400
+Message-Id: <20120527002620.919008658@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:59 +0900
+Date: Sun, 27 May 2012 09:27:00 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 46/55] nouveau: nouveau_set_bo_placement takes TTM flags
+        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 47/55] [media] smsusb: add autodetection support for USB ID 2040:c0a0
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +25,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Michael Krufky <mkrufky@linuxtv.org>
 
-commit c284815debba2f14ee2fd07b1b4cc972ab116110 upstream.
+commit 4d1b58b84472d1d300a66e1c5fd765b21e74ba15 upstream.
 
-This seems to be wrong to me, spotted while thinking about dma-buf.
-
-Reviewed-by: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_bo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb/siano/smsusb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -1075,7 +1075,7 @@ nouveau_ttm_fault_reserve_notify(struct
- 
- 	nvbo->placement.fpfn = 0;
- 	nvbo->placement.lpfn = dev_priv->fb_mappable_pages;
--	nouveau_bo_placement_set(nvbo, TTM_PL_VRAM, 0);
-+	nouveau_bo_placement_set(nvbo, TTM_PL_FLAG_VRAM, 0);
- 	return nouveau_bo_validate(nvbo, false, true, false);
- }
+--- a/drivers/media/dvb/siano/smsusb.c
++++ b/drivers/media/dvb/siano/smsusb.c
+@@ -541,6 +541,8 @@ static const struct usb_device_id smsusb
+ 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
+ 	{ USB_DEVICE(0x2040, 0xc090),
+ 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
++	{ USB_DEVICE(0x2040, 0xc0a0),
++		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
+ 	{ } /* Terminating entry */
+ 	};
  
 
 
