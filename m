@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422756Ab2E0BRy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:17:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422742Ab2E0BRr (ORCPT
+	id S1422769Ab2E0BR5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:17:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422746Ab2E0BRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:17:47 -0400
-Message-Id: <20120527002516.591644273@linuxfoundation.org>
+	Sat, 26 May 2012 21:17:52 -0400
+Message-Id: <20120527002518.008534841@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:51 +0900
+Date: Sun, 27 May 2012 09:25:57 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Jesse Feddema <jdfeddema@gmail.com>
-Subject: [ 45/91] usb-storage: unusual_devs entry for Yarvik PMP400 MP4 player
+        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Christian Eggers <christian.eggers@kathrein.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [ 51/91] USB: ohci-at91: add a reset function to fix race condition
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-commit df767b71e5816692134d59c0c17e0f77cd73333d upstream.
+commit 07e4e556eff4938eb2edf2591de3aa7d7fb82b52 upstream.
 
-This patch (as1553) adds an unusual_dev entrie for the Yarvik PMP400
-MP4 music player.
+A possible race condition appears because we are not initializing
+the ohci->regs before calling usb_hcd_request_irqs().
+We move the call to ohci_init() in hcd->driver->reset() instead of
+hcd->driver->start() to fix this.
+This was experienced when we share the same IRQ line between OHCI and EHCI
+controllers.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Jesse Feddema <jdfeddema@gmail.com>
-Tested-by: Jesse Feddema <jdfeddema@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Tested-by: Christian Eggers <christian.eggers@kathrein.de>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/host/ohci-at91.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1885,6 +1885,13 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
+--- a/drivers/usb/host/ohci-at91.c
++++ b/drivers/usb/host/ohci-at91.c
+@@ -223,7 +223,7 @@ static void __devexit usb_hcd_at91_remov
+ /*-------------------------------------------------------------------------*/
  
-+/* Reported by Jesse Feddema <jdfeddema@gmail.com> */
-+UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
-+		"Yarvik",
-+		"PMP400",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_BULK_IGNORE_TAG | US_FL_MAX_SECTORS_64 ),
+ static int __devinit
+-ohci_at91_start (struct usb_hcd *hcd)
++ohci_at91_reset (struct usb_hcd *hcd)
+ {
+ 	struct at91_usbh_data	*board = hcd->self.controller->platform_data;
+ 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+@@ -233,6 +233,14 @@ ohci_at91_start (struct usb_hcd *hcd)
+ 		return ret;
+ 
+ 	ohci->num_ports = board->ports;
++	return 0;
++}
 +
- /* Reported by Hans de Goede <hdegoede@redhat.com>
-  * These Appotech controllers are found in Picture Frames, they provide a
-  * (buggy) emulation of a cdrom drive which contains the windows software
++static int __devinit
++ohci_at91_start (struct usb_hcd *hcd)
++{
++	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
++	int			ret;
+ 
+ 	if ((ret = ohci_run(ohci)) < 0) {
+ 		err("can't start %s", hcd->self.bus_name);
+@@ -418,6 +426,7 @@ static const struct hc_driver ohci_at91_
+ 	/*
+ 	 * basic lifecycle operations
+ 	 */
++	.reset =		ohci_at91_reset,
+ 	.start =		ohci_at91_start,
+ 	.stop =			ohci_stop,
+ 	.shutdown =		ohci_shutdown,
 
 
