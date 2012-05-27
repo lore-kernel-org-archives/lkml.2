@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756566Ab2E0BhQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:37:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	id S934112Ab2E0Bhn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:37:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965460Ab2E0BNO (ORCPT
+	with ESMTP id S933722Ab2E0BNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:13:14 -0400
-Message-Id: <20120527010436.452140793@linuxfoundation.org>
+	Sat, 26 May 2012 21:13:04 -0400
+Message-Id: <20120527010435.327765926@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:53 +0900
+Date: Sun, 27 May 2012 10:05:45 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dima Zavin <dima@android.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [ 90/94] ARM: 7365/1: drop unused parameter from flush_cache_user_range
+        alan@lxorguk.ukuu.org.uk,
+        Linus Torvalds <torvalds@linuxfoundation.org>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 82/94] x86/mce: Fix check for processor context when machine check was taken.
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,53 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dima Zavin <dima@android.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 4542b6a0fa6b48d9ae6b41c1efeb618b7a221b2a upstream.
+commit 875e26648cf9b6db9d8dc07b7959d7c61fb3f49c upstream.
 
-vma isn't used and flush_cache_user_range isn't a standard macro that
-is used on several archs with the same prototype. In fact only unicore32
-has a macro with the same name (with an identical implementation and no
-in-tree users).
+Linus pointed out that there was no value is checking whether m->ip
+was zero - because zero is a legimate value.  If we have a reliable
+(or faked in the VM86 case) "m->cs" we can use it to tell whether we
+were in user mode or kernelwhen the machine check hit.
 
-This is a part of a patch proposed by Dima Zavin (with Message-id:
-1272439931-12795-1-git-send-email-dima@android.com) that didn't get
-accepted.
-
-Cc: Dima Zavin <dima@android.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
+Reported-by: Linus Torvalds <torvalds@linuxfoundation.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arm/include/asm/cacheflush.h |    2 +-
- arch/arm/kernel/traps.c           |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -249,7 +249,7 @@ extern void flush_cache_page(struct vm_a
-  * Harvard caches are synchronised for the user space address range.
-  * This is used for the ARM private sys_cacheflush system call.
-  */
--#define flush_cache_user_range(vma,start,end) \
-+#define flush_cache_user_range(start,end) \
- 	__cpuc_coherent_user_range((start) & PAGE_MASK, PAGE_ALIGN(end))
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -145,15 +145,19 @@ static struct severity {
+ };
  
  /*
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -491,7 +491,7 @@ do_cache_op(unsigned long start, unsigne
- 		if (end > vma->vm_end)
- 			end = vma->vm_end;
- 
--		flush_cache_user_range(vma, start, end);
-+		flush_cache_user_range(start, end);
- 	}
- 	up_read(&mm->mmap_sem);
+- * If the EIPV bit is set, it means the saved IP is the
+- * instruction which caused the MCE.
++ * If mcgstatus indicated that ip/cs on the stack were
++ * no good, then "m->cs" will be zero and we will have
++ * to assume the worst case (IN_KERNEL) as we actually
++ * have no idea what we were executing when the machine
++ * check hit.
++ * If we do have a good "m->cs" (or a faked one in the
++ * case we were executing in VM86 mode) we can use it to
++ * distinguish an exception taken in user from from one
++ * taken in the kernel.
+  */
+ static int error_context(struct mce *m)
+ {
+-	if (m->mcgstatus & MCG_STATUS_EIPV)
+-		return (m->ip && (m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
+-	/* Unknown, assume kernel */
+-	return IN_KERNEL;
++	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
  }
+ 
+ int mce_severity(struct mce *m, int tolerant, char **msg)
 
 
