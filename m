@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012Ab2E0Bg5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:36:57 -0400
+	id S1756566Ab2E0BhQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:37:16 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756415Ab2E0BNZ (ORCPT
+	with ESMTP id S965460Ab2E0BNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:13:25 -0400
-Message-Id: <20120527010436.165554954@linuxfoundation.org>
+	Sat, 26 May 2012 21:13:14 -0400
+Message-Id: <20120527010436.452140793@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:51 +0900
+Date: Sun, 27 May 2012 10:05:53 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Youquan Song <youquan.song@intel.com>, walter harms <wharms@bfs.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 88/94] iommu: Fix off by one in dmar_get_fault_reason()
+        alan@lxorguk.ukuu.org.uk, Dima Zavin <dima@android.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>
+Subject: [ 90/94] ARM: 7365/1: drop unused parameter from flush_cache_user_range
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Dima Zavin <dima@android.com>
 
-commit fefe1ed1398b81e3fadc92d11d91162d343c8836 upstream.
+commit 4542b6a0fa6b48d9ae6b41c1efeb618b7a221b2a upstream.
 
-fault_reason - 0x20 == ARRAY_SIZE(irq_remap_fault_reasons) is
-one past the end of the array.
+vma isn't used and flush_cache_user_range isn't a standard macro that
+is used on several archs with the same prototype. In fact only unicore32
+has a macro with the same name (with an identical implementation and no
+in-tree users).
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Youquan Song <youquan.song@intel.com>
-Cc: walter harms <wharms@bfs.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/20120513170938.GA4280@elgon.mountain
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-[bwh: Backported to 3.2: s/irq_remap_fault_reasons/intr_remap_fault_reasons/]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+This is a part of a patch proposed by Dima Zavin (with Message-id:
+1272439931-12795-1-git-send-email-dima@android.com) that didn't get
+accepted.
+
+Cc: Dima Zavin <dima@android.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/iommu/dmar.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/iommu/dmar.c
-+++ b/drivers/iommu/dmar.c
-@@ -1056,8 +1056,8 @@ static const char *intr_remap_fault_reas
+
+---
+ arch/arm/include/asm/cacheflush.h |    2 +-
+ arch/arm/kernel/traps.c           |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -249,7 +249,7 @@ extern void flush_cache_page(struct vm_a
+  * Harvard caches are synchronised for the user space address range.
+  * This is used for the ARM private sys_cacheflush system call.
+  */
+-#define flush_cache_user_range(vma,start,end) \
++#define flush_cache_user_range(start,end) \
+ 	__cpuc_coherent_user_range((start) & PAGE_MASK, PAGE_ALIGN(end))
  
- const char *dmar_get_fault_reason(u8 fault_reason, int *fault_type)
- {
--	if (fault_reason >= 0x20 && (fault_reason <= 0x20 +
--				     ARRAY_SIZE(intr_remap_fault_reasons))) {
-+	if (fault_reason >= 0x20 && (fault_reason - 0x20 <
-+					ARRAY_SIZE(intr_remap_fault_reasons))) {
- 		*fault_type = INTR_REMAP;
- 		return intr_remap_fault_reasons[fault_reason - 0x20];
- 	} else if (fault_reason < ARRAY_SIZE(dma_remap_fault_reasons)) {
+ /*
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -491,7 +491,7 @@ do_cache_op(unsigned long start, unsigne
+ 		if (end > vma->vm_end)
+ 			end = vma->vm_end;
+ 
+-		flush_cache_user_range(vma, start, end);
++		flush_cache_user_range(start, end);
+ 	}
+ 	up_read(&mm->mmap_sem);
+ }
 
 
