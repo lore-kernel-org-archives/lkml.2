@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab2E0RgI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 13:36:08 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:51875 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab2E0RgB (ORCPT
+	id S1752104Ab2E0SUj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 14:20:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46228 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab2E0SUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 13:36:01 -0400
-Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4FC24987.4090708@fastmail.fm>
-References: <4FBFEACC.8040601@fastmail.fm>
-	 <1337978725.10135.0.camel@edumazet-glaptop>
-	 <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>
-	 <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm>
+	Sun, 27 May 2012 14:20:38 -0400
+Subject: Re: [PATCH] ARM: mx35: add cpufreq support
+From: Christoph Fritz <chf.fritz@googlemail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Daniel Mack <daniel@zonque.org>
+In-Reply-To: <20120517224205.GA7021@mars>
+References: <20120507141437.GA9636@lovely.krouter>
+	 <20120509072239.GG27341@pengutronix.de>
+	 <20120509075618.GA4412@lovely.krouter>
+	 <20120509081306.GK27341@pengutronix.de> <1337276960.4970.4.camel@lovely>
+	 <20120517182036.GK30400@pengutronix.de> <1337280058.4970.6.camel@lovely>
+	 <20120517224205.GA7021@mars>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 27 May 2012 19:35:56 +0200
-Message-ID: <1338140156.3786.10.camel@edumazet-glaptop>
+Date: Sun, 27 May 2012 20:20:32 +0200
+Message-ID: <1338142832.8582.4.camel@mars>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-27 at 16:34 +0100, Jack Stone wrote:
-> On 05/27/2012 02:59 PM, Eric Dumazet wrote:
-> > On Sat, 2012-05-26 at 12:22 +0100, Jack Stone wrote:
+On Fri, 2012-05-18 at 00:42 +0200, Christoph Fritz wrote:
+> On Thu, May 17, 2012 at 08:40:58PM +0200, Christoph Fritz wrote:
+> > On Thu, 2012-05-17 at 20:20 +0200, Sascha Hauer wrote:
+> > > On Thu, May 17, 2012 at 07:49:20PM +0200, Christoph Fritz wrote:
 > > 
-> >> I'm still getting this with da89fb1 which includes the above
-> >>
-> >> Linux hover1 3.4.0-07797-gda89fb1 #4 SMP Fri May 25 22:23:14 BST 2012 x86_64 x86_64 x86_64 GNU/Linux
-> > 
-> > Thanks
-> > 
-> > Could you add following debugging patch ?
-> > 
-> > diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> > index 3ba605f..b56c63c 100644
-> > --- a/net/ipv4/tcp.c
-> > +++ b/net/ipv4/tcp.c
-> > @@ -1606,8 +1606,9 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
-> >  			if (tcp_hdr(skb)->fin)
-> >  				goto found_fin_ok;
-> >  			WARN(!(flags & MSG_PEEK),
-> > -			     "recvmsg bug 2: copied %X seq %X rcvnxt %X fl %X\n",
-> > -			     *seq, TCP_SKB_CB(skb)->seq, tp->rcv_nxt, flags);
-> > +			     "recvmsg bug 2: copied %X seq %X end_seq %X rcvnxt %X fl %X offset %u len %u syn %d\n",
-> > +			     *seq, TCP_SKB_CB(skb)->seq, TCP_SKB_CB(skb)->end_seq,
-> > +			     tp->rcv_nxt, flags, offset, skb->len, tcp_hdr(skb)->syn);
-> >  		}
-> >  
-> >  		/* Well, if we have backlog, try to process it now yet. */
-> > 
-> > 
+> > > > Is there already a version I can rebase the patch?
+> > > > 
+> > > > On your repo at git://git.pengutronix.de/git/imx/linux-2.6.git I can't
+> > > > find the new clock framework or even a work-in-progress version.
+> > > 
+> > > They are in linux-next now.
 > 
-> uname: Linux hover1 3.4.0-07822-g786f02b-dirty #1 SMP Sun May 27 15:23:39 BST 2012 x86_64 x86_64 x86_64 GNU/Linux
+> There changed a lot of stuff: Where should I register the function to
+> set/get the cpu frequency?
 > 
-> Here's the new output:
-> 
-> 
-> May 27 16:32:30 hover1 kernel: [ 1907.804613] ------------[ cut here ]------------
-> May 27 16:32:30 hover1 kernel: [ 1907.804622] WARNING: at net/ipv4/tcp.c:1611 tcp_recvmsg+0xb36/0xc90()
-> May 27 16:32:30 hover1 kernel: [ 1907.804624] Hardware name: System Product Name
-> May 27 16:32:30 hover1 kernel: [ 1907.804626] recvmsg bug 2: copied 8F322DEB seq 8F322DEB end_seq 8F322F2A rcvnxt 8F322F2A fl 0 offset 4294967295 len 319 syn 1
+> To get an idea of how it should be done, I looked at imx51: Is there
+> cpufreq-support still implemented/working?  I can see the
+> arch/arm/mach-imx/cpu_op-mx51.c but not its correlating
+> clk_cpu_set_rate function in arch/arm/mach-imx/clk-imx51-imx53.c.
 
-So it seems we can queue in sk_receive_queue a packet with SYN flag set.
-
-(A SYN or SYNACK packet contains DATA payload...)
-
-The sequence number of such frames should be tweaked (seq++) instead of
-games we do in fast path :
-
-if (tcp_hdr(skb)->syn)
-    offset--;
+*ping*
 
 
-Oh well this can wait linux-3.6, please test following patch in the
-meantime.
-
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index b224eb8..34c8dcc 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -4553,7 +4553,7 @@ static bool tcp_try_coalesce(struct sock *sk,
+ Thanks,
+  -- Christoph
  
- 	*fragstolen = false;
- 
--	if (tcp_hdr(from)->fin)
-+	if (tcp_hdr(from)->fin || tcp_hdr(to)->syn)
- 		return false;
- 
- 	/* Its possible this segment overlaps with prior segment in queue */
+
 
 
