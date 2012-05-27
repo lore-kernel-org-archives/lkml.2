@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965597Ab2E0BOy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:14:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756552Ab2E0BOu (ORCPT
+	id S1756589Ab2E0BPB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:15:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756543Ab2E0BOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:14:50 -0400
-Message-Id: <20120527002508.901423335@linuxfoundation.org>
+	Sat, 26 May 2012 21:14:55 -0400
+Message-Id: <20120527002510.135103480@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:15 +0900
+Date: Sun, 27 May 2012 09:25:21 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [ 09/91] regulator: core: Release regulator-regulator supplies on error
+        alan@lxorguk.ukuu.org.uk, Steve Wise <swise@opengridcomputing.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 15/91] RDMA/cxgb4: Use dst parameter in import_ep()
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Steve Wise <swise@opengridcomputing.com>
 
-commit e81dba85c6388dfabcb76cbc2b8bd02836a53ae5 upstream.
+commit bd61baaf59669accae2720799394a51fecabe5d9 upstream.
 
-If we fail while registering a regulator make sure we release the supply
-for the regulator if there is one.
+Function import_ep() is incorrectly using ep->dst instead of the dst
+ptr passed in.  This causes a crash when accepting new rdma connections
+becase ep->dst is not initialized yet.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Steve Wise <swise@opengridcomputing.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/infiniband/hw/cxgb4/cm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2971,6 +2971,8 @@ unset_supplies:
- 	unset_regulator_supplies(rdev);
- 
- scrub:
-+	if (rdev->supply)
-+		regulator_put(rdev->supply);
- 	kfree(rdev->constraints);
- 	device_unregister(&rdev->dev);
- 	/* device core frees rdev */
+--- a/drivers/infiniband/hw/cxgb4/cm.c
++++ b/drivers/infiniband/hw/cxgb4/cm.c
+@@ -1593,7 +1593,7 @@ static int import_ep(struct c4iw_ep *ep,
+ 					n, n->dev, 0);
+ 		if (!ep->l2t)
+ 			goto out;
+-		ep->mtu = dst_mtu(ep->dst);
++		ep->mtu = dst_mtu(dst);
+ 		ep->tx_chan = cxgb4_port_chan(n->dev);
+ 		ep->smac_idx = (cxgb4_port_viid(n->dev) & 0x7F) << 1;
+ 		step = cdev->rdev.lldi.ntxq /
 
 
