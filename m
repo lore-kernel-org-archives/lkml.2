@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab2E0Cl3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 22:41:29 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:38734 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab2E0ClZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 22:41:25 -0400
+	id S1754431Ab2E0CxG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 22:53:06 -0400
+Received: from void.printf.net ([89.145.121.20]:55316 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751633Ab2E0CxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 22:53:03 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mmc: core: Fix build warning with !CONFIG_SUSPEND
+References: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
+Date: Sat, 26 May 2012 22:52:56 -0400
+In-Reply-To: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
+	(Santosh Shilimkar's message of "Sat, 19 May 2012 13:28:39 +0530")
+Message-ID: <87d35q1gjb.fsf@laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CANQmPXipw9QPEc9xMuCLDW14W3w5VeUYZP1GJnvR+D57xCWksA@mail.gmail.com>
-References: <CANQmPXhyAavikU=861nVA3WjPsMjBt+XOTUJ08VAoinZ1gCRzQ@mail.gmail.com>
-	<CAJd=RBDN7q0C+ktY29B66d9coyy1BGESOHCHFmFQVboOfNXq5w@mail.gmail.com>
-	<CANQmPXi+O-bHFzbi1q5g0GuKgXmeyEYp+UB_61YDDd2uE475GA@mail.gmail.com>
-	<CANQmPXipw9QPEc9xMuCLDW14W3w5VeUYZP1GJnvR+D57xCWksA@mail.gmail.com>
-Date: Sun, 27 May 2012 10:41:24 +0800
-Message-ID: <CANQmPXiURpmNSXQTjOc7q9seU_b8YcbmS0fn7zsPGJwBpW2ZYQ@mail.gmail.com>
-Subject: Re: [ANNOUNCE][PATCH 5/26]Rotary Interactivity Favor Scheduler
- Version 3(Brain-Eating) Update.
-From: Chen <hi3766691@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mou Chen <hi3766691@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 27, 2012 at 10:41 AM, Chen <hi3766691@gmail.com> wrote:
-> On Sun, May 27, 2012 at 10:33 AM, Chen <hi3766691@gmail.com> wrote:
->> Yes , it is a diff
->> 在 2012-5-27 上午9:08，"Hillf Danton" <dhillf@gmail.com>写道：
->>
->>
->>>
->>> On Sat, May 26, 2012 at 9:38 PM, Chen <hi3766691@gmail.com> wrote:
->>> >
->>> > RIFS v3 has been released.
->>> >
->>>
->>> It may help more if released in the diff format
->>>
->>> Good Weekend
->>> -hd
+Hi,
+
+On Sat, May 19 2012, Santosh Shilimkar wrote:
+> With !CONFIG_SUSPEND, mmc core layer throws below build warnings.
 >
-> Now there is a new patch.It is a new V3 diff
-> Also for the newest version of RIFS please visit
-> http://code.google.com/p/rifs-scheduler/downloads/list to download.
-> :-)
+> drivers/mmc/core/bus.c:125: warning: 'mmc_bus_suspend' defined but not used
+> drivers/mmc/core/bus.c:136: warning: 'mmc_bus_resume' defined but not used
+> drivers/mmc/core/sdio_bus.c:197: warning: 'pm_no_operation' defined but not used
+>
+> Fix is by wrapping suspend hooks under CONFIG_SUSPEND
+>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Chris Ball <cjb@laptop.org>
+> ---
+>  drivers/mmc/core/bus.c      |    2 ++
+>  drivers/mmc/core/sdio_bus.c |    2 +-
+>  2 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
+> index c60cee9..ca8925d 100644
+> --- a/drivers/mmc/core/bus.c
+> +++ b/drivers/mmc/core/bus.c
+> @@ -122,6 +122,7 @@ static int mmc_bus_remove(struct device *dev)
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_SUSPEND
+>  static int mmc_bus_suspend(struct device *dev)
+>  {
+>  	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+> @@ -143,6 +144,7 @@ static int mmc_bus_resume(struct device *dev)
+>  		ret = drv->resume(card);
+>  	return ret;
+>  }
+> +#endif
+>  
+>  #ifdef CONFIG_PM_RUNTIME
+>  
+> diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
+> index 236842e..87d1b7e 100644
+> --- a/drivers/mmc/core/sdio_bus.c
+> +++ b/drivers/mmc/core/sdio_bus.c
+> @@ -192,7 +192,7 @@ static int sdio_bus_remove(struct device *dev)
+>  	return ret;
+>  }
+>  
+> -#ifdef CONFIG_PM
+> +#ifdef CONFIG_SUSPEND
+>  
+>  static int pm_no_operation(struct device *dev)
+>  {
+
+This patch doesn't apply against mmc-next, and I think this has already
+been fixed upstream -- please could you retest against Linus HEAD?
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
