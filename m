@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965356Ab2E0BLr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:11:47 -0400
+	id S965377Ab2E0BLz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:11:55 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756055Ab2E0BLn (ORCPT
+	with ESMTP id S965346Ab2E0BLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:11:43 -0400
-Message-Id: <20120527010433.208676531@linuxfoundation.org>
+	Sat, 26 May 2012 21:11:47 -0400
+Message-Id: <20120527010434.051959671@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:30 +0900
+Date: Sun, 27 May 2012 10:05:36 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 67/94] drm/i915: Avoid a double-read of PCH_IIR during interrupt handling
+        alan@lxorguk.ukuu.org.uk, Ben Skeggs <bskeggs@redhat.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 73/94] nouveau: nouveau_set_bo_placement takes TTM flags
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Dave Airlie <airlied@redhat.com>
 
-commit 9adab8b5a7fde248504f484e197589f3e3c922e2 upstream.
+commit c284815debba2f14ee2fd07b1b4cc972ab116110 upstream.
 
-Currently the code re-reads PCH_IIR during the hotplug interrupt
-processing. Not only is this a wasted read, but introduces a potential
-for handling a spurious interrupt as we then may not clear all the
-interrupts processed (since the re-read IIR may contains more interrupts
-asserted than we clear using the result of the original read).
+This seems to be wrong to me, spotted while thinking about dma-buf.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Reviewed-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_bo.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -424,14 +424,11 @@ static void gen6_pm_rps_work(struct work
- 	mutex_unlock(&dev_priv->dev->struct_mutex);
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -1035,7 +1035,7 @@ nouveau_ttm_fault_reserve_notify(struct
+ 
+ 	nvbo->placement.fpfn = 0;
+ 	nvbo->placement.lpfn = dev_priv->fb_mappable_pages;
+-	nouveau_bo_placement_set(nvbo, TTM_PL_VRAM, 0);
++	nouveau_bo_placement_set(nvbo, TTM_PL_FLAG_VRAM, 0);
+ 	return nouveau_bo_validate(nvbo, false, true, false);
  }
  
--static void pch_irq_handler(struct drm_device *dev)
-+static void pch_irq_handler(struct drm_device *dev, u32 pch_iir)
- {
- 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
--	u32 pch_iir;
- 	int pipe;
- 
--	pch_iir = I915_READ(SDEIIR);
--
- 	if (pch_iir & SDE_AUDIO_POWER_MASK)
- 		DRM_DEBUG_DRIVER("PCH audio power change on port %d\n",
- 				 (pch_iir & SDE_AUDIO_POWER_MASK) >>
-@@ -529,7 +526,7 @@ static irqreturn_t ivybridge_irq_handler
- 	if (de_iir & DE_PCH_EVENT_IVB) {
- 		if (pch_iir & SDE_HOTPLUG_MASK_CPT)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (pm_iir & GEN6_PM_DEFERRED_EVENTS) {
-@@ -629,7 +626,7 @@ static irqreturn_t ironlake_irq_handler(
- 	if (de_iir & DE_PCH_EVENT) {
- 		if (pch_iir & hotplug_mask)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (de_iir & DE_PCU_EVENT) {
 
 
