@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab2E0OXj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 10:23:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38352 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab2E0OXh convert rfc822-to-8bit (ORCPT
+	id S1752670Ab2E0O3Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 10:29:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:56302 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750846Ab2E0O3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 10:23:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120526111143.GA32304@lizard>
-References: <1336004953.4240.9.camel@mop> <20120526111143.GA32304@lizard>
-From: Kay Sievers <kay@vrfy.org>
-Date: Sun, 27 May 2012 16:23:17 +0200
-Message-ID: <CAPXgP10--rmzK8joBSrs3Abk7uuamJTDBbvrm6W6w_xODqZVtg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartmann <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        Tony Luck <tony.luck@intel.com>, John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 27 May 2012 10:29:20 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19iLlNWtd1iHia5CtuiL1taP0NL2AX5KmSJNKj05F
+	SUmTJyS7ue8xxn
+Message-ID: <1338128955.7400.43.camel@marge.simpson.net>
+Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
+From: Mike Galbraith <efault@gmx.de>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, lkml <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Paul Turner <pjt@google.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Date: Sun, 27 May 2012 16:29:15 +0200
+In-Reply-To: <4FC2362A.8080503@linux.intel.com>
+References: <1337857490.7300.19.camel@marge.simpson.net>
+	 <1337865431.9783.148.camel@laptop> <1337865641.9783.149.camel@laptop>
+	 <1337926468.5415.48.camel@marge.simpson.net>
+	 <1338014259.7302.26.camel@marge.simpson.net>
+	 <1338017364.14636.9.camel@twins>
+	 <1338020834.7747.8.camel@marge.simpson.net>
+	 <1338110259.7678.77.camel@marge.simpson.net>
+	 <4FC2362A.8080503@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 1:11 PM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
+On Sun, 2012-05-27 at 07:11 -0700, Arjan van de Ven wrote: 
+> On 5/27/2012 2:17 AM, Mike Galbraith wrote:
+> > On Sat, 2012-05-26 at 10:27 +0200, Mike Galbraith wrote: 
+> >> Hohum, back to finding out what happened to cpufreq.
+> > 
+> > Answer: nothing.. in mainline.
+> > 
+> > I test performance habitually, so just never noticed how bad ondemand
+> > sucks.  In enterprise, I found the below, explaining why cores crank up
+> > fine there, but not in mainline.  Somebody thumped ondemand properly on
+> > it's pointy head.
+> > 
+> > But, check out the numbers below this, and you can see just how horrible
+> > bouncing is when you add governor latency _on top_ of it. 
+> 
+> part of it is not ondemand, but cpufreq.
+> cpufreq forces you to schedule a kernel thread to change cpu
+> frequency... on the cpu that's already busy.
+> God knows what the scehduler then does in terms of load balancing.
 
->> Subject: printk: convert byte-buffer to variable-length record buffer
->
-> Bad news, this patch breaks all kmsg_dump users.
->
-> Per current printk.c:
->
->  * The 'struct log' buffer header must never be directly exported to
->  * userspace, it is a kernel-private implementation detail that might
->  * need to be changed in the future, when the requirements change.
->
-> But kmsg_dump users get the raw log, not text. Some users may even
-> use strlen() on the buffers, e.g. ramoops module was using it just
-> recently, before persistent_ram rework.
->
-> So, starting from this patch every kmsg_dump user is getting the
-> binary stuff, which is barely usable, and breaks a longstanding
-> user-visible ABIs (e.g. mtdoops, oops dumping into nvram on PowerPC,
-> and ramoops of course).
+Well, it'll take a spot that could have been used to authorize an affine
+wakeup for one, switch freqs a tad too late if it doesn't preempt, not
+to mention munching valuable cycles.
 
-These cases export their own format, it's just that the dump routines
-could copy the buffer in only two steps (beginning and end of the ring
-buffer), while in the future their code would need an update to copy
-it record for record now. The exported format in the dump does not
-necessarily need to change.
+> (yes this is one of the things that will be fixed in the code that we
+> now have working internally, and we're now making sure does not regress)
 
-It should be possible to convert them pretty easily to do that, they
-operate on their own allocated buffers already. Some of them seem to
-mangle the line-buffer already, so they should be able to copy
-record-by-record either.
+Cool.
 
-> I'm not sure how we can fix this without allocating a huge buffer
-> (and thus wasting memory), or reworking the whole kmsg_dump concept
-> and its users.
+> btw, on modern Intel CPUs, where in Idle, you have a frequency of Zero,
+> regardless of what you ask for when you're running, and where an idle
+> cpu is clock gated.... the performance governor behaves almost the same
+> as ondemand in terms of power (due to the suckitude of ondemand)... but
+> much better performance.
 
-I think an iterator in the dumper code is nicer and simpler. It will
-even provide structured data to the dumper, if the dumper wants to
-make use of it in the future. The prefix mangling of the text in the
-nvram dumper could surely benefit from that.
+That sounds like it should rock.
 
-The iterator would basically work similar to the printing of the whole
-buffer at a newly registered boot console, which was doing a similar
-logic as the dumper does.
+-Mike
 
-> p.s. And, btw, during HW bring-up, when there's even no serial
-> console usable, I somewhat liked to directly print log_buf memory
-> from a JTAG debugger, and thus see the kernel logs. Now that'll
-> look ugly. Heh. :-)
-
-Yeah, that probably does not look pretty anymore, but it still all
-works, right? Doesn't have he debugger a strings(1)-like output to
-print of a memory area?
-
-Kay
