@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab2E0Bsw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:48:52 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932338Ab2E0BHe (ORCPT
+	id S932816Ab2E0BtN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:49:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932546Ab2E0BHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:07:34 -0400
-Message-Id: <20120527010427.030988575@linuxfoundation.org>
+	Sat, 26 May 2012 21:07:30 -0400
+Message-Id: <20120527010426.881231735@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:46 +0900
+Date: Sun, 27 May 2012 10:04:45 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/94] KEYS: Use the compat keyctl() syscall wrapper on Sparc64 for Sparc32 compat
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 22/94] powerpc: Fix broken cpu_idle_wait() implementation
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 45de6767dc51358a188f75dc4ad9dfddb7fb9480 upstream.
+commit 9cd75e13de2dcf32ecc21c7f277cff3c0ced059e upstream.
 
-Use the 32-bit compat keyctl() syscall wrapper on Sparc64 for Sparc32 binary
-compatibility.
+commit 771dae818 (powerpc/cpuidle: Add cpu_idle_wait() to allow
+switching of idle routines) implemented cpu_idle_wait() for powerpc.
 
-Without this, keyctl(KEYCTL_INSTANTIATE_IOV) is liable to malfunction as it
-uses an iovec array read from userspace - though the kernel should survive this
-as it checks pointers and sizes anyway.
+The changelog says:
+ "The equivalent routine for x86 is in arch/x86/kernel/process.c
+  but the powerpc implementation is different.":
 
-I think all the other keyctl() function should just work, provided (a) the top
-32-bits of each 64-bit argument register are cleared prior to invoking the
-syscall routine, and the 32-bit address space is right at the 0-end of the
-64-bit address space.  Most of the arguments are 32-bit anyway, and so for
-those clearing is not required.
+Unfortunately the changelog is completely useless as it does not tell
+_WHY_ it is different.
 
-Signed-off-by: David Howells <dhowells@redhat.com
-cc: "David S. Miller" <davem@davemloft.net>
-cc: sparclinux@vger.kernel.org
+Aside of being different the implementation is patently wrong.
+
+The rescheduling IPI is async. That means that there is no guarantee,
+that the other cores have executed the IPI when cpu_idle_wait()
+returns. But that's the whole purpose of this function: to guarantee
+that no CPU uses the old idle handler anymore.
+
+Use the smp_functional_call() based implementation, which fulfils the
+requirements.
+
+[ This code is going to replaced by a core version to remove all the
+  pointless copies in arch/*, but this one should go to stable ]
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+Cc: Trinabh Gupta <g.trinabh@gmail.com>
+Cc: Arun R Bharadwaj <arun.r.bharadwaj@gmail.com>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Link: http://lkml.kernel.org/r/20120507175651.980164748@linutronix.de
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/Kconfig             |    3 +++
- arch/sparc/kernel/systbls_64.S |    2 +-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ arch/powerpc/kernel/idle.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -582,6 +582,9 @@ config SYSVIPC_COMPAT
- 	depends on COMPAT && SYSVIPC
- 	default y
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -109,6 +109,9 @@ void cpu_idle(void)
+ 	}
+ }
  
-+config KEYS_COMPAT
-+	def_bool y if COMPAT && KEYS
-+
- endmenu
++static void do_nothing(void *unused)
++{
++}
  
- source "net/Kconfig"
---- a/arch/sparc/kernel/systbls_64.S
-+++ b/arch/sparc/kernel/systbls_64.S
-@@ -74,7 +74,7 @@ sys_call_table32:
- 	.word sys_timer_delete, compat_sys_timer_create, sys_ni_syscall, compat_sys_io_setup, sys_io_destroy
- /*270*/	.word sys32_io_submit, sys_io_cancel, compat_sys_io_getevents, sys32_mq_open, sys_mq_unlink
- 	.word compat_sys_mq_timedsend, compat_sys_mq_timedreceive, compat_sys_mq_notify, compat_sys_mq_getsetattr, compat_sys_waitid
--/*280*/	.word sys32_tee, sys_add_key, sys_request_key, sys_keyctl, compat_sys_openat
-+/*280*/	.word sys32_tee, sys_add_key, sys_request_key, compat_sys_keyctl, compat_sys_openat
- 	.word sys_mkdirat, sys_mknodat, sys_fchownat, compat_sys_futimesat, compat_sys_fstatat64
- /*290*/	.word sys_unlinkat, sys_renameat, sys_linkat, sys_symlinkat, sys_readlinkat
- 	.word sys_fchmodat, sys_faccessat, compat_sys_pselect6, compat_sys_ppoll, sys_unshare
+ /*
+  * cpu_idle_wait - Used to ensure that all the CPUs come out of the old
+@@ -119,16 +122,9 @@ void cpu_idle(void)
+  */
+ void cpu_idle_wait(void)
+ {
+-	int cpu;
+ 	smp_mb();
+-
+-	/* kick all the CPUs so that they exit out of old idle routine */
+-	get_online_cpus();
+-	for_each_online_cpu(cpu) {
+-		if (cpu != smp_processor_id())
+-			smp_send_reschedule(cpu);
+-	}
+-	put_online_cpus();
++	/* kick all the CPUs so that they exit out of pm_idle */
++	smp_call_function(do_nothing, NULL, 1);
+ }
+ EXPORT_SYMBOL_GPL(cpu_idle_wait);
+ 
 
 
