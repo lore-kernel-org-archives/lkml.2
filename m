@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab2E0BBH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:01:07 -0400
+	id S932458Ab2E0BBO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:01:14 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab2E0BAx (ORCPT
+	with ESMTP id S932129Ab2E0BBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:00:53 -0400
-Message-Id: <20120527002621.081511016@linuxfoundation.org>
+	Sat, 26 May 2012 21:01:08 -0400
+Message-Id: <20120527002621.617848450@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:27:01 +0900
+Date: Sun, 27 May 2012 09:27:04 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jozef Vesely <vesely@gjh.sk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 48/55] media: uvcvideo: Fix ENUMINPUT handling
+        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 51/55] tile: fix bug where fls(0) was not returning 0
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +24,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 31c5f0c5e25ed71eeced170f113bb590f2f1f6f3 upstream.
+commit 9f1d62bed7f015d11b9164078b7fea433b474114 upstream.
 
-Properly validate the user-supplied index against the number of inputs.
-The code used the pin local variable instead of the index by mistake.
+This is because __builtin_clz(0) returns 64 for the "undefined" case
+of 0, since the builtin just does a right-shift 32 and "clz" instruction.
+So, use the alpha approach of casting to u32 and using __builtin_clzll().
 
-Reported-by: Jozef Vesely <vesely@gjh.sk>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/video/uvc/uvc_v4l2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/tile/include/asm/bitops.h |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_v4l2.c
-+++ b/drivers/media/video/uvc/uvc_v4l2.c
-@@ -710,7 +710,7 @@ static long uvc_v4l2_do_ioctl(struct fil
- 					break;
- 			}
- 			pin = iterm->id;
--		} else if (pin < selector->bNrInPins) {
-+		} else if (index < selector->bNrInPins) {
- 			pin = selector->baSourceID[index];
- 			list_for_each_entry(iterm, &chain->entities, chain) {
- 				if (!UVC_ENTITY_IS_ITERM(iterm))
+--- a/arch/tile/include/asm/bitops.h
++++ b/arch/tile/include/asm/bitops.h
+@@ -77,6 +77,11 @@ static inline int ffs(int x)
+ 	return __builtin_ffs(x);
+ }
+ 
++static inline int fls64(__u64 w)
++{
++	return (sizeof(__u64) * 8) - __builtin_clzll(w);
++}
++
+ /**
+  * fls - find last set bit in word
+  * @x: the word to search
+@@ -90,12 +95,7 @@ static inline int ffs(int x)
+  */
+ static inline int fls(int x)
+ {
+-	return (sizeof(int) * 8) - __builtin_clz(x);
+-}
+-
+-static inline int fls64(__u64 w)
+-{
+-	return (sizeof(__u64) * 8) - __builtin_clzll(w);
++	return fls64((unsigned int) x);
+ }
+ 
+ static inline unsigned int __arch_hweight32(unsigned int w)
 
 
