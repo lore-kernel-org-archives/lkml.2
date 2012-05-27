@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab2E0BEO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:04:14 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755822Ab2E0BA3 (ORCPT
+	id S932471Ab2E0BEk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:04:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755735Ab2E0BAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:00:29 -0400
-Message-Id: <20120527002620.340721575@linuxfoundation.org>
+	Sat, 26 May 2012 21:00:06 -0400
+Message-Id: <20120527002618.869742917@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:56 +0900
+Date: Sun, 27 May 2012 09:26:46 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 43/55] drm/i915: Avoid a double-read of PCH_IIR during interrupt handling
+        alan@lxorguk.ukuu.org.uk,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Scott Teel <scott.teel@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Jonathan Nieder <jrnieder@gmail.com>
+Subject: [ 33/55] SCSI: hpsa: Fix problem with MSA2xxx devices
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 9adab8b5a7fde248504f484e197589f3e3c922e2 upstream.
+commit 9bc3711cbb67ac620bf09b4a147cbab45b2c36c0 upstream.
 
-Currently the code re-reads PCH_IIR during the hotplug interrupt
-processing. Not only is this a wasted read, but introduces a potential
-for handling a spurious interrupt as we then may not clear all the
-interrupts processed (since the re-read IIR may contains more interrupts
-asserted than we clear using the result of the original read).
+Upgraded firmware on Smart Array P7xx (and some others) made them show up as
+SCSI revision 5 devices and this caused the driver to fail to map MSA2xxx
+logical drives to the correct bus/target/lun.  A symptom of this would be that
+the target ID of the logical drives as presented by the external storage array
+is ignored, and all such logical drives are assigned to target zero,
+differentiated only by LUN.  Some multipath software reportedly does not deal
+well with this behavior, failing to recognize different paths to the same
+device as such.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Scott Teel <scott.teel@hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/scsi/hpsa.c |   34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -422,14 +422,11 @@ static void gen6_pm_rps_work(struct work
- 	mutex_unlock(&dev_priv->dev->struct_mutex);
- }
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1654,30 +1654,26 @@ static void figure_bus_target_lun(struct
  
--static void pch_irq_handler(struct drm_device *dev)
-+static void pch_irq_handler(struct drm_device *dev, u32 pch_iir)
- {
- 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
--	u32 pch_iir;
- 	int pipe;
- 
--	pch_iir = I915_READ(SDEIIR);
--
- 	if (pch_iir & SDE_AUDIO_POWER_MASK)
- 		DRM_DEBUG_DRIVER("PCH audio power change on port %d\n",
- 				 (pch_iir & SDE_AUDIO_POWER_MASK) >>
-@@ -527,7 +524,7 @@ static irqreturn_t ivybridge_irq_handler
- 	if (de_iir & DE_PCH_EVENT_IVB) {
- 		if (pch_iir & SDE_HOTPLUG_MASK_CPT)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (pm_iir & GEN6_PM_DEFERRED_EVENTS) {
-@@ -626,7 +623,7 @@ static irqreturn_t ironlake_irq_handler(
- 	if (de_iir & DE_PCH_EVENT) {
- 		if (pch_iir & hotplug_mask)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (de_iir & DE_PCU_EVENT) {
+ 	if (is_logical_dev_addr_mode(lunaddrbytes)) {
+ 		/* logical device */
+-		if (unlikely(is_scsi_rev_5(h))) {
+-			/* p1210m, logical drives lun assignments
+-			 * match SCSI REPORT LUNS data.
++		lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
++		if (is_msa2xxx(h, device)) {
++			/* msa2xxx way, put logicals on bus 1
++			 * and match target/lun numbers box
++			 * reports.
+ 			 */
+-			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
+-			*bus = 0;
+-			*target = 0;
+-			*lun = (lunid & 0x3fff) + 1;
++			*bus = 1;
++			*target = (lunid >> 16) & 0x3fff;
++			*lun = lunid & 0x00ff;
+ 		} else {
+-			/* not p1210m... */
+-			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
+-			if (is_msa2xxx(h, device)) {
+-				/* msa2xxx way, put logicals on bus 1
+-				 * and match target/lun numbers box
+-				 * reports.
+-				 */
+-				*bus = 1;
+-				*target = (lunid >> 16) & 0x3fff;
+-				*lun = lunid & 0x00ff;
++			if (likely(is_scsi_rev_5(h))) {
++				/* All current smart arrays (circa 2011) */
++				*bus = 0;
++				*target = 0;
++				*lun = (lunid & 0x3fff) + 1;
+ 			} else {
+-				/* Traditional smart array way. */
++				/* Traditional old smart array way. */
+ 				*bus = 0;
+-				*lun = 0;
+ 				*target = lunid & 0x3fff;
++				*lun = 0;
+ 			}
+ 		}
+ 	} else {
 
 
