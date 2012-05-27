@@ -1,230 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab2E0TbO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 15:31:14 -0400
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35080
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab2E0TbL (ORCPT
+	id S1752687Ab2E0TgU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 15:36:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40904 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751839Ab2E0TgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 15:31:11 -0400
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 May 2012 15:31:11 EDT
-Date: Sun, 27 May 2012 21:24:03 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <10110495415.20120527212403@eikelenboom.it>
-To: Kees Cook <keescook@chromium.org>
-CC: "Ted Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org,
-        <linux-kernel@vger.kernel.org>, <dm-devel@redhat.com>
-Subject: Re: dm corruption? (Was: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd)
-In-Reply-To: <20120525015417.GK29466@outflux.net>
-References: <20120525015417.GK29466@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 27 May 2012 15:36:19 -0400
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4FC27CE7.20604@fastmail.fm>
+References: <4FBFEACC.8040601@fastmail.fm>
+	 <1337978725.10135.0.camel@edumazet-glaptop>
+	 <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>
+	 <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm>
+	 <1338140156.3786.10.camel@edumazet-glaptop>  <4FC27CE7.20604@fastmail.fm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 27 May 2012 21:36:14 +0200
+Message-ID: <1338147374.3786.43.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kees,
-
-Friday, May 25, 2012, 3:54:17 AM, you wrote:
-
-> Hi,
-
-> On Thu, Jan 05, 2012 at 11:43:22PM +0100, Sander Eikelenboom wrote:
->> Hello Ted,
->> 
->> Thursday, January 5, 2012, 7:15:35 PM, you wrote:
->> 
->> > On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
->> >> 
->> >> OK spoke too soon, i have been able to trigger it again:
->> >> - copying files from LV to the same LV without the snapshot went OK
->> >> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
->> 
->> > OK.  Originally, you said you did this:
->> 
->> > 1) fsck -v -p -f the filesystem
->> > 2) mount the filesystem
->> > 3) Try to copy a file
->> > 4) filesystem will be mounted RO on error  (see below)
->> > 5) fsck again, journal will be recovered, no other errors
->> > 6) start at 1)
->> 
->> > Was this with with a read-only snapshot always being in existence
->> > through all of these five steps?  When was the RO snapshot created?
->> 
->> > If a RO snapshot has to be there in order for this to happen, then
->> > this is almost certainly a device-mapper regression.  (dm-devel folks,
->> > this is a problem which apparently occurred when the user went from
->> > v3.1.5 to v3.2, so this looks likes 3.2 regression.)
->> 
->> >                                                 - Ted
->> 
->> Tried to bisect, but every kernel in between seems to have some drivers for devices f*cked up so it doesn't even boot.
->> That was a quite frustrating and disappointing experience.
->> So it's back to 3.1.5 and continue with i was actually trying to do, and try later if it's still reproducible with another disk layout.
->> 
->> Thx for your effort so far.
-
-> Has anything else happened with this?
-
-Nope not that i know off, with kernel 3.4.0 ...
-When trying to scp/sftp some files to a ext4 filesystem on a LVM partition, makes it readonly within a few seconds:
-
-May 27 21:17:23 serveerstertje kernel: [  880.140374] EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1699, 32254 clusters in bitmap, 32258 in gd
-May 27 21:17:23 serveerstertje kernel: [  880.147052] Aborting journal on device dm-42-8.
-May 27 21:17:23 serveerstertje kernel: [  880.263201] EXT4-fs (dm-42): Remounting filesystem read-only
-May 27 21:17:23 serveerstertje kernel: [  880.276990] EXT4-fs (dm-42): ext4_da_writepages: jbd2_start: 1673 pages, ino 7847939; err -30
-May 27 21:17:23 serveerstertje kernel: [  880.321661] EXT4-fs error (device dm-42): ext4_journal_start_sb:328: Detected aborted journal
-
-It's quite a pain in the ass ... and not fixed nor tracked down, it's not clear if its a ext4 problem, lvm/dm or the combination.
-
---
-Sander
-
-> I'm seeing similar problems with dm_crypt (with kernel 3.2.7),
-> only I also see "JBD2: Spotted dirty metadata buffer",
-> which I've found some (unanswered) reference to here:
-> https://bugzilla.redhat.com/show_bug.cgi?format=multiple&id=822071
-
-> I can reproduce the problem 100% of the time, but only under the
-> early-boot conditions I see it in. I've failed at any attempt so far to
-> reproduce it once the system is all the way up. :(
-
-> My steps to reproduce are:
-
-> create 3G sparse file (making this zero-filled doesn't change anything)
-> loopback mount file
-> bring up dm-crypt on loopback
-> build ext4 on dm-crypt
-> copy about 100M worth of files into the filesystem
-
-> The amount of errors reported varies, but most recently:
-
-> [   82.659992] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 14, 32258 clusters in bitmap, 32262 in gd
-> [   84.338432] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 15, 32258 clusters in bitmap, 32262 in gd
-> [   86.334815] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 16, 32258 clusters in bitmap, 32262 in gd
-> [   87.660183] JBD2: Spotted dirty metadata buffer (dev = dm-1, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
-> [   87.814646] JBD2: Spotted dirty metadata buffer (dev = dm-1, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
-> [   88.221369] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 17, 32258 clusters in bitmap, 32262 in gd
-> [   89.930729] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 18, 32258 clusters in bitmap, 32262 in gd
-> [   91.709804] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 19, 32258 clusters in bitmap, 32262 in gd
-> [   93.805440] EXT4-fs error (device dm-1): ext4_mb_generate_buddy:739: group 20, 32258 clusters in bitmap, 32262 in gd
-
-> I'm at a loss for how to track this down. :(
-
-> Any ideas?
-
-> -Kees
-
->> >> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
->> >> [ 2357.656056] Aborting journal on device dm-2-8.
->> >> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
->> >> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
->> >> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
->> >> 
->> >> 
->> >> Attached are 4x output from dumpe2fs
->> >> - dumpe2fs-xen_images-3.2.0                           Made just after boot
->> >> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
->> >> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
->> >> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
->> >> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
->> >> 
->> >> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
->> >> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
->> >> 
->> >> --
->> >> Sander
->> >> 
->> >> 
->> >> 
->> >> >> 
->> >> >> --
->> >> >> Sander
->> >> >> 
->> >> >> 
->> >> >> This is a forwarded message
->> >> >> From: Sander Eikelenboom <linux@eikelenboom.it>
->> >> >> To: "Theodore Ts'o" <tytso@mit.edu>
->> >> >> Date: Thursday, January 5, 2012, 11:37:59 AM
->> >> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> >> >> 
->> >> >> ===8<==============Original message text===============
->> >> >> 
->> >> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
->> >> >> 
->> >> >> Steps:
->> >> >> 1) fsck -v -p -f the filesystem
->> >> >> 2) mount the filesystem
->> >> >> 3) Try to copy a file
->> >> >> 4) filesystem will be mounted RO on error  (see below)
->> >> >> 5) fsck again, journal will be recovered, no other errors
->> >> >> 6) start at 1)
->> >> >> 
->> >> >> 
->> >> >> I think the way i bricked it is:
->> >> >> - make a lvm snapshot from that lvm logical disk
->> >> >> - mount that lvm snapshot as RO
->> >> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
->> >> >> - it fails and i can't recover (see above)
->> >> >> 
->> >> >> 
->> >> >> Is there a way to recover from this ?
->> >> >> 
->> >> >> 
->> >> >> 
->> >> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> >> >> [  220.749415] Aborting journal on device dm-2-8.
->> >> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
->> >> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
->> >> >> serveerstertje:/mnt/xen_images/domains/production# cd /
->> >> >> serveerstertje:/# umount /mnt/xen_images/
->> >> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
->> >> >> fsck from util-linux-ng 2.17.2
->> >> >> /dev/mapper/serveerstertje-xen_images: recovering journal
->> >> >> 
->> >> >>     277 inodes used (0.00%)
->> >> >>       5 non-contiguous files (1.8%)
->> >> >>       0 non-contiguous directories (0.0%)
->> >> >>         # of inodes with ind/dind/tind blocks: 41/41/3
->> >> >>         Extent depth histogram: 69/28/2
->> >> >> 51890920 blocks used (79.18%)
->> >> >>       0 bad blocks
->> >> >>      41 large files
->> >> >> 
->> >> >>     199 regular files
->> >> >>      53 directories
->> >> >>       0 character device files
->> >> >>       0 block device files
->> >> >>       0 fifos
->> >> >>       0 links
->> >> >>      16 symbolic links (16 fast symbolic links)
->> >> >>       0 sockets
->> >> >> --------
->> >> >>     268 files
->> >> >> serveerstertje:/#
->> >> >> 
->> >> >> 
->> >> >> 
->> >> >> 
->> >> >> System:
->> >> >> - Kernel 3.2.0
->> >> >> - Debian Squeeze with:
->> >> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
->> >> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
->> >> >> 
->> >> >> ===8<===========End of original message text===========
+On Sun, 2012-05-27 at 20:13 +0100, Jack Stone wrote:
+> On 05/27/2012 06:35 PM, Eric Dumazet wrote:
+> > So it seems we can queue in sk_receive_queue a packet with SYN flag set.
+> > 
+> > (A SYN or SYNACK packet contains DATA payload...)
+> > 
+> > The sequence number of such frames should be tweaked (seq++) instead of
+> > games we do in fast path :
+> > 
+> > if (tcp_hdr(skb)->syn)
+> >     offset--;
+> > 
+> > 
+> > Oh well this can wait linux-3.6, please test following patch in the
+> > meantime.
+> > 
+> > diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+> > index b224eb8..34c8dcc 100644
+> > --- a/net/ipv4/tcp_input.c
+> > +++ b/net/ipv4/tcp_input.c
+> > @@ -4553,7 +4553,7 @@ static bool tcp_try_coalesce(struct sock *sk,
+> >  
+> >  	*fragstolen = false;
+> >  
+> > -	if (tcp_hdr(from)->fin)
+> > +	if (tcp_hdr(from)->fin || tcp_hdr(to)->syn)
+> >  		return false;
+> >  
+> >  	/* Its possible this segment overlaps with prior segment in queue */
+> > 
+> > 
+> 
+> Still seems to fire with the above applied, it also sets of the warn just above it...
+> 
+> Could it be something to do with my staging network driver?
 
 
+Yes it could be memory corruption.
 
+(making tcp _think_ tcp_hdr(skb)->syn is set, while it was not at all.
 
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
+Please replace debugging patch by following, because tcp flags are
+copied elsewhere, so we can double check.
+
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 3ba605f..22e4c9a 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1606,8 +1606,10 @@ int tcp_recvmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			if (tcp_hdr(skb)->fin)
+ 				goto found_fin_ok;
+ 			WARN(!(flags & MSG_PEEK),
+-			     "recvmsg bug 2: copied %X seq %X rcvnxt %X fl %X\n",
+-			     *seq, TCP_SKB_CB(skb)->seq, tp->rcv_nxt, flags);
++			     "recvmsg bug 2: copied %X seq %X end_seq %X rcvnxt %X fl %X offset %u len %u syn %d tcp_flags %X\n",
++			     *seq, TCP_SKB_CB(skb)->seq, TCP_SKB_CB(skb)->end_seq,
++			     tp->rcv_nxt, flags, offset, skb->len, tcp_hdr(skb)->syn,
++				 TCP_SKB_CB(skb)->tcp_flags);
+ 		}
+ 
+ 		/* Well, if we have backlog, try to process it now yet. */
+
 
