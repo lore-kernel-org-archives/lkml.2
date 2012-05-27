@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946003Ab2E0BT7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:19:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35469 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945985Ab2E0BTx (ORCPT
+	id S1422712Ab2E0BUI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:20:08 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43902 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945985Ab2E0BUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:19:53 -0400
-Message-Id: <20120527002522.159952357@linuxfoundation.org>
+	Sat, 26 May 2012 21:20:01 -0400
+Message-Id: <20120527002523.608557935@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:16 +0900
+Date: Sun, 27 May 2012 09:26:23 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 70/91] spi/spi-fsl-spi: reference correct pdata in
- fsl_spi_cs_control
+        alan@lxorguk.ukuu.org.uk, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [ 77/91] x86-32, relocs: Whitelist more symbols for ld bug workaround
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 067aa4815a9bc12a569d8a06afef50ba5773afbf upstream.
+commit fd952815307f0f272bf49fd364a7fd2f9992bc42 upstream.
 
-Commit 178db7d3, "spi: Fix device unregistration when unregistering
-the bus master", changed spi device initialization of dev.parent pointer
-to be the master's device pointer instead of his parent.
+As noted in checkin:
 
-This introduced a bug in spi-fsl-spi, since its usage of spi device
-pointer was not updated accordingly. This was later fixed by commit
-5039a86, "spi/mpc83xx: fix NULL pdata dereference bug", but it missed
-another spot on fsl_spi_cs_control function where we also need to update
-usage of spi device pointer. This change address that.
+a3e854d95 x86, relocs: Workaround for binutils 2.22.52.0.1 section bug
 
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Acked-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+ld version 2.22.52.0.[12] can incorrectly promote relative symbols to
+absolute, if the output section they appear in is otherwise empty.
+
+Since checkin:
+
+6520fe55 x86, realmode: 16-bit real-mode code support for relocs tool
+
+we actually check for this and error out rather than silently creating
+a kernel which will malfunction if relocated.
+
+Ingo found a configuration in which __start_builtin_fw triggered the
+warning.
+
+Go through the linker script sources and look for more symbols that
+could plausibly get bogusly promoted to absolute, and add them to the
+whitelist.
+
+In general, if the following error triggers:
+
+	Invalid absolute R_386_32 relocation: <symbol>
+
+... then we should verify that <symbol> is really meant to be
+relocated, and add it and any related symbols manually to the S_REL
+regexp.
+
+Please note that 6520fe55 does not introduce the error, only the check
+for the error -- without 6520fe55 this version of ld will simply
+produce a corrupt kernel if CONFIG_RELOCATABLE is set on x86-32.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-fsl-spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/tools/relocs.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -933,7 +933,7 @@ err:
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -60,6 +60,17 @@ static const char * const sym_regex_kern
+ 	"__x86_cpu_dev_(start|end)|"
+ 	"(__parainstructions|__alt_instructions)(|_end)|"
+ 	"(__iommu_table|__apicdrivers|__smp_locks)(|_end)|"
++	"__(start|end)_pci_.*|"
++	"__(start|end)_builtin_fw|"
++	"__(start|stop)___ksymtab(|_gpl|_unused|_unused_gpl|_gpl_future)|"
++	"__(start|stop)___kcrctab(|_gpl|_unused|_unused_gpl|_gpl_future)|"
++	"__(start|stop)___param|"
++	"__(start|stop)___modver|"
++	"__(start|stop)___bug_table|"
++	"__tracedata_(start|end)|"
++	"__(start|stop)_notes|"
++	"__end_rodata|"
++	"__initramfs_start|"
+ 	"_end)$"
+ };
  
- static void fsl_spi_cs_control(struct spi_device *spi, bool on)
- {
--	struct device *dev = spi->dev.parent;
-+	struct device *dev = spi->dev.parent->parent;
- 	struct mpc8xxx_spi_probe_info *pinfo = to_of_pinfo(dev->platform_data);
- 	u16 cs = spi->chip_select;
- 	int gpio = pinfo->gpios[cs];
 
 
