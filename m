@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965437Ab2E0BM7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:12:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab2E0BMy (ORCPT
+	id S965453Ab2E0BNI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:13:08 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965428Ab2E0BM7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:12:54 -0400
-Message-Id: <20120527010435.877046091@linuxfoundation.org>
+	Sat, 26 May 2012 21:12:59 -0400
+Message-Id: <20120527010436.030362554@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:49 +0900
+Date: Sun, 27 May 2012 10:05:50 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 86/94] tile: fix bug where fls(0) was not returning 0
+        alan@lxorguk.ukuu.org.uk, Xudong Hao <xudong.hao@intel.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 87/94] intel-iommu: Add device info into list before doing context mapping
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,48 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit 9f1d62bed7f015d11b9164078b7fea433b474114 upstream.
+commit e2ad23d04c1304431ab5176c89b7b476ded2d995 upstream.
 
-This is because __builtin_clz(0) returns 64 for the "undefined" case
-of 0, since the builtin just does a right-shift 32 and "clz" instruction.
-So, use the alpha approach of casting to u32 and using __builtin_clzll().
+Add device info into list before doing context mapping, because device
+info will be used by iommu_enable_dev_iotlb(). Without it, ATS won't get
+enabled as it should be.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+ATS, while a dubious decision from a security point of view, can be very
+important for performance.
+
+Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
+Acked-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/tile/include/asm/bitops.h |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/iommu/intel-iommu.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
---- a/arch/tile/include/asm/bitops.h
-+++ b/arch/tile/include/asm/bitops.h
-@@ -77,6 +77,11 @@ static inline int ffs(int x)
- 	return __builtin_ffs(x);
- }
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -2280,12 +2280,6 @@ static int domain_add_dev_info(struct dm
+ 	if (!info)
+ 		return -ENOMEM;
  
-+static inline int fls64(__u64 w)
-+{
-+	return (sizeof(__u64) * 8) - __builtin_clzll(w);
-+}
-+
- /**
-  * fls - find last set bit in word
-  * @x: the word to search
-@@ -90,12 +95,7 @@ static inline int ffs(int x)
-  */
- static inline int fls(int x)
- {
--	return (sizeof(int) * 8) - __builtin_clz(x);
--}
+-	ret = domain_context_mapping(domain, pdev, translation);
+-	if (ret) {
+-		free_devinfo_mem(info);
+-		return ret;
+-	}
 -
--static inline int fls64(__u64 w)
--{
--	return (sizeof(__u64) * 8) - __builtin_clzll(w);
-+	return fls64((unsigned int) x);
+ 	info->segment = pci_domain_nr(pdev->bus);
+ 	info->bus = pdev->bus->number;
+ 	info->devfn = pdev->devfn;
+@@ -2298,6 +2292,17 @@ static int domain_add_dev_info(struct dm
+ 	pdev->dev.archdata.iommu = info;
+ 	spin_unlock_irqrestore(&device_domain_lock, flags);
+ 
++	ret = domain_context_mapping(domain, pdev, translation);
++	if (ret) {
++		spin_lock_irqsave(&device_domain_lock, flags);
++		list_del(&info->link);
++		list_del(&info->global);
++		pdev->dev.archdata.iommu = NULL;
++		spin_unlock_irqrestore(&device_domain_lock, flags);
++		free_devinfo_mem(info);
++		return ret;
++	}
++
+ 	return 0;
  }
  
- static inline unsigned int __arch_hweight32(unsigned int w)
 
 
