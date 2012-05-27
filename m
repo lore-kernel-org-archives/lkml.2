@@ -1,115 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab2E0TNr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 15:13:47 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58802 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751778Ab2E0TNp (ORCPT
+	id S1752425Ab2E0TYf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 15:24:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:45756 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab2E0TYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 15:13:45 -0400
-X-Sasl-enc: oZm2UamHtGSo94kyOxIOcmbjgC5YAT544VLU1ILTbVg6 1338146025
-Message-ID: <4FC27CE7.20604@fastmail.fm>
-Date: Sun, 27 May 2012 20:13:43 +0100
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 27 May 2012 15:24:30 -0400
+Date: Sun, 27 May 2012 16:24:20 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        Stefan Lippers-Hollmann <s.l-h@gmx.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Cesare Leonardi <celeonar@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [ 07/91] net/wireless: ipw2200: Fix WARN_ON occurring in
+ wiphy_register called by ipw_pci_probe
+Message-ID: <20120527192419.GA2638@herton-Z68MA-D2H-B3>
+References: <20120527010903.GA18244@kroah.com>
+ <20120527002508.441168361@linuxfoundation.org>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
-References: <4FBFEACC.8040601@fastmail.fm>  <1337978725.10135.0.camel@edumazet-glaptop>  <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>  <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm> <1338140156.3786.10.camel@edumazet-glaptop>
-In-Reply-To: <1338140156.3786.10.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120527002508.441168361@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2012 06:35 PM, Eric Dumazet wrote:
-> So it seems we can queue in sk_receive_queue a packet with SYN flag set.
+On Sun, May 27, 2012 at 09:25:13AM +0900, Greg KH wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
 > 
-> (A SYN or SYNACK packet contains DATA payload...)
+> ------------------
+
+As I see, this is not needed on 3.4.x or 3.3.x, since the commit
+"ipw2200: Fix order of device registration", wasn't included in 3.4 or
+any earlier kernels.
+
+This is fixing an issue introduced on that commit ("ipw2200: Fix order of
+device registration"), that moved register_netdev after ipw_wdev_init,
+but ipw_wdev_init needs initialization made on ndo_init callback.
+
+Unless there is any plan to include any of the "... Fix order of device
+registration" commits on 3.4 stable, I don't see any reason to include
+the fix for them.
+
+Besides that, I noted that ipw2100 seems to need a similar fix as below
+after the change "ipw2100: Fix order of device registration". ipw2100
+will have the same issue I expect: because ipw2100_wdev_init was moved
+before register_netdev, the ndo_init callback that runs ipw2100_up will
+only execute later with required initialization, after wiphy_register
+inside ipw2100_wdev_init runs.
+
 > 
-> The sequence number of such frames should be tweaked (seq++) instead of
-> games we do in fast path :
+> From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 > 
-> if (tcp_hdr(skb)->syn)
->     offset--;
+> commit 7ed85b65ab611ba841d508ae4ff8c45fa0c48c80 upstream.
 > 
+> The problem was found by Stefan Lippers-Hollmann
+> http://marc.info/?l=linux-wireless&m=132720334512946&w=2
 > 
-> Oh well this can wait linux-3.6, please test following patch in the
-> meantime.
+> WARNING: at /tmp/buildd/linux-aptosid-3.2/debian/build/source_i386_none/net/wireless/core.c:562 wiphy_register+0x45/0x38d [cfg80211]()
+> Hardware name: TravelMate 290 \xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff\xffffffff
+> Modules linked in: ipw2200(+) iTCO_wdt libipw joydev drm snd_seq snd_timer snd_seq_device iTCO_vendor_support yenta_socket snd intel_agp i2c_i801 pcmcia_rsrc cfg80211 soundcore parport_pc psmouse parport rng_core snd_page_alloc serio_raw pcspkr i2c_algo_bit intel_gtt pcmcia_core evdev irda crc_ccitt rfkill lib80211 processor container ac battery shpchp pci_hotplug button ext4 mbcache jbd2 crc16 dm_mod sd_mod sr_mod crc_t10dif cdrom ata_generic pata_acpi ata_piix libata scsi_mod firewire_ohci firewire_core crc_itu_t 8139too 8139cp mii uhci_hcd ehci_hcd usbcore usb_common [last unloaded: scsi_wait_scan]
+> Pid: 328, comm: modprobe Not tainted 3.2-1.slh.4-aptosid-686 #1
+> Call Trace:
+> [<c012eaf4>] ? warn_slowpath_common+0x7c/0x8f
+> [<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+> [<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+> [<c012eb22>] ? warn_slowpath_null+0x1b/0x1f
+> [<e0ff0b3e>] ? wiphy_register+0x45/0x38d [cfg80211]
+> [<c01f89d7>] ? internal_create_group+0xf5/0xff
+> [<e0a2de1c>] ? ipw_pci_probe+0xa9a/0xbd0 [ipw2200]
+> [<c01519f4>] ? arch_local_irq_save+0xf/0x14
+> [<c0252986>] ? pci_device_probe+0x53/0x9a
+> [<c02c2820>] ? driver_probe_device+0x94/0x124
+> [<c0252871>] ? pci_match_id+0x15/0x34
+> [<c02c28f0>] ? __driver_attach+0x40/0x5b
+> [<c02c1d81>] ? bus_for_each_dev+0x37/0x60
+> [<c02c25aa>] ? driver_attach+0x17/0x1a
+> [<c02c28b0>] ? driver_probe_device+0x124/0x124
+> [<c02c22c4>] ? bus_add_driver+0x92/0x1d1
+> [<e099d000>] ? 0xe099cfff
+> [<c02c2cb8>] ? driver_register+0x7d/0xd4
+> [<c017cd50>] ? jump_label_module_notify+0xec/0x167
+> [<e099d000>] ? 0xe099cfff
+> [<c0253017>] ? __pci_register_driver+0x32/0x87
+> [<e099d000>] ? 0xe099cfff
+> [<e099d02e>] ? ipw_init+0x2e/0x72 [ipw2200]
+> [<c0101173>] ? do_one_initcall+0x7d/0x132
+> [<c0145016>] ? __blocking_notifier_call_chain+0x47/0x4f
+> [<c0154a73>] ? sys_init_module+0x13a4/0x159c
+> [<c03a639f>] ? sysenter_do_call+0x12/0x28
 > 
-> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-> index b224eb8..34c8dcc 100644
-> --- a/net/ipv4/tcp_input.c
-> +++ b/net/ipv4/tcp_input.c
-> @@ -4553,7 +4553,7 @@ static bool tcp_try_coalesce(struct sock *sk,
+> This warning appears only if we apply Ben Hutchings' fix
+> http://marc.info/?l=linux-wireless&m=132720195012653&w=2
+> for the bug reported by Cesare Leonardi
+> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=656813
+> with cfg80211 warning during device registration
+> ("cfg80211: failed to add phy80211 symlink to netdev!").
+> 
+> We separate device bring up and registration with network stack
+> to avoid the problem.
+> 
+> After that Ben Hutchings' fix can be applied to fix the bug.
+> 
+> Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+> Tested-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+> Signed-off-by: John W. Linville <linville@tuxdriver.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  drivers/net/wireless/ipw2x00/ipw2200.c |   21 ++++++---------------
+>  1 file changed, 6 insertions(+), 15 deletions(-)
+> 
+> --- a/drivers/net/wireless/ipw2x00/ipw2200.c
+> +++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+> @@ -11443,20 +11443,6 @@ static void ipw_bg_down(struct work_stru
+>  	mutex_unlock(&priv->mutex);
+>  }
 >  
->  	*fragstolen = false;
+> -/* Called by register_netdev() */
+> -static int ipw_net_init(struct net_device *dev)
+> -{
+> -	int rc = 0;
+> -	struct ipw_priv *priv = libipw_priv(dev);
+> -
+> -	mutex_lock(&priv->mutex);
+> -	if (ipw_up(priv))
+> -		rc = -EIO;
+> -	mutex_unlock(&priv->mutex);
+> -
+> -	return rc;
+> -}
+> -
+>  static int ipw_wdev_init(struct net_device *dev)
+>  {
+>  	int i, rc = 0;
+> @@ -11722,7 +11708,6 @@ static void ipw_prom_free(struct ipw_pri
+>  #endif
 >  
-> -	if (tcp_hdr(from)->fin)
-> +	if (tcp_hdr(from)->fin || tcp_hdr(to)->syn)
->  		return false;
+>  static const struct net_device_ops ipw_netdev_ops = {
+> -	.ndo_init		= ipw_net_init,
+>  	.ndo_open		= ipw_net_open,
+>  	.ndo_stop		= ipw_net_stop,
+>  	.ndo_set_rx_mode	= ipw_net_set_multicast_list,
+> @@ -11849,6 +11834,12 @@ static int __devinit ipw_pci_probe(struc
+>  		goto out_release_irq;
+>  	}
 >  
->  	/* Its possible this segment overlaps with prior segment in queue */
+> +	if (ipw_up(priv)) {
+> +		mutex_unlock(&priv->mutex);
+> +		err = -EIO;
+> +		goto out_remove_sysfs;
+> +	}
+> +
+>  	mutex_unlock(&priv->mutex);
+>  	err = register_netdev(net_dev);
+>  	if (err) {
 > 
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Still seems to fire with the above applied, it also sets of the warn just above it...
-
-Could it be something to do with my staging network driver?
-
-[ 2605.769938] ------------[ cut here ]------------
-[ 2605.769942] WARNING: at net/ipv4/tcp.c:1611 tcp_recvmsg+0xb36/0xc90()
-[ 2605.769943] Hardware name: System Product Name
-[ 2605.769944] recvmsg bug 2: copied 84322A4D seq 84322A4D end_seq 84322A86 rcvnxt 843233B3 fl 0 offset 4294967295 len 57 syn 1
-[ 2605.769982] Modules linked in: fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge lockd rfcomm 8021q garp stp llc bnep ip6t_REJECT nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek vhost_net macvtap macvlan tun coretemp virtio_net kvm_intel kvm btusb bluetooth snd_hda_intel snd_hda_codec snd_hwdep snd_seq sunrpc r8712u(C) snd_seq_device snd_pcm snd_timer eeepc_wmi asus_wmi sparse_keymap e1000e mxm_wmi snd soundcore joydev wmi rfkill i2c_i801 snd_page_alloc iTCO_wdt serio_raw hid_logitech_dj pcspkr iTCO_vendor_support binfmt_misc microcode uinput crc32c_intel ghash_clmulni_intel firewire_ohci firewire_core crc_itu_t [last unloaded: scsi_wait_scan]
-[ 2605.769985] Pid: 3305, comm: firefox Tainted: G        WC   3.4.0-07822-g786f02b-dirty #2
-[ 2605.769986] Call Trace:
-[ 2605.769988]  [<ffffffff8106010f>] warn_slowpath_common+0x7f/0xc0
-[ 2605.769990]  [<ffffffff81060206>] warn_slowpath_fmt+0x46/0x50
-[ 2605.769993]  [<ffffffff8163f7f5>] ? tcp_recvmsg+0x35/0xc90
-[ 2605.769996]  [<ffffffff816402f6>] tcp_recvmsg+0xb36/0xc90
-[ 2605.769998]  [<ffffffff8166ac20>] ? inet_sendmsg+0x230/0x230
-[ 2605.770001]  [<ffffffff8166ad57>] inet_recvmsg+0x137/0x250
-[ 2605.770004]  [<ffffffff815d8288>] ? sock_update_classid+0x128/0x310
-[ 2605.770006]  [<ffffffff815d04ed>] sock_recvmsg+0x11d/0x140
-[ 2605.770009]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
-[ 2605.770012]  [<ffffffff811d1920>] ? __pollwait+0xf0/0xf0
-[ 2605.770014]  [<ffffffff811bdd76>] ? fget_light+0x106/0x4f0
-[ 2605.770017]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
-[ 2605.770020]  [<ffffffff815d3941>] sys_recvfrom+0xf1/0x170
-[ 2605.770022]  [<ffffffff810f6ddc>] ? __audit_syscall_entry+0xcc/0x310
-[ 2605.770025]  [<ffffffff8132dfce>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[ 2605.770028]  [<ffffffff8174cc69>] system_call_fastpath+0x16/0x1b
-[ 2605.770029] ---[ end trace f86533e3bdc5b326 ]---
-------------[ cut here ]------------
-[ 2605.770032] WARNING: at net/ipv4/tcp.c:1598 tcp_recvmsg+0x409/0xc90()
-[ 2605.770034] Hardware name: System Product Name
-[ 2605.770082] recvmsg bug: copied 84322A4D seq 84322A86 rcvnxt 843233B3 fl 0
-[ 2605.770119] Modules linked in: fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge lockd rfcomm 8021q garp stp llc bnep ip6t_REJECT nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek vhost_net macvtap macvlan tun coretemp virtio_net kvm_intel kvm btusb bluetooth snd_hda_intel snd_hda_codec snd_hwdep snd_seq sunrpc r8712u(C) snd_seq_device snd_pcm snd_timer eeepc_wmi asus_wmi sparse_keymap e1000e mxm_wmi snd soundcore joydev wmi rfkill i2c_i801 snd_page_alloc iTCO_wdt serio_raw hid_logitech_dj pcspkr iTCO_vendor_support binfmt_misc microcode uinput crc32c_intel ghash_clmulni_intel firewire_ohci firewire_core crc_itu_t [last unloaded: scsi_wait_scan]
-[ 2605.770122] Pid: 3305, comm: firefox Tainted: G        WC   3.4.0-07822-g786f02b-dirty #2
-[ 2605.770123] Call Trace:
-[ 2605.770125]  [<ffffffff8106010f>] warn_slowpath_common+0x7f/0xc0
-[ 2605.770128]  [<ffffffff81060206>] warn_slowpath_fmt+0x46/0x50
-[ 2605.770130]  [<ffffffff8163f7f5>] ? tcp_recvmsg+0x35/0xc90
-[ 2605.770132]  [<ffffffff8163fbc9>] tcp_recvmsg+0x409/0xc90
-[ 2605.770135]  [<ffffffff8166ac20>] ? inet_sendmsg+0x230/0x230
-[ 2605.770138]  [<ffffffff8166ad57>] inet_recvmsg+0x137/0x250
-[ 2605.770140]  [<ffffffff815d8288>] ? sock_update_classid+0x128/0x310
-[ 2605.770143]  [<ffffffff815d04ed>] sock_recvmsg+0x11d/0x140
-[ 2605.770146]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
-[ 2605.770148]  [<ffffffff811d1920>] ? __pollwait+0xf0/0xf0
-[ 2605.770150]  [<ffffffff811bdd76>] ? fget_light+0x106/0x4f0
-[ 2605.770152]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
-[ 2605.770154]  [<ffffffff815d3941>] sys_recvfrom+0xf1/0x170
-[ 2605.770157]  [<ffffffff810f6ddc>] ? __audit_syscall_entry+0xcc/0x310
-[ 2605.770160]  [<ffffffff8132dfce>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[ 2605.770163]  [<ffffffff8174cc69>] system_call_fastpath+0x16/0x1b
-[ 2605.770164] ---[ end trace f86533e3bdc5b327 ]---
-
-Thanks,
-
-Jack
+-- 
+[]'s
+Herton
