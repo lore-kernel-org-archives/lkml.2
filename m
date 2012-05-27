@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946022Ab2E0BUz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:20:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35469 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1945996Ab2E0BUs (ORCPT
+	id S1946054Ab2E0BVK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:21:10 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946006Ab2E0BUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:20:48 -0400
-Message-Id: <20120527002525.475710085@linuxfoundation.org>
+	Sat, 26 May 2012 21:20:53 -0400
+Message-Id: <20120527002525.710458499@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:32 +0900
+Date: Sun, 27 May 2012 09:26:33 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dima Zavin <dima@android.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [ 86/91] ARM: 7365/1: drop unused parameter from flush_cache_user_range
+        alan@lxorguk.ukuu.org.uk, Catalin Marinas <catalin.marinas@arm.com>,
+        Dima Zavin <dima@android.com>, John Stultz <john.stultz@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 87/91] ARM: 7409/1: Do not call flush_cache_user_range with mmap_sem held
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,49 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dima Zavin <dima@android.com>
 
-commit 4542b6a0fa6b48d9ae6b41c1efeb618b7a221b2a upstream.
+commit 435a7ef52db7d86e67a009b36cac1457f8972391 upstream.
 
-vma isn't used and flush_cache_user_range isn't a standard macro that
-is used on several archs with the same prototype. In fact only unicore32
-has a macro with the same name (with an identical implementation and no
-in-tree users).
+We can't be holding the mmap_sem while calling flush_cache_user_range
+because the flush can fault. If we fault on a user address, the
+page fault handler will try to take mmap_sem again. Since both places
+acquire the read lock, most of the time it succeeds. However, if another
+thread tries to acquire the write lock on the mmap_sem (e.g. mmap) in
+between the call to flush_cache_user_range and the fault, the down_read
+in do_page_fault will deadlock.
 
-This is a part of a patch proposed by Dima Zavin (with Message-id:
-1272439931-12795-1-git-send-email-dima@android.com) that didn't get
-accepted.
+[will: removed drop of vma parameter as already queued by rmk (7365/1)]
 
-Cc: Dima Zavin <dima@android.com>
 Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Dima Zavin <dima@android.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arm/include/asm/cacheflush.h |    2 +-
- arch/arm/kernel/traps.c           |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/kernel/traps.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -249,7 +249,7 @@ extern void flush_cache_page(struct vm_a
-  * Harvard caches are synchronised for the user space address range.
-  * This is used for the ARM private sys_cacheflush system call.
-  */
--#define flush_cache_user_range(vma,start,end) \
-+#define flush_cache_user_range(start,end) \
- 	__cpuc_coherent_user_range((start) & PAGE_MASK, PAGE_ALIGN(end))
- 
- /*
 --- a/arch/arm/kernel/traps.c
 +++ b/arch/arm/kernel/traps.c
-@@ -496,7 +496,7 @@ do_cache_op(unsigned long start, unsigne
+@@ -496,7 +496,9 @@ do_cache_op(unsigned long start, unsigne
  		if (end > vma->vm_end)
  			end = vma->vm_end;
  
--		flush_cache_user_range(vma, start, end);
-+		flush_cache_user_range(start, end);
++		up_read(&mm->mmap_sem);
+ 		flush_cache_user_range(start, end);
++		return;
  	}
  	up_read(&mm->mmap_sem);
  }
