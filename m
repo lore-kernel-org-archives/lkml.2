@@ -1,96 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752373Ab2E0TMm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 15:12:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24845 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751848Ab2E0TMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 15:12:38 -0400
-Date: Sun, 27 May 2012 21:11:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Louis Rilling <louis.rilling@kerlabs.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [PATCH v2 -mm 1/1] pidns: find_new_reaper() can no longer switch
-	to init_pid_ns.child_reaper
-Message-ID: <20120527191106.GC13929@redhat.com>
-References: <87zk95kper.fsf@xmission.com> <20120521124414.GA20391@redhat.com> <87d35x5ank.fsf_-_@xmission.com> <20120522122315.c3f2118c.akpm@linux-foundation.org> <20120523145239.GA20378@redhat.com> <20120525151526.GA13111@redhat.com> <20120525155941.GA16885@redhat.com> <20120525160008.GB16885@redhat.com> <87pq9sdjhn.fsf@xmission.com> <20120527191032.GB13929@redhat.com>
+	id S1752520Ab2E0TNr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 15:13:47 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58802 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751778Ab2E0TNp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 15:13:45 -0400
+X-Sasl-enc: oZm2UamHtGSo94kyOxIOcmbjgC5YAT544VLU1ILTbVg6 1338146025
+Message-ID: <4FC27CE7.20604@fastmail.fm>
+Date: Sun, 27 May 2012 20:13:43 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120527191032.GB13929@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+References: <4FBFEACC.8040601@fastmail.fm>  <1337978725.10135.0.camel@edumazet-glaptop>  <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>  <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm> <1338140156.3786.10.camel@edumazet-glaptop>
+In-Reply-To: <1338140156.3786.10.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_new_reaper() changes pid_ns->child_reaper, see add0d4df
-"pid_ns: zap_pid_ns_processes: fix the ->child_reaper changing".
+On 05/27/2012 06:35 PM, Eric Dumazet wrote:
+> So it seems we can queue in sk_receive_queue a packet with SYN flag set.
+> 
+> (A SYN or SYNACK packet contains DATA payload...)
+> 
+> The sequence number of such frames should be tweaked (seq++) instead of
+> games we do in fast path :
+> 
+> if (tcp_hdr(skb)->syn)
+>     offset--;
+> 
+> 
+> Oh well this can wait linux-3.6, please test following patch in the
+> meantime.
+> 
+> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+> index b224eb8..34c8dcc 100644
+> --- a/net/ipv4/tcp_input.c
+> +++ b/net/ipv4/tcp_input.c
+> @@ -4553,7 +4553,7 @@ static bool tcp_try_coalesce(struct sock *sk,
+>  
+>  	*fragstolen = false;
+>  
+> -	if (tcp_hdr(from)->fin)
+> +	if (tcp_hdr(from)->fin || tcp_hdr(to)->syn)
+>  		return false;
+>  
+>  	/* Its possible this segment overlaps with prior segment in queue */
+> 
+> 
 
-The original reason has gone away after the previous patch,
-->children list must be empty after zap_pid_ns_processes().
+Still seems to fire with the above applied, it also sets of the warn just above it...
 
-However now we can not switch to init_pid_ns.child_reaper.
-__unhash_process() relies on the "->child_reaper == parent"
-check, but this check does not work if the last exiting task
-is also the child reaper.
+Could it be something to do with my staging network driver?
 
-As Eric sugested, we can change __unhash_process() to use the
-parent's pid_ns and remove this code.
+[ 2605.769938] ------------[ cut here ]------------
+[ 2605.769942] WARNING: at net/ipv4/tcp.c:1611 tcp_recvmsg+0xb36/0xc90()
+[ 2605.769943] Hardware name: System Product Name
+[ 2605.769944] recvmsg bug 2: copied 84322A4D seq 84322A4D end_seq 84322A86 rcvnxt 843233B3 fl 0 offset 4294967295 len 57 syn 1
+[ 2605.769982] Modules linked in: fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge lockd rfcomm 8021q garp stp llc bnep ip6t_REJECT nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek vhost_net macvtap macvlan tun coretemp virtio_net kvm_intel kvm btusb bluetooth snd_hda_intel snd_hda_codec snd_hwdep snd_seq sunrpc r8712u(C) snd_seq_device snd_pcm snd_timer eeepc_wmi asus_wmi sparse_keymap e1000e mxm_wmi snd soundcore joydev wmi rfkill i2c_i801 snd_page_alloc iTCO_wdt serio_raw hid_logitech_dj pcspkr iTCO_vendor_support binfmt_misc microcode uinput crc32c_intel ghash_clmulni_intel firewire_ohci firewire_core crc_itu_t [last unloaded: scsi_wait_scan]
+[ 2605.769985] Pid: 3305, comm: firefox Tainted: G        WC   3.4.0-07822-g786f02b-dirty #2
+[ 2605.769986] Call Trace:
+[ 2605.769988]  [<ffffffff8106010f>] warn_slowpath_common+0x7f/0xc0
+[ 2605.769990]  [<ffffffff81060206>] warn_slowpath_fmt+0x46/0x50
+[ 2605.769993]  [<ffffffff8163f7f5>] ? tcp_recvmsg+0x35/0xc90
+[ 2605.769996]  [<ffffffff816402f6>] tcp_recvmsg+0xb36/0xc90
+[ 2605.769998]  [<ffffffff8166ac20>] ? inet_sendmsg+0x230/0x230
+[ 2605.770001]  [<ffffffff8166ad57>] inet_recvmsg+0x137/0x250
+[ 2605.770004]  [<ffffffff815d8288>] ? sock_update_classid+0x128/0x310
+[ 2605.770006]  [<ffffffff815d04ed>] sock_recvmsg+0x11d/0x140
+[ 2605.770009]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
+[ 2605.770012]  [<ffffffff811d1920>] ? __pollwait+0xf0/0xf0
+[ 2605.770014]  [<ffffffff811bdd76>] ? fget_light+0x106/0x4f0
+[ 2605.770017]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
+[ 2605.770020]  [<ffffffff815d3941>] sys_recvfrom+0xf1/0x170
+[ 2605.770022]  [<ffffffff810f6ddc>] ? __audit_syscall_entry+0xcc/0x310
+[ 2605.770025]  [<ffffffff8132dfce>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[ 2605.770028]  [<ffffffff8174cc69>] system_call_fastpath+0x16/0x1b
+[ 2605.770029] ---[ end trace f86533e3bdc5b326 ]---
+------------[ cut here ]------------
+[ 2605.770032] WARNING: at net/ipv4/tcp.c:1598 tcp_recvmsg+0x409/0xc90()
+[ 2605.770034] Hardware name: System Product Name
+[ 2605.770082] recvmsg bug: copied 84322A4D seq 84322A86 rcvnxt 843233B3 fl 0
+[ 2605.770119] Modules linked in: fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle bridge lockd rfcomm 8021q garp stp llc bnep ip6t_REJECT nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv6 nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek vhost_net macvtap macvlan tun coretemp virtio_net kvm_intel kvm btusb bluetooth snd_hda_intel snd_hda_codec snd_hwdep snd_seq sunrpc r8712u(C) snd_seq_device snd_pcm snd_timer eeepc_wmi asus_wmi sparse_keymap e1000e mxm_wmi snd soundcore joydev wmi rfkill i2c_i801 snd_page_alloc iTCO_wdt serio_raw hid_logitech_dj pcspkr iTCO_vendor_support binfmt_misc microcode uinput crc32c_intel ghash_clmulni_intel firewire_ohci firewire_core crc_itu_t [last unloaded: scsi_wait_scan]
+[ 2605.770122] Pid: 3305, comm: firefox Tainted: G        WC   3.4.0-07822-g786f02b-dirty #2
+[ 2605.770123] Call Trace:
+[ 2605.770125]  [<ffffffff8106010f>] warn_slowpath_common+0x7f/0xc0
+[ 2605.770128]  [<ffffffff81060206>] warn_slowpath_fmt+0x46/0x50
+[ 2605.770130]  [<ffffffff8163f7f5>] ? tcp_recvmsg+0x35/0xc90
+[ 2605.770132]  [<ffffffff8163fbc9>] tcp_recvmsg+0x409/0xc90
+[ 2605.770135]  [<ffffffff8166ac20>] ? inet_sendmsg+0x230/0x230
+[ 2605.770138]  [<ffffffff8166ad57>] inet_recvmsg+0x137/0x250
+[ 2605.770140]  [<ffffffff815d8288>] ? sock_update_classid+0x128/0x310
+[ 2605.770143]  [<ffffffff815d04ed>] sock_recvmsg+0x11d/0x140
+[ 2605.770146]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
+[ 2605.770148]  [<ffffffff811d1920>] ? __pollwait+0xf0/0xf0
+[ 2605.770150]  [<ffffffff811bdd76>] ? fget_light+0x106/0x4f0
+[ 2605.770152]  [<ffffffff811bdcb8>] ? fget_light+0x48/0x4f0
+[ 2605.770154]  [<ffffffff815d3941>] sys_recvfrom+0xf1/0x170
+[ 2605.770157]  [<ffffffff810f6ddc>] ? __audit_syscall_entry+0xcc/0x310
+[ 2605.770160]  [<ffffffff8132dfce>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[ 2605.770163]  [<ffffffff8174cc69>] system_call_fastpath+0x16/0x1b
+[ 2605.770164] ---[ end trace f86533e3bdc5b327 ]---
 
-Also, with this change we can move detach_pid(PIDTYPE_PID) back,
-where it was before the previous fix.
+Thanks,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/exit.c |   10 ++--------
- 1 files changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 6d66cd2..6424e6b 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -64,6 +64,7 @@ static void exit_mm(struct task_struct * tsk);
- static void __unhash_process(struct task_struct *p, bool group_dead)
- {
- 	nr_threads--;
-+	detach_pid(p, PIDTYPE_PID);
- 	if (group_dead) {
- 		detach_pid(p, PIDTYPE_PGID);
- 		detach_pid(p, PIDTYPE_SID);
-@@ -79,13 +80,12 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
- 		if (IS_ENABLED(CONFIG_PID_NS)) {
- 			struct task_struct *parent = p->real_parent;
- 
--			if ((task_active_pid_ns(p)->child_reaper == parent) &&
-+			if ((task_active_pid_ns(parent)->child_reaper == parent) &&
- 			    list_empty(&parent->children) &&
- 			    (parent->flags & PF_EXITING))
- 				wake_up_process(parent);
- 		}
- 	}
--	detach_pid(p, PIDTYPE_PID);
- 	list_del_rcu(&p->thread_group);
- }
- 
-@@ -732,12 +732,6 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
- 
- 		zap_pid_ns_processes(pid_ns);
- 		write_lock_irq(&tasklist_lock);
--		/*
--		 * We can not clear ->child_reaper or leave it alone.
--		 * There may by stealth EXIT_DEAD tasks on ->children,
--		 * forget_original_parent() must move them somewhere.
--		 */
--		pid_ns->child_reaper = init_pid_ns.child_reaper;
- 	} else if (father->signal->has_child_subreaper) {
- 		struct task_struct *reaper;
- 
--- 
-1.5.5.1
-
-
+Jack
