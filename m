@@ -1,123 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab2E0BlG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:41:06 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	id S1756717Ab2E0Bll (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:41:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53721 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965320Ab2E0BLX (ORCPT
+	with ESMTP id S1755129Ab2E0Blg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:11:23 -0400
-Message-Id: <20120527010433.347940776@linuxfoundation.org>
-User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:31 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bernard Kilarski <bernard.r.kilarski@intel.com>,
-        Ben Widawsky <benjamin.widawsky@intel.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 68/94] drm/i915: [GEN7] Use HW scheduler for fixed function shaders
-In-Reply-To: <20120527010332.GA11170@kroah.com>
+	Sat, 26 May 2012 21:41:36 -0400
+Message-ID: <4FC18646.8010301@gmail.com>
+Date: Sun, 27 May 2012 09:41:26 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Dimitri Sivanich <sivanich@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in smp_irq_move_cleanup_interrupt
+References: <20120521164959.GE16454@sgi.com>   <alpine.LFD.2.02.1205212304580.3231@ionos>  <20120521211917.GA25567@sgi.com>   <alpine.LFD.2.02.1205212324260.3231@ionos> <20120523181636.GA2032@sgi.com>   <20120523190414.GA5263@sgi.com>   <1337801086.1997.197.camel@sbsiddha-desk.sc.intel.com>   <20120523200226.GA6936@sgi.com>   <1337816970.1997.207.camel@sbsiddha-desk.sc.intel.com>   <20120524143711.GA24711@sgi.com>  <1337883560.7938.9.camel@sbsiddha-desk.sc.intel.com>  <alpine.LFD.2.02.1205242113400.3231@ionos> <1337991809.7938.36.camel@sbsiddha-desk.sc.intel.com> <alpine.LFD.2.02.1205261216160.3231@ionos>
+In-Reply-To: <alpine.LFD.2.02.1205261216160.3231@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+I have realized the same issue with typical usages of for_each_irq_desc(), 
+which may access freed memory with SPARSE_IRQ. My naive solution was to
+avoid freeing irq_desc even SPARSE_IRQ_ is enabled.
 
-------------------
+        for_each_irq_desc(i, desc) {
+                raw_spin_lock_irq(&desc->lock);
 
-From: Ben Widawsky <ben@bwidawsk.net>
-
-commit a1e969e0332de7a430e62822cee8f2ec8d83cd7c upstream.
-
-This originally started as a patch from Bernard as a way of simply
-setting the VS scheduler. After submitting the RFC patch, we decided to
-also modify the DS scheduler. To be most explicit, I've made the patch
-explicitly set all scheduler modes, and included the defines for other
-modes (in case someone feels frisky later).
-
-The rest of the story gets a bit weird. The first version of the patch
-showed an almost unbelievable performance improvement. Since rebasing my
-branch it appears the performance improvement has gone, unfortunately.
-But setting these bits seem to be the right thing to do given that the
-docs describe corruption that can occur with the default settings.
-
-In summary, I am seeing no more perf improvements (or regressions) in my
-limited testing, but we believe this should be set to prevent rendering
-corruption, therefore cc stable.
-
-v1: Clear bit 4 also (Ken + Eugeni)
-Do a full clear + set of the bits we want (Me).
-
-Cc: Bernard Kilarski <bernard.r.kilarski@intel.com>
-Reviewed-by (RFC): Kenneth Graunke <kenneth@whitecape.org>
-Signed-off-by: Ben Widawsky <benjamin.widawsky@intel.com>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/gpu/drm/i915/i915_reg.h      |   15 +++++++++++++++
- drivers/gpu/drm/i915/intel_display.c |   14 ++++++++++++++
- 2 files changed, 29 insertions(+)
-
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -570,6 +570,21 @@
- 
- #define GEN6_BSD_RNCID			0x12198
- 
-+#define GEN7_FF_THREAD_MODE		0x20a0
-+#define   GEN7_FF_SCHED_MASK		0x0077070
-+#define   GEN7_FF_TS_SCHED_HS1		(0x5<<16)
-+#define   GEN7_FF_TS_SCHED_HS0		(0x3<<16)
-+#define   GEN7_FF_TS_SCHED_LOAD_BALANCE	(0x1<<16)
-+#define   GEN7_FF_TS_SCHED_HW		(0x0<<16) /* Default */
-+#define   GEN7_FF_VS_SCHED_HS1		(0x5<<12)
-+#define   GEN7_FF_VS_SCHED_HS0		(0x3<<12)
-+#define   GEN7_FF_VS_SCHED_LOAD_BALANCE	(0x1<<12) /* Default */
-+#define   GEN7_FF_VS_SCHED_HW		(0x0<<12)
-+#define   GEN7_FF_DS_SCHED_HS1		(0x5<<4)
-+#define   GEN7_FF_DS_SCHED_HS0		(0x3<<4)
-+#define   GEN7_FF_DS_SCHED_LOAD_BALANCE	(0x1<<4)  /* Default */
-+#define   GEN7_FF_DS_SCHED_HW		(0x0<<4)
-+
- /*
-  * Framebuffer compression (915+ only)
-  */
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8467,6 +8467,18 @@ static void gen6_init_clock_gating(struc
- 	}
- }
- 
-+static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
-+{
-+	uint32_t reg = I915_READ(GEN7_FF_THREAD_MODE);
-+
-+	reg &= ~GEN7_FF_SCHED_MASK;
-+	reg |= GEN7_FF_TS_SCHED_HW;
-+	reg |= GEN7_FF_VS_SCHED_HW;
-+	reg |= GEN7_FF_DS_SCHED_HW;
-+
-+	I915_WRITE(GEN7_FF_THREAD_MODE, reg);
-+}
-+
- static void ivybridge_init_clock_gating(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -8511,6 +8523,8 @@ static void ivybridge_init_clock_gating(
- 			   DISPPLANE_TRICKLE_FEED_DISABLE);
- 		intel_flush_display_plane(dev_priv, pipe);
- 	}
-+
-+	gen7_setup_fixed_func_scheduler(dev_priv);
- }
- 
- static void g4x_init_clock_gating(struct drm_device *dev)
-
+On 05/26/2012 06:18 PM, Thomas Gleixner wrote:
+> On Fri, 25 May 2012, Suresh Siddha wrote:
+>> On Thu, 2012-05-24 at 21:16 +0200, Thomas Gleixner wrote:
+>> There are other (not-so common) irq desc references, like in the
+>> show_interrupts() (cat /proc/interrupts path) etc, that does things like
+>> this in the process context:
+>>
+>>         desc = irq_to_desc(i);
+>>         if (!desc)
+>>                 return 0;
+>>
+>>         raw_spin_lock_irqsave(&desc->lock, flags);
+>>
+>> May be we should introduce something like
+>> get_irq_desc_locked()/put_irq_desc_locked() that can safely access the
+>> irq desc with pre-emption/irq's disabled and lock it etc. And the
+>> synchronize_sched() will enable the destroy_irq()/free_desc() to free it
+>> safely etc.
+> 
+> I want to avoid that and instead use proper refcounting. The reason is
+> that we want to move the irq descriptor when the affinity changes
+> nodes, and for that we need refcounting anyway.
+> 
+> Thanks,
+> 
+> 	tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
