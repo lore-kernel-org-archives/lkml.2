@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab2E0GVe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 02:21:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751379Ab2E0GVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 02:21:32 -0400
-Date: Sun, 27 May 2012 09:21:29 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, mtosatti@redhat.com,
-        Dave Jones <davej@redhat.com>, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kvm: KVM internal error. Suberror: 1
-Message-ID: <20120527062129.GK9769@redhat.com>
-References: <1336324765.3638.4.camel@lappy>
- <4FA787D5.6040508@redhat.com>
- <CA+1xoqf7W1WsEvMHCEUZjBHJVUCaefnGo9qxu0pttCtoUURseg@mail.gmail.com>
- <CA+1xoqeha3EcYCy=sjER-9B0wn8wTdT-cUTwnvs7uN38uYFpmQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqeha3EcYCy=sjER-9B0wn8wTdT-cUTwnvs7uN38uYFpmQ@mail.gmail.com>
+	id S1751887Ab2E0Gyx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 02:54:53 -0400
+Received: from filtromx9.unal.edu.co ([168.176.5.62]:54396 "EHLO
+	filtromx9.unal.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab2E0Gyw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 02:54:52 -0400
+X-Greylist: delayed 900 seconds by postgrey-1.27 at vger.kernel.org; Sun, 27 May 2012 02:54:52 EDT
+X-AuditID: a8b0053d-b7b41ae000000e5a-41-4fc1cec52fd9
+To: undisclosed-recipients:;
+Date: Sat, 26 May 2012 23:39:48 -0700
+From: Andres Salcedo Fidalgo <asalcedofi@unal.edu.co>
+Subject: You Have a Transfer of 800,000.00 GBP
+Reply-to: microsft_clp@live.co.uk
+Message-id: <f99ee40f4438.4fc169c4@unal.edu.co>
+MIME-version: 1.0
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28 2007)
+Content-type: text/plain; charset=iso-8859-1
+Content-language: en
+Content-transfer-encoding: 8BIT
+Content-disposition: inline
+X-Accept-Language: en
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyYsNCft2j5w76G8z9pWhxedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgyLv/fxVRQVrFjwkO2BsaULkZODgkBE4llx8+yQNhiEhfurWfr
+	YuTiEBLYySjx/+diVpCEiICMxNzZj8FsIYEGJonVb8MhipoZJc7OWAKWYBFQldjy+QI7iM0m
+	YCrx6/ZRJhBbWEBPon/eEzCbSYBFYuOlaSwQgxQlDhy8zAxi8wroS+xYu44RwhaU+DH5HtRF
+	PhK9R5vAepkFdCR6v39jhrBFJNYe3sACYWtLPHl3gRXClpZ49HcGO0SvqMSsT4fBZgoICEgc
+	aJrIOoFRZBaSFbOQjJ2FZOwsJGNnIRm7gJF1FaNoWmZOSVF+boWFXikw/PVSU0r1kvM3MYLj
+	gdV2B2PnWdVDjAIcjEo8vJJxB/2FWBPLiitzDzFKcDArifDmbwAK8aYkVlalFuXHF5XmpBYf
+	YpTmYFES513svM9fSCA9sSQ1OzW1ILUIJsvEwSnVwKj/9M6rnbEnf2x2u7/w1YdV/74t7Y2Y
+	+GnGP22eX2KfrUyU5s2I9GOpznqbYivgFc3dvu749VZeW895JUvkjQ3qzxTy3O8x8jkw3zUu
+	xH6WG6+A8fnZGzXmlYru/aAXKGwmV7tE+F9SmzX3Mcst/JX6AW3rwvZaqq/oe8mzZ3mmx0n/
+	D+X1E5VYijMSDbWYi4oTAWfZPKmDAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 27, 2012 at 02:55:39AM +0200, Sasha Levin wrote:
-> On Fri, May 11, 2012 at 1:40 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > I wasn't able to reproduce this issue so far.
-> 
-> So I've managed to hit this again, this time with a 3.4 host kernel:
-> 
-Do you have this instance of QEMU running?
 
-> KVM internal error. Suberror: 1
-> emulation failure
-> RAX=0000000000000086 RBX=0000000000000086 RCX=0000000000000000
-> RDX=ffff88000c860000
-> RSI=0000000000000001 RDI=ffffffff811219d4 RBP=ffff88000d803d68
-> RSP=ffff88000d803d50
-> R8 =0000000000000000 R9 =0000000000000001 R10=0000000000000001
-> R11=0000000000000001
-> R12=ffff88000c8608f0 R13=0000000000000001 R14=ffffffff81116c80
-> R15=0000000000000001
-> RIP=ffffffff8197f940 RFL=00010002 [-------] CPL=0 II=0 A20=1 SMM=0 HLT=0
-> ES =0000 0000000000000000 ffffffff 00000000
-> CS =0010 0000000000000000 ffffffff 00a09b00 DPL=0 CS64 [-RA]
-> SS =0018 0000000000000000 ffffffff 00c09300 DPL=0 DS   [-WA]
-> DS =0000 0000000000000000 ffffffff 00000000
-> FS =0000 0000000000000000 ffffffff 00000000
-> GS =0000 ffff88000d800000 ffffffff 00000000
-> LDT=0000 0000000000000000 ffffffff 00000000
-> TR =0040 ffff88000d9d3cc0 00002087 00008b00 DPL=0 TSS64-busy
-> GDT=     ffff88000d804000 0000007f
-> IDT=     ffffffff84e68000 00000fff
-> CR0=8005003b CR2=00000000011f6000 CR3=000000003ca69000 CR4=000407f0
-> DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000
-> DR3=0000000000000000
-> DR6=00000000ffff0ff0 DR7=0000000000000400
-> EFER=0000000000000d01
-> Code=04 e8 8e 5a 8a ff c9 c3 90 90 90 90 90 90 90 90 90 90 90 90 <55>
-> 48 89 e5 48 83 ec 20 48 89 5d e8 4c 89 65 f0 4c 89 6d f8 65 4c 8b 24
-> 25 88 d9 00 00 65
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---
-			Gleb.
+You have won £ 800,000 pounds sterlings. Contact Mr Ivan Smith ( Email: microsft_clp@live.co.uk )
