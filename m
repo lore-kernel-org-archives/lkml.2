@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab2E0BCQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:02:16 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
+	id S932610Ab2E0BCk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:02:40 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42162 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932442Ab2E0BBN (ORCPT
+	with ESMTP id S932367Ab2E0BBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:01:13 -0400
-Message-Id: <20120527002621.841426410@linuxfoundation.org>
+	Sat, 26 May 2012 21:01:04 -0400
+Message-Id: <20120527002620.497880155@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:27:05 +0900
+Date: Sun, 27 May 2012 09:26:57 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Jiang <dave.jiang@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 52/55] isci: fix oem parameter validation on single controller skus
+        alan@lxorguk.ukuu.org.uk,
+        Bernard Kilarski <bernard.r.kilarski@intel.com>,
+        Ben Widawsky <benjamin.widawsky@intel.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Kenneth Graunke <kenneth@whitecape.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 44/55] drm/i915: [GEN7] Use HW scheduler for fixed function shaders
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +29,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Ben Widawsky <ben@bwidawsk.net>
 
-commit fc25f79af321c01a739150ba2c09435cf977a63d upstream.
+commit a1e969e0332de7a430e62822cee8f2ec8d83cd7c upstream.
 
-OEM parameters [1] are parsed from the platform option-rom / efi
-driver.  By default the driver was validating the parameters for the
-dual-controller case, but in single-controller case only the first set
-of parameters may be valid.
+This originally started as a patch from Bernard as a way of simply
+setting the VS scheduler. After submitting the RFC patch, we decided to
+also modify the DS scheduler. To be most explicit, I've made the patch
+explicitly set all scheduler modes, and included the defines for other
+modes (in case someone feels frisky later).
 
-Limit the validation to the number of actual controllers detected
-otherwise the driver may fail to parse the valid parameters leading to
-driver-load or runtime failures.
+The rest of the story gets a bit weird. The first version of the patch
+showed an almost unbelievable performance improvement. Since rebasing my
+branch it appears the performance improvement has gone, unfortunately.
+But setting these bits seem to be the right thing to do given that the
+docs describe corruption that can occur with the default settings.
 
-[1] the platform specific set of phy address, configuration,and analog
-    tuning values
+In summary, I am seeing no more perf improvements (or regressions) in my
+limited testing, but we believe this should be set to prevent rendering
+corruption, therefore cc stable.
 
-Reported-by: Dave Jiang <dave.jiang@intel.com>
-Tested-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+v1: Clear bit 4 also (Ken + Eugeni)
+Do a full clear + set of the bits we want (Me).
+
+Cc: Bernard Kilarski <bernard.r.kilarski@intel.com>
+Reviewed-by (RFC): Kenneth Graunke <kenneth@whitecape.org>
+Signed-off-by: Ben Widawsky <benjamin.widawsky@intel.com>
+Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/scsi/isci/init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/isci/init.c
-+++ b/drivers/scsi/isci/init.c
-@@ -454,7 +454,7 @@ static int __devinit isci_pci_probe(stru
- 	if (!orom)
- 		orom = isci_request_oprom(pdev);
+---
+ drivers/gpu/drm/i915/i915_reg.h      |   15 +++++++++++++++
+ drivers/gpu/drm/i915/intel_display.c |   14 ++++++++++++++
+ 2 files changed, 29 insertions(+)
+
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -537,6 +537,21 @@
  
--	for (i = 0; orom && i < ARRAY_SIZE(orom->ctrl); i++) {
-+	for (i = 0; orom && i < num_controllers(pdev); i++) {
- 		if (sci_oem_parameters_validate(&orom->ctrl[i])) {
- 			dev_warn(&pdev->dev,
- 				 "[%d]: invalid oem parameters detected, falling back to firmware\n", i);
+ #define GEN6_BSD_RNCID			0x12198
+ 
++#define GEN7_FF_THREAD_MODE		0x20a0
++#define   GEN7_FF_SCHED_MASK		0x0077070
++#define   GEN7_FF_TS_SCHED_HS1		(0x5<<16)
++#define   GEN7_FF_TS_SCHED_HS0		(0x3<<16)
++#define   GEN7_FF_TS_SCHED_LOAD_BALANCE	(0x1<<16)
++#define   GEN7_FF_TS_SCHED_HW		(0x0<<16) /* Default */
++#define   GEN7_FF_VS_SCHED_HS1		(0x5<<12)
++#define   GEN7_FF_VS_SCHED_HS0		(0x3<<12)
++#define   GEN7_FF_VS_SCHED_LOAD_BALANCE	(0x1<<12) /* Default */
++#define   GEN7_FF_VS_SCHED_HW		(0x0<<12)
++#define   GEN7_FF_DS_SCHED_HS1		(0x5<<4)
++#define   GEN7_FF_DS_SCHED_HS0		(0x3<<4)
++#define   GEN7_FF_DS_SCHED_LOAD_BALANCE	(0x1<<4)  /* Default */
++#define   GEN7_FF_DS_SCHED_HW		(0x0<<4)
++
+ /*
+  * Framebuffer compression (915+ only)
+  */
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7451,6 +7451,18 @@ static void gen6_init_clock_gating(struc
+ 			   DISPPLANE_TRICKLE_FEED_DISABLE);
+ }
+ 
++static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
++{
++	uint32_t reg = I915_READ(GEN7_FF_THREAD_MODE);
++
++	reg &= ~GEN7_FF_SCHED_MASK;
++	reg |= GEN7_FF_TS_SCHED_HW;
++	reg |= GEN7_FF_VS_SCHED_HW;
++	reg |= GEN7_FF_DS_SCHED_HW;
++
++	I915_WRITE(GEN7_FF_THREAD_MODE, reg);
++}
++
+ static void ivybridge_init_clock_gating(struct drm_device *dev)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+@@ -7597,6 +7609,8 @@ static void ironlake_teardown_rc6(struct
+ 		drm_gem_object_unreference(&dev_priv->pwrctx->base);
+ 		dev_priv->pwrctx = NULL;
+ 	}
++
++	gen7_setup_fixed_func_scheduler(dev_priv);
+ }
+ 
+ static void ironlake_disable_rc6(struct drm_device *dev)
 
 
