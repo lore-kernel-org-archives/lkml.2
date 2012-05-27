@@ -1,85 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab2E0CxG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 22:53:06 -0400
-Received: from void.printf.net ([89.145.121.20]:55316 "EHLO void.printf.net"
+	id S1753250Ab2E0DPV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 23:15:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5281 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751633Ab2E0CxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 22:53:03 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: <linux-mmc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: core: Fix build warning with !CONFIG_SUSPEND
-References: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
-Date: Sat, 26 May 2012 22:52:56 -0400
-In-Reply-To: <1337414319-27719-1-git-send-email-santosh.shilimkar@ti.com>
-	(Santosh Shilimkar's message of "Sat, 19 May 2012 13:28:39 +0530")
-Message-ID: <87d35q1gjb.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752078Ab2E0DPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 26 May 2012 23:15:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="148853921"
+Message-ID: <4FC19C0B.8080809@linux.intel.com>
+Date: Sat, 26 May 2012 20:14:19 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "lkml, " <linux-kernel@vger.kernel.org>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Carmine Iascone <carmine.iascone@st.com>,
+        Matteo Dameno <matteo.dameno@st.com>
+Subject: Re: LIS331DLH accelerometer driver, IIO or not?
+References: <4FBF0AC1.6030406@linux.intel.com> <20120525051051.GA3135@kroah.com> <4FC0C422.8080605@tremplin-utc.net> <4FC1159F.7090606@cam.ac.uk>
+In-Reply-To: <4FC1159F.7090606@cam.ac.uk>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Sat, May 19 2012, Santosh Shilimkar wrote:
-> With !CONFIG_SUSPEND, mmc core layer throws below build warnings.
->
-> drivers/mmc/core/bus.c:125: warning: 'mmc_bus_suspend' defined but not used
-> drivers/mmc/core/bus.c:136: warning: 'mmc_bus_resume' defined but not used
-> drivers/mmc/core/sdio_bus.c:197: warning: 'pm_no_operation' defined but not used
->
-> Fix is by wrapping suspend hooks under CONFIG_SUSPEND
->
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Chris Ball <cjb@laptop.org>
-> ---
->  drivers/mmc/core/bus.c      |    2 ++
->  drivers/mmc/core/sdio_bus.c |    2 +-
->  2 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
-> index c60cee9..ca8925d 100644
-> --- a/drivers/mmc/core/bus.c
-> +++ b/drivers/mmc/core/bus.c
-> @@ -122,6 +122,7 @@ static int mmc_bus_remove(struct device *dev)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_SUSPEND
->  static int mmc_bus_suspend(struct device *dev)
->  {
->  	struct mmc_driver *drv = to_mmc_driver(dev->driver);
-> @@ -143,6 +144,7 @@ static int mmc_bus_resume(struct device *dev)
->  		ret = drv->resume(card);
->  	return ret;
->  }
-> +#endif
->  
->  #ifdef CONFIG_PM_RUNTIME
->  
-> diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
-> index 236842e..87d1b7e 100644
-> --- a/drivers/mmc/core/sdio_bus.c
-> +++ b/drivers/mmc/core/sdio_bus.c
-> @@ -192,7 +192,7 @@ static int sdio_bus_remove(struct device *dev)
->  	return ret;
->  }
->  
-> -#ifdef CONFIG_PM
-> +#ifdef CONFIG_SUSPEND
->  
->  static int pm_no_operation(struct device *dev)
->  {
 
-This patch doesn't apply against mmc-next, and I think this has already
-been fixed upstream -- please could you retest against Linus HEAD?
+On 05/26/2012 10:40 AM, Jonathan Cameron wrote:
+> On 05/26/2012 12:53 PM, Éric Piel wrote:
+>> On 25-05-12 07:10, Greg Kroah-Hartman wrote:
+>>> On Thu, May 24, 2012 at 09:29:53PM -0700, Darren Hart wrote:
+>>>> I'm working to enable the LIS331DLH accelerometer on the Fish River
+>>>> Island II embedded atom development kit.
+>>>>
+>>>> I am more interested in enabling people to do bizarre and interesting
+>>>> things with the device, so I'm leaning toward continuing with my IIO
+>>>> implementation.
+>>>
+>>> Make it an IIO driver and then we can delete the misc driver, which
+>>> shouldn't have snuck in there in the first place :)
+>>>
+>>
+>> To be more fair to the misc driver, I wouldn't say it snucked in there,
+>> but more "it ended up there as the least worse place" ;-) Actually, the
+>> main problem is that there seemed to be no maintainer interested in
+>> taking care of accelerometer devices. Now that the IIO subsystem is out
+>> of staging, it might be a right place. That said, I don't know much
+>> about the user interface to IIO. I know that I liked the idea of having
+>> an joystick device created for an accelerometer because that allows to
+>> get many programs to access the device almost without any modifications.
+> I agree that this sort of device should have an input interface. Not
+> sure if a joystick is the right option, but that's more one for Dmitry
+> to comment on.
+>>
+>> I'd happy to help merge the lis3lv02d driver into IIO. IMHO, the main
+>> steps are:
+>>  * make sure all the various buses are supported (e.g., I²C, SPI, and
+>> also "ACPI-HP")
+>>  * ensure the various versions of the accelerometer are supported (there
+>> are 3 supported currently)
+>>  * check that the driver is automatically loaded on HP laptops (via ACPI
+>> entry)
+>>  * for each of the current interfaces decide if they should be ported or
+>> dropped (/dev/js*, /dev/freefall, sysfs...)
+>>
+>> What do you think Jonathan?
+> You've laid it out extremely clearly.  Thanks, I agree with these steps,
+> though they may occur from a slightly different angle given Darren is
+> interested in a part that is not (I believe) currently supported by
+> your existing driver.   Hence he may initially want to do a separate
+> driver with that (keeping in mind the aim of mergining in the existing
+> driver).  I have an ancient driver for the lis3l02dq alone (in
+> iio from the start) that will also get eaten up by Daren's new driver
+> (and the ability to test on that part on spi).
+> staging/iio/accel/lis3l02dq*.c
 
-Thanks,
+I think I should start with getting the lis331dlh support completed, if
+for no other reason than to keep the scope manageable as I write my
+first real driver. From that I would like to merge in Jonathan's IIO
+lis3l02dq driver to get the multi-chip support part right. Then we
+should look at expanding the scope of the interface and finally merging
+with misc/lis3102dq. I believe that should meet with everyone's suggestions.
 
-- Chris.
+One thing I would like to understand better is what sort of interface
+does userspace current expect. Phone Gap, for example, provides a very
+high level interface to applications in m/s^2 for each axis. Is there
+some interface we should ensure all accelerometer driver's implement?
+
+I suspect a /dev/accel interface that reads out xyz values in ms/s^2
+would make sense. We would need to ensure that allows for polled as well
+as event driven. Thoughts?
+
+
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
