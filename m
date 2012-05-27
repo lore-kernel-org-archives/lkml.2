@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934144Ab2E0BTP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:19:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934131Ab2E0BTJ (ORCPT
+	id S934183Ab2E0BTT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:19:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945932Ab2E0BTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:19:09 -0400
-Message-Id: <20120527002521.284173367@linuxfoundation.org>
+	Sat, 26 May 2012 21:19:04 -0400
+Message-Id: <20120527002520.011771470@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:12 +0900
+Date: Sun, 27 May 2012 09:26:06 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 66/91] drm/i915: Avoid a double-read of PCH_IIR during interrupt handling
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 60/91] xhci: Reset reserved command ring TRBs on cleanup.
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +24,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 9adab8b5a7fde248504f484e197589f3e3c922e2 upstream.
+commit 33b2831ac870d50cc8e01c317b07fb1e69c13fe1 upstream.
 
-Currently the code re-reads PCH_IIR during the hotplug interrupt
-processing. Not only is this a wasted read, but introduces a potential
-for handling a spurious interrupt as we then may not clear all the
-interrupts processed (since the re-read IIR may contains more interrupts
-asserted than we clear using the result of the original read).
+When the xHCI driver needs to clean up memory (perhaps due to a failed
+register restore on resume from S3 or resume from S4), it needs to reset
+the number of reserved TRBs on the command ring to zero.  Otherwise,
+several resume cycles (about 30) with a UAS device attached will
+continually increment the number of reserved TRBs, until all command
+submissions fail because there isn't enough room on the command ring.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+This patch should be backported to kernels as old as 2.6.32,
+that contain the commit 913a8a344ffcaf0b4a586d6662a2c66a7106557d
+"USB: xhci: Change how xHCI commands are handled."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/usb/host/xhci-mem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -424,14 +424,11 @@ static void gen6_pm_rps_work(struct work
- 	mutex_unlock(&dev_priv->dev->struct_mutex);
- }
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1807,6 +1807,7 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	xhci->event_ring = NULL;
+ 	xhci_dbg(xhci, "Freed event ring\n");
  
--static void pch_irq_handler(struct drm_device *dev)
-+static void pch_irq_handler(struct drm_device *dev, u32 pch_iir)
- {
- 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
--	u32 pch_iir;
- 	int pipe;
- 
--	pch_iir = I915_READ(SDEIIR);
--
- 	if (pch_iir & SDE_AUDIO_POWER_MASK)
- 		DRM_DEBUG_DRIVER("PCH audio power change on port %d\n",
- 				 (pch_iir & SDE_AUDIO_POWER_MASK) >>
-@@ -529,7 +526,7 @@ static irqreturn_t ivybridge_irq_handler
- 	if (de_iir & DE_PCH_EVENT_IVB) {
- 		if (pch_iir & SDE_HOTPLUG_MASK_CPT)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (pm_iir & GEN6_PM_DEFERRED_EVENTS) {
-@@ -629,7 +626,7 @@ static irqreturn_t ironlake_irq_handler(
- 	if (de_iir & DE_PCH_EVENT) {
- 		if (pch_iir & hotplug_mask)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (de_iir & DE_PCU_EVENT) {
++	xhci->cmd_ring_reserved_trbs = 0;
+ 	if (xhci->cmd_ring)
+ 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	xhci->cmd_ring = NULL;
 
 
