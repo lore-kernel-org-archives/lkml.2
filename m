@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345Ab2E0A66 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:58:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285Ab2E0A6x (ORCPT
+	id S1755374Ab2E0A7F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 20:59:05 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab2E0A66 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:58:53 -0400
-Message-Id: <20120527002617.507585324@linuxfoundation.org>
+	Sat, 26 May 2012 20:58:58 -0400
+Message-Id: <20120527002617.671149586@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:37 +0900
+Date: Sun, 27 May 2012 09:26:38 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [ 24/55] workqueue: skip nr_running sanity check in worker_enter_idle() if trustee is active
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Christoph Lameter <cl@linux.com>
+Subject: [ 25/55] mm: mempolicy: Let vma_merge and vma_split handle
+ vma->vm_policy linkages
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +28,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit 544ecf310f0e7f51fa057ac2a295fc1b3b35a9d3 upstream.
+commit 05f144a0d5c2207a0349348127f996e104ad7404 upstream.
 
-worker_enter_idle() has WARN_ON_ONCE() which triggers if nr_running
-isn't zero when every worker is idle.  This can trigger spuriously
-while a cpu is going down due to the way trustee sets %WORKER_ROGUE
-and zaps nr_running.
+Dave Jones' system call fuzz testing tool "trinity" triggered the
+following bug error with slab debugging enabled
 
-It first sets %WORKER_ROGUE on all workers without updating
-nr_running, releases gcwq->lock, schedules, regrabs gcwq->lock and
-then zaps nr_running.  If the last running worker enters idle
-inbetween, it would see stale nr_running which hasn't been zapped yet
-and trigger the WARN_ON_ONCE().
+    =============================================================================
+    BUG numa_policy (Not tainted): Poison overwritten
+    -----------------------------------------------------------------------------
 
-Fix it by performing the sanity check iff the trustee is idle.
+    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+     __slab_alloc+0x3d3/0x445
+     kmem_cache_alloc+0x29d/0x2b0
+     mpol_new+0xa3/0x140
+     sys_mbind+0x142/0x620
+     system_call_fastpath+0x16/0x1b
+    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+     __slab_free+0x2e/0x1de
+     kmem_cache_free+0x25a/0x260
+     __mpol_put+0x27/0x30
+     remove_vma+0x68/0x90
+     exit_mmap+0x118/0x140
+     mmput+0x73/0x110
+     exit_mm+0x108/0x130
+     do_exit+0x162/0xb90
+     do_group_exit+0x4f/0xc0
+     sys_exit_group+0x17/0x20
+     system_call_fastpath+0x16/0x1b
+    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+This implied a reference counting bug and the problem happened during
+mbind().
+
+mbind() applies a new memory policy to a range and uses mbind_range() to
+merge existing VMAs or split them as necessary.  In the event of splits,
+mpol_dup() will allocate a new struct mempolicy and maintain existing
+reference counts whose rules are documented in
+Documentation/vm/numa_memory_policy.txt .
+
+The problem occurs with shared memory policies.  The vm_op->set_policy
+increments the reference count if necessary and split_vma() and
+vma_merge() have already handled the existing reference counts.
+However, policy_vma() screws it up by replacing an existing
+vma->vm_policy with one that potentially has the wrong reference count
+leading to a premature free.  This patch removes the damage caused by
+policy_vma().
+
+With this patch applied Dave's trinity tool runs an mbind test for 5
+minutes without error.  /proc/slabinfo reported that there are no
+numa_policy or shared_policy_node objects allocated after the test
+completed and the shared memory region was deleted.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Stephen Wilson <wilsons@start.ca>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ mm/mempolicy.c |   41 +++++++++++++++++------------------------
+ 1 file changed, 17 insertions(+), 24 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1214,8 +1214,13 @@ static void worker_enter_idle(struct wor
- 	} else
- 		wake_up_all(&gcwq->trustee_wait);
- 
--	/* sanity check nr_running */
--	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
-+	/*
-+	 * Sanity check nr_running.  Because trustee releases gcwq->lock
-+	 * between setting %WORKER_ROGUE and zapping nr_running, the
-+	 * warning may trigger spuriously.  Check iff trustee is idle.
-+	 */
-+	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
-+		     gcwq->nr_workers == gcwq->nr_idle &&
- 		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -606,27 +606,6 @@ check_range(struct mm_struct *mm, unsign
+ 	return first;
  }
  
+-/* Apply policy to a single VMA */
+-static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
+-{
+-	int err = 0;
+-	struct mempolicy *old = vma->vm_policy;
+-
+-	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+-		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+-		 vma->vm_ops, vma->vm_file,
+-		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+-
+-	if (vma->vm_ops && vma->vm_ops->set_policy)
+-		err = vma->vm_ops->set_policy(vma, new);
+-	if (!err) {
+-		mpol_get(new);
+-		vma->vm_policy = new;
+-		mpol_put(old);
+-	}
+-	return err;
+-}
+-
+ /* Step 2: apply policy to a range and do splits. */
+ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 		       unsigned long end, struct mempolicy *new_pol)
+@@ -666,9 +645,23 @@ static int mbind_range(struct mm_struct
+ 			if (err)
+ 				goto out;
+ 		}
+-		err = policy_vma(vma, new_pol);
+-		if (err)
+-			goto out;
++
++		/*
++		 * Apply policy to a single VMA. The reference counting of
++		 * policy for vma_policy linkages has already been handled by
++		 * vma_merge and split_vma as necessary. If this is a shared
++		 * policy then ->set_policy will increment the reference count
++		 * for an sp node.
++		 */
++		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
++			vma->vm_start, vma->vm_end, vma->vm_pgoff,
++			vma->vm_ops, vma->vm_file,
++			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
++		if (vma->vm_ops && vma->vm_ops->set_policy) {
++			err = vma->vm_ops->set_policy(vma, new_pol);
++			if (err)
++				goto out;
++		}
+ 	}
+ 
+  out:
 
 
