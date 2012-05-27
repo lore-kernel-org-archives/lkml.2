@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab2E0A5z (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:57:55 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754628Ab2E0A5s (ORCPT
+	id S1754685Ab2E0A5u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 20:57:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab2E0A5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:57:48 -0400
-Message-Id: <20120527002615.499384988@linuxfoundation.org>
+	Sat, 26 May 2012 20:57:39 -0400
+Message-Id: <20120527002615.202460676@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:24 +0900
+Date: Sun, 27 May 2012 09:26:22 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 11/55] s390/pfault: fix task state race
+        alan@lxorguk.ukuu.org.uk, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Youngsin Lee <youngsin@qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>,
+        Vipin Mehta <vipimeht@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <mcgrof@frijolero.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 09/55] cfg80211: warn if db.txt is empty with CONFIG_CFG80211_INTERNAL_REGDB
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
 
-commit d5e50a51ccbda36b379aba9d1131a852eb908dda upstream.
+commit 80007efeff0568375b08faf93c7aad65602cb97e upstream.
 
-When setting the current task state to TASK_UNINTERRUPTIBLE this can
-race with a different cpu. The other cpu could set the task state after
-it inspected it (while it was still TASK_RUNNING) to TASK_RUNNING which
-would change the state from TASK_UNINTERRUPTIBLE to TASK_RUNNING again.
+It has happened twice now where elaborate troubleshooting has
+undergone on systems where CONFIG_CFG80211_INTERNAL_REGDB [0]
+has been set but yet net/wireless/db.txt was not updated.
 
-This race was always present in the pfault interrupt code but didn't
-cause anything harmful before commit f2db2e6c "[S390] pfault: cpu hotplug
-vs missing completion interrupts" which relied on the fact that after
-setting the task state to TASK_UNINTERRUPTIBLE the task would really
-sleep.
-Since this is not necessarily the case the result may be a list corruption
-of the pfault_list or, as observed, a use-after-free bug while trying to
-access the task_struct of a task which terminated itself already.
+Despite the documentation on this it seems system integrators could
+use some more help with this, so throw out a kernel warning at boot time
+when their database is empty.
 
-To fix this, we need to get a reference of the affected task when receiving
-the initial pfault interrupt and add special handling if we receive yet
-another initial pfault interrupt when the task is already enqueued in the
-pfault list.
+This does mean that the error-prone system integrator won't likely
+realize the issue until they boot the machine but -- it does not seem
+to make sense to enable a build bug breaking random build testing.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reviewed-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+[0] http://wireless.kernel.org/en/developers/Regulatory/CRDA#CONFIG_CFG80211_INTERNAL_REGDB
+
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Youngsin Lee <youngsin@qualcomm.com>
+Cc: Raja Mani <rmani@qca.qualcomm.com>
+Cc: Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>
+Cc: Vipin Mehta <vipimeht@qca.qualcomm.com>
+Cc: yahuan@qca.qualcomm.com
+Cc: jjan@qca.qualcomm.com
+Cc: vthiagar@qca.qualcomm.com
+Cc: henrykim@qualcomm.com
+Cc: jouni@qca.qualcomm.com
+Cc: athiruve@qca.qualcomm.com
+Cc: cjkim@qualcomm.com
+Cc: philipk@qca.qualcomm.com
+Cc: sunnykim@qualcomm.com
+Cc: sskwak@qualcomm.com
+Cc: kkim@qualcomm.com
+Cc: mattbyun@qualcomm.com
+Cc: ryanlee@qualcomm.com
+Cc: simbap@qualcomm.com
+Cc: krislee@qualcomm.com
+Cc: conner@qualcomm.com
+Cc: hojinkim@qualcomm.com
+Cc: honglee@qualcomm.com
+Cc: johnwkim@qualcomm.com
+Cc: jinyong@qca.qualcomm.com
+Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/mm/fault.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ net/wireless/reg.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -567,6 +567,7 @@ static void pfault_interrupt(unsigned in
- 			tsk->thread.pfault_wait = 0;
- 			list_del(&tsk->thread.list);
- 			wake_up_process(tsk);
-+			put_task_struct(tsk);
- 		} else {
- 			/* Completion interrupt was faster than initial
- 			 * interrupt. Set pfault_wait to -1 so the initial
-@@ -576,14 +577,22 @@ static void pfault_interrupt(unsigned in
- 		put_task_struct(tsk);
- 	} else {
- 		/* signal bit not set -> a real page is missing. */
--		if (tsk->thread.pfault_wait == -1) {
-+		if (tsk->thread.pfault_wait == 1) {
-+			/* Already on the list with a reference: put to sleep */
-+			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-+			set_tsk_need_resched(tsk);
-+		} else if (tsk->thread.pfault_wait == -1) {
- 			/* Completion interrupt was faster than the initial
- 			 * interrupt (pfault_wait == -1). Set pfault_wait
- 			 * back to zero and exit. */
- 			tsk->thread.pfault_wait = 0;
- 		} else {
- 			/* Initial interrupt arrived before completion
--			 * interrupt. Let the task sleep. */
-+			 * interrupt. Let the task sleep.
-+			 * An extra task reference is needed since a different
-+			 * cpu may set the task state to TASK_RUNNING again
-+			 * before the scheduler is reached. */
-+			get_task_struct(tsk);
- 			tsk->thread.pfault_wait = 1;
- 			list_add(&tsk->thread.list, &pfault_list);
- 			set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-@@ -608,6 +617,7 @@ static int __cpuinit pfault_cpu_notify(s
- 			list_del(&thread->list);
- 			tsk = container_of(thread, struct task_struct, thread);
- 			wake_up_process(tsk);
-+			put_task_struct(tsk);
- 		}
- 		spin_unlock_irq(&pfault_lock);
- 		break;
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -379,7 +379,15 @@ static void reg_regdb_query(const char *
+ 
+ 	schedule_work(&reg_regdb_work);
+ }
++
++/* Feel free to add any other sanity checks here */
++static void reg_regdb_size_check(void)
++{
++	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
++	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
++}
+ #else
++static inline void reg_regdb_size_check(void) {}
+ static inline void reg_regdb_query(const char *alpha2) {}
+ #endif /* CONFIG_CFG80211_INTERNAL_REGDB */
+ 
+@@ -2225,6 +2233,8 @@ int __init regulatory_init(void)
+ 	spin_lock_init(&reg_requests_lock);
+ 	spin_lock_init(&reg_pending_beacons_lock);
+ 
++	reg_regdb_size_check();
++
+ 	cfg80211_regdomain = cfg80211_world_regdom;
+ 
+ 	user_alpha2[0] = '9';
 
 
