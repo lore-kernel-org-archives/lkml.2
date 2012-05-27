@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013Ab2E0BsV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:48:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932872Ab2E0BHt (ORCPT
+	id S932849Ab2E0Bsw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:48:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932338Ab2E0BHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:07:49 -0400
-Message-Id: <20120527010427.300946724@linuxfoundation.org>
+	Sat, 26 May 2012 21:07:34 -0400
+Message-Id: <20120527010427.030988575@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:48 +0900
+Date: Sun, 27 May 2012 10:04:46 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Yishai Hadas <yishaih@mellanox.com>,
-        Christoph Lameter <cl@linux.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 25/94] IB/core: Fix mismatch between locked and pinned pages
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Subject: [ 23/94] KEYS: Use the compat keyctl() syscall wrapper on Sparc64 for Sparc32 compat
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +24,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yishai Hadas <yishaih@mellanox.com>
+From: David Howells <dhowells@redhat.com>
 
-commit c4870eb874ac16dccef40e1bc7a002c7e9156adc upstream.
+commit 45de6767dc51358a188f75dc4ad9dfddb7fb9480 upstream.
 
-Commit bc3e53f682d9 ("mm: distinguish between mlocked and pinned
-pages") introduced a separate counter for pinned pages and used it in
-the IB stack.  However, in ib_umem_get() the pinned counter is
-incremented, but ib_umem_release() wrongly decrements the locked
-counter.  Fix this.
+Use the 32-bit compat keyctl() syscall wrapper on Sparc64 for Sparc32 binary
+compatibility.
 
-Signed-off-by: Yishai Hadas <yishaih@mellanox.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Without this, keyctl(KEYCTL_INSTANTIATE_IOV) is liable to malfunction as it
+uses an iovec array read from userspace - though the kernel should survive this
+as it checks pointers and sizes anyway.
+
+I think all the other keyctl() function should just work, provided (a) the top
+32-bits of each 64-bit argument register are cleared prior to invoking the
+syscall routine, and the 32-bit address space is right at the 0-end of the
+64-bit address space.  Most of the arguments are 32-bit anyway, and so for
+those clearing is not required.
+
+Signed-off-by: David Howells <dhowells@redhat.com
+cc: "David S. Miller" <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/core/umem.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/Kconfig             |    3 +++
+ arch/sparc/kernel/systbls_64.S |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/infiniband/core/umem.c
-+++ b/drivers/infiniband/core/umem.c
-@@ -269,7 +269,7 @@ void ib_umem_release(struct ib_umem *ume
- 	} else
- 		down_write(&mm->mmap_sem);
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -582,6 +582,9 @@ config SYSVIPC_COMPAT
+ 	depends on COMPAT && SYSVIPC
+ 	default y
  
--	current->mm->locked_vm -= diff;
-+	current->mm->pinned_vm -= diff;
- 	up_write(&mm->mmap_sem);
- 	mmput(mm);
- 	kfree(umem);
++config KEYS_COMPAT
++	def_bool y if COMPAT && KEYS
++
+ endmenu
+ 
+ source "net/Kconfig"
+--- a/arch/sparc/kernel/systbls_64.S
++++ b/arch/sparc/kernel/systbls_64.S
+@@ -74,7 +74,7 @@ sys_call_table32:
+ 	.word sys_timer_delete, compat_sys_timer_create, sys_ni_syscall, compat_sys_io_setup, sys_io_destroy
+ /*270*/	.word sys32_io_submit, sys_io_cancel, compat_sys_io_getevents, sys32_mq_open, sys_mq_unlink
+ 	.word compat_sys_mq_timedsend, compat_sys_mq_timedreceive, compat_sys_mq_notify, compat_sys_mq_getsetattr, compat_sys_waitid
+-/*280*/	.word sys32_tee, sys_add_key, sys_request_key, sys_keyctl, compat_sys_openat
++/*280*/	.word sys32_tee, sys_add_key, sys_request_key, compat_sys_keyctl, compat_sys_openat
+ 	.word sys_mkdirat, sys_mknodat, sys_fchownat, compat_sys_futimesat, compat_sys_fstatat64
+ /*290*/	.word sys_unlinkat, sys_renameat, sys_linkat, sys_symlinkat, sys_readlinkat
+ 	.word sys_fchmodat, sys_faccessat, compat_sys_pselect6, compat_sys_ppoll, sys_unshare
 
 
