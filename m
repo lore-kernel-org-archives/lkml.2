@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965777Ab2E0BQj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:16:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965750Ab2E0BQb (ORCPT
+	id S1422644Ab2E0BQp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:16:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:43902 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965663Ab2E0BQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:16:31 -0400
-Message-Id: <20120527002514.274369461@linuxfoundation.org>
+	Sat, 26 May 2012 21:16:40 -0400
+Message-Id: <20120527002514.690779089@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:40 +0900
+Date: Sun, 27 May 2012 09:25:42 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oliver@neukum.org>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 34/91] USB: cdc-wdm: cannot use dev_printk when device is gone
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [ 36/91] workqueue: skip nr_running sanity check in worker_enter_idle() if trustee is active
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Tejun Heo <tj@kernel.org>
 
-commit 6b0b79d38806481c1c8fffa7c5842f3c83679a42 upstream.
+commit 544ecf310f0e7f51fa057ac2a295fc1b3b35a9d3 upstream.
 
-We cannot dereference a removed USB interface for
-dev_printk. Use pr_debug instead where necessary.
+worker_enter_idle() has WARN_ON_ONCE() which triggers if nr_running
+isn't zero when every worker is idle.  This can trigger spuriously
+while a cpu is going down due to the way trustee sets %WORKER_ROGUE
+and zaps nr_running.
 
-Flush errors are expected if device is unplugged and are
-therefore best ingored at this point.
+It first sets %WORKER_ROGUE on all workers without updating
+nr_running, releases gcwq->lock, schedules, regrabs gcwq->lock and
+then zaps nr_running.  If the last running worker enters idle
+inbetween, it would see stale nr_running which hasn't been zapped yet
+and trigger the WARN_ON_ONCE().
 
-Move the kill_urbs() call in wdm_release with dev_dbg()
-for the non disconnect, as we know it has already been
-called if WDM_DISCONNECTING is set.  This does not
-actually fix anything, but keeps the code more consistent.
+Fix it by performing the sanity check iff the trustee is idle.
 
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-wdm.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ kernel/workqueue.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -530,7 +530,9 @@ static int wdm_flush(struct file *file,
- 	struct wdm_device *desc = file->private_data;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1210,8 +1210,13 @@ static void worker_enter_idle(struct wor
+ 	} else
+ 		wake_up_all(&gcwq->trustee_wait);
  
- 	wait_event(desc->wait, !test_bit(WDM_IN_USE, &desc->flags));
--	if (desc->werr < 0)
-+
-+	/* cannot dereference desc->intf if WDM_DISCONNECTING */
-+	if (desc->werr < 0 && !test_bit(WDM_DISCONNECTING, &desc->flags))
- 		dev_err(&desc->intf->dev, "Error in flush path: %d\n",
- 			desc->werr);
+-	/* sanity check nr_running */
+-	WARN_ON_ONCE(gcwq->nr_workers == gcwq->nr_idle &&
++	/*
++	 * Sanity check nr_running.  Because trustee releases gcwq->lock
++	 * between setting %WORKER_ROGUE and zapping nr_running, the
++	 * warning may trigger spuriously.  Check iff trustee is idle.
++	 */
++	WARN_ON_ONCE(gcwq->trustee_state == TRUSTEE_DONE &&
++		     gcwq->nr_workers == gcwq->nr_idle &&
+ 		     atomic_read(get_gcwq_nr_running(gcwq->cpu)));
+ }
  
-@@ -621,12 +623,15 @@ static int wdm_release(struct inode *ino
- 	mutex_unlock(&desc->wlock);
- 
- 	if (!desc->count) {
--		dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
--		kill_urbs(desc);
--		if (!test_bit(WDM_DISCONNECTING, &desc->flags))
-+		if (!test_bit(WDM_DISCONNECTING, &desc->flags)) {
-+			dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
-+			kill_urbs(desc);
- 			desc->manage_power(desc->intf, 0);
--		else
-+		} else {
-+			/* must avoid dev_printk here as desc->intf is invalid */
-+			pr_debug(KBUILD_MODNAME " %s: device gone - cleaning up\n", __func__);
- 			cleanup(desc);
-+		}
- 	}
- 	mutex_unlock(&wdm_mutex);
- 	return 0;
 
 
