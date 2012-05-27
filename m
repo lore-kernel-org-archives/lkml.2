@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965246Ab2E0BKo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:10:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965165Ab2E0BKi (ORCPT
+	id S933556Ab2E0BK4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:10:56 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965216Ab2E0BKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:10:38 -0400
-Message-Id: <20120527010432.095748923@linuxfoundation.org>
+	Sat, 26 May 2012 21:10:48 -0400
+Message-Id: <20120527010432.370864953@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:22 +0900
+Date: Sun, 27 May 2012 10:05:24 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Eric Anholt <eric.anholt@intel.com>, David Bein <d.bein@f5.com>
-Subject: [ 59/94] xhci: Avoid dead ports when CONFIG_USB_XHCI_HCD=n
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 61/94] xhci: Reset reserved command ring TRBs on cleanup.
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,59 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 51c9e6c7732b67769c0a514d31f505e49fa82dd4 upstream.
+commit 33b2831ac870d50cc8e01c317b07fb1e69c13fe1 upstream.
 
-If the user chooses to say "no" to CONFIG_USB_XHCI_HCD on a system
-with an Intel Panther Point chipset, the PCI quirks code or the EHCI
-driver will switch the ports over to the xHCI host, but the xHCI driver
-will never load.  The ports will be powered off and seem "dead" to the
-user.
+When the xHCI driver needs to clean up memory (perhaps due to a failed
+register restore on resume from S3 or resume from S4), it needs to reset
+the number of reserved TRBs on the command ring to zero.  Otherwise,
+several resume cycles (about 30) with a UAS device attached will
+continually increment the number of reserved TRBs, until all command
+submissions fail because there isn't enough room on the command ring.
 
-Fix this by only switching the ports over if CONFIG_USB_XHCI_HCD is
-either compiled in, or compiled as a module.
-
-This patch should be backported to stable kernels as old as 3.0,
-that contain commit 69e848c2090aebba5698a1620604c7dccb448684
-"Intel xhci: Support EHCI/xHCI port switching."
+This patch should be backported to kernels as old as 2.6.32,
+that contain the commit 913a8a344ffcaf0b4a586d6662a2c66a7106557d
+"USB: xhci: Change how xHCI commands are handled."
 
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Eric Anholt <eric.anholt@intel.com>
-Reported-by: David Bein <d.bein@f5.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/pci-quirks.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/usb/host/xhci-mem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -9,6 +9,7 @@
-  */
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1701,6 +1701,7 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	xhci->event_ring = NULL;
+ 	xhci_dbg(xhci, "Freed event ring\n");
  
- #include <linux/types.h>
-+#include <linux/kconfig.h>
- #include <linux/kernel.h>
- #include <linux/pci.h>
- #include <linux/init.h>
-@@ -758,6 +759,19 @@ void usb_enable_xhci_ports(struct pci_de
- {
- 	u32		ports_available;
- 
-+	/* Don't switchover the ports if the user hasn't compiled the xHCI
-+	 * driver.  Otherwise they will see "dead" USB ports that don't power
-+	 * the devices.
-+	 */
-+	if (!IS_ENABLED(CONFIG_USB_XHCI_HCD)) {
-+		dev_warn(&xhci_pdev->dev,
-+				"CONFIG_USB_XHCI_HCD is turned off, "
-+				"defaulting to EHCI.\n");
-+		dev_warn(&xhci_pdev->dev,
-+				"USB 3.0 devices will work at USB 2.0 speeds.\n");
-+		return;
-+	}
-+
- 	ports_available = 0xffffffff;
- 	/* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
- 	 * Register, to turn on SuperSpeed terminations for all
++	xhci->cmd_ring_reserved_trbs = 0;
+ 	if (xhci->cmd_ring)
+ 		xhci_ring_free(xhci, xhci->cmd_ring);
+ 	xhci->cmd_ring = NULL;
 
 
