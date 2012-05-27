@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab2E0BOs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:14:48 -0400
+	id S965597Ab2E0BOy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:14:54 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965517Ab2E0BOl (ORCPT
+	with ESMTP id S1756552Ab2E0BOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:14:41 -0400
-Message-Id: <20120527002509.496560538@linuxfoundation.org>
+	Sat, 26 May 2012 21:14:50 -0400
+Message-Id: <20120527002508.901423335@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:18 +0900
+Date: Sun, 27 May 2012 09:25:15 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 12/91] SCSI: mpt2sas: Fix for panic happening because of improper memory allocation
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Subject: [ 09/91] regulator: core: Release regulator-regulator supplies on error
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit e42fafc25fa86c61824e8d4c5e7582316415d24f upstream.
+commit e81dba85c6388dfabcb76cbc2b8bd02836a53ae5 upstream.
 
-The ioc->pfacts member in the IOC structure is getting set to zero
-following a call to _base_get_ioc_facts due to the memset in that routine.
-So if the ioc->pfacts was read after a host reset, there would be a NULL
-pointer dereference. The routine _base_get_ioc_facts is called from context
-of host reset.  The problem in _base_get_ioc_facts  is the size of
-Mpi2IOCFactsReply is 64, whereas the sizeof "struct mpt2sas_facts" is 60,
-so there is a four byte overflow resulting from the memset.
+If we fail while registering a regulator make sure we release the supply
+for the regulator if there is one.
 
-Also, there is memset in _base_get_port_facts using the incorrect structure,
-it should be "struct mpt2sas_port_facts" instead of Mpi2PortFactsReply.
-
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/regulator/core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -3343,7 +3343,7 @@ _base_get_port_facts(struct MPT2SAS_ADAP
- 	}
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2971,6 +2971,8 @@ unset_supplies:
+ 	unset_regulator_supplies(rdev);
  
- 	pfacts = &ioc->pfacts[port];
--	memset(pfacts, 0, sizeof(Mpi2PortFactsReply_t));
-+	memset(pfacts, 0, sizeof(struct mpt2sas_port_facts));
- 	pfacts->PortNumber = mpi_reply.PortNumber;
- 	pfacts->VP_ID = mpi_reply.VP_ID;
- 	pfacts->VF_ID = mpi_reply.VF_ID;
-@@ -3385,7 +3385,7 @@ _base_get_ioc_facts(struct MPT2SAS_ADAPT
- 	}
- 
- 	facts = &ioc->facts;
--	memset(facts, 0, sizeof(Mpi2IOCFactsReply_t));
-+	memset(facts, 0, sizeof(struct mpt2sas_facts));
- 	facts->MsgVersion = le16_to_cpu(mpi_reply.MsgVersion);
- 	facts->HeaderVersion = le16_to_cpu(mpi_reply.HeaderVersion);
- 	facts->VP_ID = mpi_reply.VP_ID;
-@@ -4262,7 +4262,7 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
- 		goto out_free_resources;
- 
- 	ioc->pfacts = kcalloc(ioc->facts.NumberOfPorts,
--	    sizeof(Mpi2PortFactsReply_t), GFP_KERNEL);
-+	    sizeof(struct mpt2sas_port_facts), GFP_KERNEL);
- 	if (!ioc->pfacts) {
- 		r = -ENOMEM;
- 		goto out_free_resources;
+ scrub:
++	if (rdev->supply)
++		regulator_put(rdev->supply);
+ 	kfree(rdev->constraints);
+ 	device_unregister(&rdev->dev);
+ 	/* device core frees rdev */
 
 
