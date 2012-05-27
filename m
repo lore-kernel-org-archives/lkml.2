@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab2E0BLg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:11:36 -0400
+	id S1756062Ab2E0BLo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:11:44 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933719Ab2E0BL2 (ORCPT
+	with ESMTP id S1755857Ab2E0BLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:11:28 -0400
-Message-Id: <20120527010433.487440775@linuxfoundation.org>
+	Sat, 26 May 2012 21:11:38 -0400
+Message-Id: <20120527010433.768465216@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:32 +0900
+Date: Sun, 27 May 2012 10:05:34 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 69/94] drm/i915: dont clobber the pipe param in sanitize_modesetting
+        alan@lxorguk.ukuu.org.uk,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [ 71/94] spi/spi-fsl-spi: reference correct pdata in
+ fsl_spi_cs_control
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 
-commit a9dcf84b14ef4e9a609910367576995e6f32f3dc upstream.
+commit 067aa4815a9bc12a569d8a06afef50ba5773afbf upstream.
 
-... we need it later on in the function to clean up pipe <-> plane
-associations. This regression has been introduced in
+Commit 178db7d3, "spi: Fix device unregistration when unregistering
+the bus master", changed spi device initialization of dev.parent pointer
+to be the master's device pointer instead of his parent.
 
-commit f47166d2b0001fcb752b40c5a2d4db986dfbea68
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Mar 22 15:00:50 2012 +0000
+This introduced a bug in spi-fsl-spi, since its usage of spi device
+pointer was not updated accordingly. This was later fixed by commit
+5039a86, "spi/mpc83xx: fix NULL pdata dereference bug", but it missed
+another spot on fsl_spi_cs_control function where we also need to update
+usage of spi device pointer. This change address that.
 
-    drm/i915: Sanitize BIOS debugging bits from PIPECONF
-
-Spotted by staring at debug output of an (as it turns out) totally
-unrelated bug.
-
-v2: I've totally failed to do the s/pipe/i/ correctly, spotted by
-Chris Wilson.
-
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Acked-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_display.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/spi/spi-fsl-spi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7496,10 +7496,11 @@ static void intel_sanitize_modesetting(s
+--- a/drivers/spi/spi-fsl-spi.c
++++ b/drivers/spi/spi-fsl-spi.c
+@@ -931,7 +931,7 @@ err:
+ 
+ static void fsl_spi_cs_control(struct spi_device *spi, bool on)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	u32 reg, val;
-+	int i;
- 
- 	/* Clear any frame start delays used for debugging left by the BIOS */
--	for_each_pipe(pipe) {
--		reg = PIPECONF(pipe);
-+	for_each_pipe(i) {
-+		reg = PIPECONF(i);
- 		I915_WRITE(reg, I915_READ(reg) & ~PIPECONF_FRAME_START_DELAY_MASK);
- 	}
- 
+-	struct device *dev = spi->dev.parent;
++	struct device *dev = spi->dev.parent->parent;
+ 	struct mpc8xxx_spi_probe_info *pinfo = to_of_pinfo(dev->platform_data);
+ 	u16 cs = spi->chip_select;
+ 	int gpio = pinfo->gpios[cs];
 
 
