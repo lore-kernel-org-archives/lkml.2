@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab2E0Brd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:47:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932569Ab2E0BIN (ORCPT
+	id S933125Ab2E0Brw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:47:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932823Ab2E0BIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:08:13 -0400
-Message-Id: <20120527010428.142522428@linuxfoundation.org>
+	Sat, 26 May 2012 21:08:04 -0400
+Message-Id: <20120527010427.714312533@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:54 +0900
+Date: Sun, 27 May 2012 10:04:51 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Bukovsky <bukovsky.peter@gmail.com>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 31/94] HID: wiimote: Fix IR data parser
+        alan@lxorguk.ukuu.org.uk, Maxim Levitsky <maximlevitsky@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 28/94] mtd: sm_ftl: fix typo in major number.
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Herrmann <dh.herrmann@googlemail.com>
+From: Maxim Levitsky <maximlevitsky@gmail.com>
 
-commit 74b89e8a3625c17c7452532dfb997ac4f1a38751 upstream.
+commit 452380efbd72d8d41f53ea64c8a6ea1fedc4394d upstream.
 
-We incorrectly parse incoming IR data. The extra byte contains the upper
-bits and not the lower bits of the x/y coordinates. User-space expects
-absolute position data from us so this patch does not break existing
-applications. On the contrary, it extends the virtual view and fixes
-garbage reports for margin areas of the virtual screen.
+major == 0 allocates dynamic major, not major == -1
 
-Reported-by: Peter Bukovsky <bukovsky.peter@gmail.com>
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-wiimote-core.c |   16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/mtd/sm_ftl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/hid-wiimote-core.c
-+++ b/drivers/hid/hid-wiimote-core.c
-@@ -769,7 +769,7 @@ static void __ir_to_input(struct wiimote
+--- a/drivers/mtd/sm_ftl.c
++++ b/drivers/mtd/sm_ftl.c
+@@ -1256,7 +1256,7 @@ static void sm_remove_dev(struct mtd_blk
  
- 	/*
- 	 * Basic IR data is encoded into 3 bytes. The first two bytes are the
--	 * upper 8 bit of the X/Y data, the 3rd byte contains the lower 2 bits
-+	 * lower 8 bit of the X/Y data, the 3rd byte contains the upper 2 bits
- 	 * of both.
- 	 * If data is packed, then the 3rd byte is put first and slightly
- 	 * reordered. This allows to interleave packed and non-packed data to
-@@ -778,17 +778,11 @@ static void __ir_to_input(struct wiimote
- 	 */
- 
- 	if (packed) {
--		x = ir[1] << 2;
--		y = ir[2] << 2;
--
--		x |= ir[0] & 0x3;
--		y |= (ir[0] >> 2) & 0x3;
-+		x = ir[1] | ((ir[0] & 0x03) << 8);
-+		y = ir[2] | ((ir[0] & 0x0c) << 6);
- 	} else {
--		x = ir[0] << 2;
--		y = ir[1] << 2;
--
--		x |= (ir[2] >> 4) & 0x3;
--		y |= (ir[2] >> 6) & 0x3;
-+		x = ir[0] | ((ir[2] & 0x30) << 4);
-+		y = ir[1] | ((ir[2] & 0xc0) << 2);
- 	}
- 
- 	input_report_abs(wdata->ir, xid, x);
+ static struct mtd_blktrans_ops sm_ftl_ops = {
+ 	.name		= "smblk",
+-	.major		= -1,
++	.major		= 0,
+ 	.part_bits	= SM_FTL_PARTN_BITS,
+ 	.blksize	= SM_SECTOR_SIZE,
+ 	.getgeo		= sm_getgeo,
 
 
