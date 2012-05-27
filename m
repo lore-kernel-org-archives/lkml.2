@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458Ab2E0Dyk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 23:54:40 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:42521 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750816Ab2E0Dyg (ORCPT
+	id S1750913Ab2E0EIz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 00:08:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58862 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab2E0EIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 23:54:36 -0400
-Message-ID: <4FC1A57A.7080807@fb.com>
-Date: Sat, 26 May 2012 20:54:34 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net: compute a more reasonable default ip6_rt_max_size
-References: <4FC0063E.8080209@fb.com>  <20120525.185131.2017517041016424794.davem@davemloft.net>  <4FC01F1B.1080009@fb.com>  <20120525.201150.1782581593120395710.davem@davemloft.net>  <4FC02777.5070003@fb.com> <1338003580.10135.6.camel@edumazet-glaptop>
-In-Reply-To: <1338003580.10135.6.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.6.7580,1.0.260,0.0.0000
- definitions=2012-05-27_01:2012-05-21,2012-05-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	Sun, 27 May 2012 00:08:51 -0400
+Message-ID: <1338091732.2658.404.camel@shawn-ssd>
+Subject: Re: git-unnoticed merge conflicts breaking arm cross-building
+From: shawn <shawnlandden@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 26 May 2012 21:08:52 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/25/12 8:39 PM, Eric Dumazet wrote:
->
-> But your patch is not a  "modest increase", so whats the deal ?
->
-> A modest increase would be 8192 instead of 4096, regardless of RAM size.
->
+hmm, nv,. 
 
-Yes - 8192 solves our immediate problem, but I was worrying that the 
-problem might resurface as ipv6 adoption becomes more widespread.
+guess i just needed to run
 
-We were testing a pre-3.0 kernel that didn't have Dave's DST_NOCOUNT 
-patch. Will retest with that patch applied.
+ARCH=arm make clean
+-------
 
- > More over, a boot parameter to tweak it is absolutely not needed
 
-Agreed. Will remove that part.
+HOSTCC  scripts/mod/mk_elfconfig
+cc1: error: unrecognized command line option ‘-mlittle-endian’
+cc1: error: unrecognized command line option ‘-mno-thumb-interwork’
+scripts/mod/empty.c:1:0: error: unknown ABI (aapcs-linux) for -mabi= switch
+scripts/mod/empty.c:1:0: error: bad value (armv4t) for -march= switch
+scripts/mod/empty.c:1:0: error: bad value (xscale) for -mtune= switch
 
-Still not sure why you'd like to go for one size regardless of 
-totalram_pages.
+-----
+I checked out git master and tried to cross compile an arm kernel for my
+sheevaplug
 
-  -Arun
+It fails with linker errors:
+
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
+ELF (EM: 40)
+scripts/mod/file2alias.o: could not read symbols: File in wrong format
+collect2: ld returned 1 exit status
+
+where it appears that it isn't calling the cross-toolchain
+(/usr/bin/arm-linux-gnueabi-ld)
+
+I have 
+CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
+
+
+I did a full git bisect and
+
+good: 
+commit f08b9c2f8af0d61faa1170aeae4fbca1eff6a504
+Merge: d79ee93 0ab711a
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue May 22 18:38:11 2012 -0700
+
+    Merge branch 'x86-apic-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+
+good: 
+commit 99ce58ddc4eadec8c35d9a1d64ff57703fdcfacc
+Merge: 56ccd18 44d27f7 4e52b53 ed13794
+Author: Jiri Kosina <jkosina@suse.cz>
+Date:   Tue May 22 11:33:42 2012 +0200
+
+    Merge branches 'upstream-fixes', 'wacom' and 'waltop' into for-linus
+
+first bad:
+commit 3c2c4b73aa79e4a1b601710b59e092441175f4bb
+Merge: f08b9c2 99ce58d
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue May 22 19:21:48 2012 -0700
+
+    Merge branch 'for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
+
+
+-- 
+-Shawn Landden
+
+
+
