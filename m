@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab2E0ByI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:54:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
+	id S1754798Ab2E0Bys (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:54:48 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab2E0A6o (ORCPT
+	with ESMTP id S1754840Ab2E0A6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:58:44 -0400
-Message-Id: <20120527002616.262683334@linuxfoundation.org>
+	Sat, 26 May 2012 20:58:16 -0400
+Message-Id: <20120527002616.408648964@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:29 +0900
+Date: Sun, 27 May 2012 09:26:30 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Julia Lawall <Julia.Lawall@lip6.fr>
-Subject: [ 16/55] drivers/staging/comedi/comedi_fops.c: add missing vfree
+        alan@lxorguk.ukuu.org.uk, Robert Richter <robert.richter@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 17/55] perf/x86: Update event scheduling constraints for AMD family 15h models
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+From: Robert Richter <robert.richter@amd.com>
 
-commit abae41e6438b798e046d721b6ccdd55b4a398170 upstream.
+commit 5bcdf5e4fee3c45e1281c25e4941f2163cb28c65 upstream.
 
-aux_free is freed on all other exits from the function.  By removing the
-return, we can benefit from the vfree already at the end of the function.
+This update is for newer family 15h cpu models from 0x02 to 0x1f.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1337337642-1621-1-git-send-email-robert.richter@amd.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/comedi_fops.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_amd.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -280,7 +280,7 @@ static int do_devconfig_ioctl(struct com
- 	if (ret == 0) {
- 		if (!try_module_get(dev->driver->module)) {
- 			comedi_device_detach(dev);
--			return -ENOSYS;
-+			ret = -ENOSYS;
- 		}
- 	}
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -437,6 +437,7 @@ static __initconst const struct x86_pmu
+  * 0x023	DE	PERF_CTL[2:0]
+  * 0x02D	LS	PERF_CTL[3]
+  * 0x02E	LS	PERF_CTL[3,0]
++ * 0x031	LS	PERF_CTL[2:0] (**)
+  * 0x043	CU	PERF_CTL[2:0]
+  * 0x045	CU	PERF_CTL[2:0]
+  * 0x046	CU	PERF_CTL[2:0]
+@@ -450,10 +451,12 @@ static __initconst const struct x86_pmu
+  * 0x0DD	LS	PERF_CTL[5:0]
+  * 0x0DE	LS	PERF_CTL[5:0]
+  * 0x0DF	LS	PERF_CTL[5:0]
++ * 0x1C0	EX	PERF_CTL[5:3]
+  * 0x1D6	EX	PERF_CTL[5:0]
+  * 0x1D8	EX	PERF_CTL[5:0]
+  *
+- * (*) depending on the umask all FPU counters may be used
++ * (*)  depending on the umask all FPU counters may be used
++ * (**) only one unitmask enabled at a time
+  */
  
+ static struct event_constraint amd_f15_PMC0  = EVENT_CONSTRAINT(0, 0x01, 0);
+@@ -503,6 +506,12 @@ amd_get_event_constraints_f15h(struct cp
+ 			return &amd_f15_PMC3;
+ 		case 0x02E:
+ 			return &amd_f15_PMC30;
++		case 0x031:
++			if (hweight_long(hwc->config & ARCH_PERFMON_EVENTSEL_UMASK) <= 1)
++				return &amd_f15_PMC20;
++			return &emptyconstraint;
++		case 0x1C0:
++			return &amd_f15_PMC53;
+ 		default:
+ 			return &amd_f15_PMC50;
+ 		}
 
 
