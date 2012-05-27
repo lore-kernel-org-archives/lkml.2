@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449Ab2E0Bqb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:46:31 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56176 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab2E0Bq1 (ORCPT
+	id S933540Ab2E0Bq7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:46:59 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933206Ab2E0BIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:46:27 -0400
-Message-ID: <1338083186.2658.401.camel@shawn-ssd>
-Subject: git-unnoticed merge conflicts breaking arm cross-building
-From: shawn <shawnlandden@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Date: Sat, 26 May 2012 18:46:26 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 26 May 2012 21:08:37 -0400
+Message-Id: <20120527010427.995132979@linuxfoundation.org>
+User-Agent: quilt/0.60-19.1
+Date: Sun, 27 May 2012 10:04:53 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Matt Johnson <johnso87@illinois.edu>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 30/94] ahci: Detect Marvell 88SE9172 SATA controller
+In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I checked out git master and tried to cross compile an arm kernel for my
-sheevaplug
+3.3-stable review patch.  If anyone has any objections, please let me know.
 
-It fails with linker errors:
+------------------
 
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-/usr/bin/ld.bfd.real: scripts/mod/file2alias.o: Relocations in generic
-ELF (EM: 40)
-scripts/mod/file2alias.o: could not read symbols: File in wrong format
-collect2: ld returned 1 exit status
+From: Matt Johnson <johnso87@illinois.edu>
 
-where it appears that it isn't calling the cross-toolchain
-(/usr/bin/arm-linux-gnueabi-ld)
+commit 642d89252201c4155fc3946bf9cdea409e5d263e upstream.
 
-I have 
-CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
+The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
+once it was detected, but was missing an ahci_pci_tbl entry.
 
+Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
 
-I did a full git bisect and
+Signed-off-by: Matt Johnson <johnso87@illinois.edu>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-good: 
-commit f08b9c2f8af0d61faa1170aeae4fbca1eff6a504
-Merge: d79ee93 0ab711a
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Tue May 22 18:38:11 2012 -0700
+---
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-    Merge branch 'x86-apic-for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -386,6 +386,8 @@ static const struct pci_device_id ahci_p
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
+ 	{ PCI_DEVICE(0x1b4b, 0x9125),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
++	{ PCI_DEVICE(0x1b4b, 0x917a),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
+ 
 
-good: 
-commit 99ce58ddc4eadec8c35d9a1d64ff57703fdcfacc
-Merge: 56ccd18 44d27f7 4e52b53 ed13794
-Author: Jiri Kosina <jkosina@suse.cz>
-Date:   Tue May 22 11:33:42 2012 +0200
-
-    Merge branches 'upstream-fixes', 'wacom' and 'waltop' into for-linus
-
-first bad:
-commit 3c2c4b73aa79e4a1b601710b59e092441175f4bb
-Merge: f08b9c2 99ce58d
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Tue May 22 19:21:48 2012 -0700
-
-    Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid
-
-
--- 
--Shawn Landden
 
