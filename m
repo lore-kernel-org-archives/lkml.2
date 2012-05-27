@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965265Ab2E0BLN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:11:13 -0400
+	id S933686Ab2E0BLI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:11:08 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933584Ab2E0BLD (ORCPT
+	with ESMTP id S933572Ab2E0BK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:11:03 -0400
-Message-Id: <20120527010432.788259335@linuxfoundation.org>
+	Sat, 26 May 2012 21:10:58 -0400
+Message-Id: <20120527010432.654585701@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:05:27 +0900
+Date: Sun, 27 May 2012 10:05:26 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 64/94] usbcore: enable USB2 LPM if port suspend fails
+Subject: [ 63/94] USB: fix resource leak in xhci power loss path
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@gmail.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit c3e751e4f4754793bb52bd5ae30e9cc027edbb12 upstream.
+commit f8a9e72d125f4e00ec529ba67b674321a1f3bf31 upstream.
 
-USB2 LPM is disabled when device begin to suspend and enabled after device
-is resumed. That's because USB spec does not define the transition from
-U1/U2 state to U3 state.
+Some more data structures must be freed and counters
+reset if an XHCI controller has lost power. The failure
+to do so renders some chips inoperative after a certain number
+of S4 cycles.
 
-If usb_port_suspend() fails, usb_port_resume() is never called, and USB2 LPM
-is disabled in this situation. Enable USB2 LPM if port suspend fails.
+This patch should be backported to kernels as old as 3.2,
+that contain the commits c29eea621900f18287d50519f72cb9113746d75a
+"xhci: Implement HS/FS/LS bandwidth checking." and
+commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe
+"xhci: Implement HS/FS/LS bandwidth checking."
 
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set USB2
-hardware LPM".
-
-Signed-off-by: Andiry Xu <andiry.xu@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/hub.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-mem.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2419,6 +2419,10 @@ int usb_port_suspend(struct usb_device *
- 				NULL, 0,
- 				USB_CTRL_SET_TIMEOUT);
- 
-+		/* Try to enable USB2 hardware LPM again */
-+		if (udev->usb2_hw_lpm_capable == 1)
-+			usb_set_usb2_hardware_lpm(udev, 1);
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1685,6 +1685,14 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ {
+ 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
+ 	struct dev_info	*dev_info, *next;
++	struct list_head *tt_list_head;
++	struct list_head *tt;
++	struct list_head *endpoints;
++	struct list_head *ep, *q;
++	struct xhci_tt_bw_info *tt_info;
++	struct xhci_interval_bw_table *bwt;
++	struct xhci_virt_ep *virt_ep;
 +
- 		/* System sleep transitions should never fail */
- 		if (!PMSG_IS_AUTO(msg))
- 			status = 0;
+ 	unsigned long	flags;
+ 	int size;
+ 	int i;
+@@ -1744,8 +1752,26 @@ void xhci_mem_cleanup(struct xhci_hcd *x
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
++	bwt = &xhci->rh_bw->bw_table;
++	for (i = 0; i < XHCI_MAX_INTERVAL; i++) {
++		endpoints = &bwt->interval_bw[i].endpoints;
++		list_for_each_safe(ep, q, endpoints) {
++			virt_ep = list_entry(ep, struct xhci_virt_ep, bw_endpoint_list);
++			list_del(&virt_ep->bw_endpoint_list);
++			kfree(virt_ep);
++		}
++	}
++
++	tt_list_head = &xhci->rh_bw->tts;
++	list_for_each_safe(tt, q, tt_list_head) {
++		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
++		list_del(tt);
++		kfree(tt_info);
++	}
++
+ 	xhci->num_usb2_ports = 0;
+ 	xhci->num_usb3_ports = 0;
++	xhci->num_active_eps = 0;
+ 	kfree(xhci->usb2_ports);
+ 	kfree(xhci->usb3_ports);
+ 	kfree(xhci->port_array);
 
 
