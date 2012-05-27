@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965735Ab2E0BQT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:16:19 -0400
+	id S965764Ab2E0BQg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:16:36 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965720Ab2E0BQI (ORCPT
+	with ESMTP id S1755055Ab2E0BQ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:16:08 -0400
-Message-Id: <20120527002512.281677733@linuxfoundation.org>
+	Sat, 26 May 2012 21:16:26 -0400
+Message-Id: <20120527002514.050644993@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:31 +0900
+Date: Sun, 27 May 2012 09:25:39 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 25/91] usbhid: prevent deadlock during timeout
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oliver@neukum.org>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 33/91] USB: cdc-wdm: poll must return POLLHUP if device is gone
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,187 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 8815bb09af21316aeb5f8948b24ac62181670db2 upstream.
+commit 616b6937e348ef2b4c6ea5fef2cd3c441145efb0 upstream.
 
-On some HCDs usb_unlink_urb() can directly call the
-completion handler. That limits the spinlocks that can
-be taken in the handler to locks not held while calling
-usb_unlink_urb()
-To prevent a race with resubmission, this patch exposes
-usbcore's infrastructure for blocking submission, uses it
-and so drops the lock without causing a race in usbhid.
+Else the poll will be restarted indefinitely in a tight loop,
+preventing final device cleanup.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/usbhid/hid-core.c |   61 +++++++++++++++++++++++++++++++++++++-----
- drivers/usb/core/urb.c        |   21 ++++++++++++++
- include/linux/usb.h           |    3 ++
- 3 files changed, 79 insertions(+), 6 deletions(-)
+ drivers/usb/class/cdc-wdm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -399,6 +399,16 @@ static int hid_submit_ctrl(struct hid_de
-  * Output interrupt completion handler.
-  */
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -545,7 +545,7 @@ static unsigned int wdm_poll(struct file
  
-+static int irq_out_pump_restart(struct hid_device *hid)
-+{
-+	struct usbhid_device *usbhid = hid->driver_data;
-+
-+	if (usbhid->outhead != usbhid->outtail)
-+		return hid_submit_out(hid);
-+	else
-+		return -1;
-+}
-+
- static void hid_irq_out(struct urb *urb)
- {
- 	struct hid_device *hid = urb->context;
-@@ -428,7 +438,7 @@ static void hid_irq_out(struct urb *urb)
- 	else
- 		usbhid->outtail = (usbhid->outtail + 1) & (HID_OUTPUT_FIFO_SIZE - 1);
- 
--	if (usbhid->outhead != usbhid->outtail && !hid_submit_out(hid)) {
-+	if (!irq_out_pump_restart(hid)) {
- 		/* Successfully submitted next urb in queue */
- 		spin_unlock_irqrestore(&usbhid->lock, flags);
- 		return;
-@@ -443,6 +453,15 @@ static void hid_irq_out(struct urb *urb)
- /*
-  * Control pipe completion handler.
-  */
-+static int ctrl_pump_restart(struct hid_device *hid)
-+{
-+	struct usbhid_device *usbhid = hid->driver_data;
-+
-+	if (usbhid->ctrlhead != usbhid->ctrltail)
-+		return hid_submit_ctrl(hid);
-+	else
-+		return -1;
-+}
- 
- static void hid_ctrl(struct urb *urb)
- {
-@@ -476,7 +495,7 @@ static void hid_ctrl(struct urb *urb)
- 	else
- 		usbhid->ctrltail = (usbhid->ctrltail + 1) & (HID_CONTROL_FIFO_SIZE - 1);
- 
--	if (usbhid->ctrlhead != usbhid->ctrltail && !hid_submit_ctrl(hid)) {
-+	if (!ctrl_pump_restart(hid)) {
- 		/* Successfully submitted next urb in queue */
- 		spin_unlock(&usbhid->lock);
- 		return;
-@@ -535,11 +554,27 @@ static void __usbhid_submit_report(struc
- 			 * the queue is known to run
- 			 * but an earlier request may be stuck
- 			 * we may need to time out
--			 * no race because this is called under
-+			 * no race because the URB is blocked under
- 			 * spinlock
- 			 */
--			if (time_after(jiffies, usbhid->last_out + HZ * 5))
-+			if (time_after(jiffies, usbhid->last_out + HZ * 5)) {
-+				usb_block_urb(usbhid->urbout);
-+				/* drop lock to not deadlock if the callback is called */
-+				spin_unlock(&usbhid->lock);
- 				usb_unlink_urb(usbhid->urbout);
-+				spin_lock(&usbhid->lock);
-+				usb_unblock_urb(usbhid->urbout);
-+				/*
-+				 * if the unlinking has already completed
-+				 * the pump will have been stopped
-+				 * it must be restarted now
-+				 */
-+				if (!test_bit(HID_OUT_RUNNING, &usbhid->iofl))
-+					if (!irq_out_pump_restart(hid))
-+						set_bit(HID_OUT_RUNNING, &usbhid->iofl);
-+
-+
-+			}
- 		}
- 		return;
+ 	spin_lock_irqsave(&desc->iuspin, flags);
+ 	if (test_bit(WDM_DISCONNECTING, &desc->flags)) {
+-		mask = POLLERR;
++		mask = POLLHUP | POLLERR;
+ 		spin_unlock_irqrestore(&desc->iuspin, flags);
+ 		goto desc_out;
  	}
-@@ -583,11 +618,25 @@ static void __usbhid_submit_report(struc
- 		 * the queue is known to run
- 		 * but an earlier request may be stuck
- 		 * we may need to time out
--		 * no race because this is called under
-+		 * no race because the URB is blocked under
- 		 * spinlock
- 		 */
--		if (time_after(jiffies, usbhid->last_ctrl + HZ * 5))
-+		if (time_after(jiffies, usbhid->last_ctrl + HZ * 5)) {
-+			usb_block_urb(usbhid->urbctrl);
-+			/* drop lock to not deadlock if the callback is called */
-+			spin_unlock(&usbhid->lock);
- 			usb_unlink_urb(usbhid->urbctrl);
-+			spin_lock(&usbhid->lock);
-+			usb_unblock_urb(usbhid->urbctrl);
-+			/*
-+			 * if the unlinking has already completed
-+			 * the pump will have been stopped
-+			 * it must be restarted now
-+			 */
-+			if (!test_bit(HID_CTRL_RUNNING, &usbhid->iofl))
-+				if (!ctrl_pump_restart(hid))
-+					set_bit(HID_CTRL_RUNNING, &usbhid->iofl);
-+		}
- 	}
- }
- 
---- a/drivers/usb/core/urb.c
-+++ b/drivers/usb/core/urb.c
-@@ -681,6 +681,27 @@ void usb_unpoison_urb(struct urb *urb)
- EXPORT_SYMBOL_GPL(usb_unpoison_urb);
- 
- /**
-+ * usb_block_urb - reliably prevent further use of an URB
-+ * @urb: pointer to URB to be blocked, may be NULL
-+ *
-+ * After the routine has run, attempts to resubmit the URB will fail
-+ * with error -EPERM.  Thus even if the URB's completion handler always
-+ * tries to resubmit, it will not succeed and the URB will become idle.
-+ *
-+ * The URB must not be deallocated while this routine is running.  In
-+ * particular, when a driver calls this routine, it must insure that the
-+ * completion handler cannot deallocate the URB.
-+ */
-+void usb_block_urb(struct urb *urb)
-+{
-+	if (!urb)
-+		return;
-+
-+	atomic_inc(&urb->reject);
-+}
-+EXPORT_SYMBOL_GPL(usb_block_urb);
-+
-+/**
-  * usb_kill_anchored_urbs - cancel transfer requests en masse
-  * @anchor: anchor the requests are bound to
-  *
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1379,6 +1379,7 @@ extern int usb_unlink_urb(struct urb *ur
- extern void usb_kill_urb(struct urb *urb);
- extern void usb_poison_urb(struct urb *urb);
- extern void usb_unpoison_urb(struct urb *urb);
-+extern void usb_block_urb(struct urb *urb);
- extern void usb_kill_anchored_urbs(struct usb_anchor *anchor);
- extern void usb_poison_anchored_urbs(struct usb_anchor *anchor);
- extern void usb_unpoison_anchored_urbs(struct usb_anchor *anchor);
-@@ -1391,6 +1392,8 @@ extern struct urb *usb_get_from_anchor(s
- extern void usb_scuttle_anchored_urbs(struct usb_anchor *anchor);
- extern int usb_anchor_empty(struct usb_anchor *anchor);
- 
-+#define usb_unblock_urb	usb_unpoison_urb
-+
- /**
-  * usb_urb_dir_in - check if an URB describes an IN transfer
-  * @urb: URB to be checked
 
 
