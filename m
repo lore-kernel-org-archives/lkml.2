@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab2E0A7a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 20:59:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37624 "EHLO
+	id S932174Ab2E0BFx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:05:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56104 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab2E0A7W (ORCPT
+	with ESMTP id S1755523Ab2E0A7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 20:59:22 -0400
-Message-Id: <20120527002618.286202021@linuxfoundation.org>
+	Sat, 26 May 2012 20:59:31 -0400
+Message-Id: <20120527002618.574614254@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:42 +0900
+Date: Sun, 27 May 2012 09:26:44 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>
-Subject: [ 29/55] USB: ftdi-sio: add support for Physik Instrumente E-861
+        alan@lxorguk.ukuu.org.uk, Matthias Fend <matthias.fend@wolfvision.net>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: [ 31/55] USB: ffs-test: fix length argument of out function call
 In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Éric Piel <piel@delmic.com>
+From: Matthias Fend <Matthias.Fend@wolfvision.net>
 
-commit b69cc672052540e8efb1368420f10d7d4d8b8a3d upstream.
+commit eb9c5836384cd2a276254df6254ed71117983626 upstream.
 
-This adds VID/PID for the PI E-861. Without it, I had to do:
-modprobe -q ftdi-sio product=0x1008 vendor=0x1a72
+The out functions should only handle actual available data instead of the complete buffer.
+Otherwise for example the ep0_consume function will report ghost events since it tries to decode
+the complete buffer - which may contain partly invalid data.
 
-http://www.physikinstrumente.com/en/products/prdetail.php?sortnr=900610
-
-Signed-off-by: Éric Piel <piel@delmic.com>
+Signed-off-by: Matthias Fend <matthias.fend@wolfvision.net>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    8 ++++++++
- 2 files changed, 9 insertions(+)
+ tools/usb/ffs-test.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -807,6 +807,7 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
- 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
-+	{ USB_DEVICE(PI_VID, PI_E861_PID) },
- 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -785,6 +785,14 @@
- #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
- #define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -324,7 +324,7 @@ static void *start_thread_helper(void *a
  
-+
-+/*
-+ * Physik Instrumente
-+ * http://www.physikinstrumente.com/en/products/
-+ */
-+#define PI_VID              0x1a72  /* Vendor ID */
-+#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
-+
- /*
-  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-  * http://winglucofacts.com/cables/
+ 		ret = t->in(t, t->buf, t->buf_size);
+ 		if (ret > 0) {
+-			ret = t->out(t, t->buf, t->buf_size);
++			ret = t->out(t, t->buf, ret);
+ 			name = out_name;
+ 			op = "write";
+ 		} else {
 
 
