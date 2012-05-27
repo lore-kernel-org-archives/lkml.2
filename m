@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab2E0OdJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 10:33:09 -0400
-Received: from nm27.bullet.mail.bf1.yahoo.com ([98.139.212.186]:23232 "HELO
-	nm27.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750846Ab2E0OdE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 10:33:04 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 331007.70375.bm@omp1003.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=cDZTJoAzIYVIwH/DQ+I9yCqtk66ZPJ6EV+8DyTiliFbdRbnJ77ST2T6j6zbiKZf7tJmV7/fhm8GKyYxGX1BuKr/yk4/D/gBsE/5ZXymSdPHpH4bFyfw58XA4wrTXWi0q6YIMp8N/I/PoMgk1Swff7DCo8M356VWyJpzmCSDdel0=;
-X-YMail-OSG: VhjEGBUVM1l62B0u9KjVk3zfkAk0FxFdGyaXYMEEL2ocqaG
- d.fKKjDZgfdqpncaqA1Tx8R5MrA.FW4lNRvjnT0X8Ghe8CXOQVl0At69GJ6T
- kmzI3MabydEn3C3OBIIqYvIa4xAULssteGq5YyJWiABX5naSbp5lxAMJH6Gv
- 4JSoytEsE3p6e7huO.sH5Ok67CPEbGzz0sJcWPLMdaKTpTcTP3JFEkE1MJGC
- Nuq61IFxlGxOPbHCPfQa1azw8yKQE4SrBYlpTVZebOVXzh5o14.MyixmSK2A
- Pb5OGW5GJP7r58aqLEzJOI0F3hmOw7ZwhYNS2bMjgjgf4mFcqphT.XrFP.dW
- ok0vhPWCN9EJ68iVBPn8wuPBcjZTzWVrYLpE7zumExv_ITd2FbX5Tmv5h0uM
- s81gIAazgvja6z6i.6ZlsVA3rpn9ZkbwJfJDEcU3rKo9QkoBP68o2jNwQbjq
- EgxCy42_5hlHKdnJEngz0baoCkTaIuNH3.jlgdVU6X3Pw6VWZW9MPrGBiF6F
- .Z8E-
-X-Mailer: YahooMailClassic/15.0.6 YahooMailWebService/0.8.118.349524
-Message-ID: <1338129182.70493.YahooMailClassic@web162605.mail.bf1.yahoo.com>
-Date: Sun, 27 May 2012 07:33:02 -0700 (PDT)
-From: Denis Lotarev <dlotarev@yahoo.com>
-Subject: Re: [BUG] Hibernate not working on laptop LENOVO X120e
-To: Arend van Spriel <arend@broadcom.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4FC21F57.8030507@broadcom.com>
+	id S1752754Ab2E0Orb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 10:47:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab2E0Or2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 10:47:28 -0400
+Message-ID: <4FC23E73.3080901@redhat.com>
+Date: Sun, 27 May 2012 11:47:15 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for v3.5-rc1] media updates for v3.5
+References: <4FBE5518.5090705@redhat.com> <CA+55aFyt2OFOsr5uCpQ6nrur4zhHhmWUJrvMgLH_Wy1niTbC6w@mail.gmail.com> <4FBEB72D.4040905@redhat.com> <CA+55aFyYQkrtgvG99ZOOhAzoKi8w5rJfRgZQy3Dqs39p1n=FPA@mail.gmail.com> <4FBF773B.10408@redhat.com> <20120526003856.7e4efd77@stein>
+In-Reply-To: <20120526003856.7e4efd77@stein>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is one solution that i found, this is uncommenting one line in file:
-/usr/lib/pm-utils/defaults
-HIBERNATE_MODE="shutdown"
-But i dont know how this solution is right. Maybe this is bug of thinkpad_acpi or bug of pm-utils
+Em 25-05-2012 19:38, Stefan Richter escreveu:
+> On May 25 Mauro Carvalho Chehab wrote:
+>> A simple way to solve it seems to make those options dependent on CONFIG_EXPERT.
+>>
+>> Not sure if all usual distributions disable it, but I guess most won't have
+>> EXPERT enabled.
+>>
+>> The enclosed patch does that. If nobody complains, I'll submit it together
+>> with the next git pull request.
+> 
+> I only want dvb-core and firedtv.  But when I switch off
+> CONFIG_MEDIA_TUNER_CUSTOMISE, suddenly also
+> 
+>   CC [M]  drivers/media/common/tuners/tuner-xc2028.o
+>   CC [M]  drivers/media/common/tuners/tuner-simple.o
+>   CC [M]  drivers/media/common/tuners/tuner-types.o
+>   CC [M]  drivers/media/common/tuners/mt20xx.o
+>   CC [M]  drivers/media/common/tuners/tda8290.o
+>   CC [M]  drivers/media/common/tuners/tea5767.o
+>   CC [M]  drivers/media/common/tuners/tea5761.o
+>   CC [M]  drivers/media/common/tuners/tda9887.o
+>   CC [M]  drivers/media/common/tuners/tda827x.o
+>   CC [M]  drivers/media/common/tuners/tda18271-maps.o
+>   CC [M]  drivers/media/common/tuners/tda18271-common.o
+>   CC [M]  drivers/media/common/tuners/tda18271-fe.o
+>   CC [M]  drivers/media/common/tuners/xc5000.o
+>   CC [M]  drivers/media/common/tuners/xc4000.o
+>   CC [M]  drivers/media/common/tuners/mc44s803.o
+>   LD [M]  drivers/media/common/tuners/tda18271.o
+> 
+> are built.  Why is that?
 
-Your sincerely, Denis Lotarev
+Those are the tuners supported by the tuner_core logic. The tuner_core module
+is required by all TV drivers that have analog support.
 
+After the tuner rework to allow a driver under drivers/media/dvb to use the
+same tuner module as the ../v4l modules, there are now pure dvb drivers that
+don't use tune_core.
 
---- On Sun, 5/27/12, Arend van Spriel <arend@broadcom.com> wrote:
+So, it makes sense to add a new config for tuner_core that will be
+selected only for devices with analog TV support.
 
-> From: Arend van Spriel <arend@broadcom.com>
-> Subject: Re: [BUG] Hibernate not working on laptop LENOVO X120e
-> To: "Denis Lotarev" <dlotarev@yahoo.com>
-> Cc: linux-kernel@vger.kernel.org
-> Date: Sunday, May 27, 2012, 4:34 PM
-> On 05/27/2012 05:26 AM, Denis Lotarev
-> wrote:
-> > Hello!
-> > My system on Lenovo X120e doesnt hibernate, when i
-> trying to hibernate system power led begin often blinking
-> (about 3 times at second), LCD turned off, HDD still
-> working, and CPU fan workinkg too. There are no kernel log
-> at messages, even if i run DEBUG=1 at pm-hibernate there are
-> no errors at pm-hibernate.log. Suspent on RAM working good.
-> > Linux lenarch 3.3.7-1-ARCH #1 SMP PREEMPT Mon May 21
-> 22:39:59 UTC 2012 i686 GNU/Linux
-> >  
-> 
-> Could you try:
-> 
-> # echo reboot > /sys/power/disk
-> # echo disk > /sys/power/state
-> 
-> and provide the kernel log.
-> 
-> Gr. AvS
-> 
-> 
+Regards,
+Mauro
