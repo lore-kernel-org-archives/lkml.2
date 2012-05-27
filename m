@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab2E0BSP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:18:15 -0400
+	id S934070Ab2E0BSW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:18:22 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:38960 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422785Ab2E0BSH (ORCPT
+	with ESMTP id S1756673Ab2E0BSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:18:07 -0400
-Message-Id: <20120527002518.701723446@linuxfoundation.org>
+	Sat, 26 May 2012 21:18:17 -0400
+Message-Id: <20120527002519.172218382@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:26:00 +0900
+Date: Sun, 27 May 2012 09:26:02 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Chen <peter.chen@freescale.com>,
-        Li Yang <leoli@freescale.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 54/91] usb: gadget: fsl_udc_core: dTDs next dtd pointer need to be updated once written
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 56/91] xhci: Add Lynx Point to list of Intel switchable hosts.
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +24,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Chen <peter.chen@freescale.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 4d0947dec4db1224354e2f6f00ae22ce38e62a43 upstream.
+commit 1c12443ab8eba71a658fae4572147e56d1f84f66 upstream.
 
-dTD's next dtd pointer need to be updated once CPU writes it, or this
-request may not be handled by controller, then host will get NAK from
-device forever.
+The upcoming Intel Lynx Point chipset includes an xHCI host controller
+that can have ports switched from the EHCI host controller, just like
+the Intel Panther Point xHCI host.  This time, ports from both EHCI
+hosts can be switched to the xHCI host controller.  The PCI config
+registers to do the port switching are in the exact same place in the
+xHCI PCI configuration registers, with the same semantics.
 
-This problem occurs when there is a request is handling, we need to add
-a new request to dTD list, if this new request is added before the current
-one is finished, the new request is intended to added as next dtd pointer
-at current dTD, but without wmb(), the dTD's next dtd pointer may not be
-updated when the controller reads it. In that case, the controller will
-still get Terminate Bit is 1 at dTD's next dtd pointer, that means there is
-no next request, then this new request is missed by controller.
+Hooray for shipping patches for next-gen hardware before the current gen
+hardware is even available for purchase!
 
-Signed-off-by: Peter Chen <peter.chen@freescale.com>
-Acked-by: Li Yang <leoli@freescale.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+This patch should be backported to stable kernels as old as 3.0,
+that contain commit 69e848c2090aebba5698a1620604c7dccb448684
+"Intel xhci: Support EHCI/xHCI port switching."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/fsl_udc_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/host/ehci-pci.c   |    4 +++-
+ drivers/usb/host/pci-quirks.c |   18 +++++++++++++++++-
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/fsl_udc_core.c
-+++ b/drivers/usb/gadget/fsl_udc_core.c
-@@ -736,6 +736,8 @@ static void fsl_queue_td(struct fsl_ep *
- 		lastreq = list_entry(ep->queue.prev, struct fsl_req, queue);
- 		lastreq->tail->next_td_ptr =
- 			cpu_to_hc32(req->head->td_dma & DTD_ADDR_MASK);
-+		/* Ensure dTD's next dtd pointer to be updated */
-+		wmb();
- 		/* Read prime bit, if 1 goto done */
- 		if (fsl_readl(&dr_regs->endpointprime) & bitmask)
- 			return;
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -368,7 +368,9 @@ static bool usb_is_intel_switchable_ehci
+ {
+ 	return pdev->class == PCI_CLASS_SERIAL_USB_EHCI &&
+ 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
+-		pdev->device == 0x1E26;
++		(pdev->device == 0x1E26 ||
++		 pdev->device == 0x8C2D ||
++		 pdev->device == 0x8C26);
+ }
+ 
+ static void ehci_enable_xhci_companion(void)
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -712,12 +712,28 @@ static int handshake(void __iomem *ptr,
+ 	return -ETIMEDOUT;
+ }
+ 
+-bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
++#define PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI	0x8C31
++
++bool usb_is_intel_ppt_switchable_xhci(struct pci_dev *pdev)
+ {
+ 	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
+ 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 		pdev->device == PCI_DEVICE_ID_INTEL_PANTHERPOINT_XHCI;
+ }
++
++/* The Intel Lynx Point chipset also has switchable ports. */
++bool usb_is_intel_lpt_switchable_xhci(struct pci_dev *pdev)
++{
++	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
++		pdev->vendor == PCI_VENDOR_ID_INTEL &&
++		pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI;
++}
++
++bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
++{
++	return usb_is_intel_ppt_switchable_xhci(pdev) ||
++		usb_is_intel_lpt_switchable_xhci(pdev);
++}
+ EXPORT_SYMBOL_GPL(usb_is_intel_switchable_xhci);
+ 
+ /*
 
 
