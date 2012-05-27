@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2E0Ljy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 07:39:54 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:60040 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab2E0Ljx (ORCPT
+	id S1752016Ab2E0Lp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 07:45:28 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:46030 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab2E0LpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 07:39:53 -0400
-Message-ID: <4FC22098.3070803@kernel.org>
-Date: Sun, 27 May 2012 13:39:52 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 27 May 2012 07:45:25 -0400
 MIME-Version: 1.0
-To: swarren@wwwdotorg.org, kay.sievers@vrfy.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: arm: Remaining issue with alignment of __log_buf in printk.c
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Sun, 27 May 2012 19:45:24 +0800
+Message-ID: <CAJd=RBBKk5ObBaaWGRiAbM1qf3EeuMBPKLPy65qV3qxgM5pbTQ@mail.gmail.com>
+Subject: [patch] BFS 420: no update of task cpu when changing cpu affinity
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Since task cpu is involved in the computation of difference of locality, we
+have to delay updating it until the task will be taken off the global runqueue.
 
-My stargate 2 board refused to start and after bisection I ended
-up at the same patch that Stephen found an alignment issue in.
-Unfortunately Stephen's patch doesn't seem to have fixed the
-issue for me.
-https://lkml.org/lkml/2012/5/10/510 is the thread.  Patch from
-Stephen is : f8450fca6ecdea38b5a882fdf6cd097e3ec8651c
+If given task is a sleeper, no problem since it has to be activated first.
 
-Increasing the alignement for 32 bit systems to 8 seems to do the
-job but I can't immediately think why...
+--- a/kernel/sched/bfs.c	Mon May 14 20:50:38 2012
++++ b/kernel/sched/bfs.c	Sun May 27 09:38:00 2012
+@@ -5117,8 +5117,7 @@ int set_cpus_allowed_ptr(struct task_str
+ 			running_wrong = true;
+ 		} else
+ 			resched_task(p);
+-	} else
+-		set_task_cpu(p, cpumask_any_and(cpu_active_mask, new_mask));
++	}
 
-System is a pxa27x strong arm.
-
-Tree was effectively today's mainline.
-
-Saddly I have too many other bits to fit in today for futher
-investigation (hence this information free email!)
-
-
-Jonathan
+ out:
+ 	if (queued)
+--
