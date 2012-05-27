@@ -1,118 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab2E0BwK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:52:10 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755818Ab2E0BF6 (ORCPT
+	id S932101Ab2E0BxF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:53:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52492 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754936Ab2E0A7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:05:58 -0400
-Message-Id: <20120527010424.219564037@linuxfoundation.org>
+	Sat, 26 May 2012 20:59:13 -0400
+Message-Id: <20120527002617.982162993@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:26 +0900
+Date: Sun, 27 May 2012 09:26:40 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        Szymon Gruszczynski <sz.gruszczynski@googlemail.com>,
-        Will Drewry <wad@chromium.org>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 03/94] block: fix buffer overflow when printing partition UUIDs
-In-Reply-To: <20120527010332.GA11170@kroah.com>
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [ 27/55] Add missing call to uart_update_timeout()
+In-Reply-To: <20120527005203.GA2146@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.3-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Lothar Waßmann <LW@KARO-electronics.de>
 
-commit 05c69d298c96703741cac9a5cbbf6c53bd55a6e2 upstream.
+commit 8b979f7c6bf13a57e7b6002f1175312a44773960 upstream.
 
-6d1d8050b4bc8 "block, partition: add partition_meta_info to hd_struct"
-added part_unpack_uuid() which assumes that the passed in buffer has
-enough space for sprintfing "%pU" - 37 characters including '\0'.
+This patch fixes a problem reported here:
+http://article.gmane.org/gmane.linux.ports.arm.kernel/155242/match=auart
 
-Unfortunately, b5af921ec0233 "init: add support for root devices
-specified by partition UUID" supplied 33 bytes buffer to the function
-leading to the following panic with stackprotector enabled.
-
-  Kernel panic - not syncing: stack-protector: Kernel stack corrupted in: ffffffff81b14c7e
-
-  [<ffffffff815e226b>] panic+0xba/0x1c6
-  [<ffffffff81b14c7e>] ? printk_all_partitions+0x259/0x26xb
-  [<ffffffff810566bb>] __stack_chk_fail+0x1b/0x20
-  [<ffffffff81b15c7e>] printk_all_paritions+0x259/0x26xb
-  [<ffffffff81aedfe0>] mount_block_root+0x1bc/0x27f
-  [<ffffffff81aee0fa>] mount_root+0x57/0x5b
-  [<ffffffff81aee23b>] prepare_namespace+0x13d/0x176
-  [<ffffffff8107eec0>] ? release_tgcred.isra.4+0x330/0x30
-  [<ffffffff81aedd60>] kernel_init+0x155/0x15a
-  [<ffffffff81087b97>] ? schedule_tail+0x27/0xb0
-  [<ffffffff815f4d24>] kernel_thread_helper+0x5/0x10
-  [<ffffffff81aedc0b>] ? start_kernel+0x3c5/0x3c5
-  [<ffffffff815f4d20>] ? gs_change+0x13/0x13
-
-Increase the buffer size, remove the dangerous part_unpack_uuid() and
-use snprintf() directly from printk_all_partitions().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Szymon Gruszczynski <sz.gruszczynski@googlemail.com>
-Cc: Will Drewry <wad@chromium.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c         |   10 ++++++----
- include/linux/genhd.h |    6 ------
- 2 files changed, 6 insertions(+), 10 deletions(-)
+ drivers/tty/serial/mxs-auart.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -743,7 +743,7 @@ void __init printk_all_partitions(void)
- 		struct hd_struct *part;
- 		char name_buf[BDEVNAME_SIZE];
- 		char devt_buf[BDEVT_SIZE];
--		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
-+		char uuid_buf[PARTITION_META_INFO_UUIDLTH * 2 + 5];
+--- a/drivers/tty/serial/mxs-auart.c
++++ b/drivers/tty/serial/mxs-auart.c
+@@ -368,6 +368,8 @@ static void mxs_auart_settermios(struct
  
- 		/*
- 		 * Don't show empty devices or things that have been
-@@ -762,14 +762,16 @@ void __init printk_all_partitions(void)
- 		while ((part = disk_part_iter_next(&piter))) {
- 			bool is_part0 = part == &disk->part0;
- 
--			uuid[0] = 0;
-+			uuid_buf[0] = '\0';
- 			if (part->info)
--				part_unpack_uuid(part->info->uuid, uuid);
-+				snprintf(uuid_buf, sizeof(uuid_buf), "%pU",
-+					 part->info->uuid);
- 
- 			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
- 			       bdevt_str(part_devt(part), devt_buf),
- 			       (unsigned long long)part->nr_sects >> 1,
--			       disk_name(disk, part->partno, name_buf), uuid);
-+			       disk_name(disk, part->partno, name_buf),
-+			       uuid_buf);
- 			if (is_part0) {
- 				if (disk->driverfs_dev != NULL &&
- 				    disk->driverfs_dev->driver != NULL)
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -222,12 +222,6 @@ static inline void part_pack_uuid(const
- 	}
+ 	writel(ctrl, u->membase + AUART_LINECTRL);
+ 	writel(ctrl2, u->membase + AUART_CTRL2);
++
++	uart_update_timeout(u, termios->c_cflag, baud);
  }
  
--static inline char *part_unpack_uuid(const u8 *uuid, char *out)
--{
--	sprintf(out, "%pU", uuid);
--	return out;
--}
--
- static inline int disk_max_parts(struct gendisk *disk)
- {
- 	if (disk->flags & GENHD_FL_EXT_DEVT)
+ static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
 
 
