@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933153Ab2E0BI1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:08:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
+	id S933197Ab2E0BId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:08:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36809 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932959Ab2E0BIX (ORCPT
+	with ESMTP id S933157Ab2E0BI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:08:23 -0400
-Message-Id: <20120527010428.287299519@linuxfoundation.org>
+	Sat, 26 May 2012 21:08:28 -0400
+Message-Id: <20120527010428.425537516@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 10:04:55 +0900
+Date: Sun, 27 May 2012 10:04:56 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
+        alan@lxorguk.ukuu.org.uk,
+        Hugo Osvaldo Barrera <hugo@osvaldobarrera.com.ar>,
+        Jonathan Nieder <jrnieder@gmail.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [ 32/94] usbhid: prevent deadlock during timeout
+Subject: [ 33/94] HID: logitech: read all 32 bits of report type bitfield
 In-Reply-To: <20120527010332.GA11170@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,187 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Jonathan Nieder <jrnieder@gmail.com>
 
-commit 8815bb09af21316aeb5f8948b24ac62181670db2 upstream.
+commit 44d27f7dfedd9aadc082cda31462f6600f56e4ec upstream.
 
-On some HCDs usb_unlink_urb() can directly call the
-completion handler. That limits the spinlocks that can
-be taken in the handler to locks not held while calling
-usb_unlink_urb()
-To prevent a race with resubmission, this patch exposes
-usbcore's infrastructure for blocking submission, uses it
-and so drops the lock without causing a race in usbhid.
+On big-endian systems (e.g., Apple PowerBook), trying to use a
+logitech wireless mouse with the Logitech Unifying Receiver does not
+work with v3.2 and later kernels.  The device doesn't show up in
+/dev/input.  Older kernels work fine.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Acked-by: Jiri Kosina <jkosina@suse.cz>
+That is because the new hid-logitech-dj driver claims the device.  The
+device arrival notification appears:
+
+	20 00 41 02 00 00 00 00 00 00 00 00 00 00 00
+
+and we read the report_types bitfield (02 00 00 00) to find out what
+kind of device it is.  Unfortunately the driver only reads the first 8
+bits and treats that value as a 32-bit little-endian number, so on a
+powerpc the report type seems to be 0x02000000 and is not recognized.
+
+Even on little-endian machines, connecting a media center remote
+control (report type 00 01 00 00) with this driver loaded would
+presumably fail for the same reason.
+
+Fix both problems by using get_unaligned_le32() to read all four
+bytes, which is a little clearer anyway.  After this change, the
+wireless mouse works on Hugo's PowerBook again.
+
+Based on a patch by Nestor Lopez Casado.
+Addresses http://bugs.debian.org/671292
+
+Reported-by: Hugo Osvaldo Barrera <hugo@osvaldobarrera.com.ar>
+Inspired-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/usbhid/hid-core.c |   61 +++++++++++++++++++++++++++++++++++++-----
- drivers/usb/core/urb.c        |   21 ++++++++++++++
- include/linux/usb.h           |    3 ++
- 3 files changed, 79 insertions(+), 6 deletions(-)
+ drivers/hid/hid-logitech-dj.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -399,6 +399,16 @@ static int hid_submit_ctrl(struct hid_de
-  * Output interrupt completion handler.
-  */
- 
-+static int irq_out_pump_restart(struct hid_device *hid)
-+{
-+	struct usbhid_device *usbhid = hid->driver_data;
-+
-+	if (usbhid->outhead != usbhid->outtail)
-+		return hid_submit_out(hid);
-+	else
-+		return -1;
-+}
-+
- static void hid_irq_out(struct urb *urb)
- {
- 	struct hid_device *hid = urb->context;
-@@ -428,7 +438,7 @@ static void hid_irq_out(struct urb *urb)
- 	else
- 		usbhid->outtail = (usbhid->outtail + 1) & (HID_OUTPUT_FIFO_SIZE - 1);
- 
--	if (usbhid->outhead != usbhid->outtail && !hid_submit_out(hid)) {
-+	if (!irq_out_pump_restart(hid)) {
- 		/* Successfully submitted next urb in queue */
- 		spin_unlock_irqrestore(&usbhid->lock, flags);
- 		return;
-@@ -443,6 +453,15 @@ static void hid_irq_out(struct urb *urb)
- /*
-  * Control pipe completion handler.
-  */
-+static int ctrl_pump_restart(struct hid_device *hid)
-+{
-+	struct usbhid_device *usbhid = hid->driver_data;
-+
-+	if (usbhid->ctrlhead != usbhid->ctrltail)
-+		return hid_submit_ctrl(hid);
-+	else
-+		return -1;
-+}
- 
- static void hid_ctrl(struct urb *urb)
- {
-@@ -476,7 +495,7 @@ static void hid_ctrl(struct urb *urb)
- 	else
- 		usbhid->ctrltail = (usbhid->ctrltail + 1) & (HID_CONTROL_FIFO_SIZE - 1);
- 
--	if (usbhid->ctrlhead != usbhid->ctrltail && !hid_submit_ctrl(hid)) {
-+	if (!ctrl_pump_restart(hid)) {
- 		/* Successfully submitted next urb in queue */
- 		spin_unlock(&usbhid->lock);
- 		return;
-@@ -535,11 +554,27 @@ static void __usbhid_submit_report(struc
- 			 * the queue is known to run
- 			 * but an earlier request may be stuck
- 			 * we may need to time out
--			 * no race because this is called under
-+			 * no race because the URB is blocked under
- 			 * spinlock
- 			 */
--			if (time_after(jiffies, usbhid->last_out + HZ * 5))
-+			if (time_after(jiffies, usbhid->last_out + HZ * 5)) {
-+				usb_block_urb(usbhid->urbout);
-+				/* drop lock to not deadlock if the callback is called */
-+				spin_unlock(&usbhid->lock);
- 				usb_unlink_urb(usbhid->urbout);
-+				spin_lock(&usbhid->lock);
-+				usb_unblock_urb(usbhid->urbout);
-+				/*
-+				 * if the unlinking has already completed
-+				 * the pump will have been stopped
-+				 * it must be restarted now
-+				 */
-+				if (!test_bit(HID_OUT_RUNNING, &usbhid->iofl))
-+					if (!irq_out_pump_restart(hid))
-+						set_bit(HID_OUT_RUNNING, &usbhid->iofl);
-+
-+
-+			}
- 		}
- 		return;
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -26,6 +26,7 @@
+ #include <linux/hid.h>
+ #include <linux/module.h>
+ #include <linux/usb.h>
++#include <asm/unaligned.h>
+ #include "usbhid/usbhid.h"
+ #include "hid-ids.h"
+ #include "hid-logitech-dj.h"
+@@ -265,8 +266,8 @@ static void logi_dj_recv_add_djhid_devic
+ 		goto dj_device_allocate_fail;
  	}
-@@ -583,11 +618,25 @@ static void __usbhid_submit_report(struc
- 		 * the queue is known to run
- 		 * but an earlier request may be stuck
- 		 * we may need to time out
--		 * no race because this is called under
-+		 * no race because the URB is blocked under
- 		 * spinlock
- 		 */
--		if (time_after(jiffies, usbhid->last_ctrl + HZ * 5))
-+		if (time_after(jiffies, usbhid->last_ctrl + HZ * 5)) {
-+			usb_block_urb(usbhid->urbctrl);
-+			/* drop lock to not deadlock if the callback is called */
-+			spin_unlock(&usbhid->lock);
- 			usb_unlink_urb(usbhid->urbctrl);
-+			spin_lock(&usbhid->lock);
-+			usb_unblock_urb(usbhid->urbctrl);
-+			/*
-+			 * if the unlinking has already completed
-+			 * the pump will have been stopped
-+			 * it must be restarted now
-+			 */
-+			if (!test_bit(HID_CTRL_RUNNING, &usbhid->iofl))
-+				if (!ctrl_pump_restart(hid))
-+					set_bit(HID_CTRL_RUNNING, &usbhid->iofl);
-+		}
- 	}
- }
  
---- a/drivers/usb/core/urb.c
-+++ b/drivers/usb/core/urb.c
-@@ -671,6 +671,27 @@ void usb_unpoison_urb(struct urb *urb)
- EXPORT_SYMBOL_GPL(usb_unpoison_urb);
- 
- /**
-+ * usb_block_urb - reliably prevent further use of an URB
-+ * @urb: pointer to URB to be blocked, may be NULL
-+ *
-+ * After the routine has run, attempts to resubmit the URB will fail
-+ * with error -EPERM.  Thus even if the URB's completion handler always
-+ * tries to resubmit, it will not succeed and the URB will become idle.
-+ *
-+ * The URB must not be deallocated while this routine is running.  In
-+ * particular, when a driver calls this routine, it must insure that the
-+ * completion handler cannot deallocate the URB.
-+ */
-+void usb_block_urb(struct urb *urb)
-+{
-+	if (!urb)
-+		return;
-+
-+	atomic_inc(&urb->reject);
-+}
-+EXPORT_SYMBOL_GPL(usb_block_urb);
-+
-+/**
-  * usb_kill_anchored_urbs - cancel transfer requests en masse
-  * @anchor: anchor the requests are bound to
-  *
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1371,6 +1371,7 @@ extern int usb_unlink_urb(struct urb *ur
- extern void usb_kill_urb(struct urb *urb);
- extern void usb_poison_urb(struct urb *urb);
- extern void usb_unpoison_urb(struct urb *urb);
-+extern void usb_block_urb(struct urb *urb);
- extern void usb_kill_anchored_urbs(struct usb_anchor *anchor);
- extern void usb_poison_anchored_urbs(struct usb_anchor *anchor);
- extern void usb_unpoison_anchored_urbs(struct usb_anchor *anchor);
-@@ -1383,6 +1384,8 @@ extern struct urb *usb_get_from_anchor(s
- extern void usb_scuttle_anchored_urbs(struct usb_anchor *anchor);
- extern int usb_anchor_empty(struct usb_anchor *anchor);
- 
-+#define usb_unblock_urb	usb_unpoison_urb
-+
- /**
-  * usb_urb_dir_in - check if an URB describes an IN transfer
-  * @urb: URB to be checked
+-	dj_dev->reports_supported = le32_to_cpu(
+-		dj_report->report_params[DEVICE_PAIRED_RF_REPORT_TYPE]);
++	dj_dev->reports_supported = get_unaligned_le32(
++		dj_report->report_params + DEVICE_PAIRED_RF_REPORT_TYPE);
+ 	dj_dev->hdev = dj_hiddev;
+ 	dj_dev->dj_receiver_dev = djrcv_dev;
+ 	dj_dev->device_index = dj_report->device_index;
 
 
