@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945897Ab2E0BaL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 26 May 2012 21:30:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54259 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422640Ab2E0BQu (ORCPT
+	id S965784Ab2E0Bau (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 26 May 2012 21:30:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36607 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965760Ab2E0BQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 26 May 2012 21:16:50 -0400
-Message-Id: <20120527002515.148499606@linuxfoundation.org>
+	Sat, 26 May 2012 21:16:35 -0400
+Message-Id: <20120527002513.402073373@linuxfoundation.org>
 User-Agent: quilt/0.60-19.1
-Date: Sun, 27 May 2012 09:25:44 +0900
+Date: Sun, 27 May 2012 09:25:36 +0900
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@fusionio.com>,
-        NeilBrown <neilb@suse.de>
-Subject: [ 38/91] md: using GFP_NOIO to allocate bio for flush request
+        alan@lxorguk.ukuu.org.uk, Kees Cook <keescook@chromium.org>
+Subject: [ 30/91] docs: update HOWTO for 2.6.x -> 3.x versioning
 In-Reply-To: <20120527010903.GA18244@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +24,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: Kees Cook <keescook@chromium.org>
 
-commit b5e1b8cee7ad58a15d2fa79bcd7946acb592602d upstream.
+commit 591bfc6bf9e5e25e464fd4c87d64afd5135667c4 upstream.
 
-A flush request is usually issued in transaction commit code path, so
-using GFP_KERNEL to allocate memory for flush request bio falls into
-the classic deadlock issue.
+The HOWTO document needed updating for the new kernel versioning. The
+git URI for -next was updated as well.
 
-This is suitable for any -stable kernel to which it applies as it
-avoids a possible deadlock.
-
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/HOWTO |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -452,7 +452,7 @@ static void submit_flushes(struct work_s
- 			atomic_inc(&rdev->nr_pending);
- 			atomic_inc(&rdev->nr_pending);
- 			rcu_read_unlock();
--			bi = bio_alloc_mddev(GFP_KERNEL, 0, mddev);
-+			bi = bio_alloc_mddev(GFP_NOIO, 0, mddev);
- 			bi->bi_end_io = md_end_flush;
- 			bi->bi_private = rdev;
- 			bi->bi_bdev = rdev->bdev;
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -218,16 +218,16 @@ The development process
+ Linux kernel development process currently consists of a few different
+ main kernel "branches" and lots of different subsystem-specific kernel
+ branches.  These different branches are:
+-  - main 2.6.x kernel tree
+-  - 2.6.x.y -stable kernel tree
+-  - 2.6.x -git kernel patches
++  - main 3.x kernel tree
++  - 3.x.y -stable kernel tree
++  - 3.x -git kernel patches
+   - subsystem specific kernel trees and patches
+-  - the 2.6.x -next kernel tree for integration tests
++  - the 3.x -next kernel tree for integration tests
+ 
+-2.6.x kernel tree
++3.x kernel tree
+ -----------------
+-2.6.x kernels are maintained by Linus Torvalds, and can be found on
+-kernel.org in the pub/linux/kernel/v2.6/ directory.  Its development
++3.x kernels are maintained by Linus Torvalds, and can be found on
++kernel.org in the pub/linux/kernel/v3.x/ directory.  Its development
+ process is as follows:
+   - As soon as a new kernel is released a two weeks window is open,
+     during this period of time maintainers can submit big diffs to
+@@ -262,20 +262,20 @@ mailing list about kernel releases:
+ 	released according to perceived bug status, not according to a
+ 	preconceived timeline."
+ 
+-2.6.x.y -stable kernel tree
++3.x.y -stable kernel tree
+ ---------------------------
+-Kernels with 4-part versions are -stable kernels. They contain
++Kernels with 3-part versions are -stable kernels. They contain
+ relatively small and critical fixes for security problems or significant
+-regressions discovered in a given 2.6.x kernel.
++regressions discovered in a given 3.x kernel.
+ 
+ This is the recommended branch for users who want the most recent stable
+ kernel and are not interested in helping test development/experimental
+ versions.
+ 
+-If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
++If no 3.x.y kernel is available, then the highest numbered 3.x
+ kernel is the current stable kernel.
+ 
+-2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
++3.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
+ are released as needs dictate.  The normal release period is approximately
+ two weeks, but it can be longer if there are no pressing problems.  A
+ security-related problem, instead, can cause a release to happen almost
+@@ -285,7 +285,7 @@ The file Documentation/stable_kernel_rul
+ documents what kinds of changes are acceptable for the -stable tree, and
+ how the release process works.
+ 
+-2.6.x -git patches
++3.x -git patches
+ ------------------
+ These are daily snapshots of Linus' kernel tree which are managed in a
+ git repository (hence the name.) These patches are usually released
+@@ -317,13 +317,13 @@ revisions to it, and maintainers can mar
+ accepted, or rejected.  Most of these patchwork sites are listed at
+ http://patchwork.kernel.org/.
+ 
+-2.6.x -next kernel tree for integration tests
++3.x -next kernel tree for integration tests
+ ---------------------------------------------
+-Before updates from subsystem trees are merged into the mainline 2.6.x
++Before updates from subsystem trees are merged into the mainline 3.x
+ tree, they need to be integration-tested.  For this purpose, a special
+ testing repository exists into which virtually all subsystem trees are
+ pulled on an almost daily basis:
+-	http://git.kernel.org/?p=linux/kernel/git/sfr/linux-next.git
++	http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git
+ 	http://linux.f-seidel.de/linux-next/pmwiki/
+ 
+ This way, the -next kernel gives a summary outlook onto what will be
 
 
