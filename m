@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2E1R5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 13:57:22 -0400
-Received: from mga12.intel.com ([143.182.124.36]:24880 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753049Ab2E1R5V convert rfc822-to-8bit (ORCPT
+	id S1754213Ab2E1SBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 14:01:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46628 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab2E1SBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 13:57:21 -0400
+	Mon, 28 May 2012 14:01:50 -0400
+Date: Mon, 28 May 2012 19:01:39 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: alan@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
+Subject: Re: [PATCH] serial/of-serial: Add 16654 chip to compatible string
+	list
+Message-ID: <20120528180139.GC28290@n2100.arm.linux.org.uk>
+References: <1338199134-23885-1-git-send-email-stigge@antcom.de> <20120528100338.GI24149@n2100.arm.linux.org.uk> <4FC35F97.2030400@antcom.de> <20120528150311.GA28290@n2100.arm.linux.org.uk> <4FC3A768.3060208@antcom.de> <20120528163151.GB28290@n2100.arm.linux.org.uk> <4FC3BA89.4060804@antcom.de>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1205281835400.32511@debianer>
-References: <Pine.LNX.4.44L0.1205251034190.1907-100000@iolanthe.rowland.org>
-	<201205252127.21436.rjw@sisk.pl>
-	<alpine.DEB.2.02.1205281835400.32511@debianer>
-Date: Mon, 28 May 2012 10:56:58 -0700
-Message-ID: <CABE8wwsormFTiyE8Qepq_DBZ1rcA5P1+L9xLfgA7S8VY7_t0+Q@mail.gmail.com>
-Subject: Re: 3.4.0-02580-g72c04af regression on sparc64 - partitions not recognized
-From: Dan Williams <dan.j.williams@intel.com>
-To: Eldad Zack <eldadzack@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <jejbbe@hansenpartnership.com>,
-        David Miller <davem@davemloft.net>, mroos@linux.ee,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC3BA89.4060804@antcom.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 9:46 AM, Eldad Zack <eldadzack@gmail.com> wrote:
->
-> On Fri, 25 May 2012, Rafael J. Wysocki wrote:
->> On Friday, May 25, 2012, Alan Stern wrote:
->> > On Fri, 25 May 2012, James Bottomley wrote:
->> >
->> > Whether or not the boot kernel can have modular drivers isn't clear to me;
->>
->> It can, but then the code in question is irrelevant and the resume has to
->> be triggered in a different way.  For example, by writing to
->> /sys/power/resume from the initrd boot scripts.
->>
->> > I don't know when the check for a valid image in the swap area is carried
->> > out in relation to starting up the initramfs task.
->>
->> This particular one is carried out before the initrd is loaded.
->
-> I just got hit by this one too, but on x86 qemu. There's no initrd, and all
-> the modules are built in.
->
-> With commit a7a20d103994fd760766e6c9d494daa569cbfe06 the kernel doesn't
-> get to the point where it reads the partition table.
->
-> If it's of any help, I can provide more details.
+On Mon, May 28, 2012 at 07:48:57PM +0200, Roland Stigge wrote:
+> On 28/05/12 18:31, Russell King - ARM Linux wrote:
+> >>>> So maybe 16750 is the better choice for me, anyway. Already supported in
+> >>>> of-serial. Works for now, but need more testing. Another hint is that
+> >>>> 16750 is advertised as "IP core for Soc" which matches the case of LPC32xx.
+> >>>
+> >>> 16750 also has automatic hardware flow control support, selectable through
+> >>> bit 5 in the MCR register.  If your UART has that, then it's probably a
+> >>> 16750 derivative rather than a 16550 or 16650 derivative.
+> >>>
+> >>> 16650s have an EFR register at offset 2, selectable by writing 0xBF into
+> >>> the LCR register, which the 16750 doesn't have.  16650 also has automatic
+> >>> hardware flow control, bit this is selected through a couple of bits in
+> >>> the EFR.
+> >>
+> >> The 4 LPC32xx's "Standard" UARTs have neither of those.
+> >>
+> >> Is it ok to use "ns16650", i.e. PORT_16650, or do I need to introduce a
+> >> FIFO depth configuration?
+> > 
+> > I think you need a new type, because as I said above, 16650s have that
+> > additional EFR, and we will attempt to access that register which
+> > isn't present in yours.
+> 
+> I actually meant 16750 instead of 16650, sorry, but this basically means
+> the same - I would refer to extensions that are actually not there...
+> 
+> Now, introducing a new type, can I add to 8250.c's uart_config[] by
+> introducing a new type (no. 22) after PORT_XR17D15X? Unfortunately,
+> there are the "ARM specific type numbers" after current PORT_MAX_8250
+> (21), but those are not listed in 8250.c's uart_config[]. Or how am I
+> supposed to add a new type?
 
-Yes, please send the qemu config details.
-
-The proposed fix for 3.5 is here:
-http://marc.info/?l=linux-scsi&m=133796775807498&w=2
-
---
-Dan
+If it's 8250, stick it in with the group, otherwise the array will
+become stupidly large.  That's why there's a separation of the two.
