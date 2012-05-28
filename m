@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab2E1Nle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 09:41:34 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:48694 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab2E1Nld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 09:41:33 -0400
-Message-ID: <4FC38084.40409@linux.vnet.ibm.com>
-Date: Mon, 28 May 2012 21:41:24 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754549Ab2E1NmT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 09:42:19 -0400
+Received: from twin.jikos.cz ([89.185.236.188]:52849 "EHLO twin.jikos.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866Ab2E1NmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 09:42:18 -0400
+Date: Mon, 28 May 2012 15:41:59 +0200
+From: David Sterba <dave@jikos.cz>
+To: Asias He <asias@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        jeffm@suse.com
+Subject: Re: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
+Message-ID: <20120528134159.GT24394@twin.jikos.cz>
+Reply-To: dave@jikos.cz
+Mail-Followup-To: Asias He <asias@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+	Jens Axboe <axboe@kernel.dk>, jeffm@suse.com
+References: <1337915422-24988-1-git-send-email-asias@redhat.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] KVM: MMU: fix huge page adapted on non-PAE host
-References: <4FC316E3.6080607@linux.vnet.ibm.com> <4FC35A15.6080000@redhat.com> <4FC363EE.6060204@linux.vnet.ibm.com> <4FC36E85.4010909@redhat.com> <4FC37600.1060301@linux.vnet.ibm.com> <4FC37A18.10809@redhat.com>
-In-Reply-To: <4FC37A18.10809@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052813-5564-0000-0000-000002FA845B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337915422-24988-1-git-send-email-asias@redhat.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2012 09:14 PM, Avi Kivity wrote:
+On Fri, May 25, 2012 at 11:10:21AM +0800, Asias He wrote:
+> 1) This function is not used anywhere.
 
-> On 05/28/2012 03:56 PM, Xiao Guangrong wrote:
->> On 05/28/2012 08:24 PM, Avi Kivity wrote:
->>
->>> On 05/28/2012 02:39 PM, Xiao Guangrong wrote:
->>>> On 05/28/2012 06:57 PM, Avi Kivity wrote:
->>>>
->>>>> On 05/28/2012 09:10 AM, Xiao Guangrong wrote:
->>>>>> The huge page size is 4M on non-PAE host, but 2M page size is used in
->>>>>> transparent_hugepage_adjust(), so the page we get after adjust the
->>>>>> mapping level is not the head page, the BUG_ON() will be triggered
->>>>>>
->>>>>>
->>>>>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->>>>>> index 72102e0..be3cea4 100644
->>>>>> --- a/arch/x86/kvm/mmu.c
->>>>>> +++ b/arch/x86/kvm/mmu.c
->>>>>> @@ -2595,8 +2595,7 @@ static void transparent_hugepage_adjust(struct kvm_vcpu *vcpu,
->>>>>>  			*gfnp = gfn;
->>>>>>  			kvm_release_pfn_clean(pfn);
->>>>>>  			pfn &= ~mask;
->>>>>> -			if (!get_page_unless_zero(pfn_to_page(pfn)))
->>>>>> -				BUG();
->>>>>> +			kvm_get_pfn(pfn);
->>>>>>  			*pfnp = pfn;
->>>>>>  		}
->>>>>>  	}
->>>>>
->>>>> Shouldn't we adjust mask instead?
->>>>>
->>>>
->>>>
->>>> Adjusting mask to map the whole 4M huge page to KVM guest?
->>>
->>> The code moves the refcount from the small page to the huge page.  i.e.
->>> from pfn 0x1312 to pfn 0x1200.  But if the huge page frame contains
->>> 0x400 pages, it should move the refcount to pfn 0x1000.
->>>
->>
->>
->> We need not move the refcount to the huge page (the head of pages), moving
->> the refcount to the any middle small page is also ok, get_page() will
->> properly handle it:
->>
->> get_page() -> __get_page_tail():
->>
->> |	struct page *page_head = compound_trans_head(page);
->> |
->> |	if (likely(page != page_head && get_page_unless_zero(page_head))) {
->> |		/*
->> |		 * page_head wasn't a dangling pointer but it
->> |		 * may not be a head page anymore by the time
->> |		 * we obtain the lock. That is ok as long as it
->> |		 * can't be freed from under us.
->> |		 */
->> |		flags = compound_lock_irqsave(page_head);
->> |		/* here __split_huge_page_refcount won't run anymore */
->> |		if (likely(PageTail(page))) {
->> |			__get_page_tail_foll(page, false);
->> |			got = true;
->> |		}
->> |		compound_unlock_irqrestore(page_head, flags);
->> |		if (unlikely(!got))
->> |			put_page(page_head);
->> |	}
->>
->> The refcount of page_head is increased.
->>
+This was added in 49b25e0540904be0bf558b84475c69d72e4de66e adding a
+transaction abort infrastructure.  I'm not sure if Jeff had some
+intentions with it or whether it got obsolete during the patchset long
+evolution, CCed.
+
+
+david
+
+
+> 2) Using the blk_abort_queue() to abort the queue seems not correct.
+> blk_abort_queue() is used for timeout handling (block/blk-timeout.c).
 > 
-> So, the whole thing is unneeded?  Andrea?
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Cc: linux-btrfs@vger.kernel.org
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Asias He <asias@redhat.com>
+> ---
+>  fs/btrfs/disk-io.c |   13 -------------
+>  fs/btrfs/disk-io.h |    1 -
+>  2 files changed, 14 deletions(-)
 > 
-
-
-I think the reason we move refcount in current code is, we should increase the
-refcount of the page we will mapped into shadow page table, since we always
-decrease its refcount after it is mapped. (That is this patch does.)
-
+> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+> index e1fe74a..3521866 100644
+> --- a/fs/btrfs/disk-io.c
+> +++ b/fs/btrfs/disk-io.c
+> @@ -2902,19 +2902,6 @@ int write_ctree_super(struct btrfs_trans_handle *trans,
+>  	return ret;
+>  }
+>  
+> -/* Kill all outstanding I/O */
+> -void btrfs_abort_devices(struct btrfs_root *root)
+> -{
+> -	struct list_head *head;
+> -	struct btrfs_device *dev;
+> -	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
+> -	head = &root->fs_info->fs_devices->devices;
+> -	list_for_each_entry_rcu(dev, head, dev_list) {
+> -		blk_abort_queue(dev->bdev->bd_disk->queue);
+> -	}
+> -	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
+> -}
+> -
+>  void btrfs_free_fs_root(struct btrfs_fs_info *fs_info, struct btrfs_root *root)
+>  {
+>  	spin_lock(&fs_info->fs_roots_radix_lock);
+> diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
+> index ab1830a..05b3fab 100644
+> --- a/fs/btrfs/disk-io.h
+> +++ b/fs/btrfs/disk-io.h
+> @@ -89,7 +89,6 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
+>  int btrfs_cleanup_transaction(struct btrfs_root *root);
+>  void btrfs_cleanup_one_transaction(struct btrfs_transaction *trans,
+>  				  struct btrfs_root *root);
+> -void btrfs_abort_devices(struct btrfs_root *root);
+>  
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  void btrfs_init_lockdep(void);
