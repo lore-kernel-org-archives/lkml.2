@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab2E1Jlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 05:41:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64088 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab2E1Jlv convert rfc822-to-8bit (ORCPT
+	id S1752983Ab2E1Jmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 05:42:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34551 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2E1JmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 05:41:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120421062130.GC27551@core.coreip.homeip.net>
-References: <1328084386-31110-1-git-send-email-clchiou@chromium.org>
- <1328671497-20880-1-git-send-email-clchiou@chromium.org> <CAGS+omDWrSyLtDYWAubyc5F=BUqKOnKmCnyWPn5nNcoREar_aw@mail.gmail.com>
- <20120421062130.GC27551@core.coreip.homeip.net>
-From: Che-liang Chiou <clchiou@chromium.org>
-Date: Mon, 28 May 2012 17:41:09 +0800
-X-Google-Sender-Auth: Pp_r1KCcn-JdpirgdHKqhI1e7vE
-Message-ID: <CANJuy2+Gboe-_3boJ3NEMKH_FpDZX_+73KDaykBqdazDNSwzZA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Input: serio_raw - add monitor/replay debugging interface
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Daniel Kurtz <djkurtz@google.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 28 May 2012 05:42:08 -0400
+Date: Mon, 28 May 2012 10:44:38 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Aaron Lu <aaron.lu@amd.com>, Holger Macht <holger@homac.de>,
+        Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v4 0/13] SATA ZPODD support
+Message-ID: <20120528104438.044ae385@pyramind.ukuu.org.uk>
+In-Reply-To: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
+References: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Mon, 28 May 2012 13:08:27 +0800
+Lin Ming <ming.m.lin@intel.com> wrote:
 
-I am sorry for getting back to you so late. See below.
+> Hi all,
+> 
+> This is the v4 patches to add SATA ZPODD support, to try it:
+> git pull git://git.kernel.org/pub/scm/linux/kernel/git/mlin/linux.git zpodd
+> 
+> Holger and Mathtew,
+> Patch 1 to Patch 4 are the libata acpi binding patches from you.
+> I removed dock related code from your original version.
+> Would you help to review?
+> 
+> v4:
+> - Includes libata acpi binding patches from Holger Macht and Matthew Garrett.
+> - tell scsi layer device supports runtime power off
+> - check support for device busy class events
 
-On Sat, Apr 21, 2012 at 2:21 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Tue, Feb 14, 2012 at 11:18:38AM +0800, Daniel Kurtz wrote:
->> On Wed, Feb 8, 2012 at 11:24 AM, Che-Liang Chiou <clchiou@chromium.org> wrote:
->> >
->> > The serio_raw driver is designed to provide "raw access" to mice, keyboards
->> > etc; thus, a driver accessing serio_raw may live entirely in userland.
->> >
->> > However, serio_raw lacks testability.  It is practically impossible to do
->> > regression tests on changes to a serio_raw -based userland driver.  On the other
->> > hand, the kernel's input subsystem has good testability support.  With the help
->> > of tools like utouch-evemu, we may capture and replay input events for evdev
->> > drivers in regression tests.
->> >
->> > This patchset contains extensions to the serio_raw driver which add debugfs
->> > entries for monitoring and replaying byte sequence between a userland driver
->> > and device.  These byte sequences can be used in regression tests of the
->> > userland driver.  This patchset closes the gap between serio_raw and the input
->> > subsystem regarding testability.
->> >
->> > This patchset is successfully applied on kernel version 3.3-rc2.
->> >
->> > Che-Liang Chiou (5):
->> >  Input: serio_raw - return proper result when serio_raw_read fails
->> >  Input: serio_raw - extract queue interface
->> >  Input: serio_raw - factor out common pattern of write
->> >  Input: serio_raw - add debugfs interface
->> >  Input: serio_raw - implement debugfs interface
->>
->> For patches 3-5:
->> Reviewed-by: Daniel Kurtz <djkurtz@google.com>
->>
->> For patch 1 (and its implication on queue_read() in patch 2, I'd
->> prefer to hear feedback from the list.
->
-> I have already taken the patch 1, but I am unsure why we need kernel
-> support for the monitor and replay. It seems you should only need a
-> userspace program that would sit between the driver being tested and
-> serio_raw misc device and pipe data back and forth, optionally saving
-> it for subsequent replay.
+Have you fixed the fact that Matthews patches broke things like pata_acpi
+last time ? Until that is fixed properly I don't see that these patches
+can make any progress.
 
-Sadly some user space drivers hard codes path, like
-"/dev/serio_raw%d", and quite often their source codes are not
-available; so it is effectively impossible to monitor these drivers
-without kernel's help.
-
-Besides, changing from accessing a char device to communicating
-through IPC requires rewriting the user space driver, no matter it's a
-pair of named pipes or a socket. This may sometimes be quite hard
-depending on the I/O strategy of the driver.
-
-> Thanks.
->
-> --
-> Dmitry
-
-Regards,
-Che-Liang
+Alan
