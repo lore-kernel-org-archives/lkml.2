@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894Ab2E1Bab (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 21:30:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48329 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab2E1Ba2 (ORCPT
+	id S1752726Ab2E1Bg0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 21:36:26 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36271 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2E1BgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 21:30:28 -0400
-Date: Mon, 28 May 2012 10:30:12 +0900
+	Sun, 27 May 2012 21:36:24 -0400
+Date: Mon, 28 May 2012 10:36:08 +0900
 From: Tejun Heo <tj@kernel.org>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
@@ -15,49 +15,43 @@ Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
         agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
         bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
         sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v3 04/16] pktcdvd: Switch to bio_kmalloc()
-Message-ID: <20120528013012.GD9891@dhcp-172-17-108-109.mtv.corp.google.com>
+Subject: Re: [PATCH v3 05/16] block: Kill bi_destructor
+Message-ID: <20120528013608.GE9891@dhcp-172-17-108-109.mtv.corp.google.com>
 References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
- <1337977539-16977-5-git-send-email-koverstreet@google.com>
+ <1337977539-16977-6-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337977539-16977-5-git-send-email-koverstreet@google.com>
+In-Reply-To: <1337977539-16977-6-git-send-email-koverstreet@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 01:25:27PM -0700, Kent Overstreet wrote:
-> This is prep work for killing bi_destructor - previously, pktcdvd had
-> its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-> necessitating its own bi_destructor implementation.
+On Fri, May 25, 2012 at 01:25:28PM -0700, Kent Overstreet wrote:
+> Now that we've got generic code for freeing bios allocated from bio
+> pools, this isn't needed anymore.
 > 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> Change-Id: I5604293e07f695c8f0106ae819e306f1def89a67
-> ---
->  drivers/block/pktcdvd.c |  115 ++++++++++++++++-------------------------------
->  1 file changed, 39 insertions(+), 76 deletions(-)
-> 
-> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
-> index ba66e44..6fe693a 100644
-> --- a/drivers/block/pktcdvd.c
-> +++ b/drivers/block/pktcdvd.c
-> @@ -522,36 +522,38 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
->  	}
->  }
+> This also changes the semantics of bio_free() a bit - it now also frees
+> bios allocated by bio_kmalloc(). It's also no longer exported, as
+> without bi_destructor there should be no need for it to be called
+> anywhere else.
+
+I like this patch but I'd *really* like to see the patch description
+giving some background and explains *why* this is a good change.
+
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 6b7daf3..b6ddbf1 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -74,11 +74,8 @@ struct bio {
+>  	struct bio_integrity_payload *bi_integrity;  /* data integrity */
+>  #endif
 >  
-> -static void pkt_bio_destructor(struct bio *bio)
-> +static void pkt_end_io_read(struct bio *bio, int err)
+> -	/* If bi_pool is non NULL, bi_destructor is not called */
+>  	struct bio_set		*bi_pool;
 
-* Why isn't pktcdvd maintainer cc'd?
-
-* How is it tested or why do you think this change is correct?
-
-* Didn't Boaz point out that mixing function relocations and
-  functional changes makes the patch difficult to review and verify
-  already?  Why doesn't the patch description mention function
-  relocations?  And why are they mixed with functional changes?
+Maybe explain that %NULL bi_pool indicates kmalloc backed allocation?
 
 -- 
 tejun
