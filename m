@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2E1D4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:56:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51814 "EHLO
+	id S1755603Ab2E1D4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:56:25 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51810 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753246Ab2E1D25 (ORCPT
+	by vger.kernel.org with ESMTP id S1753203Ab2E1D25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:28:57 -0400
-Message-Id: <20120528031204.684195488@decadent.org.uk>
+Message-Id: <20120528031203.461134868@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:15 +0100
+Date: Mon, 28 May 2012 04:12:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
-Subject: [ 013/117] [PARISC] fix panic on prefetch(NULL) on PA7300LC
+        alan@lxorguk.ukuu.org.uk, Marcelo Tosatti <mtosatti@redhat.com>,
+        Nadav HarEl <nyh@math.technion.ac.il>, Nadav HarEl <nyh@il.ibm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Avi Kivity <avi@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 004/117] KVM: nVMX: Fix erroneous exception bitmap check
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,38 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit b3cb8674811d1851bbf1486a73d62b90c119b994 upstream.
+From: Nadav Har'El <nyh@math.technion.ac.il>
 
-Due to an errata, the PA7300LC generates a TLB miss interruption even on the
-prefetch instruction.  This means that prefetch(NULL), which is supposed to be
-a nop on linux actually generates a NULL deref fault.  Fix this by testing the
-address of prefetch against NULL before doing the prefetch.
+(cherry picked from commit 9587190107d0c0cbaccbf7bf6b0245d29095a9ae)
 
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The code which checks whether to inject a pagefault to L1 or L2 (in
+nested VMX) was wrong, incorrect in how it checked the PF_VECTOR bit.
+Thanks to Dan Carpenter for spotting this.
+
+Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/parisc/include/asm/prefetch.h |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/kvm/vmx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/parisc/include/asm/prefetch.h b/arch/parisc/include/asm/prefetch.h
-index c5edc60..1ee7c82 100644
---- a/arch/parisc/include/asm/prefetch.h
-+++ b/arch/parisc/include/asm/prefetch.h
-@@ -21,7 +21,12 @@
- #define ARCH_HAS_PREFETCH
- static inline void prefetch(const void *addr)
- {
--	__asm__("ldw 0(%0), %%r0" : : "r" (addr));
-+	__asm__(
-+#ifndef CONFIG_PA20
-+		/* Need to avoid prefetch of NULL on PA7300LC */
-+		"	extrw,u,= %0,31,32,%%r0\n"
-+#endif
-+		"	ldw 0(%0), %%r0" : : "r" (addr));
- }
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4ea7678..7ac5993 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1677,7 +1677,7 @@ static int nested_pf_handled(struct kvm_vcpu *vcpu)
+ 	struct vmcs12 *vmcs12 = get_vmcs12(vcpu);
  
- /* LDD is a PA2.0 addition. */
+ 	/* TODO: also check PFEC_MATCH/MASK, not just EB.PF. */
+-	if (!(vmcs12->exception_bitmap & PF_VECTOR))
++	if (!(vmcs12->exception_bitmap & (1u << PF_VECTOR)))
+ 		return 0;
+ 
+ 	nested_vmx_vmexit(vcpu);
 
 
