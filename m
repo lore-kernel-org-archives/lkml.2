@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab2E1D3x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52179 "EHLO
+	id S1754593Ab2E1Dbc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:31:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52196 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754050Ab2E1D3m (ORCPT
+	by vger.kernel.org with ESMTP id S1754176Ab2E1D3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:42 -0400
-Message-Id: <20120528031216.101299517@decadent.org.uk>
+	Sun, 27 May 2012 23:29:53 -0400
+Message-Id: <20120528031215.149138561@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:38 +0100
+Date: Mon, 28 May 2012 04:13:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 096/117] spi/spi-fsl-spi: reference correct pdata in fsl_spi_cs_control
+        alan@lxorguk.ukuu.org.uk, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Sujit Reddy Thumma <sthumma@codeaurora.org>,
+        Nicolas Pitre <nico@linaro.org>, Chris Ball <cjb@laptop.org>
+Subject: [ 089/117] mmc: sdio: avoid spurious calls to interrupt handlers
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,40 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-commit 067aa4815a9bc12a569d8a06afef50ba5773afbf upstream.
+commit bbbc4c4d8c5face097d695f9bf3a39647ba6b7e7 upstream.
 
-Commit 178db7d3, "spi: Fix device unregistration when unregistering
-the bus master", changed spi device initialization of dev.parent pointer
-to be the master's device pointer instead of his parent.
+Commit 06e8935feb ("optimized SDIO IRQ handling for single irq")
+introduced some spurious calls to SDIO function interrupt handlers,
+such as when the SDIO IRQ thread is started, or the safety check
+performed upon a system resume.  Let's add a flag to perform the
+optimization only when a real interrupt is signaled by the host
+driver and we know there is no point confirming it.
 
-This introduced a bug in spi-fsl-spi, since its usage of spi device
-pointer was not updated accordingly. This was later fixed by commit
-5039a86, "spi/mpc83xx: fix NULL pdata dereference bug", but it missed
-another spot on fsl_spi_cs_control function where we also need to update
-usage of spi device pointer. This change address that.
-
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Acked-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Reported-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
+Signed-off-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/spi/spi-fsl-spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/core/sdio.c     |    2 +-
+ drivers/mmc/core/sdio_irq.c |   11 +++++++----
+ include/linux/mmc/host.h    |    2 ++
+ 3 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/spi/spi-fsl-spi.c b/drivers/spi/spi-fsl-spi.c
-index 5f748c0..6a62934 100644
---- a/drivers/spi/spi-fsl-spi.c
-+++ b/drivers/spi/spi-fsl-spi.c
-@@ -933,7 +933,7 @@ err:
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index 2c7c83f..13d0e95 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -947,7 +947,7 @@ static int mmc_sdio_resume(struct mmc_host *host)
+ 	}
  
- static void fsl_spi_cs_control(struct spi_device *spi, bool on)
+ 	if (!err && host->sdio_irqs)
+-		mmc_signal_sdio_irq(host);
++		wake_up_process(host->sdio_irq_thread);
+ 	mmc_release_host(host);
+ 
+ 	/*
+diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
+index f573e7f..3d8ceb4 100644
+--- a/drivers/mmc/core/sdio_irq.c
++++ b/drivers/mmc/core/sdio_irq.c
+@@ -28,18 +28,20 @@
+ 
+ #include "sdio_ops.h"
+ 
+-static int process_sdio_pending_irqs(struct mmc_card *card)
++static int process_sdio_pending_irqs(struct mmc_host *host)
  {
--	struct device *dev = spi->dev.parent;
-+	struct device *dev = spi->dev.parent->parent;
- 	struct mpc8xxx_spi_probe_info *pinfo = to_of_pinfo(dev->platform_data);
- 	u16 cs = spi->chip_select;
- 	int gpio = pinfo->gpios[cs];
++	struct mmc_card *card = host->card;
+ 	int i, ret, count;
+ 	unsigned char pending;
+ 	struct sdio_func *func;
+ 
+ 	/*
+ 	 * Optimization, if there is only 1 function interrupt registered
+-	 * call irq handler directly
++	 * and we know an IRQ was signaled then call irq handler directly.
++	 * Otherwise do the full probe.
+ 	 */
+ 	func = card->sdio_single_irq;
+-	if (func) {
++	if (func && host->sdio_irq_pending) {
+ 		func->irq_handler(func);
+ 		return 1;
+ 	}
+@@ -116,7 +118,8 @@ static int sdio_irq_thread(void *_host)
+ 		ret = __mmc_claim_host(host, &host->sdio_irq_thread_abort);
+ 		if (ret)
+ 			break;
+-		ret = process_sdio_pending_irqs(host->card);
++		ret = process_sdio_pending_irqs(host);
++		host->sdio_irq_pending = false;
+ 		mmc_release_host(host);
+ 
+ 		/*
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index cbde4b7..0707d22 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -297,6 +297,7 @@ struct mmc_host {
+ 
+ 	unsigned int		sdio_irqs;
+ 	struct task_struct	*sdio_irq_thread;
++	bool			sdio_irq_pending;
+ 	atomic_t		sdio_irq_thread_abort;
+ 
+ 	mmc_pm_flag_t		pm_flags;	/* requested pm features */
+@@ -352,6 +353,7 @@ extern int mmc_cache_ctrl(struct mmc_host *, u8);
+ static inline void mmc_signal_sdio_irq(struct mmc_host *host)
+ {
+ 	host->ops->enable_sdio_irq(host, 0);
++	host->sdio_irq_pending = true;
+ 	wake_up_process(host->sdio_irq_thread);
+ }
+ 
 
 
