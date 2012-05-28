@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2E1D0x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:26:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36522 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab2E1D0u (ORCPT
+	id S1753362Ab2E1D3A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51798 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752763Ab2E1D2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:26:50 -0400
-Date: Mon, 28 May 2012 13:26:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the dma-mapping tree with the  tree
-Message-Id: <20120528132640.03db266f490fa5917a54bb6d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp"
+	Sun, 27 May 2012 23:28:55 -0400
+Message-Id: <20120528031203.583213241@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 28 May 2012 04:12:07 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Marcelo Tosatti <mtosatti@redhat.com>,
+        Avi Kivity <avi@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 005/117] KVM: VMX: vmx_set_cr0 expects kvm->srcu locked
+In-Reply-To: <20120528031202.829379252@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Hi all,
+------------------
 
-Today's linux-next merge of the dma-mapping tree got conflicts in
-arch/arm/Kconfig and arch/x86/include/asm/dma-mapping.h between various
-commits from Linus' tree and various commits from the dma-mapping tree.
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-Again, these commits were rebased from what was merged into Linus' tree
-via other trees.   Please do not do this.
+(cherry picked from commit 7a4f5ad051e02139a9f1c0f7f4b1acb88915852b)
 
-I just used the version of these files from Linus' tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+vmx_set_cr0 is called from vcpu run context, therefore it expects
+kvm->srcu to be held (for setting up the real-mode TSS).
 
---Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp
-Content-Type: application/pgp-signature
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/x86/kvm/vmx.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 7ac5993..7315488 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3915,7 +3915,9 @@ static int vmx_vcpu_reset(struct kvm_vcpu *vcpu)
+ 		vmcs_write16(VIRTUAL_PROCESSOR_ID, vmx->vpid);
+ 
+ 	vmx->vcpu.arch.cr0 = X86_CR0_NW | X86_CR0_CD | X86_CR0_ET;
++	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
+ 	vmx_set_cr0(&vmx->vcpu, kvm_read_cr0(vcpu)); /* enter rmode */
++	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
+ 	vmx_set_cr4(&vmx->vcpu, 0);
+ 	vmx_set_efer(&vmx->vcpu, 0);
+ 	vmx_fpu_activate(&vmx->vcpu);
 
-iQIcBAEBCAAGBQJPwvBwAAoJEECxmPOUX5FEr6sP/24QmZOsiRXuDL9VlqWyeALJ
-EtbXM5v/9Ej/s3EVZK6pV0vN6h12Srt1c+Ax6LXbjy/pUZeCFS+gBbSB6TSCpknQ
-fZE4pBCgKVd/VopFGEPCi1ntCfHwAeJa9Z2NiwzJL7fwISYVa90yxQKhbj6sV/Y0
-s4nB+4Jb/srK86s/4+o+HPambRHKwGjy0nfPE07X3ahcFHQOwX+rswvu3/+I/t3u
-8zS08eAZDJ7B/pHf51G/gi/U62+sfrELZIOn7w6SSwKFNzWJHSTARTu2jzkiylQ8
-KQpni3jwR6cNueKraWiPXZP3iQGZHAA+VUpr17UFa2bCSGwY1/AyBG7qvNkr2W5W
-e8k1+djHnQxAvF1EI4s/hN6mg/lUeDEqqEgNPR9GuYAcOe2l4m2t5PfgU0cEFJqp
-LRnHSIAEcB6Oy4UgjUMGclHJjhe2LY5Y/Tb2jGZQHEMQcU73j9+vMkXhaKngMk6r
-OQXh7QDZx+3iqFkFjq3x9K/QamTL7XOx9b53ELvkShX0rJE1b7Yn93hOA0Qp8Qck
-12JFoBF9ZyhtAgywctTJxM0SMM46Kx9Zuqr1NPqMLIlXWAdCi5tEf6r0uls6pIdg
-YOVuN2gZTDXvEDYICGU1X2jfniPfrBT/Tljetw7g81WvJg+R/JfAitmXN80gi3A9
-dBt4ZLffa0cB+wQazt68
-=wZOd
------END PGP SIGNATURE-----
 
---Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp--
