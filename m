@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab2E1D3O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51855 "EHLO
+	id S1753812Ab2E1D3Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51902 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753369Ab2E1D3D (ORCPT
+	by vger.kernel.org with ESMTP id S1753485Ab2E1D3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:03 -0400
-Message-Id: <20120528031205.222288360@decadent.org.uk>
+	Sun, 27 May 2012 23:29:10 -0400
+Message-Id: <20120528031204.815467775@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:19 +0100
+Date: Mon, 28 May 2012 04:12:16 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Scott Teel <scott.teel@hp.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 017/117] [SCSI] hpsa: Fix problem with MSA2xxx devices
+        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 014/117] arch/tile/Kconfig: remove pointless "!M386" test.
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,76 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-commit 9bc3711cbb67ac620bf09b4a147cbab45b2c36c0 upstream.
+commit 8d6951439ef524683057251f1231df232046b6b6 upstream.
 
-Upgraded firmware on Smart Array P7xx (and some others) made them show up as
-SCSI revision 5 devices and this caused the driver to fail to map MSA2xxx
-logical drives to the correct bus/target/lun.  A symptom of this would be that
-the target ID of the logical drives as presented by the external storage array
-is ignored, and all such logical drives are assigned to target zero,
-differentiated only by LUN.  Some multipath software reportedly does not deal
-well with this behavior, failing to recognize different paths to the same
-device as such.
+Looks like a cut and paste bug from the x86 version.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Signed-off-by: Scott Teel <scott.teel@hp.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/hpsa.c |   34 +++++++++++++++-------------------
- 1 file changed, 15 insertions(+), 19 deletions(-)
+ arch/tile/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index d048b69..4e7df2e 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -1637,30 +1637,26 @@ static void figure_bus_target_lun(struct ctlr_info *h,
+diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
+index 11270ca..30413c1 100644
+--- a/arch/tile/Kconfig
++++ b/arch/tile/Kconfig
+@@ -12,7 +12,7 @@ config TILE
+ 	select GENERIC_PENDING_IRQ if SMP
+ 	select GENERIC_IRQ_SHOW
+ 	select SYS_HYPERVISOR
+-	select ARCH_HAVE_NMI_SAFE_CMPXCHG if !M386
++	select ARCH_HAVE_NMI_SAFE_CMPXCHG
  
- 	if (is_logical_dev_addr_mode(lunaddrbytes)) {
- 		/* logical device */
--		if (unlikely(is_scsi_rev_5(h))) {
--			/* p1210m, logical drives lun assignments
--			 * match SCSI REPORT LUNS data.
-+		lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
-+		if (is_msa2xxx(h, device)) {
-+			/* msa2xxx way, put logicals on bus 1
-+			 * and match target/lun numbers box
-+			 * reports.
- 			 */
--			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
--			*bus = 0;
--			*target = 0;
--			*lun = (lunid & 0x3fff) + 1;
-+			*bus = 1;
-+			*target = (lunid >> 16) & 0x3fff;
-+			*lun = lunid & 0x00ff;
- 		} else {
--			/* not p1210m... */
--			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
--			if (is_msa2xxx(h, device)) {
--				/* msa2xxx way, put logicals on bus 1
--				 * and match target/lun numbers box
--				 * reports.
--				 */
--				*bus = 1;
--				*target = (lunid >> 16) & 0x3fff;
--				*lun = lunid & 0x00ff;
-+			if (likely(is_scsi_rev_5(h))) {
-+				/* All current smart arrays (circa 2011) */
-+				*bus = 0;
-+				*target = 0;
-+				*lun = (lunid & 0x3fff) + 1;
- 			} else {
--				/* Traditional smart array way. */
-+				/* Traditional old smart array way. */
- 				*bus = 0;
--				*lun = 0;
- 				*target = lunid & 0x3fff;
-+				*lun = 0;
- 			}
- 		}
- 	} else {
+ # FIXME: investigate whether we need/want these options.
+ #	select HAVE_IOREMAP_PROT
 
 
