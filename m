@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2E1BZl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 21:25:41 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38044 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab2E1BZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 21:25:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104873301"
-Date: Mon, 28 May 2012 09:22:09 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]x86, reboot: Fix a warning message triggered by
- stop_other_cpus()
-Message-ID: <20120528092209.60677c3b@feng-i7>
-In-Reply-To: <20120522133356.GW32472@redhat.com>
-References: <20120522105233.725be041@feng-i7>
-	<20120522133356.GW32472@redhat.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752894Ab2E1Bab (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 21:30:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48329 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab2E1Ba2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 21:30:28 -0400
+Date: Mon, 28 May 2012 10:30:12 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
+        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v3 04/16] pktcdvd: Switch to bio_kmalloc()
+Message-ID: <20120528013012.GD9891@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-5-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337977539-16977-5-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
-
-On Tue, 22 May 2012 09:33:56 -0400
-Don Zickus <dzickus@redhat.com> wrote:
-
-> On Tue, May 22, 2012 at 10:52:33AM +0800, Feng Tang wrote:
-> > 
-> > The root cause seems to be the default_send_IPI_mask_allbutself_phys()
-> > takes quiet some time (I measured it could be several ms) to complete
-> > sending NMIs to all the other 23 CPUs, and for HZ=250/1000 system, the
+On Fri, May 25, 2012 at 01:25:27PM -0700, Kent Overstreet wrote:
+> This is prep work for killing bi_destructor - previously, pktcdvd had
+> its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
+> necessitating its own bi_destructor implementation.
 > 
-> I sent Ingo a patch (which he took in), that reverts this path to interrupts
-> again (and NMIs as a fallback if it fails).  The problem will still exist
-> I assume though I don't know if it changes the timing characteristics.
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> Change-Id: I5604293e07f695c8f0106ae819e306f1def89a67
+> ---
+>  drivers/block/pktcdvd.c |  115 ++++++++++++++++-------------------------------
+>  1 file changed, 39 insertions(+), 76 deletions(-)
+> 
+> diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+> index ba66e44..6fe693a 100644
+> --- a/drivers/block/pktcdvd.c
+> +++ b/drivers/block/pktcdvd.c
+> @@ -522,36 +522,38 @@ static void pkt_bio_finished(struct pktcdvd_device *pd)
+>  	}
+>  }
+>  
+> -static void pkt_bio_destructor(struct bio *bio)
+> +static void pkt_end_io_read(struct bio *bio, int err)
 
-Thanks for your review and letting me know the revert which I just saw in
-the latest Linus' tree. And I think this new mechanism will greatly reduce
-the possibility, but it still exist as the old nmi_stop_other_cpus's
-implementation still exist. So
+* Why isn't pktcdvd maintainer cc'd?
 
-Ingo,
+* How is it tested or why do you think this change is correct?
 
-Could you review this patch? thanks,
+* Didn't Boaz point out that mixing function relocations and
+  functional changes makes the patch difficult to review and verify
+  already?  Why doesn't the patch description mention function
+  relocations?  And why are they mixed with functional changes?
 
--Feng
-
+-- 
+tejun
