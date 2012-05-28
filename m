@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528Ab2E1DwW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:52:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51924 "EHLO
+	id S1755535Ab2E1Dwy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:52:54 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51909 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753530Ab2E1D3M (ORCPT
+	by vger.kernel.org with ESMTP id S1753364Ab2E1D3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:12 -0400
-Message-Id: <20120528031206.762344541@decadent.org.uk>
+	Sun, 27 May 2012 23:29:10 -0400
+Message-Id: <20120528031205.084222483@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:30 +0100
+Date: Mon, 28 May 2012 04:12:18 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steve Wise <swise@opengridcomputing.com>,
-        Roland Dreier <roland@purestorage.com>
-Subject: [ 028/117] RDMA/cxgb4: Always wake up waiters in c4iw_peer_abort_intr()
+        alan@lxorguk.ukuu.org.uk, Maxim Levitsky <maximlevitsky@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: [ 016/117] mtd: sm_ftl: fix typo in major number.
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Wise <swise@opengridcomputing.com>
+From: Maxim Levitsky <maximlevitsky@gmail.com>
 
-commit 0f1dcfae6bc5563424346ad3a03282b8235a4c33 upstream.
+commit 452380efbd72d8d41f53ea64c8a6ea1fedc4394d upstream.
 
-This fixes a race where an ingress abort fails to wake up the thread
-blocked in rdma_init() causing the app to hang.
+major == 0 allocates dynamic major, not major == -1
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/cxgb4/cm.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/mtd/sm_ftl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/cxgb4/cm.c b/drivers/infiniband/hw/cxgb4/cm.c
-index 86542cd..b770a044 100644
---- a/drivers/infiniband/hw/cxgb4/cm.c
-+++ b/drivers/infiniband/hw/cxgb4/cm.c
-@@ -2667,11 +2667,8 @@ static int peer_abort_intr(struct c4iw_dev *dev, struct sk_buff *skb)
+diff --git a/drivers/mtd/sm_ftl.c b/drivers/mtd/sm_ftl.c
+index 072ed59..9e2dfd5 100644
+--- a/drivers/mtd/sm_ftl.c
++++ b/drivers/mtd/sm_ftl.c
+@@ -1256,7 +1256,7 @@ static void sm_remove_dev(struct mtd_blktrans_dev *dev)
  
- 	/*
- 	 * Wake up any threads in rdma_init() or rdma_fini().
--	 * However, this is not needed if com state is just
--	 * MPA_REQ_SENT
- 	 */
--	if (ep->com.state != MPA_REQ_SENT)
--		c4iw_wake_up(&ep->com.wr_wait, -ECONNRESET);
-+	c4iw_wake_up(&ep->com.wr_wait, -ECONNRESET);
- 	sched(dev, skb);
- 	return 0;
- }
+ static struct mtd_blktrans_ops sm_ftl_ops = {
+ 	.name		= "smblk",
+-	.major		= -1,
++	.major		= 0,
+ 	.part_bits	= SM_FTL_PARTN_BITS,
+ 	.blksize	= SM_SECTOR_SIZE,
+ 	.getgeo		= sm_getgeo,
 
 
