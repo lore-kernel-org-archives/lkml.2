@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab2E1Les (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 07:34:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59899 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751724Ab2E1Ler convert rfc822-to-8bit (ORCPT
+	id S1753774Ab2E1LjO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 07:39:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:57264 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724Ab2E1LjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 07:34:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="148550009"
-From: "Hao, Xudong" <xudong.hao@intel.com>
-To: Avi Kivity <avi@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "takuya.yoshikawa@gmail.com" <takuya.yoshikawa@gmail.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>
-Subject: RE: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-Thread-Topic: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-Thread-Index: AQHNN8m33b6njSgvbECbKWBAN0OYjpbXYMXAgAclD4CAAJYpYA==
-Date: Mon, 28 May 2012 11:34:43 +0000
-Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDCA3AE@SHSMSX102.ccr.corp.intel.com>
-References: <1337656995-24964-1-git-send-email-xudong.hao@intel.com>
- <403610A45A2B5242BD291EDAE8B37D300FDC8918@SHSMSX102.ccr.corp.intel.com>
- <4FC35535.90401@redhat.com>
-In-Reply-To: <4FC35535.90401@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 May 2012 07:39:13 -0400
+Date: Mon, 28 May 2012 13:39:03 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE][PATCH 5/26]Rotary Interactivity Favor Scheduler
+ Version 3(Brain-Eating) Update.
+Message-ID: <20120528113903.GA5187@fancy-poultry.org>
+References: <CANQmPXhyAavikU=861nVA3WjPsMjBt+XOTUJ08VAoinZ1gCRzQ@mail.gmail.com>
+ <CAJd=RBDN7q0C+ktY29B66d9coyy1BGESOHCHFmFQVboOfNXq5w@mail.gmail.com>
+ <CANQmPXi+O-bHFzbi1q5g0GuKgXmeyEYp+UB_61YDDd2uE475GA@mail.gmail.com>
+ <CANQmPXipw9QPEc9xMuCLDW14W3w5VeUYZP1GJnvR+D57xCWksA@mail.gmail.com>
+ <CAJd=RBC5=JHEUD7N4cQc87AkkgYc-VS+TBEza6QMomA1DsOL1g@mail.gmail.com>
+ <CANQmPXhpV1Hq11FM4vwN7yneGQ7F7wC0Mh+zGCPgNgxry8xLqg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANQmPXhpV1Hq11FM4vwN7yneGQ7F7wC0Mh+zGCPgNgxry8xLqg@mail.gmail.com>
+Organization: private site
+X-OpenPGP-KeyID: 0x898F89DE
+X-OpenPGP-Fingerprint: 0815 20AD E896 A2B7 488F  4659 4C7B 8951 898F 89DE
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+54 (41a8d7dceb6c) (2011-07-01)
+X-Provags-ID: V02:K0:xzJyRovG9Sq0r9kTOo0kFN/rZQeE0kcWIHHrOzgxibz
+ yEOd9AGIDMqCMJWFH5CWxkPb0aANCvd09qPis59gnwQw+WnTEw
+ hYiYYpbat39SagZ9cqYvSfRtRTJ6AOs+tzuOuVXZKxpg2o7483
+ PWkDjpIj9S08mwu9qd5WGMhinWvExJx5xNzDjXJnZ0zqTz4u+S
+ +61RpvdiQS9y7agO9LZLWvuUNUK9tAIwbh9M1Z8Y7Og9nve66x
+ wkTLDA1lQM+wZBsXuneoyDivufmLTe/PxuSbk3Gq3bQPVWqC/B
+ 7eNv943sJcXfvYZIIGQYrswIV9rPR0s6SFZVrVw0xElRboK4WJ
+ ivN8UnHZhzjTv/gsedA/lANsoENiL6F0InsDRIZ4c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Avi Kivity [mailto:avi@redhat.com]
-> Sent: Monday, May 28, 2012 6:37 PM
-> To: Hao, Xudong
-> Cc: kvm@vger.kernel.org; linux-kernel@vger.kernel.org; mtosatti@redhat.com;
-> takuya.yoshikawa@gmail.com; Zhang, Xiantao; Shan, Haitao
-> Subject: Re: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-> 
-> On 05/23/2012 04:31 PM, Hao, Xudong wrote:
-> > Hi, Avi
-> >
-> > Will these patches be accepted if no other comments?
-> >
-> 
-> I can't see the other patches (use git send-email if possible) but this
-> one looks fine.
-> 
+On 28.05.2012, Chen wrote: 
 
-Ok, I sent other 3 patches just now.
+> This is the patch
 
-> 
-> --
-> error compiling committee.c: too many arguments to function
+What you posted is a patch on the BFS-4.20 patch (by Con Kolivas)
+itself, and not a patch against an actual kernel tree. The output 
+has a format which is totally unreadable and disgusting, 
+and I can't apply it without tinkering with BFS first,
+(which is designed for 3.3.x and needs a merge into 3.4.0 on top of that)
+
+Could you please provide a clean patch which is based on one of the
+current trees?
+
+Besides, it seems to me that you are trying to reinvent the wheel
+using a lot of pieces of Con's -ck patch..
+
+Thanks,
+Heinz.
