@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab2E1DgW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:36:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52194 "EHLO
+	id S1754369Ab2E1Dgd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:36:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52122 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754164Ab2E1D3q (ORCPT
+	by vger.kernel.org with ESMTP id S1753968Ab2E1D3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:46 -0400
-Message-Id: <20120528031215.570708861@decadent.org.uk>
+	Sun, 27 May 2012 23:29:44 -0400
+Message-Id: <20120528031214.882403942@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:34 +0100
+Date: Mon, 28 May 2012 04:13:29 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 092/117] drm/i915: Avoid a double-read of PCH_IIR during interrupt handling
+        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: [ 087/117] i2c-eg20t: change timeout value 50msec to 1000msec
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,59 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
 
-commit 9adab8b5a7fde248504f484e197589f3e3c922e2 upstream.
+commit 8a52f9f347da721b199b7f9dcc0168bbe7d0baae upstream.
 
-Currently the code re-reads PCH_IIR during the hotplug interrupt
-processing. Not only is this a wasted read, but introduces a potential
-for handling a spurious interrupt as we then may not clear all the
-interrupts processed (since the re-read IIR may contains more interrupts
-asserted than we clear using the result of the original read).
+Currently, during i2c works alone, wait-event timeout is not occurred.
+However, as CPU load increases, timeout occurs frequently.
+So, I modified like this patch.
+Modifying like this patch, I've never seen the timeout event with high
+load test.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_irq.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
+ drivers/i2c/busses/i2c-eg20t.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -424,14 +424,11 @@
- 	mutex_unlock(&dev_priv->dev->struct_mutex);
- }
- 
--static void pch_irq_handler(struct drm_device *dev)
-+static void pch_irq_handler(struct drm_device *dev, u32 pch_iir)
+diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
+index f086131..4a46c8b 100644
+--- a/drivers/i2c/busses/i2c-eg20t.c
++++ b/drivers/i2c/busses/i2c-eg20t.c
+@@ -324,7 +324,7 @@ static s32 pch_i2c_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
  {
- 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
--	u32 pch_iir;
- 	int pipe;
+ 	long ret;
+ 	ret = wait_event_timeout(pch_event,
+-			(adap->pch_event_flag != 0), msecs_to_jiffies(50));
++			(adap->pch_event_flag != 0), msecs_to_jiffies(1000));
  
--	pch_iir = I915_READ(SDEIIR);
--
- 	if (pch_iir & SDE_AUDIO_POWER_MASK)
- 		DRM_DEBUG_DRIVER("PCH audio power change on port %d\n",
- 				 (pch_iir & SDE_AUDIO_POWER_MASK) >>
-@@ -529,7 +526,7 @@
- 	if (de_iir & DE_PCH_EVENT_IVB) {
- 		if (pch_iir & SDE_HOTPLUG_MASK_CPT)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (pm_iir & GEN6_PM_DEFERRED_EVENTS) {
-@@ -629,7 +626,7 @@
- 	if (de_iir & DE_PCH_EVENT) {
- 		if (pch_iir & hotplug_mask)
- 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
--		pch_irq_handler(dev);
-+		pch_irq_handler(dev, pch_iir);
- 	}
- 
- 	if (de_iir & DE_PCU_EVENT) {
+ 	if (ret == 0) {
+ 		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
 
 
