@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab2E1DlQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:41:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52201 "EHLO
+	id S1754888Ab2E1DlK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:41:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52106 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754093Ab2E1D3k (ORCPT
+	by vger.kernel.org with ESMTP id S1753831Ab2E1D3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:40 -0400
-Message-Id: <20120528031218.737350228@decadent.org.uk>
+Message-Id: <20120528031215.284639379@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:57 +0100
+Date: Mon, 28 May 2012 04:13:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 115/117] x86, relocs: Build clean fix
+        alan@lxorguk.ukuu.org.uk, Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 090/117] [media] smsusb: add autodetection support for USB ID 2040:c0a0
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,32 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+From: Michael Krufky <mkrufky@linuxtv.org>
 
-commit b2d668da9307c4c163dd603d2bb3cadb10f9fd37 upstream.
+commit 4d1b58b84472d1d300a66e1c5fd765b21e74ba15 upstream.
 
-relocs was not cleaned up when "make clean" is issued. This
-patch fixes the issue.
-
-Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Link: http://lkml.kernel.org/r/1337622684-6834-1-git-send-email-jarkko.sakkinen@intel.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/Makefile |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/media/dvb/siano/smsusb.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 94e91e4..b1c611e 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -206,6 +206,7 @@ archclean:
- 	$(Q)rm -rf $(objtree)/arch/i386
- 	$(Q)rm -rf $(objtree)/arch/x86_64
- 	$(Q)$(MAKE) $(clean)=$(boot)
-+	$(Q)$(MAKE) $(clean)=arch/x86/tools
+diff --git a/drivers/media/dvb/siano/smsusb.c b/drivers/media/dvb/siano/smsusb.c
+index b1fe513..63c004a 100644
+--- a/drivers/media/dvb/siano/smsusb.c
++++ b/drivers/media/dvb/siano/smsusb.c
+@@ -542,6 +542,8 @@ static const struct usb_device_id smsusb_id_table[] __devinitconst = {
+ 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
+ 	{ USB_DEVICE(0x2040, 0xc090),
+ 		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
++	{ USB_DEVICE(0x2040, 0xc0a0),
++		.driver_info = SMS1XXX_BOARD_HAUPPAUGE_WINDHAM },
+ 	{ } /* Terminating entry */
+ 	};
  
- define archhelp
-   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
 
 
