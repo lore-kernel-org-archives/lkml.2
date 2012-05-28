@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369Ab2E1Dgd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:36:33 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52122 "EHLO
+	id S1754987Ab2E1Dgt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:36:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52198 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753968Ab2E1D3o (ORCPT
+	by vger.kernel.org with ESMTP id S1754074Ab2E1D3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:44 -0400
-Message-Id: <20120528031214.882403942@decadent.org.uk>
+	Sun, 27 May 2012 23:29:43 -0400
+Message-Id: <20120528031216.656728457@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:29 +0100
+Date: Mon, 28 May 2012 04:13:42 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: [ 087/117] i2c-eg20t: change timeout value 50msec to 1000msec
+        alan@lxorguk.ukuu.org.uk, Tony Luck <tony.luck@intel.com>,
+        Linus Torvalds <torvalds@linuxfoundation.org>
+Subject: [ 100/117] x86/mce: Fix check for processor context when machine check was
+ taken.
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,35 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+From: Tony Luck <tony.luck@intel.com>
 
-commit 8a52f9f347da721b199b7f9dcc0168bbe7d0baae upstream.
+commit 875e26648cf9b6db9d8dc07b7959d7c61fb3f49c upstream.
 
-Currently, during i2c works alone, wait-event timeout is not occurred.
-However, as CPU load increases, timeout occurs frequently.
-So, I modified like this patch.
-Modifying like this patch, I've never seen the timeout event with high
-load test.
+Linus pointed out that there was no value is checking whether m->ip
+was zero - because zero is a legimate value.  If we have a reliable
+(or faked in the VM86 case) "m->cs" we can use it to tell whether we
+were in user mode or kernelwhen the machine check hit.
 
-Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Reported-by: Linus Torvalds <torvalds@linuxfoundation.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/i2c/busses/i2c-eg20t.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-eg20t.c b/drivers/i2c/busses/i2c-eg20t.c
-index f086131..4a46c8b 100644
---- a/drivers/i2c/busses/i2c-eg20t.c
-+++ b/drivers/i2c/busses/i2c-eg20t.c
-@@ -324,7 +324,7 @@ static s32 pch_i2c_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
- {
- 	long ret;
- 	ret = wait_event_timeout(pch_event,
--			(adap->pch_event_flag != 0), msecs_to_jiffies(50));
-+			(adap->pch_event_flag != 0), msecs_to_jiffies(1000));
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 0c82091..1ccd453 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -165,15 +165,19 @@ static struct severity {
+ };
  
- 	if (ret == 0) {
- 		pch_err(adap, "timeout: %x\n", adap->pch_event_flag);
+ /*
+- * If the EIPV bit is set, it means the saved IP is the
+- * instruction which caused the MCE.
++ * If mcgstatus indicated that ip/cs on the stack were
++ * no good, then "m->cs" will be zero and we will have
++ * to assume the worst case (IN_KERNEL) as we actually
++ * have no idea what we were executing when the machine
++ * check hit.
++ * If we do have a good "m->cs" (or a faked one in the
++ * case we were executing in VM86 mode) we can use it to
++ * distinguish an exception taken in user from from one
++ * taken in the kernel.
+  */
+ static int error_context(struct mce *m)
+ {
+-	if (m->mcgstatus & MCG_STATUS_EIPV)
+-		return (m->ip && (m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
+-	/* Unknown, assume kernel */
+-	return IN_KERNEL;
++	return ((m->cs & 3) == 3) ? IN_USER : IN_KERNEL;
+ }
+ 
+ int mce_severity(struct mce *m, int tolerant, char **msg)
 
 
