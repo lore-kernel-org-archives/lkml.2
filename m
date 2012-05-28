@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab2E1M0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 08:26:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62997 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753607Ab2E1M0K (ORCPT
+	id S1754466Ab2E1M3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 08:29:25 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25837 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab2E1M3Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 08:26:10 -0400
-Message-ID: <4FC36EDA.6020707@gmail.com>
-Date: Mon, 28 May 2012 20:26:02 +0800
-From: yuq <yuq825@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Mon, 28 May 2012 08:29:24 -0400
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Run RTOS simultaneously with Linux
-References: <4FC2EF4B.5020207@gmail.com> <CAJd=RBAQR_h437ZGU7K=7=dnd-joBkGNc_oGaQ1z8_3cAPLLWA@mail.gmail.com>
-In-Reply-To: <CAJd=RBAQR_h437ZGU7K=7=dnd-joBkGNc_oGaQ1z8_3cAPLLWA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <aabb3c7d-1c1a-4558-805a-b6d8478d1494@default>
+Date: Mon, 28 May 2012 05:29:11 -0700 (PDT)
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+To: <mingo@redhat.com>, <x86@kernel.org>, <yinghai@kernel.org>,
+        <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: Feng Jin <joe.jin@oracle.com>, <ethan.zhao@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Fix an overflow in range_to_mtrr func
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In fact my modification to Linux kernel is a separate loadable kernel 
-module. It also includes a user space monitor and RTOS file system 
-server, RTOS image is also a loadable file. You can get it from my rep:
+When boot x86_64 kernel on sun G5+ with 4T mem, see an overflow in mtrr cleanup as below.
 
-RGMP, an early version for porting existing RTOS like Nuttx and UCOS to 
-run with Linux. Besides Linux loadable module and Linux user space 
-monitor, it has a static library for
-RTOS to link with:
+*BAD*gran_size: 2G      chunk_size: 2G  num_reg: 10     lose cover RAM:
+-18014398505283592M
 
-git://rgmp.git.sourceforge.net/gitroot/rgmp/rgmp
+This is because 1<<31 sign extended.
+Use explicit type conversion to force a 64bit constant to fix it.
+Useful for mem larger than or equal to 4T.
 
-YUQIX, an advance version which has Linux side RTOS file system server 
-and my experimental RTOS for advanced real-time applications:
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+---
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-git://rgmp.git.sourceforge.net/gitroot/rgmp/yuqix
-
-yuq
-
-On 05/28/2012 07:55 PM, Hillf Danton wrote:
-> Hi yuq
->
-> On Mon, May 28, 2012 at 11:21 AM, yuq<yuq825@gmail.com>  wrote:
->> Hi all,
->>
->> I have done some work about running some RTOS simultaneously with Linux, the
->> approach is running RTOS and Linux on different CPU cores. No modification
->> to Linux kernel but adding a loadable kernel module. I post it at
->> http://rgmp.sf.net
->>
->> I want to know how you guys think about it. Any advice is welcome.
->>
-> I want to see your work, would you please post it on LMKL in
-> (monolithic) diff format?
->
-> Thanks
-> -hd
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index ac140c7..853a4c6 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -266,7 +266,7 @@ range_to_mtrr(unsigned int reg, unsigned long range_startk,
+ 		if (align > max_align)
+ 			align = max_align;
+ 
+-		sizek = 1 << align;
++		sizek = (unsigned long)1 << align;
+ 		if (debug_print) {
+ 			char start_factor = 'K', size_factor = 'K';
+ 			unsigned long start_base, size_base;
+-- 
+1.7.3
 
