@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab2E1A7U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 20:59:20 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:64124 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751432Ab2E1A7R (ORCPT
+	id S1751955Ab2E1BPm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 21:15:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50302 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750941Ab2E1BPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 20:59:17 -0400
-Message-ID: <4FC2CD93.1080009@ce.jp.nec.com>
-Date: Mon, 28 May 2012 09:57:55 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
+	Sun, 27 May 2012 21:15:38 -0400
+Date: Mon, 28 May 2012 10:15:22 +0900
+From: Tejun Heo <tj@kernel.org>
 To: Kent Overstreet <koverstreet@google.com>
-CC: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net,
-        mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com,
-        tj@kernel.org, sage@newdream.net, agk@redhat.com,
-        drbd-dev@lists.linbit.com
-Subject: Re: [dm-devel] [PATCH v3 02/16] dm: Use bioset's front_pad for dm_rq_clone_bio_info
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com> <1337977539-16977-3-git-send-email-koverstreet@google.com>
-In-Reply-To: <1337977539-16977-3-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
+        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v3 01/16] block: Generalized bio pool freeing
+Message-ID: <20120528011522.GA9891@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-2-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337977539-16977-2-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/12 05:25, Kent Overstreet wrote:
->  struct dm_rq_clone_bio_info {
->  	struct bio *orig;
->  	struct dm_rq_target_io *tio;
-> +	struct bio clone;
->  };
-...
-> -	pools->bs = bioset_create(pool_size, 0);
-> +	pools->bs = bioset_create(pool_size,
-> +				  offsetof(struct dm_rq_clone_bio_info, orig));
->  	if (!pools->bs)
->  		goto free_tio_pool_and_out;
+Hello, Kent.
 
-Did you mean offset of *clone*?
-"offsetof(struct dm_rq_clone_bio_info, orig)" is zero.
+On Fri, May 25, 2012 at 01:25:24PM -0700, Kent Overstreet wrote:
+> With the old code, when you allocate a bio from a bio pool you have to
+> implement your own destructor that knows how to find the bio pool the
+> bio was originally allocated from.
+> 
+> This adds a new field to struct bio (bi_pool) and changes
+> bio_alloc_bioset() to use it. This makes various bio destructors
+> unnecessary, so they're then deleted.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> Change-Id: I5eb66c1d6910757f4af8755b8857dcbe4619cf8d
 
-And now _rq_bio_info_cache has no user and can be removed.
+In the previous review, I made two requests about this patch.
 
-Otherwise, I think it's nicer than the previous version.
-Thank you.
+* Please improve description.
+
+* Please lose Change-Id.
+
+None of which seems to have happened and my Acked-by isn't added
+either.  Come on.  Give me some reason to keep reviewing this stuff.
+A couple more suggestions.
+
+* If this goes in, it will go through Jens' block tree.  Better keep
+  him cc'd.
+
+* It's generally a good idea to have Cc: tags in the description
+  footer for the maintainers of the affected subsystems.
+
+Thanks.
+
 -- 
-Jun'ichi Nomura, NEC Corporation
+tejun
