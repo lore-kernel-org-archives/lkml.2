@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab2E1Dcs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:32:48 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52131 "EHLO
+	id S1754284Ab2E1D3t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52252 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754004Ab2E1D3v (ORCPT
+	by vger.kernel.org with ESMTP id S1754160Ab2E1D3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:51 -0400
-Message-Id: <20120528031217.197788249@decadent.org.uk>
+	Sun, 27 May 2012 23:29:42 -0400
+Message-Id: <20120528031217.633639836@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:46 +0100
+Date: Mon, 28 May 2012 04:13:49 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Moyer <jmoyer@redhat.com>,
-        Nick Piggin <npiggin@kernel.dk>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 104/117] block: dont mark buffers beyond end of disk as mapped
+        alan@lxorguk.ukuu.org.uk, Peng Tao <bergwolf@gmail.com>,
+        Peng Tao <peng_tao@emc.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 107/117] NFS4: fix compile warnings in nfs4proc.c
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,155 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Moyer <jmoyer@redhat.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 080399aaaf3531f5b8761ec0ac30ff98891e8686 upstream.
+commit de040beccd52bb5fcac90031505384d037b1111c upstream.
 
-Hi,
+compile in nfs-for-3.3 branch shows following warnings. Fix it here.
 
-We have a bug report open where a squashfs image mounted on ppc64 would
-exhibit errors due to trying to read beyond the end of the disk.  It can
-easily be reproduced by doing the following:
+fs/nfs/nfs4proc.c: In function ‘__nfs4_get_acl_uncached’:
+fs/nfs/nfs4proc.c:3589: warning: format ‘%ld’ expects type ‘long int’, but argument 4 has type ‘size_t’
+fs/nfs/nfs4proc.c:3589: warning: format ‘%ld’ expects type ‘long int’, but argument 6 has type ‘size_t’
 
-[root@ibm-p750e-02-lp3 ~]# ls -l install.img
--rw-r--r-- 1 root root 142032896 Apr 30 16:46 install.img
-[root@ibm-p750e-02-lp3 ~]# mount -o loop ./install.img /mnt/test
-[root@ibm-p750e-02-lp3 ~]# dd if=/dev/loop0 of=/dev/null
-dd: reading `/dev/loop0': Input/output error
-277376+0 records in
-277376+0 records out
-142016512 bytes (142 MB) copied, 0.9465 s, 150 MB/s
-
-In dmesg, you'll find the following:
-
-squashfs: version 4.0 (2009/01/31) Phillip Lougher
-[   43.106012] attempt to access beyond end of device
-[   43.106029] loop0: rw=0, want=277410, limit=277408
-[   43.106039] Buffer I/O error on device loop0, logical block 138704
-[   43.106053] attempt to access beyond end of device
-[   43.106057] loop0: rw=0, want=277412, limit=277408
-[   43.106061] Buffer I/O error on device loop0, logical block 138705
-[   43.106066] attempt to access beyond end of device
-[   43.106070] loop0: rw=0, want=277414, limit=277408
-[   43.106073] Buffer I/O error on device loop0, logical block 138706
-[   43.106078] attempt to access beyond end of device
-[   43.106081] loop0: rw=0, want=277416, limit=277408
-[   43.106085] Buffer I/O error on device loop0, logical block 138707
-[   43.106089] attempt to access beyond end of device
-[   43.106093] loop0: rw=0, want=277418, limit=277408
-[   43.106096] Buffer I/O error on device loop0, logical block 138708
-[   43.106101] attempt to access beyond end of device
-[   43.106104] loop0: rw=0, want=277420, limit=277408
-[   43.106108] Buffer I/O error on device loop0, logical block 138709
-[   43.106112] attempt to access beyond end of device
-[   43.106116] loop0: rw=0, want=277422, limit=277408
-[   43.106120] Buffer I/O error on device loop0, logical block 138710
-[   43.106124] attempt to access beyond end of device
-[   43.106128] loop0: rw=0, want=277424, limit=277408
-[   43.106131] Buffer I/O error on device loop0, logical block 138711
-[   43.106135] attempt to access beyond end of device
-[   43.106139] loop0: rw=0, want=277426, limit=277408
-[   43.106143] Buffer I/O error on device loop0, logical block 138712
-[   43.106147] attempt to access beyond end of device
-[   43.106151] loop0: rw=0, want=277428, limit=277408
-[   43.106154] Buffer I/O error on device loop0, logical block 138713
-[   43.106158] attempt to access beyond end of device
-[   43.106162] loop0: rw=0, want=277430, limit=277408
-[   43.106166] attempt to access beyond end of device
-[   43.106169] loop0: rw=0, want=277432, limit=277408
-...
-[   43.106307] attempt to access beyond end of device
-[   43.106311] loop0: rw=0, want=277470, limit=2774
-
-Squashfs manages to read in the end block(s) of the disk during the
-mount operation.  Then, when dd reads the block device, it leads to
-block_read_full_page being called with buffers that are beyond end of
-disk, but are marked as mapped.  Thus, it would end up submitting read
-I/O against them, resulting in the errors mentioned above.  I fixed the
-problem by modifying init_page_buffers to only set the buffer mapped if
-it fell inside of i_size.
-
-Cheers,
-Jeff
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Nick Piggin <npiggin@kernel.dk>
-
---
-
-Changes from v1->v2: re-used max_block, as suggested by Nick Piggin.
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Peng Tao <peng_tao@emc.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/block_dev.c     |    6 +++---
- fs/buffer.c        |    4 +++-
- include/linux/fs.h |    1 +
- 3 files changed, 7 insertions(+), 4 deletions(-)
+ fs/nfs/nfs4proc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index e08f6a20..ba11c30 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -70,7 +70,7 @@ static void bdev_inode_switch_bdi(struct inode *inode,
- 	spin_unlock(&dst->wb.list_lock);
- }
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 75366dc..f0c849c 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3587,7 +3587,7 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
+ 		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
+ 	resp_buf = page_address(pages[0]);
  
--static sector_t max_block(struct block_device *bdev)
-+sector_t blkdev_max_block(struct block_device *bdev)
- {
- 	sector_t retval = ~((sector_t)0);
- 	loff_t sz = i_size_read(bdev->bd_inode);
-@@ -163,7 +163,7 @@ static int
- blkdev_get_block(struct inode *inode, sector_t iblock,
- 		struct buffer_head *bh, int create)
- {
--	if (iblock >= max_block(I_BDEV(inode))) {
-+	if (iblock >= blkdev_max_block(I_BDEV(inode))) {
- 		if (create)
- 			return -EIO;
- 
-@@ -185,7 +185,7 @@ static int
- blkdev_get_blocks(struct inode *inode, sector_t iblock,
- 		struct buffer_head *bh, int create)
- {
--	sector_t end_block = max_block(I_BDEV(inode));
-+	sector_t end_block = blkdev_max_block(I_BDEV(inode));
- 	unsigned long max_blocks = bh->b_size >> inode->i_blkbits;
- 
- 	if ((iblock + max_blocks) > end_block) {
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 351e18e..ad5938c 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -921,6 +921,7 @@ init_page_buffers(struct page *page, struct block_device *bdev,
- 	struct buffer_head *head = page_buffers(page);
- 	struct buffer_head *bh = head;
- 	int uptodate = PageUptodate(page);
-+	sector_t end_block = blkdev_max_block(I_BDEV(bdev->bd_inode));
- 
- 	do {
- 		if (!buffer_mapped(bh)) {
-@@ -929,7 +930,8 @@ init_page_buffers(struct page *page, struct block_device *bdev,
- 			bh->b_blocknr = block;
- 			if (uptodate)
- 				set_buffer_uptodate(bh);
--			set_buffer_mapped(bh);
-+			if (block < end_block)
-+				set_buffer_mapped(bh);
- 		}
- 		block++;
- 		bh = bh->b_this_page;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8de6755..25c40b9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2051,6 +2051,7 @@ extern void unregister_blkdev(unsigned int, const char *);
- extern struct block_device *bdget(dev_t);
- extern struct block_device *bdgrab(struct block_device *bdev);
- extern void bd_set_size(struct block_device *, loff_t size);
-+extern sector_t blkdev_max_block(struct block_device *bdev);
- extern void bd_forget(struct inode *inode);
- extern void bdput(struct block_device *);
- extern void invalidate_bdev(struct block_device *);
+-	dprintk("%s  buf %p buflen %ld npages %d args.acl_len %ld\n",
++	dprintk("%s  buf %p buflen %zu npages %d args.acl_len %zu\n",
+ 		__func__, buf, buflen, npages, args.acl_len);
+ 	ret = nfs4_call_sync(NFS_SERVER(inode)->client, NFS_SERVER(inode),
+ 			     &msg, &args.seq_args, &res.seq_res, 0);
 
 
