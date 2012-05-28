@@ -1,67 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab2E1Pb5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 11:31:57 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:41803 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751333Ab2E1Pbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 11:31:55 -0400
-Message-ID: <1338219259.3521.1.camel@debian>
-Subject: Re: [PATCH] video: bfin_adv7393fb: Fix cleanup code
-From: Emil Goode <emilgoode@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Date: Mon, 28 May 2012 17:34:19 +0200
-In-Reply-To: <20120528152601.GE4637@mwanda>
-References: <1338216019-1288-1-git-send-email-emilgoode@gmail.com>
-	 <20120528152601.GE4637@mwanda>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754797Ab2E1Pjd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 11:39:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57255 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751214Ab2E1Pjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 11:39:31 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Hugh Dickins <hughd@google.com>
+Subject: [RFC -mm] memcg: prevent from OOM with too many dirty pages
+Date: Mon, 28 May 2012 17:38:55 +0200
+Message-Id: <1338219535-7874-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Dan, I'll resend with these modifications.
+Current implementation of dirty pages throttling is not memcg aware which makes
+it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
+hard limit is small and so the lists are scanned faster than pages written
+back.
 
-Best regards, 
-Emil Goode
-On Mon, 2012-05-28 at 18:26 +0300, Dan Carpenter wrote:
-> On Mon, May 28, 2012 at 04:40:19PM +0200, Emil Goode wrote:
-> > This patch fixes the cleanup code of the bfin_adv7393_fb_probe
-> > function by changing the order in which cleanup is performed
-> > and by adding one label.
-> > 
-> 
-> Could you list the actual bugs which were fixed:
-> 
-> 1) The resources were not freed in the order that we allocated them
->    so we call dma_free_coherent() before it was allocated.
-> 2) The labels weren't in the right place which also meant that we
->    freed resources that weren't allocated.
-> 3) We should free gpio_free(P_IDENT(P_PPI0_FS3)) before returning.
-> 
-> The new gpio_free() is more important than the added label.
-> 
-> Since you're changing all these, you may as well fix the label names
-> as well.  The out_9 style labels suck.  The right way is to give
-> them meaningful labels instead of GW-BASIC style labels.
-> 
-> Labels should be named after what happens when you arrive.  Some
-> people name them after the start of the journey but that's a
-> mistake.  It's just like the town of Chicago is still called Chicago
-> even though you might goto Chicago starting from Boston.  Like this:
-> 
-> err_ppi:
-> 	free_dma(CH_PPI);
-> 	fb_dealloc_cmap(&fbdev->info.cmap);
-> err_palette:
-> 	kfree(fbdev->info.pseudo_palette);
-> 
-> regards,
-> dan carpenter
+This patch fixes the problem by throttling the allocating process (possibly
+a writer) during the hard limit reclaim by waiting on PageReclaim pages.
+We are waiting only for PageReclaim pages because those are the pages
+that made one full round over LRU and that means that the writeback is much
+slower than scanning.
+The solution is far from being ideal - long term solution is memcg aware
+dirty throttling - but it is meant to be a band aid until we have a real
+fix.
+We are seeing this happening during nightly backups which are placed into
+containers to prevent from eviction of the real working set.
 
+The change affects only memcg reclaim and only when we encounter PageReclaim
+pages which is a signal that the reclaim doesn't catch up on with the writers
+so somebody should be throttled. This could be potentially unfair because it
+could be somebody else from the group who gets throttled on behalf of the
+writer but as writers need to allocate as well and they allocate in higher rate
+the probability that only innocent processes would be penalized is not that
+high.
+
+I have tested this change by a simple dd copying /dev/zero to tmpfs or ext3
+running under small memcg (1G copy under 5M, 60M, 300M and 2G containers) and
+dd got killed by OOM killer every time. With the patch I could run the dd with
+the same size under 5M controller without any OOM.
+The issue is more visible with slower devices for output.
+
+* With the patch
+================
+* tmpfs size=2G
+---------------
+$ vim cgroup_cache_oom_test.sh
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 30.4049 s, 34.5 MB/s
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 31.4561 s, 33.3 MB/s
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 20.4618 s, 51.2 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 1.42172 s, 738 MB/s
+
+* ext3
+------
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 27.9547 s, 37.5 MB/s
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 30.3221 s, 34.6 MB/s
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 24.5764 s, 42.7 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 3.35828 s, 312 MB/s
+
+* Without the patch
+===================
+* tmpfs size=2G
+---------------
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+./cgroup_cache_oom_test.sh: line 46:  4668 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 25.4989 s, 41.1 MB/s
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 24.3928 s, 43.0 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 1.49797 s, 700 MB/s
+
+* ext3
+------
+$ ./cgroup_cache_oom_test.sh 5M
+using Limit 5M for group
+./cgroup_cache_oom_test.sh: line 46:  4689 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
+$ ./cgroup_cache_oom_test.sh 60M
+using Limit 60M for group
+./cgroup_cache_oom_test.sh: line 46:  4692 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
+$ ./cgroup_cache_oom_test.sh 300M
+using Limit 300M for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 20.248 s, 51.8 MB/s
+$ ./cgroup_cache_oom_test.sh 2G
+using Limit 2G for group
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 2.85201 s, 368 MB/s
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Ying Han <yinghan@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg Thelen <gthelen@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/vmscan.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c978ce4..7cccd81 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -720,9 +720,20 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
+ 
+ 		if (PageWriteback(page)) {
+-			nr_writeback++;
+-			unlock_page(page);
+-			goto keep;
++			/*
++			 * memcg doesn't have any dirty pages throttling so we
++			 * could easily OOM just because too many pages are in
++			 * writeback from reclaim and there is nothing else to
++			 * reclaim.
++			 */
++			if (PageReclaim(page)
++					&& may_enter_fs && !global_reclaim(sc))
++				wait_on_page_writeback(page);
++			else {
++				nr_writeback++;
++				unlock_page(page);
++				goto keep;
++			}
+ 		}
+ 
+ 		references = page_check_references(page, sc);
+-- 
+1.7.10
 
