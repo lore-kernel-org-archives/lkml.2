@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2E1Ngu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 09:36:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:33519 "EHLO mga14.intel.com"
+	id S1753945Ab2E1NjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 09:39:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49254 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab2E1Ngs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 09:36:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105056399"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@amd64.org>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
-Subject: RE: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
- platform (v2)
-Thread-Topic: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
- platform (v2)
-Thread-Index: AQHNOqBYr6jLO/PX8Ee8ZH/5SHvSCZba1ybwgARWupA=
-Date: Mon, 28 May 2012 13:36:45 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351F4313@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
- <20120522092354.GB18578@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
- <20120524103023.GA27063@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
- <20120524184947.GA28338@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
- <20120525180102.GA27280@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750866Ab2E1NjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 09:39:22 -0400
+Date: Mon, 28 May 2012 15:39:18 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Chen Baozi <baozich@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] memcg: remove the unnecessary MEM_CGROUP_STAT_DATA
+Message-ID: <20120528133918.GA22185@tiehlicka.suse.cz>
+References: <1337933501-3985-1-git-send-email-baozich@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337933501-3985-1-git-send-email-baozich@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Liu, Jinsong wrote:
-> Konrad Rzeszutek Wilk wrote:
->> On Fri, May 25, 2012 at 05:56:56PM +0000, Liu, Jinsong wrote:
->>> Konrad Rzeszutek Wilk wrote:
->>>>>>>>> -static struct miscdevice mce_chrdev_device = {
->>>>>>>>> +struct miscdevice mce_chrdev_device = {
->>>>>>>>>  	MISC_MCELOG_MINOR,
->>>>>>>>>  	"mcelog",
->>>>>>>>>  	&mce_chrdev_ops,
->>>>>>>> 
->>>>>>>> You're still reusing those - pls, define your own 'struct
->>>>>>>> miscdevice mce_chrdev_device' in drivers/xen/ or somewhere
->>>>>>>> convenient and your own mce_chrdev_ops. The only thing you
->>>>>>>> should be touching in arch/x86/.../mcheck/ is the export of
->>>>>>>> MISC_MCELOG_MINOR. 
->>>>>>>> 
->>>>>>>> Thanks.
->>>>>>> 
->>>>>>> I'm *not* reuse native code.
->>>>>>> I have defined 'struct miscdevice xen_mce_chrdev_device' in
->>>>>>> drivers/xen, and I also implement xen_mce_chrdev_ops, they are
->>>>>>> all xen-self-contained. 
->>>>>>> 
->>>>>>> The patch just redirect native mce_chrdev_device to
->>>>>>> xen_mce_chrdev_device when running under xen environment.
->>>>>>> It didn't change any native code (except just cancel
->>>>>>> mce_chrdev_device 'static'), and will not break native logic.
->>>>>> 
->>>>>> Why are you doing that?
->>>>>> 
->>>>>> Why don't you do
->>>>>> 
->>>>>> 	misc_register(&xen_mce_chrdev_device);
->>>>>> 
->>>>>> in xen_early_init_mcelog() ?
->>>>>> 
->>>>>> This way there'll be no arch/x86/ dependencies at all.
->>>>> 
->>>>> The reason is, if we do so, it would be covered by native
->>>>> misc_register(&mce_chrdev_device) later when native kernel init
->>>>> (xen init first and then start native kernel).
->>>> 
->>>> Won't the second registration (so the original one) of the major
->>>> fail? So the mce_log would just error out since somebody already
->>>> registered?
->>> 
->>> No, that would be device confliction, the 2nd register return as
->>> -EBUSY and un-predicetable result.
->> 
->> And the existing code does not actually check the 'misc_register'
->> return value? Ah yes. Perhaps then a fix to
->> arch/x86/kernel/cpu/mcheck/mce.c to do the proper de-registration if
->> 'misc_register' fails?
-> 
-> It's weird. From code point of view, it indeed not check return value
-> so it should go silently. mce.c didn't do misc_deregister. 
+On Fri 25-05-12 16:11:41, Chen Baozi wrote:
+> Since MEM_CGROUP_ON_MOVE has been removed, it comes to be redudant
+> to hold MEM_CGROUP_STAT_DATA to mark the end of data requires
+> synchronization.
 
-Have a debug it, the root cause is, 
-1). it does misc_register(&xen_mce_chrdev_device) at xen_early_init_mcelog(), it's very early stage (at xen_start_kernel), linux kernel and dd didn't start yet, so it fail to register xen_mce_chrdev_device.
-2). After native start_kernel, native mce_chrdev_device registered successfully, then it point to *native* mcelog logic.
+A similar patch has been already posted by Johannes 2 weeks ago
+(http://www.gossamer-threads.com/lists/linux/kernel/1535888) and it
+should appear in -next soonish.
 
 > 
->> 
->> Or just set 'mce_disabled=1' in the bootup of Xen, similar to
->> how lguest.c does it?
+> Signed-off-by: Chen Baozi <baozich@gmail.com>
+> ---
+>  mm/memcontrol.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index f342778..446ca94 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -88,7 +88,6 @@ enum mem_cgroup_stat_index {
+>  	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+>  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+> -	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+>  	MEM_CGROUP_STAT_NSTATS,
+>  };
+>  
+> @@ -2139,7 +2138,7 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *memcg, int cpu)
+>  	int i;
+>  
+>  	spin_lock(&memcg->pcp_counter_lock);
+> -	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
+> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+>  		long x = per_cpu(memcg->stat->count[i], cpu);
+>  
+>  		per_cpu(memcg->stat->count[i], cpu) = 0;
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Have a look at lguest, it disable whole mce logic.
-Xen dom0 cannot do so since we need keep dom0 mce logic to handle memory error which belong to dom0 (hypervisor will inject vMCE to dom0 in the case).
-
-
-===================
-
-Borislav and Konrad,
-
-An approach which basically same as you suggested but w/ slightly update, is
-1). at xen/mcelog.c, do misc_register(&xen_mce_chrdev_device) at xen_late_init_mcelog, define it as device_initcall(xen_late_init_mcelog) --> now linux dd ready, so xen mcelog divice would register successfully;
-2). at native mce.c, change 1 line from device_initcall(mcheck_init_device) to device_initcall_sync(mcheck_init_device) --> so misc_register(&mce_chrdev_device) would be blocked by xen mcelog device;
-
-I have draft test it and works fine.
-Thought?
-
-Thanks,
-Jinsong
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
