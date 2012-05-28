@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754828Ab2E1Dg2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:36:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52203 "EHLO
+	id S1754265Ab2E1DgT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:36:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52231 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754114Ab2E1D3p (ORCPT
+	by vger.kernel.org with ESMTP id S1754122Ab2E1D3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:45 -0400
-Message-Id: <20120528031215.017823881@decadent.org.uk>
+	Sun, 27 May 2012 23:29:46 -0400
+Message-Id: <20120528031217.901560287@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:30 +0100
+Date: Mon, 28 May 2012 04:13:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bernard Kilarski <bernard.r.kilarski@intel.com>,
-        Ben Widawsky <benjamin.widawsky@intel.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Kenneth Graunke <kenneth@whitecape.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 088/117] drm/i915: [GEN7] Use HW scheduler for fixed function shaders
+        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
+        Jian Li <jiali@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 109/117] Avoid beyond bounds copy while caching ACL
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,94 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
-commit a1e969e0332de7a430e62822cee8f2ec8d83cd7c upstream.
+commit 5794d21ef4639f0e33440927bb903f9598c21e92 upstream.
 
-This originally started as a patch from Bernard as a way of simply
-setting the VS scheduler. After submitting the RFC patch, we decided to
-also modify the DS scheduler. To be most explicit, I've made the patch
-explicitly set all scheduler modes, and included the defines for other
-modes (in case someone feels frisky later).
+When attempting to cache ACLs returned from the server, if the bitmap
+size + the ACL size is greater than a PAGE_SIZE but the ACL size itself
+is smaller than a PAGE_SIZE, we can read past the buffer page boundary.
 
-The rest of the story gets a bit weird. The first version of the patch
-showed an almost unbelievable performance improvement. Since rebasing my
-branch it appears the performance improvement has gone, unfortunately.
-But setting these bits seem to be the right thing to do given that the
-docs describe corruption that can occur with the default settings.
-
-In summary, I am seeing no more perf improvements (or regressions) in my
-limited testing, but we believe this should be set to prevent rendering
-corruption, therefore cc stable.
-
-v1: Clear bit 4 also (Ken + Eugeni)
-Do a full clear + set of the bits we want (Me).
-
-Cc: Bernard Kilarski <bernard.r.kilarski@intel.com>
-Reviewed-by (RFC): Kenneth Graunke <kenneth@whitecape.org>
-Signed-off-by: Ben Widawsky <benjamin.widawsky@intel.com>
-Reviewed-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Reviewed-by: Kenneth Graunke <kenneth@whitecape.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Reported-by: Jian Li <jiali@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_reg.h      |   15 +++++++++++++++
- drivers/gpu/drm/i915/intel_display.c |   14 ++++++++++++++
- 2 files changed, 29 insertions(+)
+ fs/nfs/nfs4proc.c |   12 +++++-------
+ fs/nfs/nfs4xdr.c  |    2 +-
+ 2 files changed, 6 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -570,6 +570,21 @@
- 
- #define GEN6_BSD_RNCID			0x12198
- 
-+#define GEN7_FF_THREAD_MODE		0x20a0
-+#define   GEN7_FF_SCHED_MASK		0x0077070
-+#define   GEN7_FF_TS_SCHED_HS1		(0x5<<16)
-+#define   GEN7_FF_TS_SCHED_HS0		(0x3<<16)
-+#define   GEN7_FF_TS_SCHED_LOAD_BALANCE	(0x1<<16)
-+#define   GEN7_FF_TS_SCHED_HW		(0x0<<16) /* Default */
-+#define   GEN7_FF_VS_SCHED_HS1		(0x5<<12)
-+#define   GEN7_FF_VS_SCHED_HS0		(0x3<<12)
-+#define   GEN7_FF_VS_SCHED_LOAD_BALANCE	(0x1<<12) /* Default */
-+#define   GEN7_FF_VS_SCHED_HW		(0x0<<12)
-+#define   GEN7_FF_DS_SCHED_HS1		(0x5<<4)
-+#define   GEN7_FF_DS_SCHED_HS0		(0x3<<4)
-+#define   GEN7_FF_DS_SCHED_LOAD_BALANCE	(0x1<<4)  /* Default */
-+#define   GEN7_FF_DS_SCHED_HW		(0x0<<4)
-+
- /*
-  * Framebuffer compression (915+ only)
-  */
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8245,6 +8245,18 @@
- 	}
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index f5f125f..2ce0698 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3628,16 +3628,16 @@ out:
+ 	return ret;
  }
  
-+static void gen7_setup_fixed_func_scheduler(struct drm_i915_private *dev_priv)
-+{
-+	uint32_t reg = I915_READ(GEN7_FF_THREAD_MODE);
-+
-+	reg &= ~GEN7_FF_SCHED_MASK;
-+	reg |= GEN7_FF_TS_SCHED_HW;
-+	reg |= GEN7_FF_VS_SCHED_HW;
-+	reg |= GEN7_FF_DS_SCHED_HW;
-+
-+	I915_WRITE(GEN7_FF_THREAD_MODE, reg);
-+}
-+
- static void ivybridge_init_clock_gating(struct drm_device *dev)
+-static void nfs4_write_cached_acl(struct inode *inode, const char *buf, size_t acl_len)
++static void nfs4_write_cached_acl(struct inode *inode, struct page **pages, size_t pgbase, size_t acl_len)
  {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -8285,6 +8297,8 @@
- 			   DISPPLANE_TRICKLE_FEED_DISABLE);
- 		intel_flush_display_plane(dev_priv, pipe);
- 	}
-+
-+	gen7_setup_fixed_func_scheduler(dev_priv);
- }
+ 	struct nfs4_cached_acl *acl;
  
- static void g4x_init_clock_gating(struct drm_device *dev)
+-	if (buf && acl_len <= PAGE_SIZE) {
++	if (pages && acl_len <= PAGE_SIZE) {
+ 		acl = kmalloc(sizeof(*acl) + acl_len, GFP_KERNEL);
+ 		if (acl == NULL)
+ 			goto out;
+ 		acl->cached = 1;
+-		memcpy(acl->data, buf, acl_len);
++		_copy_from_pages(acl->data, pages, pgbase, acl_len);
+ 	} else {
+ 		acl = kmalloc(sizeof(*acl), GFP_KERNEL);
+ 		if (acl == NULL)
+@@ -3670,7 +3670,6 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
+ 	struct nfs_getaclres res = {
+ 		.acl_len = buflen,
+ 	};
+-	void *resp_buf;
+ 	struct rpc_message msg = {
+ 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_GETACL],
+ 		.rpc_argp = &args,
+@@ -3705,7 +3704,6 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
+ 	 * the page we send as a guess */
+ 	if (buf == NULL)
+ 		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
+-	resp_buf = page_address(pages[0]);
+ 
+ 	dprintk("%s  buf %p buflen %zu npages %d args.acl_len %zu\n",
+ 		__func__, buf, buflen, npages, args.acl_len);
+@@ -3716,9 +3714,9 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
+ 
+ 	acl_len = res.acl_len - res.acl_data_offset;
+ 	if (acl_len > args.acl_len)
+-		nfs4_write_cached_acl(inode, NULL, acl_len);
++		nfs4_write_cached_acl(inode, NULL, 0, acl_len);
+ 	else
+-		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,
++		nfs4_write_cached_acl(inode, pages, res.acl_data_offset,
+ 				      acl_len);
+ 	if (buf) {
+ 		ret = -ERANGE;
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index 9312dd7..203c096 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -4940,7 +4940,7 @@ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
+ 				res->acl_len = attrlen;
+ 				goto out;
+ 			}
+-			dprintk("NFS: acl reply: attrlen %zu > page_len %u\n",
++			dprintk("NFS: acl reply: attrlen %u > page_len %zu\n",
+ 					attrlen, page_len);
+ 			return -EINVAL;
+ 		}
 
 
