@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2E1NB1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 09:01:27 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:44425 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab2E1NBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 09:01:25 -0400
-Message-ID: <4FC376CD.80902@linux.vnet.ibm.com>
-Date: Mon, 28 May 2012 20:59:57 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754691Ab2E1NBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 09:01:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47881 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754635Ab2E1NBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 09:01:42 -0400
+Date: Mon, 28 May 2012 15:01:35 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>
+Subject: [GIT] doc
+Message-ID: <alpine.LNX.2.00.1205281451411.15057@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM: introduce readonly memory region
-References: <4FBDFE52.5090902@linux.vnet.ibm.com> <4FBE2521.1050800@redhat.com> <4FBF471E.9080809@linux.vnet.ibm.com> <20120528072118.GE4369@redhat.com>
-In-Reply-To: <20120528072118.GE4369@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052813-2674-0000-0000-000004B4ADE8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2012 03:21 PM, Gleb Natapov wrote:
+Linus,
 
-> On Fri, May 25, 2012 at 04:47:26PM +0800, Xiao Guangrong wrote:
->> By the way, a foolish question, what is ROMD?  i did not find any explanation
->> on google.
-> This is memory region that behaves like ROM on read and like a device on
-> write. IIRC some flash chips are like that.
-> 
+please pull from
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git doc
 
-Got it, thank you, Gleb! :)
+to receive documentation updates. I am currently relaying documentation 
+patches through 'doc' branch of trivial tree, until Rob, the new 
+documentation maintainer, has established a proper tree.
 
+Thanks.
+
+Marcos Paulo de Souza (1):
+      Documentation/initrd.txt: Change the location of util-linux
+
+Michel Machado (1):
+      Documentation/SubmittingPatches: suggested the use of scripts/get_maintainer.pl
+
+Sebastian Andrzej Siewior (1):
+      Documentation/kernel-parameters: remove autotest and mcatest
+
+Stefan Hajnoczi (1):
+      doc: ext3: update documentation with barrier=1 default
+
+ Documentation/SubmittingPatches     |    3 ++-
+ Documentation/filesystems/ext3.txt  |    6 +++---
+ Documentation/initrd.txt            |    4 ++--
+ Documentation/kernel-parameters.txt |    4 ----
+ 4 files changed, 7 insertions(+), 10 deletions(-)
+
+-- 
+Jiri Kosina
+SUSE Labs
