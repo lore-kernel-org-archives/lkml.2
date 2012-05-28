@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab2E1D3S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51880 "EHLO
+	id S1753722Ab2E1Dv1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:51:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51946 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752763Ab2E1D3H (ORCPT
+	by vger.kernel.org with ESMTP id S1753617Ab2E1D3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:07 -0400
-Message-Id: <20120528031205.933245738@decadent.org.uk>
+	Sun, 27 May 2012 23:29:17 -0400
+Message-Id: <20120528031208.821753278@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:24 +0100
+Date: Mon, 28 May 2012 04:12:45 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 022/117] isdn/gigaset: fix CAPI disconnect B3 handling
+        alan@lxorguk.ukuu.org.uk, Hans de Goede <hdegoede@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 043/117] usb-xhci: Handle COMP_TX_ERR for isoc tds
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,43 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 62a1cfe052346b96a552b6a9178d412c709711bb upstream.
+commit 9c745995ae5c4ff787f34a359de908facc11ee00 upstream.
 
-If DISCONNECT_B3_IND was synthesized because of a DISCONNECT_REQ
-with existing logical connections, the connection state wasn't
-updated accordingly. Also the emitted DISCONNECT_B3_IND message
-wasn't included in the debug log as requested.
-This patch fixes both of these issues.
+While testing unplugging an UVC HD webcam with usb-redirection (so through
+usbdevfs), my userspace usb-redir code was getting a value of -1 in
+iso_frame_desc[n].status, which according to Documentation/usb/error-codes.txt
+is not a valid value.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context]
+The source of this -1 is the default case in xhci-ring.c:process_isoc_td()
+adding a kprintf there showed the value of trb_comp_code to be COMP_TX_ERR
+in this case, so this patch adds handling for that completion code to
+process_isoc_td().
+
+This was observed and tested with the following xhci controller:
+1033:0194 NEC Corporation uPD720200 USB 3.0 Host Controller (rev 04)
+
+Note: I also wonder if setting frame->status to -1 (-EPERM) is the best we can
+do, but since I cannot come up with anything better I've left that as is.
+
+This patch should be backported to kernels as old as 2.6.36, which contain the
+commit 04e51901dd44f40a5a385ced897f6bca87d5f40a "USB: xHCI: Isochronous
+transfer implementation".
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/isdn/gigaset/capi.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-ring.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- linux.orig/drivers/isdn/gigaset/capi.c
-+++ linux/drivers/isdn/gigaset/capi.c
-@@ -1887,6 +1887,9 @@
- 
- 	/* check for active logical connection */
- 	if (bcs->apconnstate >= APCONN_ACTIVE) {
-+		/* clear it */
-+		bcs->apconnstate = APCONN_SETUP;
-+
- 		/*
- 		 * emit DISCONNECT_B3_IND with cause 0x3301
- 		 * use separate cmsg structure, as the content of iif->acmsg
-@@ -1911,6 +1914,7 @@
- 		}
- 		capi_cmsg2message(b3cmsg,
- 			__skb_put(b3skb, CAPI_DISCONNECT_B3_IND_BASELEN));
-+		dump_cmsg(DEBUG_CMD, __func__, b3cmsg);
- 		kfree(b3cmsg);
- 		capi_ctr_handle_message(&iif->ctr, ap->id, b3skb);
- 	}
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index cb1de11..d40194c 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -1804,6 +1804,7 @@ static int process_isoc_td(struct xhci_hcd *xhci, struct xhci_td *td,
+ 		break;
+ 	case COMP_DEV_ERR:
+ 	case COMP_STALL:
++	case COMP_TX_ERR:
+ 		frame->status = -EPROTO;
+ 		skip_td = true;
+ 		break;
 
 
