@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2E1DjR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:39:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52249 "EHLO
+	id S1754749Ab2E1DjN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:39:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52155 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753824Ab2E1D3n (ORCPT
+	by vger.kernel.org with ESMTP id S1754007Ab2E1D3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:43 -0400
-Message-Id: <20120528031215.834054283@decadent.org.uk>
+Message-Id: <20120528031212.540584498@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:36 +0100
+Date: Mon, 28 May 2012 04:13:12 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
-        Thomas Wucher <thwucher@linutronix.de>,
-        Felix Radensky <felix@embedded-sol.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [ 094/117] gpio: mpc8xxx: Prevent NULL pointer deref in demux handler
+        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@kernel.org>,
+        Shaohua Li <shli@fusionio.com>, Holger Kiehl <Holger.Kiehl@dwd.de>,
+        Hugh Dickins <hughd@google.com>
+Subject: [ 070/117] swap: dont do discard if no discard option added
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Shaohua Li <shli@kernel.org>
 
-commit d6de85e85edcc38c9edcde45a0a568818fcddc13 upstream.
+commit 052b1987faca3606109d88d96bce124851f7c4c2 upstream.
 
-commit cfadd838(powerpc/8xxx: Fix interrupt handling in MPC8xxx GPIO
-driver) added an unconditional call of chip->irq_eoi() to the demux
-handler.
+When swapon() was not passed the SWAP_FLAG_DISCARD option, sys_swapon()
+will still perform a discard operation.  This can cause problems if
+discard is slow or buggy.
 
-This leads to a NULL pointer derefernce on MPC512x platforms which use
-this driver as well.
+Reverse the order of the check so that a discard operation is performed
+only if the sys_swapon() caller is attempting to enable discard.
 
-Make it conditional.
-
-Reported-by: Thomas Wucher <thwucher@linutronix.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Felix Radensky <felix@embedded-sol.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Shaohua Li <shli@fusionio.com>
+Reported-by: Holger Kiehl <Holger.Kiehl@dwd.de>
+Tested-by: Holger Kiehl <Holger.Kiehl@dwd.de>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpio/gpio-mpc8xxx.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/swapfile.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
-index e6568c1..5a1817e 100644
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -163,7 +163,8 @@ static void mpc8xxx_gpio_irq_cascade(unsigned int irq, struct irq_desc *desc)
- 	if (mask)
- 		generic_handle_irq(irq_linear_revmap(mpc8xxx_gc->irq,
- 						     32 - ffs(mask)));
--	chip->irq_eoi(&desc->irq_data);
-+	if (chip->irq_eoi)
-+		chip->irq_eoi(&desc->irq_data);
- }
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index b82c028..21b5694 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2103,7 +2103,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 			p->flags |= SWP_SOLIDSTATE;
+ 			p->cluster_next = 1 + (random32() % p->highest_bit);
+ 		}
+-		if (discard_swap(p) == 0 && (swap_flags & SWAP_FLAG_DISCARD))
++		if ((swap_flags & SWAP_FLAG_DISCARD) && discard_swap(p) == 0)
+ 			p->flags |= SWP_DISCARDABLE;
+ 	}
  
- static void mpc8xxx_irq_unmask(struct irq_data *d)
 
 
