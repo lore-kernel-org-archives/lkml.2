@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab2E1DbY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:31:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52205 "EHLO
+	id S1754550Ab2E1DcU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:32:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52163 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754169Ab2E1D3x (ORCPT
+	by vger.kernel.org with ESMTP id S1754018Ab2E1D3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:53 -0400
-Message-Id: <20120528031213.085639353@decadent.org.uk>
+	Sun, 27 May 2012 23:29:52 -0400
+Message-Id: <20120528031214.613990618@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:16 +0100
+Date: Mon, 28 May 2012 04:13:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dima Zavin <dima@android.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 074/117] ARM: 7409/1: Do not call flush_cache_user_range with mmap_sem held
+        alan@lxorguk.ukuu.org.uk, Jeff Mahoney <jeffm@suse.com>,
+        Stephan Mueller <stephan.mueller@atsec.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 085/117] dl2k: Clean up rio_ioctl
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +29,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dima Zavin <dima@android.com>
+From: Jeff Mahoney <jeffm@suse.com>
 
-commit 435a7ef52db7d86e67a009b36cac1457f8972391 upstream.
+commit 1bb57e940e1958e40d51f2078f50c3a96a9b2d75 upstream.
 
-We can't be holding the mmap_sem while calling flush_cache_user_range
-because the flush can fault. If we fault on a user address, the
-page fault handler will try to take mmap_sem again. Since both places
-acquire the read lock, most of the time it succeeds. However, if another
-thread tries to acquire the write lock on the mmap_sem (e.g. mmap) in
-between the call to flush_cache_user_range and the fault, the down_read
-in do_page_fault will deadlock.
+The dl2k driver's rio_ioctl call has a few issues:
+- No permissions checking
+- Implements SIOCGMIIREG and SIOCGMIIREG using the SIOCDEVPRIVATE numbers
+- Has a few ioctls that may have been used for debugging at one point
+  but have no place in the kernel proper.
 
-[will: removed drop of vma parameter as already queued by rmk (7365/1)]
+This patch removes all but the MII ioctls, renumbers them to use the
+standard ones, and adds the proper permission check for SIOCSMIIREG.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Dima Zavin <dima@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+We can also get rid of the dl2k-specific struct mii_data in favor of
+the generic struct mii_ioctl_data.
+
+Since we have the phyid on hand, we can add the SIOCGMIIPHY ioctl too.
+
+Most of the MII code for the driver could probably be converted to use
+the generic MII library but I don't have a device to test the results.
+
+Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/kernel/traps.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/dlink/dl2k.c |   52 +++++++------------------------------
+ drivers/net/ethernet/dlink/dl2k.h |    7 -----
+ 2 files changed, 9 insertions(+), 50 deletions(-)
 
-diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 55b2f3d..63d402f 100644
---- a/arch/arm/kernel/traps.c
-+++ b/arch/arm/kernel/traps.c
-@@ -496,7 +496,9 @@ do_cache_op(unsigned long start, unsigned long end, int flags)
- 		if (end > vma->vm_end)
- 			end = vma->vm_end;
+diff --git a/drivers/net/ethernet/dlink/dl2k.c b/drivers/net/ethernet/dlink/dl2k.c
+index b2dc2c8..2e09edb 100644
+--- a/drivers/net/ethernet/dlink/dl2k.c
++++ b/drivers/net/ethernet/dlink/dl2k.c
+@@ -1259,55 +1259,21 @@ rio_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
+ {
+ 	int phy_addr;
+ 	struct netdev_private *np = netdev_priv(dev);
+-	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
+-
+-	struct netdev_desc *desc;
+-	int i;
++	struct mii_ioctl_data *miidata = if_mii(rq);
  
-+		up_read(&mm->mmap_sem);
- 		flush_cache_user_range(start, end);
-+		return;
+ 	phy_addr = np->phy_addr;
+ 	switch (cmd) {
+-	case SIOCDEVPRIVATE:
+-		break;
+-
+-	case SIOCDEVPRIVATE + 1:
+-		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
++	case SIOCGMIIPHY:
++		miidata->phy_id = phy_addr;
+ 		break;
+-	case SIOCDEVPRIVATE + 2:
+-		mii_write (dev, phy_addr, miidata->reg_num, miidata->in_value);
++	case SIOCGMIIREG:
++		miidata->val_out = mii_read (dev, phy_addr, miidata->reg_num);
+ 		break;
+-	case SIOCDEVPRIVATE + 3:
+-		break;
+-	case SIOCDEVPRIVATE + 4:
+-		break;
+-	case SIOCDEVPRIVATE + 5:
+-		netif_stop_queue (dev);
++	case SIOCSMIIREG:
++		if (!capable(CAP_NET_ADMIN))
++			return -EPERM;
++		mii_write (dev, phy_addr, miidata->reg_num, miidata->val_in);
+ 		break;
+-	case SIOCDEVPRIVATE + 6:
+-		netif_wake_queue (dev);
+-		break;
+-	case SIOCDEVPRIVATE + 7:
+-		printk
+-		    ("tx_full=%x cur_tx=%lx old_tx=%lx cur_rx=%lx old_rx=%lx\n",
+-		     netif_queue_stopped(dev), np->cur_tx, np->old_tx, np->cur_rx,
+-		     np->old_rx);
+-		break;
+-	case SIOCDEVPRIVATE + 8:
+-		printk("TX ring:\n");
+-		for (i = 0; i < TX_RING_SIZE; i++) {
+-			desc = &np->tx_ring[i];
+-			printk
+-			    ("%02x:cur:%08x next:%08x status:%08x frag1:%08x frag0:%08x",
+-			     i,
+-			     (u32) (np->tx_ring_dma + i * sizeof (*desc)),
+-			     (u32)le64_to_cpu(desc->next_desc),
+-			     (u32)le64_to_cpu(desc->status),
+-			     (u32)(le64_to_cpu(desc->fraginfo) >> 32),
+-			     (u32)le64_to_cpu(desc->fraginfo));
+-			printk ("\n");
+-		}
+-		printk ("\n");
+-		break;
+-
+ 	default:
+ 		return -EOPNOTSUPP;
  	}
- 	up_read(&mm->mmap_sem);
- }
+diff --git a/drivers/net/ethernet/dlink/dl2k.h b/drivers/net/ethernet/dlink/dl2k.h
+index ba0adca..30c2da3 100644
+--- a/drivers/net/ethernet/dlink/dl2k.h
++++ b/drivers/net/ethernet/dlink/dl2k.h
+@@ -365,13 +365,6 @@ struct ioctl_data {
+ 	char *data;
+ };
+ 
+-struct mii_data {
+-	__u16 reserved;
+-	__u16 reg_num;
+-	__u16 in_value;
+-	__u16 out_value;
+-};
+-
+ /* The Rx and Tx buffer descriptors. */
+ struct netdev_desc {
+ 	__le64 next_desc;
 
 
