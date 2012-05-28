@@ -1,190 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797Ab2E1Pjd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 11:39:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57255 "EHLO mx2.suse.de"
+	id S1754358Ab2E1PoI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 11:44:08 -0400
+Received: from metasoft.pl ([195.149.224.191]:56360 "EHLO smtp.metasoft.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab2E1Pjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 11:39:31 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: [RFC -mm] memcg: prevent from OOM with too many dirty pages
-Date: Mon, 28 May 2012 17:38:55 +0200
-Message-Id: <1338219535-7874-1-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.7.10
+	id S1751214Ab2E1PoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 11:44:07 -0400
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 May 2012 11:44:07 EDT
+X-clamdmail: clamdmail 0.18a
+Message-ID: <4FC39B5A.9010007@metasoft.pl>
+Date: Mon, 28 May 2012 17:35:54 +0200
+From: Rafal Prylowski <prylowski@metasoft.pl>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        =?ISO-8859-2?Q?Rafa=B3_Pry=B3owski?= <prylowski@metasoft.pl>
+Subject: [PATCH] leds: don't disable blinking when writing the same value
+ to delay_on or delay_off
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation of dirty pages throttling is not memcg aware which makes
-it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
-hard limit is small and so the lists are scanned faster than pages written
-back.
+Function led_set_software_blink() assumes that blink timer is still running,
+but commit 488bc35bf40df89d37486c1826b178a2fba36ce7 introduced disabling
+of blink timer before each call to led_set_software_blink().
 
-This patch fixes the problem by throttling the allocating process (possibly
-a writer) during the hard limit reclaim by waiting on PageReclaim pages.
-We are waiting only for PageReclaim pages because those are the pages
-that made one full round over LRU and that means that the writeback is much
-slower than scanning.
-The solution is far from being ideal - long term solution is memcg aware
-dirty throttling - but it is meant to be a band aid until we have a real
-fix.
-We are seeing this happening during nightly backups which are placed into
-containers to prevent from eviction of the real working set.
+Correct led_software_blink():
+1) remove protection against reprogramming blink timer to the same values,
+   because it only disables blinking now,
+2) remove unnecessary call to led_stop_software_blink().
 
-The change affects only memcg reclaim and only when we encounter PageReclaim
-pages which is a signal that the reclaim doesn't catch up on with the writers
-so somebody should be throttled. This could be potentially unfair because it
-could be somebody else from the group who gets throttled on behalf of the
-writer but as writers need to allocate as well and they allocate in higher rate
-the probability that only innocent processes would be penalized is not that
-high.
-
-I have tested this change by a simple dd copying /dev/zero to tmpfs or ext3
-running under small memcg (1G copy under 5M, 60M, 300M and 2G containers) and
-dd got killed by OOM killer every time. With the patch I could run the dd with
-the same size under 5M controller without any OOM.
-The issue is more visible with slower devices for output.
-
-* With the patch
-================
-* tmpfs size=2G
----------------
-$ vim cgroup_cache_oom_test.sh
-$ ./cgroup_cache_oom_test.sh 5M
-using Limit 5M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 30.4049 s, 34.5 MB/s
-$ ./cgroup_cache_oom_test.sh 60M
-using Limit 60M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 31.4561 s, 33.3 MB/s
-$ ./cgroup_cache_oom_test.sh 300M
-using Limit 300M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 20.4618 s, 51.2 MB/s
-$ ./cgroup_cache_oom_test.sh 2G
-using Limit 2G for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 1.42172 s, 738 MB/s
-
-* ext3
-------
-$ ./cgroup_cache_oom_test.sh 5M
-using Limit 5M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 27.9547 s, 37.5 MB/s
-$ ./cgroup_cache_oom_test.sh 60M
-using Limit 60M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 30.3221 s, 34.6 MB/s
-$ ./cgroup_cache_oom_test.sh 300M
-using Limit 300M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 24.5764 s, 42.7 MB/s
-$ ./cgroup_cache_oom_test.sh 2G
-using Limit 2G for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 3.35828 s, 312 MB/s
-
-* Without the patch
-===================
-* tmpfs size=2G
----------------
-$ ./cgroup_cache_oom_test.sh 5M
-using Limit 5M for group
-./cgroup_cache_oom_test.sh: line 46:  4668 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
-$ ./cgroup_cache_oom_test.sh 60M
-using Limit 60M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 25.4989 s, 41.1 MB/s
-$ ./cgroup_cache_oom_test.sh 300M
-using Limit 300M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 24.3928 s, 43.0 MB/s
-$ ./cgroup_cache_oom_test.sh 2G
-using Limit 2G for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 1.49797 s, 700 MB/s
-
-* ext3
-------
-$ ./cgroup_cache_oom_test.sh 5M
-using Limit 5M for group
-./cgroup_cache_oom_test.sh: line 46:  4689 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
-$ ./cgroup_cache_oom_test.sh 60M
-using Limit 60M for group
-./cgroup_cache_oom_test.sh: line 46:  4692 Killed                  dd if=/dev/zero of=$OUT/zero bs=1M count=$count
-$ ./cgroup_cache_oom_test.sh 300M
-using Limit 300M for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 20.248 s, 51.8 MB/s
-$ ./cgroup_cache_oom_test.sh 2G
-using Limit 2G for group
-1000+0 records in
-1000+0 records out
-1048576000 bytes (1.0 GB) copied, 2.85201 s, 368 MB/s
-
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Ying Han <yinghan@google.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Rafal Prylowski <prylowski@metasoft.pl>
+Cc: Bryan Wu <bryan.wu@canonical.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
- mm/vmscan.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index c978ce4..7cccd81 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -720,9 +720,20 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
- 
- 		if (PageWriteback(page)) {
--			nr_writeback++;
--			unlock_page(page);
--			goto keep;
-+			/*
-+			 * memcg doesn't have any dirty pages throttling so we
-+			 * could easily OOM just because too many pages are in
-+			 * writeback from reclaim and there is nothing else to
-+			 * reclaim.
-+			 */
-+			if (PageReclaim(page)
-+					&& may_enter_fs && !global_reclaim(sc))
-+				wait_on_page_writeback(page);
-+			else {
-+				nr_writeback++;
-+				unlock_page(page);
-+				goto keep;
-+			}
- 		}
- 
- 		references = page_check_references(page, sc);
--- 
-1.7.10
+Patch applies to current mainline.
 
+ drivers/leds/led-core.c |    7 -------
+ 1 file changed, 7 deletions(-)
+
+Index: mainline/drivers/leds/led-core.c
+===================================================================
+--- mainline.orig/drivers/leds/led-core.c
++++ mainline/drivers/leds/led-core.c
+@@ -44,13 +44,6 @@ static void led_set_software_blink(struc
+ 	if (!led_cdev->blink_brightness)
+ 		led_cdev->blink_brightness = led_cdev->max_brightness;
+ 
+-	if (led_get_trigger_data(led_cdev) &&
+-	    delay_on == led_cdev->blink_delay_on &&
+-	    delay_off == led_cdev->blink_delay_off)
+-		return;
+-
+-	led_stop_software_blink(led_cdev);
+-
+ 	led_cdev->blink_delay_on = delay_on;
+ 	led_cdev->blink_delay_off = delay_off;
+ 
