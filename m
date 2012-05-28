@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab2E1DdS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:33:18 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52162 "EHLO
+	id S1754613Ab2E1DeW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:34:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52138 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754134Ab2E1D3u (ORCPT
+	by vger.kernel.org with ESMTP id S1753991Ab2E1D3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:50 -0400
-Message-Id: <20120528031217.060562005@decadent.org.uk>
+	Sun, 27 May 2012 23:29:48 -0400
+Message-Id: <20120528031211.849807410@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:45 +0100
+Date: Mon, 28 May 2012 04:13:07 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 103/117] ethtool: Null-terminate filename passed to ethtool_ops::flash_device
+        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oncaphillis <oncaphillis@snafu.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 065/117] USB: Remove races in devio.c
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,52 +30,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Huajun Li <huajun.li.lee@gmail.com>
 
-commit 786f528119722f564a22ad953411374e06116333 upstream.
+commit 4e09dcf20f7b5358615514c2ec8584b248ab8874 upstream.
 
-The parameters for ETHTOOL_FLASHDEV include a filename, which ought to
-be null-terminated.  Currently the only driver that implements
-ethtool_ops::flash_device attempts to add a null terminator if
-necessary, but does it wrongly.  Do it in the ethtool core instead.
+There exist races in devio.c, below is one case,
+and there are similar races in destroy_async()
+and proc_unlinkurb().  Remove these races.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+ cancel_bulk_urbs()        async_completed()
+-------------------                -----------------------
+ spin_unlock(&ps->lock);
+
+                           list_move_tail(&as->asynclist,
+		                    &ps->async_completed);
+
+                           wake_up(&ps->wait);
+
+                           Lead to free_async() be triggered,
+                           then urb and 'as' will be freed.
+
+ usb_unlink_urb(as->urb);
+ ===> refer to the freed 'as'
+
+Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Oncaphillis <oncaphillis@snafu.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/emulex/benet/be_ethtool.c |    6 +-----
- net/core/ethtool.c                             |    2 ++
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/usb/core/devio.c |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/emulex/benet/be_ethtool.c b/drivers/net/ethernet/emulex/benet/be_ethtool.c
-index 6db6b6a..802e5dd 100644
---- a/drivers/net/ethernet/emulex/benet/be_ethtool.c
-+++ b/drivers/net/ethernet/emulex/benet/be_ethtool.c
-@@ -716,12 +716,8 @@ static int
- be_do_flash(struct net_device *netdev, struct ethtool_flash *efl)
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index c4a1af8..e0f1079 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -333,17 +333,14 @@ static struct async *async_getcompleted(struct dev_state *ps)
+ static struct async *async_getpending(struct dev_state *ps,
+ 					     void __user *userurb)
  {
- 	struct be_adapter *adapter = netdev_priv(netdev);
--	char file_name[ETHTOOL_FLASH_MAX_FILENAME];
+-	unsigned long flags;
+ 	struct async *as;
  
--	file_name[ETHTOOL_FLASH_MAX_FILENAME - 1] = 0;
--	strcpy(file_name, efl->data);
--
--	return be_load_fw(adapter, file_name);
-+	return be_load_fw(adapter, efl->data);
+-	spin_lock_irqsave(&ps->lock, flags);
+ 	list_for_each_entry(as, &ps->async_pending, asynclist)
+ 		if (as->userurb == userurb) {
+ 			list_del_init(&as->asynclist);
+-			spin_unlock_irqrestore(&ps->lock, flags);
+ 			return as;
+ 		}
+-	spin_unlock_irqrestore(&ps->lock, flags);
++
+ 	return NULL;
  }
  
- static int
-diff --git a/net/core/ethtool.c b/net/core/ethtool.c
-index 369b418..3f79db1 100644
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -1190,6 +1190,8 @@ static noinline_for_stack int ethtool_flash_device(struct net_device *dev,
- 	if (!dev->ethtool_ops->flash_device)
- 		return -EOPNOTSUPP;
+@@ -398,6 +395,7 @@ static void cancel_bulk_urbs(struct dev_state *ps, unsigned bulk_addr)
+ __releases(ps->lock)
+ __acquires(ps->lock)
+ {
++	struct urb *urb;
+ 	struct async *as;
  
-+	efl.data[ETHTOOL_FLASH_MAX_FILENAME - 1] = 0;
+ 	/* Mark all the pending URBs that match bulk_addr, up to but not
+@@ -420,8 +418,11 @@ __acquires(ps->lock)
+ 	list_for_each_entry(as, &ps->async_pending, asynclist) {
+ 		if (as->bulk_status == AS_UNLINK) {
+ 			as->bulk_status = 0;		/* Only once */
++			urb = as->urb;
++			usb_get_urb(urb);
+ 			spin_unlock(&ps->lock);		/* Allow completions */
+-			usb_unlink_urb(as->urb);
++			usb_unlink_urb(urb);
++			usb_put_urb(urb);
+ 			spin_lock(&ps->lock);
+ 			goto rescan;
+ 		}
+@@ -472,6 +473,7 @@ static void async_completed(struct urb *urb)
+ 
+ static void destroy_async(struct dev_state *ps, struct list_head *list)
+ {
++	struct urb *urb;
+ 	struct async *as;
+ 	unsigned long flags;
+ 
+@@ -479,10 +481,13 @@ static void destroy_async(struct dev_state *ps, struct list_head *list)
+ 	while (!list_empty(list)) {
+ 		as = list_entry(list->next, struct async, asynclist);
+ 		list_del_init(&as->asynclist);
++		urb = as->urb;
++		usb_get_urb(urb);
+ 
+ 		/* drop the spinlock so the completion handler can run */
+ 		spin_unlock_irqrestore(&ps->lock, flags);
+-		usb_kill_urb(as->urb);
++		usb_kill_urb(urb);
++		usb_put_urb(urb);
+ 		spin_lock_irqsave(&ps->lock, flags);
+ 	}
+ 	spin_unlock_irqrestore(&ps->lock, flags);
+@@ -1399,12 +1404,24 @@ static int proc_submiturb(struct dev_state *ps, void __user *arg)
+ 
+ static int proc_unlinkurb(struct dev_state *ps, void __user *arg)
+ {
++	struct urb *urb;
+ 	struct async *as;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&ps->lock, flags);
+ 	as = async_getpending(ps, arg);
+-	if (!as)
++	if (!as) {
++		spin_unlock_irqrestore(&ps->lock, flags);
+ 		return -EINVAL;
+-	usb_kill_urb(as->urb);
++	}
 +
- 	return dev->ethtool_ops->flash_device(dev, &efl);
++	urb = as->urb;
++	usb_get_urb(urb);
++	spin_unlock_irqrestore(&ps->lock, flags);
++
++	usb_kill_urb(urb);
++	usb_put_urb(urb);
++
+ 	return 0;
  }
  
 
