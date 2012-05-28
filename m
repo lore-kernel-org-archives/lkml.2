@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab2E1Dfh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:35:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52134 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754108Ab2E1D3r (ORCPT
+	id S1754666Ab2E1Dfq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:35:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57271 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359Ab2E1Dfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:47 -0400
-Message-Id: <20120528031210.061766277@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:54 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Christian Eggers <christian.eggers@kathrein.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 052/117] USB: ohci-at91: add a reset function to fix race condition
-In-Reply-To: <20120528031202.829379252@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 27 May 2012 23:35:43 -0400
+Date: Mon, 28 May 2012 13:35:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the dma-buf tree with Linus' tree
+Message-Id: <20120528133540.19498993351d66f959f079b6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Hi Sumit,
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Today's linux-next merge of the dma-buf tree got conflicts in
+drivers/base/dma-buf.c and include/linux/dma-buf.h between various
+commits from Linus' tree and various commits from the dma-buf tree.
 
-commit 07e4e556eff4938eb2edf2591de3aa7d7fb82b52 upstream.
+Again, another tree that was rebased before or after being sent
+upstream.  Please don't do this.
 
-A possible race condition appears because we are not initializing
-the ohci->regs before calling usb_hcd_request_irqs().
-We move the call to ohci_init() in hcd->driver->reset() instead of
-hcd->driver->start() to fix this.
-This was experienced when we share the same IRQ line between OHCI and EHCI
-controllers.
+I have used the versions of these files from Linus' tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Tested-by: Christian Eggers <christian.eggers@kathrein.de>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/host/ohci-at91.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+--Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M
+Content-Type: application/pgp-signature
 
---- a/drivers/usb/host/ohci-at91.c
-+++ b/drivers/usb/host/ohci-at91.c
-@@ -199,7 +199,7 @@
- /*-------------------------------------------------------------------------*/
- 
- static int __devinit
--ohci_at91_start (struct usb_hcd *hcd)
-+ohci_at91_reset (struct usb_hcd *hcd)
- {
- 	struct at91_usbh_data	*board = hcd->self.controller->platform_data;
- 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
-@@ -209,6 +209,14 @@
- 		return ret;
- 
- 	ohci->num_ports = board->ports;
-+	return 0;
-+}
-+
-+static int __devinit
-+ohci_at91_start (struct usb_hcd *hcd)
-+{
-+	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
-+	int			ret;
- 
- 	if ((ret = ohci_run(ohci)) < 0) {
- 		err("can't start %s", hcd->self.bus_name);
-@@ -390,6 +398,7 @@
- 	/*
- 	 * basic lifecycle operations
- 	 */
-+	.reset =		ohci_at91_reset,
- 	.start =		ohci_at91_start,
- 	.stop =			ohci_stop,
- 	.shutdown =		ohci_shutdown,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPwvKMAAoJEECxmPOUX5FEtloP/2hJ/DTOtqpPNkpUGTVD33yS
+oQaTf1wdMG6sgUgI7MUtnZyOSAdq8L1dY/zMqjGNUmXTLPri6LsDAVySTx7JAO2A
+3LW+Ic5Vy8mQgUofPjSFO/fYYCVUhO38Nq5e0WSvfW6LOJOFtj7Za5QCc3FwSeOD
+NVpojK4/uXfz4O0VRSi24Eh7LOnA8xpM7UunNHWBZDXlxpv7nMW/JAlmLzokcUX8
+end78AiXpCxB4uKjIg33W0YaZmDtyQk2Qx9ZwSrijrvGpVLgg/ciM3xY4d8I/c/6
+5x9jzy/EwrX06WhOGH2HT65q66B0KCCQG4kNayI1JnM7MRuESqUuzoTvv8oH94Yb
+ZrNI7bQzzXaPhAudZFgqumxfBCp66drBPLqE+vfruMgC9kQLBm1Yl5nTyWpWE913
+k2rCdguAtgkYFsPsOAPxc8nj+KbAxJ5bzR2RU4PkT0N4Mm7kpk7wwwCUM7w+LXfX
+6F4ZBAxH9Po0L9F+fWcG3HHgaydaXbT30rucK2ypr0RSfap8bXBdd+XLaMPVlGCW
+hUOIDUKAZkSYhx8HQCJMwlIxjiqiU3WtvtXrMn2mCq3fwjp2d9Vy0QycfrLxxT/4
+++FA89+XvhOyI+Y5uMcXEUtF0u1dRg2wbKw/apW8Kqz1A8xfzSfaaZ58tB0/qcnG
+SyzVwUIMAOvjwpH42W3U
+=n0J0
+-----END PGP SIGNATURE-----
 
+--Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M--
