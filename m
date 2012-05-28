@@ -1,45 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab2E1XWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 19:22:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50716 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab2E1XWy (ORCPT
+	id S1752503Ab2E1Xay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 19:30:54 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35175 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab2E1Xax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 19:22:54 -0400
-Date: Tue, 29 May 2012 08:22:46 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        axboe@kernel.dk, paul.gortmaker@windriver.com
-Subject: Re: [PATCH 0/3] Generic rb tree code
-Message-ID: <20120528232246.GC20954@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337979461-19654-1-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 May 2012 19:30:53 -0400
+Date: Tue, 29 May 2012 00:33:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: tty locking problem (possible recursive locking detected)
+Message-ID: <20120529003342.6eadabaa@pyramind.ukuu.org.uk>
+In-Reply-To: <20120528221300.GD16584@smp.if.uj.edu.pl>
+References: <20120528221300.GD16584@smp.if.uj.edu.pl>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 01:57:38PM -0700, Kent Overstreet wrote:
-> Right now, users of the rb tree code have to open code their own search and
-> insert functions. This provides generic versions that you pass a comparison
-> function to.
+On Tue, 29 May 2012 00:13:00 +0200
+Witold Baryluk <baryluk@smp.if.uj.edu.pl> wrote:
+
+> Hi,
 > 
-> I highly doubt the extra function calls are going to have a measurable
-> performance impact in practice - the pointer chasing is going to dominate. I
-> did provide inline versions just in case, though - it's modelled after the
-> spinlock code.
+> I just compiled recent Linus tree and this is what I got after opening terminator terminal:
 
-Modeled after spinlock code how?  AFAICS, spinlock code doesn't
-present inline and !inline versions to users.  All the current users
-are inline anyway, why not just provide inlined versions and worry
-about whether inlining is beneifical in a separate patch?
-
-Thanks.
-
--- 
-tejun
+Yes - already fixed.
