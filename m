@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab2E1Dww (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:52:52 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51906 "EHLO
+	id S1755560Ab2E1Dxd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:53:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51882 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753513Ab2E1D3L (ORCPT
+	by vger.kernel.org with ESMTP id S1753451Ab2E1D3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:11 -0400
-Message-Id: <20120528031206.485575402@decadent.org.uk>
+	Sun, 27 May 2012 23:29:09 -0400
+Message-Id: <20120528031206.065849401@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:28 +0100
+Date: Mon, 28 May 2012 04:12:25 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [ 026/117] regulator: core: Release regulator-regulator supplies on error
+        alan@lxorguk.ukuu.org.uk, Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 023/117] isdn/gigaset: improve error handling querying firmware version
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,32 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit e81dba85c6388dfabcb76cbc2b8bd02836a53ae5 upstream.
+commit e055d03dc088a990fe5ea24a2d64033a168da23c upstream.
 
-If we fail while registering a regulator make sure we release the supply
-for the regulator if there is one.
+An out-of-place "OK" response to the "AT+GMR" (get firmware version)
+command turns out to be, more often than not, a delayed response to
+a previous command rather than an actual error, so continue waiting
+for the version number in that case.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: adjust indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/regulator/core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/isdn/gigaset/ev-layer.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 8918271..5a33282 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -3193,6 +3193,8 @@ unset_supplies:
- 	unset_regulator_supplies(rdev);
+diff --git a/drivers/isdn/gigaset/ev-layer.c b/drivers/isdn/gigaset/ev-layer.c
+index 624a825..685638a 100644
+--- a/drivers/isdn/gigaset/ev-layer.c
++++ b/drivers/isdn/gigaset/ev-layer.c
+@@ -190,6 +190,7 @@ struct reply_t gigaset_tab_nocid[] =
+ 							  ACT_INIT} },
+ {RSP_OK,	121, 121, -1,			  0,  0, {ACT_GOTVER,
+ 							  ACT_INIT} },
++{RSP_NONE,	121, 121, -1,			120,  0, {ACT_GETSTRING} },
  
- scrub:
-+	if (rdev->supply)
-+		regulator_put(rdev->supply);
- 	kfree(rdev->constraints);
- 	device_unregister(&rdev->dev);
- 	/* device core frees rdev */
+ /* leave dle mode */
+ {RSP_INIT,	  0,   0, SEQ_DLE0,		201,  5, {0},	"^SDLE=0\r"},
+@@ -1314,8 +1315,9 @@ static void do_action(int action, struct cardstate *cs,
+ 		s = ev->ptr;
+ 
+ 		if (!strcmp(s, "OK")) {
++			/* OK without version string: assume old response */
+ 			*p_genresp = 1;
+-			*p_resp_code = RSP_ERROR;
++			*p_resp_code = RSP_NONE;
+ 			break;
+ 		}
+ 
 
 
