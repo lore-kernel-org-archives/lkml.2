@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab2E1QLX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 12:11:23 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:33647 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042Ab2E1QLV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 12:11:21 -0400
-Message-ID: <1338221539.4284.25.camel@lappy>
-Subject: Wrong usage of hash in L2TP leading to NULL ptr derefs
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        jchapman@katalix.com
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 28 May 2012 18:12:19 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754844Ab2E1QMn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 12:12:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753252Ab2E1QMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 12:12:41 -0400
+Date: Mon, 28 May 2012 12:12:23 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Kent Overstreet <koverstreet@google.com>
+cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, tj@kernel.org,
+        axboe@kernel.dk, agk@redhat.com, neilb@suse.de,
+        drbd-dev@lists.linbit.com, bharrosh@panasas.com, vgoyal@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v3 08/16] block: Rework bio splitting
+In-Reply-To: <1337977539-16977-9-git-send-email-koverstreet@google.com>
+Message-ID: <Pine.LNX.4.64.1205281210450.3913@file.rdu.redhat.com>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-9-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-Looking at net/l2tp/l2tp_ip{6}.c, l2tp uses UDP for communications, but
-uses inet_hash and inet_unhash for hashing - which appears to be wrong
-(and causes NULL ptr derefs during runtime).
 
-Since I'm not too familiar with the protocol, I'm not sure if the right
-fix would be to switch it to use the UDP hashing code, or to actually
-initialize everything inet_hash() expects so the current hashing would
-work properly.
+On Fri, 25 May 2012, Kent Overstreet wrote:
 
-Help appreciated!
+> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+> index f8b6f14..0062326 100644
+> --- a/drivers/md/raid10.c
+> +++ b/drivers/md/raid10.c
+> @@ -1001,15 +1001,9 @@ static void make_request(struct mddev *mddev, struct bio * bio)
+>  		      > chunk_sects &&
+>  		    conf->near_copies < conf->raid_disks)) {
+>  		struct bio_pair *bp;
+> -		/* Sanity check -- queue functions should prevent this happening */
+> -		if (bio->bi_vcnt != 1 ||
+> -		    bio->bi_idx != 0)
+> -			goto bad_map;
+> -		/* This is a one page bio that upper layers
+> -		 * refuse to split for us, so we need to split it.
+> -		 */
+> +
 
-Thanks,
-Sasha
+That "Sanity check" should be removed from drivers/md/raid0.c too. Your 
+patch only removes it from raid10.
 
+Mikulas
