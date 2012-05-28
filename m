@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab2E1JZu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 05:25:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751646Ab2E1JZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 05:25:32 -0400
-Message-ID: <4FC34489.5000707@redhat.com>
-Date: Mon, 28 May 2012 12:25:29 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751954Ab2E1JaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 05:30:07 -0400
+Received: from mailxx.hitachi.co.jp ([133.145.228.50]:44099 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab2E1JaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 05:30:05 -0400
+X-Greylist: delayed 1241 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 May 2012 05:30:04 EDT
+X-AuditID: b753bd60-a3089ba000000655-48-4fc340c11849
+X-AuditID: b753bd60-a3089ba000000655-48-4fc340c11849
+Message-ID: <4FC340BE.7080101@hitachi.com>
+Date: Mon, 28 May 2012 18:09:18 +0900
+From: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Gleb Natapov <gleb@redhat.com>, mtosatti@redhat.com,
-        Dave Jones <davej@redhat.com>, kvm@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kvm: KVM internal error. Suberror: 1
-References: <1336324765.3638.4.camel@lappy> <4FA787D5.6040508@redhat.com> <CA+1xoqf7W1WsEvMHCEUZjBHJVUCaefnGo9qxu0pttCtoUURseg@mail.gmail.com> <CA+1xoqeha3EcYCy=sjER-9B0wn8wTdT-cUTwnvs7uN38uYFpmQ@mail.gmail.com> <20120527062129.GK9769@redhat.com> <CA+1xoqeT0rSymQDT=k9YhUNnbvVwnkY0SKYbMFHWft40uLfndg@mail.gmail.com>
-In-Reply-To: <CA+1xoqeT0rSymQDT=k9YhUNnbvVwnkY0SKYbMFHWft40uLfndg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        yrl.pp-manager.tt@hitachi.com, ltc-kernel@ml.yrl.intra.hitachi.co.jp
+Subject: [PATCH] x86: Fix NULL pointer dereference on CPU hotplug after disabling
+ irqs
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2012 11:23 AM, Sasha Levin wrote:
-> On Sun, May 27, 2012 at 8:21 AM, Gleb Natapov <gleb@redhat.com> wrote:
->> On Sun, May 27, 2012 at 02:55:39AM +0200, Sasha Levin wrote:
->>> On Fri, May 11, 2012 at 1:40 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
->>> > I wasn't able to reproduce this issue so far.
->>>
->>> So I've managed to hit this again, this time with a 3.4 host kernel:
->>>
->> Do you have this instance of QEMU running?
-> 
-> Nope, qemu pretty much hangs at that point, so I've killed it.
-> 
-> Should I wait with that next time?
+In current Linux, percpu variable `vector_irq' is not cleared on offlined
+cpus while disabling devices' irqs. If the cpu that has the disabled irqs
+in vector_irq is hotplugged, __setup_vector_irq() hits invalid irq vector
+and may crash.
 
-Use -monitor stdio if you don't already.
+This bug can be reproduced as following;
+ # echo 0 > /sys/devices/system/cpu/cpu7/online
+ # modprobe -r some_driver_using_interrupts      # vector_irq@cpu7 uncleared
+ # echo 1 > /sys/devices/system/cpu/cpu7/online  # kernel may crash
 
+This patch fixes this bug by clearing vector_irq in __clear_irq_vector()
+even if the cpu is offlined.
+
+Signed-off-by: Tomoki Sekiyama <tomoki.sekiyama.qu@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ac96561..5f0ff59 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1195,7 +1195,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 	BUG_ON(!cfg->vector);
+  	vector = cfg->vector;
+-	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
++	for_each_cpu(cpu, cfg->domain)
+ 		per_cpu(vector_irq, cpu)[vector] = -1;
+  	cfg->vector = 0;
+@@ -1203,7 +1203,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+  	if (likely(!cfg->move_in_progress))
+ 		return;
+-	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
++	for_each_cpu(cpu, cfg->old_domain) {
+ 		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
+ 								vector++) {
+ 			if (per_cpu(vector_irq, cpu)[vector] != irq)
 -- 
-error compiling committee.c: too many arguments to function
+1.7.7.6
+
