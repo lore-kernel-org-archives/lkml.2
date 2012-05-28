@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519Ab2E1IeK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 04:34:10 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50349 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751178Ab2E1IeH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 04:34:07 -0400
-X-Sasl-enc: QJchpFSU6azoyz5pgvpBaygptauztJnIJ98VpmXnSWlg 1338194047
-Message-ID: <4FC3387D.8080904@fastmail.fm>
-Date: Mon, 28 May 2012 09:34:05 +0100
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751932Ab2E1Ie7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 04:34:59 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:37108 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697Ab2E1Ies (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 04:34:48 -0400
+Message-ID: <4FC3381C.9020608@parallels.com>
+Date: Mon, 28 May 2012 12:32:28 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
-References: <4FBFEACC.8040601@fastmail.fm>  <1337978725.10135.0.camel@edumazet-glaptop>  <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>  <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm>  <1338140156.3786.10.camel@edumazet-glaptop>  <4FC27CE7.20604@fastmail.fm> <1338164727.2240.14.camel@edumazet-glaptop>
-In-Reply-To: <1338164727.2240.14.camel@edumazet-glaptop>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Lameter <cl@linux.com>
+CC: Michal Hocko <mhocko@suse.cz>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120525133441.GB30527@tiehlicka.suse.cz> <alpine.DEB.2.00.1205250933170.22597@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205250933170.22597@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2012 01:25 AM, Eric Dumazet wrote:
-> On Sun, 2012-05-27 at 20:13 +0100, Jack Stone wrote:
-> 
->> Could it be something to do with my staging network driver?
-> 
-> drivers/staging/rtl8712/rtl8712_recv.c
-> 
-> line 1096
-> 
-> precvframe->u.hdr.pkt = skb_clone(pskb, GFP_ATOMIC);
-> 
-> This looks very wrong.
-> Make sure you never _never_ hit this path.
-> 
+On 05/25/2012 06:34 PM, Christoph Lameter wrote:
+> On Fri, 25 May 2012, Michal Hocko wrote:
+>
+>> On Fri 25-05-12 17:03:20, Glauber Costa wrote:
+>>> I believe some of the early patches here are already in some trees around.
+>>> I don't know who should pick this, so if everyone agrees with what's in here,
+>>> please just ack them and tell me which tree I should aim for (-mm? Hocko's?)
+>>> and I'll rebase it.
+>>
+>> memcg-devel tree is only to make development easier. Everything that
+>> applies on top of this tree should be applicable to both -mm and
+>> linux-next.
+>> So the patches should go via traditional Andrew's channel.
+>
+> It would be best to merge these with my patchset to extract common code
+> from the allocators. The modifications of individual slab allocators would
+> then be not necessary anymore and it would save us a lot of work.
+>
+Some of them would not, some of them would still be. But also please 
+note that the patches here that deal with differences between allocators 
+are usually the low hanging fruits compared to the rest.
 
-I've applied the following debugging patch. Thanks for the suggestion.
+I agree that long term it not only better, but inevitable, if we are 
+going to merge both.
 
-diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
-index 8e82ce2..fed62f8 100644
---- a/drivers/staging/rtl8712/rtl8712_recv.c
-+++ b/drivers/staging/rtl8712/rtl8712_recv.c
-@@ -1082,23 +1082,16 @@ static int recvbuf2recvframe(struct _adapter *padapter, struct sk_buff *pskb)
-                 * 4 is for skb->data 4 bytes alignment. */
-                alloc_sz += 6;
-                pkt_copy = netdev_alloc_skb(padapter->pnetdev, alloc_sz);
--               if (pkt_copy) {
--                       pkt_copy->dev = padapter->pnetdev;
--                       precvframe->u.hdr.pkt = pkt_copy;
--                       skb_reserve(pkt_copy, 4 - ((addr_t)(pkt_copy->data)
--                                   % 4));
--                       skb_reserve(pkt_copy, shift_sz);
--                       memcpy(pkt_copy->data, pbuf, tmp_len);
--                       precvframe->u.hdr.rx_head = precvframe->u.hdr.rx_data =
--                                precvframe->u.hdr.rx_tail = pkt_copy->data;
--                       precvframe->u.hdr.rx_end = pkt_copy->data + alloc_sz;
--               } else {
--                       precvframe->u.hdr.pkt = skb_clone(pskb, GFP_ATOMIC);
--                       precvframe->u.hdr.rx_head = pbuf;
--                       precvframe->u.hdr.rx_data = pbuf;
--                       precvframe->u.hdr.rx_tail = pbuf;
--                       precvframe->u.hdr.rx_end = pbuf + alloc_sz;
--               }
-+               WARN_ON(!pkt_copy)
-+               pkt_copy->dev = padapter->pnetdev;
-+               precvframe->u.hdr.pkt = pkt_copy;
-+               skb_reserve(pkt_copy, 4 - ((addr_t)(pkt_copy->data)
-+                           % 4));
-+               skb_reserve(pkt_copy, shift_sz);
-+               memcpy(pkt_copy->data, pbuf, tmp_len);
-+               precvframe->u.hdr.rx_head = precvframe->u.hdr.rx_data =
-+                        precvframe->u.hdr.rx_tail = pkt_copy->data;
-+               precvframe->u.hdr.rx_end = pkt_copy->data + alloc_sz;
-                recvframe_put(precvframe, tmp_len);
-                recvframe_pull(precvframe, drvinfo_sz + RXDESC_SIZE);
-                /* because the endian issue, driver avoid reference to the
+But right now, I think we should agree with the implementation itself - 
+so if you have any comments on how I am handling these, I'd be happy to 
+hear. Then we can probably set up a tree that does both, or get your 
+patches merged and I'll rebase, etc.
+
+
+
