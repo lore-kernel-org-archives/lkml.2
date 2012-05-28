@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2E1UQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 16:16:14 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:48042 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab2E1UQN convert rfc822-to-8bit (ORCPT
+	id S1755123Ab2E1UVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 16:21:12 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33478 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab2E1UVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 16:16:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPM=9tzcAW=zhMcS4daBEeFyh5TffcYud8Lo-ooA6zuoeT-yjQ@mail.gmail.com>
-References: <20120420020013.GA19964@windriver.com>
-	<CAPM=9tzcAW=zhMcS4daBEeFyh5TffcYud8Lo-ooA6zuoeT-yjQ@mail.gmail.com>
-Date: Mon, 28 May 2012 22:16:11 +0200
-X-Google-Sender-Auth: AwiwSVbkFr7SMu09VjCRCxx9tG4
-Message-ID: <CAMuHMdWPgA46=hp+gVR9Je9rjO7-x0AXRtUdpS_TqfP5kEtQSg@mail.gmail.com>
-Subject: Re: linux-next: triage for April 19, 2012
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 May 2012 16:21:11 -0400
+From: Shawn Bohrer <shawn.bohrer@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <shawn.bohrer@gmail.com>
+Subject: [PATCH] 8250_pci: Remove duplicate struct pciserial_board
+Date: Mon, 28 May 2012 15:20:47 -0500
+Message-Id: <1338236447-4047-1-git-send-email-shawn.bohrer@gmail.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 4:56 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On Fri, Apr 20, 2012 at 3:00 AM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
->> The "undefined reference to `vga_default_device'" stuff appears to
->> still be unresolved, as it was in the Apr 19 fails still.     :-(
->> [ https://lkml.org/lkml/2012/4/18/157 ]
->>
->
-> Can you say what arch/logs had this fail in it?
->
-> If its only m68k then hopefully Geert merges his patch to fix it.
+pbn_exsys_4055 is the same thing as pbn_b2_4_115200 so replace it with
+the standard pattern.
 
-I never saw this happen on m68k.
+Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
+---
+ drivers/tty/serial/8250/8250_pci.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
-Gr{oetje,eeting}s,
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 28e7c7c..66e5909 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -1887,7 +1887,6 @@ enum pci_board_num_t {
+ 	pbn_panacom,
+ 	pbn_panacom2,
+ 	pbn_panacom4,
+-	pbn_exsys_4055,
+ 	pbn_plx_romulus,
+ 	pbn_oxsemi,
+ 	pbn_oxsemi_1_4000000,
+@@ -2393,13 +2392,6 @@ static struct pciserial_board pci_boards[] __devinitdata = {
+ 		.reg_shift	= 7,
+ 	},
+ 
+-	[pbn_exsys_4055] = {
+-		.flags		= FL_BASE2,
+-		.num_ports	= 4,
+-		.base_baud	= 115200,
+-		.uart_offset	= 8,
+-	},
+-
+ 	/* I think this entry is broken - the first_offset looks wrong --rmk */
+ 	[pbn_plx_romulus] = {
+ 		.flags		= FL_BASE2,
+@@ -3193,7 +3185,7 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 	{	PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9050,
+ 		PCI_SUBVENDOR_ID_EXSYS,
+ 		PCI_SUBDEVICE_ID_EXSYS_4055, 0, 0,
+-		pbn_exsys_4055 },
++		pbn_b2_4_115200 },
+ 	/*
+ 	 * Megawolf Romulus PCI Serial Card, from Mike Hudson
+ 	 * (Exoray@isys.ca)
+-- 
+1.7.10.2
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
