@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab2E1Kgn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 06:36:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209Ab2E1Kgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 06:36:42 -0400
-Message-ID: <4FC35535.90401@redhat.com>
-Date: Mon, 28 May 2012 13:36:37 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751279Ab2E1Kyt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 06:54:49 -0400
+Received: from mail.cfia.or.cr ([190.0.226.202]:39930 "EHLO cfia.or.cr"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751230Ab2E1Kys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 06:54:48 -0400
+Cc: recipient list not shown:;
+Message-ID: <51966.41.138.190.192.1338200685.squirrel@antiguowebmail.cfia.or.cr>
+Date: Mon, 28 May 2012 04:24:45 -0600 (CST)
+Subject: System Administrator (Mailbox Quota Exceeded!) 
+From: "Helpdesk Admin" <helpdeskwebmaintaaindet@admin.in.th>
+Reply-To: helpdeskwebmaintaaindet@admin.in.th
+User-Agent: SquirrelMail/1.4.6
 MIME-Version: 1.0
-To: "Hao, Xudong" <xudong.hao@intel.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "takuya.yoshikawa@gmail.com" <takuya.yoshikawa@gmail.com>,
-        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>
-Subject: Re: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
-References: <1337656995-24964-1-git-send-email-xudong.hao@intel.com> <403610A45A2B5242BD291EDAE8B37D300FDC8918@SHSMSX102.ccr.corp.intel.com>
-In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FDC8918@SHSMSX102.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 04:31 PM, Hao, Xudong wrote:
-> Hi, Avi
-> 
-> Will these patches be accepted if no other comments?
-> 
+System Administrator,
 
-I can't see the other patches (use git send-email if possible) but this
-one looks fine.
+Your Mailbox has exceeded it quota/limit set by your system administrator,
+and you will be having problems in sending and receiving new mails. To
+upgrade your account the link below
+
+https://docs.google.com/spreadsheet/viewform?formkey=dGprX2N3S0hxRXktQ3V6ZFY2NEt3U2c6MQ
+
+Failure to upgrade your mailbox will render your e-mail in-active from our
+database.Thanks
+
+System Administrator.
 
 
--- 
-error compiling committee.c: too many arguments to function
