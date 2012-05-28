@@ -1,54 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2E1EX0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 00:23:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55735 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab2E1EXZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 00:23:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338172734.977.3.camel@joe2Laptop>
-References: <1338152074-30747-1-git-send-email-devendra.aaru@gmail.com>
-	<CAKPrQY8O0=PQroL6vYOCATG3WUx1ChgqW9rFqhuY2G7Q7oj3WA@mail.gmail.com>
-	<1338172734.977.3.camel@joe2Laptop>
-Date: Mon, 28 May 2012 09:53:24 +0530
-Message-ID: <CAHdPZaMbzWBUsaTKYiApnZxhaGRqSaaaHdpPtiYSKrFLrn0rdg@mail.gmail.com>
+	id S1751581Ab2E1Ehn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 00:37:43 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:52276 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750802Ab2E1Ehl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 00:37:41 -0400
+Message-ID: <1338179859.2202.11.camel@joe2Laptop>
 Subject: Re: [PATCH] [staging] bcm: Fix codingstyle problems
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Joe Perches <joe@perches.com>
+From: Joe Perches <joe@perches.com>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
 Cc: Kevin McKinney <klmckinney1@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Date: Sun, 27 May 2012 21:37:39 -0700
+In-Reply-To: <CAHdPZaMbzWBUsaTKYiApnZxhaGRqSaaaHdpPtiYSKrFLrn0rdg@mail.gmail.com>
+References: <1338152074-30747-1-git-send-email-devendra.aaru@gmail.com>
+	 <CAKPrQY8O0=PQroL6vYOCATG3WUx1ChgqW9rFqhuY2G7Q7oj3WA@mail.gmail.com>
+	 <1338172734.977.3.camel@joe2Laptop>
+	 <CAHdPZaMbzWBUsaTKYiApnZxhaGRqSaaaHdpPtiYSKrFLrn0rdg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Joe,
+On Mon, 2012-05-28 at 09:53 +0530, devendra.aaru wrote:
+> Hello Joe,
+> 
+> On Mon, May 28, 2012 at 8:08 AM, Joe Perches <joe@perches.com> wrote:
+> > On Sun, 2012-05-27 at 22:30 -0400, Kevin McKinney wrote:
+> >> Hi Devendra,
+> >>
+> >> On Sun, May 27, 2012 at 4:54 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+> >> > Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> >> > ---
+> >> >  drivers/staging/bcm/Debug.h |    6 +++---
+> >> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >> >
+> >> I understand this is a simple change, but please add a descriptive
+> >> change log to your patch for consistency.
+> >
+> > Hello as well.
+> >
+> > Devendra, sometimes the simpler change isn't the best change.
+> > Consider converting some of these macros into functions.
+> >
+> So How about converting BCM_DEBUG_PRINT, BCM_DEBUG_PRINT_BUFFER,
+> BCM_SHOW_DEBUG_BITMAP into a single function? and using a type to
+> print the corresponding values?
 
-On Mon, May 28, 2012 at 8:08 AM, Joe Perches <joe@perches.com> wrote:
-> On Sun, 2012-05-27 at 22:30 -0400, Kevin McKinney wrote:
->> Hi Devendra,
->>
->> On Sun, May 27, 2012 at 4:54 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
->> > Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
->> > ---
->> >  drivers/staging/bcm/Debug.h |    6 +++---
->> >  1 file changed, 3 insertions(+), 3 deletions(-)
->> >
->> I understand this is a simple change, but please add a descriptive
->> change log to your patch for consistency.
->
-> Hello as well.
->
-> Devendra, sometimes the simpler change isn't the best change.
-> Consider converting some of these macros into functions.
->
-So How about converting BCM_DEBUG_PRINT, BCM_DEBUG_PRINT_BUFFER,
-BCM_SHOW_DEBUG_BITMAP into a single function? and using a type to
-print the corresponding values?
->
-Thanks,
-Devendra.
+I think it'd be better with 3 functions.
+
+Maybe something like the below:
+
+But read the TODO file.  I'm not sure if
+there's any value in working on bcm at all.
+---
+
+ create mode 100644 drivers/staging/bcm/Debug.c
+
+diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
+new file mode 100644
+index 0000000..3ca720c
+--- /dev/null
++++ b/drivers/staging/bcm/Debug.c
+@@ -0,0 +1,53 @@
++#include "headers.h"
++
++void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
++		     int dbg_level, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	if (DBG_TYPE_PRINTK == Type)
++		pr_info("%s: %pV", __func__, &vaf);
++	else if (Adapter &&
++		 (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
++		 (Type & Adapter->stDebugState.type) &&
++		 (SubType & Adapter->stDebugState.subtype[Type])) {
++		if (dbg_level & DBG_NO_FUNC_PRINT)
++			printk(KERN_DEBUG "%pV" , &vaf);
++		else
++			printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
++	}
++
++	va_end(args);
++}
++
++void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
++			    int dbg_level, const void *buffer, size_t bufferlen)
++{
++	if (DBG_TYPE_PRINTK == Type ||
++	    (Adapter &&
++	     (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level  &&
++	     (Type & Adapter->stDebugState.type) &&
++	     (SubType & Adapter->stDebugState.subtype[Type]))) {
++		printk(KERN_DEBUG "%s:\n", __func__);
++		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
++			       16, 1, buffer, bufferlen, false);
++	}
++}
++
++void bcm_show_debug_bitmap(PMINI_ADAPTER Adapter)
++{
++	int i;
++	for (i = 0; i < (NUMTYPES * 2) + 1; i++) {
++		if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
++					"subtype[%d] = 0x%08x\n",
++					i, Adapter->stDebugState.subtype[i]);
++		}
++	}
++}
+diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
+index 420382d..0fbb206 100644
+--- a/drivers/staging/bcm/Debug.h
++++ b/drivers/staging/bcm/Debug.h
+@@ -203,57 +203,35 @@ typedef struct _S_BCM_DEBUG_STATE {
+ 	 * corresponding to valid Type values. Hence we use the 'Type' field
+ 	 * as the index value, ignoring the array entries 0,3,5,6,7 !
+ 	 */
+-	UINT subtype[(NUMTYPES*2)+1];
++	UINT subtype[(NUMTYPES * 2) + 1];
+ 	UINT debug_level;
+ } S_BCM_DEBUG_STATE;
+ /* Instantiated in the Adapter structure */
+ /* We'll reuse the debug level parameter to include a bit (the MSB) to indicate whether or not
+  * we want the function's name printed.  */
+-#define DBG_NO_FUNC_PRINT	1 << 31
++#define DBG_NO_FUNC_PRINT	(1 << 31)
+ #define DBG_LVL_BITMASK		0xFF
+ 
+ //--- Only for direct printk's; "hidden" to API.
+ #define DBG_TYPE_PRINTK		3
+ 
+-#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, string, args...) \
+-	do {								\
+-		if (DBG_TYPE_PRINTK == Type)				\
+-			pr_info("%s:" string, __func__, ##args);	\
+-		else if (Adapter &&					\
+-			 (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level && \
+-			 (Type & Adapter->stDebugState.type) &&		\
+-			 (SubType & Adapter->stDebugState.subtype[Type])) { \
+-			if (dbg_level & DBG_NO_FUNC_PRINT)		\
+-				printk(KERN_DEBUG string, ##args);	\
+-			else						\
+-				printk(KERN_DEBUG "%s:" string, __func__, ##args);	\
+-		}							\
+-	} while (0)
+-
+-#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,  buffer, bufferlen) do { \
+-	if (DBG_TYPE_PRINTK == Type ||					\
+-	    (Adapter &&							\
+-	     (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level  && \
+-	     (Type & Adapter->stDebugState.type) &&			\
+-	     (SubType & Adapter->stDebugState.subtype[Type]))) {	\
+-		printk(KERN_DEBUG "%s:\n", __func__);			\
+-		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,	\
+-			       16, 1, buffer, bufferlen, false);	\
+-	}								\
+-} while(0)
+-
+-
+-#define BCM_SHOW_DEBUG_BITMAP(Adapter)	do { \
+-	int i;									\
+-	for (i=0; i<(NUMTYPES*2)+1; i++) {		\
+-		if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {		\
+-		/* CAUTION! Forcefully turn on ALL debug paths and subpaths!	\
+-		Adapter->stDebugState.subtype[i] = 0xffffffff;	*/ \
+-		BCM_DEBUG_PRINT (Adapter, DBG_TYPE_PRINTK, 0, 0, "subtype[%d] = 0x%08x\n", 	\
+-		i, Adapter->stDebugState.subtype[i]);	\
+-		}	\
+-	}		\
+-} while (0)
++struct _MINI_ADAPTER;
+ 
+-#endif
++__printf(5, 6)
++void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
++		     int dbg_level, const char *fmt, ...);
++void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
++			    int dbg_level, const void *buffer, size_t bufferlen);
++void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
++
++#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...)	\
++	bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
+ 
++#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,	\
++			       buffer, bufferlen)			\
++	bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,	\
++			       buffer, bufferlen)
++#define BCM_SHOW_DEBUG_BITMAP(Adapter)					\
++	bcm_show_debug_bitmap(Adapter)
++
++#endif
+diff --git a/drivers/staging/bcm/Makefile b/drivers/staging/bcm/Makefile
+index 652b7f8..a858ac1 100644
+--- a/drivers/staging/bcm/Makefile
++++ b/drivers/staging/bcm/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_BCM_WIMAX) +=	bcm_wimax.o
+ bcm_wimax-y :=  InterfaceDld.o InterfaceIdleMode.o InterfaceInit.o InterfaceRx.o \
+ 		InterfaceIsr.o InterfaceMisc.o InterfaceTx.o \
+ 		CmHost.o IPv6Protocol.o Qos.o Transmit.o\
++		Debug.o\
+ 		Bcmnet.o DDRInit.o HandleControlPacket.o\
+ 		LeakyBucket.o Misc.o sort.o Bcmchar.o hostmibs.o PHSModule.o\
+ 		led_control.o nvm.o vendorspecificextn.o
+-- 
+1.7.6.rc3
+
+
+
