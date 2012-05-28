@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2E1PEY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 11:04:24 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61127 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2E1PEW convert rfc822-to-8bit (ORCPT
+	id S1753609Ab2E1PKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 11:10:50 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55858 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab2E1PKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 11:04:22 -0400
+	Mon, 28 May 2012 11:10:49 -0400
+Message-ID: <4FC39572.6010709@linux.vnet.ibm.com>
+Date: Mon, 28 May 2012 20:40:42 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <4FC38DBD.4070406@redhat.com>
-References: <20120420020013.GA19964@windriver.com>
-	<CAMuHMdUUgysVqz226jhK42nvYNaX7yvexpqRjOPx0QpvzUwVXg@mail.gmail.com>
-	<4FC38DBD.4070406@redhat.com>
-Date: Mon, 28 May 2012 17:04:21 +0200
-X-Google-Sender-Auth: Fp7VcyCIfj-Syat9lDN9n-nksWE
-Message-ID: <CAMuHMdXf6O249NttPgeQzWkGfLu_Ocod80ecXaaFy+SqZQNmcg@mail.gmail.com>
-Subject: Re: linux-next: triage for April 19, 2012
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Stephane Eranian <eranian@google.com>
+CC: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        mingo@elte.hu
+Subject: Re: [PATCH] perf record: fix branch_stack type in perf_record_opts
+References: <20120525211344.GA7729@quad>
+In-Reply-To: <20120525211344.GA7729@quad>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052815-5564-0000-0000-000002FAC216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Avi,
+On Saturday 26 May 2012 02:43 AM, Stephane Eranian wrote:
 
-On Mon, May 28, 2012 at 4:37 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 05/25/2012 11:59 PM, Geert Uytterhoeven wrote:
->> On Fri, Apr 20, 2012 at 4:00 AM, Paul Gortmaker
->> <paul.gortmaker@windriver.com> wrote:
->>> The parisc got borked by some kvm header shuffle it seems?
->>> Now complaining about "file 'asm-generic/kvm_para.h' is not exported"
->>> [ http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/ ]
->>
->> Not only parisc.
->>
->> This breakage has now entered mainline:
->>
->> parisc deconfig http://kisskb.ellerman.id.au/kisskb/buildresult/6365677/
->> m68k allmodconfig: http://kisskb.ellerman.id.au/kisskb/buildresult/6365681/
->
->
-> Does the following patch help?
+> 
+> The attr.branch_sample_type field is defined as u64 by the API.
+> As such, we need to ensure the variable holding the value of the
+> branch stack filters is also u64 otherwise we may lose bits in
+> the future.
+> 
+> Note also that the bogus definition of the field in
+> perf_record_opts caused problems on big-endian PPC systems.
+> Thanks to Anshuman Khandual for tracking the problem on PPC.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Thanks, that fixes it!
 
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 
-> From: Avi Kivity <avi@redhat.com>
-> Date: Mon, 28 May 2012 17:35:22 +0300
-> Subject: [PATCH] KVM: Export asm-generic/kvm_para.h
->
-> Prevents build failures on non-KVM archs.
->
-> Signed-off-by: Avi Kivity <avi@redhat.com>
 > ---
->  include/asm-generic/Kbuild |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/include/asm-generic/Kbuild b/include/asm-generic/Kbuild
-> index 53f91b1..2c85a0f 100644
-> --- a/include/asm-generic/Kbuild
-> +++ b/include/asm-generic/Kbuild
-> @@ -8,6 +8,7 @@ header-y += int-ll64.h
->  header-y += ioctl.h
->  header-y += ioctls.h
->  header-y += ipcbuf.h
-> +header-y += kvm_para.h
->  header-y += mman-common.h
->  header-y += mman.h
->  header-y += msgbuf.h
->
+> 
+> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+> index 14f1034..f960ccb 100644
+> --- a/tools/perf/perf.h
+> +++ b/tools/perf/perf.h
+> @@ -227,7 +227,7 @@ struct perf_record_opts {
+>  	unsigned int freq;
+>  	unsigned int mmap_pages;
+>  	unsigned int user_freq;
+> -	int	     branch_stack;
+> +	u64          branch_stack;
+>  	u64	     default_interval;
+>  	u64	     user_interval;
+>  };
+> 
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
