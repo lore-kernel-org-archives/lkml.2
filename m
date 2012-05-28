@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab2E1D31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51935 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753585Ab2E1D3O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753588Ab2E1D3O (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 27 May 2012 23:29:14 -0400
-Message-Id: <20120528031207.304707365@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51855 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753369Ab2E1D3D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 23:29:03 -0400
+Message-Id: <20120528031205.222288360@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:34 +0100
+Date: Mon, 28 May 2012 04:12:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [ 032/117] Fix blocking allocations called very early during bootup
+        alan@lxorguk.ukuu.org.uk,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Scott Teel <scott.teel@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 017/117] [SCSI] hpsa: Fix problem with MSA2xxx devices
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,67 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-commit 31a67102f4762df5544bc2dfb34a931233d2a5b2 upstream.
+commit 9bc3711cbb67ac620bf09b4a147cbab45b2c36c0 upstream.
 
-During early boot, when the scheduler hasn't really been fully set up,
-we really can't do blocking allocations because with certain (dubious)
-configurations the "might_resched()" calls can actually result in
-scheduling events.
+Upgraded firmware on Smart Array P7xx (and some others) made them show up as
+SCSI revision 5 devices and this caused the driver to fail to map MSA2xxx
+logical drives to the correct bus/target/lun.  A symptom of this would be that
+the target ID of the logical drives as presented by the external storage array
+is ignored, and all such logical drives are assigned to target zero,
+differentiated only by LUN.  Some multipath software reportedly does not deal
+well with this behavior, failing to recognize different paths to the same
+device as such.
 
-We could just make such users always use GFP_ATOMIC, but quite often the
-code that does the allocation isn't really aware of the fact that the
-scheduler isn't up yet, and forcing that kind of random knowledge on the
-initialization code is just annoying and not good for anybody.
-
-And we actually have a the 'gfp_allowed_mask' exactly for this reason:
-it's just that the kernel init sequence happens to set it to allow
-blocking allocations much too early.
-
-So move the 'gfp_allowed_mask' initialization from 'start_kernel()'
-(which is some of the earliest init code, and runs with preemption
-disabled for good reasons) into 'kernel_init()'.  kernel_init() is run
-in the newly created thread that will become the 'init' process, as
-opposed to the early startup code that runs within the context of what
-will be the first idle thread.
-
-So by the time we reach 'kernel_init()', we know that the scheduler must
-be at least limping along, because we've already scheduled from the idle
-thread into the init thread.
-
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Rientjes <rientjes@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: Scott Teel <scott.teel@hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- init/main.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/scsi/hpsa.c |   34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
 
-diff --git a/init/main.c b/init/main.c
-index 44b2433..cb54cd3 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -560,9 +560,6 @@ asmlinkage void __init start_kernel(void)
- 	early_boot_irqs_disabled = false;
- 	local_irq_enable();
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index d048b69..4e7df2e 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1637,30 +1637,26 @@ static void figure_bus_target_lun(struct ctlr_info *h,
  
--	/* Interrupts are enabled now so all GFP allocations are safe. */
--	gfp_allowed_mask = __GFP_BITS_MASK;
--
- 	kmem_cache_init_late();
- 
- 	/*
-@@ -842,6 +839,10 @@ static int __init kernel_init(void * unused)
- 	 * Wait until kthreadd is all set-up.
- 	 */
- 	wait_for_completion(&kthreadd_done);
-+
-+	/* Now the scheduler is fully set up and can do blocking allocations */
-+	gfp_allowed_mask = __GFP_BITS_MASK;
-+
- 	/*
- 	 * init can allocate pages on any node
- 	 */
+ 	if (is_logical_dev_addr_mode(lunaddrbytes)) {
+ 		/* logical device */
+-		if (unlikely(is_scsi_rev_5(h))) {
+-			/* p1210m, logical drives lun assignments
+-			 * match SCSI REPORT LUNS data.
++		lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
++		if (is_msa2xxx(h, device)) {
++			/* msa2xxx way, put logicals on bus 1
++			 * and match target/lun numbers box
++			 * reports.
+ 			 */
+-			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
+-			*bus = 0;
+-			*target = 0;
+-			*lun = (lunid & 0x3fff) + 1;
++			*bus = 1;
++			*target = (lunid >> 16) & 0x3fff;
++			*lun = lunid & 0x00ff;
+ 		} else {
+-			/* not p1210m... */
+-			lunid = le32_to_cpu(*((__le32 *) lunaddrbytes));
+-			if (is_msa2xxx(h, device)) {
+-				/* msa2xxx way, put logicals on bus 1
+-				 * and match target/lun numbers box
+-				 * reports.
+-				 */
+-				*bus = 1;
+-				*target = (lunid >> 16) & 0x3fff;
+-				*lun = lunid & 0x00ff;
++			if (likely(is_scsi_rev_5(h))) {
++				/* All current smart arrays (circa 2011) */
++				*bus = 0;
++				*target = 0;
++				*lun = (lunid & 0x3fff) + 1;
+ 			} else {
+-				/* Traditional smart array way. */
++				/* Traditional old smart array way. */
+ 				*bus = 0;
+-				*lun = 0;
+ 				*target = lunid & 0x3fff;
++				*lun = 0;
+ 			}
+ 		}
+ 	} else {
 
 
