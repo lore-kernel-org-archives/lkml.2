@@ -1,121 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab2E1CUw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 22:20:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18240 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab2E1CUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 22:20:50 -0400
-From: Asias He <asias@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Asias He <asias@redhat.com>
-Subject: [PATCH v2] block: Mitigate lock unbalance caused by lock disconnect
-Date: Mon, 28 May 2012 10:20:03 +0800
-Message-Id: <1338171603-14393-1-git-send-email-asias@redhat.com>
-In-Reply-To: <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1753050Ab2E1Ca5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 22:30:57 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54858 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab2E1Ca4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 22:30:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338152074-30747-1-git-send-email-devendra.aaru@gmail.com>
+References: <1338152074-30747-1-git-send-email-devendra.aaru@gmail.com>
+Date: Sun, 27 May 2012 22:30:54 -0400
+Message-ID: <CAKPrQY8O0=PQroL6vYOCATG3WUx1ChgqW9rFqhuY2G7Q7oj3WA@mail.gmail.com>
+Subject: Re: [PATCH] [staging] bcm: Fix codingstyle problems
+From: Kevin McKinney <klmckinney1@gmail.com>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 777eb1bf15b8532c396821774bf6451e563438f5 disconnects externally
-supplied queue_lock before blk_drain_queue(). This would introduce lock
-unbalance because theads which have taken the external lock might unlock
-the internal lock in the during the queue drain.
+Hi Devendra,
 
-This patch mitigate this by disconnecting the lock after the queue
-draining since queue draining makes a lot of request_queue users go
-away.
+On Sun, May 27, 2012 at 4:54 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>  drivers/staging/bcm/Debug.h |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+>
+I understand this is a simple change, but please add a descriptive
+change log to your patch for consistency.
 
- =====================================
- [ BUG: bad unlock balance detected! ]
- 3.4.0+ #288 Not tainted
- -------------------------------------
- fio/17706 is trying to release lock (&(&q->__queue_lock)->rlock) at:
- [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
- but there are no more locks to release!
-
- other info that might help us debug this:
- 1 lock held by fio/17706:
-  #0:  (&(&vblk->lock)->rlock){......}, at: [<ffffffff81327f1a>]
- get_request_wait+0x19a/0x250
-
- stack backtrace:
- Pid: 17706, comm: fio Not tainted 3.4.0+ #288
- Call Trace:
-  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
-  [<ffffffff810dea49>] print_unlock_inbalance_bug+0xf9/0x100
-  [<ffffffff810dfe4f>] lock_release_non_nested+0x1df/0x330
-  [<ffffffff811dae24>] ? dio_bio_end_aio+0x34/0xc0
-  [<ffffffff811d6935>] ? bio_check_pages_dirty+0x85/0xe0
-  [<ffffffff811daea1>] ? dio_bio_end_aio+0xb1/0xc0
-  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
-  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
-  [<ffffffff810e0079>] lock_release+0xd9/0x250
-  [<ffffffff81a74553>] _raw_spin_unlock_irq+0x23/0x40
-  [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
-  [<ffffffff81328faa>] generic_make_request+0xca/0x100
-  [<ffffffff81329056>] submit_bio+0x76/0xf0
-  [<ffffffff8115470c>] ? set_page_dirty_lock+0x3c/0x60
-  [<ffffffff811d69e1>] ? bio_set_pages_dirty+0x51/0x70
-  [<ffffffff811dd1a8>] do_blockdev_direct_IO+0xbf8/0xee0
-  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
-  [<ffffffff811dd4e5>] __blockdev_direct_IO+0x55/0x60
-  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
-  [<ffffffff811d92e7>] blkdev_direct_IO+0x57/0x60
-  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
-  [<ffffffff8114c6ae>] generic_file_aio_read+0x70e/0x760
-  [<ffffffff810df7c5>] ? __lock_acquire+0x215/0x5a0
-  [<ffffffff811e9924>] ? aio_run_iocb+0x54/0x1a0
-  [<ffffffff8114bfa0>] ? grab_cache_page_nowait+0xc0/0xc0
-  [<ffffffff811e82cc>] aio_rw_vect_retry+0x7c/0x1e0
-  [<ffffffff811e8250>] ? aio_fsync+0x30/0x30
-  [<ffffffff811e9936>] aio_run_iocb+0x66/0x1a0
-  [<ffffffff811ea9b0>] do_io_submit+0x6f0/0xb80
-  [<ffffffff8134de2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-  [<ffffffff811eae50>] sys_io_submit+0x10/0x20
-  [<ffffffff81a7c9e9>] system_call_fastpath+0x16/0x1b
-
-Changes since v1: Update commit log as Tejun suggested.
-
-Signed-off-by: Asias He <asias@redhat.com>
----
- block/blk-core.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 1f61b74..7b4f6fe 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -416,15 +416,10 @@ void blk_cleanup_queue(struct request_queue *q)
- 	/* mark @q DEAD, no new request or merges will be allowed afterwards */
- 	mutex_lock(&q->sysfs_lock);
- 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
--
- 	spin_lock_irq(lock);
- 	queue_flag_set(QUEUE_FLAG_NOMERGES, q);
- 	queue_flag_set(QUEUE_FLAG_NOXMERGES, q);
- 	queue_flag_set(QUEUE_FLAG_DEAD, q);
--
--	if (q->queue_lock != &q->__queue_lock)
--		q->queue_lock = &q->__queue_lock;
--
- 	spin_unlock_irq(lock);
- 	mutex_unlock(&q->sysfs_lock);
- 
-@@ -440,6 +435,11 @@ void blk_cleanup_queue(struct request_queue *q)
- 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
- 	blk_sync_queue(q);
- 
-+	spin_lock_irq(lock);
-+	if (q->queue_lock != &q->__queue_lock)
-+		q->queue_lock = &q->__queue_lock;
-+	spin_unlock_irq(lock);
-+
- 	/* @q is and will stay empty, shutdown and put */
- 	blk_put_queue(q);
- }
--- 
-1.7.10.2
-
+Thanks,
+Kevin
