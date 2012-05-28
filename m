@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab2E1K0X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 06:26:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:60900 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753465Ab2E1K0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 06:26:21 -0400
-Date: Mon, 28 May 2012 19:26:14 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Asias He <asias@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Avoid missed wakeup in request waitqueue
-Message-ID: <20120528102614.GC15202@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1338178743-16956-1-git-send-email-asias@redhat.com>
+	id S1753582Ab2E1Kgn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 06:36:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1872 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753209Ab2E1Kgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 06:36:42 -0400
+Message-ID: <4FC35535.90401@redhat.com>
+Date: Mon, 28 May 2012 13:36:37 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338178743-16956-1-git-send-email-asias@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Hao, Xudong" <xudong.hao@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "takuya.yoshikawa@gmail.com" <takuya.yoshikawa@gmail.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>,
+        "Shan, Haitao" <haitao.shan@intel.com>
+Subject: Re: [PATCH v3 4/4] Enabling Access bit when doing memory swapping
+References: <1337656995-24964-1-git-send-email-xudong.hao@intel.com> <403610A45A2B5242BD291EDAE8B37D300FDC8918@SHSMSX102.ccr.corp.intel.com>
+In-Reply-To: <403610A45A2B5242BD291EDAE8B37D300FDC8918@SHSMSX102.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 12:19:03PM +0800, Asias He wrote:
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 1f61b74..1a45877 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -359,9 +359,10 @@ EXPORT_SYMBOL(blk_put_queue);
->   */
->  void blk_drain_queue(struct request_queue *q, bool drain_all)
->  {
-> +	int i;
-> +
->  	while (true) {
->  		bool drain = false;
-> -		int i;
->  
->  		spin_lock_irq(q->queue_lock);
->  
-> @@ -400,6 +401,14 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
->  			break;
->  		msleep(10);
->  	}
-> +
-> +	/* Wake up threads which are sleeping on get_request() */
-> +	spin_lock_irq(q->queue_lock);
-> +	for (i = 0; i < ARRAY_SIZE(q->rq.wait); i++) {
-> +		if (waitqueue_active(&q->rq.wait[i]))
-> +			wake_up_all(&q->rq.wait[i]);
-> +	}
-> +	spin_unlock_irq(q->queue_lock);
+On 05/23/2012 04:31 PM, Hao, Xudong wrote:
+> Hi, Avi
+> 
+> Will these patches be accepted if no other comments?
+> 
 
-I don't think we need waitqueue_active() optimization here.  Let's
-just do,
+I can't see the other patches (use git send-email if possible) but this
+one looks fine.
 
-	/* please explain why this is necessary */
-	for (i = 0; i < ARRAY_SIZE(q->rq.wait); i++)
-		wake_up_all(&q->rq.wait[i]);
-
-Thanks.
 
 -- 
-tejun
+error compiling committee.c: too many arguments to function
