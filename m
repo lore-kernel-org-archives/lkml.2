@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab2E1PKu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 11:10:50 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55858 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab2E1PKt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 11:10:49 -0400
-Message-ID: <4FC39572.6010709@linux.vnet.ibm.com>
-Date: Mon, 28 May 2012 20:40:42 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        mingo@elte.hu
-Subject: Re: [PATCH] perf record: fix branch_stack type in perf_record_opts
-References: <20120525211344.GA7729@quad>
-In-Reply-To: <20120525211344.GA7729@quad>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754102Ab2E1PMj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 11:12:39 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:49293 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752215Ab2E1PMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 11:12:37 -0400
+Message-ID: <1338217956.2202.27.camel@joe2Laptop>
+Subject: Re: [PATCH V3] checkpatch: check for whitespace before semicolon at
+ EOL
+From: Joe Perches <joe@perches.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Eric Nelson <eric.nelson@boundarydevices.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Date: Mon, 28 May 2012 08:12:36 -0700
+In-Reply-To: <20120528144259.GA5878@dm>
+References: <1338163246-6727-1-git-send-email-eric.nelson@boundarydevices.com>
+	 <20120528144259.GA5878@dm>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12052815-5564-0000-0000-000002FAC216
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 26 May 2012 02:43 AM, Stephane Eranian wrote:
+On Mon, 2012-05-28 at 15:42 +0100, Andy Whitcroft wrote:
+> On Sun, May 27, 2012 at 05:00:46PM -0700, Eric Nelson wrote:
+> > +# check for whitespace before a non-naked semicolon
+> > +		if ($line =~ /^\+.*\S\s+;/) {
+> > +			CHK("SPACING",
+> > +			    "space prohibited before semicolon\n" . $herecurr);
+> > +		}
+> > +
+> 
+> Would this not also falsly trigger on 'for (foo = 10; foo; foo--) {' ?
 
-> 
-> The attr.branch_sample_type field is defined as u64 by the API.
-> As such, we need to ensure the variable holding the value of the
-> branch stack filters is also u64 otherwise we may lose bits in
-> the future.
-> 
-> Note also that the bogus definition of the field in
-> perf_record_opts caused problems on big-endian PPC systems.
-> Thanks to Anshuman Khandual for tracking the problem on PPC.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-
-
-Acked-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-
-> ---
-> 
-> diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-> index 14f1034..f960ccb 100644
-> --- a/tools/perf/perf.h
-> +++ b/tools/perf/perf.h
-> @@ -227,7 +227,7 @@ struct perf_record_opts {
->  	unsigned int freq;
->  	unsigned int mmap_pages;
->  	unsigned int user_freq;
-> -	int	     branch_stack;
-> +	u64          branch_stack;
->  	u64	     default_interval;
->  	u64	     user_interval;
->  };
-> 
+No, it checks for a non-space, then requires whitespace before the semi
 
 
