@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754827Ab2E1RUM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 13:20:12 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61821 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab2E1RUK (ORCPT
+	id S1754805Ab2E1RWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 13:22:50 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47935 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab2E1RWs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 13:20:10 -0400
-Message-ID: <1338225668.4284.29.camel@lappy>
-Subject: Re: Wrong usage of hash in L2TP leading to NULL ptr derefs
-From: Sasha Levin <levinsasha928@gmail.com>
-To: James Chapman <jchapman@katalix.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 28 May 2012 19:21:08 +0200
-In-Reply-To: <4FC3A599.1040909@katalix.com>
-References: <1338221539.4284.25.camel@lappy> <4FC3A599.1040909@katalix.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 28 May 2012 13:22:48 -0400
+Subject: Re: [PATCH] memcg: remove the unnecessary MEM_CGROUP_STAT_DATA
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Chen Baozi <baozich@gmail.com>
+In-Reply-To: <20120528133918.GA22185@tiehlicka.suse.cz>
+Date: Tue, 29 May 2012 01:22:41 +0800
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B23B2709-F70C-4B47-80CC-FBC3AA40A907@gmail.com>
+References: <1337933501-3985-1-git-send-email-baozich@gmail.com> <20120528133918.GA22185@tiehlicka.suse.cz>
+To: Michal Hocko <mhocko@suse.cz>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
 
-On Mon, 2012-05-28 at 17:19 +0100, James Chapman wrote:
-> On 28/05/12 17:12, Sasha Levin wrote:
-> > Hi all,
-> > 
-> > Looking at net/l2tp/l2tp_ip{6}.c, l2tp uses UDP for communications, but
-> > uses inet_hash and inet_unhash for hashing - which appears to be wrong
-> > (and causes NULL ptr derefs during runtime).
+On May 28, 2012, at 9:39 PM, Michal Hocko wrote:
+
+> On Fri 25-05-12 16:11:41, Chen Baozi wrote:
+>> Since MEM_CGROUP_ON_MOVE has been removed, it comes to be redudant
+>> to hold MEM_CGROUP_STAT_DATA to mark the end of data requires
+>> synchronization.
 > 
-> L2TPv3 also supports IP encapsulation, which is L2TP directly in IP, no
-> UDP. That's what the l2tp_ip[6] code implements.
+> A similar patch has been already posted by Johannes 2 weeks ago
+> (http://www.gossamer-threads.com/lists/linux/kernel/1535888) and it
+> should appear in -next soonish.
+Oh, I see, Thanks for informing.
 
-Hm... Odd, I thought it uses UDP because there I saw it using udp_disconnect, udp_ioctl, and friends...
+Baozi
 
-> Can you post an oops with steps for how to reproduce it?
-
-Sure!
-
-The code is pretty simple:
-
-#include <linux/l2tp.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-void main(void)
-{
-        struct sockaddr addr = { .sa_family = AF_UNSPEC };
-        connect(socket(AF_INET, SOCK_DGRAM, IPPROTO_L2TP), &addr, sizeof(addr));
-}
-
-
-And the BUG it produces:
-
-[   18.161780] BUG: unable to handle kernel NULL pointer dereference at 0000000000000014
-[   18.162025] IP: [<ffffffff82e133b0>] inet_unhash+0x50/0xd0
-[   18.162025] PGD 4066e067 PUD 40661067 PMD 0 
-[   18.162025] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   18.162025] CPU 1 
-[   18.162025] Pid: 5821, comm: a.out Tainted: G        W    3.4.0-next-20120528-sasha-00009-gd406307 #309 Bochs Bochs
-[   18.162025] RIP: 0010:[<ffffffff82e133b0>]  [<ffffffff82e133b0>] inet_unhash+0x50/0xd0
-[   18.162025] RSP: 0018:ffff88001989be28  EFLAGS: 00010293
-[   18.162025] RAX: 0000000000000000 RBX: ffff8800407a8000 RCX: 0000000000000000
-[   18.162025] RDX: 0000000000000007 RSI: 0000000000000000 RDI: ffff8800407a8000
-[   18.162025] RBP: ffff88001989be38 R08: 0000000000000000 R09: 0000000000000001
-[   18.162025] R10: 0000000000000001 R11: 0000000000000001 R12: ffff8800407a8000
-[   18.162025] R13: ffff88001989bec8 R14: 00007fff79818700 R15: 0000000000000000
-[   18.162025] FS:  00007f312ff36700(0000) GS:ffff88001b800000(0000) knlGS:0000000000000000
-[   18.162025] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   18.162025] CR2: 0000000000000014 CR3: 0000000040793000 CR4: 00000000000407e0
-[   18.162025] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   18.162025] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   18.162025] Process a.out (pid: 5821, threadinfo ffff88001989a000, task ffff880019c18000)
-[   18.162025] Stack:
-[   18.162025]  ffff8800407a8000 0000000000000000 ffff88001989be78 ffffffff82e3a249
-[   18.162025]  ffffffff82e3a050 ffff88001989bec8 ffff88001989be88 ffff8800407a8000
-[   18.162025]  0000000000000010 ffff88001989bec8 ffff88001989bea8 ffffffff82e42639
-[   18.162025] Call Trace:
-[   18.162025]  [<ffffffff82e3a249>] udp_disconnect+0x1f9/0x290
-[   18.162025]  [<ffffffff82e3a050>] ? udp_rcv+0x20/0x20
-[   18.162025]  [<ffffffff82e42639>] inet_dgram_connect+0x29/0x80
-[   18.162025]  [<ffffffff82d00645>] ? move_addr_to_kernel+0x35/0x80
-[   18.162025]  [<ffffffff82d012fc>] sys_connect+0x9c/0x100
-[   18.162025]  [<ffffffff8325c319>] ? retint_swapgs+0x13/0x1b
-[   18.162025]  [<ffffffff81968f7e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[   18.162025]  [<ffffffff8325cbf9>] system_call_fastpath+0x16/0x1b
-[   18.162025] Code: fa 0a 75 27 48 8b 57 30 0f b7 8f 2a 05 00 00 48 c1 ea 06 8d 14 11 83 e2 1f 48 8d 14 92 48 c1 e2 04 48 8d 5c 10 40 eb 15 0f 1f 00 <8b> 50 14 23 57 08 48 8d 1c d2 48 c1 e3 03 48 03 58 08 48 89 df 
-[   18.162025] RIP  [<ffffffff82e133b0>] inet_unhash+0x50/0xd0
-[   18.162025]  RSP <ffff88001989be28>
-[   18.162025] CR2: 0000000000000014
-[   18.409434] ---[ end trace 8f6ca168297608b9 ]---
+> 
+>> 
+>> Signed-off-by: Chen Baozi <baozich@gmail.com>
+>> ---
+>> mm/memcontrol.c |    3 +--
+>> 1 files changed, 1 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index f342778..446ca94 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -88,7 +88,6 @@ enum mem_cgroup_stat_index {
+>> 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+>> 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>> 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>> -	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+>> 	MEM_CGROUP_STAT_NSTATS,
+>> };
+>> 
+>> @@ -2139,7 +2138,7 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *memcg, int cpu)
+>> 	int i;
+>> 
+>> 	spin_lock(&memcg->pcp_counter_lock);
+>> -	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
+>> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+>> 		long x = per_cpu(memcg->stat->count[i], cpu);
+>> 
+>> 		per_cpu(memcg->stat->count[i], cpu) = 0;
+>> -- 
+>> 1.7.1
+>> 
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> SUSE LINUX s.r.o.
+> Lihovarska 1060/12
+> 190 00 Praha 9    
+> Czech Republic
 
