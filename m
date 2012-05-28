@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2E1Dnt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:43:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52096 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753919Ab2E1D3d (ORCPT
+	id S1755234Ab2E1Dn4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:43:56 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39333 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060Ab2E1Dnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:33 -0400
-Message-Id: <20120528031214.326681665@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:25 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kazuya Mio <k-mio@sx.jp.nec.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 083/117] wake up s_wait_unfrozen when ->freeze_fs fails
-In-Reply-To: <20120528031202.829379252@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 27 May 2012 23:43:52 -0400
+Date: Mon, 28 May 2012 13:43:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sparc: fix bad merge of sparc Kconfig
+Message-Id: <20120528134348.c934fef7360aa10683fc3a28@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+--Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------------------
+Fixes this sparc32 defconfig build error:
 
-From: Kazuya Mio <k-mio@sx.jp.nec.com>
+timekeeping.c:(.text+0x277c4): undefined reference to `arch_gettimeoffset'
 
-commit e1616300a20c80396109c1cf013ba9a36055a3da upstream.
-
-dd slept infinitely when fsfeeze failed because of EIO.
-To fix this problem, if ->freeze_fs fails, freeze_super() wakes up
-the tasks waiting for the filesystem to become unfrozen.
-
-When s_frozen isn't SB_UNFROZEN in __generic_file_aio_write(),
-the function sleeps until FITHAW ioctl wakes up s_wait_unfrozen.
-
-However, if ->freeze_fs fails, s_frozen is set to SB_UNFROZEN and then
-freeze_super() returns an error number. In this case, FITHAW ioctl returns
-EINVAL because s_frozen is already SB_UNFROZEN. There is no way to wake up
-s_wait_unfrozen, so __generic_file_aio_write() sleeps infinitely.
-
-Signed-off-by: Kazuya Mio <k-mio@sx.jp.nec.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- fs/super.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/Kconfig |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index de41e1e..6015c02 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1186,6 +1186,8 @@ int freeze_super(struct super_block *sb)
- 			printk(KERN_ERR
- 				"VFS:Filesystem freeze failed\n");
- 			sb->s_frozen = SB_UNFROZEN;
-+			smp_wmb();
-+			wake_up(&sb->s_wait_unfrozen);
- 			deactivate_locked_super(sb);
- 			return ret;
- 		}
+Dave, I have been carrying this merge fix in linux-next for a while and
+now it is needed in Linus' tree.
 
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 9be0dd2..35e08fe 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -39,7 +39,6 @@ config SPARC32
+ 	def_bool !64BIT
+ 	select GENERIC_ATOMIC64
+ 	select CLZ_TAB
+-	select ARCH_USES_GETTIMEOFFSET
+=20
+ config SPARC64
+ 	def_bool 64BIT
+--=20
+1.7.10.280.gaa39
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPwvR0AAoJEECxmPOUX5FEJDYP/3qLmftAmkgtAYym0k4lfoTo
+yNcVe1D/XHVOWg0123+ex5mh90iRmggqiCQkfc1+FOiCPrKNUYg5Ve5A1xEF3bdI
+mm1JKxMFJhUyD0LFBRhbm8rAdMXxxwoswGW4ZBR29NdH8cZ2aPeWJJLiPa3pbcpy
+k9ghz3xVSnQVsXV5a6KaoD+BHnhTx9N6IYKNupe7wdyWWW86wTkieRtgfphmx27X
+VMVHxOOikdxo4vLIqWtReTBDGpKCX/reVJuqO/VAQUJfA2BNcCypWQrNScFzaWnB
+lmqBiLhnTnVpSX5dvENy+JrFExKz/JM/wB9Wte5+xAEnyMh3j3OeSz+6novN1odt
+z4whzbaH6Gt+nlRWFg613sRVm5MfHujJpUpifWdHE1BhqY/BgHjDEV6ve8HWrKYJ
+aNCRAcZ97zjiOTchbudawGyDYtDabEmu8JRzHREkENs5GdphgFVSdLN3uU39rcH8
+gGVRsA/+VU0YYD/VaThUc9RmPMb2NrhIND1GtkPk8yVcalcxNza2hLcrMSKuX6Lz
+BCzGrtYU8ER6BLfCrgSHJz9mfE4WkzxxKFLCyQ1hOUtABHZhBqLQGvsL8VkJ/6yf
+SDqG8tGSfxcRDfiNW5oEo7JD5irYrWl/yS2uwy8AAd4asA3RP80HsofuodVW5M65
+YtSwUW0rTo68ZZcEWSae
+=XC6/
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W--
