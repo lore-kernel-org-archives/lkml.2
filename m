@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab2E1FI4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 01:08:56 -0400
+	id S1754300Ab2E1FKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 01:10:25 -0400
 Received: from mga02.intel.com ([134.134.136.20]:32734 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab2E1FIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 01:08:52 -0400
+	id S1752804Ab2E1FJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 01:09:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="145291354"
+   d="scan'208";a="145291479"
 From: Lin Ming <ming.m.lin@intel.com>
 To: Jeff Garzik <jgarzik@pobox.com>,
         David Woodhouse <David.Woodhouse@intel.com>,
@@ -17,84 +17,54 @@ To: Jeff Garzik <jgarzik@pobox.com>,
 Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-acpi@vger.kernel.org
-Subject: [PATCH v4 0/13] SATA ZPODD support
-Date: Mon, 28 May 2012 13:08:27 +0800
-Message-Id: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
+Subject: [PATCH v4 13/13] [SCSI] sr: make sure ODD is in resumed state in block ioctl
+Date: Mon, 28 May 2012 13:08:40 +0800
+Message-Id: <1338181720-4149-14-git-send-email-ming.m.lin@intel.com>
 X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
+References: <1338181720-4149-1-git-send-email-ming.m.lin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Aaron Lu <aaron.lu@amd.com>
 
-This is the v4 patches to add SATA ZPODD support, to try it:
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/mlin/linux.git zpodd
+When application tries to access the ODD's block device by ioctl,
+make sure ODD is in an active state.
 
-Holger and Mathtew,
-Patch 1 to Patch 4 are the libata acpi binding patches from you.
-I removed dock related code from your original version.
-Would you help to review?
+Signed-off-by: Aaron Lu <aaron.lu@amd.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ drivers/scsi/sr.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-v4:
-- Includes libata acpi binding patches from Holger Macht and Matthew Garrett.
-- tell scsi layer device supports runtime power off
-- check support for device busy class events
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index 72488c2..3da0879 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -654,6 +654,13 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 	void __user *argp = (void __user *)arg;
+ 	int ret;
+ 
++	/* Make sure the ODD is not suspended */
++	ret = pm_runtime_get_sync(&sdev->sdev_gendev);
++	if (ret < 0) {
++		pm_runtime_put_noidle(&sdev->sdev_gendev);
++		return -EACCES;
++	}
++
+ 	mutex_lock(&sr_mutex);
+ 
+ 	/*
+@@ -685,6 +692,8 @@ static int sr_block_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+ 
+ out:
+ 	mutex_unlock(&sr_mutex);
++	pm_runtime_mark_last_busy(&cd->device->sdev_gendev);
++	pm_runtime_put_autosuspend(&cd->device->sdev_gendev);
+ 	return ret;
+ }
+ 
+-- 
+1.7.2.5
 
-v3:
-https://lkml.org/lkml/2012/3/28/20
-- Split the ACPI D3Cold state support patches out
-- Adds "Device Attention" bit check
-
-v2:
-https://lkml.org/lkml/2012/3/1/61
-- _PR3 indicates D3Cold support
-- move can_power_off flag to pm_subsys_data
-- allow all combinations of power resource and device
-- split patches into smaller ones to make review easy
-
-v1:
-https://lkml.org/lkml/2012/2/13/86
-
-
-Aaron Lu (5):
-      libata: tell scsi layer device supports runtime power off
-      [SCSI] pm: resume device if suspend failed
-      [SCSI] sr: check support for device busy class events
-      [SCSI] sr: support zero power ODD
-      [SCSI] sr: make sure ODD is in resumed state in block ioctl
-
-Holger Macht (2):
-      [SCSI]: add wrapper to access and set scsi_bus_type in struct acpi_bus_type
-      libata: use correct PCI devices
-
-Lin Ming (4):
-      libata-acpi: set acpi state for SATA port
-      libata-acpi: add ata port runtime D3Cold support
-      libata-acpi: register/unregister device to/from power resource
-      libata: detect Device Attention support
-
-Matthew Garrett (2):
-      libata: bind the Linux device tree to the ACPI device tree
-      libata: migrate ACPI code over to new bindings
-
-
- drivers/acpi/glue.c        |    2 +
- drivers/acpi/power.c       |    2 +
- drivers/ata/libata-acpi.c  |  389 +++++++++++++++++++++++++++++++-------------
- drivers/ata/libata-core.c  |    9 +-
- drivers/ata/libata-pmp.c   |    4 -
- drivers/ata/libata-scsi.c  |    3 +
- drivers/ata/libata.h       |   13 +-
- drivers/ata/pata_acpi.c    |    4 +-
- drivers/scsi/scsi_lib.c    |   17 ++
- drivers/scsi/scsi_pm.c     |    5 +-
- drivers/scsi/sr.c          |  160 ++++++++++++++++++-
- drivers/scsi/sr.h          |    3 +
- include/linux/ata.h        |    1 +
- include/linux/cdrom.h      |   43 +++++
- include/linux/libata.h     |    9 +-
- include/scsi/scsi.h        |   10 +
- include/scsi/scsi_device.h |    2 +
- 17 files changed, 538 insertions(+), 138 deletions(-)
-
-                                                          
