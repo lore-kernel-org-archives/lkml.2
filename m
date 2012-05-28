@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab2E1COW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 22:14:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60163 "EHLO mx1.redhat.com"
+	id S1753026Ab2E1CUw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 22:20:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18240 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab2E1COU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 22:14:20 -0400
-Message-ID: <4FC2DFB6.6080701@redhat.com>
-Date: Mon, 28 May 2012 10:15:18 +0800
+	id S1752624Ab2E1CUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 22:20:50 -0400
 From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Fix lock unbalance caused by lock disconnect
-References: <1337911859-22913-1-git-send-email-asias@redhat.com> <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com>
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Asias He <asias@redhat.com>
+Subject: [PATCH v2] block: Mitigate lock unbalance caused by lock disconnect
+Date: Mon, 28 May 2012 10:20:03 +0800
+Message-Id: <1338171603-14393-1-git-send-email-asias@redhat.com>
 In-Reply-To: <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+References: <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2012 08:07 AM, Tejun Heo wrote:
-> On Fri, May 25, 2012 at 10:10:59AM +0800, Asias He wrote:
->> Commit 777eb1bf15b8532c396821774bf6451e563438f5 disconnects externally
->> supplied queue_lock before blk_drain_queue(). This would introduce lock
->> unbalance because theads which have taken the external lock might unlock
->> the internal lock in the during the queue drain.
->>
->> This patch fixes this by disconnecting the lock after the queue drain.
->
-> I don't think the patch description is correct.  The lock switcihng is
-> inherently broken and the patch doesn't really fix the problem
-> although it *might* make the problem less likely.  Trying to switch
-> locks while there are other accessors of the lock is simply broken, it
-> can never work without outer synchronization.
+Commit 777eb1bf15b8532c396821774bf6451e563438f5 disconnects externally
+supplied queue_lock before blk_drain_queue(). This would introduce lock
+unbalance because theads which have taken the external lock might unlock
+the internal lock in the during the queue drain.
 
-Since the lock switching is broken, is it a good idea to force all the 
-drivers to use the block layer provided lock? i.e. Change the API from
-blk_init_queue(rfn, driver_lock) to blk_init_queue(rfn). Any reason not 
-to use the block layer provided one.
+This patch mitigate this by disconnecting the lock after the queue
+draining since queue draining makes a lot of request_queue users go
+away.
 
-> Your patch might make
-> the problem somewhat less likely simply because queue draining makes a
-> lot of request_queue users go away.
+ =====================================
+ [ BUG: bad unlock balance detected! ]
+ 3.4.0+ #288 Not tainted
+ -------------------------------------
+ fio/17706 is trying to release lock (&(&q->__queue_lock)->rlock) at:
+ [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
+ but there are no more locks to release!
 
-Who will use the request_queue after blk_cleanup_queue()?
+ other info that might help us debug this:
+ 1 lock held by fio/17706:
+  #0:  (&(&vblk->lock)->rlock){......}, at: [<ffffffff81327f1a>]
+ get_request_wait+0x19a/0x250
 
-> So, can you please update the commit description?  It doesn't really
-> *fix* anything but I think we're still better off with the change.
+ stack backtrace:
+ Pid: 17706, comm: fio Not tainted 3.4.0+ #288
+ Call Trace:
+  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
+  [<ffffffff810dea49>] print_unlock_inbalance_bug+0xf9/0x100
+  [<ffffffff810dfe4f>] lock_release_non_nested+0x1df/0x330
+  [<ffffffff811dae24>] ? dio_bio_end_aio+0x34/0xc0
+  [<ffffffff811d6935>] ? bio_check_pages_dirty+0x85/0xe0
+  [<ffffffff811daea1>] ? dio_bio_end_aio+0xb1/0xc0
+  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
+  [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
+  [<ffffffff810e0079>] lock_release+0xd9/0x250
+  [<ffffffff81a74553>] _raw_spin_unlock_irq+0x23/0x40
+  [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
+  [<ffffffff81328faa>] generic_make_request+0xca/0x100
+  [<ffffffff81329056>] submit_bio+0x76/0xf0
+  [<ffffffff8115470c>] ? set_page_dirty_lock+0x3c/0x60
+  [<ffffffff811d69e1>] ? bio_set_pages_dirty+0x51/0x70
+  [<ffffffff811dd1a8>] do_blockdev_direct_IO+0xbf8/0xee0
+  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
+  [<ffffffff811dd4e5>] __blockdev_direct_IO+0x55/0x60
+  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
+  [<ffffffff811d92e7>] blkdev_direct_IO+0x57/0x60
+  [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
+  [<ffffffff8114c6ae>] generic_file_aio_read+0x70e/0x760
+  [<ffffffff810df7c5>] ? __lock_acquire+0x215/0x5a0
+  [<ffffffff811e9924>] ? aio_run_iocb+0x54/0x1a0
+  [<ffffffff8114bfa0>] ? grab_cache_page_nowait+0xc0/0xc0
+  [<ffffffff811e82cc>] aio_rw_vect_retry+0x7c/0x1e0
+  [<ffffffff811e8250>] ? aio_fsync+0x30/0x30
+  [<ffffffff811e9936>] aio_run_iocb+0x66/0x1a0
+  [<ffffffff811ea9b0>] do_io_submit+0x6f0/0xb80
+  [<ffffffff8134de2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff811eae50>] sys_io_submit+0x10/0x20
+  [<ffffffff81a7c9e9>] system_call_fastpath+0x16/0x1b
 
-Sure. Will send v2.
+Changes since v1: Update commit log as Tejun suggested.
 
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ block/blk-core.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1f61b74..7b4f6fe 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -416,15 +416,10 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	/* mark @q DEAD, no new request or merges will be allowed afterwards */
+ 	mutex_lock(&q->sysfs_lock);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+-
+ 	spin_lock_irq(lock);
+ 	queue_flag_set(QUEUE_FLAG_NOMERGES, q);
+ 	queue_flag_set(QUEUE_FLAG_NOXMERGES, q);
+ 	queue_flag_set(QUEUE_FLAG_DEAD, q);
+-
+-	if (q->queue_lock != &q->__queue_lock)
+-		q->queue_lock = &q->__queue_lock;
+-
+ 	spin_unlock_irq(lock);
+ 	mutex_unlock(&q->sysfs_lock);
+ 
+@@ -440,6 +435,11 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+ 	blk_sync_queue(q);
+ 
++	spin_lock_irq(lock);
++	if (q->queue_lock != &q->__queue_lock)
++		q->queue_lock = &q->__queue_lock;
++	spin_unlock_irq(lock);
++
+ 	/* @q is and will stay empty, shutdown and put */
+ 	blk_put_queue(q);
+ }
 -- 
-Asias
+1.7.10.2
+
