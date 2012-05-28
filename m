@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab2E1FQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 01:16:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58494 "EHLO mx2.suse.de"
+	id S1753627Ab2E1FRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 01:17:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58498 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab2E1FQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 01:16:52 -0400
-Date: Mon, 28 May 2012 07:16:50 +0200
-Message-ID: <s5hbol86g1p.wl%tiwai@suse.de>
+	id S1751442Ab2E1FQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 01:16:58 -0400
+Date: Mon, 28 May 2012 07:16:57 +0200
+Message-ID: <s5haa0s6g1i.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: =?UTF-8?B?SsO2cmctVm9sa2Vy?= Peetz <jvpeetz@web.de>
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
         Fengguang Wu <fengguang.wu@intel.com>
-Newsgroups: gmane.linux.kernel
 Subject: Re: Linux 3.4 released
 In-Reply-To: <4FC2262D.2040105@web.de>
 References: <CA+55aFwaobhbBZkE1LTyQJYhk8w8zk-cyOXXuXfPyE=BXzT3PA@mail.gmail.com>
