@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab2E1AaF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 20:30:05 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41527 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751191Ab2E1AaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 20:30:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="145235954"
-Message-ID: <1338165058.14538.209.camel@ymzhang.sh.intel.com>
-Subject: RE: [PATCH 1/2] printk: add interface for disabling recursion check
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Liu, ShuoX" <shuox.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>
-Date: Mon, 28 May 2012 08:30:58 +0800
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com>
-References: <4FBC444A.6060500@intel.com>
-	 <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com>
-	 <20120524061145.GA18284@liondog.tnic>
-	 <20120524155611.b7aeff4d.akpm@linux-foundation.org>
-	 <1337905811.14538.206.camel@ymzhang.sh.intel.com>
-	 <4FBF3295.7090608@intel.com>
-	 <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com>
-Organization: MCG
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1752696Ab2E1A7U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 20:59:20 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:64124 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab2E1A7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 20:59:17 -0400
+Message-ID: <4FC2CD93.1080009@ce.jp.nec.com>
+Date: Mon, 28 May 2012 09:57:55 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Kent Overstreet <koverstreet@google.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net,
+        mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com,
+        tj@kernel.org, sage@newdream.net, agk@redhat.com,
+        drbd-dev@lists.linbit.com
+Subject: Re: [dm-devel] [PATCH v3 02/16] dm: Use bioset's front_pad for dm_rq_clone_bio_info
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com> <1337977539-16977-3-git-send-email-koverstreet@google.com>
+In-Reply-To: <1337977539-16977-3-git-send-email-koverstreet@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 16:09 +0000, Luck, Tony wrote:
-> +void printk_recursion_check_enable(void)
-> +{
-> +	atomic_dec(&recursion_check_disabled);
-> +}
-> 
-> 
-> Is it worth a BUG_ON() in here to check that recursion_check_disabled
-> is >=1 before blindly decrementing it? Or is this interface so simple
-> that nobody would ever get this wrong?
-Tony,
+On 05/26/12 05:25, Kent Overstreet wrote:
+>  struct dm_rq_clone_bio_info {
+>  	struct bio *orig;
+>  	struct dm_rq_target_io *tio;
+> +	struct bio clone;
+>  };
+...
+> -	pools->bs = bioset_create(pool_size, 0);
+> +	pools->bs = bioset_create(pool_size,
+> +				  offsetof(struct dm_rq_clone_bio_info, orig));
+>  	if (!pools->bs)
+>  		goto free_tio_pool_and_out;
 
-The interface is clear and simple. But a WARN_ON checking is better
-to have. We would add WARN_ON.
+Did you mean offset of *clone*?
+"offsetof(struct dm_rq_clone_bio_info, orig)" is zero.
 
-Thanks,
-Yanmin
+And now _rq_bio_info_cache has no user and can be removed.
 
-
+Otherwise, I think it's nicer than the previous version.
+Thank you.
+-- 
+Jun'ichi Nomura, NEC Corporation
