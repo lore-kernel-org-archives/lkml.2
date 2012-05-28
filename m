@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab2E1Dfq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:35:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57271 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753359Ab2E1Dfn (ORCPT
+	id S1754474Ab2E1Dfd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:35:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52146 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754121Ab2E1D3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:35:43 -0400
-Date: Mon, 28 May 2012 13:35:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the dma-buf tree with Linus' tree
-Message-Id: <20120528133540.19498993351d66f959f079b6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M"
+	Sun, 27 May 2012 23:29:47 -0400
+Message-Id: <20120528031219.003946705@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 28 May 2012 04:13:59 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [ 117/117] x86, relocs: Add jiffies and jiffies_64 to the relative whitelist
+In-Reply-To: <20120528031202.829379252@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Hi Sumit,
+------------------
 
-Today's linux-next merge of the dma-buf tree got conflicts in
-drivers/base/dma-buf.c and include/linux/dma-buf.h between various
-commits from Linus' tree and various commits from the dma-buf tree.
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-Again, another tree that was rebased before or after being sent
-upstream.  Please don't do this.
+commit ea17e7414bc62e8d3bde8d08e3df1d921c518c17 upstream.
 
-I have used the versions of these files from Linus' tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The symbol jiffies is created in the linker script as an alias to
+jiffies_64.  Unfortunately this is done outside any section, and
+apparently GNU ld 2.21 doesn't carry the section with it, so we end up
+with an absolute symbol and therefore a broken kernel.
 
---Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M
-Content-Type: application/pgp-signature
+Add jiffies and jiffies_64 to the whitelist.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The most disturbing bit with this discovery is that it shows that we
+have had multiple linker bugs in this area crossing multiple
+generations, and have been silently building bad kernels for some time.
 
-iQIcBAEBCAAGBQJPwvKMAAoJEECxmPOUX5FEtloP/2hJ/DTOtqpPNkpUGTVD33yS
-oQaTf1wdMG6sgUgI7MUtnZyOSAdq8L1dY/zMqjGNUmXTLPri6LsDAVySTx7JAO2A
-3LW+Ic5Vy8mQgUofPjSFO/fYYCVUhO38Nq5e0WSvfW6LOJOFtj7Za5QCc3FwSeOD
-NVpojK4/uXfz4O0VRSi24Eh7LOnA8xpM7UunNHWBZDXlxpv7nMW/JAlmLzokcUX8
-end78AiXpCxB4uKjIg33W0YaZmDtyQk2Qx9ZwSrijrvGpVLgg/ciM3xY4d8I/c/6
-5x9jzy/EwrX06WhOGH2HT65q66B0KCCQG4kNayI1JnM7MRuESqUuzoTvv8oH94Yb
-ZrNI7bQzzXaPhAudZFgqumxfBCp66drBPLqE+vfruMgC9kQLBm1Yl5nTyWpWE913
-k2rCdguAtgkYFsPsOAPxc8nj+KbAxJ5bzR2RU4PkT0N4Mm7kpk7wwwCUM7w+LXfX
-6F4ZBAxH9Po0L9F+fWcG3HHgaydaXbT30rucK2ypr0RSfap8bXBdd+XLaMPVlGCW
-hUOIDUKAZkSYhx8HQCJMwlIxjiqiU3WtvtXrMn2mCq3fwjp2d9Vy0QycfrLxxT/4
-++FA89+XvhOyI+Y5uMcXEUtF0u1dRg2wbKw/apW8Kqz1A8xfzSfaaZ58tB0/qcnG
-SyzVwUIMAOvjwpH42W3U
-=n0J0
------END PGP SIGNATURE-----
+Link: http://lkml.kernel.org/r/20120524171604.0d98284f3affc643e9714470@canb.auug.org.au
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/x86/tools/relocs.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---Signature=_Mon__28_May_2012_13_35_40_+1000_+bH/O+QNqK6_F07M--
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index b8f7c65..b685296 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -71,6 +71,7 @@ static const char * const sym_regex_kernel[S_NSYMTYPES] = {
+ 	"__(start|stop)_notes|"
+ 	"__end_rodata|"
+ 	"__initramfs_start|"
++	"(jiffies|jiffies_64)|"
+ 	"_end)$"
+ };
+ 
+
+
