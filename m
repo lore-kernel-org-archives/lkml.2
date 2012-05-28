@@ -1,56 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab2E1Mh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 08:37:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46939 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab2E1MhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 08:37:25 -0400
-Date: Mon, 28 May 2012 14:37:23 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ebiederm@xmission.com, yann.morin.1998@free.fr,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig for 3.5-rc1
-Message-ID: <20120528123723.GA14538@sepie.suse.cz>
+	id S1754568Ab2E1Mhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 08:37:46 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52341 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab2E1Mhp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 08:37:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120426001529.GA14006@kroah.com>
+References: <20120426001529.GA14006@kroah.com>
+Date: Mon, 28 May 2012 09:37:44 -0300
+Message-ID: <CALF0-+UeGxjML71sWGr8A-mEwBQRyFd6fcXa2Q0VZ3dxgWPwZg@mail.gmail.com>
+Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
+From: Ezequiel Garcia <elezegarcia@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Greg,
 
-The kconfig part of kbuild for 3.5 includes:
-* Error handling for make KCONFIG_ALLCONFIG=<...> all*config plus a fix
-  for a bug that was exposed by this
-* Fix for the script/config utility.
+On Wed, Apr 25, 2012 at 9:15 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This option has been deprecated for many years now, and no userspace
+> tools use it anymore, so it should be safe to finally remove it.
+>
 
-Michal
+Does this mean usbview will be completely deprecated?
+Do you think is it possible to write an update for it?
 
-The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
+It was a little more helpful for me than lsusb. (Is it just me?)
 
-  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kconfig
-
-for you to fetch changes up to d6686da814c884e341d3bd8aa54947c91cb678be:
-
-  scripts/config: properly report and set string options (2012-05-16 00:13:11 +0200)
-
-----------------------------------------------------------------
-Eric W. Biederman (2):
-      kconfig: Add error handling to KCONFIG_ALLCONFIG
-      kbuild: all{no,yes,mod,def,rand}config only read files when instructed to.
-
-Yann E. MORIN (1):
-      scripts/config: properly report and set string options
-
- Documentation/kbuild/kconfig.txt |   18 +++++++++---------
- scripts/config                   |   11 +++++++----
- scripts/kconfig/conf.c           |   22 ++++++++++++++++------
- 3 files changed, 32 insertions(+), 19 deletions(-)
+Thanks,
+Ezequiel.
