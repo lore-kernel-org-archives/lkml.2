@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab2E1P0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 11:26:15 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:46187 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab2E1P0N (ORCPT
+	id S1754818Ab2E1P0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 11:26:45 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:57410 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754018Ab2E1P0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 11:26:13 -0400
-Date: Mon, 28 May 2012 18:26:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Emil Goode <emilgoode@gmail.com>
-Cc: FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] video: bfin_adv7393fb: Fix cleanup code
-Message-ID: <20120528152601.GE4637@mwanda>
-References: <1338216019-1288-1-git-send-email-emilgoode@gmail.com>
+	Mon, 28 May 2012 11:26:44 -0400
+Message-ID: <4FC39904.9080309@linux.vnet.ibm.com>
+Date: Mon, 28 May 2012 20:55:56 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338216019-1288-1-git-send-email-emilgoode@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Alex Shi <alex.shi@intel.com>
+CC: rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: add a few comments of cpumask functions
+References: <1338195748-18934-1-git-send-email-alex.shi@intel.com> <4FC373D9.7040109@linux.vnet.ibm.com> <4FC38277.2030500@intel.com>
+In-Reply-To: <4FC38277.2030500@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052805-0260-0000-0000-0000013DF3FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 04:40:19PM +0200, Emil Goode wrote:
-> This patch fixes the cleanup code of the bfin_adv7393_fb_probe
-> function by changing the order in which cleanup is performed
-> and by adding one label.
+On 05/28/2012 07:19 PM, Alex Shi wrote:
+
+> On 05/28/2012 08:47 PM, Srivatsa S. Bhat wrote:
+> 
+>> On 05/28/2012 02:32 PM, Alex Shi wrote:
+>>
+>>> Current few cpumask function purpose are not quite clear. Stupid
+>>> user like myself need to dig into details for clear function
+>>> purpose and return value.
+>>
+>>
+>> You can just see how it is used elsewhere and figure it out ;-)
+>> Anyway, in principle, I don't have any objections to adding comments
+>> that are actually helpful. But I don't think all the comments this
+>> patch adds fall into that category..
+>>
+>>> Add few explanation for them is helpful.
+>>>
+>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>>> ---
+>>>  include/linux/cpumask.h |    6 ++++++
+>>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+>>> index a2c819d..8436e61 100644
+>>> --- a/include/linux/cpumask.h
+>>> +++ b/include/linux/cpumask.h
+>>> @@ -271,6 +271,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+>>>   * cpumask_test_cpu - test for a cpu in a cpumask
+>>>   * @cpu: cpu number (< nr_cpu_ids)
+>>>   * @cpumask: the cpumask pointer
+>>> + * return 1 if the 'cpu' is in the old 'cpumask', otherwise return 0
+>>>   *
+>>
+>>
+>> s/return/Returns
+>>
+>> What do you mean by "old" cpumask?
+> 
+> Thanks for comments!
+> Should be "the old bitmap of cpumask"?
 > 
 
-Could you list the actual bugs which were fixed:
 
-1) The resources were not freed in the order that we allocated them
-   so we call dma_free_coherent() before it was allocated.
-2) The labels weren't in the right place which also meant that we
-   freed resources that weren't allocated.
-3) We should free gpio_free(P_IDENT(P_PPI0_FS3)) before returning.
+No, there is no "old" or "new" cpumask here because this function doesn't
+change the cpumask. It just checks if that bit is set.
+So something like:
+Returns 1 if 'cpu' is set in 'cpumask', else returns 0.
 
-The new gpio_free() is more important than the added label.
+Regards,
+Srivatsa S. Bhat
 
-Since you're changing all these, you may as well fix the label names
-as well.  The out_9 style labels suck.  The right way is to give
-them meaningful labels instead of GW-BASIC style labels.
-
-Labels should be named after what happens when you arrive.  Some
-people name them after the start of the journey but that's a
-mistake.  It's just like the town of Chicago is still called Chicago
-even though you might goto Chicago starting from Boston.  Like this:
-
-err_ppi:
-	free_dma(CH_PPI);
-	fb_dealloc_cmap(&fbdev->info.cmap);
-err_palette:
-	kfree(fbdev->info.pseudo_palette);
-
-regards,
-dan carpenter
