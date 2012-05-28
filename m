@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab2E1Doy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:44:54 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52055 "EHLO
+	id S1755136Ab2E1DpT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:45:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52061 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753874Ab2E1D3b (ORCPT
+	by vger.kernel.org with ESMTP id S1753895Ab2E1D3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:31 -0400
-Message-Id: <20120528031209.929225604@decadent.org.uk>
+	Sun, 27 May 2012 23:29:30 -0400
+Message-Id: <20120528031205.518379925@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:53 +0100
+Date: Mon, 28 May 2012 04:12:21 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Jesse Feddema <jdfeddema@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 051/117] usb-storage: unusual_devs entry for Yarvik PMP400 MP4 player
+        alan@lxorguk.ukuu.org.uk, "Luis R. Rodriguez" <mcgrof@frijolero.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Youngsin Lee <youngsin@qualcomm.com>,
+        Raja Mani <rmani@qca.qualcomm.com>,
+        Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>,
+        Vipin Mehta <vipimeht@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 019/117] cfg80211: warn if db.txt is empty with
+ CONFIG_CFG80211_INTERNAL_REGDB
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,39 +34,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
 
-commit df767b71e5816692134d59c0c17e0f77cd73333d upstream.
+commit 80007efeff0568375b08faf93c7aad65602cb97e upstream.
 
-This patch (as1553) adds an unusual_dev entrie for the Yarvik PMP400
-MP4 music player.
+It has happened twice now where elaborate troubleshooting has
+undergone on systems where CONFIG_CFG80211_INTERNAL_REGDB [0]
+has been set but yet net/wireless/db.txt was not updated.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Jesse Feddema <jdfeddema@gmail.com>
-Tested-by: Jesse Feddema <jdfeddema@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Despite the documentation on this it seems system integrators could
+use some more help with this, so throw out a kernel warning at boot time
+when their database is empty.
+
+This does mean that the error-prone system integrator won't likely
+realize the issue until they boot the machine but -- it does not seem
+to make sense to enable a build bug breaking random build testing.
+
+[0] http://wireless.kernel.org/en/developers/Regulatory/CRDA#CONFIG_CFG80211_INTERNAL_REGDB
+
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Youngsin Lee <youngsin@qualcomm.com>
+Cc: Raja Mani <rmani@qca.qualcomm.com>
+Cc: Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>
+Cc: Vipin Mehta <vipimeht@qca.qualcomm.com>
+Cc: yahuan@qca.qualcomm.com
+Cc: jjan@qca.qualcomm.com
+Cc: vthiagar@qca.qualcomm.com
+Cc: henrykim@qualcomm.com
+Cc: jouni@qca.qualcomm.com
+Cc: athiruve@qca.qualcomm.com
+Cc: cjkim@qualcomm.com
+Cc: philipk@qca.qualcomm.com
+Cc: sunnykim@qualcomm.com
+Cc: sskwak@qualcomm.com
+Cc: kkim@qualcomm.com
+Cc: mattbyun@qualcomm.com
+Cc: ryanlee@qualcomm.com
+Cc: simbap@qualcomm.com
+Cc: krislee@qualcomm.com
+Cc: conner@qualcomm.com
+Cc: hojinkim@qualcomm.com
+Cc: honglee@qualcomm.com
+Cc: johnwkim@qualcomm.com
+Cc: jinyong@qca.qualcomm.com
+Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/wireless/reg.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 856ad92..8f3cbb8 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1885,6 +1885,13 @@ UNUSUAL_DEV(  0x1652, 0x6600, 0x0201, 0x0201,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_IGNORE_RESIDUE ),
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index e9a0ac8..15f3474 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -388,7 +388,15 @@ static void reg_regdb_query(const char *alpha2)
  
-+/* Reported by Jesse Feddema <jdfeddema@gmail.com> */
-+UNUSUAL_DEV(  0x177f, 0x0400, 0x0000, 0x0000,
-+		"Yarvik",
-+		"PMP400",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_BULK_IGNORE_TAG | US_FL_MAX_SECTORS_64 ),
+ 	schedule_work(&reg_regdb_work);
+ }
 +
- /* Reported by Hans de Goede <hdegoede@redhat.com>
-  * These Appotech controllers are found in Picture Frames, they provide a
-  * (buggy) emulation of a cdrom drive which contains the windows software
++/* Feel free to add any other sanity checks here */
++static void reg_regdb_size_check(void)
++{
++	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
++	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
++}
+ #else
++static inline void reg_regdb_size_check(void) {}
+ static inline void reg_regdb_query(const char *alpha2) {}
+ #endif /* CONFIG_CFG80211_INTERNAL_REGDB */
+ 
+@@ -2322,6 +2330,8 @@ int __init regulatory_init(void)
+ 	spin_lock_init(&reg_requests_lock);
+ 	spin_lock_init(&reg_pending_beacons_lock);
+ 
++	reg_regdb_size_check();
++
+ 	cfg80211_regdomain = cfg80211_world_regdom;
+ 
+ 	user_alpha2[0] = '9';
 
 
