@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2E1Oh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 10:37:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899Ab2E1Ohz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 10:37:55 -0400
-Message-ID: <4FC38DBD.4070406@redhat.com>
-Date: Mon, 28 May 2012 17:37:49 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: triage for April 19, 2012
-References: <20120420020013.GA19964@windriver.com> <CAMuHMdUUgysVqz226jhK42nvYNaX7yvexpqRjOPx0QpvzUwVXg@mail.gmail.com>
-In-Reply-To: <CAMuHMdUUgysVqz226jhK42nvYNaX7yvexpqRjOPx0QpvzUwVXg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754767Ab2E1OiU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 10:38:20 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:58644 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754656Ab2E1OiR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 10:38:17 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] video: bfin_adv7393fb: Fix cleanup code
+Date: Mon, 28 May 2012 16:40:19 +0200
+Message-Id: <1338216019-1288-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2012 11:59 PM, Geert Uytterhoeven wrote:
-> On Fri, Apr 20, 2012 at 4:00 AM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
->> The parisc got borked by some kvm header shuffle it seems?
->> Now complaining about "file 'asm-generic/kvm_para.h' is not exported"
->> [ http://kisskb.ellerman.id.au/kisskb/buildresult/6137786/ ]
-> 
-> Not only parisc.
-> 
-> This breakage has now entered mainline:
-> 
-> parisc deconfig http://kisskb.ellerman.id.au/kisskb/buildresult/6365677/
-> m68k allmodconfig: http://kisskb.ellerman.id.au/kisskb/buildresult/6365681/
+This patch fixes the cleanup code of the bfin_adv7393_fb_probe
+function by changing the order in which cleanup is performed
+and by adding one label.
 
-
-Does the following patch help?
-
-I was unable to find a cross compiler, so I can't test it myself.
-
-
-From: Avi Kivity <avi@redhat.com>
-Date: Mon, 28 May 2012 17:35:22 +0300
-Subject: [PATCH] KVM: Export asm-generic/kvm_para.h
-
-Prevents build failures on non-KVM archs.
-
-Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
 ---
- include/asm-generic/Kbuild |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/bfin_adv7393fb.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/include/asm-generic/Kbuild b/include/asm-generic/Kbuild
-index 53f91b1..2c85a0f 100644
---- a/include/asm-generic/Kbuild
-+++ b/include/asm-generic/Kbuild
-@@ -8,6 +8,7 @@ header-y += int-ll64.h
- header-y += ioctl.h
- header-y += ioctls.h
- header-y += ipcbuf.h
-+header-y += kvm_para.h
- header-y += mman-common.h
- header-y += mman.h
- header-y += msgbuf.h
-
+diff --git a/drivers/video/bfin_adv7393fb.c b/drivers/video/bfin_adv7393fb.c
+index 1a268a2..ddbd031 100644
+--- a/drivers/video/bfin_adv7393fb.c
++++ b/drivers/video/bfin_adv7393fb.c
+@@ -414,7 +414,7 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 		if (ret) {
+ 			dev_err(&client->dev, "PPI0_FS3 GPIO request failed\n");
+ 			ret = -EBUSY;
+-			goto out_8;
++			goto out_9;
+ 		}
+ 	}
+ 
+@@ -528,15 +528,18 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+  out_3:
+ 	free_dma(CH_PPI);
+  out_4:
+-	dma_free_coherent(NULL, fbdev->fb_len, fbdev->fb_mem,
+-			  fbdev->dma_handle);
+- out_5:
+ 	fb_dealloc_cmap(&fbdev->info.cmap);
+- out_6:
++ out_5:
+ 	kfree(fbdev->info.pseudo_palette);
++ out_6:
++	dma_free_coherent(NULL, fbdev->fb_len, fbdev->fb_mem,
++			  fbdev->dma_handle);
+  out_7:
+ 	peripheral_free_list(ppi_pins);
+  out_8:
++	if (ANOMALY_05000400)
++		gpio_free(P_IDENT(P_PPI0_FS3));
++ out_9:
+ 	kfree(fbdev);
+ 
+ 	return ret;
 -- 
-error compiling committee.c: too many arguments to function
+1.7.10
+
