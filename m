@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2E1RWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 13:22:50 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47935 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab2E1RWs convert rfc822-to-8bit (ORCPT
+	id S1753100Ab2E1Rg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 13:36:57 -0400
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:52503 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab2E1Rg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 13:22:48 -0400
-Subject: Re: [PATCH] memcg: remove the unnecessary MEM_CGROUP_STAT_DATA
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Chen Baozi <baozich@gmail.com>
-In-Reply-To: <20120528133918.GA22185@tiehlicka.suse.cz>
-Date: Tue, 29 May 2012 01:22:41 +0800
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Johannes Weiner <hannes@cmpxchg.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B23B2709-F70C-4B47-80CC-FBC3AA40A907@gmail.com>
-References: <1337933501-3985-1-git-send-email-baozich@gmail.com> <20120528133918.GA22185@tiehlicka.suse.cz>
-To: Michal Hocko <mhocko@suse.cz>
-X-Mailer: Apple Mail (2.1084)
+	Mon, 28 May 2012 13:36:56 -0400
+From: "Torne (Richard Coles)" <torne@google.com>
+To: cjb@laptop.org
+Cc: linus.walleij@linaro.org, jh80.chung@samsung.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ben@decadent.org.uk, "Torne (Richard Coles)" <torne@google.com>
+Subject: [PATCH V2] MMC: core: cap MMC card timeouts at 2 seconds.
+Date: Mon, 28 May 2012 18:31:18 +0100
+Message-Id: <1338226278-13336-1-git-send-email-torne@google.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Torne (Richard Coles)" <torne@google.com>
 
-On May 28, 2012, at 9:39 PM, Michal Hocko wrote:
+MMC CSD info can specify very large, ridiculous timeouts, big enough to
+overflow timeout_ns on 32-bit machines. This can result in the card
+timing out on every operation because the wrapped timeout value is far
+too small.
 
-> On Fri 25-05-12 16:11:41, Chen Baozi wrote:
->> Since MEM_CGROUP_ON_MOVE has been removed, it comes to be redudant
->> to hold MEM_CGROUP_STAT_DATA to mark the end of data requires
->> synchronization.
-> 
-> A similar patch has been already posted by Johannes 2 weeks ago
-> (http://www.gossamer-threads.com/lists/linux/kernel/1535888) and it
-> should appear in -next soonish.
-Oh, I see, Thanks for informing.
+Fix the overflow by capping the result at 2 seconds.  Cards specifying
+longer timeouts are almost certainly insane, and host controllers
+generally cannot support timeouts that long in any case.
 
-Baozi
+2 seconds should be plenty of time for any card to actually function;
+the timeout calculation code is already using 1 second as a "worst case"
+timeout for cards running in SPI mode.
+---
+ drivers/mmc/core/core.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-> 
->> 
->> Signed-off-by: Chen Baozi <baozich@gmail.com>
->> ---
->> mm/memcontrol.c |    3 +--
->> 1 files changed, 1 insertions(+), 2 deletions(-)
->> 
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index f342778..446ca94 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -88,7 +88,6 @@ enum mem_cgroup_stat_index {
->> 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
->> 	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->> 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
->> -	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
->> 	MEM_CGROUP_STAT_NSTATS,
->> };
->> 
->> @@ -2139,7 +2138,7 @@ static void mem_cgroup_drain_pcp_counter(struct mem_cgroup *memcg, int cpu)
->> 	int i;
->> 
->> 	spin_lock(&memcg->pcp_counter_lock);
->> -	for (i = 0; i < MEM_CGROUP_STAT_DATA; i++) {
->> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
->> 		long x = per_cpu(memcg->stat->count[i], cpu);
->> 
->> 		per_cpu(memcg->stat->count[i], cpu) = 0;
->> -- 
->> 1.7.1
->> 
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9    
-> Czech Republic
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 0b6141d..3b4a9fc 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
+ 	if (data->flags & MMC_DATA_WRITE)
+ 		mult <<= card->csd.r2w_factor;
+ 
+-	data->timeout_ns = card->csd.tacc_ns * mult;
++	/*
++	 * The timeout in nanoseconds may overflow with some cards. Cap it at
++	 * two seconds both to avoid the overflow and also because host
++	 * controllers cannot generally generate timeouts that long anyway.
++	 */
++	if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
++		data->timeout_ns = card->csd.tacc_ns * mult;
++	else
++		data->timeout_ns = 2 * NSEC_PER_SEC;
++
+ 	data->timeout_clks = card->csd.tacc_clks * mult;
+ 
+ 	/*
+-- 
+1.7.7.3
 
