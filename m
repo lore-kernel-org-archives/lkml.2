@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab2E1Qhn (ORCPT <rfc822;w@1wt.eu>);
+	id S1754978Ab2E1Qhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 12:37:46 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:43100 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754906Ab2E1Qhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 May 2012 12:37:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45275 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754833Ab2E1Qhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 12:37:40 -0400
-Date: Mon, 28 May 2012 18:37:27 +0200
-From: Andi Shyti <andi.shyti@gmail.com>
-To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com
-Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        peterhuewe@gmx.de, oatilla@gmail.com
-Subject: Re: [PATCH] tpm: check the chip reference before using it
-Message-ID: <20120528163727.GA6178@andi>
-Mail-Followup-To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
-	tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	peterhuewe@gmx.de, oatilla@gmail.com
-References: <172ab3cfdd755d047e6366cc56b942820e02ffee.1338221569.git.andi.shyti@gmail.com>
+Date: Mon, 28 May 2012 18:37:25 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, Russell King <linux@arm.linux.org.uk>,
+        x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: [PATCH V2 2/6] amba: use the new linux/sizes.h
+Message-ID: <47bf886a2bc4d9e65b14a5700d5aa874232ec32a.1338222461.git.rubini@gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <172ab3cfdd755d047e6366cc56b942820e02ffee.1338221569.git.andi.shyti@gmail.com>
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+References: <cover.1338222460.git.rubini@gnudd.com>
+In-Reply-To: <cover.1338222460.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ drivers/amba/bus.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Mon, May 28, 2012 at 06:23:12PM +0200, Andi Shyti wrote:
->  void tpm_dev_release(struct device *dev)
->  {
-> +	if (!chip)
-> +		return;
-> +
->  	struct tpm_chip *chip = dev_get_drvdata(dev);
-
-sorry wrong patch file... this is not going to work...
-I'll resend it
-
-Andi
+diff --git a/drivers/amba/bus.c b/drivers/amba/bus.c
+index b7e7285..e8eb91b 100644
+--- a/drivers/amba/bus.c
++++ b/drivers/amba/bus.c
+@@ -16,9 +16,9 @@
+ #include <linux/pm.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/amba/bus.h>
++#include <linux/sizes.h>
+ 
+ #include <asm/irq.h>
+-#include <asm/sizes.h>
+ 
+ #define to_amba_driver(d)	container_of(d, struct amba_driver, drv)
+ 
+-- 
+1.7.7.2
