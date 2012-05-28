@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab2E1DqD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:46:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52066 "EHLO
+	id S1755334Ab2E1Dqz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:46:55 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52025 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753890Ab2E1D33 (ORCPT
+	by vger.kernel.org with ESMTP id S1753850Ab2E1D31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:29 -0400
-Message-Id: <20120528031212.812558190@decadent.org.uk>
+	Sun, 27 May 2012 23:29:27 -0400
+Message-Id: <20120528031208.551705113@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:14 +0100
+Date: Mon, 28 May 2012 04:12:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Johnson <johnso87@illinois.edu>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 072/117] ahci: Detect Marvell 88SE9172 SATA controller
+        alan@lxorguk.ukuu.org.uk, Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 041/117] usb: usbtest: two super speed fixes for usbtest
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,34 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Johnson <johnso87@illinois.edu>
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
 
-commit 642d89252201c4155fc3946bf9cdea409e5d263e upstream.
+commit 6a23ccd216b6a8ba2c67a9f9d8969b4431ad2920 upstream.
 
-The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
-once it was detected, but was missing an ahci_pci_tbl entry.
+bMaxPacketSize0 field for super speed is a power of 2, not a count.
+The size itself is always 512.
 
-Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
+Max packet size for a super speed bulk endpoint is 1024, so
+allocate the urb size in halt_simple() accordingly.
 
-Signed-off-by: Matt Johnson <johnso87@illinois.edu>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/ahci.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/misc/usbtest.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 79a1e9d..ebaf67e 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -394,6 +394,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
- 	{ PCI_DEVICE(0x1b4b, 0x9125),
- 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
-+	{ PCI_DEVICE(0x1b4b, 0x917a),
-+	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
- 	{ PCI_DEVICE(0x1b4b, 0x91a3),
- 	  .driver_data = board_ahci_yes_fbs },
+diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
+index 9dcb68f..055b84a 100644
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1028,7 +1028,10 @@ test_ctrl_queue(struct usbtest_dev *dev, struct usbtest_param *param)
+ 		case 13:	/* short read, resembling case 10 */
+ 			req.wValue = cpu_to_le16((USB_DT_CONFIG << 8) | 0);
+ 			/* last data packet "should" be DATA1, not DATA0 */
+-			len = 1024 - udev->descriptor.bMaxPacketSize0;
++			if (udev->speed == USB_SPEED_SUPER)
++				len = 1024 - 512;
++			else
++				len = 1024 - udev->descriptor.bMaxPacketSize0;
+ 			expected = -EREMOTEIO;
+ 			break;
+ 		case 14:	/* short read; try to fill the last packet */
+@@ -1387,11 +1390,15 @@ static int test_halt(struct usbtest_dev *tdev, int ep, struct urb *urb)
+ 
+ static int halt_simple(struct usbtest_dev *dev)
+ {
+-	int		ep;
+-	int		retval = 0;
+-	struct urb	*urb;
++	int			ep;
++	int			retval = 0;
++	struct urb		*urb;
++	struct usb_device	*udev = testdev_to_usbdev(dev);
+ 
+-	urb = simple_alloc_urb(testdev_to_usbdev(dev), 0, 512);
++	if (udev->speed == USB_SPEED_SUPER)
++		urb = simple_alloc_urb(udev, 0, 1024);
++	else
++		urb = simple_alloc_urb(udev, 0, 512);
+ 	if (urb == NULL)
+ 		return -ENOMEM;
  
 
 
