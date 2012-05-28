@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2E1Dbc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:31:32 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52196 "EHLO
+	id S1754566Ab2E1Db1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:31:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52150 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754176Ab2E1D3x (ORCPT
+	by vger.kernel.org with ESMTP id S1754026Ab2E1D3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:53 -0400
-Message-Id: <20120528031215.149138561@decadent.org.uk>
+Message-Id: <20120528031212.398831479@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:31 +0100
+Date: Mon, 28 May 2012 04:13:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Sujit Reddy Thumma <sthumma@codeaurora.org>,
-        Nicolas Pitre <nico@linaro.org>, Chris Ball <cjb@laptop.org>
-Subject: [ 089/117] mmc: sdio: avoid spurious calls to interrupt handlers
+        alan@lxorguk.ukuu.org.uk, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Stephen Wilson <wilsons@start.ca>, Christoph Lameter <cl@linux.com>
+Subject: [ 069/117] mm: mempolicy: Let vma_merge and vma_split handle vma->vm_policy
+ linkages
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,97 +31,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
+From: Mel Gorman <mgorman@suse.de>
 
-commit bbbc4c4d8c5face097d695f9bf3a39647ba6b7e7 upstream.
+commit 05f144a0d5c2207a0349348127f996e104ad7404 upstream.
 
-Commit 06e8935feb ("optimized SDIO IRQ handling for single irq")
-introduced some spurious calls to SDIO function interrupt handlers,
-such as when the SDIO IRQ thread is started, or the safety check
-performed upon a system resume.  Let's add a flag to perform the
-optimization only when a real interrupt is signaled by the host
-driver and we know there is no point confirming it.
+Dave Jones' system call fuzz testing tool "trinity" triggered the
+following bug error with slab debugging enabled
 
-Reported-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Signed-off-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+    =============================================================================
+    BUG numa_policy (Not tainted): Poison overwritten
+    -----------------------------------------------------------------------------
+
+    INFO: 0xffff880146498250-0xffff880146498250. First byte 0x6a instead of 0x6b
+    INFO: Allocated in mpol_new+0xa3/0x140 age=46310 cpu=6 pid=32154
+     __slab_alloc+0x3d3/0x445
+     kmem_cache_alloc+0x29d/0x2b0
+     mpol_new+0xa3/0x140
+     sys_mbind+0x142/0x620
+     system_call_fastpath+0x16/0x1b
+    INFO: Freed in __mpol_put+0x27/0x30 age=46268 cpu=6 pid=32154
+     __slab_free+0x2e/0x1de
+     kmem_cache_free+0x25a/0x260
+     __mpol_put+0x27/0x30
+     remove_vma+0x68/0x90
+     exit_mmap+0x118/0x140
+     mmput+0x73/0x110
+     exit_mm+0x108/0x130
+     do_exit+0x162/0xb90
+     do_group_exit+0x4f/0xc0
+     sys_exit_group+0x17/0x20
+     system_call_fastpath+0x16/0x1b
+    INFO: Slab 0xffffea0005192600 objects=27 used=27 fp=0x          (null) flags=0x20000000004080
+    INFO: Object 0xffff880146498250 @offset=592 fp=0xffff88014649b9d0
+
+This implied a reference counting bug and the problem happened during
+mbind().
+
+mbind() applies a new memory policy to a range and uses mbind_range() to
+merge existing VMAs or split them as necessary.  In the event of splits,
+mpol_dup() will allocate a new struct mempolicy and maintain existing
+reference counts whose rules are documented in
+Documentation/vm/numa_memory_policy.txt .
+
+The problem occurs with shared memory policies.  The vm_op->set_policy
+increments the reference count if necessary and split_vma() and
+vma_merge() have already handled the existing reference counts.
+However, policy_vma() screws it up by replacing an existing
+vma->vm_policy with one that potentially has the wrong reference count
+leading to a premature free.  This patch removes the damage caused by
+policy_vma().
+
+With this patch applied Dave's trinity tool runs an mbind test for 5
+minutes without error.  /proc/slabinfo reported that there are no
+numa_policy or shared_policy_node objects allocated after the test
+completed and the shared memory region was deleted.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Dave Jones <davej@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Stephen Wilson <wilsons@start.ca>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/core/sdio.c     |    2 +-
- drivers/mmc/core/sdio_irq.c |   11 +++++++----
- include/linux/mmc/host.h    |    2 ++
- 3 files changed, 10 insertions(+), 5 deletions(-)
+ mm/mempolicy.c |   41 +++++++++++++++++------------------------
+ 1 file changed, 17 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
-index 2c7c83f..13d0e95 100644
---- a/drivers/mmc/core/sdio.c
-+++ b/drivers/mmc/core/sdio.c
-@@ -947,7 +947,7 @@ static int mmc_sdio_resume(struct mmc_host *host)
- 	}
- 
- 	if (!err && host->sdio_irqs)
--		mmc_signal_sdio_irq(host);
-+		wake_up_process(host->sdio_irq_thread);
- 	mmc_release_host(host);
- 
- 	/*
-diff --git a/drivers/mmc/core/sdio_irq.c b/drivers/mmc/core/sdio_irq.c
-index f573e7f..3d8ceb4 100644
---- a/drivers/mmc/core/sdio_irq.c
-+++ b/drivers/mmc/core/sdio_irq.c
-@@ -28,18 +28,20 @@
- 
- #include "sdio_ops.h"
- 
--static int process_sdio_pending_irqs(struct mmc_card *card)
-+static int process_sdio_pending_irqs(struct mmc_host *host)
- {
-+	struct mmc_card *card = host->card;
- 	int i, ret, count;
- 	unsigned char pending;
- 	struct sdio_func *func;
- 
- 	/*
- 	 * Optimization, if there is only 1 function interrupt registered
--	 * call irq handler directly
-+	 * and we know an IRQ was signaled then call irq handler directly.
-+	 * Otherwise do the full probe.
- 	 */
- 	func = card->sdio_single_irq;
--	if (func) {
-+	if (func && host->sdio_irq_pending) {
- 		func->irq_handler(func);
- 		return 1;
- 	}
-@@ -116,7 +118,8 @@ static int sdio_irq_thread(void *_host)
- 		ret = __mmc_claim_host(host, &host->sdio_irq_thread_abort);
- 		if (ret)
- 			break;
--		ret = process_sdio_pending_irqs(host->card);
-+		ret = process_sdio_pending_irqs(host);
-+		host->sdio_irq_pending = false;
- 		mmc_release_host(host);
- 
- 		/*
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index cbde4b7..0707d22 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -297,6 +297,7 @@ struct mmc_host {
- 
- 	unsigned int		sdio_irqs;
- 	struct task_struct	*sdio_irq_thread;
-+	bool			sdio_irq_pending;
- 	atomic_t		sdio_irq_thread_abort;
- 
- 	mmc_pm_flag_t		pm_flags;	/* requested pm features */
-@@ -352,6 +353,7 @@ extern int mmc_cache_ctrl(struct mmc_host *, u8);
- static inline void mmc_signal_sdio_irq(struct mmc_host *host)
- {
- 	host->ops->enable_sdio_irq(host, 0);
-+	host->sdio_irq_pending = true;
- 	wake_up_process(host->sdio_irq_thread);
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 39fd416..88f9422 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -607,27 +607,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
+ 	return first;
  }
  
+-/* Apply policy to a single VMA */
+-static int policy_vma(struct vm_area_struct *vma, struct mempolicy *new)
+-{
+-	int err = 0;
+-	struct mempolicy *old = vma->vm_policy;
+-
+-	pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
+-		 vma->vm_start, vma->vm_end, vma->vm_pgoff,
+-		 vma->vm_ops, vma->vm_file,
+-		 vma->vm_ops ? vma->vm_ops->set_policy : NULL);
+-
+-	if (vma->vm_ops && vma->vm_ops->set_policy)
+-		err = vma->vm_ops->set_policy(vma, new);
+-	if (!err) {
+-		mpol_get(new);
+-		vma->vm_policy = new;
+-		mpol_put(old);
+-	}
+-	return err;
+-}
+-
+ /* Step 2: apply policy to a range and do splits. */
+ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 		       unsigned long end, struct mempolicy *new_pol)
+@@ -676,9 +655,23 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 			if (err)
+ 				goto out;
+ 		}
+-		err = policy_vma(vma, new_pol);
+-		if (err)
+-			goto out;
++
++		/*
++		 * Apply policy to a single VMA. The reference counting of
++		 * policy for vma_policy linkages has already been handled by
++		 * vma_merge and split_vma as necessary. If this is a shared
++		 * policy then ->set_policy will increment the reference count
++		 * for an sp node.
++		 */
++		pr_debug("vma %lx-%lx/%lx vm_ops %p vm_file %p set_policy %p\n",
++			vma->vm_start, vma->vm_end, vma->vm_pgoff,
++			vma->vm_ops, vma->vm_file,
++			vma->vm_ops ? vma->vm_ops->set_policy : NULL);
++		if (vma->vm_ops && vma->vm_ops->set_policy) {
++			err = vma->vm_ops->set_policy(vma, new_pol);
++			if (err)
++				goto out;
++		}
+ 	}
+ 
+  out:
 
 
