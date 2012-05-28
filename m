@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab2E1D3A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51798 "EHLO
+	id S1753504Ab2E1D3K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:10 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51851 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752763Ab2E1D2z (ORCPT
+	by vger.kernel.org with ESMTP id S1753364Ab2E1D3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:28:55 -0400
-Message-Id: <20120528031203.583213241@decadent.org.uk>
+	Sun, 27 May 2012 23:29:03 -0400
+Message-Id: <20120528031204.549979472@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:07 +0100
+Date: Mon, 28 May 2012 04:12:14 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Marcelo Tosatti <mtosatti@redhat.com>,
-        Avi Kivity <avi@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 005/117] KVM: VMX: vmx_set_cr0 expects kvm->srcu locked
+        alan@lxorguk.ukuu.org.uk, John David Anglin <dave.anglin@bell.net>,
+        Helge Deller <deller@gmx.de>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 012/117] [PARISC] fix crash in flush_icache_page_asm on PA1.1
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,34 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: John David Anglin <dave.anglin@bell.net>
 
-(cherry picked from commit 7a4f5ad051e02139a9f1c0f7f4b1acb88915852b)
+commit 207f583d7179f707f402c36a7bda5ca1fd03ad5b upstream.
 
-vmx_set_cr0 is called from vcpu run context, therefore it expects
-kvm->srcu to be held (for setting up the real-mode TSS).
+As pointed out by serveral people, PA1.1 only has a type 26 instruction
+meaning that the space register must be explicitly encoded.  Not giving an
+explicit space means that the compiler uses the type 24 version which is PA2.0
+only resulting in an illegal instruction crash.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This regression was caused by
+
+    commit f311847c2fcebd81912e2f0caf8a461dec28db41
+    Author: James Bottomley <James.Bottomley@HansenPartnership.com>
+    Date:   Wed Dec 22 10:22:11 2010 -0600
+
+        parisc: flush pages through tmpalias space
+
+Reported-by: Helge Deller <deller@gmx.de>
+Signed-off-by: John David Anglin <dave.anglin@bell.net>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kvm/vmx.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/parisc/kernel/pacache.S |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 7ac5993..7315488 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3915,7 +3915,9 @@ static int vmx_vcpu_reset(struct kvm_vcpu *vcpu)
- 		vmcs_write16(VIRTUAL_PROCESSOR_ID, vmx->vpid);
+diff --git a/arch/parisc/kernel/pacache.S b/arch/parisc/kernel/pacache.S
+index 93ff3d9..5d7218a 100644
+--- a/arch/parisc/kernel/pacache.S
++++ b/arch/parisc/kernel/pacache.S
+@@ -692,7 +692,7 @@ ENTRY(flush_icache_page_asm)
  
- 	vmx->vcpu.arch.cr0 = X86_CR0_NW | X86_CR0_CD | X86_CR0_ET;
-+	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
- 	vmx_set_cr0(&vmx->vcpu, kvm_read_cr0(vcpu)); /* enter rmode */
-+	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
- 	vmx_set_cr4(&vmx->vcpu, 0);
- 	vmx_set_efer(&vmx->vcpu, 0);
- 	vmx_fpu_activate(&vmx->vcpu);
+ 	/* Purge any old translation */
+ 
+-	pitlb		(%sr0,%r28)
++	pitlb		(%sr4,%r28)
+ 
+ 	ldil		L%icache_stride, %r1
+ 	ldw		R%icache_stride(%r1), %r1
+@@ -706,27 +706,29 @@ ENTRY(flush_icache_page_asm)
+ 	sub		%r25, %r1, %r25
+ 
+ 
+-1:      fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
+-	fic,m		%r1(%r28)
++	/* fic only has the type 26 form on PA1.1, requiring an
++	 * explicit space specification, so use %sr4 */
++1:      fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
++	fic,m		%r1(%sr4,%r28)
+ 	cmpb,COND(<<)		%r28, %r25,1b
+-	fic,m		%r1(%r28)
++	fic,m		%r1(%sr4,%r28)
+ 
+ 	sync
+ 	bv		%r0(%r2)
+-	pitlb		(%sr0,%r25)
++	pitlb		(%sr4,%r25)
+ 	.exit
+ 
+ 	.procend
 
 
