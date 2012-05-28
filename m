@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370Ab2E1ITs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 04:19:48 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:11269 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab2E1ITp (ORCPT
+	id S1751519Ab2E1IeK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 04:34:10 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50349 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751178Ab2E1IeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 04:19:45 -0400
-Date: Mon, 28 May 2012 10:19:39 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv2 3/4] mm: vmalloc: add VM_DMA flag to indicate areas used
- by dma-mapping framework
-In-reply-to: <CAHGf_=qmBMFfV=UhXFtepO8styaQonfBA0E0+FO0qSi7RLfJFA@mail.gmail.com>
-To: "'KOSAKI Motohiro'" <kosaki.motohiro@gmail.com>,
-        "'Paul Mundt'" <lethal@linux-sh.org>
-Cc: "'Minchan Kim'" <minchan@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Krishna Reddy'" <vdumpa@nvidia.com>,
-        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
-        "'Hiroshi Doyu'" <hdoyu@nvidia.com>,
-        "'Subash Patel'" <subashrp@gmail.com>,
-        "'Nick Piggin'" <npiggin@gmail.com>
-Message-id: <001d01cd3caa$a05d0510$e1170f30$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Ac08BT44lU09F0l8TOCrspyaYIvvLwApKrLw
-References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
- <1337252085-22039-4-git-send-email-m.szyprowski@samsung.com>
- <4FBB3B41.8010102@kernel.org>
- <01e501cd39a8$67f34ea0$37d9ebe0$%szyprowski@samsung.com>
- <20120524122854.GD11860@linux-sh.org>
- <CAHGf_=qmBMFfV=UhXFtepO8styaQonfBA0E0+FO0qSi7RLfJFA@mail.gmail.com>
-X-TM-AS-MML: No
+	Mon, 28 May 2012 04:34:07 -0400
+X-Sasl-enc: QJchpFSU6azoyz5pgvpBaygptauztJnIJ98VpmXnSWlg 1338194047
+Message-ID: <4FC3387D.8080904@fastmail.fm>
+Date: Mon, 28 May 2012 09:34:05 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+References: <4FBFEACC.8040601@fastmail.fm>  <1337978725.10135.0.camel@edumazet-glaptop>  <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>  <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm>  <1338140156.3786.10.camel@edumazet-glaptop>  <4FC27CE7.20604@fastmail.fm> <1338164727.2240.14.camel@edumazet-glaptop>
+In-Reply-To: <1338164727.2240.14.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Sunday, May 27, 2012 2:35 PM KOSAKI Motohiro wrote:
-
-> On Thu, May 24, 2012 at 8:28 AM, Paul Mundt <lethal@linux-sh.org> wrote:
-> > On Thu, May 24, 2012 at 02:26:12PM +0200, Marek Szyprowski wrote:
-> >> On Tuesday, May 22, 2012 9:08 AM Minchan Kim wrote:
-> >> > Hmm, VM_DMA would become generic flag?
-> >> > AFAIU, maybe VM_DMA would be used only on ARM arch.
-> >>
-> >> Right now yes, it will be used only on ARM architecture, but maybe other architecture will
-> >> start using it once it is available.
-> >>
-> > There's very little about the code in question that is ARM-specific to
-> > begin with. I plan to adopt similar changes on SH once the work has
-> > settled one way or the other, so we'll probably use the VMA flag there,
-> > too.
+On 05/28/2012 01:25 AM, Eric Dumazet wrote:
+> On Sun, 2012-05-27 at 20:13 +0100, Jack Stone wrote:
 > 
-> I don't think VM_DMA is good idea because x86_64 has two dma zones. x86 unaware
-> patches make no sense.
+>> Could it be something to do with my staging network driver?
+> 
+> drivers/staging/rtl8712/rtl8712_recv.c
+> 
+> line 1096
+> 
+> precvframe->u.hdr.pkt = skb_clone(pskb, GFP_ATOMIC);
+> 
+> This looks very wrong.
+> Make sure you never _never_ hit this path.
+> 
 
-I see no problems to add VM_DMA64 later if x86_64 starts using vmalloc areas for creating 
-kernel mappings for the dma buffers (I assume that there are 2 dma zones: one 32bit and one
-64bit). Right now x86 and x86_64 don't use vmalloc areas for dma buffers, so I hardly see
-how this patch can be considered as 'x86 unaware'.
+I've applied the following debugging patch. Thanks for the suggestion.
 
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
+index 8e82ce2..fed62f8 100644
+--- a/drivers/staging/rtl8712/rtl8712_recv.c
++++ b/drivers/staging/rtl8712/rtl8712_recv.c
+@@ -1082,23 +1082,16 @@ static int recvbuf2recvframe(struct _adapter *padapter, struct sk_buff *pskb)
+                 * 4 is for skb->data 4 bytes alignment. */
+                alloc_sz += 6;
+                pkt_copy = netdev_alloc_skb(padapter->pnetdev, alloc_sz);
+-               if (pkt_copy) {
+-                       pkt_copy->dev = padapter->pnetdev;
+-                       precvframe->u.hdr.pkt = pkt_copy;
+-                       skb_reserve(pkt_copy, 4 - ((addr_t)(pkt_copy->data)
+-                                   % 4));
+-                       skb_reserve(pkt_copy, shift_sz);
+-                       memcpy(pkt_copy->data, pbuf, tmp_len);
+-                       precvframe->u.hdr.rx_head = precvframe->u.hdr.rx_data =
+-                                precvframe->u.hdr.rx_tail = pkt_copy->data;
+-                       precvframe->u.hdr.rx_end = pkt_copy->data + alloc_sz;
+-               } else {
+-                       precvframe->u.hdr.pkt = skb_clone(pskb, GFP_ATOMIC);
+-                       precvframe->u.hdr.rx_head = pbuf;
+-                       precvframe->u.hdr.rx_data = pbuf;
+-                       precvframe->u.hdr.rx_tail = pbuf;
+-                       precvframe->u.hdr.rx_end = pbuf + alloc_sz;
+-               }
++               WARN_ON(!pkt_copy)
++               pkt_copy->dev = padapter->pnetdev;
++               precvframe->u.hdr.pkt = pkt_copy;
++               skb_reserve(pkt_copy, 4 - ((addr_t)(pkt_copy->data)
++                           % 4));
++               skb_reserve(pkt_copy, shift_sz);
++               memcpy(pkt_copy->data, pbuf, tmp_len);
++               precvframe->u.hdr.rx_head = precvframe->u.hdr.rx_data =
++                        precvframe->u.hdr.rx_tail = pkt_copy->data;
++               precvframe->u.hdr.rx_end = pkt_copy->data + alloc_sz;
+                recvframe_put(precvframe, tmp_len);
+                recvframe_pull(precvframe, drvinfo_sz + RXDESC_SIZE);
+                /* because the endian issue, driver avoid reference to the
