@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2E1Dgn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:36:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52104 "EHLO
+	id S1754900Ab2E1Dgk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:36:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52184 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753931Ab2E1D3o (ORCPT
+	by vger.kernel.org with ESMTP id S1754128Ab2E1D3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:44 -0400
-Message-Id: <20120528031216.794239447@decadent.org.uk>
+	Sun, 27 May 2012 23:29:43 -0400
+Message-Id: <20120528031218.870211329@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:43 +0100
+Date: Mon, 28 May 2012 04:13:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 101/117] tile: fix bug where fls(0) was not returning 0
+        alan@lxorguk.ukuu.org.uk, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 116/117] x86-32, relocs: Whitelist more symbols for ld bug workaround
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,49 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: "H. Peter Anvin" <hpa@zytor.com>
 
-commit 9f1d62bed7f015d11b9164078b7fea433b474114 upstream.
+commit fd952815307f0f272bf49fd364a7fd2f9992bc42 upstream.
 
-This is because __builtin_clz(0) returns 64 for the "undefined" case
-of 0, since the builtin just does a right-shift 32 and "clz" instruction.
-So, use the alpha approach of casting to u32 and using __builtin_clzll().
+As noted in checkin:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+a3e854d95 x86, relocs: Workaround for binutils 2.22.52.0.1 section bug
+
+ld version 2.22.52.0.[12] can incorrectly promote relative symbols to
+absolute, if the output section they appear in is otherwise empty.
+
+Since checkin:
+
+6520fe55 x86, realmode: 16-bit real-mode code support for relocs tool
+
+we actually check for this and error out rather than silently creating
+a kernel which will malfunction if relocated.
+
+Ingo found a configuration in which __start_builtin_fw triggered the
+warning.
+
+Go through the linker script sources and look for more symbols that
+could plausibly get bogusly promoted to absolute, and add them to the
+whitelist.
+
+In general, if the following error triggers:
+
+	Invalid absolute R_386_32 relocation: <symbol>
+
+... then we should verify that <symbol> is really meant to be
+relocated, and add it and any related symbols manually to the S_REL
+regexp.
+
+Please note that 6520fe55 does not introduce the error, only the check
+for the error -- without 6520fe55 this version of ld will simply
+produce a corrupt kernel if CONFIG_RELOCATABLE is set on x86-32.
+
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/tile/include/asm/bitops.h |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/tools/relocs.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/tile/include/asm/bitops.h b/arch/tile/include/asm/bitops.h
-index 16f1fa5..bd186c4 100644
---- a/arch/tile/include/asm/bitops.h
-+++ b/arch/tile/include/asm/bitops.h
-@@ -77,6 +77,11 @@ static inline int ffs(int x)
- 	return __builtin_ffs(x);
- }
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index b43cfcd..b8f7c65 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -60,6 +60,17 @@ static const char * const sym_regex_kernel[S_NSYMTYPES] = {
+ 	"__x86_cpu_dev_(start|end)|"
+ 	"(__parainstructions|__alt_instructions)(|_end)|"
+ 	"(__iommu_table|__apicdrivers|__smp_locks)(|_end)|"
++	"__(start|end)_pci_.*|"
++	"__(start|end)_builtin_fw|"
++	"__(start|stop)___ksymtab(|_gpl|_unused|_unused_gpl|_gpl_future)|"
++	"__(start|stop)___kcrctab(|_gpl|_unused|_unused_gpl|_gpl_future)|"
++	"__(start|stop)___param|"
++	"__(start|stop)___modver|"
++	"__(start|stop)___bug_table|"
++	"__tracedata_(start|end)|"
++	"__(start|stop)_notes|"
++	"__end_rodata|"
++	"__initramfs_start|"
+ 	"_end)$"
+ };
  
-+static inline int fls64(__u64 w)
-+{
-+	return (sizeof(__u64) * 8) - __builtin_clzll(w);
-+}
-+
- /**
-  * fls - find last set bit in word
-  * @x: the word to search
-@@ -90,12 +95,7 @@ static inline int ffs(int x)
-  */
- static inline int fls(int x)
- {
--	return (sizeof(int) * 8) - __builtin_clz(x);
--}
--
--static inline int fls64(__u64 w)
--{
--	return (sizeof(__u64) * 8) - __builtin_clzll(w);
-+	return fls64((unsigned int) x);
- }
- 
- static inline unsigned int __arch_hweight32(unsigned int w)
 
 
