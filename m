@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab2E1D3h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:37 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52016 "EHLO
+	id S1754235Ab2E1D3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52158 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753824Ab2E1D30 (ORCPT
+	by vger.kernel.org with ESMTP id S1754046Ab2E1D3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:26 -0400
-Message-Id: <20120528031209.381121063@decadent.org.uk>
+	Sun, 27 May 2012 23:29:38 -0400
+Message-Id: <20120528031212.678300963@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:49 +0100
+Date: Mon, 28 May 2012 04:13:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 047/117] Add missing call to uart_update_timeout()
+        alan@lxorguk.ukuu.org.uk, Chris Bagwell <chris@cnpbagwell.com>,
+        Ping Cheng <pingc@wacom.com>, Dmitry Torokhov <dtor@mail.ru>
+Subject: [ 071/117] Input: wacom - relax Bamboo stylus ID check
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,32 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lothar Waßmann <LW@KARO-electronics.de>
+From: Chris Bagwell <chris@cnpbagwell.com>
 
-commit 8b979f7c6bf13a57e7b6002f1175312a44773960 upstream.
+commit c5981411f60c31f0dff6f0f98d2d3711384badaf upstream.
 
-This patch fixes a problem reported here:
-http://article.gmane.org/gmane.linux.ports.arm.kernel/155242/match=auart
+Bit 0x02 always means tip versus eraser. Bit 0x01 is something related
+to version of stylus and different values are starting to be used.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Relaxing proximity check is required to be used with 3rd generation
+Bamboo Pen and Touch tablets.
+
+Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+Acked-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/mxs-auart.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/input/tablet/wacom_wac.c |    7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-diff --git a/drivers/tty/serial/mxs-auart.c b/drivers/tty/serial/mxs-auart.c
-index 55fd362..039c054 100644
---- a/drivers/tty/serial/mxs-auart.c
-+++ b/drivers/tty/serial/mxs-auart.c
-@@ -369,6 +369,8 @@ static void mxs_auart_settermios(struct uart_port *u,
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 7fefd93..d1ced32 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -842,12 +842,7 @@ static int wacom_bpt_pen(struct wacom_wac *wacom)
+ 	unsigned char *data = wacom->data;
+ 	int prox = 0, x = 0, y = 0, p = 0, d = 0, pen = 0, btn1 = 0, btn2 = 0;
  
- 	writel(ctrl, u->membase + AUART_LINECTRL);
- 	writel(ctrl2, u->membase + AUART_CTRL2);
-+
-+	uart_update_timeout(u, termios->c_cflag, baud);
- }
+-	/*
+-	 * Similar to Graphire protocol, data[1] & 0x20 is proximity and
+-	 * data[1] & 0x18 is tool ID.  0x30 is safety check to ignore
+-	 * 2 unused tool ID's.
+-	 */
+-	prox = (data[1] & 0x30) == 0x30;
++	prox = (data[1] & 0x20) == 0x20;
  
- static irqreturn_t mxs_auart_irq_handle(int irq, void *context)
+ 	/*
+ 	 * All reports shared between PEN and RUBBER tool must be
 
 
