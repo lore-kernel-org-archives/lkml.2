@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab2E1DpY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:45:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52078 "EHLO
+	id S1755268Ab2E1Dp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:45:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52052 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753900Ab2E1D3a (ORCPT
+	by vger.kernel.org with ESMTP id S1753867Ab2E1D3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:30 -0400
-Message-Id: <20120528031210.757569840@decadent.org.uk>
+Message-Id: <20120528031209.526256556@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:59 +0100
+Date: Mon, 28 May 2012 04:12:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Oliver Neukum <oliver@neukum.org>,
+        =?UTF-8?q?=C3=89ric=20Piel?= <piel@delmic.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 057/117] USB: cdc-wdm: cannot use dev_printk when device is gone
+Subject: [ 048/117] USB: ftdi-sio: add support for Physik Instrumente E-861
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,59 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Éric Piel <piel@delmic.com>
 
-commit 6b0b79d38806481c1c8fffa7c5842f3c83679a42 upstream.
+commit b69cc672052540e8efb1368420f10d7d4d8b8a3d upstream.
 
-We cannot dereference a removed USB interface for
-dev_printk. Use pr_debug instead where necessary.
+This adds VID/PID for the PI E-861. Without it, I had to do:
+modprobe -q ftdi-sio product=0x1008 vendor=0x1a72
 
-Flush errors are expected if device is unplugged and are
-therefore best ingored at this point.
+http://www.physikinstrumente.com/en/products/prdetail.php?sortnr=900610
 
-Move the kill_urbs() call in wdm_release with dev_dbg()
-for the non disconnect, as we know it has already been
-called if WDM_DISCONNECTING is set.  This does not
-actually fix anything, but keeps the code more consistent.
-
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Éric Piel <piel@delmic.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/class/cdc-wdm.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    8 ++++++++
+ 2 files changed, 9 insertions(+)
 
---- a/drivers/usb/class/cdc-wdm.c
-+++ b/drivers/usb/class/cdc-wdm.c
-@@ -496,7 +496,9 @@
- 	struct wdm_device *desc = file->private_data;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 7fbba46..e0e2b94 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -809,6 +809,7 @@ static struct usb_device_id id_table_combined [] = {
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(LARSENBRUSGAARD_VID, LB_ALTITRACK_PID) },
+ 	{ USB_DEVICE(GN_OTOMETRICS_VID, AURICAL_USB_PID) },
++	{ USB_DEVICE(PI_VID, PI_E861_PID) },
+ 	{ USB_DEVICE(BAYER_VID, BAYER_CONTOUR_CABLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, MARVELL_OPENRD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 0838baf8..f3c7c78 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -785,6 +785,14 @@
+ #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
+ #define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
  
- 	wait_event(desc->wait, !test_bit(WDM_IN_USE, &desc->flags));
--	if (desc->werr < 0)
 +
-+	/* cannot dereference desc->intf if WDM_DISCONNECTING */
-+	if (desc->werr < 0 && !test_bit(WDM_DISCONNECTING, &desc->flags))
- 		dev_err(&desc->intf->dev, "Error in flush path: %d\n",
- 			desc->werr);
- 
-@@ -586,12 +588,13 @@
- 	mutex_unlock(&desc->wlock);
- 
- 	if (!desc->count) {
--		dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
--		kill_urbs(desc);
- 		if (!test_bit(WDM_DISCONNECTING, &desc->flags)) {
-+			dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
-+			kill_urbs(desc);
- 			desc->intf->needs_remote_wakeup = 0;
- 		} else {
--			dev_dbg(&desc->intf->dev, "%s: device gone - cleaning up\n", __func__);
-+			/* must avoid dev_printk here as desc->intf is invalid */
-+			pr_debug(KBUILD_MODNAME " %s: device gone - cleaning up\n", __func__);
- 			cleanup(desc);
- 		}
- 	}
++/*
++ * Physik Instrumente
++ * http://www.physikinstrumente.com/en/products/
++ */
++#define PI_VID              0x1a72  /* Vendor ID */
++#define PI_E861_PID         0x1008  /* E-861 piezo controller USB connection */
++
+ /*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
+  * http://winglucofacts.com/cables/
 
 
