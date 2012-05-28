@@ -1,43 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2E1Why (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 18:37:54 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:50086 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab2E1Whx (ORCPT
+	id S1752170Ab2E1Wle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 18:41:34 -0400
+Received: from d246500.freehost.com.ua ([178.20.152.145]:54550 "EHLO
+	free1.domen-hosting.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab2E1Wld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 18:37:53 -0400
-From: Gustavo Padovan <gustavo@padovan.org>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: =?UTF-8?q?=5BPATCH=5D=20Fix=20my=20name=20in=20=2Emailmap?=
-Date: Mon, 28 May 2012 19:37:09 -0300
-Message-Id: <1338244629-30197-1-git-send-email-gustavo@padovan.org>
-X-Mailer: git-send-email 1.7.10.2
+	Mon, 28 May 2012 18:41:33 -0400
+Date: Tue, 29 May 2012 01:43:22 +0300 (EEST)
+Message-Id: <201205282243.q4SMhMda031605@free1.domen-hosting.net>
+To: linux-kernel@vger.kernel.org
+Subject: Purchase Order ?
+From: Wilson Anderson <wilsonanderson00@gmail.com>
+Reply-To: wilsonanderson00@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Good day,
 
----
- .mailmap |    2 ++
- 1 file changed, 2 insertions(+)
+I want to place an order and I have a private freight agent that will commence to your location for the pick up. So you don\'t have any stress to face in the shipping arrangement to Malaysia,but I will like to know if you have credit card processing machine (EFTPOS) to charge my VISA card for the payment ? If yes,then treat this email with good concern and include your website/current price list.
 
-diff --git a/.mailmap b/.mailmap
-index 9b0d026..2909c33 100644
---- a/.mailmap
-+++ b/.mailmap
-@@ -113,3 +113,5 @@ Uwe Kleine-König <Uwe.Kleine-Koenig@digi.com>
- Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
- Takashi YOSHII <takashi.yoshii.zj@renesas.com>
- Yusuke Goda <goda.yusuke@renesas.com>
-+Gustavo Padovan <gustavo@las.ic.unicamp.br>
-+Gustavo Padovan <padovan@profusion.mobi>
--- 
-1.7.10.2
+
+Regards,
+Wilson Anderson
+
 
