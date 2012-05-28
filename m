@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab2E1Dat (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:30:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52222 "EHLO
+	id S1754501Ab2E1DbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:31:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52237 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754234Ab2E1D3z (ORCPT
+	by vger.kernel.org with ESMTP id S1754191Ab2E1D3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:55 -0400
-Message-Id: <20120528031216.233571155@decadent.org.uk>
+	Sun, 27 May 2012 23:29:54 -0400
+Message-Id: <20120528031217.341260477@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:39 +0100
+Date: Mon, 28 May 2012 04:13:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [ 097/117] xen: do not map the same GSI twice in PVHVM guests.
+        Rajkumar Kasirajan <rajkumar.kasirajan@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [ 105/117] drivers/rtc/rtc-pl031.c: configure correct wday for 2000-01-01
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,89 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Rajkumar Kasirajan <rajkumar.kasirajan@stericsson.com>
 
-commit 68c2c39a76b094e9b2773e5846424ea674bf2c46 upstream.
+commit c0a5f4a05af588a0f9951f8d24e2564b09501918 upstream.
 
-PV on HVM guests map GSIs into event channels. At restore time the
-event channels are resumed by restore_pirqs.
+The reset date of the ST Micro version of PL031 is 2000-01-01.  The
+correct weekday for 2000-01-01 is saturday, but pl031 is initialized to
+sunday.  This may lead to alarm malfunction, so configure the correct
+wday if RTC_DR indicates reset.
 
-Device drivers might try to register the same GSI again through ACPI at
-restore time, but the GSI has already been mapped and bound by
-restore_pirqs. This patch detects these situations and avoids
- mapping the same GSI multiple times.
-
-Without this patch we get:
-(XEN) irq.c:2235: dom4: pirq 23 or emuirq 28 already mapped
-and waste a pirq.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Rajkumar Kasirajan <rajkumar.kasirajan@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mattias Wallin <mattias.wallin@stericsson.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/pci/xen.c   |    4 ++++
- drivers/xen/events.c |    5 +++--
- include/xen/events.h |    3 +++
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-pl031.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 7415aa9..56ab749 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -64,6 +64,10 @@ static int xen_register_pirq(u32 gsi, int gsi_override, int triggering,
- 	int shareable = 0;
- 	char *name;
+diff --git a/drivers/rtc/rtc-pl031.c b/drivers/rtc/rtc-pl031.c
+index 684ef4b..f027c06 100644
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -312,6 +312,7 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
+ 	int ret;
+ 	struct pl031_local *ldata;
+ 	struct rtc_class_ops *ops = id->data;
++	unsigned long time;
  
-+	irq = xen_irq_from_gsi(gsi);
-+	if (irq > 0)
-+		return irq;
+ 	ret = amba_request_regions(adev, NULL);
+ 	if (ret)
+@@ -343,6 +344,23 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
+ 		writel(readl(ldata->base + RTC_CR) | RTC_CR_CWEN,
+ 		       ldata->base + RTC_CR);
+ 
++	/*
++	 * On ST PL031 variants, the RTC reset value does not provide correct
++	 * weekday for 2000-01-01. Correct the erroneous sunday to saturday.
++	 */
++	if (ldata->hw_designer == AMBA_VENDOR_ST) {
++		if (readl(ldata->base + RTC_YDR) == 0x2000) {
++			time = readl(ldata->base + RTC_DR);
++			if ((time &
++			     (RTC_MON_MASK | RTC_MDAY_MASK | RTC_WDAY_MASK))
++			    == 0x02120000) {
++				time = time | (0x7 << RTC_WDAY_SHIFT);
++				writel(0x2000, ldata->base + RTC_YLR);
++				writel(time, ldata->base + RTC_LR);
++			}
++		}
++	}
 +
- 	if (set_pirq)
- 		pirq = gsi;
- 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4b33acd..faae2f9 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -611,7 +611,7 @@ static void disable_pirq(struct irq_data *data)
- 	disable_dynirq(data);
- }
- 
--static int find_irq_by_gsi(unsigned gsi)
-+int xen_irq_from_gsi(unsigned gsi)
- {
- 	struct irq_info *info;
- 
-@@ -625,6 +625,7 @@ static int find_irq_by_gsi(unsigned gsi)
- 
- 	return -1;
- }
-+EXPORT_SYMBOL_GPL(xen_irq_from_gsi);
- 
- /*
-  * Do not make any assumptions regarding the relationship between the
-@@ -644,7 +645,7 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
- 
- 	mutex_lock(&irq_mapping_update_lock);
- 
--	irq = find_irq_by_gsi(gsi);
-+	irq = xen_irq_from_gsi(gsi);
- 	if (irq != -1) {
- 		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
- 		       irq, gsi);
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 0f77370..04399b2 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -103,6 +103,9 @@ int xen_irq_from_pirq(unsigned pirq);
- /* Return the pirq allocated to the irq. */
- int xen_pirq_from_irq(unsigned irq);
- 
-+/* Return the irq allocated to the gsi */
-+int xen_irq_from_gsi(unsigned gsi);
-+
- /* Determine whether to ignore this IRQ if it is passed to a guest. */
- int xen_test_irq_shared(int irq);
- 
+ 	ldata->rtc = rtc_device_register("pl031", &adev->dev, ops,
+ 					THIS_MODULE);
+ 	if (IS_ERR(ldata->rtc)) {
 
 
