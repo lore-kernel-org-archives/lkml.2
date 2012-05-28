@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab2E1LnT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 07:43:19 -0400
-Received: from smarthost03.mail.zen.net.uk ([212.23.1.3]:58980 "EHLO
-	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753746Ab2E1LnP (ORCPT
+	id S1754586Ab2E1Lov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 07:44:51 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:47683 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753746Ab2E1Lou (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 07:43:15 -0400
-From: Andrew Bird <ajb@spheresystems.co.uk>
-To: smurf@smurf.noris.de, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Bird <ajb@spheresystems.co.uk>
-Subject: [PATCH] USB: option: Updated Huawei K4605 has better id
-Date: Mon, 28 May 2012 12:43:06 +0100
-Message-Id: <1338205386-4333-1-git-send-email-ajb@spheresystems.co.uk>
-X-Mailer: git-send-email 1.7.6.5
-X-Originating-Smarthost03-IP: [82.71.70.22]
+	Mon, 28 May 2012 07:44:50 -0400
+Message-ID: <4FC364F9.4090308@panasas.com>
+Date: Mon, 28 May 2012 14:43:53 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: Peng Tao <bergwolf@gmail.com>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, <tao.peng@emc.com>,
+        <skinsbursky@parallels.com>, <linux-nfs@vger.kernel.org>,
+        <xemul@parallels.com>, <neilb@suse.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jbottomley@parallels.com>,
+        <davem@davemloft.net>, <devel@openvz.org>,
+        Steve Dickson <steved@redhat.com>
+Subject: Re: [PATCH 4/5] NFS: remove RPC PipeFS mount point reference from
+ blocklayout routines
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6> <20111129091037.20730.59391.stgit@localhost6.localdomain6> <F19688880B763E40B28B2B462677FBF805E3A4AFF2@MX09A.corp.emc.com> <4ED4CDCE.9080804@parallels.com> <F19688880B763E40B28B2B462677FBF805E3A4AFFD@MX09A.corp.emc.com> <2E1EB2CF9ED1CB4AA966F0EB76EAB4430C3CBC23@SACMVEXC2-PRD.hq.netapp.com> <CA+a=Yy5GKMu8rbh8y3fOtK6pmqygPNBr=a+p7LfcmTqtXFH3iA@mail.gmail.com> <1322579906.3619.1.camel@lade.trondhjem.org> <CA+a=Yy6kJe0NemSiRwM+t8gz5-UF5fOdwdS2so+q=nSYjBx--w@mail.gmail.com> <1322584830.4174.16.camel@lade.trondhjem.org> <20111129164252.GA19528@fieldses.org> <1322587165.4174.20.camel@lade.trondhjem.org> <CA+a=Yy4bEKaeUihjYLRzXVbjA3fc2EuZ3ToAkf0w-oL3PnZJKQ@mail.gmail.com>
+In-Reply-To: <CA+a=Yy4bEKaeUihjYLRzXVbjA3fc2EuZ3ToAkf0w-oL3PnZJKQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Later firmwares for this device now have proper subclass and
-protocol info so we can identify it nicely without needing to use
-the blacklist. I'm not removing the old 0xff matching as there
-may be devices in the field that still need that.
+On 11/29/2011 07:30 PM, Peng Tao wrote:
 
-Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
----
- drivers/usb/serial/option.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> On Wed, Nov 30, 2011 at 1:19 AM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+>> On Tue, 2011-11-29 at 11:42 -0500, J. Bruce Fields wrote:
+>>> On Tue, Nov 29, 2011 at 11:40:30AM -0500, Trond Myklebust wrote:
+>>>> I mean that I'm perfectly entitled to do
+>>>>
+>>>> 'modprobe -r blocklayoutdriver'
+>>>>
+>>>> and when I do that, then I expect blkmapd to close the rpc pipe and wait
+>>>> for a new one to be created just like rpc.idmapd and rpc.gssd do when I
+>>>> remove the nfs and sunrpc modules.
+>>>
+>>> The rpc pipefs mount doesn't hold a reference on the sunrpc module?
+>>
+>> I stand corrected: the mount does hold a reference to the sunrpc
+>> module.
+>> However nothing holds a reference to the blocklayoutdriver module, so
+>> the main point that the "blocklayout" pipe can disappear from underneath
+>> the blkmapd stands.
+> Thanks for the explanation and I agree it can cause problem if user
+> reload blocklayout module. I will look into a fix to blkmapd.
+> 
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index 1aae902..3ac049e 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -666,6 +666,8 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
- 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x31) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
--- 
-1.7.6.5
 
+You might want to consider converting to call_usermodehelper()
+
+I know that it greatly simplified our code both in Kernel and
+in user-mode. And it made nfs-utils maintainer much happier
+as well.
+
+The speed is not Cardinal here I think. Like in objects it's
+done once per new device_id
+
+> Best,
+> Tao
+
+
+Just my $0.017
+Boaz
