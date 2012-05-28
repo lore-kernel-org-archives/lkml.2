@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab2E1MJA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 08:09:00 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49224 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab2E1MI6 convert rfc822-to-8bit (ORCPT
+	id S1754472Ab2E1MLB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 08:11:01 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34683 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939Ab2E1MLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 08:08:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANQmPXhoJVo5c2+bzG=+okgh=++11ndhskwR6r+PX8hNjQ_6Bw@mail.gmail.com>
-References: <CANQmPXhyAavikU=861nVA3WjPsMjBt+XOTUJ08VAoinZ1gCRzQ@mail.gmail.com>
-	<CAJd=RBDN7q0C+ktY29B66d9coyy1BGESOHCHFmFQVboOfNXq5w@mail.gmail.com>
-	<CANQmPXi+O-bHFzbi1q5g0GuKgXmeyEYp+UB_61YDDd2uE475GA@mail.gmail.com>
-	<CANQmPXipw9QPEc9xMuCLDW14W3w5VeUYZP1GJnvR+D57xCWksA@mail.gmail.com>
-	<CAJd=RBC5=JHEUD7N4cQc87AkkgYc-VS+TBEza6QMomA1DsOL1g@mail.gmail.com>
-	<CANQmPXhpV1Hq11FM4vwN7yneGQ7F7wC0Mh+zGCPgNgxry8xLqg@mail.gmail.com>
-	<20120528113903.GA5187@fancy-poultry.org>
-	<CANQmPXhoJVo5c2+bzG=+okgh=++11ndhskwR6r+PX8hNjQ_6Bw@mail.gmail.com>
-Date: Mon, 28 May 2012 20:08:58 +0800
-Message-ID: <CANQmPXhWuk1KmdO9pRgLY4kgsppFb7HF8KTyZWESR-DmeUN3sg@mail.gmail.com>
-Subject: Fwd: [ANNOUNCE][PATCH 5/26]Rotary Interactivity Favor Scheduler
- Version 3(Brain-Eating) Update.
-From: Chen <hi3766691@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 28 May 2012 08:11:00 -0400
+Date: Mon, 28 May 2012 13:13:58 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] tty changes for the locking warnings.
+Message-ID: <20120528131358.793c127e@pyramind.ukuu.org.uk>
+In-Reply-To: <20120528112906.GA6188@kroah.com>
+References: <20120528094741.3001.29866.stgit@bob.linux.org.uk>
+	<20120528112906.GA6188@kroah.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Chen <hi3766691@gmail.com>
-Date: Mon, May 28, 2012 at 8:03 PM
-Subject: Re: [ANNOUNCE][PATCH 5/26]Rotary Interactivity Favor
-Scheduler Version 3(Brain-Eating) Update.
-To: Heinz Diehl <htd@fancy-poultry.org>
+On Mon, 28 May 2012 20:29:06 +0900
+Greg KH <greg@kroah.com> wrote:
+
+> On Mon, May 28, 2012 at 10:48:37AM +0100, Alan Cox wrote:
+> > Fix the tty locking warnings. This doesn't include the patches to the
+> > lock markup as I'm not sure which are the final valid ones there.
+> 
+> So this should take care of the issues people have reported?  Or are
+> Peter's patches still needed?
 
 
-This is not the regular patch!The regular one is on
-http://rifs-scheduler.googlecode.com
-
-在 2012-5-28 下午7:39，"Heinz Diehl" <htd@fancy-poultry.org>写道：
-
-> On 28.05.2012, Chen wrote:
->
-> > This is the patch
->
-> What you posted is a patch on the BFS-4.20 patch (by Con Kolivas)
-> itself, and not a patch against an actual kernel tree. The output
-> has a format which is totally unreadable and disgusting,
-> and I can't apply it without tinkering with BFS first,
-> (which is designed for 3.3.x and needs a merge into 3.4.0 on top of that)
->
-> Could you please provide a clean patch which is based on one of the
-> current trees?
->
-> Besides, it seems to me that you are trying to reinvent the wheel
-> using a lot of pieces of Con's -ck patch..
->
-> Thanks,
-> Heinz.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+These fix all the known actual locking issues. I'm not clear if one of
+the other various mark up patches are also needed to babysit the lockdep
+analyser
