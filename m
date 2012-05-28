@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab2E1M3Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 08:29:25 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25837 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab2E1M3Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 08:29:24 -0400
+	id S1754596Ab2E1MfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 08:35:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46845 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753125Ab2E1MfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 08:35:04 -0400
+Date: Mon, 28 May 2012 14:35:01 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: laface.tw@gmail.com, mmarek@suse.cz, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild core changes for v3.5-rc1
+Message-ID: <20120528123501.GA13847@sepie.suse.cz>
 MIME-Version: 1.0
-Message-ID: <aabb3c7d-1c1a-4558-805a-b6d8478d1494@default>
-Date: Mon, 28 May 2012 05:29:11 -0700 (PDT)
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-To: <mingo@redhat.com>, <x86@kernel.org>, <yinghai@kernel.org>,
-        <tglx@linutronix.de>, <hpa@zytor.com>
-Cc: Feng Jin <joe.jin@oracle.com>, <ethan.zhao@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Fix an overflow in range_to_mtrr func
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When boot x86_64 kernel on sun G5+ with 4T mem, see an overflow in mtrr cleanup as below.
+Hi Linus,
 
-*BAD*gran_size: 2G      chunk_size: 2G  num_reg: 10     lose cover RAM:
--18014398505283592M
+the main part of kbuild this time is a series by Sam to clean up the
+Makefile and move the vmlinux linking step to a separate script. There
+are two conflicts unfortunately. Parts of arch/sparc/boot/Makefile were
+removed in the sparc tree, so just do
 
-This is because 1<<31 sign extended.
-Use explicit type conversion to force a 64bit constant to fix it.
-Useful for mem larger than or equal to 4T.
+git checkout HEAD -- arch/sparc/boot/Makefile
 
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
----
- arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+to resolve this. The other conflict is between commit 1dbdc6f
+("kbuild/extable: Hook up sortextable into the build system.") from the
+tip tree and commit 1f2bfbd ("kbuild: link of vmlinux moved to a
+script") from the kbuild tree. The fix is to do the sortextable in the
+link-vmlinux.sh script. Stephen did this in linux-next, see
 
-diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
-index ac140c7..853a4c6 100644
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -266,7 +266,7 @@ range_to_mtrr(unsigned int reg, unsigned long range_startk,
- 		if (align > max_align)
- 			align = max_align;
- 
--		sizek = 1 << align;
-+		sizek = (unsigned long)1 << align;
- 		if (debug_print) {
- 			char start_factor = 'K', size_factor = 'K';
- 			unsigned long start_base, size_base;
--- 
-1.7.3
+http://lkml.indiana.edu/hypermail/linux/kernel/1205.0/02567.html
 
+Or simply checkout scripts/link-vmlinux.sh from linux-next.
+
+Michal
+
+The following changes since commit dd775ae2549217d3ae09363e3edb305d0fa19928:
+
+  Linux 3.4-rc1 (2012-03-31 16:24:09 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+for you to fetch changes up to f7fc237e330deaaea4ba6726b603d4058d1e6b38:
+
+  mips: Fix KBUILD_CPPFLAGS definition (2012-05-16 00:35:06 +0200)
+
+----------------------------------------------------------------
+Edward Shao (1):
+      kbuild: Makefile: remove unnecessary check for m68knommu ARCH
+
+Michal Marek (1):
+      mips: Fix KBUILD_CPPFLAGS definition
+
+Sam Ravnborg (5):
+      kbuild: drop unused KBUILD_VMLINUX_OBJS from top-level Makefile
+      kbuild: refactor final link of sparc32
+      kbuild: link of vmlinux moved to a script
+      kbuild: document KBUILD_LDS, KBUILD_VMLINUX_{INIT,MAIN} and LDFLAGS_vmlinux
+      kbuild: fix ia64 link
+
+ Documentation/kbuild/kbuild.txt |   19 ++++
+ Makefile                        |  221 +++------------------------------------
+ arch/mips/Makefile              |    4 +-
+ arch/sparc/Makefile             |   11 --
+ arch/sparc/boot/Makefile        |   14 ++-
+ arch/um/Makefile                |   11 +-
+ scripts/link-vmlinux.sh         |  211 +++++++++++++++++++++++++++++++++++++
+ 7 files changed, 258 insertions(+), 233 deletions(-)
+ create mode 100644 scripts/link-vmlinux.sh
