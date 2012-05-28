@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab2E1D3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52158 "EHLO
+	id S1754401Ab2E1D34 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52114 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754046Ab2E1D3i (ORCPT
+	by vger.kernel.org with ESMTP id S1753946Ab2E1D3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:38 -0400
-Message-Id: <20120528031212.678300963@decadent.org.uk>
+	Sun, 27 May 2012 23:29:42 -0400
+Message-Id: <20120528031214.751344602@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:13 +0100
+Date: Mon, 28 May 2012 04:13:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Bagwell <chris@cnpbagwell.com>,
-        Ping Cheng <pingc@wacom.com>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [ 071/117] Input: wacom - relax Bamboo stylus ID check
+        alan@lxorguk.ukuu.org.uk, Danny Kukawka <danny.kukawka@bisect.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [ 086/117] OMAPDSS: VENC: fix NULL pointer dereference in DSS2 VENC sysfs debug
+ attr on OMAP4
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,41 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Bagwell <chris@cnpbagwell.com>
+From: Danny Kukawka <danny.kukawka@bisect.de>
 
-commit c5981411f60c31f0dff6f0f98d2d3711384badaf upstream.
+commit cc1d3e032df53d83d0ca4d537d8eb67eb5b3e808 upstream.
 
-Bit 0x02 always means tip versus eraser. Bit 0x01 is something related
-to version of stylus and different values are starting to be used.
+Commit ba02fa37de80bea10d706f39f076dd848348320a disabled the
+venc driver registration on OMAP4. Since the driver never gets
+probed/initialised your get a dereferenceed NULL pointer if you
+try to get info from /sys/kernel/debug/omapdss/venc
 
-Relaxing proximity check is required to be used with 3rd generation
-Bamboo Pen and Touch tablets.
+Return info message about disabled venc if venc_dump_regs() gets called.
 
-Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
-Acked-by: Ping Cheng <pingc@wacom.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/tablet/wacom_wac.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
+ drivers/video/omap2/dss/venc.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index 7fefd93..d1ced32 100644
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -842,12 +842,7 @@ static int wacom_bpt_pen(struct wacom_wac *wacom)
- 	unsigned char *data = wacom->data;
- 	int prox = 0, x = 0, y = 0, p = 0, d = 0, pen = 0, btn1 = 0, btn2 = 0;
+diff --git a/drivers/video/omap2/dss/venc.c b/drivers/video/omap2/dss/venc.c
+index b3e9f90..82865be 100644
+--- a/drivers/video/omap2/dss/venc.c
++++ b/drivers/video/omap2/dss/venc.c
+@@ -699,6 +699,11 @@ void venc_dump_regs(struct seq_file *s)
+ {
+ #define DUMPREG(r) seq_printf(s, "%-35s %08x\n", #r, venc_read_reg(r))
  
--	/*
--	 * Similar to Graphire protocol, data[1] & 0x20 is proximity and
--	 * data[1] & 0x18 is tool ID.  0x30 is safety check to ignore
--	 * 2 unused tool ID's.
--	 */
--	prox = (data[1] & 0x30) == 0x30;
-+	prox = (data[1] & 0x20) == 0x20;
++	if (cpu_is_omap44xx()) {
++		seq_printf(s, "VENC currently disabled on OMAP44xx\n");
++		return;
++	}
++
+ 	if (venc_runtime_get())
+ 		return;
  
- 	/*
- 	 * All reports shared between PEN and RUBBER tool must be
 
 
