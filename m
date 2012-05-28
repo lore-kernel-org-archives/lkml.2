@@ -1,209 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab2E1Qt1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 12:49:27 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52594 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab2E1QtZ (ORCPT
+	id S1754849Ab2E1Qwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 12:52:38 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43147 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750892Ab2E1Qwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 12:49:25 -0400
-Date: Mon, 28 May 2012 18:49:14 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V1 5/5] timekeeping: Use a continuous timescale to
- tell time.
-Message-ID: <20120528164913.GA2285@netboy.at.omicron.at>
-References: <cover.1335510125.git.richardcochran@gmail.com>
- <35c0c03617503dba8cb4001350c57a6db1be6d29.1335510125.git.richardcochran@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35c0c03617503dba8cb4001350c57a6db1be6d29.1335510125.git.richardcochran@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 28 May 2012 12:52:36 -0400
+From: Emil Goode <emilgoode@gmail.com>
+To: FlorianSchandinat@gmx.de
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH v2] video: bfin_adv7393fb: Fix cleanup code
+Date: Mon, 28 May 2012 18:54:51 +0200
+Message-Id: <1338224091-8322-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 27, 2012 at 10:12:44AM +0200, Richard Cochran wrote:
-> This patch converts the core time keeping code to use a continuous
-> timescale called the Kernel Time Scale (KTS). KTS is based on the
-> TAI timescale but can be offset from it by an integral number of seconds.
-> Every function that returns UTC time now coverts the seconds by adding
-> the current KTS - UTC offset.
-> 
-> As a result of this change, the NTP leap second code is considerably
-> simplified and hopefully more robust.
-> 
-> Signed-off-by: Richard Cochran <richardcochran@gmail.com>
-> ---
->  include/linux/timex.h     |    2 +-
->  kernel/time/ntp.c         |   81 ++++++++++----------------------------------
->  kernel/time/timekeeping.c |   73 ++++++++++++++++++++++++++++++++--------
->  3 files changed, 79 insertions(+), 77 deletions(-)
-> 
-> diff --git a/include/linux/timex.h b/include/linux/timex.h
-> index 99bc88b..9461e6f 100644
-> --- a/include/linux/timex.h
-> +++ b/include/linux/timex.h
-> @@ -252,7 +252,7 @@ extern void ntp_clear(void);
->  /* Returns how long ticks are at present, in ns / 2^NTP_SCALE_SHIFT. */
->  extern u64 ntp_tick_length(void);
->  
-> -extern int second_overflow(unsigned long secs);
-> +void second_overflow(void);
->  extern int do_adjtimex(struct timex *);
->  extern void hardpps(const struct timespec *, const struct timespec *);
->  
-> diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-> index d0a2183..91de2f8 100644
-> --- a/kernel/time/ntp.c
-> +++ b/kernel/time/ntp.c
-> @@ -16,6 +16,7 @@
->  #include <linux/mm.h>
->  #include <linux/module.h>
->  
-> +#include "leap-seconds.h"
->  #include "tick-internal.h"
->  
->  /*
-> @@ -24,6 +25,7 @@
->  
->  DEFINE_SPINLOCK(ntp_lock);
->  
-> +#define STA_LEAP		(STA_INS | STA_DEL)
->  
->  /* USER_HZ period (usecs): */
->  unsigned long			tick_usec = TICK_USEC;
-> @@ -42,19 +44,9 @@ static u64			tick_length_base;
->   * phase-lock loop variables
->   */
->  
-> -/*
-> - * clock synchronization status
-> - *
-> - * (TIME_ERROR prevents overwriting the CMOS clock)
-> - */
-> -static int			time_state = TIME_OK;
-> -
->  /* clock status bits:							*/
->  static int			time_status = STA_UNSYNC;
->  
-> -/* TAI offset (secs):							*/
-> -static long			time_tai;
-> -
->  /* time adjustment (nsecs):						*/
->  static s64			time_offset;
->  
-> @@ -386,57 +378,14 @@ u64 ntp_tick_length(void)
->   * They were originally developed for SUN and DEC kernels.
->   * All the kudos should go to Dave for this stuff.
->   *
-> - * Also handles leap second processing, and returns leap offset
->   */
-> -int second_overflow(unsigned long secs)
-> +void second_overflow(void)
->  {
->  	s64 delta;
-> -	int leap = 0;
->  	unsigned long flags;
->  
->  	spin_lock_irqsave(&ntp_lock, flags);
->  
-> -	/*
-> -	 * Leap second processing. If in leap-insert state at the end of the
-> -	 * day, the system clock is set back one second; if in leap-delete
-> -	 * state, the system clock is set ahead one second.
-> -	 */
-> -	switch (time_state) {
-> -	case TIME_OK:
-> -		if (time_status & STA_INS)
-> -			time_state = TIME_INS;
-> -		else if (time_status & STA_DEL)
-> -			time_state = TIME_DEL;
-> -		break;
-> -	case TIME_INS:
-> -		if (secs % 86400 == 0) {
-> -			leap = -1;
-> -			time_state = TIME_OOP;
-> -			printk(KERN_NOTICE
-> -				"Clock: inserting leap second 23:59:60 UTC\n");
-> -		}
-> -		break;
-> -	case TIME_DEL:
-> -		if ((secs + 1) % 86400 == 0) {
-> -			leap = 1;
-> -			time_tai--;
-> -			time_state = TIME_WAIT;
-> -			printk(KERN_NOTICE
-> -				"Clock: deleting leap second 23:59:59 UTC\n");
-> -		}
-> -		break;
-> -	case TIME_OOP:
-> -		time_tai++;
-> -		time_state = TIME_WAIT;
-> -		break;
-> -
-> -	case TIME_WAIT:
-> -		if (!(time_status & (STA_INS | STA_DEL)))
-> -			time_state = TIME_OK;
-> -		break;
-> -	}
-> -
-> -
->  	/* Bump the maxerror field */
->  	time_maxerror += MAXFREQ / NSEC_PER_USEC;
->  	if (time_maxerror > NTP_PHASE_LIMIT) {
-> @@ -475,8 +424,6 @@ int second_overflow(unsigned long secs)
->  
->  out:
->  	spin_unlock_irqrestore(&ntp_lock, flags);
-> -
-> -	return leap;
->  }
->  
->  #ifdef CONFIG_GENERIC_CMOS_UPDATE
-> @@ -541,7 +488,6 @@ static inline void notify_cmos_timer(void) { }
->  static inline void process_adj_status(struct timex *txc, struct timespec *ts)
->  {
->  	if ((time_status & STA_PLL) && !(txc->status & STA_PLL)) {
-> -		time_state = TIME_OK;
->  		time_status = STA_UNSYNC;
->  		/* restart PPS frequency calibration */
->  		pps_reset_freq_interval();
-> @@ -554,6 +500,18 @@ static inline void process_adj_status(struct timex *txc, struct timespec *ts)
->  	if (!(time_status & STA_PLL) && (txc->status & STA_PLL))
->  		time_reftime = get_seconds();
->  
-> +	/*
-> +	 * Check for new leap second commands.
-> +	 */
-> +	if (!(time_status & STA_INS) && (txc->status & STA_INS))
-> +		timekeeper_insert_leap_second();
-> +
-> +	else if (!(time_status & STA_DEL) && (txc->status & STA_DEL))
-> +		timekeeper_delete_leap_second();
-> +
-> +	else if ((time_status & STA_LEAP) && !(txc->status & STA_LEAP))
-> +		timekeeper_finish_leap_second();
-> +
->  	/* only set allowed bits */
->  	time_status &= STA_RONLY;
->  	time_status |= txc->status & ~STA_RONLY;
+This patch fixes the cleanup code of the bfin_adv7393_fb_probe
+function.
 
-Just for the record, this hunk and the following violate the (unspoken
-but mentioned in the discussion on V2 series) locking rules for
-ntp_lock and timekeerer.lock.
+1) The resources were not freed in the order that we allocated them
+   so we call dma_free_coherent() before it was allocated.
+2) The labels weren't in the right place which also meant that we
+   freed resources that weren't allocated.
+3) We should free gpio_free(P_IDENT(P_PPI0_FS3)) before returning.
+4) Lets change the label names into something more meaningful.
 
-> @@ -597,7 +555,7 @@ static inline void process_adjtimex_modes(struct timex *txc, struct timespec *ts
->  	}
->  
->  	if (txc->modes & ADJ_TAI && txc->constant > 0)
-> -		time_tai = txc->constant;
-> +		timekeeper_tai_offset(txc->constant);
->  
->  	if (txc->modes & ADJ_OFFSET)
->  		ntp_update_offset(txc->offset);
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+v2: Changed the label names as well.
 
-Thanks,
-Richard
+ drivers/video/bfin_adv7393fb.c |   43 +++++++++++++++++++++-------------------
+ 1 file changed, 23 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/video/bfin_adv7393fb.c b/drivers/video/bfin_adv7393fb.c
+index 1a268a2..33ea874 100644
+--- a/drivers/video/bfin_adv7393fb.c
++++ b/drivers/video/bfin_adv7393fb.c
+@@ -414,14 +414,14 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 		if (ret) {
+ 			dev_err(&client->dev, "PPI0_FS3 GPIO request failed\n");
+ 			ret = -EBUSY;
+-			goto out_8;
++			goto free_fbdev;
+ 		}
+ 	}
+ 
+ 	if (peripheral_request_list(ppi_pins, DRIVER_NAME)) {
+ 		dev_err(&client->dev, "requesting PPI peripheral failed\n");
+ 		ret = -EFAULT;
+-		goto out_8;
++		goto free_gpio;
+ 	}
+ 
+ 	fbdev->fb_mem =
+@@ -432,7 +432,7 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 		dev_err(&client->dev, "couldn't allocate dma buffer (%d bytes)\n",
+ 		       (u32) fbdev->fb_len);
+ 		ret = -ENOMEM;
+-		goto out_7;
++		goto free_ppi_pins;
+ 	}
+ 
+ 	fbdev->info.screen_base = (void *)fbdev->fb_mem;
+@@ -464,27 +464,27 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 	if (!fbdev->info.pseudo_palette) {
+ 		dev_err(&client->dev, "failed to allocate pseudo_palette\n");
+ 		ret = -ENOMEM;
+-		goto out_6;
++		goto free_fb_mem;
+ 	}
+ 
+ 	if (fb_alloc_cmap(&fbdev->info.cmap, BFIN_LCD_NBR_PALETTE_ENTRIES, 0) < 0) {
+ 		dev_err(&client->dev, "failed to allocate colormap (%d entries)\n",
+ 			   BFIN_LCD_NBR_PALETTE_ENTRIES);
+ 		ret = -EFAULT;
+-		goto out_5;
++		goto free_palette;
+ 	}
+ 
+ 	if (request_dma(CH_PPI, "BF5xx_PPI_DMA") < 0) {
+ 		dev_err(&client->dev, "unable to request PPI DMA\n");
+ 		ret = -EFAULT;
+-		goto out_4;
++		goto free_cmap;
+ 	}
+ 
+ 	if (request_irq(IRQ_PPI_ERROR, ppi_irq_error, 0,
+ 			"PPI ERROR", fbdev) < 0) {
+ 		dev_err(&client->dev, "unable to request PPI ERROR IRQ\n");
+ 		ret = -EFAULT;
+-		goto out_3;
++		goto free_ch_ppi;
+ 	}
+ 
+ 	fbdev->open = 0;
+@@ -494,14 +494,14 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 
+ 	if (ret) {
+ 		dev_err(&client->dev, "i2c attach: init error\n");
+-		goto out_1;
++		goto free_irq_ppi;
+ 	}
+ 
+ 
+ 	if (register_framebuffer(&fbdev->info) < 0) {
+ 		dev_err(&client->dev, "unable to register framebuffer\n");
+ 		ret = -EFAULT;
+-		goto out_1;
++		goto free_irq_ppi;
+ 	}
+ 
+ 	dev_info(&client->dev, "fb%d: %s frame buffer device\n",
+@@ -512,7 +512,7 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 	if (!entry) {
+ 		dev_err(&client->dev, "unable to create /proc entry\n");
+ 		ret = -EFAULT;
+-		goto out_0;
++		goto free_fb;
+ 	}
+ 
+ 	entry->read_proc = adv7393_read_proc;
+@@ -521,22 +521,25 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
+ 
+ 	return 0;
+ 
+- out_0:
++free_fb:
+ 	unregister_framebuffer(&fbdev->info);
+- out_1:
++free_irq_ppi:
+ 	free_irq(IRQ_PPI_ERROR, fbdev);
+- out_3:
++free_ch_ppi:
+ 	free_dma(CH_PPI);
+- out_4:
+-	dma_free_coherent(NULL, fbdev->fb_len, fbdev->fb_mem,
+-			  fbdev->dma_handle);
+- out_5:
++free_cmap:
+ 	fb_dealloc_cmap(&fbdev->info.cmap);
+- out_6:
++free_palette:
+ 	kfree(fbdev->info.pseudo_palette);
+- out_7:
++free_fb_mem:
++	dma_free_coherent(NULL, fbdev->fb_len, fbdev->fb_mem,
++			  fbdev->dma_handle);
++free_ppi_pins:
+ 	peripheral_free_list(ppi_pins);
+- out_8:
++free_gpio:
++	if (ANOMALY_05000400)
++		gpio_free(P_IDENT(P_PPI0_FS3));
++free_fbdev:
+ 	kfree(fbdev);
+ 
+ 	return ret;
+-- 
+1.7.10
+
