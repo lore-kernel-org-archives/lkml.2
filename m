@@ -1,1092 +1,752 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab2E1Nzn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 09:55:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55647 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753928Ab2E1Nzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 09:55:40 -0400
-Date: Mon, 28 May 2012 15:55:38 +0200
-From: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?Q?M=FCller?= 
-	<Tilo.Mueller@informatik.uni-erlangen.de>
-Subject: [PATCH] crypto: testmgr - expand twofish test vectors
-Message-ID: <20120528135538.GJ17705@kronos.redsun>
+	id S1754600Ab2E1OE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 10:04:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54049 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751899Ab2E1OEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 10:04:55 -0400
+Date: Mon, 28 May 2012 16:04:50 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Kamil Grzebien <ciptok@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: Initializing iwl3945 error
+Message-ID: <20120528140448.GA22783@redhat.com>
+References: <CANHD2=rF6dBkLLkWAj8uS3nq0B1wCt7Uvu=HzO84UNz2kuiaFg@mail.gmail.com>
+ <20120313081235.GC15333@redhat.com>
+ <CAErSpo6t-cVBdJfyARi3ifEuBUvopbG5GQSP5YywrvumDK8HFA@mail.gmail.com>
+ <CANHD2=qSWRv76mjwhTNMgO=u5yYCh2QZzxbNLNaPWm1d52FtOg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:2a95q2413AtWKV8sdT2vYio/AgdnUUZdNHlvT/wfyCB
- 7lj7hKsb41pF043V0ELX7k+R2dh7YCXZ0GhWjM/RjYxjWTXyQk
- BVYPNWYAyKYIO6pYId09SRVtUjQH1qmh3gLV2NqZ3SVaNHu8OE
- GgjJuWOjqeQAIBGzyI8NOkkEtOSFDvu+xFL+qYdQV55GhKBMnf
- djHZcKI87r3mh6VqNPf85Xy1L27J0xBwd/uafTyJ2Ki4c+ptTS
- OaEdigpoTOlndBA3Pnp8fqAaU4gRZKtxbe2KMRi7/Q27t1IAEp
- znA0MbXU4wz9rAsaQqBRIMn2Uva0xkn3g3zvFs9cAd+nn4aOBG
- qzu0OI3u0aIONZLKOWwQ=
+In-Reply-To: <CANHD2=qSWRv76mjwhTNMgO=u5yYCh2QZzxbNLNaPWm1d52FtOg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AVX implementation of the twofish cipher processes 8 blocks parallel, so we
-need to make test vectors larger to check parallel code paths. Test vectors are
-also large enough to deal with 16 block parallel implementations which may occur
-in the future.
+On Sun, Apr 08, 2012 at 12:51:30PM +0100, Kamil Grzebien wrote:
+> I've attached logs as you asked for. It was done on kernel 3.3.0-4.fc16.i686.
 
-Signed-off-by: Johannes Goetzfried <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
----
- crypto/testmgr.h |  928 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 896 insertions(+), 32 deletions(-)
+Below are iomem and dmesg diffs between bad and good (noapic) case. In
+dmesg I only see this suspicious difference:
 
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index 36e5a8e..a7eb347 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -2765,8 +2765,62 @@ static struct cipher_testvec tf_enc_tv_template[] = {
- 			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
--			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C",
--		.ilen	= 64,
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.ilen	= 496,
- 		.result	= "\x88\xCB\x1E\xC2\xAF\x8A\x97\xFF"
- 			  "\xF6\x90\x46\x9C\x4A\x0F\x08\xDC"
- 			  "\xDE\xAB\xAD\xFA\xFC\xA8\xC2\x3D"
-@@ -2774,8 +2828,62 @@ static struct cipher_testvec tf_enc_tv_template[] = {
- 			  "\x34\x9E\xB6\x08\xB2\xDD\xA8\xF5"
- 			  "\xDF\xFA\xC7\xE8\x09\x50\x76\x08"
- 			  "\xA2\xB6\x6A\x59\xC0\x2B\x6D\x05"
--			  "\x89\xF6\x82\xF0\xD3\xDB\x06\x02",
--		.rlen	= 64,
-+			  "\x89\xF6\x82\xF0\xD3\xDB\x06\x02"
-+			  "\xB5\x11\x5C\x5E\x79\x1A\xAC\x43"
-+			  "\x5C\xC0\x30\x4B\x6B\x16\xA1\x40"
-+			  "\x80\x27\x88\xBA\x2C\x74\x42\xE0"
-+			  "\x1B\xA5\x85\x08\xB9\xE6\x22\x7A"
-+			  "\x36\x3B\x0D\x9F\xA0\x22\x6C\x2A"
-+			  "\x91\x75\x47\xBC\x67\x21\x4E\xF9"
-+			  "\xEA\xFF\xD9\xD5\xC0\xFC\x9E\x2C"
-+			  "\x3E\xAD\xC6\x61\x0E\x93\x7A\x22"
-+			  "\x09\xC8\x8D\xC1\x8E\xB4\x8B\x5C"
-+			  "\xC6\x24\x42\xB8\x23\x66\x80\xA9"
-+			  "\x32\x0B\x7A\x29\xBF\xB3\x0B\x63"
-+			  "\x43\x27\x13\xA9\xBE\xEB\xBD\xF3"
-+			  "\x33\x62\x70\xE2\x1B\x86\x7A\xA1"
-+			  "\x51\x4A\x16\xFE\x29\x63\x7E\xD0"
-+			  "\x7A\xA4\x6E\x2C\xF8\xC1\xDB\xE8"
-+			  "\xCB\x4D\xD2\x8C\x04\x14\xB4\x66"
-+			  "\x41\xB7\x3A\x96\x16\x7C\x1D\x5B"
-+			  "\xB6\x41\x42\x64\x43\xEE\x6E\x7C"
-+			  "\x8B\xAF\x01\x9C\xA4\x6E\x75\x8F"
-+			  "\xDE\x10\x9F\xA6\xE7\xD6\x44\x97"
-+			  "\x66\xA3\x96\x0F\x1C\x25\x60\xF5"
-+			  "\x3C\x2E\x32\x69\x0E\x82\xFF\x27"
-+			  "\x0F\xB5\x06\xDA\xD8\x31\x15\x6C"
-+			  "\xDF\x18\x6C\x87\xF5\x3B\x11\x9A"
-+			  "\x1B\x42\x1F\x5B\x29\x19\x96\x13"
-+			  "\x68\x2E\x5E\x08\x1C\x8F\x32\x4B"
-+			  "\x81\x77\x6D\xF4\xA0\x01\x42\xEC"
-+			  "\xDD\x5B\xFD\x3A\x8E\x6A\x14\xFB"
-+			  "\x83\x54\xDF\x0F\x86\xB7\xEA\x40"
-+			  "\x46\x39\xF7\x2A\x89\x8D\x4E\x96"
-+			  "\x5F\x5F\x6D\x76\xC6\x13\x9D\x3D"
-+			  "\x1D\x5F\x0C\x7D\xE2\xBC\xC2\x16"
-+			  "\x16\xBE\x89\x3E\xB0\x61\xA2\x5D"
-+			  "\xAF\xD1\x40\x5F\x1A\xB8\x26\x41"
-+			  "\xC6\xBD\x36\xEF\xED\x29\x50\x6D"
-+			  "\x10\xEF\x26\xE8\xA8\x93\x11\x3F"
-+			  "\x2D\x1F\x88\x20\x77\x45\xF5\x66"
-+			  "\x08\xB9\xF1\xEF\xB1\x93\xA8\x81"
-+			  "\x65\xC5\xCD\x3E\x8C\x06\x60\x2C"
-+			  "\xB2\x10\x7A\xCA\x05\x25\x59\xDB"
-+			  "\xC7\x28\xF5\x20\x35\x52\x9E\x62"
-+			  "\xF8\x88\x24\x1C\x4D\x84\x12\x39"
-+			  "\x39\xE4\x2E\xF4\xD4\x9D\x2B\xBC"
-+			  "\x87\x66\xE6\xC0\x6B\x31\x9A\x66"
-+			  "\x03\xDC\x95\xD8\x6B\xD0\x30\x8F"
-+			  "\xDF\x8F\x8D\xFA\xEC\x1F\x08\xBD"
-+			  "\xA3\x63\xE2\x71\x4F\x03\x94\x87"
-+			  "\x50\xDF\x15\x1F\xED\x3A\xA3\x7F"
-+			  "\x1F\x2A\xB5\xA1\x69\xAC\x4B\x0D"
-+			  "\x84\x9B\x2A\xE9\x55\xDD\x46\x91"
-+			  "\x15\x33\xF3\x2B\x9B\x46\x97\x00"
-+			  "\xF0\x29\xD8\x59\x5D\x33\x37\xF9"
-+			  "\x58\x33\x9B\x78\xC7\x58\x48\x6B"
-+			  "\x2C\x75\x64\xC4\xCA\xC1\x7E\xD5",
-+		.rlen	= 496,
- 	},
- };
- 
-@@ -2822,8 +2930,62 @@ static struct cipher_testvec tf_dec_tv_template[] = {
- 			  "\x34\x9E\xB6\x08\xB2\xDD\xA8\xF5"
- 			  "\xDF\xFA\xC7\xE8\x09\x50\x76\x08"
- 			  "\xA2\xB6\x6A\x59\xC0\x2B\x6D\x05"
--			  "\x89\xF6\x82\xF0\xD3\xDB\x06\x02",
--		.ilen	= 64,
-+			  "\x89\xF6\x82\xF0\xD3\xDB\x06\x02"
-+			  "\xB5\x11\x5C\x5E\x79\x1A\xAC\x43"
-+			  "\x5C\xC0\x30\x4B\x6B\x16\xA1\x40"
-+			  "\x80\x27\x88\xBA\x2C\x74\x42\xE0"
-+			  "\x1B\xA5\x85\x08\xB9\xE6\x22\x7A"
-+			  "\x36\x3B\x0D\x9F\xA0\x22\x6C\x2A"
-+			  "\x91\x75\x47\xBC\x67\x21\x4E\xF9"
-+			  "\xEA\xFF\xD9\xD5\xC0\xFC\x9E\x2C"
-+			  "\x3E\xAD\xC6\x61\x0E\x93\x7A\x22"
-+			  "\x09\xC8\x8D\xC1\x8E\xB4\x8B\x5C"
-+			  "\xC6\x24\x42\xB8\x23\x66\x80\xA9"
-+			  "\x32\x0B\x7A\x29\xBF\xB3\x0B\x63"
-+			  "\x43\x27\x13\xA9\xBE\xEB\xBD\xF3"
-+			  "\x33\x62\x70\xE2\x1B\x86\x7A\xA1"
-+			  "\x51\x4A\x16\xFE\x29\x63\x7E\xD0"
-+			  "\x7A\xA4\x6E\x2C\xF8\xC1\xDB\xE8"
-+			  "\xCB\x4D\xD2\x8C\x04\x14\xB4\x66"
-+			  "\x41\xB7\x3A\x96\x16\x7C\x1D\x5B"
-+			  "\xB6\x41\x42\x64\x43\xEE\x6E\x7C"
-+			  "\x8B\xAF\x01\x9C\xA4\x6E\x75\x8F"
-+			  "\xDE\x10\x9F\xA6\xE7\xD6\x44\x97"
-+			  "\x66\xA3\x96\x0F\x1C\x25\x60\xF5"
-+			  "\x3C\x2E\x32\x69\x0E\x82\xFF\x27"
-+			  "\x0F\xB5\x06\xDA\xD8\x31\x15\x6C"
-+			  "\xDF\x18\x6C\x87\xF5\x3B\x11\x9A"
-+			  "\x1B\x42\x1F\x5B\x29\x19\x96\x13"
-+			  "\x68\x2E\x5E\x08\x1C\x8F\x32\x4B"
-+			  "\x81\x77\x6D\xF4\xA0\x01\x42\xEC"
-+			  "\xDD\x5B\xFD\x3A\x8E\x6A\x14\xFB"
-+			  "\x83\x54\xDF\x0F\x86\xB7\xEA\x40"
-+			  "\x46\x39\xF7\x2A\x89\x8D\x4E\x96"
-+			  "\x5F\x5F\x6D\x76\xC6\x13\x9D\x3D"
-+			  "\x1D\x5F\x0C\x7D\xE2\xBC\xC2\x16"
-+			  "\x16\xBE\x89\x3E\xB0\x61\xA2\x5D"
-+			  "\xAF\xD1\x40\x5F\x1A\xB8\x26\x41"
-+			  "\xC6\xBD\x36\xEF\xED\x29\x50\x6D"
-+			  "\x10\xEF\x26\xE8\xA8\x93\x11\x3F"
-+			  "\x2D\x1F\x88\x20\x77\x45\xF5\x66"
-+			  "\x08\xB9\xF1\xEF\xB1\x93\xA8\x81"
-+			  "\x65\xC5\xCD\x3E\x8C\x06\x60\x2C"
-+			  "\xB2\x10\x7A\xCA\x05\x25\x59\xDB"
-+			  "\xC7\x28\xF5\x20\x35\x52\x9E\x62"
-+			  "\xF8\x88\x24\x1C\x4D\x84\x12\x39"
-+			  "\x39\xE4\x2E\xF4\xD4\x9D\x2B\xBC"
-+			  "\x87\x66\xE6\xC0\x6B\x31\x9A\x66"
-+			  "\x03\xDC\x95\xD8\x6B\xD0\x30\x8F"
-+			  "\xDF\x8F\x8D\xFA\xEC\x1F\x08\xBD"
-+			  "\xA3\x63\xE2\x71\x4F\x03\x94\x87"
-+			  "\x50\xDF\x15\x1F\xED\x3A\xA3\x7F"
-+			  "\x1F\x2A\xB5\xA1\x69\xAC\x4B\x0D"
-+			  "\x84\x9B\x2A\xE9\x55\xDD\x46\x91"
-+			  "\x15\x33\xF3\x2B\x9B\x46\x97\x00"
-+			  "\xF0\x29\xD8\x59\x5D\x33\x37\xF9"
-+			  "\x58\x33\x9B\x78\xC7\x58\x48\x6B"
-+			  "\x2C\x75\x64\xC4\xCA\xC1\x7E\xD5",
-+		.ilen	= 496,
- 		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
- 			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
- 			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-@@ -2831,8 +2993,62 @@ static struct cipher_testvec tf_dec_tv_template[] = {
- 			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
--			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C",
--		.rlen	= 64,
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.rlen	= 496,
- 	},
- };
- 
-@@ -2894,8 +3110,62 @@ static struct cipher_testvec tf_cbc_enc_tv_template[] = {
- 			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
--			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C",
--		.ilen	= 64,
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.ilen	= 496,
- 		.result	= "\xC8\xFF\xF2\x53\xA6\x27\x09\xD1"
- 			  "\x33\x38\xC2\xC0\x0C\x14\x7E\xB5"
- 			  "\x26\x1B\x05\x0C\x05\x12\x3F\xC0"
-@@ -2903,8 +3173,62 @@ static struct cipher_testvec tf_cbc_enc_tv_template[] = {
- 			  "\x3D\x32\xDF\xDA\x56\x00\x6E\xEE"
- 			  "\x5B\x2A\x72\x9D\xC2\x4D\x19\xBC"
- 			  "\x8C\x53\xFA\x87\x6F\xDD\x81\xA3"
--			  "\xB1\xD3\x44\x65\xDF\xE7\x63\x38",
--		.rlen	= 64,
-+			  "\xB1\xD3\x44\x65\xDF\xE7\x63\x38"
-+			  "\x4A\xFC\xDC\xEC\x3F\x26\x8E\xB8"
-+			  "\x43\xFC\xFE\x18\xB5\x11\x6D\x31"
-+			  "\x81\x8B\x0D\x75\xF6\x80\xEC\x84"
-+			  "\x04\xB9\xE6\x09\x63\xED\x39\xDB"
-+			  "\xC3\xF6\x14\xD6\x6E\x5E\x8B\xBD"
-+			  "\x3E\xFA\xD7\x98\x50\x6F\xD9\x63"
-+			  "\x02\xCD\x0D\x39\x4B\x0D\xEC\x80"
-+			  "\xE3\x6A\x17\xF4\xCC\xAD\xFF\x68"
-+			  "\x45\xDD\xC8\x83\x1D\x41\x96\x0D"
-+			  "\x91\x2E\x05\xD3\x59\x82\xE0\x43"
-+			  "\x90\x4F\xB9\xF7\xAD\x6B\x2E\xAF"
-+			  "\xA7\x84\x00\x53\xCD\x6F\xD1\x0C"
-+			  "\x4E\xF9\x5A\x23\xFB\xCA\xC7\xD3"
-+			  "\xA9\xAA\x9D\xB2\x3F\x66\xF1\xAC"
-+			  "\x25\x21\x8F\xF7\xEF\xF2\x6A\xDF"
-+			  "\xE8\xDA\x75\x1A\x8A\xF1\xDD\x38"
-+			  "\x1F\xF9\x3D\x68\x4A\xBB\x9E\x34"
-+			  "\x1F\x66\x1F\x9C\x2B\x54\xFF\x60"
-+			  "\x7F\x29\x4B\x55\x80\x8F\x4E\xA7"
-+			  "\xA6\x9A\x0A\xD9\x0D\x19\x00\xF8"
-+			  "\x1F\xBC\x0C\x40\x6B\xEC\x99\x25"
-+			  "\x94\x70\x74\x0E\x1D\xC5\xBC\x12"
-+			  "\xF3\x42\xBE\x95\xBF\xFB\x4E\x55"
-+			  "\x9A\xB9\xCE\x14\x16\x5B\xDC\xD3"
-+			  "\x75\x42\x62\x04\x31\x1F\x95\x7C"
-+			  "\x66\x1A\x97\xDC\x2F\x40\x5C\x39"
-+			  "\x78\xE6\x02\xDB\x49\xE1\xC6\x47"
-+			  "\xC2\x78\x9A\xBB\xF3\xBE\xCB\x93"
-+			  "\xD8\xB8\xE8\xBB\x8C\xB3\x9B\xA7"
-+			  "\xC2\x89\xF3\x91\x88\x83\x3D\xF0"
-+			  "\x29\xA2\xCD\xB5\x79\x16\xC2\x40"
-+			  "\x11\x03\x8E\x9C\xFD\xC9\x43\xC4"
-+			  "\xC2\x19\xF0\x4A\x32\xEF\x0C\x2B"
-+			  "\xD3\x2B\xE9\xD4\x4C\xDE\x95\xCF"
-+			  "\x04\x03\xD3\x2C\x7F\x82\xC8\xFA"
-+			  "\x0F\xD8\x7A\x39\x7B\x01\x41\x9C"
-+			  "\x78\xB6\xC9\xBF\xF9\x78\x57\x88"
-+			  "\xB1\xA5\xE1\xE0\xD9\x16\xD4\xC8"
-+			  "\xEE\xC4\xBE\x7B\x55\x59\x00\x48"
-+			  "\x1B\xBC\x14\xFA\x2A\x9D\xC9\x1C"
-+			  "\xFB\x28\x3F\x95\xDD\xB7\xD6\xCE"
-+			  "\x3A\x7F\x09\x0C\x0E\x69\x30\x7D"
-+			  "\xBC\x68\x9C\x91\x2A\x59\x57\x04"
-+			  "\xED\x1A\x1E\x00\xB1\x85\x92\x04"
-+			  "\x28\x8C\x0C\x3C\xC1\xD5\x12\xF7"
-+			  "\x4C\x3E\xB0\xE7\x86\x62\x68\x91"
-+			  "\xFC\xC4\xE2\xCE\xA6\xDC\x5E\x93"
-+			  "\x5D\x8D\x8C\x68\xB3\xB2\xB9\x64"
-+			  "\x16\xB8\xC8\x6F\xD8\xEE\x21\xBD"
-+			  "\xAC\x18\x0C\x7D\x0D\x05\xAB\xF1"
-+			  "\xFA\xDD\xE2\x48\xDF\x4C\x02\x39"
-+			  "\x69\xA1\x62\xBD\x49\x3A\x9D\x91"
-+			  "\x30\x70\x56\xA4\x37\xDD\x7C\xC0"
-+			  "\x0A\xA3\x30\x10\x26\x25\x41\x2C",
-+		.rlen	= 496,
- 	},
- };
- 
-@@ -2966,8 +3290,62 @@ static struct cipher_testvec tf_cbc_dec_tv_template[] = {
- 			  "\x3D\x32\xDF\xDA\x56\x00\x6E\xEE"
- 			  "\x5B\x2A\x72\x9D\xC2\x4D\x19\xBC"
- 			  "\x8C\x53\xFA\x87\x6F\xDD\x81\xA3"
--			  "\xB1\xD3\x44\x65\xDF\xE7\x63\x38",
--		.ilen	= 64,
-+			  "\xB1\xD3\x44\x65\xDF\xE7\x63\x38"
-+			  "\x4A\xFC\xDC\xEC\x3F\x26\x8E\xB8"
-+			  "\x43\xFC\xFE\x18\xB5\x11\x6D\x31"
-+			  "\x81\x8B\x0D\x75\xF6\x80\xEC\x84"
-+			  "\x04\xB9\xE6\x09\x63\xED\x39\xDB"
-+			  "\xC3\xF6\x14\xD6\x6E\x5E\x8B\xBD"
-+			  "\x3E\xFA\xD7\x98\x50\x6F\xD9\x63"
-+			  "\x02\xCD\x0D\x39\x4B\x0D\xEC\x80"
-+			  "\xE3\x6A\x17\xF4\xCC\xAD\xFF\x68"
-+			  "\x45\xDD\xC8\x83\x1D\x41\x96\x0D"
-+			  "\x91\x2E\x05\xD3\x59\x82\xE0\x43"
-+			  "\x90\x4F\xB9\xF7\xAD\x6B\x2E\xAF"
-+			  "\xA7\x84\x00\x53\xCD\x6F\xD1\x0C"
-+			  "\x4E\xF9\x5A\x23\xFB\xCA\xC7\xD3"
-+			  "\xA9\xAA\x9D\xB2\x3F\x66\xF1\xAC"
-+			  "\x25\x21\x8F\xF7\xEF\xF2\x6A\xDF"
-+			  "\xE8\xDA\x75\x1A\x8A\xF1\xDD\x38"
-+			  "\x1F\xF9\x3D\x68\x4A\xBB\x9E\x34"
-+			  "\x1F\x66\x1F\x9C\x2B\x54\xFF\x60"
-+			  "\x7F\x29\x4B\x55\x80\x8F\x4E\xA7"
-+			  "\xA6\x9A\x0A\xD9\x0D\x19\x00\xF8"
-+			  "\x1F\xBC\x0C\x40\x6B\xEC\x99\x25"
-+			  "\x94\x70\x74\x0E\x1D\xC5\xBC\x12"
-+			  "\xF3\x42\xBE\x95\xBF\xFB\x4E\x55"
-+			  "\x9A\xB9\xCE\x14\x16\x5B\xDC\xD3"
-+			  "\x75\x42\x62\x04\x31\x1F\x95\x7C"
-+			  "\x66\x1A\x97\xDC\x2F\x40\x5C\x39"
-+			  "\x78\xE6\x02\xDB\x49\xE1\xC6\x47"
-+			  "\xC2\x78\x9A\xBB\xF3\xBE\xCB\x93"
-+			  "\xD8\xB8\xE8\xBB\x8C\xB3\x9B\xA7"
-+			  "\xC2\x89\xF3\x91\x88\x83\x3D\xF0"
-+			  "\x29\xA2\xCD\xB5\x79\x16\xC2\x40"
-+			  "\x11\x03\x8E\x9C\xFD\xC9\x43\xC4"
-+			  "\xC2\x19\xF0\x4A\x32\xEF\x0C\x2B"
-+			  "\xD3\x2B\xE9\xD4\x4C\xDE\x95\xCF"
-+			  "\x04\x03\xD3\x2C\x7F\x82\xC8\xFA"
-+			  "\x0F\xD8\x7A\x39\x7B\x01\x41\x9C"
-+			  "\x78\xB6\xC9\xBF\xF9\x78\x57\x88"
-+			  "\xB1\xA5\xE1\xE0\xD9\x16\xD4\xC8"
-+			  "\xEE\xC4\xBE\x7B\x55\x59\x00\x48"
-+			  "\x1B\xBC\x14\xFA\x2A\x9D\xC9\x1C"
-+			  "\xFB\x28\x3F\x95\xDD\xB7\xD6\xCE"
-+			  "\x3A\x7F\x09\x0C\x0E\x69\x30\x7D"
-+			  "\xBC\x68\x9C\x91\x2A\x59\x57\x04"
-+			  "\xED\x1A\x1E\x00\xB1\x85\x92\x04"
-+			  "\x28\x8C\x0C\x3C\xC1\xD5\x12\xF7"
-+			  "\x4C\x3E\xB0\xE7\x86\x62\x68\x91"
-+			  "\xFC\xC4\xE2\xCE\xA6\xDC\x5E\x93"
-+			  "\x5D\x8D\x8C\x68\xB3\xB2\xB9\x64"
-+			  "\x16\xB8\xC8\x6F\xD8\xEE\x21\xBD"
-+			  "\xAC\x18\x0C\x7D\x0D\x05\xAB\xF1"
-+			  "\xFA\xDD\xE2\x48\xDF\x4C\x02\x39"
-+			  "\x69\xA1\x62\xBD\x49\x3A\x9D\x91"
-+			  "\x30\x70\x56\xA4\x37\xDD\x7C\xC0"
-+			  "\x0A\xA3\x30\x10\x26\x25\x41\x2C",
-+		.ilen	= 496,
- 		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
- 			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
- 			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-@@ -2975,8 +3353,62 @@ static struct cipher_testvec tf_cbc_dec_tv_template[] = {
- 			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
--			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C",
--		.rlen	= 64,
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.rlen	= 496,
- 	},
- };
- 
-@@ -2996,8 +3428,62 @@ static struct cipher_testvec tf_ctr_enc_tv_template[] = {
- 			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
--			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C",
--		.ilen	= 64,
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.ilen	= 496,
- 		.result	= "\xDF\xDD\x69\xFA\xB0\x2E\xFD\xFE"
- 			  "\x70\x9E\xC5\x4B\xC9\xD4\xA1\x30"
- 			  "\x26\x9B\x89\xA1\xEE\x43\xE0\x52"
-@@ -3005,8 +3491,62 @@ static struct cipher_testvec tf_ctr_enc_tv_template[] = {
- 			  "\x9F\x8D\x40\x9F\x24\xFD\x92\xA0"
- 			  "\xBC\x8F\x35\xDD\x67\x38\xD8\xAA"
- 			  "\xCF\xF8\x48\xCA\xFB\xE4\x5C\x60"
--			  "\x01\x41\x21\x12\x38\xAB\x52\x4F",
--		.rlen	= 64,
-+			  "\x01\x41\x21\x12\x38\xAB\x52\x4F"
-+			  "\xA8\x57\x20\xE0\x21\x6A\x17\x0D"
-+			  "\x0E\xF9\x8E\x49\x42\x00\x3C\x94"
-+			  "\x14\xC0\xD0\x8D\x8A\x98\xEB\x29"
-+			  "\xEC\xAE\x96\x44\xC0\x3C\x48\xDC"
-+			  "\x29\x35\x25\x2F\xE7\x11\x6C\x68"
-+			  "\xC8\x67\x0A\x2F\xF4\x07\xBE\xF9"
-+			  "\x2C\x31\x87\x40\xAB\xB2\xB6\xFA"
-+			  "\xD2\xC9\x6D\x5C\x50\xE9\xE6\x7E"
-+			  "\xE3\x0A\xD2\xD5\x6D\x8D\x64\x9E"
-+			  "\x70\xCE\x03\x76\xDD\xE0\xF0\x8C"
-+			  "\x84\x86\x8B\x6A\xFE\xC7\xF9\x69"
-+			  "\x2E\xFE\xFC\xC2\xC4\x1A\x55\x58"
-+			  "\xB3\xBE\xE2\x7E\xED\x39\x42\x6C"
-+			  "\xB4\x42\x97\x9A\xEC\xE1\x0A\x06"
-+			  "\x02\xC5\x03\x9D\xC4\x48\x15\x66"
-+			  "\x35\x6A\xC2\xC9\xA2\x26\x30\xBB"
-+			  "\xDB\x2D\xC8\x08\x2B\xA0\x29\x1A"
-+			  "\x23\x61\x48\xEA\x80\x04\x27\xAA"
-+			  "\x69\x49\xE8\xE8\x4A\x83\x6B\x5A"
-+			  "\xCA\x7C\xD3\xB1\xB5\x0B\xCC\x23"
-+			  "\x74\x1F\xA9\x87\xCD\xED\xC0\x2D"
-+			  "\xBF\xEB\xCF\x16\x2D\x2A\x2E\x1D"
-+			  "\x96\xBA\x36\x11\x45\x41\xDA\xCE"
-+			  "\xA4\x48\x80\x8B\x06\xF4\x98\x89"
-+			  "\x8B\x23\x08\x53\xF4\xD4\x5A\x24"
-+			  "\x8B\xF8\x43\x73\xD1\xEE\xC4\xB0"
-+			  "\xF8\xFE\x09\x0C\x75\x05\x38\x0B"
-+			  "\x7C\x81\xDE\x9D\xE4\x61\x37\x63"
-+			  "\x63\xAD\x12\xD2\x04\xB9\xCE\x45"
-+			  "\x5A\x1A\x6E\xB3\x78\x2A\xA4\x74"
-+			  "\x86\xD0\xE3\xFF\xDA\x38\x9C\xB5"
-+			  "\xB8\xB1\xDB\x38\x2F\xC5\x6A\xB4"
-+			  "\xEB\x6E\x96\xE8\x43\x80\xB5\x51"
-+			  "\x61\x2D\x48\xAA\x07\x65\x11\x8C"
-+			  "\x48\xE3\x90\x7E\x78\x3A\xEC\x97"
-+			  "\x05\x3D\x84\xE7\x90\x2B\xAA\xBD"
-+			  "\x83\x29\x0E\x1A\x81\x73\x7B\xE0"
-+			  "\x7A\x01\x4A\x37\x3B\x77\x7F\x8D"
-+			  "\x49\xA4\x2F\x6E\xBE\x68\x99\x08"
-+			  "\x99\xAA\x4C\x12\x04\xAE\x1F\x77"
-+			  "\x35\x88\xF1\x65\x06\x0A\x0B\x4D"
-+			  "\x47\xF9\x50\x38\x5D\x71\xF9\x6E"
-+			  "\xDE\xEC\x61\x35\x2C\x4C\x96\x50"
-+			  "\xE8\x28\x93\x9C\x7E\x01\xC6\x04"
-+			  "\xB2\xD6\xBC\x6C\x17\xEB\xC1\x7D"
-+			  "\x11\xE9\x43\x83\x76\xAA\x53\x37"
-+			  "\x0C\x1D\x39\x89\x53\x72\x09\x7E"
-+			  "\xD9\x85\x16\x04\xA5\x2C\x05\x6F"
-+			  "\x17\x0C\x6E\x66\xAA\x84\xA7\xD9"
-+			  "\xE2\xD9\xC4\xEB\x43\x3E\xB1\x8D"
-+			  "\x7C\x36\xC7\x71\x70\x9C\x10\xD8"
-+			  "\xE8\x47\x2A\x4D\xFD\xA1\xBC\xE3"
-+			  "\xB9\x32\xE2\xC1\x82\xAC\xFE\xCC"
-+			  "\xC5\xC9\x7F\x9E\xCF\x33\x7A\xDF",
-+		.rlen	= 496,
- 	}, { /* Generated with Crypto++ */
- 		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
- 			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
-@@ -3023,8 +3563,62 @@ static struct cipher_testvec tf_ctr_enc_tv_template[] = {
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
- 			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
--			  "\xC3\x37\xCE",
--		.ilen	= 67,
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7"
-+			  "\x2B\xC2\x59",
-+		.ilen	= 499,
- 		.result	= "\xDF\xDD\x69\xFA\xB0\x2E\xFD\xFE"
- 			  "\x70\x9E\xC5\x4B\xC9\xD4\xA1\x30"
- 			  "\x26\x9B\x89\xA1\xEE\x43\xE0\x52"
-@@ -3033,8 +3627,62 @@ static struct cipher_testvec tf_ctr_enc_tv_template[] = {
- 			  "\xBC\x8F\x35\xDD\x67\x38\xD8\xAA"
- 			  "\xCF\xF8\x48\xCA\xFB\xE4\x5C\x60"
- 			  "\x01\x41\x21\x12\x38\xAB\x52\x4F"
--			  "\xA8\x57\x20",
--		.rlen	= 67,
-+			  "\xA8\x57\x20\xE0\x21\x6A\x17\x0D"
-+			  "\x0E\xF9\x8E\x49\x42\x00\x3C\x94"
-+			  "\x14\xC0\xD0\x8D\x8A\x98\xEB\x29"
-+			  "\xEC\xAE\x96\x44\xC0\x3C\x48\xDC"
-+			  "\x29\x35\x25\x2F\xE7\x11\x6C\x68"
-+			  "\xC8\x67\x0A\x2F\xF4\x07\xBE\xF9"
-+			  "\x2C\x31\x87\x40\xAB\xB2\xB6\xFA"
-+			  "\xD2\xC9\x6D\x5C\x50\xE9\xE6\x7E"
-+			  "\xE3\x0A\xD2\xD5\x6D\x8D\x64\x9E"
-+			  "\x70\xCE\x03\x76\xDD\xE0\xF0\x8C"
-+			  "\x84\x86\x8B\x6A\xFE\xC7\xF9\x69"
-+			  "\x2E\xFE\xFC\xC2\xC4\x1A\x55\x58"
-+			  "\xB3\xBE\xE2\x7E\xED\x39\x42\x6C"
-+			  "\xB4\x42\x97\x9A\xEC\xE1\x0A\x06"
-+			  "\x02\xC5\x03\x9D\xC4\x48\x15\x66"
-+			  "\x35\x6A\xC2\xC9\xA2\x26\x30\xBB"
-+			  "\xDB\x2D\xC8\x08\x2B\xA0\x29\x1A"
-+			  "\x23\x61\x48\xEA\x80\x04\x27\xAA"
-+			  "\x69\x49\xE8\xE8\x4A\x83\x6B\x5A"
-+			  "\xCA\x7C\xD3\xB1\xB5\x0B\xCC\x23"
-+			  "\x74\x1F\xA9\x87\xCD\xED\xC0\x2D"
-+			  "\xBF\xEB\xCF\x16\x2D\x2A\x2E\x1D"
-+			  "\x96\xBA\x36\x11\x45\x41\xDA\xCE"
-+			  "\xA4\x48\x80\x8B\x06\xF4\x98\x89"
-+			  "\x8B\x23\x08\x53\xF4\xD4\x5A\x24"
-+			  "\x8B\xF8\x43\x73\xD1\xEE\xC4\xB0"
-+			  "\xF8\xFE\x09\x0C\x75\x05\x38\x0B"
-+			  "\x7C\x81\xDE\x9D\xE4\x61\x37\x63"
-+			  "\x63\xAD\x12\xD2\x04\xB9\xCE\x45"
-+			  "\x5A\x1A\x6E\xB3\x78\x2A\xA4\x74"
-+			  "\x86\xD0\xE3\xFF\xDA\x38\x9C\xB5"
-+			  "\xB8\xB1\xDB\x38\x2F\xC5\x6A\xB4"
-+			  "\xEB\x6E\x96\xE8\x43\x80\xB5\x51"
-+			  "\x61\x2D\x48\xAA\x07\x65\x11\x8C"
-+			  "\x48\xE3\x90\x7E\x78\x3A\xEC\x97"
-+			  "\x05\x3D\x84\xE7\x90\x2B\xAA\xBD"
-+			  "\x83\x29\x0E\x1A\x81\x73\x7B\xE0"
-+			  "\x7A\x01\x4A\x37\x3B\x77\x7F\x8D"
-+			  "\x49\xA4\x2F\x6E\xBE\x68\x99\x08"
-+			  "\x99\xAA\x4C\x12\x04\xAE\x1F\x77"
-+			  "\x35\x88\xF1\x65\x06\x0A\x0B\x4D"
-+			  "\x47\xF9\x50\x38\x5D\x71\xF9\x6E"
-+			  "\xDE\xEC\x61\x35\x2C\x4C\x96\x50"
-+			  "\xE8\x28\x93\x9C\x7E\x01\xC6\x04"
-+			  "\xB2\xD6\xBC\x6C\x17\xEB\xC1\x7D"
-+			  "\x11\xE9\x43\x83\x76\xAA\x53\x37"
-+			  "\x0C\x1D\x39\x89\x53\x72\x09\x7E"
-+			  "\xD9\x85\x16\x04\xA5\x2C\x05\x6F"
-+			  "\x17\x0C\x6E\x66\xAA\x84\xA7\xD9"
-+			  "\xE2\xD9\xC4\xEB\x43\x3E\xB1\x8D"
-+			  "\x7C\x36\xC7\x71\x70\x9C\x10\xD8"
-+			  "\xE8\x47\x2A\x4D\xFD\xA1\xBC\xE3"
-+			  "\xB9\x32\xE2\xC1\x82\xAC\xFE\xCC"
-+			  "\xC5\xC9\x7F\x9E\xCF\x33\x7A\xDF"
-+			  "\x6C\x82\x9D",
-+		.rlen	= 499,
- 	},
- };
- 
-@@ -3054,8 +3702,62 @@ static struct cipher_testvec tf_ctr_dec_tv_template[] = {
- 			  "\x9F\x8D\x40\x9F\x24\xFD\x92\xA0"
- 			  "\xBC\x8F\x35\xDD\x67\x38\xD8\xAA"
- 			  "\xCF\xF8\x48\xCA\xFB\xE4\x5C\x60"
--			  "\x01\x41\x21\x12\x38\xAB\x52\x4F",
--		.ilen	= 64,
-+			  "\x01\x41\x21\x12\x38\xAB\x52\x4F"
-+			  "\xA8\x57\x20\xE0\x21\x6A\x17\x0D"
-+			  "\x0E\xF9\x8E\x49\x42\x00\x3C\x94"
-+			  "\x14\xC0\xD0\x8D\x8A\x98\xEB\x29"
-+			  "\xEC\xAE\x96\x44\xC0\x3C\x48\xDC"
-+			  "\x29\x35\x25\x2F\xE7\x11\x6C\x68"
-+			  "\xC8\x67\x0A\x2F\xF4\x07\xBE\xF9"
-+			  "\x2C\x31\x87\x40\xAB\xB2\xB6\xFA"
-+			  "\xD2\xC9\x6D\x5C\x50\xE9\xE6\x7E"
-+			  "\xE3\x0A\xD2\xD5\x6D\x8D\x64\x9E"
-+			  "\x70\xCE\x03\x76\xDD\xE0\xF0\x8C"
-+			  "\x84\x86\x8B\x6A\xFE\xC7\xF9\x69"
-+			  "\x2E\xFE\xFC\xC2\xC4\x1A\x55\x58"
-+			  "\xB3\xBE\xE2\x7E\xED\x39\x42\x6C"
-+			  "\xB4\x42\x97\x9A\xEC\xE1\x0A\x06"
-+			  "\x02\xC5\x03\x9D\xC4\x48\x15\x66"
-+			  "\x35\x6A\xC2\xC9\xA2\x26\x30\xBB"
-+			  "\xDB\x2D\xC8\x08\x2B\xA0\x29\x1A"
-+			  "\x23\x61\x48\xEA\x80\x04\x27\xAA"
-+			  "\x69\x49\xE8\xE8\x4A\x83\x6B\x5A"
-+			  "\xCA\x7C\xD3\xB1\xB5\x0B\xCC\x23"
-+			  "\x74\x1F\xA9\x87\xCD\xED\xC0\x2D"
-+			  "\xBF\xEB\xCF\x16\x2D\x2A\x2E\x1D"
-+			  "\x96\xBA\x36\x11\x45\x41\xDA\xCE"
-+			  "\xA4\x48\x80\x8B\x06\xF4\x98\x89"
-+			  "\x8B\x23\x08\x53\xF4\xD4\x5A\x24"
-+			  "\x8B\xF8\x43\x73\xD1\xEE\xC4\xB0"
-+			  "\xF8\xFE\x09\x0C\x75\x05\x38\x0B"
-+			  "\x7C\x81\xDE\x9D\xE4\x61\x37\x63"
-+			  "\x63\xAD\x12\xD2\x04\xB9\xCE\x45"
-+			  "\x5A\x1A\x6E\xB3\x78\x2A\xA4\x74"
-+			  "\x86\xD0\xE3\xFF\xDA\x38\x9C\xB5"
-+			  "\xB8\xB1\xDB\x38\x2F\xC5\x6A\xB4"
-+			  "\xEB\x6E\x96\xE8\x43\x80\xB5\x51"
-+			  "\x61\x2D\x48\xAA\x07\x65\x11\x8C"
-+			  "\x48\xE3\x90\x7E\x78\x3A\xEC\x97"
-+			  "\x05\x3D\x84\xE7\x90\x2B\xAA\xBD"
-+			  "\x83\x29\x0E\x1A\x81\x73\x7B\xE0"
-+			  "\x7A\x01\x4A\x37\x3B\x77\x7F\x8D"
-+			  "\x49\xA4\x2F\x6E\xBE\x68\x99\x08"
-+			  "\x99\xAA\x4C\x12\x04\xAE\x1F\x77"
-+			  "\x35\x88\xF1\x65\x06\x0A\x0B\x4D"
-+			  "\x47\xF9\x50\x38\x5D\x71\xF9\x6E"
-+			  "\xDE\xEC\x61\x35\x2C\x4C\x96\x50"
-+			  "\xE8\x28\x93\x9C\x7E\x01\xC6\x04"
-+			  "\xB2\xD6\xBC\x6C\x17\xEB\xC1\x7D"
-+			  "\x11\xE9\x43\x83\x76\xAA\x53\x37"
-+			  "\x0C\x1D\x39\x89\x53\x72\x09\x7E"
-+			  "\xD9\x85\x16\x04\xA5\x2C\x05\x6F"
-+			  "\x17\x0C\x6E\x66\xAA\x84\xA7\xD9"
-+			  "\xE2\xD9\xC4\xEB\x43\x3E\xB1\x8D"
-+			  "\x7C\x36\xC7\x71\x70\x9C\x10\xD8"
-+			  "\xE8\x47\x2A\x4D\xFD\xA1\xBC\xE3"
-+			  "\xB9\x32\xE2\xC1\x82\xAC\xFE\xCC"
-+			  "\xC5\xC9\x7F\x9E\xCF\x33\x7A\xDF",
-+		.ilen	= 496,
- 		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
- 			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
- 			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-@@ -3063,8 +3765,62 @@ static struct cipher_testvec tf_ctr_dec_tv_template[] = {
- 			  "\x1E\x92\x29\xC0\x34\xCB\x62\xF9"
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
--			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C",
--		.rlen	= 64,
-+			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7",
-+		.rlen	= 496,
- 	}, { /* Generated with Crypto++ */
- 		.key	= "\x85\x62\x3F\x1C\xF9\xD6\x1C\xF9"
- 			  "\xD6\xB3\x90\x6D\x4A\x90\x6D\x4A"
-@@ -3081,8 +3837,62 @@ static struct cipher_testvec tf_ctr_dec_tv_template[] = {
- 			  "\xBC\x8F\x35\xDD\x67\x38\xD8\xAA"
- 			  "\xCF\xF8\x48\xCA\xFB\xE4\x5C\x60"
- 			  "\x01\x41\x21\x12\x38\xAB\x52\x4F"
--			  "\xA8\x57\x20",
--		.ilen	= 67,
-+			  "\xA8\x57\x20\xE0\x21\x6A\x17\x0D"
-+			  "\x0E\xF9\x8E\x49\x42\x00\x3C\x94"
-+			  "\x14\xC0\xD0\x8D\x8A\x98\xEB\x29"
-+			  "\xEC\xAE\x96\x44\xC0\x3C\x48\xDC"
-+			  "\x29\x35\x25\x2F\xE7\x11\x6C\x68"
-+			  "\xC8\x67\x0A\x2F\xF4\x07\xBE\xF9"
-+			  "\x2C\x31\x87\x40\xAB\xB2\xB6\xFA"
-+			  "\xD2\xC9\x6D\x5C\x50\xE9\xE6\x7E"
-+			  "\xE3\x0A\xD2\xD5\x6D\x8D\x64\x9E"
-+			  "\x70\xCE\x03\x76\xDD\xE0\xF0\x8C"
-+			  "\x84\x86\x8B\x6A\xFE\xC7\xF9\x69"
-+			  "\x2E\xFE\xFC\xC2\xC4\x1A\x55\x58"
-+			  "\xB3\xBE\xE2\x7E\xED\x39\x42\x6C"
-+			  "\xB4\x42\x97\x9A\xEC\xE1\x0A\x06"
-+			  "\x02\xC5\x03\x9D\xC4\x48\x15\x66"
-+			  "\x35\x6A\xC2\xC9\xA2\x26\x30\xBB"
-+			  "\xDB\x2D\xC8\x08\x2B\xA0\x29\x1A"
-+			  "\x23\x61\x48\xEA\x80\x04\x27\xAA"
-+			  "\x69\x49\xE8\xE8\x4A\x83\x6B\x5A"
-+			  "\xCA\x7C\xD3\xB1\xB5\x0B\xCC\x23"
-+			  "\x74\x1F\xA9\x87\xCD\xED\xC0\x2D"
-+			  "\xBF\xEB\xCF\x16\x2D\x2A\x2E\x1D"
-+			  "\x96\xBA\x36\x11\x45\x41\xDA\xCE"
-+			  "\xA4\x48\x80\x8B\x06\xF4\x98\x89"
-+			  "\x8B\x23\x08\x53\xF4\xD4\x5A\x24"
-+			  "\x8B\xF8\x43\x73\xD1\xEE\xC4\xB0"
-+			  "\xF8\xFE\x09\x0C\x75\x05\x38\x0B"
-+			  "\x7C\x81\xDE\x9D\xE4\x61\x37\x63"
-+			  "\x63\xAD\x12\xD2\x04\xB9\xCE\x45"
-+			  "\x5A\x1A\x6E\xB3\x78\x2A\xA4\x74"
-+			  "\x86\xD0\xE3\xFF\xDA\x38\x9C\xB5"
-+			  "\xB8\xB1\xDB\x38\x2F\xC5\x6A\xB4"
-+			  "\xEB\x6E\x96\xE8\x43\x80\xB5\x51"
-+			  "\x61\x2D\x48\xAA\x07\x65\x11\x8C"
-+			  "\x48\xE3\x90\x7E\x78\x3A\xEC\x97"
-+			  "\x05\x3D\x84\xE7\x90\x2B\xAA\xBD"
-+			  "\x83\x29\x0E\x1A\x81\x73\x7B\xE0"
-+			  "\x7A\x01\x4A\x37\x3B\x77\x7F\x8D"
-+			  "\x49\xA4\x2F\x6E\xBE\x68\x99\x08"
-+			  "\x99\xAA\x4C\x12\x04\xAE\x1F\x77"
-+			  "\x35\x88\xF1\x65\x06\x0A\x0B\x4D"
-+			  "\x47\xF9\x50\x38\x5D\x71\xF9\x6E"
-+			  "\xDE\xEC\x61\x35\x2C\x4C\x96\x50"
-+			  "\xE8\x28\x93\x9C\x7E\x01\xC6\x04"
-+			  "\xB2\xD6\xBC\x6C\x17\xEB\xC1\x7D"
-+			  "\x11\xE9\x43\x83\x76\xAA\x53\x37"
-+			  "\x0C\x1D\x39\x89\x53\x72\x09\x7E"
-+			  "\xD9\x85\x16\x04\xA5\x2C\x05\x6F"
-+			  "\x17\x0C\x6E\x66\xAA\x84\xA7\xD9"
-+			  "\xE2\xD9\xC4\xEB\x43\x3E\xB1\x8D"
-+			  "\x7C\x36\xC7\x71\x70\x9C\x10\xD8"
-+			  "\xE8\x47\x2A\x4D\xFD\xA1\xBC\xE3"
-+			  "\xB9\x32\xE2\xC1\x82\xAC\xFE\xCC"
-+			  "\xC5\xC9\x7F\x9E\xCF\x33\x7A\xDF"
-+			  "\x6C\x82\x9D",
-+		.ilen	= 499,
- 		.result	= "\x56\xED\x84\x1B\x8F\x26\xBD\x31"
- 			  "\xC8\x5F\xF6\x6A\x01\x98\x0C\xA3"
- 			  "\x3A\xD1\x45\xDC\x73\x0A\x7E\x15"
-@@ -3091,8 +3901,62 @@ static struct cipher_testvec tf_ctr_dec_tv_template[] = {
- 			  "\x6D\x04\x9B\x0F\xA6\x3D\xD4\x48"
- 			  "\xDF\x76\x0D\x81\x18\xAF\x23\xBA"
- 			  "\x51\xE8\x5C\xF3\x8A\x21\x95\x2C"
--			  "\xC3\x37\xCE",
--		.rlen	= 67,
-+			  "\xC3\x37\xCE\x65\xFC\x70\x07\x9E"
-+			  "\x12\xA9\x40\xD7\x4B\xE2\x79\x10"
-+			  "\x84\x1B\xB2\x26\xBD\x54\xEB\x5F"
-+			  "\xF6\x8D\x01\x98\x2F\xC6\x3A\xD1"
-+			  "\x68\xFF\x73\x0A\xA1\x15\xAC\x43"
-+			  "\xDA\x4E\xE5\x7C\x13\x87\x1E\xB5"
-+			  "\x29\xC0\x57\xEE\x62\xF9\x90\x04"
-+			  "\x9B\x32\xC9\x3D\xD4\x6B\x02\x76"
-+			  "\x0D\xA4\x18\xAF\x46\xDD\x51\xE8"
-+			  "\x7F\x16\x8A\x21\xB8\x2C\xC3\x5A"
-+			  "\xF1\x65\xFC\x93\x07\x9E\x35\xCC"
-+			  "\x40\xD7\x6E\x05\x79\x10\xA7\x1B"
-+			  "\xB2\x49\xE0\x54\xEB\x82\x19\x8D"
-+			  "\x24\xBB\x2F\xC6\x5D\xF4\x68\xFF"
-+			  "\x96\x0A\xA1\x38\xCF\x43\xDA\x71"
-+			  "\x08\x7C\x13\xAA\x1E\xB5\x4C\xE3"
-+			  "\x57\xEE\x85\x1C\x90\x27\xBE\x32"
-+			  "\xC9\x60\xF7\x6B\x02\x99\x0D\xA4"
-+			  "\x3B\xD2\x46\xDD\x74\x0B\x7F\x16"
-+			  "\xAD\x21\xB8\x4F\xE6\x5A\xF1\x88"
-+			  "\x1F\x93\x2A\xC1\x35\xCC\x63\xFA"
-+			  "\x6E\x05\x9C\x10\xA7\x3E\xD5\x49"
-+			  "\xE0\x77\x0E\x82\x19\xB0\x24\xBB"
-+			  "\x52\xE9\x5D\xF4\x8B\x22\x96\x2D"
-+			  "\xC4\x38\xCF\x66\xFD\x71\x08\x9F"
-+			  "\x13\xAA\x41\xD8\x4C\xE3\x7A\x11"
-+			  "\x85\x1C\xB3\x27\xBE\x55\xEC\x60"
-+			  "\xF7\x8E\x02\x99\x30\xC7\x3B\xD2"
-+			  "\x69\x00\x74\x0B\xA2\x16\xAD\x44"
-+			  "\xDB\x4F\xE6\x7D\x14\x88\x1F\xB6"
-+			  "\x2A\xC1\x58\xEF\x63\xFA\x91\x05"
-+			  "\x9C\x33\xCA\x3E\xD5\x6C\x03\x77"
-+			  "\x0E\xA5\x19\xB0\x47\xDE\x52\xE9"
-+			  "\x80\x17\x8B\x22\xB9\x2D\xC4\x5B"
-+			  "\xF2\x66\xFD\x94\x08\x9F\x36\xCD"
-+			  "\x41\xD8\x6F\x06\x7A\x11\xA8\x1C"
-+			  "\xB3\x4A\xE1\x55\xEC\x83\x1A\x8E"
-+			  "\x25\xBC\x30\xC7\x5E\xF5\x69\x00"
-+			  "\x97\x0B\xA2\x39\xD0\x44\xDB\x72"
-+			  "\x09\x7D\x14\xAB\x1F\xB6\x4D\xE4"
-+			  "\x58\xEF\x86\x1D\x91\x28\xBF\x33"
-+			  "\xCA\x61\xF8\x6C\x03\x9A\x0E\xA5"
-+			  "\x3C\xD3\x47\xDE\x75\x0C\x80\x17"
-+			  "\xAE\x22\xB9\x50\xE7\x5B\xF2\x89"
-+			  "\x20\x94\x2B\xC2\x36\xCD\x64\xFB"
-+			  "\x6F\x06\x9D\x11\xA8\x3F\xD6\x4A"
-+			  "\xE1\x78\x0F\x83\x1A\xB1\x25\xBC"
-+			  "\x53\xEA\x5E\xF5\x8C\x00\x97\x2E"
-+			  "\xC5\x39\xD0\x67\xFE\x72\x09\xA0"
-+			  "\x14\xAB\x42\xD9\x4D\xE4\x7B\x12"
-+			  "\x86\x1D\xB4\x28\xBF\x56\xED\x61"
-+			  "\xF8\x8F\x03\x9A\x31\xC8\x3C\xD3"
-+			  "\x6A\x01\x75\x0C\xA3\x17\xAE\x45"
-+			  "\xDC\x50\xE7\x7E\x15\x89\x20\xB7"
-+			  "\x2B\xC2\x59",
-+		.rlen	= 499,
- 	},
- };
- 
--- 
-1.7.2.5
+-system 00:0c: [mem 0xfec00000-0xfec0ffff] could not be reserved
++system 00:0c: [mem 0xfec00000-0xfec0ffff] has been reserved
 
+but this is for "pnp 00:0c" not for iwl3945 which has f1eff000-f1efffff
+addresses. So I have no idea why IO memory is not correcly mapped
+for iwl3945. Any chance that pci folks could look on that? Here is mail
+thread with previous information:
+https://lkml.org/lkml/2012/3/11/112
+
+Stanislaw
+
+
+iomem.diff:
+-----------
+
+--- bad/iomem.log	2012-04-08 13:43:00.000000000 +0200
++++ good/iomem_noapic.log	2012-04-08 13:43:00.000000000 +0200
+@@ -21,8 +21,8 @@ e0000000-f7ffffff : PCI Bus 0000:00
+   f0200000-f03fffff : PCI Bus 0000:0b
+   f0400000-f05fffff : PCI Bus 0000:09
+   f1b00000-f1bfffff : PCI Bus 0000:03
+-    f1bff400-f1bff4ff : 0000:03:09.1
+-      f1bff400-f1bff4ff : mmc0
++    f1bff500-f1bff5ff : 0000:03:09.1
++      f1bff500-f1bff5ff : mmc0
+     f1bff600-f1bff6ff : 0000:03:09.2
+       f1bff600-f1bff6ff : r592
+     f1bff700-f1bff7ff : 0000:03:09.3
+@@ -32,6 +32,7 @@ e0000000-f7ffffff : PCI Bus 0000:00
+   f1c00000-f1dfffff : PCI Bus 0000:0c
+   f1e00000-f1efffff : PCI Bus 0000:0b
+     f1eff000-f1efffff : 0000:0b:00.0
++      f1eff000-f1efffff : iwl3945
+   f1f00000-f1ffffff : PCI Bus 0000:09
+     f1ffc000-f1ffffff : 0000:09:00.0
+       f1ffc000-f1ffffff : sky2
+@@ -49,7 +50,7 @@ f8000000-fbffffff : PCI MMCONFIG 0000 [b
+     f8000000-fbffffff : pnp 00:0c
+ fc000000-febfffff : PCI Bus 0000:00
+ fec00000-fec0ffff : reserved
+-  fec00000-fec003ff : IOAPIC 0
++  fec00000-fec0ffff : pnp 00:0c
+ fec10000-fecfffff : PCI Bus 0000:00
+ fed00000-fed003ff : HPET 0
+   fed00000-fed003ff : pnp 00:09
+
+dmesg.diff:
+-----------
+
+--- bad/dmesg.log	2012-05-28 15:12:13.559424823 +0200
++++ good/dmesg_noapic.log	2012-05-28 15:12:19.016266833 +0200
+@@ -101,17 +101,11 @@ enabled)
+ enabled)
+ high edge lint[0x1])
+ high edge lint[0x1])
+-gsi_base[0])
+-IOAPIC[0]: apic_id 2, version 32, address 0xfec00000, GSI 0-23
+-ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+-ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+-ACPI: IRQ0 used by override.
+-ACPI: IRQ2 used by override.
+-ACPI: IRQ9 used by override.
+-Using ACPI (MADT) for SMP configuration information
++ACPI: Skipping IOAPIC probe due to 'noapic' option.
++Using ACPI for processor (LAPIC) configuration information
+ ACPI: HPET id: 0x8086a201 base: 0xfed00000
+ SMP: Allowing 2 CPUs, 0 hotplug CPUs
+-nr_irqs_gsi: 40
++nr_irqs_gsi: 16
+ PM: Registered nosave memory: 000000000009f000 - 00000000000a0000
+ PM: Registered nosave memory: 00000000000a0000 - 0000000000100000
+ Allocating PCI resources starting at e0000000 (gap: e0000000:18000000)
+@@ -121,7 +115,7 @@ PERCPU: Embedded 13 pages/cpu @f3c00000 
+ pcpu-alloc: s31168 r0 d22080 u2097152 alloc=1*4194304
+ 0 1 
+ Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 909828
+-Kernel command line: BOOT_IMAGE=/vmlinuz-3.3.0-4.fc16.i686 root=UUID=7417d839-a647-466e-b57d-fc65d20a6342 ro rd.md=0 rd.lvm=0 rd.dm=0 quiet SYSFONT=latarcyrheb-sun16 rhgb rd.luks=0 KEYTABLE=pl2 LANG=en_US.UTF-8
++Kernel command line: BOOT_IMAGE=/vmlinuz-3.3.0-4.fc16.i686 root=UUID=7417d839-a647-466e-b57d-fc65d20a6342 ro rd.md=0 rd.lvm=0 rd.dm=0 quiet SYSFONT=latarcyrheb-sun16 rhgb rd.luks=0 KEYTABLE=pl2 LANG=en_US.UTF-8 noapic
+ PID hash table entries: 4096 (order: 2, 16384 bytes)
+ Dentry cache hash table entries: 131072 (order: 7, 524288 bytes)
+ Inode-cache hash table entries: 65536 (order: 6, 262144 bytes)
+@@ -142,15 +136,15 @@ Checking if this processor honours the W
+ SLUB: Genslabs=15, HWalign=64, Order=0-3, MinObjects=0, CPUs=2, Nodes=1
+ Hierarchical RCU implementation.
+ 	RCU dyntick-idle grace-period acceleration is enabled.
+-NR_IRQS:2304 nr_irqs:512 16
++NR_IRQS:2304 nr_irqs:288 16
+ CPU 0 irqstacks, hard=f3008000 soft=f300a000
+ Extended CMOS year: 2000
+ Console: colour dummy device 80x25
+ enabled
+ hpet clockevent registered
+ Fast TSC calibration using PIT
+-Detected 2394.148 MHz processor.
+-Calibrating delay loop (skipped), value calculated using timer frequency.. 4788.29 BogoMIPS (lpj=2394148)
++Detected 2393.887 MHz processor.
++Calibrating delay loop (skipped), value calculated using timer frequency.. 4787.77 BogoMIPS (lpj=2393887)
+ pid_max: default: 32768 minimum: 301
+ Security Framework initialized
+ SELinux:  Initializing.
+@@ -169,9 +163,9 @@ mce: CPU supports 6 MCE banks
+ CPU0: Thermal monitoring enabled (TM2)
+ using mwait in idle threads.
+ ACPI: Core revision 20120111
++ACPI: setting ELCR to 0200 (from 0ea0)
+ ftrace: allocating 21899 entries in 43 pages
+-Enabling APIC mode:  Flat.  Using 1 I/O APICs
+-..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
++Enabling APIC mode:  Flat.  Using 0 I/O APICs
+ CPU0: Intel(R) Core(TM)2 Duo CPU     T8300  @ 2.40GHz stepping 06
+ Performance Events: PEBS fmt0+, Core2 events, Intel PMU driver.
+ ... version:                2
+@@ -188,10 +182,10 @@ smpboot cpu 1: start_ip = 9b000
+ Initializing CPU#1
+ NMI watchdog enabled, takes one hw-pmu counter.
+ Brought up 2 CPUs
+-Total of 2 processors activated (9576.59 BogoMIPS).
++Total of 2 processors activated (9575.54 BogoMIPS).
+ devtmpfs: initialized
+ atomic64 test passed for i586+ platform with CX8 and with SSE
+-RTC time: 12:29:27, date: 04/08/12
++RTC time: 12:34:58, date: 04/08/12
+ NET: Registered protocol family 16
+ ACPI: bus type pci registered
+ PCI: MMCONFIG for domain 0000 [bus 00-3f] at [mem 0xf8000000-0xfbffffff] (base 0xf8000000)
+@@ -219,7 +213,7 @@ ACPI: Dynamic OEM Table Load:
+ ACPI: SSDT   (null) 00085 (v01  PmRef  Cpu1Cst 00003000 INTL 20050624)
+ ACPI: Interpreter enabled
+ ACPI: (supports S0 S3 S4 S5)
+-ACPI: Using IOAPIC for interrupt routing
++ACPI: Using PIC for interrupt routing
+ ACPI: No dock devices found.
+ PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+ (domain 0000 [bus 00-ff])
+@@ -330,13 +324,11 @@ pci 0000:00:1c.4:   bridge window [io  0
+ pci 0000:00:1c.4:   bridge window [mem 0xf1c00000-0xf1dfffff]
+ pci 0000:00:1c.4:   bridge window [mem 0xf0000000-0xf01fffff 64bit pref]
+ type 0 class 0x000c00
+-pci 0000:03:09.0: proprietary Ricoh MMC controller disabled (via firewire function)
+-pci 0000:03:09.0: MMC cards are now supported by standard SDHCI controller
+ pci 0000:03:09.0: reg 10: [mem 0xf1bff800-0xf1bfffff]
+ pci 0000:03:09.0: supports D1 D2
+ pci 0000:03:09.0: PME# supported from D0 D1 D2 D3hot D3cold
+ type 0 class 0x000805
+-pci 0000:03:09.1: reg 10: [mem 0xf1bff400-0xf1bff4ff]
++pci 0000:03:09.1: reg 10: [mem 0xf1bff500-0xf1bff5ff]
+ pci 0000:03:09.1: supports D1 D2
+ pci 0000:03:09.1: PME# supported from D0 D1 D2 D3hot D3cold
+ type 0 class 0x000880
+@@ -516,7 +508,7 @@ system 00:0c: [mem 0xdfe72000-0xdfefffff
+ system 00:0c: [mem 0xdff00000-0xdfffffff] has been reserved
+ system 00:0c: [mem 0xffe00000-0xffffffff] has been reserved
+ system 00:0c: [mem 0xffa00000-0xffbfffff] has been reserved
+-system 00:0c: [mem 0xfec00000-0xfec0ffff] could not be reserved
++system 00:0c: [mem 0xfec00000-0xfec0ffff] has been reserved
+ system 00:0c: [mem 0xfee00000-0xfee0ffff] has been reserved
+ system 00:0c: [mem 0xfed20000-0xfed8ffff] has been reserved
+ system 00:0c: [mem 0xfeda0000-0xfeda3fff] has been reserved
+@@ -551,6 +543,10 @@ pci 0000:00:1c.4:   bridge window [mem 0
+ pci 0000:00:1c.4:   bridge window [mem 0xf0000000-0xf01fffff 64bit pref]
+ pci 0000:00:1e.0: PCI bridge to [bus 03-03]
+ pci 0000:00:1e.0:   bridge window [mem 0xf1b00000-0xf1bfffff]
++ACPI: PCI Interrupt Link [LNKA] enabled at IRQ 11
++PCI: setting IRQ 11 as level-triggered
++ACPI: PCI Interrupt Link [LNKB] enabled at IRQ 7
++PCI: setting IRQ 7 as level-triggered
+ pci 0000:00:1e.0: setting latency timer to 64
+ pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7]
+ pci_bus 0000:00: resource 5 [io  0x0d00-0xffff]
+@@ -598,6 +594,11 @@ TCP reno registered
+ UDP hash table entries: 512 (order: 2, 16384 bytes)
+ UDP-Lite hash table entries: 512 (order: 2, 16384 bytes)
+ NET: Registered protocol family 1
++ACPI: PCI Interrupt Link [LNKE] enabled at IRQ 11
++ACPI: PCI Interrupt Link [LNKF] enabled at IRQ 10
++PCI: setting IRQ 10 as level-triggered
++ACPI: PCI Interrupt Link [LNKG] enabled at IRQ 9
++PCI: setting IRQ 9 as level-triggered
+ pci 0000:01:00.0: Boot video device
+ PCI: CLS 64 bytes, default 64
+ Unpacking initramfs...
+@@ -606,7 +607,7 @@ Simple Boot Flag at 0x79 set to 0x1
+ apm: BIOS not found.
+ Intel AES-NI instructions are not detected.
+ audit: initializing netlink socket (disabled)
+-type=2000 audit(1333888166.549:1): initialized
++type=2000 audit(1333888497.540:1): initialized
+ highmem bounce pool size: 64 pages
+ HugeTLB registered 4 MB page size, pre-allocated 0 pages
+ VFS: Disk quotas dquot_6.5.2
+@@ -619,10 +620,10 @@ Block layer SCSI generic (bsg) driver ve
+ io scheduler noop registered
+ io scheduler deadline registered
+ io scheduler cfq registered (default)
+-pcieport 0000:00:01.0: irq 40 for MSI/MSI-X
+-pcieport 0000:00:1c.0: irq 41 for MSI/MSI-X
+-pcieport 0000:00:1c.1: irq 42 for MSI/MSI-X
+-pcieport 0000:00:1c.4: irq 43 for MSI/MSI-X
++pcieport 0000:00:01.0: irq 16 for MSI/MSI-X
++pcieport 0000:00:1c.0: irq 17 for MSI/MSI-X
++pcieport 0000:00:1c.1: irq 18 for MSI/MSI-X
++pcieport 0000:00:1c.4: irq 19 for MSI/MSI-X
+ pci_hotplug: PCI Hot Plug PCI Core version: 0.5
+ pciehp: PCI Express Hot Plug Controller Driver version: 0.4
+ acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+@@ -648,7 +649,7 @@ Monitor-Mwait will be used to enter C-3 
+ Marking TSC unstable due to TSC halts in idle
+ ACPI: acpi_idle registered with cpuidle
+ thermal LNXTHERM:00: registered as thermal_zone0
+-ACPI: Thermal Zone [THM] (32 C)
++ACPI: Thermal Zone [THM] (55 C)
+ GHES: HEST is not enabled!
+ isapnp: Scanning for PnP cards...
+ (battery present)
+@@ -658,17 +659,18 @@ Non-volatile memory driver v1.3
+ Linux agpgart interface v0.103
+ loop: module loaded
+ ahci 0000:00:1f.2: version 3.0
+-ahci 0000:00:1f.2: irq 44 for MSI/MSI-X
++ahci 0000:00:1f.2: irq 20 for MSI/MSI-X
+ ahci 0000:00:1f.2: AHCI 0001.0100 32 slots 3 ports 3 Gbps 0x5 impl SATA mode
+ ahci 0000:00:1f.2: flags: 64bit ncq sntf pm led clo pio slum part ccc ems 
+ ahci 0000:00:1f.2: setting latency timer to 64
+ scsi0 : ahci
+ scsi1 : ahci
+ scsi2 : ahci
+-ata1: SATA max UDMA/133 abar m2048@0xf6ffb800 port 0xf6ffb900 irq 44
++ata1: SATA max UDMA/133 abar m2048@0xf6ffb800 port 0xf6ffb900 irq 20
+ ata2: DUMMY
+-ata3: SATA max UDMA/133 abar m2048@0xf6ffb800 port 0xf6ffba00 irq 44
++ata3: SATA max UDMA/133 abar m2048@0xf6ffb800 port 0xf6ffba00 irq 20
+ ata_piix 0000:00:1f.1: version 2.13
++ACPI: PCI Interrupt Link [LNKC] enabled at IRQ 10
+ ata_piix 0000:00:1f.1: setting latency timer to 64
+ scsi3 : ata_piix
+ scsi4 : ata_piix
+@@ -682,7 +684,7 @@ ehci_hcd 0000:00:1a.7: EHCI Host Control
+ ehci_hcd 0000:00:1a.7: new USB bus registered, assigned bus number 1
+ ehci_hcd 0000:00:1a.7: debug port 1
+ ehci_hcd 0000:00:1a.7: cache line size of 64 is not supported
+-ehci_hcd 0000:00:1a.7: irq 22, io mem 0xfed1c400
++ehci_hcd 0000:00:1a.7: irq 9, io mem 0xfed1c400
+ ehci_hcd 0000:00:1a.7: USB 2.0 started, EHCI 1.00
+ usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+ usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+@@ -696,7 +698,7 @@ ehci_hcd 0000:00:1d.7: EHCI Host Control
+ ehci_hcd 0000:00:1d.7: new USB bus registered, assigned bus number 2
+ ehci_hcd 0000:00:1d.7: debug port 1
+ ehci_hcd 0000:00:1d.7: cache line size of 64 is not supported
+-ehci_hcd 0000:00:1d.7: irq 20, io mem 0xfed1c000
++ehci_hcd 0000:00:1d.7: irq 11, io mem 0xfed1c000
+ ehci_hcd 0000:00:1d.7: USB 2.0 started, EHCI 1.00
+ usb usb2: New USB device found, idVendor=1d6b, idProduct=0002
+ usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+@@ -710,7 +712,7 @@ uhci_hcd: USB Universal Host Controller 
+ uhci_hcd 0000:00:1a.0: setting latency timer to 64
+ uhci_hcd 0000:00:1a.0: UHCI Host Controller
+ uhci_hcd 0000:00:1a.0: new USB bus registered, assigned bus number 3
+-uhci_hcd 0000:00:1a.0: irq 20, io base 0x00006f20
++uhci_hcd 0000:00:1a.0: irq 11, io base 0x00006f20
+ usb usb3: New USB device found, idVendor=1d6b, idProduct=0001
+ usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ usb usb3: Product: UHCI Host Controller
+@@ -721,7 +723,7 @@ hub 3-0:1.0: 2 ports detected
+ uhci_hcd 0000:00:1a.1: setting latency timer to 64
+ uhci_hcd 0000:00:1a.1: UHCI Host Controller
+ uhci_hcd 0000:00:1a.1: new USB bus registered, assigned bus number 4
+-uhci_hcd 0000:00:1a.1: irq 21, io base 0x00006f00
++uhci_hcd 0000:00:1a.1: irq 10, io base 0x00006f00
+ usb usb4: New USB device found, idVendor=1d6b, idProduct=0001
+ usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ usb usb4: Product: UHCI Host Controller
+@@ -732,7 +734,7 @@ hub 4-0:1.0: 2 ports detected
+ uhci_hcd 0000:00:1d.0: setting latency timer to 64
+ uhci_hcd 0000:00:1d.0: UHCI Host Controller
+ uhci_hcd 0000:00:1d.0: new USB bus registered, assigned bus number 5
+-uhci_hcd 0000:00:1d.0: irq 20, io base 0x00006f80
++uhci_hcd 0000:00:1d.0: irq 11, io base 0x00006f80
+ usb usb5: New USB device found, idVendor=1d6b, idProduct=0001
+ usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ usb usb5: Product: UHCI Host Controller
+@@ -743,7 +745,7 @@ hub 5-0:1.0: 2 ports detected
+ uhci_hcd 0000:00:1d.1: setting latency timer to 64
+ uhci_hcd 0000:00:1d.1: UHCI Host Controller
+ uhci_hcd 0000:00:1d.1: new USB bus registered, assigned bus number 6
+-uhci_hcd 0000:00:1d.1: irq 21, io base 0x00006f60
++uhci_hcd 0000:00:1d.1: irq 10, io base 0x00006f60
+ usb usb6: New USB device found, idVendor=1d6b, idProduct=0001
+ usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ usb usb6: Product: UHCI Host Controller
+@@ -754,7 +756,7 @@ hub 6-0:1.0: 2 ports detected
+ uhci_hcd 0000:00:1d.2: setting latency timer to 64
+ uhci_hcd 0000:00:1d.2: UHCI Host Controller
+ uhci_hcd 0000:00:1d.2: new USB bus registered, assigned bus number 7
+-uhci_hcd 0000:00:1d.2: irq 22, io base 0x00006f40
++uhci_hcd 0000:00:1d.2: irq 9, io base 0x00006f40
+ usb usb7: New USB device found, idVendor=1d6b, idProduct=0001
+ usb usb7: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+ usb usb7: Product: UHCI Host Controller
+@@ -790,14 +792,14 @@ Registering the dns_resolver key type
+ Using IPI No-Shortcut mode
+ PM: Hibernation image not present or could not be loaded.
+ registered taskstats version 1
+-  Magic number: 8:784:480
+-rtc_cmos 00:04: setting system clock to 2012-04-08 12:29:28 UTC (1333888168)
++  Magic number: 8:887:581
++rtc_cmos 00:04: setting system clock to 2012-04-08 12:34:59 UTC (1333888499)
+ Initializing network drop monitor service
+ input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input3
+ ata4.00: ATAPI: Optiarc DVD+/-RW AD-7640A, JD05, max UDMA/33
+ ata4.00: configured for UDMA/33
+-ata3: SATA link down (SStatus 0 SControl 300)
+ ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
++ata3: SATA link down (SStatus 0 SControl 300)
+ ata1.00: ATA-7: ST9200420ASG, 3.ADD, max UDMA/133
+ ata1.00: 390721968 sectors, multi 8: LBA48 NCQ (depth 31/32)
+ ata1.00: configured for UDMA/133
+@@ -813,19 +815,19 @@ sr0: scsi3-mmc drive: 24x/24x writer dvd
+ cdrom: Uniform CD-ROM driver Revision: 3.20
+ sr 3:0:0:0: Attached scsi CD-ROM sr0
+ sr 3:0:0:0: Attached scsi generic sg1 type 5
++usb 1-1: New USB device found, idVendor=05a9, idProduct=2640
++usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
++usb 1-1: Product: Laptop Integrated Webcam
++usb 1-1: Manufacturer: OmniVision Technologies, Inc. -2640-07.07.20.3
+  sda: sda1 sda2 sda3 sda4 < sda5 sda6 sda7 sda8 sda9 >
+ sd 0:0:0:0: [sda] Attached SCSI disk
+ Freeing unused kernel memory: 620k freed
+ Write protecting the kernel text: 5340k
+ Write protecting the kernel read-only data: 2096k
+-usb 1-1: New USB device found, idVendor=05a9, idProduct=2640
+-usb 1-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+-usb 1-1: Product: Laptop Integrated Webcam
+-usb 1-1: Manufacturer: OmniVision Technologies, Inc. -2640-07.07.20.3
+ dracut: dracut-013-20.fc16
+ dracut: rd.luks=0: removing cryptoluks activation
+ dracut: rd.lvm=0: removing LVM activation
+-udevd[111]: starting version 173
++udevd[112]: starting version 173
+ wmi: Mapper loaded
+ acpi device:31: registered as cooling_device2
+ input: Video Bus as /devices/LNXSYSTM:00/device:00/PNP0A03:00/device:2e/LNXVIDEO:00/input/input4
+@@ -859,36 +861,34 @@ usb 2-2: new high-speed USB device numbe
+ [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 1 at offset 0xCB78
+ [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 2 at offset 0xD5C8
+ [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 3 at offset 0xD6BA
+-usb 2-2: New USB device found, idVendor=0bb4, idProduct=0c99
+-usb 2-2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+-usb 2-2: Product: Android Phone
+ [drm] nouveau 0000:01:00.0: Parsing VBIOS init table 4 at offset 0xD8ED
+ [drm] nouveau 0000:01:00.0: Parsing VBIOS init table at offset 0xD952
+-usb 2-2: Manufacturer: HTC
+-usb 2-2: SerialNumber: HT999L903452
+ [drm] nouveau 0000:01:00.0: 0xD952: Condition still not met after 20ms, skipping following opcodes
+-Initializing USB Mass Storage driver...
+-scsi5 : usb-storage 2-2:1.0
+ [drm] nouveau 0000:01:00.0: 3 available performance level(s)
+ [drm] nouveau 0000:01:00.0: 0: core 169MHz shader 338MHz memory 100MHz timing 0 voltage 1150mV fanspeed 100%
+ [drm] nouveau 0000:01:00.0: 1: core 275MHz shader 550MHz memory 301MHz timing 1 voltage 1150mV fanspeed 100%
+ [drm] nouveau 0000:01:00.0: 2: core 475MHz shader 950MHz memory 702MHz timing 2 voltage 1200mV fanspeed 100%
+ [drm] nouveau 0000:01:00.0: c: core 275MHz shader 550MHz memory 302MHz voltage 1150mV
+-usbcore: registered new interface driver usb-storage
+-USB Mass Storage support registered.
+ [TTM] Zone  kernel: Available graphics memory: 429556 kiB.
+ [TTM] Zone highmem: Available graphics memory: 1811164 kiB.
+ [TTM] Initializing pool allocator.
+ [drm] nouveau 0000:01:00.0: Detected 256MiB VRAM
+ mtrr: type mismatch for e0000000,10000000 old: write-back new: write-combining
+ [drm] nouveau 0000:01:00.0: 512 MiB GART (aperture)
++usb 2-2: New USB device found, idVendor=0bb4, idProduct=0c99
++usb 2-2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
++usb 2-2: Product: Android Phone
++usb 2-2: Manufacturer: HTC
++usb 2-2: SerialNumber: HT999L903452
++Initializing USB Mass Storage driver...
++scsi5 : usb-storage 2-2:1.0
++usbcore: registered new interface driver usb-storage
++USB Mass Storage support registered.
+ [drm] nouveau 0000:01:00.0: DCB encoder 1 unknown
+ [drm] nouveau 0000:01:00.0: TV-1 has no encoders, removing
+ [drm] Supports vblank timestamp caching Rev 1 (10.10.2010).
+ [drm] No driver support for vblank timestamp query.
+ [drm] nouveau 0000:01:00.0: ACPI backlight interface available, not registering our own
+-input: PS/2 Mouse as /devices/platform/i8042/serio1/input/input5
+-input: AlpsPS/2 ALPS GlidePoint as /devices/platform/i8042/serio1/input/input6
+ usb 3-2: new full-speed USB device number 2 using uhci_hcd
+ usb 3-2: New USB device found, idVendor=0483, idProduct=2016
+ usb 3-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+@@ -899,13 +899,15 @@ usb 5-1: New USB device found, idVendor=
+ usb 5-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+ usb 5-1: Product: USB Full Speed
+ usb 5-1: Manufacturer: A4Tech
+-input: A4Tech USB Full Speed as /devices/pci0000:00/0000:00:1d.0/usb5/5-1/5-1:1.0/input/input7
++input: A4Tech USB Full Speed as /devices/pci0000:00/0000:00:1d.0/usb5/5-1/5-1:1.0/input/input5
+ generic-usb 0003:09DA:8090.0001: input,hidraw0: USB HID v1.11 Mouse [A4Tech USB Full Speed] on usb-0000:00:1d.0-1/input0
+-input: A4Tech USB Full Speed as /devices/pci0000:00/0000:00:1d.0/usb5/5-1/5-1:1.1/input/input8
++input: A4Tech USB Full Speed as /devices/pci0000:00/0000:00:1d.0/usb5/5-1/5-1:1.1/input/input6
+ generic-usb 0003:09DA:8090.0002: input,hiddev0,hidraw1: USB HID v1.11 Keyboard [A4Tech USB Full Speed] on usb-0000:00:1d.0-1/input1
+ scsi 5:0:0:0: Direct-Access     HTC      Android Phone    0100 PQ: 0 ANSI: 2
+ sd 5:0:0:0: Attached scsi generic sg2 type 0
+ sd 5:0:0:0: [sdb] Attached SCSI removable disk
++input: PS/2 Mouse as /devices/platform/i8042/serio1/input/input7
++input: AlpsPS/2 ALPS GlidePoint as /devices/platform/i8042/serio1/input/input8
+ usb 6-1: new full-speed USB device number 2 using uhci_hcd
+ usb 6-1: New USB device found, idVendor=054c, idProduct=03d5
+ usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+@@ -914,7 +916,7 @@ usb 6-1: Manufacturer: Sony Computer Ent
+ input: Sony Computer Entertainment Motion Controller as /devices/pci0000:00/0000:00:1d.1/usb6/6-1/6-1:1.0/input/input9
+ generic-usb 0003:054C:03D5.0003: input,hiddev0,hidraw2: USB HID v1.10 Gamepad [Sony Computer Entertainment Motion Controller] on usb-0000:00:1d.1-1/input0
+ composite sync not supported
+-[drm] nouveau 0000:01:00.0: allocated 1440x900 fb: 0x320000, bo f28cf600
++[drm] nouveau 0000:01:00.0: allocated 1440x900 fb: 0x320000, bo f65ee800
+ fbcon: nouveaufb (fb0) is primary device
+ Console: switching to colour frame buffer device 180x56
+ fb0: nouveaufb frame buffer device
+@@ -923,20 +925,20 @@ drm: registered panic notifier
+ dracut: Starting plymouth daemon
+ usb 7-2: new full-speed USB device number 2 using uhci_hcd
+ composite sync not supported
+-dracut: rd.dm=0: removing DM RAID activation
+ usb 7-2: New USB device found, idVendor=0a5c, idProduct=4500
+ usb 7-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+ usb 7-2: Product: BCM2045B2
+ usb 7-2: Manufacturer: Broadcom
+-dracut: rd.md=0: removing MD RAID activation
+ hub 7-2:1.0: USB hub found
+ hub 7-2:1.0: 3 ports detected
++dracut: rd.dm=0: removing DM RAID activation
++dracut: rd.md=0: removing MD RAID activation
+ sdhci: Secure Digital Host Controller Interface driver
+ sdhci: Copyright(c) Pierre Ossman
++firewire_ohci: Added fw-ohci device 0000:03:09.0, OHCI v1.10, 4 IR + 4 IT contexts, quirks 0x11
+ (rev 22)
+ Registered led device: mmc0::
+ using DMA
+-firewire_ohci: Added fw-ohci device 0000:03:09.0, OHCI v1.10, 4 IR + 4 IT contexts, quirks 0x11
+ usb 7-2.2: new full-speed USB device number 3 using uhci_hcd
+ usb 7-2.2: New USB device found, idVendor=0a5c, idProduct=4502
+ usb 7-2.2: New USB device strings: Mfr=1, Product=0, SerialNumber=0
+@@ -944,21 +946,21 @@ usb 7-2.2: Manufacturer: Broadcom Corp
+ input: Broadcom Corp as /devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2.2/7-2.2:1.0/input/input10
+ generic-usb 0003:0A5C:4502.0004: input,hidraw3: USB HID v1.11 Keyboard [Broadcom Corp] on usb-0000:00:1d.2-2.2/input0
+ usb 7-2.3: new full-speed USB device number 4 using uhci_hcd
+-firewire_core: created device fw0: GUID 334fc0001cece070, S400
+ usb 7-2.3: New USB device found, idVendor=0a5c, idProduct=4503
+ usb 7-2.3: New USB device strings: Mfr=1, Product=0, SerialNumber=0
+ usb 7-2.3: Manufacturer: Broadcom Corp
+ input: Broadcom Corp as /devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2.3/7-2.3:1.0/input/input11
+ generic-usb 0003:0A5C:4503.0005: input,hidraw4: USB HID v1.11 Mouse [Broadcom Corp] on usb-0000:00:1d.2-2.3/input0
++firewire_core: created device fw0: GUID 334fc0001cece070, S400
+ EXT4-fs (sda7): mounted filesystem with ordered data mode. Opts: (null)
+ dracut: Checking ext4: /dev/disk/by-uuid/7417d839-a647-466e-b57d-fc65d20a6342
+ dracut: issuing e2fsck -a  /dev/disk/by-uuid/7417d839-a647-466e-b57d-fc65d20a6342
+-dracut: _Fedora-16-i686-: clean, 238747/901120 files, 1776110/3584000 blocks
++dracut: _Fedora-16-i686-: clean, 238750/901120 files, 1775993/3584000 blocks
+ dracut: Remounting /dev/disk/by-uuid/7417d839-a647-466e-b57d-fc65d20a6342 with -o ro
+ EXT4-fs (sda7): mounted filesystem with ordered data mode. Opts: (null)
+ dracut: Mounted root filesystem /dev/sda7
+ dracut: Switching root
+-type=1404 audit(1333888173.684:2): enforcing=1 old_enforcing=0 auid=4294967295 ses=4294967295
++type=1404 audit(1333888504.678:2): enforcing=1 old_enforcing=0 auid=4294967295 ses=4294967295
+ SELinux: 2048 avtab hash slots, 97362 rules.
+ SELinux: 2048 avtab hash slots, 97362 rules.
+ SELinux:  9 users, 13 roles, 3912 types, 215 bools, 1 sens, 1024 cats
+@@ -984,13 +986,13 @@ SELinux: initialized (dev sysfs, type sy
+ SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+ SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+ SELinux: initialized (dev sda7, type ext4), uses xattr
+-type=1403 audit(1333888173.953:3): policy loaded auid=4294967295 ses=4294967295
+-systemd[1]: Successfully loaded SELinux policy in 347ms 981us.
+-systemd[1]: Successfully loaded SELinux database in 54ms 927us, size on heap is 365K.
++type=1403 audit(1333888504.936:3): policy loaded auid=4294967295 ses=4294967295
++systemd[1]: Successfully loaded SELinux policy in 331ms 344us.
++systemd[1]: Successfully loaded SELinux database in 63ms 586us, size on heap is 365K.
+ systemd[1]: RTC configured in localtime, applying delta of 60 minutes to system time.
+ SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+ SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
+-systemd[1]: Relabelled /dev and /run in 42ms 476us.
++systemd[1]: Relabelled /dev and /run in 42ms 435us.
+ SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
+ SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
+ SELinux: initialized (dev cgroup, type cgroup), uses genfs_contexts
+@@ -1002,11 +1004,11 @@ SELinux: initialized (dev cgroup, type c
+ systemd[1]: systemd 37 running in system mode. (+PAM +LIBWRAP +AUDIT +SELINUX +SYSVINIT +LIBCRYPTSETUP; fedora)
+ systemd[1]: Set hostname to <xps>.
+ SELinux: initialized (dev autofs, type autofs), uses genfs_contexts
+-udevd[521]: starting version 173
+-udevd[521]: specified group 'plugdev' unknown
+-SELinux: initialized (dev configfs, type configfs), uses genfs_contexts
++udevd[524]: starting version 173
++udevd[524]: specified group 'plugdev' unknown
+ SELinux: initialized (dev tmpfs, type tmpfs), uses transition SIDs
+ SELinux: initialized (dev hugetlbfs, type hugetlbfs), uses transition SIDs
++SELinux: initialized (dev configfs, type configfs), uses genfs_contexts
+ SELinux: initialized (dev securityfs, type securityfs), uses genfs_contexts
+ EXT4-fs (sda7): re-mounted. Opts: (null)
+ RPC: Registered named UNIX socket transport module.
+@@ -1017,44 +1019,39 @@ SELinux: initialized (dev rpc_pipefs, ty
+ SELinux: initialized (dev binfmt_misc, type binfmt_misc), uses genfs_contexts
+ sky2: driver version 1.30
+ sky2 0000:09:00.0: Yukon-2 FE+ chip revision 0
+-sky2 0000:09:00.0: irq 45 for MSI/MSI-X
++sky2 0000:09:00.0: irq 21 for MSI/MSI-X
+ sky2 0000:09:00.0: eth0: addr 00:21:9b:cd:55:50
+ cfg80211: Calling CRDA to update world regulatory domain
+ iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:ds
+ iwl3945: Copyright(c) 2003-2011 Intel Corporation
+-iwl3945 0000:0b:00.0: enabling device (0000 -> 0002)
+-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
++r592: driver successfully loaded
+ iTCO_vendor_support: vendor-support=0
+-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+-iwl3945 0000:0b:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+-iwl3945 0000:0b:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
+-iwl3945 0000:0b:00.0: EEPROM not found, EEPROM_GP=0xffffffff
+-iwl3945 0000:0b:00.0: Unable to init EEPROM
+ iTCO_wdt: Intel TCO WatchDog Timer Driver v1.07
+ iTCO_wdt: Found a ICH8M TCO device (Version=2, TCOBASE=0x1060)
+ iTCO_wdt: initialized. heartbeat=30 sec (nowayout=0)
+-iwl3945: probe of 0000:0b:00.0 failed with error -2
++iwl3945 0000:0b:00.0: Tunable channels: 13 802.11bg, 23 802.11a channels
++iwl3945 0000:0b:00.0: Detected Intel Wireless WiFi Link 3945ABG
++iwl3945 0000:0b:00.0: irq 22 for MSI/MSI-X
++Registered led device: phy0-led
++mtp-probe[676]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:1a.0/usb3/3-2"
++mtp-probe[694]: checking bus 2, device 3: "/sys/devices/pci0000:00/0000:00:1d.7/usb2/2-2"
++mtp-probe[692]: checking bus 1, device 2: "/sys/devices/pci0000:00/0000:00:1a.7/usb1/1-1"
+ microcode: CPU0 sig=0x10676, pf=0x80, revision=0x60c
+-r592: driver successfully loaded
+-mtp-probe[674]: checking bus 6, device 2: "/sys/devices/pci0000:00/0000:00:1d.1/usb6/6-1"
++mtp-probe[695]: checking bus 5, device 2: "/sys/devices/pci0000:00/0000:00:1d.0/usb5/5-1"
++mtp-probe[716]: checking bus 6, device 2: "/sys/devices/pci0000:00/0000:00:1d.1/usb6/6-1"
++mtp-probe[694]: bus: 2, device: 3 was not an MTP device
++mtp-probe[692]: bus: 1, device: 2 was not an MTP device
++mtp-probe[716]: bus: 6, device: 2 was not an MTP device
++mtp-probe[676]: bus: 3, device: 2 was not an MTP device
+ mtp-probe[724]: checking bus 7, device 3: "/sys/devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2.2"
+-mtp-probe[670]: checking bus 5, device 2: "/sys/devices/pci0000:00/0000:00:1d.0/usb5/5-1"
+-mtp-probe[691]: checking bus 2, device 3: "/sys/devices/pci0000:00/0000:00:1d.7/usb2/2-2"
+-mtp-probe[684]: checking bus 1, device 2: "/sys/devices/pci0000:00/0000:00:1a.7/usb1/1-1"
+-mtp-probe[650]: checking bus 3, device 2: "/sys/devices/pci0000:00/0000:00:1a.0/usb3/3-2"
+-mtp-probe[730]: checking bus 7, device 4: "/sys/devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2.3"
+-mtp-probe[691]: bus: 2, device: 3 was not an MTP device
++mtp-probe[729]: checking bus 7, device 4: "/sys/devices/pci0000:00/0000:00:1d.2/usb7/7-2/7-2.3"
++mtp-probe[729]: bus: 7, device: 4 was not an MTP device
++mtp-probe[695]: bus: 5, device: 2 was not an MTP device
+ mtp-probe[724]: bus: 7, device: 3 was not an MTP device
+-mtp-probe[670]: bus: 5, device: 2 was not an MTP device
+-mtp-probe[684]: bus: 1, device: 2 was not an MTP device
+-mtp-probe[674]: bus: 6, device: 2 was not an MTP device
+-mtp-probe[730]: bus: 7, device: 4 was not an MTP device
+-mtp-probe[650]: bus: 3, device: 2 was not an MTP device
+-dcdbas dcdbas: Dell Systems Management Base Driver (version 5.6.0-3.2)
+ r852: driver loaded successfully
++dcdbas dcdbas: Dell Systems Management Base Driver (version 5.6.0-3.2)
++Linux media interface: v0.10
++ieee80211 phy0: Selected rate control algorithm 'iwl-3945-rs'
+ cfg80211: World regulatory domain updated:
+ cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
+ cfg80211:   (2402000 KHz - 2472000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+@@ -1062,19 +1059,19 @@ cfg80211:   (2457000 KHz - 2482000 KHz @
+ cfg80211:   (2474000 KHz - 2494000 KHz @ 20000 KHz), (300 mBi, 2000 mBm)
+ cfg80211:   (5170000 KHz - 5250000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
+ cfg80211:   (5735000 KHz - 5835000 KHz @ 40000 KHz), (300 mBi, 2000 mBm)
++input: Dell WMI hotkeys as /devices/virtual/input/input12
+ microcode: CPU0 updated to revision 0x60f, date = 2010-09-29
+ microcode: CPU1 sig=0x10676, pf=0x80, revision=0x60c
+ microcode: CPU1 updated to revision 0x60f, date = 2010-09-29
+ microcode: Microcode Update Driver: v2.00 <tigran@aivazian.fsnet.co.uk>, Peter Oruba
+-Linux media interface: v0.10
+ Linux video capture interface: v2.00
+-input: Dell WMI hotkeys as /devices/virtual/input/input12
+-snd_hda_intel 0000:00:1b.0: irq 46 for MSI/MSI-X
++udevd[583]: renamed network interface eth0 to p2p1
+ uvcvideo: Found UVC 1.00 device Laptop Integrated Webcam (05a9:2640)
+ uvcvideo: UVC non compliance - GET_DEF(PROBE) not supported. Enabling workaround.
+ input: Laptop Integrated Webcam as /devices/pci0000:00/0000:00:1a.7/usb1/1-1/1-1:1.0/input/input13
+ usbcore: registered new interface driver uvcvideo
+ USB Video Class driver (1.1.1)
++snd_hda_intel 0000:00:1b.0: irq 23 for MSI/MSI-X
+ ALSA sound/pci/hda/hda_codec.c:4927 autoconfig: line_outs=1 (0xd/0x0/0x0/0x0/0x0) type:speaker
+ ALSA sound/pci/hda/hda_codec.c:4931    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+ ALSA sound/pci/hda/hda_codec.c:4935    hp_outs=2 (0xa/0xf/0x0/0x0/0x0)
+@@ -1085,59 +1082,65 @@ ALSA sound/pci/hda/hda_codec.c:4944  Int
+ ALSA sound/pci/hda/hda_codec.c:4944  Mic=0xe
+ ALSA sound/pci/hda/hda_codec.c:4946 
+ ALSA sound/pci/hda/patch_sigmatel.c:3090 stac92xx: dac_nids=2 (0x2/0x5/0x0/0x0/0x0)
+-udevd[609]: renamed network interface eth0 to p2p1
++cfg80211: Calling CRDA for country: GB
++cfg80211: Regulatory domain changed to country: GB
++cfg80211:   (start_freq - end_freq @ bandwidth), (max_antenna_gain, max_eirp)
++cfg80211:   (2402000 KHz - 2482000 KHz @ 40000 KHz), (N/A, 2000 mBm)
++cfg80211:   (5170000 KHz - 5250000 KHz @ 40000 KHz), (N/A, 2000 mBm)
++cfg80211:   (5250000 KHz - 5330000 KHz @ 40000 KHz), (N/A, 2000 mBm)
++cfg80211:   (5490000 KHz - 5710000 KHz @ 40000 KHz), (N/A, 2700 mBm)
++Adding 2047996k swap on /dev/sda8.  Priority:0 extents:1 across:2047996k 
+ fuse init (API version 7.18)
+ SELinux: initialized (dev fusectl, type fusectl), uses genfs_contexts
+-mount[900]: mount: fusectl already mounted or /sys/fs/fuse/connections busy
+-mount[900]: mount: according to mtab, fusectl is already mounted on /sys/fs/fuse/connections
++mount[931]: mount: fusectl already mounted or /sys/fs/fuse/connections busy
++mount[931]: mount: according to mtab, fusectl is already mounted on /sys/fs/fuse/connections
+ systemd[1]: sys-fs-fuse-connections.mount mount process exited, code=exited status=32
+-Adding 2047996k swap on /dev/sda8.  Priority:0 extents:1 across:2047996k 
+-systemd-fsck[893]: /dev/sda5: clean, 281/76304 files, 117477/304216 blocks
+ SELinux: initialized (dev sda3, type fuseblk), uses genfs_contexts
+-ntfs-3g[923]: Version 2011.4.12 integrated FUSE 27
+-ntfs-3g[923]: Mounted /dev/sda3 (Read-Write, label "", NTFS 3.1)
+-ntfs-3g[923]: Cmdline options: rw
+-ntfs-3g[923]: Mount options: rw,allow_other,nonempty,atime,fsname=/dev/sda3,blkdev,blksize=4096
+-ntfs-3g[923]: Ownership and permissions disabled, configuration type 1
+-fedora-storage-init[912]: Setting up Logical Volume Management:   No volume groups found
+-fedora-storage-init[912]: [  OK  ]
+-EXT4-fs (sda5): mounted filesystem with ordered data mode. Opts: (null)
+-SELinux: initialized (dev sda5, type ext4), uses xattr
+-fedora-storage-init[925]: Setting up Logical Volume Management:   No volume groups found
+-fedora-storage-init[925]: [  OK  ]
+-systemd-fsck[903]: /home: clean, 1056585/5799936 files, 19080578/23175424 blocks
+-lvm[935]: No volume groups found
++ntfs-3g[950]: Version 2011.4.12 integrated FUSE 27
++ntfs-3g[950]: Mounted /dev/sda3 (Read-Write, label "", NTFS 3.1)
++ntfs-3g[950]: Cmdline options: rw
++ntfs-3g[950]: Mount options: rw,allow_other,nonempty,atime,fsname=/dev/sda3,blkdev,blksize=4096
++ntfs-3g[950]: Ownership and permissions disabled, configuration type 1
++systemd-fsck[925]: /home: clean, 1056585/5799936 files, 19080275/23175424 blocks
+ EXT4-fs (sda6): mounting ext3 file system using the ext4 subsystem
++fedora-storage-init[944]: Setting up Logical Volume Management:   No volume groups found
++fedora-storage-init[944]: [  OK  ]
+ EXT4-fs (sda6): mounted filesystem with ordered data mode. Opts: (null)
+ SELinux: initialized (dev sda6, type ext3), uses xattr
++systemd-fsck[935]: /dev/sda5: clean, 281/76304 files, 117477/304216 blocks
+ EXT4-fs (sda9): warning: maximal mount count reached, running e2fsck is recommended
+ EXT4-fs (sda9): mounted filesystem with ordered data mode. Opts: (null)
+ SELinux: initialized (dev sda9, type ext4), uses xattr
+-systemd-tmpfiles[951]: Successfully loaded SELinux database in 13ms 399us, size on heap is 366K.
++fedora-storage-init[957]: Setting up Logical Volume Management:   No volume groups found
++fedora-storage-init[957]: [  OK  ]
++EXT4-fs (sda5): mounted filesystem with ordered data mode. Opts: (null)
++SELinux: initialized (dev sda5, type ext4), uses xattr
++lvm[975]: No volume groups found
++systemd-tmpfiles[982]: Successfully loaded SELinux database in 14ms 107us, size on heap is 366K.
++mcelog[1015]: mcelog read: No such device
+ nf_conntrack version 0.5.0 (16384 buckets, 65536 max)
+-auditd[965]: Started dispatcher: /sbin/audispd pid: 990
+-iptables.init[959]: iptables: Applying firewall rules: [  OK  ]
+-audispd[990]: priority_boost_parser called with: 4
+-audispd[990]: max_restarts_parser called with: 10
+-audispd[990]: audispd initialized with q_depth=120 and 1 active plugins
+ ip6_tables: (C) 2000-2006 Netfilter Core Team
+-ip6tables.init[960]: ip6tables: Applying firewall rules: [  OK  ]
+-NetworkManager[1003]: <info> NetworkManager (version 0.9.2-1.fc16) is starting...
+-NetworkManager[1003]: <info> Read config file /etc/NetworkManager/NetworkManager.conf
+-NetworkManager[1003]: NetworkManager[1003]: <info> NetworkManager (version 0.9.2-1.fc16) is starting...
+-NetworkManager[1003]: NetworkManager[1003]: <info> Read config file /etc/NetworkManager/NetworkManager.conf
+-mcelog[996]: mcelog read: No such device
+-auditctl[973]: No rules
+-auditctl[973]: AUDIT_STATUS: enabled=0 flag=1 pid=965 rate_limit=0 backlog_limit=320 lost=0 backlog=0
+-abrtd[1011]: Init complete, entering main loop
+-acpid[1026]: starting up with netlink and the input layer
+-acpid[1026]: skipping incomplete file /etc/acpi/events/videoconf
+-acpid[1026]: 1 rule loaded
+-acpid[1026]: waiting for events: event logging is off
+-avahi-daemon[1025]: Found user 'avahi' (UID 70) and group 'avahi' (GID 70).
+-avahi-daemon[1025]: Successfully dropped root privileges.
+-avahi-daemon[1025]: avahi-daemon 0.6.30 starting up.
+-auditd[965]: Init complete, auditd 2.1.3 listening for events (startup state enable)
++iptables.init[991]: iptables: Applying firewall rules: [  OK  ]
++ip6tables.init[993]: ip6tables: Applying firewall rules: [  OK  ]
++NetworkManager[1029]: <info> NetworkManager (version 0.9.2-1.fc16) is starting...
++NetworkManager[1029]: <info> Read config file /etc/NetworkManager/NetworkManager.conf
++NetworkManager[1029]: NetworkManager[1029]: <info> NetworkManager (version 0.9.2-1.fc16) is starting...
++NetworkManager[1029]: NetworkManager[1029]: <info> Read config file /etc/NetworkManager/NetworkManager.conf
++auditd[995]: Started dispatcher: /sbin/audispd pid: 1042
++audispd[1042]: priority_boost_parser called with: 4
++audispd[1042]: max_restarts_parser called with: 10
++audispd[1042]: audispd initialized with q_depth=120 and 1 active plugins
++auditctl[1001]: No rules
++auditctl[1001]: AUDIT_STATUS: enabled=0 flag=1 pid=0 rate_limit=0 backlog_limit=320 lost=0 backlog=0
++abrtd[1038]: Init complete, entering main loop
++avahi-daemon[1051]: Found user 'avahi' (UID 70) and group 'avahi' (GID 70).
++avahi-daemon[1051]: Successfully dropped root privileges.
++avahi-daemon[1051]: avahi-daemon 0.6.30 starting up.
++acpid[1064]: starting up with netlink and the input layer
++acpid[1064]: skipping incomplete file /etc/acpi/events/videoconf
++acpid[1064]: 1 rule loaded
++acpid[1064]: waiting for events: event logging is off
++auditd[995]: Init complete, auditd 2.1.3 listening for events (startup state enable)
+ Loading iSCSI transport class v2.0-870.
+ iscsi: registered transport (tcp)
+ iscsi: registered transport (iser)
+@@ -1153,6 +1156,8 @@ iscsi: registered transport (bnx2i)
+ iscsi: registered transport (be2iscsi)
+ sky2 0000:09:00.0: p2p1: enabling interface
+ ADDRCONF(NETDEV_UP): p2p1: link is not ready
++iwl3945 0000:0b:00.0: loaded firmware version 15.32.2.9
++ADDRCONF(NETDEV_UP): wlan0: link is not ready
+ 8021q: 802.1Q VLAN Support v1.8
+ netlink: 12 bytes leftover after parsing attributes.
+ netlink: 12 bytes leftover after parsing attributes.
+@@ -1160,5 +1165,15 @@ netlink: 12 bytes leftover after parsing
+ composite sync not supported
+ composite sync not supported
+ composite sync not supported
++wlan0: authenticate with 00:8b:5d:90:fa:8a (try 1)
++wlan0: authenticated
++wlan0: associate with 00:8b:5d:90:fa:8a (try 1)
++wlan0: RX AssocResp from 00:8b:5d:90:fa:8a (capab=0x431 status=0 aid=1)
++wlan0: associated
++wlan0: moving STA 00:8b:5d:90:fa:8a to state 1
++wlan0: moving STA 00:8b:5d:90:fa:8a to state 2
++ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
++wlan0: moving STA 00:8b:5d:90:fa:8a to state 3
+ composite sync not supported
+ hda-intel: IRQ timing workaround is activated for card #0. Suggest a bigger bdl_pos_adj.
++wlan0: no IPv6 routers present
