@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab2E1Ted (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 15:34:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32587 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754389Ab2E1Tec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 15:34:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="145512569"
-Date: Mon, 28 May 2012 20:50:02 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: tty: AB-BA between tty->legacy_mutex and devpts_mutex
-Message-ID: <20120528205002.17609388@bob.linux.org.uk>
-In-Reply-To: <alpine.LNX.2.00.1205282100390.15057@pobox.suse.cz>
-References: <alpine.LNX.2.00.1205282044410.15057@pobox.suse.cz>
-	<alpine.LNX.2.00.1205282100390.15057@pobox.suse.cz>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755024Ab2E1Top (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 15:44:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:49319 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab2E1Ton (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 15:44:43 -0400
+Date: Mon, 28 May 2012 16:44:38 -0300
+From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [ 71/94] spi/spi-fsl-spi: reference correct pdata in
+ fsl_spi_cs_control
+Message-ID: <20120528194437.GC2915@herton-Z68MA-D2H-B3>
+References: <20120527010332.GA11170@kroah.com>
+ <20120527010433.768465216@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120527010433.768465216@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 May 2012 21:02:15 +0200 (CEST)
-Jiri Kosina <jkosina@suse.cz> wrote:
+On Sun, May 27, 2012 at 10:05:34AM +0900, Greg KH wrote:
+> 3.3-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
 
-> On Mon, 28 May 2012, Jiri Kosina wrote:
-> 
-> > ======================================================
-> > [ INFO: possible circular locking dependency detected ]
-> > 3.4.0-08219-g238d69d #11 Not tainted
-> > -------------------------------------------------------
-> > blogd/265 is trying to acquire lock:
-> >  (devpts_mutex){+.+.+.}, at: [<ffffffff8134d696>]
-> > pty_close+0x166/0x190
-> > 
-> > but task is already holding lock:
-> >  (&tty->legacy_mutex){+.+.+.}, at: [<ffffffff8150f632>]
-> > tty_lock+0x22/0x29
-> > 
-> > which lock already depends on the new lock.
-> 
-> [ ... snip ... ]
-> 
-> > This deadlock scenario doesn't really seem realistic, as it's
-> > between open()/close(). Not being really familiar with tty layer, I
-> > am not sure what the proper lock ordering in this case is, I am
-> > just reporting for you guys to decide how to get rid of this one.
-> 
-> This seems to have been caused by
-> 
-> commit d739e65bb21d34f0f5d3bf4048410e534fbec148
-> Author: Alan Cox <alan@linux.intel.com>
-> Date:   Thu May 3 22:22:09 2012 +0100
-> 
->     pty: Lock the devpts bits privately
+In addition to this fix, please also cherry-pick into 3.3 series commit
+5039a86973cd35bdb2f64d28ee12f13fe2bb5a4c, "spi/mpc83xx: fix NULL pdata
+dereference bug". I noted now that 3.3 stable is missing it. It
+was the first part addressing the issue introduced by commit 178db7d3 in
+spi-fsl-spi, that is included in 3.3.
 
-Already fixed. It turned out we could just get rid of the lock there
-anyway
+> 
+> From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> 
+> commit 067aa4815a9bc12a569d8a06afef50ba5773afbf upstream.
+> 
+> Commit 178db7d3, "spi: Fix device unregistration when unregistering
+> the bus master", changed spi device initialization of dev.parent pointer
+> to be the master's device pointer instead of his parent.
+> 
+> This introduced a bug in spi-fsl-spi, since its usage of spi device
+> pointer was not updated accordingly. This was later fixed by commit
+> 5039a86, "spi/mpc83xx: fix NULL pdata dereference bug", but it missed
+> another spot on fsl_spi_cs_control function where we also need to update
+> usage of spi device pointer. This change address that.
+> 
+> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> Acked-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  drivers/spi/spi-fsl-spi.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- a/drivers/spi/spi-fsl-spi.c
+> +++ b/drivers/spi/spi-fsl-spi.c
+> @@ -931,7 +931,7 @@ err:
+>  
+>  static void fsl_spi_cs_control(struct spi_device *spi, bool on)
+>  {
+> -	struct device *dev = spi->dev.parent;
+> +	struct device *dev = spi->dev.parent->parent;
+>  	struct mpc8xxx_spi_probe_info *pinfo = to_of_pinfo(dev->platform_data);
+>  	u16 cs = spi->chip_select;
+>  	int gpio = pinfo->gpios[cs];
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+[]'s
+Herton
