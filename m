@@ -1,35 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab2E1Xay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 19:30:54 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35175 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab2E1Xax (ORCPT
+	id S1751231Ab2E1XfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 19:35:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44824 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824Ab2E1XfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 19:30:53 -0400
-Date: Tue, 29 May 2012 00:33:42 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: tty locking problem (possible recursive locking detected)
-Message-ID: <20120529003342.6eadabaa@pyramind.ukuu.org.uk>
-In-Reply-To: <20120528221300.GD16584@smp.if.uj.edu.pl>
-References: <20120528221300.GD16584@smp.if.uj.edu.pl>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 28 May 2012 19:35:17 -0400
+Date: Tue, 29 May 2012 08:35:10 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        axboe@kernel.dk, paul.gortmaker@windriver.com
+Subject: Re: [PATCH 1/3] rbtree: Add rb_insert(), rb_search(), etc.
+Message-ID: <20120528233510.GD20954@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
+ <1337979461-19654-2-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337979461-19654-2-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 May 2012 00:13:00 +0200
-Witold Baryluk <baryluk@smp.if.uj.edu.pl> wrote:
+Hello, Kent.
 
-> Hi,
+Please cc akpm.
+
+On Fri, May 25, 2012 at 01:57:39PM -0700, Kent Overstreet wrote:
+> Change-Id: I072d94a42b75454aa62be849c724980d27523b08
 > 
-> I just compiled recent Linus tree and this is what I got after opening terminator terminal:
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
 
-Yes - already fixed.
+Same complaints.
+
+And function comments please.
+
+> +static inline int _rb_insert(struct rb_root *root,
+> +			     struct rb_node *new,
+> +			     rb_cmp_t cmp)
+> +{
+> +	struct rb_node **n = &root->rb_node, *parent = NULL;
+> +	int res;
+> +
+> +	while (*n) {
+> +		parent = *n;
+> +		res = cmp(new, *n);
+> +		if (!res)
+> +			return -1;
+
+-EINVAL?
+
+> +		n = res < 0
+> +			? &(*n)->rb_left
+> +			: &(*n)->rb_right;
+
+I don't know.  I'm finding this formatting rather weird.  If ?: has to
+be used and line has to break, how about the following?
+
+		n = res < 0 ? A
+			    : B;
+
+Or how about using good'ol if else?
+
+	if (res < 0)
+		n = A;
+	else if (res > 0)
+		n = B;
+	else
+		return -EINVAL;
+
+> +	}
+> +
+> +	rb_link_node(new, parent, n);
+> +	rb_insert_color(new, root);
+> +	return 0;
+> +}
+> +
+> +static inline void _rb_insert_allow_dup(struct rb_root *root,
+> +				       struct rb_node *new,
+> +				       rb_cmp_t cmp)
+> +{
+> +	struct rb_node **n = &root->rb_node, *parent = NULL;
+> +
+> +	while (*n) {
+> +		parent = *n;
+> +		n = cmp(new, *n) < 0
+> +			? &(*n)->rb_left
+> +			: &(*n)->rb_right;
+
+Ditto.
+
+> +	}
+> +
+> +	rb_link_node(new, parent, n);
+> +	rb_insert_color(new, root);
+> +}
+> +
+> +static inline struct rb_node *_rb_search(struct rb_root *root,
+> +					 struct rb_node *search,
+> +					 rb_cmp_t cmp)
+> +{
+> +	struct rb_node *n = root->rb_node;
+> +
+> +	while (n) {
+> +		int res = cmp(search, n);
+> +		if (!res)
+> +			return n;
+> +
+> +		n = res < 0
+> +			? n->rb_left
+> +			: n->rb_right;
+> +	}
+> +
+> +	return NULL;
+> +}
+> +
+> +static inline struct rb_node *_rb_greater(struct rb_root *root,
+> +					  struct rb_node *search,
+> +					  rb_cmp_t cmp)
+> +{
+> +	struct rb_node *n = root->rb_node;
+> +	struct rb_node *ret = NULL;
+> +
+> +	while (n) {
+> +		int res = cmp(search, n);
+> +
+> +		if (res < 0) {
+> +			ret = n;
+> +			n = n->rb_left;
+> +		} else {
+> +			n = n->rb_right;
+> +		}
+> +	}
+> +
+> +	return ret;
+> +}
+
+What does _rb_greater() do?  If these are gonna be inlined, can't we
+mostly just have single lookup function which returns either the found
+node or insertion position and let each wrapper deal with the
+specifics?
+
+Thanks.
+
+-- 
+tejun
