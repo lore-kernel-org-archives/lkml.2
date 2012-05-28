@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab2E1Dn4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:43:56 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39333 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754060Ab2E1Dnw (ORCPT
+	id S1753962Ab2E1D3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52020 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753831Ab2E1D30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:43:52 -0400
-Date: Mon, 28 May 2012 13:43:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sparc: fix bad merge of sparc Kconfig
-Message-Id: <20120528134348.c934fef7360aa10683fc3a28@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W"
+	Sun, 27 May 2012 23:29:26 -0400
+Message-Id: <20120528031211.580118574@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 28 May 2012 04:13:05 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 063/117] USB: fix resource leak in xhci power loss path
+In-Reply-To: <20120528031202.829379252@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Fixes this sparc32 defconfig build error:
+------------------
 
-timekeeping.c:(.text+0x277c4): undefined reference to `arch_gettimeoffset'
+From: Oliver Neukum <oneukum@suse.de>
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+commit f8a9e72d125f4e00ec529ba67b674321a1f3bf31 upstream.
+
+Some more data structures must be freed and counters
+reset if an XHCI controller has lost power. The failure
+to do so renders some chips inoperative after a certain number
+of S4 cycles.
+
+This patch should be backported to kernels as old as 3.2,
+that contain the commits c29eea621900f18287d50519f72cb9113746d75a
+"xhci: Implement HS/FS/LS bandwidth checking." and
+commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe
+"xhci: Implement HS/FS/LS bandwidth checking."
+
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/sparc/Kconfig |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/usb/host/xhci-mem.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-Dave, I have been carrying this merge fix in linux-next for a while and
-now it is needed in Linus' tree.
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index 68eaa90..0b5ff26 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1791,6 +1791,14 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ {
+ 	struct pci_dev	*pdev = to_pci_dev(xhci_to_hcd(xhci)->self.controller);
+ 	struct dev_info	*dev_info, *next;
++	struct list_head *tt_list_head;
++	struct list_head *tt;
++	struct list_head *endpoints;
++	struct list_head *ep, *q;
++	struct xhci_tt_bw_info *tt_info;
++	struct xhci_interval_bw_table *bwt;
++	struct xhci_virt_ep *virt_ep;
++
+ 	unsigned long	flags;
+ 	int size;
+ 	int i;
+@@ -1849,8 +1857,26 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
+ 	}
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
++	bwt = &xhci->rh_bw->bw_table;
++	for (i = 0; i < XHCI_MAX_INTERVAL; i++) {
++		endpoints = &bwt->interval_bw[i].endpoints;
++		list_for_each_safe(ep, q, endpoints) {
++			virt_ep = list_entry(ep, struct xhci_virt_ep, bw_endpoint_list);
++			list_del(&virt_ep->bw_endpoint_list);
++			kfree(virt_ep);
++		}
++	}
++
++	tt_list_head = &xhci->rh_bw->tts;
++	list_for_each_safe(tt, q, tt_list_head) {
++		tt_info = list_entry(tt, struct xhci_tt_bw_info, tt_list);
++		list_del(tt);
++		kfree(tt_info);
++	}
++
+ 	xhci->num_usb2_ports = 0;
+ 	xhci->num_usb3_ports = 0;
++	xhci->num_active_eps = 0;
+ 	kfree(xhci->usb2_ports);
+ 	kfree(xhci->usb3_ports);
+ 	kfree(xhci->port_array);
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index 9be0dd2..35e08fe 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -39,7 +39,6 @@ config SPARC32
- 	def_bool !64BIT
- 	select GENERIC_ATOMIC64
- 	select CLZ_TAB
--	select ARCH_USES_GETTIMEOFFSET
-=20
- config SPARC64
- 	def_bool 64BIT
---=20
-1.7.10.280.gaa39
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPwvR0AAoJEECxmPOUX5FEJDYP/3qLmftAmkgtAYym0k4lfoTo
-yNcVe1D/XHVOWg0123+ex5mh90iRmggqiCQkfc1+FOiCPrKNUYg5Ve5A1xEF3bdI
-mm1JKxMFJhUyD0LFBRhbm8rAdMXxxwoswGW4ZBR29NdH8cZ2aPeWJJLiPa3pbcpy
-k9ghz3xVSnQVsXV5a6KaoD+BHnhTx9N6IYKNupe7wdyWWW86wTkieRtgfphmx27X
-VMVHxOOikdxo4vLIqWtReTBDGpKCX/reVJuqO/VAQUJfA2BNcCypWQrNScFzaWnB
-lmqBiLhnTnVpSX5dvENy+JrFExKz/JM/wB9Wte5+xAEnyMh3j3OeSz+6novN1odt
-z4whzbaH6Gt+nlRWFg613sRVm5MfHujJpUpifWdHE1BhqY/BgHjDEV6ve8HWrKYJ
-aNCRAcZ97zjiOTchbudawGyDYtDabEmu8JRzHREkENs5GdphgFVSdLN3uU39rcH8
-gGVRsA/+VU0YYD/VaThUc9RmPMb2NrhIND1GtkPk8yVcalcxNza2hLcrMSKuX6Lz
-BCzGrtYU8ER6BLfCrgSHJz9mfE4WkzxxKFLCyQ1hOUtABHZhBqLQGvsL8VkJ/6yf
-SDqG8tGSfxcRDfiNW5oEo7JD5irYrWl/yS2uwy8AAd4asA3RP80HsofuodVW5M65
-YtSwUW0rTo68ZZcEWSae
-=XC6/
------END PGP SIGNATURE-----
-
---Signature=_Mon__28_May_2012_13_43_48_+1000_l.JAEKkPijOlMt9W--
