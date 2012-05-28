@@ -1,91 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab2E1NmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 09:42:19 -0400
-Received: from twin.jikos.cz ([89.185.236.188]:52849 "EHLO twin.jikos.cz"
+	id S1754085Ab2E1Nty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 09:49:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56856 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab2E1NmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 09:42:18 -0400
-Date: Mon, 28 May 2012 15:41:59 +0200
-From: David Sterba <dave@jikos.cz>
-To: Asias He <asias@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        jeffm@suse.com
-Subject: Re: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
-Message-ID: <20120528134159.GT24394@twin.jikos.cz>
-Reply-To: dave@jikos.cz
-Mail-Followup-To: Asias He <asias@redhat.com>, linux-kernel@vger.kernel.org,
-	linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-	Jens Axboe <axboe@kernel.dk>, jeffm@suse.com
-References: <1337915422-24988-1-git-send-email-asias@redhat.com>
+	id S1750866Ab2E1Ntx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 09:49:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105059497"
+Message-ID: <4FC38277.2030500@intel.com>
+Date: Mon, 28 May 2012 21:49:43 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337915422-24988-1-git-send-email-asias@redhat.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: add a few comments of cpumask functions
+References: <1338195748-18934-1-git-send-email-alex.shi@intel.com> <4FC373D9.7040109@linux.vnet.ibm.com>
+In-Reply-To: <4FC373D9.7040109@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 11:10:21AM +0800, Asias He wrote:
-> 1) This function is not used anywhere.
+On 05/28/2012 08:47 PM, Srivatsa S. Bhat wrote:
 
-This was added in 49b25e0540904be0bf558b84475c69d72e4de66e adding a
-transaction abort infrastructure.  I'm not sure if Jeff had some
-intentions with it or whether it got obsolete during the patchset long
-evolution, CCed.
-
-
-david
-
-
-> 2) Using the blk_abort_queue() to abort the queue seems not correct.
-> blk_abort_queue() is used for timeout handling (block/blk-timeout.c).
+> On 05/28/2012 02:32 PM, Alex Shi wrote:
 > 
-> Cc: Chris Mason <chris.mason@oracle.com>
-> Cc: linux-btrfs@vger.kernel.org
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Asias He <asias@redhat.com>
-> ---
->  fs/btrfs/disk-io.c |   13 -------------
->  fs/btrfs/disk-io.h |    1 -
->  2 files changed, 14 deletions(-)
+>> Current few cpumask function purpose are not quite clear. Stupid
+>> user like myself need to dig into details for clear function
+>> purpose and return value.
 > 
-> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-> index e1fe74a..3521866 100644
-> --- a/fs/btrfs/disk-io.c
-> +++ b/fs/btrfs/disk-io.c
-> @@ -2902,19 +2902,6 @@ int write_ctree_super(struct btrfs_trans_handle *trans,
->  	return ret;
->  }
+> 
+> You can just see how it is used elsewhere and figure it out ;-)
+> Anyway, in principle, I don't have any objections to adding comments
+> that are actually helpful. But I don't think all the comments this
+> patch adds fall into that category..
+> 
+>> Add few explanation for them is helpful.
+>>
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  include/linux/cpumask.h |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+>> index a2c819d..8436e61 100644
+>> --- a/include/linux/cpumask.h
+>> +++ b/include/linux/cpumask.h
+>> @@ -271,6 +271,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+>>   * cpumask_test_cpu - test for a cpu in a cpumask
+>>   * @cpu: cpu number (< nr_cpu_ids)
+>>   * @cpumask: the cpumask pointer
+>> + * return 1 if the 'cpu' is in the old 'cpumask', otherwise return 0
+>>   *
+> 
+> 
+> s/return/Returns
+> 
+> What do you mean by "old" cpumask?
+
+
+
+
+Thanks for comments!
+Should be "the old bitmap of cpumask"?
+
+> 
+>>   * No static inline type checking - see Subtlety (1) above.
+>>   */
+>> @@ -281,6 +282,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+>>   * cpumask_test_and_set_cpu - atomically test and set a cpu in a cpumask
+>>   * @cpu: cpu number (< nr_cpu_ids)
+>>   * @cpumask: the cpumask pointer
+>> + * return 1 if the 'cpu' is in the old 'cpumask', otherwise return 0
+>>   *
+> 
+> 
+> "Test and Set" already has a very well-defined and well-known meaning.. Not sure if the
+> comment adds any extra value..
+
+
+
+
+Yes, but it is still helpful for newbie. :)
+
+> 
+>>   * test_and_set_bit wrapper for cpumasks.
+>>   */
+>> @@ -293,6 +295,7 @@ static inline int cpumask_test_and_set_cpu(int cpu, struct cpumask *cpumask)
+>>   * cpumask_test_and_clear_cpu - atomically test and clear a cpu in a cpumask
+>>   * @cpu: cpu number (< nr_cpu_ids)
+>>   * @cpumask: the cpumask pointer
+>> + * return 1 if the 'cpu' is in the old 'cpumask', otherwise return 0
+>>   *
+> 
+> 
+> Same here. Pretty well known meaning.
+> 
+>>   * test_and_clear_bit wrapper for cpumasks.
+>>   */
+>> @@ -324,6 +327,7 @@ static inline void cpumask_clear(struct cpumask *dstp)
+>>   * @dstp: the cpumask result
+>>   * @src1p: the first input
+>>   * @src2p: the second input
+>> + * if *dstp is empty, return 0, otherwise return 1
+> 
+> 
+> I don't think anybody would be interested in the return value of this function!
+> The functionality (rather than the return value) is what is more interesting
+> and useful, and is already well-documented.
+
+
+
+
+:) it is true none is using the return value, but why not to have a comments 
+if we have this return value.
+
+> 
+>>   */
+>>  static inline int cpumask_and(struct cpumask *dstp,
+>>  			       const struct cpumask *src1p,
+>> @@ -365,6 +369,7 @@ static inline void cpumask_xor(struct cpumask *dstp,
+>>   * @dstp: the cpumask result
+>>   * @src1p: the first input
+>>   * @src2p: the second input
+>> + * if *dstp is empty, return 0, otherwise return 1
+> 
+> 
+> Same here. Functionality is more interesting.
+> 
+>>   */
+>>  static inline int cpumask_andnot(struct cpumask *dstp,
+>>  				  const struct cpumask *src1p,
+>> @@ -414,6 +419,7 @@ static inline bool cpumask_intersects(const struct cpumask *src1p,
+>>   * cpumask_subset - (*src1p & ~*src2p) == 0
+>>   * @src1p: the first input
+>>   * @src2p: the second input
+>> + * return 1 if the *src1p is the subset of *src2p, otherwise return 0
+> 
+> 
+> s/return/Returns
+> (I think the function name itself is pretty descriptive, but anyway...)
+
+
+
+
+Just this function make me confusing, because I missed the '== 0' in 
+"*src1p & ~*src2p) == 0", than I thought scr1p should be the mother mask
+ and scr2p is daughter. :)
+
+> 
+>>   */
+>>  static inline int cpumask_subset(const struct cpumask *src1p,
+>>  				 const struct cpumask *src2p)
+> 
+> 
 >  
-> -/* Kill all outstanding I/O */
-> -void btrfs_abort_devices(struct btrfs_root *root)
-> -{
-> -	struct list_head *head;
-> -	struct btrfs_device *dev;
-> -	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
-> -	head = &root->fs_info->fs_devices->devices;
-> -	list_for_each_entry_rcu(dev, head, dev_list) {
-> -		blk_abort_queue(dev->bdev->bd_disk->queue);
-> -	}
-> -	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
-> -}
-> -
->  void btrfs_free_fs_root(struct btrfs_fs_info *fs_info, struct btrfs_root *root)
->  {
->  	spin_lock(&fs_info->fs_roots_radix_lock);
-> diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
-> index ab1830a..05b3fab 100644
-> --- a/fs/btrfs/disk-io.h
-> +++ b/fs/btrfs/disk-io.h
-> @@ -89,7 +89,6 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
->  int btrfs_cleanup_transaction(struct btrfs_root *root);
->  void btrfs_cleanup_one_transaction(struct btrfs_transaction *trans,
->  				  struct btrfs_root *root);
-> -void btrfs_abort_devices(struct btrfs_root *root);
->  
->  #ifdef CONFIG_DEBUG_LOCK_ALLOC
->  void btrfs_init_lockdep(void);
+> Regards,
+> Srivatsa S. Bhat
+
+
+
+Thanks for all comments, I updated the patch according to your some suggestion.
+Anyway, I don't mind if the patch is picked up. Maybe there is only one stupid 
+guy in the world. :)
+----------
+
+>From caf6e32ec4f335064f067904f24fb9f9f90312df Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 28 May 2012 15:53:51 +0800
+Subject: [PATCH] cpumask: add a few comments of cpumask functions
+
+Current few cpumask functions' purposes are not quite clear. Stupid
+user like myself need to dig into details for clear function
+purpose and return value.
+Add few explanation for them is helpful.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/cpumask.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index a2c819d..177e5e8 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -271,6 +271,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+  * cpumask_test_cpu - test for a cpu in a cpumask
+  * @cpu: cpu number (< nr_cpu_ids)
+  * @cpumask: the cpumask pointer
++ * Return 1 if the 'cpu' is in the old bitmap of 'cpumask', otherwise return 0
+  *
+  * No static inline type checking - see Subtlety (1) above.
+  */
+@@ -281,6 +282,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+  * cpumask_test_and_set_cpu - atomically test and set a cpu in a cpumask
+  * @cpu: cpu number (< nr_cpu_ids)
+  * @cpumask: the cpumask pointer
++ * Return 1 if the 'cpu' is in the old bitmap of 'cpumask', otherwise return 0
+  *
+  * test_and_set_bit wrapper for cpumasks.
+  */
+@@ -293,6 +295,7 @@ static inline int cpumask_test_and_set_cpu(int cpu, struct cpumask *cpumask)
+  * cpumask_test_and_clear_cpu - atomically test and clear a cpu in a cpumask
+  * @cpu: cpu number (< nr_cpu_ids)
+  * @cpumask: the cpumask pointer
++ * Return 1 if the 'cpu' is in the old bitmap of 'cpumask', otherwise return 0
+  *
+  * test_and_clear_bit wrapper for cpumasks.
+  */
+@@ -324,6 +327,7 @@ static inline void cpumask_clear(struct cpumask *dstp)
+  * @dstp: the cpumask result
+  * @src1p: the first input
+  * @src2p: the second input
++ * If *dstp is empty, return 0, otherwise return 1
+  */
+ static inline int cpumask_and(struct cpumask *dstp,
+ 			       const struct cpumask *src1p,
+@@ -365,6 +369,7 @@ static inline void cpumask_xor(struct cpumask *dstp,
+  * @dstp: the cpumask result
+  * @src1p: the first input
+  * @src2p: the second input
++ * If *dstp is empty, return 0, otherwise return 1
+  */
+ static inline int cpumask_andnot(struct cpumask *dstp,
+ 				  const struct cpumask *src1p,
+@@ -414,6 +419,7 @@ static inline bool cpumask_intersects(const struct cpumask *src1p,
+  * cpumask_subset - (*src1p & ~*src2p) == 0
+  * @src1p: the first input
+  * @src2p: the second input
++ * Return 1 if the *src1p is the subset of *src2p, otherwise return 0
+  */
+ static inline int cpumask_subset(const struct cpumask *src1p,
+ 				 const struct cpumask *src2p)
+-- 
+1.7.5.4
+
