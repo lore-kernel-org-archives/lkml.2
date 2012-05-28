@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739Ab2E1D3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51899 "EHLO
+	id S1755358Ab2E1DuP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:50:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51974 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753468Ab2E1D3K (ORCPT
+	by vger.kernel.org with ESMTP id S1753743Ab2E1D3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:10 -0400
-Message-Id: <20120528031207.461181592@decadent.org.uk>
+	Sun, 27 May 2012 23:29:20 -0400
+Message-Id: <20120528031206.342607017@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:35 +0100
+Date: Mon, 28 May 2012 04:12:27 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Manish Honap <manish_honap_vit@yahoo.co.in>
-Subject: [ 033/117] vfs: make AIO use the proper rw_verify_area() area helpers
+        alan@lxorguk.ukuu.org.uk, Yishai Hadas <yishaih@mellanox.com>,
+        Christoph Lameter <cl@linux.com>,
+        Roland Dreier <roland@purestorage.com>
+Subject: [ 025/117] IB/core: Fix mismatch between locked and pinned pages
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,107 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Yishai Hadas <yishaih@mellanox.com>
 
-commit a70b52ec1aaeaf60f4739edb1b422827cb6f3893 upstream.
+commit c4870eb874ac16dccef40e1bc7a002c7e9156adc upstream.
 
-We had for some reason overlooked the AIO interface, and it didn't use
-the proper rw_verify_area() helper function that checks (for example)
-mandatory locking on the file, and that the size of the access doesn't
-cause us to overflow the provided offset limits etc.
+Commit bc3e53f682d9 ("mm: distinguish between mlocked and pinned
+pages") introduced a separate counter for pinned pages and used it in
+the IB stack.  However, in ib_umem_get() the pinned counter is
+incremented, but ib_umem_release() wrongly decrements the locked
+counter.  Fix this.
 
-Instead, AIO did just the security_file_permission() thing (that
-rw_verify_area() also does) directly.
-
-This fixes it to do all the proper helper functions, which not only
-means that now mandatory file locking works with AIO too, we can
-actually remove lines of code.
-
-Reported-by: Manish Honap <manish_honap_vit@yahoo.co.in>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Yishai Hadas <yishaih@mellanox.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/aio.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+ drivers/infiniband/core/umem.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 67a6db3..e7f2fad 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1456,6 +1456,10 @@ static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb, bool compat)
- 	if (ret < 0)
- 		goto out;
+diff --git a/drivers/infiniband/core/umem.c b/drivers/infiniband/core/umem.c
+index 71f0c0f..a841123 100644
+--- a/drivers/infiniband/core/umem.c
++++ b/drivers/infiniband/core/umem.c
+@@ -269,7 +269,7 @@ void ib_umem_release(struct ib_umem *umem)
+ 	} else
+ 		down_write(&mm->mmap_sem);
  
-+	ret = rw_verify_area(type, kiocb->ki_filp, &kiocb->ki_pos, ret);
-+	if (ret < 0)
-+		goto out;
-+
- 	kiocb->ki_nr_segs = kiocb->ki_nbytes;
- 	kiocb->ki_cur_seg = 0;
- 	/* ki_nbytes/left now reflect bytes instead of segs */
-@@ -1467,11 +1471,17 @@ out:
- 	return ret;
- }
- 
--static ssize_t aio_setup_single_vector(struct kiocb *kiocb)
-+static ssize_t aio_setup_single_vector(int type, struct file * file, struct kiocb *kiocb)
- {
-+	int bytes;
-+
-+	bytes = rw_verify_area(type, file, &kiocb->ki_pos, kiocb->ki_left);
-+	if (bytes < 0)
-+		return bytes;
-+
- 	kiocb->ki_iovec = &kiocb->ki_inline_vec;
- 	kiocb->ki_iovec->iov_base = kiocb->ki_buf;
--	kiocb->ki_iovec->iov_len = kiocb->ki_left;
-+	kiocb->ki_iovec->iov_len = bytes;
- 	kiocb->ki_nr_segs = 1;
- 	kiocb->ki_cur_seg = 0;
- 	return 0;
-@@ -1496,10 +1506,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (unlikely(!access_ok(VERIFY_WRITE, kiocb->ki_buf,
- 			kiocb->ki_left)))
- 			break;
--		ret = security_file_permission(file, MAY_READ);
--		if (unlikely(ret))
--			break;
--		ret = aio_setup_single_vector(kiocb);
-+		ret = aio_setup_single_vector(READ, file, kiocb);
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
-@@ -1514,10 +1521,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (unlikely(!access_ok(VERIFY_READ, kiocb->ki_buf,
- 			kiocb->ki_left)))
- 			break;
--		ret = security_file_permission(file, MAY_WRITE);
--		if (unlikely(ret))
--			break;
--		ret = aio_setup_single_vector(kiocb);
-+		ret = aio_setup_single_vector(WRITE, file, kiocb);
- 		if (ret)
- 			break;
- 		ret = -EINVAL;
-@@ -1528,9 +1532,6 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		ret = -EBADF;
- 		if (unlikely(!(file->f_mode & FMODE_READ)))
- 			break;
--		ret = security_file_permission(file, MAY_READ);
--		if (unlikely(ret))
--			break;
- 		ret = aio_setup_vectored_rw(READ, kiocb, compat);
- 		if (ret)
- 			break;
-@@ -1542,9 +1543,6 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		ret = -EBADF;
- 		if (unlikely(!(file->f_mode & FMODE_WRITE)))
- 			break;
--		ret = security_file_permission(file, MAY_WRITE);
--		if (unlikely(ret))
--			break;
- 		ret = aio_setup_vectored_rw(WRITE, kiocb, compat);
- 		if (ret)
- 			break;
+-	current->mm->locked_vm -= diff;
++	current->mm->pinned_vm -= diff;
+ 	up_write(&mm->mmap_sem);
+ 	mmput(mm);
+ 	kfree(umem);
 
 
