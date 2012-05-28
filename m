@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab2E1DyM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:54:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51878 "EHLO
+	id S1753449Ab2E1Dyb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:54:31 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51866 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753449Ab2E1D3I (ORCPT
+	by vger.kernel.org with ESMTP id S1753162Ab2E1D3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:08 -0400
-Message-Id: <20120528031205.798243797@decadent.org.uk>
+	Sun, 27 May 2012 23:29:06 -0400
+Message-Id: <20120528031206.199281317@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:23 +0100
+Date: Mon, 28 May 2012 04:12:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tilman Schmidt <tilman@imap.cc>,
+        alan@lxorguk.ukuu.org.uk, David Howells <dhowells@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 021/117] isdn/gigaset: ratelimit CAPI message dumps
+Subject: [ 024/117] KEYS: Use the compat keyctl() syscall wrapper on Sparc64 for Sparc32
+ compat
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,86 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: David Howells <dhowells@redhat.com>
 
-commit 8e618aad5348b6e6c5a90e8d97ea643197963b20 upstream.
+commit 45de6767dc51358a188f75dc4ad9dfddb7fb9480 upstream.
 
-Introduce a global ratelimit for CAPI message dumps to protect
-against possible log flood.
-Drop the ratelimit for ignored messages which is now covered by the
-global one.
+Use the 32-bit compat keyctl() syscall wrapper on Sparc64 for Sparc32 binary
+compatibility.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Without this, keyctl(KEYCTL_INSTANTIATE_IOV) is liable to malfunction as it
+uses an iovec array read from userspace - though the kernel should survive this
+as it checks pointers and sizes anyway.
+
+I think all the other keyctl() function should just work, provided (a) the top
+32-bits of each 64-bit argument register are cleared prior to invoking the
+syscall routine, and the 32-bit address space is right at the 0-end of the
+64-bit address space.  Most of the arguments are 32-bit anyway, and so for
+those clearing is not required.
+
+Signed-off-by: David Howells <dhowells@redhat.com
+cc: "David S. Miller" <davem@davemloft.net>
+cc: sparclinux@vger.kernel.org
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/isdn/gigaset/capi.c |   22 +++++++++-------------
- 1 file changed, 9 insertions(+), 13 deletions(-)
+ arch/sparc/Kconfig             |    3 +++
+ arch/sparc/kernel/systbls_64.S |    2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index 343b5c8..292ca2f 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -14,6 +14,7 @@
- #include "gigaset.h"
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
-+#include <linux/ratelimit.h>
- #include <linux/isdn/capilli.h>
- #include <linux/isdn/capicmd.h>
- #include <linux/isdn/capiutil.h>
-@@ -223,10 +224,14 @@ get_appl(struct gigaset_capi_ctr *iif, u16 appl)
- static inline void dump_cmsg(enum debuglevel level, const char *tag, _cmsg *p)
- {
- #ifdef CONFIG_GIGASET_DEBUG
-+	/* dump at most 20 messages in 20 secs */
-+	static DEFINE_RATELIMIT_STATE(msg_dump_ratelimit, 20 * HZ, 20);
- 	_cdebbuf *cdb;
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 6c0683d..76c7ccf 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -584,6 +584,9 @@ config SYSVIPC_COMPAT
+ 	depends on COMPAT && SYSVIPC
+ 	default y
  
- 	if (!(gigaset_debuglevel & level))
- 		return;
-+	if (!___ratelimit(&msg_dump_ratelimit, tag))
-+		return;
++config KEYS_COMPAT
++	def_bool y if COMPAT && KEYS
++
+ endmenu
  
- 	cdb = capi_cmsg2str(p);
- 	if (cdb) {
-@@ -2059,12 +2064,6 @@ static void do_reset_b3_req(struct gigaset_capi_ctr *iif,
- }
- 
- /*
-- * dump unsupported/ignored messages at most twice per minute,
-- * some apps send those very frequently
-- */
--static unsigned long ignored_msg_dump_time;
--
--/*
-  * unsupported CAPI message handler
-  */
- static void do_unsupported(struct gigaset_capi_ctr *iif,
-@@ -2073,8 +2072,7 @@ static void do_unsupported(struct gigaset_capi_ctr *iif,
- {
- 	/* decode message */
- 	capi_message2cmsg(&iif->acmsg, skb->data);
--	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000))
--		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
-+	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
- 	send_conf(iif, ap, skb, CapiMessageNotSupportedInCurrentState);
- }
- 
-@@ -2085,11 +2083,9 @@ static void do_nothing(struct gigaset_capi_ctr *iif,
- 		       struct gigaset_capi_appl *ap,
- 		       struct sk_buff *skb)
- {
--	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000)) {
--		/* decode message */
--		capi_message2cmsg(&iif->acmsg, skb->data);
--		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
--	}
-+	/* decode message */
-+	capi_message2cmsg(&iif->acmsg, skb->data);
-+	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
- 	dev_kfree_skb_any(skb);
- }
- 
+ source "net/Kconfig"
+diff --git a/arch/sparc/kernel/systbls_64.S b/arch/sparc/kernel/systbls_64.S
+index db86b1a..3a58e0d 100644
+--- a/arch/sparc/kernel/systbls_64.S
++++ b/arch/sparc/kernel/systbls_64.S
+@@ -74,7 +74,7 @@ sys_call_table32:
+ 	.word sys_timer_delete, compat_sys_timer_create, sys_ni_syscall, compat_sys_io_setup, sys_io_destroy
+ /*270*/	.word sys32_io_submit, sys_io_cancel, compat_sys_io_getevents, sys32_mq_open, sys_mq_unlink
+ 	.word compat_sys_mq_timedsend, compat_sys_mq_timedreceive, compat_sys_mq_notify, compat_sys_mq_getsetattr, compat_sys_waitid
+-/*280*/	.word sys32_tee, sys_add_key, sys_request_key, sys_keyctl, compat_sys_openat
++/*280*/	.word sys32_tee, sys_add_key, sys_request_key, compat_sys_keyctl, compat_sys_openat
+ 	.word sys_mkdirat, sys_mknodat, sys_fchownat, compat_sys_futimesat, compat_sys_fstatat64
+ /*290*/	.word sys_unlinkat, sys_renameat, sys_linkat, sys_symlinkat, sys_readlinkat
+ 	.word sys_fchmodat, sys_faccessat, compat_sys_pselect6, compat_sys_ppoll, sys_unshare
 
 
