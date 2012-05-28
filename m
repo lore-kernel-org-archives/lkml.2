@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755580Ab2E1Dzv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:55:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51820 "EHLO
+	id S1755049Ab2E1Dzr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:55:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51828 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753268Ab2E1D26 (ORCPT
+	by vger.kernel.org with ESMTP id S1752913Ab2E1D26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:28:58 -0400
-Message-Id: <20120528031204.950186515@decadent.org.uk>
+Message-Id: <20120528031205.393145490@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:17 +0100
+Date: Mon, 28 May 2012 04:12:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Chris Metcalf <cmetcalf@tilera.com>
-Subject: [ 015/117] tilegx: enable SYSCALL_WRAPPERS support
+        alan@lxorguk.ukuu.org.uk, Eric Paris <eparis@redhat.com>
+Subject: [ 018/117] SELinux: if sel_make_bools errors dont leave inconsistent state
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,38 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Metcalf <cmetcalf@tilera.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit e6d9668e119af44ae5bcd5f1197174531458afe3 upstream.
+commit 154c50ca4eb9ae472f50b6a481213e21ead4457d upstream.
 
-Some discussion with the glibc mailing lists revealed that this was
-necessary for 64-bit platforms with MIPS-like sign-extension rules
-for 32-bit values.  The original symptom was that passing (uid_t)-1 to
-setreuid() was failing in programs linked -pthread because of the "setxid"
-mechanism for passing setxid-type function arguments to the syscall code.
-SYSCALL_WRAPPERS handles ensuring that all syscall arguments end up with
-proper sign-extension and is thus the appropriate fix for this problem.
+We reset the bool names and values array to NULL, but do not reset the
+number of entries in these arrays to 0.  If we error out and then get back
+into this function we will walk these NULL pointers based on the belief
+that they are non-zero length.
 
-On other platforms (s390, powerpc, sparc64, and mips) this was fixed
-in 2.6.28.6.  The general issue is tracked as CVE-2009-0029.
-
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/tile/Kconfig |    1 +
+ security/selinux/selinuxfs.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/tile/Kconfig b/arch/tile/Kconfig
-index 96033e2..74239dd 100644
---- a/arch/tile/Kconfig
-+++ b/arch/tile/Kconfig
-@@ -11,6 +11,7 @@ config TILE
- 	select GENERIC_IRQ_PROBE
- 	select GENERIC_PENDING_IRQ if SMP
- 	select GENERIC_IRQ_SHOW
-+	select HAVE_SYSCALL_WRAPPERS if TILEGX
- 	select SYS_HYPERVISOR
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
+diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+index 640feaa..4e93f9e 100644
+--- a/security/selinux/selinuxfs.c
++++ b/security/selinux/selinuxfs.c
+@@ -1233,6 +1233,7 @@ static int sel_make_bools(void)
+ 		kfree(bool_pending_names[i]);
+ 	kfree(bool_pending_names);
+ 	kfree(bool_pending_values);
++	bool_num = 0;
+ 	bool_pending_names = NULL;
+ 	bool_pending_values = NULL;
  
 
 
