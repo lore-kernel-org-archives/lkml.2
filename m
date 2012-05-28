@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab2E1BXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 21:23:24 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38810 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab2E1BXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 21:23:23 -0400
-Date: Mon, 28 May 2012 10:23:07 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
-        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
-        sage@newdream.net, yehuda@hq.newdream.net
-Subject: Re: [PATCH v3 03/16] block: Add bio_reset()
-Message-ID: <20120528012307.GC9891@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
- <1337977539-16977-4-git-send-email-koverstreet@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337977539-16977-4-git-send-email-koverstreet@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752431Ab2E1BZl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 21:25:41 -0400
+Received: from mga14.intel.com ([143.182.124.37]:38044 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024Ab2E1BZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 21:25:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104873301"
+Date: Mon, 28 May 2012 09:22:09 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH]x86, reboot: Fix a warning message triggered by
+ stop_other_cpus()
+Message-ID: <20120528092209.60677c3b@feng-i7>
+In-Reply-To: <20120522133356.GW32472@redhat.com>
+References: <20120522105233.725be041@feng-i7>
+	<20120522133356.GW32472@redhat.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 01:25:26PM -0700, Kent Overstreet wrote:
-> Reusing bios is something that's been highly frowned upon in the past,
-> but driver code keeps doing it anyways. If it's going to happen anyways,
-> we should provide a generic method.
-> 
-> This'll help with getting rid of bi_destructor - drivers/block/pktcdvd.c
-> was open coding it, by doing a bio_init() and resetting bi_destructor.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> Change-Id: Ib0a43dfcb3f6c22a54da513d4a86be544b5ffd95
-> ---
->  fs/bio.c                  |    8 ++++++++
->  include/linux/bio.h       |    1 +
->  include/linux/blk_types.h |    6 ++++++
->  3 files changed, 15 insertions(+)
-> 
-> diff --git a/fs/bio.c b/fs/bio.c
-> index 3667cef..240da21 100644
-> --- a/fs/bio.c
-> +++ b/fs/bio.c
-> @@ -259,6 +259,14 @@ void bio_init(struct bio *bio)
->  }
->  EXPORT_SYMBOL(bio_init);
->  
+Hi Don,
 
-Function comment please.
+On Tue, 22 May 2012 09:33:56 -0400
+Don Zickus <dzickus@redhat.com> wrote:
 
-> +void bio_reset(struct bio *bio)
-> +{
-> +	memset(bio, 0, BIO_RESET_BYTES);
-> +	bio->bi_flags = 1 << BIO_UPTODATE;
-> +
-> +}
-> +EXPORT_SYMBOL(bio_reset);
+> On Tue, May 22, 2012 at 10:52:33AM +0800, Feng Tang wrote:
+> > 
+> > The root cause seems to be the default_send_IPI_mask_allbutself_phys()
+> > takes quiet some time (I measured it could be several ms) to complete
+> > sending NMIs to all the other 23 CPUs, and for HZ=250/1000 system, the
+> 
+> I sent Ingo a patch (which he took in), that reverts this path to interrupts
+> again (and NMIs as a fallback if it fails).  The problem will still exist
+> I assume though I don't know if it changes the timing characteristics.
 
--- 
-tejun
+Thanks for your review and letting me know the revert which I just saw in
+the latest Linus' tree. And I think this new mechanism will greatly reduce
+the possibility, but it still exist as the old nmi_stop_other_cpus's
+implementation still exist. So
+
+Ingo,
+
+Could you review this patch? thanks,
+
+-Feng
+
