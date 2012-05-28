@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab2E1KTm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 06:19:42 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:50314 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab2E1KTk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 06:19:40 -0400
-X-IronPort-AV: E=Sophos;i="4.75,670,1330905600"; 
-   d="scan'208";a="12692702"
-Date: Mon, 28 May 2012 11:19:24 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "jbeulich@suse.com" <jbeulich@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/blkback: Copy id field when doing
- BLKIF_DISCARD.
-In-Reply-To: <1337982603-15692-2-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.DEB.2.00.1205281119080.26786@kaball-desktop>
-References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com> <1337982603-15692-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753591Ab2E1KTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 06:19:45 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17002 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752903Ab2E1KTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 06:19:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="148532000"
+Date: Mon, 28 May 2012 13:20:57 +0300
+From: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, adobriyan@gmail.com,
+        andriy.shevchenko@linux.intel.com
+Subject: Re: [PATCHv2] vsprintf: Add %pMR for Bluetooth MAC address
+Message-ID: <20120528102055.GA3537@aemeltch-MOBL1>
+Mail-Followup-To: Andrei Emeltchenko <Andrei.Emeltchenko.news@gmail.com>,
+	Andy Shevchenko <andy.shevchenko@gmail.com>,
+	linux-bluetooth@vger.kernel.org, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org, adobriyan@gmail.com,
+	andriy.shevchenko@linux.intel.com
+References: <1337956368-30621-1-git-send-email-andrei.emeltchenko.news@gmail.com>
+ <1338195605-22513-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+ <CAHp75Vc3sut7R7FF=xHQ0-3HaydPBh86sNnzRjKP8+ow=SOfLg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHp75Vc3sut7R7FF=xHQ0-3HaydPBh86sNnzRjKP8+ow=SOfLg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Konrad Rzeszutek Wilk wrote:
-> We weren't copying the id field so when we sent the response
-> back to the frontend (especially with a 64-bit host and 32-bit
-> guest), we ended up using a random value. This lead to the
-> frontend crashing as it would try to pass to __blk_end_request_all
-> a NULL 'struct request' (b/c it would use the 'id' to find the
-> proper 'struct request' in its shadow array) and end up crashing:
-> 
-> BUG: unable to handle kernel NULL pointer dereference at 000000e4
-> IP: [<c0646d4c>] __blk_end_request_all+0xc/0x40
-> .. snip..
-> EIP is at __blk_end_request_all+0xc/0x40
-> .. snip..
->  [<ed95db72>] blkif_interrupt+0x172/0x330 [xen_blkfront]
-> 
-> This fixes the bug by passing in the proper id for the response.
-> 
-> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=824641
-> CC: stable@kernel.org
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Hi Andy,
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On Mon, May 28, 2012 at 01:01:05PM +0300, Andy Shevchenko wrote:
+> On Mon, May 28, 2012 at 12:00 PM, Andrei Emeltchenko
+> <Andrei.Emeltchenko.news@gmail.com> wrote:
+> > From: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+> >
+> > Bluetooth uses mostly LE byte order which is reversed for visual
+> > interpretation. Currently in Bluetooth in use unsafe batostr function.
+> >
+> > This is slightly modified version of Joe Perches <joe@perches.com>
+> > patch (sent Sat, Dec 4, 2010).
+> >
+> > Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
+> > ---
+> >        v2: changed bluetooth to reversed, syntax fixes
+> >
+> >  lib/vsprintf.c |   22 +++++++++++++++++-----
+> >  1 file changed, 17 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+> > index abbabec..d98b12d 100644
+> > --- a/lib/vsprintf.c
+> > +++ b/lib/vsprintf.c
+> > @@ -557,17 +557,27 @@ char *mac_address_string(char *buf, char *end, u8 *addr,
+> >  {
+> >        char mac_addr[sizeof("xx:xx:xx:xx:xx:xx")];
+> >        char *p = mac_addr;
+> > -       int i;
+> > +       int i, index;
+> >        char separator;
+> > +       bool reversed = false;
+> >
+> > -       if (fmt[1] == 'F') {            /* FDDI canonical format */
+> > +       switch (fmt[1]) {
+> > +       case 'F':
+> >                separator = '-';
+> > -       } else {
+> > +               break;
+> > +
+> > +       case 'R':
+> > +               reversed = true;
+> > +               /* fall through */
+> This solution looks a bit limited. On one hand it makes difficult to add another
+> case where format specifies colon separator with something else. On
+> the other hand
 
->  drivers/block/xen-blkback/common.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+I believe it is good as is for now. The other option would be to name it
+as "B" or "b" for bluetooth.
+
+> I don't see any troubles if you allow reverse as a modifier for both
+> cases %pMF & %pM
+
+MF is used for FDDI and it makes no sense to reverse it.
+
 > 
-> diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
-> index 773cf27..9ad3b5e 100644
-> --- a/drivers/block/xen-blkback/common.h
-> +++ b/drivers/block/xen-blkback/common.h
-> @@ -257,6 +257,7 @@ static inline void blkif_get_x86_32_req(struct blkif_request *dst,
->  		break;
->  	case BLKIF_OP_DISCARD:
->  		dst->u.discard.flag = src->u.discard.flag;
-> +		dst->u.discard.id = src->u.discard.id;
->  		dst->u.discard.sector_number = src->u.discard.sector_number;
->  		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
->  		break;
-> @@ -287,6 +288,7 @@ static inline void blkif_get_x86_64_req(struct blkif_request *dst,
->  		break;
->  	case BLKIF_OP_DISCARD:
->  		dst->u.discard.flag = src->u.discard.flag;
-> +		dst->u.discard.id = src->u.discard.id;
->  		dst->u.discard.sector_number = src->u.discard.sector_number;
->  		dst->u.discard.nr_sectors = src->u.discard.nr_sectors;
->  		break;
-> -- 
-> 1.7.7.6
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
-> 
+> > +
+> > +       default:
+> >                separator = ':';
+> > +               break;
+> >        }
+> >
+> >        for (i = 0; i < 6; i++) {
+> > -               p = hex_byte_pack(p, addr[i]);
+> > +               index = !reversed ? i : 5 - i;
+> > +               p = hex_byte_pack(p, addr[index]);
+> I guess instead of using additional variable (index), you could use
+> just normal if () {} else {} sentence
+> here.
+
+I can change this
+
+Best regards 
+Andrei Emeltchenko 
