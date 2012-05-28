@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2E1DqF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:46:05 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52042 "EHLO
+	id S1755165Ab2E1DqD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:46:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52066 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753862Ab2E1D32 (ORCPT
+	by vger.kernel.org with ESMTP id S1753890Ab2E1D33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:28 -0400
-Message-Id: <20120528031212.256834936@decadent.org.uk>
+	Sun, 27 May 2012 23:29:29 -0400
+Message-Id: <20120528031212.812558190@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:10 +0100
+Date: Mon, 28 May 2012 04:13:14 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Richard Weinberger <richard@nod.at>
-Subject: [ 068/117] um: Fix __swp_type()
+        alan@lxorguk.ukuu.org.uk, Matt Johnson <johnso87@illinois.edu>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 072/117] ahci: Detect Marvell 88SE9172 SATA controller
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,38 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Matt Johnson <johnso87@illinois.edu>
 
-commit 2b76ebaa728f8a3967c52aa189261c72fe56a6f1 upstream.
+commit 642d89252201c4155fc3946bf9cdea409e5d263e upstream.
 
-The current __swp_type() function uses a too small bitshift.
-Using more than one swap files causes bad pages because
-the type bits clash with other page flags.
+The Marvell 88SE9172 SATA controller (PCI ID 1b4b 917a) already worked
+once it was detected, but was missing an ahci_pci_tbl entry.
 
-Analyzed-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Richard Weinberger <richard@nod.at>
+Boot tested on a Gigabyte Z68X-UD3H-B3 motherboard.
+
+Signed-off-by: Matt Johnson <johnso87@illinois.edu>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/um/include/asm/pgtable.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/ahci.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/um/include/asm/pgtable.h b/arch/um/include/asm/pgtable.h
-index 294254e..5888f1b 100644
---- a/arch/um/include/asm/pgtable.h
-+++ b/arch/um/include/asm/pgtable.h
-@@ -354,11 +354,11 @@ extern pte_t *virt_to_pte(struct mm_struct *mm, unsigned long addr);
- #define update_mmu_cache(vma,address,ptep) do ; while (0)
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 79a1e9d..ebaf67e 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -394,6 +394,8 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9128 */
+ 	{ PCI_DEVICE(0x1b4b, 0x9125),
+ 	  .driver_data = board_ahci_yes_fbs },			/* 88se9125 */
++	{ PCI_DEVICE(0x1b4b, 0x917a),
++	  .driver_data = board_ahci_yes_fbs },			/* 88se9172 */
+ 	{ PCI_DEVICE(0x1b4b, 0x91a3),
+ 	  .driver_data = board_ahci_yes_fbs },
  
- /* Encode and de-code a swap entry */
--#define __swp_type(x)			(((x).val >> 4) & 0x3f)
-+#define __swp_type(x)			(((x).val >> 5) & 0x1f)
- #define __swp_offset(x)			((x).val >> 11)
- 
- #define __swp_entry(type, offset) \
--	((swp_entry_t) { ((type) << 4) | ((offset) << 11) })
-+	((swp_entry_t) { ((type) << 5) | ((offset) << 11) })
- #define __pte_to_swp_entry(pte) \
- 	((swp_entry_t) { pte_val(pte_mkuptodate(pte)) })
- #define __swp_entry_to_pte(x)		((pte_t) { (x).val })
 
 
