@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab2E1Dqz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:46:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52025 "EHLO
+	id S1755364Ab2E1Dq6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:46:58 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52033 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753850Ab2E1D31 (ORCPT
+	by vger.kernel.org with ESMTP id S1753585Ab2E1D31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:27 -0400
-Message-Id: <20120528031208.551705113@decadent.org.uk>
+Message-Id: <20120528031208.955967060@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:43 +0100
+Date: Mon, 28 May 2012 04:12:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Paul Zimmerman <paulz@synopsys.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 041/117] usb: usbtest: two super speed fixes for usbtest
+        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Eric Anholt <eric.anholt@intel.com>, David Bein <d.bein@f5.com>
+Subject: [ 044/117] xhci: Avoid dead ports when CONFIG_USB_XHCI_HCD=n
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,59 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 6a23ccd216b6a8ba2c67a9f9d8969b4431ad2920 upstream.
+commit 51c9e6c7732b67769c0a514d31f505e49fa82dd4 upstream.
 
-bMaxPacketSize0 field for super speed is a power of 2, not a count.
-The size itself is always 512.
+If the user chooses to say "no" to CONFIG_USB_XHCI_HCD on a system
+with an Intel Panther Point chipset, the PCI quirks code or the EHCI
+driver will switch the ports over to the xHCI host, but the xHCI driver
+will never load.  The ports will be powered off and seem "dead" to the
+user.
 
-Max packet size for a super speed bulk endpoint is 1024, so
-allocate the urb size in halt_simple() accordingly.
+Fix this by only switching the ports over if CONFIG_USB_XHCI_HCD is
+either compiled in, or compiled as a module.
 
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This patch should be backported to stable kernels as old as 3.0,
+that contain commit 69e848c2090aebba5698a1620604c7dccb448684
+"Intel xhci: Support EHCI/xHCI port switching."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Eric Anholt <eric.anholt@intel.com>
+Reported-by: David Bein <d.bein@f5.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/misc/usbtest.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/usb/host/pci-quirks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/usb/misc/usbtest.c b/drivers/usb/misc/usbtest.c
-index 9dcb68f..055b84a 100644
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1028,7 +1028,10 @@ test_ctrl_queue(struct usbtest_dev *dev, struct usbtest_param *param)
- 		case 13:	/* short read, resembling case 10 */
- 			req.wValue = cpu_to_le16((USB_DT_CONFIG << 8) | 0);
- 			/* last data packet "should" be DATA1, not DATA0 */
--			len = 1024 - udev->descriptor.bMaxPacketSize0;
-+			if (udev->speed == USB_SPEED_SUPER)
-+				len = 1024 - 512;
-+			else
-+				len = 1024 - udev->descriptor.bMaxPacketSize0;
- 			expected = -EREMOTEIO;
- 			break;
- 		case 14:	/* short read; try to fill the last packet */
-@@ -1387,11 +1390,15 @@ static int test_halt(struct usbtest_dev *tdev, int ep, struct urb *urb)
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index 32dada8..39b2612 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -9,6 +9,7 @@
+  */
  
- static int halt_simple(struct usbtest_dev *dev)
+ #include <linux/types.h>
++#include <linux/kconfig.h>
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
+ #include <linux/init.h>
+@@ -742,6 +743,19 @@ void usb_enable_xhci_ports(struct pci_dev *xhci_pdev)
  {
--	int		ep;
--	int		retval = 0;
--	struct urb	*urb;
-+	int			ep;
-+	int			retval = 0;
-+	struct urb		*urb;
-+	struct usb_device	*udev = testdev_to_usbdev(dev);
+ 	u32		ports_available;
  
--	urb = simple_alloc_urb(testdev_to_usbdev(dev), 0, 512);
-+	if (udev->speed == USB_SPEED_SUPER)
-+		urb = simple_alloc_urb(udev, 0, 1024);
-+	else
-+		urb = simple_alloc_urb(udev, 0, 512);
- 	if (urb == NULL)
- 		return -ENOMEM;
- 
++	/* Don't switchover the ports if the user hasn't compiled the xHCI
++	 * driver.  Otherwise they will see "dead" USB ports that don't power
++	 * the devices.
++	 */
++	if (!IS_ENABLED(CONFIG_USB_XHCI_HCD)) {
++		dev_warn(&xhci_pdev->dev,
++				"CONFIG_USB_XHCI_HCD is turned off, "
++				"defaulting to EHCI.\n");
++		dev_warn(&xhci_pdev->dev,
++				"USB 3.0 devices will work at USB 2.0 speeds.\n");
++		return;
++	}
++
+ 	ports_available = 0xffffffff;
+ 	/* Write USB3_PSSEN, the USB 3.0 Port SuperSpeed Enable
+ 	 * Register, to turn on SuperSpeed terminations for all
 
 
