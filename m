@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2E1OUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 10:20:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7435 "EHLO mx1.redhat.com"
+	id S1754128Ab2E1OX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 10:23:58 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19181 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940Ab2E1OU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 10:20:29 -0400
-Message-ID: <4FC38992.8070408@redhat.com>
-Date: Mon, 28 May 2012 17:20:02 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751899Ab2E1OX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 10:23:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="149269805"
+Message-ID: <4FC38A77.8090700@intel.com>
+Date: Mon, 28 May 2012 22:23:51 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] KVM: MMU: fix huge page adapted on non-PAE host
-References: <4FC316E3.6080607@linux.vnet.ibm.com> <4FC35A15.6080000@redhat.com> <4FC363EE.6060204@linux.vnet.ibm.com> <4FC36E85.4010909@redhat.com> <4FC37600.1060301@linux.vnet.ibm.com> <4FC37A18.10809@redhat.com> <4FC38084.40409@linux.vnet.ibm.com> <4FC38362.6010802@redhat.com> <4FC3863F.5020902@linux.vnet.ibm.com>
-In-Reply-To: <4FC3863F.5020902@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: add a few comments of cpumask functions
+References: <1338195748-18934-1-git-send-email-alex.shi@intel.com> <4FC373D9.7040109@linux.vnet.ibm.com> <4FC38277.2030500@intel.com>
+In-Reply-To: <4FC38277.2030500@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2012 05:05 PM, Xiao Guangrong wrote:
->>>
->>>
->>> I think the reason we move refcount in current code is, we should increase the
->>> refcount of the page we will mapped into shadow page table, since we always
->>> decrease its refcount after it is mapped. (That is this patch does.)
->>>
->> 
->> 
->> As far as I can tell __get_user_pages_fast() will take the reference
->> count in the page head in the first place.
-> 
-> 
-> IIUC, the refcount used in the Compound Page is like this:
-> 
-> get_user_pages / get_page(page):
-> 	head_page = page->first_page;
-> 	if (page is not the head page)
-> 		page->__mapcount++
-> 	head_page->_count++
-> 
-> 	
-> put_page(page):
-> 	head_page = page->first_page;
-> 	if (page is not the head page)
-> 		page->__mapcount--
-> 	head_page->_count--
-> 
+>
 
-Aha.
+> Thanks for all comments, I updated the patch according to your some suggestion.
+> Anyway, I don't mind if the patch is picked up. Maybe there is only one stupid 
+> guy in the world. :)
+> ----------
 
-The "right thing" we should be doing is running get_page() on every
-small page within the frame (we asked for a small page but are
-opportunistrically using the pages around it, without a proper ref).
-That's a bit slow though, so we cheat.
 
-Maybe we should do it anyway.  Large page maps/unmaps should be rare.
 
-But I guess we can start with your fix.  But what about shifting mask by
-one bit?  Isn't it sufficient?
 
--		mask = KVM_PAGES_PER_HPAGE(level) - 1;
-+		mask = KVM_PAGES_PER_HPAGE(level);
-+		mask *= KVM_HOST_HPAGES_PER_HPAGE;
-+		mask -= 1;
+Sorry, missed 's' for verb's singular form in third personal.
 
-This should move the reference to the right place.
+---
+>From e33d4fb4a6730832c08979f2cfdf65795cefd08a Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Mon, 28 May 2012 15:53:51 +0800
+Subject: [PATCH] cpumask: add a few comments of cpumask functions
 
+Current few cpumask functions' purposes are not quite clear. Stupid
+user like myself need to dig into details for clear function
+purpose and return value.
+Add few explanation for them is helpful.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/cpumask.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index a2c819d..7fb07ac 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -271,6 +271,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+  * cpumask_test_cpu - test for a cpu in a cpumask
+  * @cpu: cpu number (< nr_cpu_ids)
+  * @cpumask: the cpumask pointer
++ * Returns 1 if the 'cpu' is in the old bitmap of 'cpumask', otherwise returns 0
+  *
+  * No static inline type checking - see Subtlety (1) above.
+  */
+@@ -281,6 +282,7 @@ static inline void cpumask_clear_cpu(int cpu, struct cpumask *dstp)
+  * cpumask_test_and_set_cpu - atomically test and set a cpu in a cpumask
+  * @cpu: cpu number (< nr_cpu_ids)
+  * @cpumask: the cpumask pointer
++ * Returns 1 if the 'cpu' is in the old bitmap of 'cpumask', otherwise returns 0
+  *
+  * test_and_set_bit wrapper for cpumasks.
+  */
+@@ -293,6 +295,7 @@ static inline int cpumask_test_and_set_cpu(int cpu, struct cpumask *cpumask)
+  * cpumask_test_and_clear_cpu - atomically test and clear a cpu in a cpumask
+  * @cpu: cpu number (< nr_cpu_ids)
+  * @cpumask: the cpumask pointer
++ * Returns 1 if the 'cpu' is in the old bitmap of 'cpumask', otherwise returns 0
+  *
+  * test_and_clear_bit wrapper for cpumasks.
+  */
+@@ -324,6 +327,7 @@ static inline void cpumask_clear(struct cpumask *dstp)
+  * @dstp: the cpumask result
+  * @src1p: the first input
+  * @src2p: the second input
++ * If *dstp is empty, returns 0, otherwise returns 1
+  */
+ static inline int cpumask_and(struct cpumask *dstp,
+ 			       const struct cpumask *src1p,
+@@ -365,6 +369,7 @@ static inline void cpumask_xor(struct cpumask *dstp,
+  * @dstp: the cpumask result
+  * @src1p: the first input
+  * @src2p: the second input
++ * If *dstp is empty, returns 0, otherwise returns 1
+  */
+ static inline int cpumask_andnot(struct cpumask *dstp,
+ 				  const struct cpumask *src1p,
+@@ -414,6 +419,7 @@ static inline bool cpumask_intersects(const struct cpumask *src1p,
+  * cpumask_subset - (*src1p & ~*src2p) == 0
+  * @src1p: the first input
+  * @src2p: the second input
++ * Returns 1 if the *src1p is the subset of *src2p, otherwise returns 0
+  */
+ static inline int cpumask_subset(const struct cpumask *src1p,
+ 				 const struct cpumask *src2p)
 -- 
-error compiling committee.c: too many arguments to function
+1.7.5.4
+
