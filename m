@@ -1,32 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab2E1DV5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:21:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34811 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195Ab2E1DVy (ORCPT
+	id S1753245Ab2E1D0x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:26:53 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36522 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab2E1D0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:21:54 -0400
-Message-ID: <4FC2EF4B.5020207@gmail.com>
-Date: Mon, 28 May 2012 11:21:47 +0800
-From: yuq <yuq825@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Run RTOS simultaneously with Linux
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 27 May 2012 23:26:50 -0400
+Date: Mon, 28 May 2012 13:26:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the dma-mapping tree with the  tree
+Message-Id: <20120528132640.03db266f490fa5917a54bb6d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi all,
 
-I have done some work about running some RTOS simultaneously with Linux, 
-the approach is running RTOS and Linux on different CPU cores. No 
-modification to Linux kernel but adding a loadable kernel module. I post 
-it at http://rgmp.sf.net
+Today's linux-next merge of the dma-mapping tree got conflicts in
+arch/arm/Kconfig and arch/x86/include/asm/dma-mapping.h between various
+commits from Linus' tree and various commits from the dma-mapping tree.
 
-I want to know how you guys think about it. Any advice is welcome.
+Again, these commits were rebased from what was merged into Linus' tree
+via other trees.   Please do not do this.
 
-yuq
+I just used the version of these files from Linus' tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPwvBwAAoJEECxmPOUX5FEr6sP/24QmZOsiRXuDL9VlqWyeALJ
+EtbXM5v/9Ej/s3EVZK6pV0vN6h12Srt1c+Ax6LXbjy/pUZeCFS+gBbSB6TSCpknQ
+fZE4pBCgKVd/VopFGEPCi1ntCfHwAeJa9Z2NiwzJL7fwISYVa90yxQKhbj6sV/Y0
+s4nB+4Jb/srK86s/4+o+HPambRHKwGjy0nfPE07X3ahcFHQOwX+rswvu3/+I/t3u
+8zS08eAZDJ7B/pHf51G/gi/U62+sfrELZIOn7w6SSwKFNzWJHSTARTu2jzkiylQ8
+KQpni3jwR6cNueKraWiPXZP3iQGZHAA+VUpr17UFa2bCSGwY1/AyBG7qvNkr2W5W
+e8k1+djHnQxAvF1EI4s/hN6mg/lUeDEqqEgNPR9GuYAcOe2l4m2t5PfgU0cEFJqp
+LRnHSIAEcB6Oy4UgjUMGclHJjhe2LY5Y/Tb2jGZQHEMQcU73j9+vMkXhaKngMk6r
+OQXh7QDZx+3iqFkFjq3x9K/QamTL7XOx9b53ELvkShX0rJE1b7Yn93hOA0Qp8Qck
+12JFoBF9ZyhtAgywctTJxM0SMM46Kx9Zuqr1NPqMLIlXWAdCi5tEf6r0uls6pIdg
+YOVuN2gZTDXvEDYICGU1X2jfniPfrBT/Tljetw7g81WvJg+R/JfAitmXN80gi3A9
+dBt4ZLffa0cB+wQazt68
+=wZOd
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_May_2012_13_26_40_+1000_7YMJgoJoku5KgIbp--
