@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2E1ASZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 20:18:25 -0400
-Received: from szxga04-in.huawei.com ([58.251.152.67]:51214 "EHLO
-	szxga04-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751797Ab2E1ASU (ORCPT
+	id S1752597Ab2E1AZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 20:25:36 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64654 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab2E1AZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 20:18:20 -0400
-Date: Mon, 28 May 2012 08:18:08 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH] cgroup: superblock can't be released with active dentries
-In-reply-to: <20120524154139.GA27983@google.com>
-X-Originating-IP: [10.166.88.128]
-To: Tejun Heo <tj@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, rni@google.com,
-        ctalbott@google.com, Vivek Goyal <vgoyal@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Balbir Singh <bsingharora@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Message-id: <4FC2C440.8090104@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
-References: <20120330223423.GJ28934@google.com>
- <20120330223606.GK28934@google.com> <4F77B6BA.4070207@huawei.com>
- <20120401185430.GA9230@dhcp-172-17-108-109.mtv.corp.google.com>
- <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com>
- <20120518175548.GM19388@google.com>
- <CA+1xoqfr5aaGbxoX3YKrJHXTjU9fWSbX_xbuEOU=4K7kMay6XQ@mail.gmail.com>
- <20120523222242.GD3933@htj.dyndns.org>
- <CA+1xoqdbtkC5Ue3s1qZHHJBLcj9a=djFDGny6AJJSV-pdn7mcA@mail.gmail.com>
- <20120524154139.GA27983@google.com>
+	Sun, 27 May 2012 20:25:33 -0400
+Subject: Re: WARNING: at net/ipv4/tcp.c:1610 tcp_recvmsg+0xb1b/0xc70()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: davem@davemloft.net, netdev@vger.kernel.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4FC27CE7.20604@fastmail.fm>
+References: <4FBFEACC.8040601@fastmail.fm>
+	 <1337978725.10135.0.camel@edumazet-glaptop>
+	 <1337979331.10135.2.camel@edumazet-glaptop> <4FC0BCE1.6070601@fastmail.fm>
+	 <1338127184.3670.50.camel@edumazet-glaptop> <4FC24987.4090708@fastmail.fm>
+	 <1338140156.3786.10.camel@edumazet-glaptop>  <4FC27CE7.20604@fastmail.fm>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 28 May 2012 02:25:27 +0200
+Message-ID: <1338164727.2240.14.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/5/24 23:41, Tejun Heo wrote:
+On Sun, 2012-05-27 at 20:13 +0100, Jack Stone wrote:
 
->>From 88787c483106c5830a46d18deaffdc1e70929af7 Mon Sep 17 00:00:00 2001
-> From: Tejun Heo <tj@kernel.org>
-> Date: Thu, 24 May 2012 08:24:39 -0700
-> 
-> 48ddbe1946 "cgroup: make css->refcnt clearing on cgroup removal
-> optional" allowed a css to linger after the associated cgroup is
-> removed.  As a css holds a reference on the cgroup's dentry, it means
-> that cgroup dentries may linger for a while.
-> 
-> cgroup_create() does grab an active reference on the superblock to
-> prevent it from going away while there are !root cgroups; however, the
-> reference is put from cgroup_diput() which is invoked on cgroup
-> removal, so cgroup dentries which are removed but persisting due to
-> lingering csses already have released their superblock active refs
-> allowing superblock to be killed while those dentries are around.
-> 
-> Given the right condition, this makes cgroup_kill_sb() call
-> kill_litter_super() with dentries with non-zero d_count leading to
-> BUG() in shrink_dcache_for_umount_subtree().
-> 
-> Fix it by adding cgroup_dops->d_release() operation and moving
-> deactivate_super() to it.  cgroup_diput() now marks dentry->d_fsdata
-> with itself if superblock should be deactivated and cgroup_d_release()
-> deactivates the superblock on dentry release.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Sasha Levin <levinsasha928@gmail.com>
-> Tested-by: Sasha Levin <levinsasha928@gmail.com>
-> LKML-Reference: <CA+1xoqe5hMuxzCRhMy7J0XchDk2ZnuxOHJKikROk1-ReAzcT6g@mail.gmail.com>
+> Could it be something to do with my staging network driver?
+
+drivers/staging/rtl8712/rtl8712_recv.c
+
+line 1096
+
+precvframe->u.hdr.pkt = skb_clone(pskb, GFP_ATOMIC);
+
+This looks very wrong.
+Make sure you never _never_ hit this path.
 
 
-Acked-by: Li Zefan <lizefan@huawei.com>
+
