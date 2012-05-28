@@ -1,65 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab2E1Rg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 13:36:57 -0400
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:52503 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab2E1Rg4 (ORCPT
+	id S1753385Ab2E1Rkr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 13:40:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36734 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab2E1Rkq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 13:36:56 -0400
-From: "Torne (Richard Coles)" <torne@google.com>
-To: cjb@laptop.org
-Cc: linus.walleij@linaro.org, jh80.chung@samsung.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ben@decadent.org.uk, "Torne (Richard Coles)" <torne@google.com>
-Subject: [PATCH V2] MMC: core: cap MMC card timeouts at 2 seconds.
-Date: Mon, 28 May 2012 18:31:18 +0100
-Message-Id: <1338226278-13336-1-git-send-email-torne@google.com>
-X-Mailer: git-send-email 1.7.7.3
+	Mon, 28 May 2012 13:40:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdaRSE9ixE6qdJK+X_WqFQt7KauiUxZDpjNjng0U9SVacg@mail.gmail.com>
+References: <1338187691-32616-1-git-send-email-dbaryshkov@gmail.com>
+	<CACRpkdaRSE9ixE6qdJK+X_WqFQt7KauiUxZDpjNjng0U9SVacg@mail.gmail.com>
+Date: Mon, 28 May 2012 21:40:44 +0400
+Message-ID: <CALT56yN1=J_AgBQg06mngJsEhW+HvUKOCymnXZSJaAf8DSBvKA@mail.gmail.com>
+Subject: Re: [PATCH][V2] gpio: add a driver for GPIO pins found on AMD-8111
+ south bridge chips
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Torne (Richard Coles)" <torne@google.com>
+Hello,
 
-MMC CSD info can specify very large, ridiculous timeouts, big enough to
-overflow timeout_ns on 32-bit machines. This can result in the card
-timing out on every operation because the wrapped timeout value is far
-too small.
+On Mon, May 28, 2012 at 8:19 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, May 28, 2012 at 2:48 PM, Dmitry Eremin-Solenikov
+> <dbaryshkov@gmail.com> wrote:
+>
+>> Add a driver to use GPIO pins available on several AMD south bridges
+>> (currently only AMD 8111 is supported).
+>>
+>> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>> ---
+>>
+>> Changes since V1:
+>> * Replaced magic numbers in register access with named values
+>
+> This is looking a lot better, some nitpicking:
 
-Fix the overflow by capping the result at 2 seconds.  Cards specifying
-longer timeouts are almost certainly insane, and host controllers
-generally cannot support timeouts that long in any case.
+Oh, my, I forgot to change module_init/module_exit function names.
+So anyway I'll have to send V3
 
-2 seconds should be plenty of time for any card to actually function;
-the timeout calculation code is already using 1 second as a "worst case"
-timeout for cards running in SPI mode.
----
- drivers/mmc/core/core.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+>
+>> +#define AMD_GPIO_MODE_ALTFN    0x08 /* Or 0x09 */
+>
+> Hm Hm I wonder what this register does... looks a lot like a mux.
+> (Just philisophizing...)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 0b6141d..3b4a9fc 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
- 	if (data->flags & MMC_DATA_WRITE)
- 		mult <<= card->csd.r2w_factor;
- 
--	data->timeout_ns = card->csd.tacc_ns * mult;
-+	/*
-+	 * The timeout in nanoseconds may overflow with some cards. Cap it at
-+	 * two seconds both to avoid the overflow and also because host
-+	 * controllers cannot generally generate timeouts that long anyway.
-+	 */
-+	if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
-+		data->timeout_ns = card->csd.tacc_ns * mult;
-+	else
-+		data->timeout_ns = 2 * NSEC_PER_SEC;
-+
- 	data->timeout_clks = card->csd.tacc_clks * mult;
- 
- 	/*
+As the name says, it is an "alternate function". Some (most) of these pins
+can have alternative functions like "clock output", IRQ, SMBus, etc. Setting
+this ALTFN mode enables special logic for that pin.
+
+>
+>> +static int __init mod_init(void)
+>> +{
+>> +       int err = -ENODEV;
+>> +       struct pci_dev *pdev = NULL;
+>> +       const struct pci_device_id *ent;
+>> +
+>> +       for_each_pci_dev(pdev) {
+>> +               ent = pci_match_id(pci_tbl, pdev);
+>> +               if (ent)
+>> +                       goto found;
+>
+> It's not like I know how PCI abstractions really work, but what happens
+> here if there would be two instances of the device? It looks like you will
+> only find the first?
+
+Hmm. I don't know a system with two amd 8111 south bridges in it.
+This part is mostly a c&p from amd hw_random driver.
+
+>
+>> +       }
+>> +       /* Device not found. */
+>> +       goto out;
+>
+> Can't you just return -ENODEV here? Why jump around...
+
+OK.
+
+>
+> Now as I said I'm not a PCI expert, but isn't the proper way to do this
+> to use this stuff:
+>
+> static struct pci_driver amd_gpio_driver = {
+>        .name =         "amd-gpio",
+>        .id_table =     pci_ids,
+>        .probe =        amd_gpio_probe,
+>        .remove =       __devexit_p(amd_gpio_remove),
+> };
+>
+> static int __init amd_gpio_init(void)
+> {
+>        return pci_register_driver(&amd_gpio_driver);
+> }
+>
+> static void __exit amd_gpio_exit(void)
+> {
+>        pci_unregister_driver(&amd_gpio_driver);
+> }
+>
+> module_init(amd_gpio_init);
+> module_exit(amd_gpio_exit);
+>
+> Then start working from the probe function insteaf of go and
+> iterate over the PCI bus yourself? I was thinking there was a
+> reason for but couldn't find any.
+
+It would be the usual way. There is however a problem with that way.
+The System Management devices (that the driver looks for):
+
+1) Is a kind of placeholder. If you check, the driver get's the IO address
+    not via usual pci_resource_start()/_end(), which end up with the data
+    from BARs from pci device, but does special register access magic
+
+2) Is a multifunction device. The IO space that is provided by the device
+   is used for HW random generator, I2C (well, SMBus) controller, now
+   the GPIO pins driver. Also it covers some power management/SMI/SCI
+   magic, which usually nobody should touch. So, in the ideal world,
+   we should register an MFD driver over that PCI device and then
+   register all other child sub-devices. However this looks like a
+huger overkill
+   to me. In the end, it's just a GPIO part of south bridge, which should
+   not be touched by normal people :)
+
 -- 
-1.7.7.3
-
+With best wishes
+Dmitry
