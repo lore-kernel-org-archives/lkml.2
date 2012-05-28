@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab2E1DjN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:39:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52155 "EHLO
+	id S1754848Ab2E1DkR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:40:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52186 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754007Ab2E1D3n (ORCPT
+	by vger.kernel.org with ESMTP id S1754041Ab2E1D3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:43 -0400
-Message-Id: <20120528031212.540584498@decadent.org.uk>
+	Sun, 27 May 2012 23:29:41 -0400
+Message-Id: <20120528031212.950319912@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:12 +0100
+Date: Mon, 28 May 2012 04:13:15 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Shaohua Li <shli@kernel.org>,
-        Shaohua Li <shli@fusionio.com>, Holger Kiehl <Holger.Kiehl@dwd.de>,
-        Hugh Dickins <hughd@google.com>
-Subject: [ 070/117] swap: dont do discard if no discard option added
+        alan@lxorguk.ukuu.org.uk, Dima Zavin <dima@android.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 073/117] ARM: 7365/1: drop unused parameter from flush_cache_user_range
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,40 +31,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shaohua Li <shli@kernel.org>
+From: Dima Zavin <dima@android.com>
 
-commit 052b1987faca3606109d88d96bce124851f7c4c2 upstream.
+commit 4542b6a0fa6b48d9ae6b41c1efeb618b7a221b2a upstream.
 
-When swapon() was not passed the SWAP_FLAG_DISCARD option, sys_swapon()
-will still perform a discard operation.  This can cause problems if
-discard is slow or buggy.
+vma isn't used and flush_cache_user_range isn't a standard macro that
+is used on several archs with the same prototype. In fact only unicore32
+has a macro with the same name (with an identical implementation and no
+in-tree users).
 
-Reverse the order of the check so that a discard operation is performed
-only if the sys_swapon() caller is attempting to enable discard.
+This is a part of a patch proposed by Dima Zavin (with Message-id:
+1272439931-12795-1-git-send-email-dima@android.com) that didn't get
+accepted.
 
-Signed-off-by: Shaohua Li <shli@fusionio.com>
-Reported-by: Holger Kiehl <Holger.Kiehl@dwd.de>
-Tested-by: Holger Kiehl <Holger.Kiehl@dwd.de>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dima Zavin <dima@android.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/swapfile.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/include/asm/cacheflush.h |    2 +-
+ arch/arm/kernel/traps.c           |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b82c028..21b5694 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2103,7 +2103,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
- 			p->flags |= SWP_SOLIDSTATE;
- 			p->cluster_next = 1 + (random32() % p->highest_bit);
- 		}
--		if (discard_swap(p) == 0 && (swap_flags & SWAP_FLAG_DISCARD))
-+		if ((swap_flags & SWAP_FLAG_DISCARD) && discard_swap(p) == 0)
- 			p->flags |= SWP_DISCARDABLE;
- 	}
+diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+index d5d8d5c..1252a26 100644
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -249,7 +249,7 @@ extern void flush_cache_page(struct vm_area_struct *vma, unsigned long user_addr
+  * Harvard caches are synchronised for the user space address range.
+  * This is used for the ARM private sys_cacheflush system call.
+  */
+-#define flush_cache_user_range(vma,start,end) \
++#define flush_cache_user_range(start,end) \
+ 	__cpuc_coherent_user_range((start) & PAGE_MASK, PAGE_ALIGN(end))
  
+ /*
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 7784547..55b2f3d 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -496,7 +496,7 @@ do_cache_op(unsigned long start, unsigned long end, int flags)
+ 		if (end > vma->vm_end)
+ 			end = vma->vm_end;
+ 
+-		flush_cache_user_range(vma, start, end);
++		flush_cache_user_range(start, end);
+ 	}
+ 	up_read(&mm->mmap_sem);
+ }
 
 
