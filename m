@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab2E1D3K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:29:10 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51851 "EHLO
+	id S1753856Ab2E1D31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:27 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51935 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753364Ab2E1D3D (ORCPT
+	by vger.kernel.org with ESMTP id S1753585Ab2E1D3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:03 -0400
-Message-Id: <20120528031204.549979472@decadent.org.uk>
+	Sun, 27 May 2012 23:29:14 -0400
+Message-Id: <20120528031207.304707365@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:14 +0100
+Date: Mon, 28 May 2012 04:12:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, John David Anglin <dave.anglin@bell.net>,
-        Helge Deller <deller@gmx.de>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 012/117] [PARISC] fix crash in flush_icache_page_asm on PA1.1
+        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [ 032/117] Fix blocking allocations called very early during bootup
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,90 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John David Anglin <dave.anglin@bell.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 207f583d7179f707f402c36a7bda5ca1fd03ad5b upstream.
+commit 31a67102f4762df5544bc2dfb34a931233d2a5b2 upstream.
 
-As pointed out by serveral people, PA1.1 only has a type 26 instruction
-meaning that the space register must be explicitly encoded.  Not giving an
-explicit space means that the compiler uses the type 24 version which is PA2.0
-only resulting in an illegal instruction crash.
+During early boot, when the scheduler hasn't really been fully set up,
+we really can't do blocking allocations because with certain (dubious)
+configurations the "might_resched()" calls can actually result in
+scheduling events.
 
-This regression was caused by
+We could just make such users always use GFP_ATOMIC, but quite often the
+code that does the allocation isn't really aware of the fact that the
+scheduler isn't up yet, and forcing that kind of random knowledge on the
+initialization code is just annoying and not good for anybody.
 
-    commit f311847c2fcebd81912e2f0caf8a461dec28db41
-    Author: James Bottomley <James.Bottomley@HansenPartnership.com>
-    Date:   Wed Dec 22 10:22:11 2010 -0600
+And we actually have a the 'gfp_allowed_mask' exactly for this reason:
+it's just that the kernel init sequence happens to set it to allow
+blocking allocations much too early.
 
-        parisc: flush pages through tmpalias space
+So move the 'gfp_allowed_mask' initialization from 'start_kernel()'
+(which is some of the earliest init code, and runs with preemption
+disabled for good reasons) into 'kernel_init()'.  kernel_init() is run
+in the newly created thread that will become the 'init' process, as
+opposed to the early startup code that runs within the context of what
+will be the first idle thread.
 
-Reported-by: Helge Deller <deller@gmx.de>
-Signed-off-by: John David Anglin <dave.anglin@bell.net>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+So by the time we reach 'kernel_init()', we know that the scheduler must
+be at least limping along, because we've already scheduled from the idle
+thread into the init thread.
+
+Reported-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/parisc/kernel/pacache.S |   38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+ init/main.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/parisc/kernel/pacache.S b/arch/parisc/kernel/pacache.S
-index 93ff3d9..5d7218a 100644
---- a/arch/parisc/kernel/pacache.S
-+++ b/arch/parisc/kernel/pacache.S
-@@ -692,7 +692,7 @@ ENTRY(flush_icache_page_asm)
+diff --git a/init/main.c b/init/main.c
+index 44b2433..cb54cd3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -560,9 +560,6 @@ asmlinkage void __init start_kernel(void)
+ 	early_boot_irqs_disabled = false;
+ 	local_irq_enable();
  
- 	/* Purge any old translation */
+-	/* Interrupts are enabled now so all GFP allocations are safe. */
+-	gfp_allowed_mask = __GFP_BITS_MASK;
+-
+ 	kmem_cache_init_late();
  
--	pitlb		(%sr0,%r28)
-+	pitlb		(%sr4,%r28)
- 
- 	ldil		L%icache_stride, %r1
- 	ldw		R%icache_stride(%r1), %r1
-@@ -706,27 +706,29 @@ ENTRY(flush_icache_page_asm)
- 	sub		%r25, %r1, %r25
- 
- 
--1:      fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
--	fic,m		%r1(%r28)
-+	/* fic only has the type 26 form on PA1.1, requiring an
-+	 * explicit space specification, so use %sr4 */
-+1:      fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
-+	fic,m		%r1(%sr4,%r28)
- 	cmpb,COND(<<)		%r28, %r25,1b
--	fic,m		%r1(%r28)
-+	fic,m		%r1(%sr4,%r28)
- 
- 	sync
- 	bv		%r0(%r2)
--	pitlb		(%sr0,%r25)
-+	pitlb		(%sr4,%r25)
- 	.exit
- 
- 	.procend
+ 	/*
+@@ -842,6 +839,10 @@ static int __init kernel_init(void * unused)
+ 	 * Wait until kthreadd is all set-up.
+ 	 */
+ 	wait_for_completion(&kthreadd_done);
++
++	/* Now the scheduler is fully set up and can do blocking allocations */
++	gfp_allowed_mask = __GFP_BITS_MASK;
++
+ 	/*
+ 	 * init can allocate pages on any node
+ 	 */
 
 
