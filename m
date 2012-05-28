@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab2E1L5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 07:57:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53052 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab2E1L5K (ORCPT
+	id S1753746Ab2E1L6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 07:58:49 -0400
+Received: from orion.tchmachines.com ([208.76.84.200]:51057 "EHLO
+	orion.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab2E1L6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 07:57:10 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Florian Fainelli <florian@openwrt.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] r6040: disable pci device if the subsequent calls (after pci_enable_device) fails
-Date: Mon, 28 May 2012 17:27:03 +0530
-Message-Id: <1338206223-26781-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 28 May 2012 07:58:46 -0400
+From: Vlad Zolotarov <vlad@scalemp.com>
+To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Shai@scalemp.com
+Subject: [PATCH RESEND] fs: Move bh_cachep to the __read_mostly section
+Date: Mon, 28 May 2012 14:58:42 +0300
+Message-ID: <2325453.OX7ktP55U1@vlad>
+Organization: ScaleMP Ltd.
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; i686; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - orion.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - scalemp.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the calls after the pci_enable_device may fail, and will error out with out
-disabling it. disable the device at error paths.
+From: Shai Fultheim <shai@scalemp.com>
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+bh_cachep is only written to once on initialization, so move it to the
+__read_mostly section.
+
+Signed-off-by: Shai Fultheim <shai@scalemp.com>
+Signed-off-by: Vlad Zolotarov <vlad@scalemp.com>
 ---
- drivers/net/ethernet/rdc/r6040.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/buffer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/rdc/r6040.c b/drivers/net/ethernet/rdc/r6040.c
-index 4de7364..8f5079a 100644
---- a/drivers/net/ethernet/rdc/r6040.c
-+++ b/drivers/net/ethernet/rdc/r6040.c
-@@ -1096,20 +1096,20 @@ static int __devinit r6040_init_one(struct pci_dev *pdev,
- 	if (err) {
- 		dev_err(&pdev->dev, "32-bit PCI DMA addresses"
- 				"not supported by the card\n");
--		goto err_out;
-+		goto err_out_disable_dev;
- 	}
- 	err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
- 	if (err) {
- 		dev_err(&pdev->dev, "32-bit PCI DMA addresses"
- 				"not supported by the card\n");
--		goto err_out;
-+		goto err_out_disable_dev;
- 	}
+diff --git a/fs/buffer.c b/fs/buffer.c
+index ad5938c..838a9cf 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -3152,7 +3152,7 @@ SYSCALL_DEFINE2(bdflush, int, func, long, data)
+ /*
+  * Buffer-head allocation
+  */
+-static struct kmem_cache *bh_cachep;
++static struct kmem_cache *bh_cachep __read_mostly;
  
- 	/* IO Size check */
- 	if (pci_resource_len(pdev, bar) < io_size) {
- 		dev_err(&pdev->dev, "Insufficient PCI resources, aborting\n");
- 		err = -EIO;
--		goto err_out;
-+		goto err_out_disable_dev;
- 	}
- 
- 	pci_set_master(pdev);
-@@ -1117,7 +1117,7 @@ static int __devinit r6040_init_one(struct pci_dev *pdev,
- 	dev = alloc_etherdev(sizeof(struct r6040_private));
- 	if (!dev) {
- 		err = -ENOMEM;
--		goto err_out;
-+		goto err_out_disable_dev;
- 	}
- 	SET_NETDEV_DEV(dev, &pdev->dev);
- 	lp = netdev_priv(dev);
-@@ -1238,6 +1238,8 @@ err_out_free_res:
- 	pci_release_regions(pdev);
- err_out_free_dev:
- 	free_netdev(dev);
-+err_out_disable_dev:
-+	pci_disable_device(dev);
- err_out:
- 	return err;
- }
+ /*
+  * Once the number of bh's in the machine exceeds this level, we start
 -- 
 1.7.9.5
+
 
