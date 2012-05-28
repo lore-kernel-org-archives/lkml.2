@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab2E1QTu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 12:19:50 -0400
-Received: from katalix.com ([82.103.140.233]:34046 "EHLO mail.katalix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753855Ab2E1QTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 12:19:42 -0400
-Message-ID: <4FC3A599.1040909@katalix.com>
-Date: Mon, 28 May 2012 17:19:37 +0100
-From: James Chapman <jchapman@katalix.com>
-Organization: Katalix Systems Ltd
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Wrong usage of hash in L2TP leading to NULL ptr derefs
-References: <1338221539.4284.25.camel@lappy>
-In-Reply-To: <1338221539.4284.25.camel@lappy>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754737Ab2E1QXY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 12:23:24 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42093 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914Ab2E1QXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 12:23:23 -0400
+From: Andi Shyti <andi.shyti@gmail.com>
+To: debora@linux.vnet.ibm.com, srajiv@linux.vnet.ibm.com,
+        m.selhorst@sirrix.com
+Cc: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        peterhuewe@gmx.de, andi.shyti@gmail.com, oatilla@gmail.com
+Subject: [PATCH] tpm: check the chip reference before using it
+Date: Mon, 28 May 2012 18:23:12 +0200
+Message-Id: <172ab3cfdd755d047e6366cc56b942820e02ffee.1338221569.git.andi.shyti@gmail.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/05/12 17:12, Sasha Levin wrote:
-> Hi all,
-> 
-> Looking at net/l2tp/l2tp_ip{6}.c, l2tp uses UDP for communications, but
-> uses inet_hash and inet_unhash for hashing - which appears to be wrong
-> (and causes NULL ptr derefs during runtime).
+If a driver calls tpm_dev_vendor_release for a device already released
+then the driver will oops.
 
-L2TPv3 also supports IP encapsulation, which is L2TP directly in IP, no
-UDP. That's what the l2tp_ip[6] code implements.
+Signed-off-by: Andi Shyti <andi.shyti@gmail.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/char/tpm/tpm.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Can you post an oops with steps for how to reproduce it?
-
-
+diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+index ad7c732..66e4c12 100644
+--- a/drivers/char/tpm/tpm.c
++++ b/drivers/char/tpm/tpm.c
+@@ -1322,6 +1322,9 @@ EXPORT_SYMBOL_GPL(tpm_pm_resume);
+ 
+ void tpm_dev_vendor_release(struct tpm_chip *chip)
+ {
++	if (!chip)
++		return;
++
+ 	if (chip->vendor.release)
+ 		chip->vendor.release(chip->dev);
+ 
+@@ -1337,6 +1340,9 @@ EXPORT_SYMBOL_GPL(tpm_dev_vendor_release);
+  */
+ void tpm_dev_release(struct device *dev)
+ {
++	if (!chip)
++		return;
++
+ 	struct tpm_chip *chip = dev_get_drvdata(dev);
+ 
+ 	tpm_dev_vendor_release(chip);
 -- 
-James Chapman
-Katalix Systems Ltd
-http://www.katalix.com
-Catalysts for your Embedded Linux software development
+1.7.10
+
