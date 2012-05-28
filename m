@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553Ab2E1OaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 10:30:06 -0400
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:55254 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752334Ab2E1OaE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 10:30:04 -0400
-X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Mon, 28 May 2012 10:30:04 EDT
-From: takuo.koguchi.sw@hitachi.com
-X-AuditID: b753bd60-94a01ba000003d24-c7-4fc38a30f221
-Message-Type: Multiple Part
+	id S1754726Ab2E1OcZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 10:32:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752782Ab2E1OcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 10:32:24 -0400
+Date: Mon, 28 May 2012 16:32:21 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH] KVM: MMU: fix huge page adapted on non-PAE host
+Message-ID: <20120528143221.GF4016@redhat.com>
+References: <4FC316E3.6080607@linux.vnet.ibm.com>
+ <4FC35A15.6080000@redhat.com>
+ <4FC363EE.6060204@linux.vnet.ibm.com>
+ <4FC36E85.4010909@redhat.com>
+ <4FC37600.1060301@linux.vnet.ibm.com>
+ <4FC37A18.10809@redhat.com>
+ <4FC38084.40409@linux.vnet.ibm.com>
+ <4FC38362.6010802@redhat.com>
 MIME-Version: 1.0
-Message-ID: <XNM1$5$0$1$$3$9$0$A$8005401U4fc38a01@hitachi.com>
 Content-Type: text/plain; charset=us-ascii
-To: <linux-kernel@vger.kernel.org>
-Cc: <rob.herring@calxeda.com>, <linus.walleij@linaro.org>
-Date: Mon, 28 May 2012 23:22:22 +0900
-Importance: normal
-Subject: v3.4 boot failure on qemu-system-arm -M versatilepb
-X400-Content-Identifier: X4FC38A0100000M
-X400-MTS-Identifier: [/C=JP/ADMD=HITNET/PRMD=HITACHI/;gmml06120528232153P4N]
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Disposition: inline
+In-Reply-To: <4FC38362.6010802@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-I found linux-3.4 kernel fails to mount the rootfs on "qemu-system-arm -M versatile."
+On Mon, May 28, 2012 at 04:53:38PM +0300, Avi Kivity wrote:
+> As far as I can tell __get_user_pages_fast() will take the reference
+> count in the page head in the first place.
 
-Git bisect shows commit c334bc1 cause this first.
+    mask = KVM_PAGES_PER_HPAGE(level) - 1;
 
-So I tried to revert it by putting arch/arm/mach-versatile/include/mach/io.h and adding select NEED_MACH_IO_H in the section of ARCH_VERSATILE in arch/arm/Kconfig, then the kernel can mount the rootfs.
+The BUG would trigger if the above KVM mask is 2M (that is the NPT/EPT
+pmd size), but the hugepage size in the host is 4M (noPAE 32bit).
 
-Can someone confirm and fix this?
+The refcount is taken only in the head page for heads, and in both for
+tails.
 
-Takuo Koguchi
+Because we've mmu notifier, we never keep the pages mapped by sptes
+refcounted, we drop them all. So all we need to do is just to move the
+refcount on the same exact pfn that is then freed by mmu_set_spte
+(kvm_release_pfn_clean at the end).
 
+The adjustement is not done for the refcounting, the issue here is, we
+want to adjust the "pfn" passed to mmu_set_spte, and in turn we've to
+move the refcounting too, because the kvm_release_pfn_clean will run
+on that "pfn" (not on the pfn returned by gup-fast anymore).
 
------------
-Uncompressing Linux... done, booting the kernel.
-Booting Linux on physical CPU 0
-Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
-Linux version 3.4.0-yocto-standard (koguchi@mg70k) (gcc version 4.5.2 (Sourcery G++ Lite 2011.03-41) ) #37 PREEMPT Sun May 27 22:36:22 JST 2012
-CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00093177
-CPU: VIVT data cache, VIVT instruction cache
-Machine: ARM-Versatile PB
-...
-eth0: link up
-IP-Config: Complete:
-     device=eth0, addr=192.168.7.3, mask=255.255.255.0, gw=192.168.7.1
-     host=192.168.7.3, domain=, nis-domain=(none)
-     bootserver=255.255.255.255, rootserver=255.255.255.255, rootpath=
- input: AT Raw Set 2 keyboard as /devices/fpga:06/serio0/input/input0
-md: Skipping autodetection of RAID arrays. (raid=autodetect will force)
-VFS: Cannot open root device "0x0800" or unknown-block(8,0): error -6
-Please append a correct "root=" boot option; here are the available partitions:
-Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(8,0)
-[<c0013870>] (unwind_backtrace+0x0/0xec) from [<c0389b68>] (dump_stack+0x20/0x24)
-[<c0389b68>] (dump_stack+0x20/0x24) from [<c0389bf4>] (panic+0x88/0x1c4)
-[<c0389bf4>] (panic+0x88/0x1c4) from [<c04fbde8>] (mount_block_root+0x240/0x290)
-[<c04fbde8>] (mount_block_root+0x240/0x290) from [<c04fbf80>] (mount_root+0x50/0x68)
-[<c04fbf80>] (mount_root+0x50/0x68) from [<c04fc108>] (prepare_namespace+0x170/0x1d0)
-[<c04fc108>] (prepare_namespace+0x170/0x1d0) from [<c04fba08>] (kernel_init+0x1bc/0x204)
-[<c04fba08>] (kernel_init+0x1bc/0x204) from [<c000e7dc>] (kernel_thread_exit+0x0/0x8)
+So it looks fine to just do get_page and the patch looks correct (not
+sure if the mmio the mmio check is needed or if we can just do
+get_page) as long as the "pfn" that is returned through &pfn parameter
+and then passssed to mmu_set_sptes is the same one were we do get_page.
 
+The reason it was a get_page_unless_zero() is that it wanted to check
+that there was no THP split and the head page was still there. Problem
+is that with a 4M host page size and 2M NTP/EPT pmd size, we need to
+get_page a tail page half of the time, and get_page_unless_zero()
+won't be a correct refcount for tail pages, not equivalent to a full
+get_page.
 
-
-
+Overall the most important thing is that the pfn returned is the
+correct one that matches the alignment of the NPT/EPT hugepmd size,
+the refcounting just closely follows that aligned "pfn".
