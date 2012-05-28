@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab2E1LuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 07:50:24 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1600 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab2E1LuW (ORCPT
+	id S1753106Ab2E1LzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 07:55:13 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55516 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892Ab2E1LzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 07:50:22 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Federico Vaga <federico.vaga@gmail.com>
-Subject: Re: [GIT PULL FOR v3.5] Move sta2x11_vip to staging
-Date: Mon, 28 May 2012 13:50:10 +0200
-User-Agent: KMail/1.13.7 (Linux/3.4.0-rc7-tschai; KDE/4.7.4; x86_64; ; )
-Cc: "linux-media" <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-References: <201205260939.58100.hverkuil@xs4all.nl> <1444585.tu7qHxh2Mp@harkonnen>
-In-Reply-To: <1444585.tu7qHxh2Mp@harkonnen>
+	Mon, 28 May 2012 07:55:12 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205281350.10606.hverkuil@xs4all.nl>
+In-Reply-To: <4FC2EF4B.5020207@gmail.com>
+References: <4FC2EF4B.5020207@gmail.com>
+Date: Mon, 28 May 2012 19:55:11 +0800
+Message-ID: <CAJd=RBAQR_h437ZGU7K=7=dnd-joBkGNc_oGaQ1z8_3cAPLLWA@mail.gmail.com>
+Subject: Re: Run RTOS simultaneously with Linux
+From: Hillf Danton <dhillf@gmail.com>
+To: yuq <yuq825@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon May 28 2012 13:47:43 Federico Vaga wrote:
-> > I didn't get any reply from Federico when I posted my concerns last
-> > week, so that makes me unhappy as well.
-> > 
-> > I hope the author will fix these issues, but in the meantime this will
-> > move it to staging waiting for further developments.
-> 
-> The last time I worked on this device was 2 month and half ago (RFC 
-> time) and before answer "Ok, I'll fix it" I'm trying to understand if me 
-> or someone else will do that work. I'll provide a better answer than 
-> this when I have more information.
-> 
-> Sorry for not sending an ack immediately, but be reassured that I'm 
-> still on the hardware and following the developments.
+Hi yuq
 
-Thank you for the feedback! Suddenly I feel a lot happier :-)
+On Mon, May 28, 2012 at 11:21 AM, yuq <yuq825@gmail.com> wrote:
+> Hi all,
+>
+> I have done some work about running some RTOS simultaneously with Linux, the
+> approach is running RTOS and Linux on different CPU cores. No modification
+> to Linux kernel but adding a loadable kernel module. I post it at
+> http://rgmp.sf.net
+>
+> I want to know how you guys think about it. Any advice is welcome.
+>
+I want to see your work, would you please post it on LMKL in
+(monolithic) diff format?
 
-You were just unlucky that you posted the driver just in a period where I
-was almost completely absent from the list due to personal circumstances.
-
-Otherwise you would have gotten the feedback at that time.
-
-Regards,
-
-	Hans
+Thanks
+-hd
