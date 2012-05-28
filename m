@@ -1,217 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060Ab2E1HWj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 03:22:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56409 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab2E1HWh convert rfc822-to-8bit (ORCPT
+	id S1754048Ab2E1Hgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 03:36:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46315 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab2E1Hgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 03:22:37 -0400
+	Mon, 28 May 2012 03:36:31 -0400
+Date: Mon, 28 May 2012 08:36:09 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alim Akhtar <alim.akhtar@gmail.com>, Alim Akhtar <alim.akhtar@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, vinod.koul@intel.com,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V2 0/1] dmaengine/amba-pl08x: Add support for s3c64xx
+	DMAC
+Message-ID: <20120528073609.GG24149@n2100.arm.linux.org.uk>
+References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com> <CACRpkdZC8LOOLkWbrPbXN_nKaw-WvueusYDyrX48Q1Pcdwv3Aw@mail.gmail.com> <CAGOxZ52w1nn8g4d_vuNAzjA9qYZ1=yEfihFvSOK+pBz=ZD=J7Q@mail.gmail.com> <CACRpkdZO=B9gWkhvgf4Ewi1GKibFxki36uF06ispQzDK7T+4sA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1338179859.2202.11.camel@joe2Laptop>
-References: <1338152074-30747-1-git-send-email-devendra.aaru@gmail.com>
-	<CAKPrQY8O0=PQroL6vYOCATG3WUx1ChgqW9rFqhuY2G7Q7oj3WA@mail.gmail.com>
-	<1338172734.977.3.camel@joe2Laptop>
-	<CAHdPZaMbzWBUsaTKYiApnZxhaGRqSaaaHdpPtiYSKrFLrn0rdg@mail.gmail.com>
-	<1338179859.2202.11.camel@joe2Laptop>
-Date: Mon, 28 May 2012 12:52:37 +0530
-Message-ID: <CAHdPZaMTHHL9M2RdUYoCEX4JJNivCchRrRGxBWAFh=kAuHAJBA@mail.gmail.com>
-Subject: Re: [PATCH] [staging] bcm: Fix codingstyle problems
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Kevin McKinney <klmckinney1@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZO=B9gWkhvgf4Ewi1GKibFxki36uF06ispQzDK7T+4sA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Joe,
+On Mon, May 28, 2012 at 12:41:42PM +0800, Linus Walleij wrote:
+> On Thu, Dec 8, 2011 at 9:03 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+> 
+> > Hello Linus,
+> > sorry for the delay in submitting V3 of the pl080 patches for s3c64xx.
+> > I am very busy with my current assignment.
+> > I will come back to my patch series incorporating yours and Viresh
+> > suggestions in v3.
+> 
+> Ping on this, is there something in specific that you need help on here?
+> We really need to get rid of this forked code, and it should be beneficial
+> to S3C because we have fixed a lot of bugs in the PL08x driver now,
+> plus it'll likely be a prerequisite to DT support for S3C.
 
-Thanks for a very quick reply with a code suggestion.
+So this hasn't gone in?
 
-Just a small change at your code,
-
-On Mon, May 28, 2012 at 10:07 AM, Joe Perches <joe@perches.com> wrote:
->
-> I think it'd be better with 3 functions.
->
-> Maybe something like the below:
->
-> But read the TODO file.  I'm not sure if
-> there's any value in working on bcm at all.
-> ---
->
->  create mode 100644 drivers/staging/bcm/Debug.c
->
-> diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
-> new file mode 100644
-> index 0000000..3ca720c
-> --- /dev/null
-> +++ b/drivers/staging/bcm/Debug.c
-> @@ -0,0 +1,53 @@
-> +#include "headers.h"
-/**
- * for the BCM_DEBUG_PRINT macro
- */
-+#include "debug.h"
-> +
-> +void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
-> +                    int dbg_level, const char *fmt, ...)
-> +{
-> +       struct va_format vaf;
-> +       va_list args;
-> +
-> +       va_start(args, fmt);
-> +
-> +       vaf.fmt = fmt;
-> +       vaf.va = &args;
-> +
-> +       if (DBG_TYPE_PRINTK == Type)
-> +               pr_info("%s: %pV", __func__, &vaf);
-> +       else if (Adapter &&
-> +                (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
-> +                (Type & Adapter->stDebugState.type) &&
-> +                (SubType & Adapter->stDebugState.subtype[Type])) {
-> +               if (dbg_level & DBG_NO_FUNC_PRINT)
-> +                       printk(KERN_DEBUG "%pV" , &vaf);
-> +               else
-> +                       printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
-> +       }
-> +
-> +       va_end(args);
-> +}
-> +
-> +void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
-> +                           int dbg_level, const void *buffer, size_t bufferlen)
-> +{
-> +       if (DBG_TYPE_PRINTK == Type ||
-> +           (Adapter &&
-> +            (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level  &&
-> +            (Type & Adapter->stDebugState.type) &&
-> +            (SubType & Adapter->stDebugState.subtype[Type]))) {
-> +               printk(KERN_DEBUG "%s:\n", __func__);
-> +               print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
-> +                              16, 1, buffer, bufferlen, false);
-> +       }
-> +}
-> +
-> +void bcm_show_debug_bitmap(PMINI_ADAPTER Adapter)
-> +{
-> +       int i;
-> +       for (i = 0; i < (NUMTYPES * 2) + 1; i++) {
-> +               if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {
-> +                       BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
-> +                                       "subtype[%d] = 0x%08x\n",
-> +                                       i, Adapter->stDebugState.subtype[i]);
-> +               }
-> +       }
-> +}
-> diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
-> index 420382d..0fbb206 100644
-> --- a/drivers/staging/bcm/Debug.h
-> +++ b/drivers/staging/bcm/Debug.h
-> @@ -203,57 +203,35 @@ typedef struct _S_BCM_DEBUG_STATE {
->         * corresponding to valid Type values. Hence we use the 'Type' field
->         * as the index value, ignoring the array entries 0,3,5,6,7 !
->         */
-> -       UINT subtype[(NUMTYPES*2)+1];
-> +       UINT subtype[(NUMTYPES * 2) + 1];
->        UINT debug_level;
->  } S_BCM_DEBUG_STATE;
->  /* Instantiated in the Adapter structure */
->  /* We'll reuse the debug level parameter to include a bit (the MSB) to indicate whether or not
->  * we want the function's name printed.  */
-> -#define DBG_NO_FUNC_PRINT      1 << 31
-> +#define DBG_NO_FUNC_PRINT      (1 << 31)
->  #define DBG_LVL_BITMASK                0xFF
->
->  //--- Only for direct printk's; "hidden" to API.
->  #define DBG_TYPE_PRINTK                3
->
-> -#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, string, args...) \
-> -       do {                                                            \
-> -               if (DBG_TYPE_PRINTK == Type)                            \
-> -                       pr_info("%s:" string, __func__, ##args);        \
-> -               else if (Adapter &&                                     \
-> -                        (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level && \
-> -                        (Type & Adapter->stDebugState.type) &&         \
-> -                        (SubType & Adapter->stDebugState.subtype[Type])) { \
-> -                       if (dbg_level & DBG_NO_FUNC_PRINT)              \
-> -                               printk(KERN_DEBUG string, ##args);      \
-> -                       else                                            \
-> -                               printk(KERN_DEBUG "%s:" string, __func__, ##args);      \
-> -               }                                                       \
-> -       } while (0)
-> -
-> -#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,  buffer, bufferlen) do { \
-> -       if (DBG_TYPE_PRINTK == Type ||                                  \
-> -           (Adapter &&                                                 \
-> -            (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level  && \
-> -            (Type & Adapter->stDebugState.type) &&                     \
-> -            (SubType & Adapter->stDebugState.subtype[Type]))) {        \
-> -               printk(KERN_DEBUG "%s:\n", __func__);                   \
-> -               print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,     \
-> -                              16, 1, buffer, bufferlen, false);        \
-> -       }                                                               \
-> -} while(0)
-> -
-> -
-> -#define BCM_SHOW_DEBUG_BITMAP(Adapter) do { \
-> -       int i;                                                                  \
-> -       for (i=0; i<(NUMTYPES*2)+1; i++) {              \
-> -               if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {             \
-> -               /* CAUTION! Forcefully turn on ALL debug paths and subpaths!    \
-> -               Adapter->stDebugState.subtype[i] = 0xffffffff;  */ \
-> -               BCM_DEBUG_PRINT (Adapter, DBG_TYPE_PRINTK, 0, 0, "subtype[%d] = 0x%08x\n",      \
-> -               i, Adapter->stDebugState.subtype[i]);   \
-> -               }       \
-> -       }               \
-> -} while (0)
-> +struct _MINI_ADAPTER;
->
-> -#endif
-> +__printf(5, 6)
-> +void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
-> +                    int dbg_level, const char *fmt, ...);
-> +void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
-> +                           int dbg_level, const void *buffer, size_t bufferlen);
-> +void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
-> +
-> +#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...)   \
-> +       bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
->
-> +#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,      \
-> +                              buffer, bufferlen)                       \
-> +       bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,       \
-> +                              buffer, bufferlen)
-> +#define BCM_SHOW_DEBUG_BITMAP(Adapter)                                 \
-> +       bcm_show_debug_bitmap(Adapter)
-> +
-> +#endif
-> diff --git a/drivers/staging/bcm/Makefile b/drivers/staging/bcm/Makefile
-> index 652b7f8..a858ac1 100644
-> --- a/drivers/staging/bcm/Makefile
-> +++ b/drivers/staging/bcm/Makefile
-> @@ -7,6 +7,7 @@ obj-$(CONFIG_BCM_WIMAX) +=      bcm_wimax.o
->  bcm_wimax-y :=  InterfaceDld.o InterfaceIdleMode.o InterfaceInit.o InterfaceRx.o \
->                InterfaceIsr.o InterfaceMisc.o InterfaceTx.o \
->                CmHost.o IPv6Protocol.o Qos.o Transmit.o\
-> +               Debug.o\
->                Bcmnet.o DDRInit.o HandleControlPacket.o\
->                LeakyBucket.o Misc.o sort.o Bcmchar.o hostmibs.o PHSModule.o\
->                led_control.o nvm.o vendorspecificextn.o
-> --
-> 1.7.6.rc3
->
->
->
-
-The TODO says these are developer debug prints, and may be set for
-removal. I think its better to have macros, anyway they are going to
-be removed in future.
-
-Thanks,
-Devendra.
+This is going to be painful - I have 40 odd patches to PL08x converting it
+to virt-dma now...  It's probably going to be easier for the S3C conversion
+to be based upon my work rather than me having to rework all those patches.
