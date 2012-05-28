@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752449Ab2E1Jdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 05:33:37 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34534 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab2E1Jdg (ORCPT
+	id S1752663Ab2E1Jdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 05:33:50 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60689 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709Ab2E1Jds convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 05:33:36 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 1/2] pty: Fix lock inversion
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Mon, 28 May 2012 10:49:10 +0100
-Message-ID: <20120528094848.3001.48296.stgit@bob.linux.org.uk>
-In-Reply-To: <20120528094741.3001.29866.stgit@bob.linux.org.uk>
-References: <20120528094741.3001.29866.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Mon, 28 May 2012 05:33:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120528071421.GB3014@kroah.com>
+References: <1335165396-23604-1-git-send-email-linus.walleij@stericsson.com>
+	<20120423154342.GB23990@kroah.com>
+	<CACRpkdabgGFCLGNFtje2efXoRHtk_uvb3yo6FTkH2pVGpHGB1A@mail.gmail.com>
+	<20120424143624.GB3438@kroah.com>
+	<CACRpkdZ0MnMLxvi4oFv-s8aut_zRfQh_OQN6HoXHkXmrtkSmzA@mail.gmail.com>
+	<20120528071421.GB3014@kroah.com>
+Date: Mon, 28 May 2012 17:33:47 +0800
+Message-ID: <CACRpkdaoeSRiS28Epmp7UVGercOuySM2VC6Jiqoi4THU-WE7aQ@mail.gmail.com>
+Subject: Re: [PATCH RESEND] driver core: always handle dpm_order
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Mon, May 28, 2012 at 3:14 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, May 28, 2012 at 02:38:09PM +0800, Linus Walleij wrote:
+>> On Tue, Apr 24, 2012 at 10:36 PM, Greg Kroah-Hartman
+>> <gregkh@linuxfoundation.org> wrote:
 
-The ptmx_open path takes the tty and devpts locks in the wrong order
-because tty_init_dev locks and returns a locked tty. As far as I can tell
-this is actually safe anyway because the tty being returned is new so
-nobody can get a reference to lock it at this point.
+>> > That didn't answer my question at all.  Oh well, 3.5 it is...
+>>
+>> Is this going upstream in this merge window? I haven't seen it
+>> in Torvalds' tree, but I guess it may be pending for a late
+>> merge...?
+>
+> Nope, it missed 3.5 as no one ever answered my questions, so I guessed
+> that no one really cares about this :(
 
-However we don't even need the devpts lock at this point, it's only held as
-a byproduct of the way the locks were pushed down.
+I care. Anyway, Rafael has ACK:ed it so please merge it as any
+other patch for kernel 3.6.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+If somebody wants to for CC @stable, speak up.
 
- drivers/tty/pty.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 59af394..65c7c62 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -633,7 +633,6 @@ static int ptmx_open(struct inode *inode, struct file *filp)
- 	mutex_unlock(&devpts_mutex);
- 
- 	mutex_lock(&tty_mutex);
--	mutex_lock(&devpts_mutex);
- 	tty = tty_init_dev(ptm_driver, index);
- 
- 	if (IS_ERR(tty)) {
-@@ -643,7 +642,6 @@ static int ptmx_open(struct inode *inode, struct file *filp)
- 
- 	/* The tty returned here is locked so we can safely
- 	   drop the mutex */
--	mutex_unlock(&devpts_mutex);
- 	mutex_unlock(&tty_mutex);
- 
- 	set_bit(TTY_PTY_LOCK, &tty->flags); /* LOCK THE SLAVE */
-
+Yours,
+Linus Walleij
