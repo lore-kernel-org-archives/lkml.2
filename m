@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab2E1Dx3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:53:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51895 "EHLO
+	id S1753446Ab2E1D3G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:29:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51831 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753465Ab2E1D3J (ORCPT
+	by vger.kernel.org with ESMTP id S1752415Ab2E1D27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:09 -0400
-Message-Id: <20120528031207.161109910@decadent.org.uk>
+	Sun, 27 May 2012 23:28:59 -0400
+Message-Id: <20120528031203.986470805@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:33 +0100
+Date: Mon, 28 May 2012 04:12:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>
-Subject: [ 031/117] isci: fix oem parameter validation on single controller skus
+        alan@lxorguk.ukuu.org.uk, Kent Overstreet <kent.overstreet@gmail.com>,
+        Kent Overstreet <koverstreet@google.com>, Tejun Heo <tj@kernel.org>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 008/117] bio: dont overflow in bio_get_nr_vecs()
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Kent Overstreet <kent.overstreet@gmail.com>
 
-commit fc25f79af321c01a739150ba2c09435cf977a63d upstream.
+commit 5abebfdd02450fa1349daacf242e70b3736581e3 upstream.
 
-OEM parameters [1] are parsed from the platform option-rom / efi
-driver.  By default the driver was validating the parameters for the
-dual-controller case, but in single-controller case only the first set
-of parameters may be valid.
+There were two places bio_get_nr_vecs() could overflow:
 
-Limit the validation to the number of actual controllers detected
-otherwise the driver may fail to parse the valid parameters leading to
-driver-load or runtime failures.
+First, it did a left shift to convert from sectors to bytes immediately
+before dividing by PAGE_SIZE.  If PAGE_SIZE ever was less than 512 a great
+many things would break, so dividing by PAGE_SIZE >> 9 is safe and will
+generate smaller code too.
 
-[1] the platform specific set of phy address, configuration,and analog
-    tuning values
+The nastier overflow was in the DIV_ROUND_UP() (that's what the code was
+effectively doing, anyways).  If n + d overflowed, the whole thing would
+return 0 which breaks things rather effectively.
 
-[stable v3.0+]
-Reported-by: Dave Jiang <dave.jiang@intel.com>
-Tested-by: Dave Jiang <dave.jiang@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-[bwh: Backported to 3.2: adjust context]
+bio_get_nr_vecs() doesn't claim to give an exact value anyways, so the
+DIV_ROUND_UP() is silly; we could do a straight divide except if a
+device's queue_max_sectors was less than PAGE_SIZE we'd return 0.  So we
+just add 1; this should always be safe - things will break badly if
+bio_get_nr_vecs() returns > BIO_MAX_PAGES (bio_alloc() will suddenly start
+failing) but it's queue_max_segments that must guard against this, if
+queue_max_sectors is preventing this from happen things are going to
+explode on architectures with different PAGE_SIZE.
+
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Acked-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/isci/init.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/bio.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
---- linux.orig/drivers/scsi/isci/init.c
-+++ linux/drivers/scsi/isci/init.c
-@@ -465,7 +465,7 @@
- 	if (!orom)
- 		orom = isci_request_oprom(pdev);
+diff --git a/fs/bio.c b/fs/bio.c
+index b1fe82c..b980ecd 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -505,13 +505,9 @@ EXPORT_SYMBOL(bio_clone);
+ int bio_get_nr_vecs(struct block_device *bdev)
+ {
+ 	struct request_queue *q = bdev_get_queue(bdev);
+-	int nr_pages;
+-
+-	nr_pages = ((queue_max_sectors(q) << 9) + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	if (nr_pages > queue_max_segments(q))
+-		nr_pages = queue_max_segments(q);
+-
+-	return nr_pages;
++	return min_t(unsigned,
++		     queue_max_segments(q),
++		     queue_max_sectors(q) / (PAGE_SIZE >> 9) + 1);
+ }
+ EXPORT_SYMBOL(bio_get_nr_vecs);
  
--	for (i = 0; orom && i < ARRAY_SIZE(orom->ctrl); i++) {
-+	for (i = 0; orom && i < num_controllers(pdev); i++) {
- 		if (sci_oem_parameters_validate(&orom->ctrl[i])) {
- 			dev_warn(&pdev->dev,
- 				 "[%d]: invalid oem parameters detected, falling back to firmware\n", i);
 
 
