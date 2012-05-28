@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab2E1DcU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:32:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52163 "EHLO
+	id S1754394Ab2E1DcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:32:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52226 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754018Ab2E1D3w (ORCPT
+	by vger.kernel.org with ESMTP id S1754165Ab2E1D3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:52 -0400
-Message-Id: <20120528031214.613990618@decadent.org.uk>
+Message-Id: <20120528031217.765799936@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:27 +0100
+Date: Mon, 28 May 2012 04:13:50 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Mahoney <jeffm@suse.com>,
-        Stephan Mueller <stephan.mueller@atsec.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 085/117] dl2k: Clean up rio_ioctl
+        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
+        Jian Li <jiali@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 108/117] Avoid reading past buffer when calling GETACL
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,122 +29,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
-commit 1bb57e940e1958e40d51f2078f50c3a96a9b2d75 upstream.
+commit 5a00689930ab975fdd1b37b034475017e460cf2a upstream.
 
-The dl2k driver's rio_ioctl call has a few issues:
-- No permissions checking
-- Implements SIOCGMIIREG and SIOCGMIIREG using the SIOCDEVPRIVATE numbers
-- Has a few ioctls that may have been used for debugging at one point
-  but have no place in the kernel proper.
+Bug noticed in commit
+bf118a342f10dafe44b14451a1392c3254629a1f
 
-This patch removes all but the MII ioctls, renumbers them to use the
-standard ones, and adds the proper permission check for SIOCSMIIREG.
+When calling GETACL, if the size of the bitmap array, the length
+attribute and the acl returned by the server is greater than the
+allocated buffer(args.acl_len), we can Oops with a General Protection
+fault at _copy_from_pages() when we attempt to read past the pages
+allocated.
 
-We can also get rid of the dl2k-specific struct mii_data in favor of
-the generic struct mii_ioctl_data.
+This patch allocates an extra PAGE for the bitmap and checks to see that
+the bitmap + attribute_length + ACLs don't exceed the buffer space
+allocated to it.
 
-Since we have the phyid on hand, we can add the SIOCGMIIPHY ioctl too.
-
-Most of the MII code for the driver could probably be converted to use
-the generic MII library but I don't have a device to test the results.
-
-Reported-by: Stephan Mueller <stephan.mueller@atsec.com>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Reported-by: Jian Li <jiali@redhat.com>
+[Trond: Fixed a size_t vs unsigned int printk() warning]
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/dlink/dl2k.c |   52 +++++++------------------------------
- drivers/net/ethernet/dlink/dl2k.h |    7 -----
- 2 files changed, 9 insertions(+), 50 deletions(-)
+ fs/nfs/nfs4proc.c |   16 ++++++++++------
+ fs/nfs/nfs4xdr.c  |   18 +++++++++++-------
+ 2 files changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/net/ethernet/dlink/dl2k.c b/drivers/net/ethernet/dlink/dl2k.c
-index b2dc2c8..2e09edb 100644
---- a/drivers/net/ethernet/dlink/dl2k.c
-+++ b/drivers/net/ethernet/dlink/dl2k.c
-@@ -1259,55 +1259,21 @@ rio_ioctl (struct net_device *dev, struct ifreq *rq, int cmd)
- {
- 	int phy_addr;
- 	struct netdev_private *np = netdev_priv(dev);
--	struct mii_data *miidata = (struct mii_data *) &rq->ifr_ifru;
--
--	struct netdev_desc *desc;
--	int i;
-+	struct mii_ioctl_data *miidata = if_mii(rq);
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 60d5f4c..f5f125f 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -3684,19 +3684,23 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
+ 	if (npages == 0)
+ 		npages = 1;
  
- 	phy_addr = np->phy_addr;
- 	switch (cmd) {
--	case SIOCDEVPRIVATE:
--		break;
--
--	case SIOCDEVPRIVATE + 1:
--		miidata->out_value = mii_read (dev, phy_addr, miidata->reg_num);
-+	case SIOCGMIIPHY:
-+		miidata->phy_id = phy_addr;
- 		break;
--	case SIOCDEVPRIVATE + 2:
--		mii_write (dev, phy_addr, miidata->reg_num, miidata->in_value);
-+	case SIOCGMIIREG:
-+		miidata->val_out = mii_read (dev, phy_addr, miidata->reg_num);
- 		break;
--	case SIOCDEVPRIVATE + 3:
--		break;
--	case SIOCDEVPRIVATE + 4:
--		break;
--	case SIOCDEVPRIVATE + 5:
--		netif_stop_queue (dev);
-+	case SIOCSMIIREG:
-+		if (!capable(CAP_NET_ADMIN))
-+			return -EPERM;
-+		mii_write (dev, phy_addr, miidata->reg_num, miidata->val_in);
- 		break;
--	case SIOCDEVPRIVATE + 6:
--		netif_wake_queue (dev);
--		break;
--	case SIOCDEVPRIVATE + 7:
--		printk
--		    ("tx_full=%x cur_tx=%lx old_tx=%lx cur_rx=%lx old_rx=%lx\n",
--		     netif_queue_stopped(dev), np->cur_tx, np->old_tx, np->cur_rx,
--		     np->old_rx);
--		break;
--	case SIOCDEVPRIVATE + 8:
--		printk("TX ring:\n");
--		for (i = 0; i < TX_RING_SIZE; i++) {
--			desc = &np->tx_ring[i];
--			printk
--			    ("%02x:cur:%08x next:%08x status:%08x frag1:%08x frag0:%08x",
--			     i,
--			     (u32) (np->tx_ring_dma + i * sizeof (*desc)),
--			     (u32)le64_to_cpu(desc->next_desc),
--			     (u32)le64_to_cpu(desc->status),
--			     (u32)(le64_to_cpu(desc->fraginfo) >> 32),
--			     (u32)le64_to_cpu(desc->fraginfo));
--			printk ("\n");
--		}
--		printk ("\n");
--		break;
--
- 	default:
- 		return -EOPNOTSUPP;
++	/* Add an extra page to handle the bitmap returned */
++	npages++;
++
+ 	for (i = 0; i < npages; i++) {
+ 		pages[i] = alloc_page(GFP_KERNEL);
+ 		if (!pages[i])
+ 			goto out_free;
  	}
-diff --git a/drivers/net/ethernet/dlink/dl2k.h b/drivers/net/ethernet/dlink/dl2k.h
-index ba0adca..30c2da3 100644
---- a/drivers/net/ethernet/dlink/dl2k.h
-+++ b/drivers/net/ethernet/dlink/dl2k.h
-@@ -365,13 +365,6 @@ struct ioctl_data {
- 	char *data;
- };
+-	if (npages > 1) {
+-		/* for decoding across pages */
+-		res.acl_scratch = alloc_page(GFP_KERNEL);
+-		if (!res.acl_scratch)
+-			goto out_free;
+-	}
++
++	/* for decoding across pages */
++	res.acl_scratch = alloc_page(GFP_KERNEL);
++	if (!res.acl_scratch)
++		goto out_free;
++
+ 	args.acl_len = npages * PAGE_SIZE;
+ 	args.acl_pgbase = 0;
++
+ 	/* Let decode_getfacl know not to fail if the ACL data is larger than
+ 	 * the page we send as a guess */
+ 	if (buf == NULL)
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index 77fc5f9..9312dd7 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -4902,11 +4902,19 @@ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
+ 		 bitmap[3] = {0};
+ 	struct kvec *iov = req->rq_rcv_buf.head;
+ 	int status;
++	size_t page_len = xdr->buf->page_len;
  
--struct mii_data {
--	__u16 reserved;
--	__u16 reg_num;
--	__u16 in_value;
--	__u16 out_value;
--};
--
- /* The Rx and Tx buffer descriptors. */
- struct netdev_desc {
- 	__le64 next_desc;
+ 	res->acl_len = 0;
+ 	if ((status = decode_op_hdr(xdr, OP_GETATTR)) != 0)
+ 		goto out;
++
+ 	bm_p = xdr->p;
++	res->acl_data_offset = be32_to_cpup(bm_p) + 2;
++	res->acl_data_offset <<= 2;
++	/* Check if the acl data starts beyond the allocated buffer */
++	if (res->acl_data_offset > page_len)
++		return -ERANGE;
++
+ 	if ((status = decode_attr_bitmap(xdr, bitmap)) != 0)
+ 		goto out;
+ 	if ((status = decode_attr_length(xdr, &attrlen, &savep)) != 0)
+@@ -4916,28 +4924,24 @@ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
+ 		return -EIO;
+ 	if (likely(bitmap[0] & FATTR4_WORD0_ACL)) {
+ 		size_t hdrlen;
+-		u32 recvd;
+ 
+ 		/* The bitmap (xdr len + bitmaps) and the attr xdr len words
+ 		 * are stored with the acl data to handle the problem of
+ 		 * variable length bitmaps.*/
+ 		xdr->p = bm_p;
+-		res->acl_data_offset = be32_to_cpup(bm_p) + 2;
+-		res->acl_data_offset <<= 2;
+ 
+ 		/* We ignore &savep and don't do consistency checks on
+ 		 * the attr length.  Let userspace figure it out.... */
+ 		hdrlen = (u8 *)xdr->p - (u8 *)iov->iov_base;
+ 		attrlen += res->acl_data_offset;
+-		recvd = req->rq_rcv_buf.len - hdrlen;
+-		if (attrlen > recvd) {
++		if (attrlen > page_len) {
+ 			if (res->acl_flags & NFS4_ACL_LEN_REQUEST) {
+ 				/* getxattr interface called with a NULL buf */
+ 				res->acl_len = attrlen;
+ 				goto out;
+ 			}
+-			dprintk("NFS: acl reply: attrlen %u > recvd %u\n",
+-					attrlen, recvd);
++			dprintk("NFS: acl reply: attrlen %zu > page_len %u\n",
++					attrlen, page_len);
+ 			return -EINVAL;
+ 		}
+ 		xdr_read_pages(xdr, attrlen);
 
 
