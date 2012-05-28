@@ -1,82 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab2E1S3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 14:29:12 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40410 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab2E1S3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 14:29:10 -0400
-From: Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
-Subject: [PATCH] staging: comedi: cb_pcidas64: Fixed coding style errors and an if-statement
-Date: Mon, 28 May 2012 21:28:35 +0300
-Message-Id: <1338229715-2730-1-git-send-email-dimitrios.semitsoglou@gmail.com>
-X-Mailer: git-send-email 1.7.10.2
+	id S1754424Ab2E1Sei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 14:34:38 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50562 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753531Ab2E1Seg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 14:34:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338195855-14462-1-git-send-email-eric.miao@canonical.com>
+References: <1338195855-14462-1-git-send-email-eric.miao@canonical.com>
+From: Eric Miao <eric.miao@canonical.com>
+Date: Tue, 29 May 2012 02:34:15 +0800
+X-Google-Sender-Auth: YlWosWHaEw2iyQ3waCeWk1mBjs4
+Message-ID: <CAMPhdO_qwDmoLUpHZpNTJLLPhzyxdkKD0sh2Pu21p6uPw-_HYg@mail.gmail.com>
+Subject: Re: [PATCH] fbdev: make FIRMWARE_EDID depends on X86
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Eric Miao <eric.miao@canonical.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a few coding style errors and an if-statement responsible for a
-sanity check inside the prep_ao_dma function.
+On Mon, May 28, 2012 at 5:04 PM, Eric Miao <eric.miao@canonical.com> wrote:
+> The only place where CONFIG_FIRMWARE_EDID is used is in fbmon.c,
+> and only when CONFIG_X86 is defined, this implied dependency will
+> be better specified in Kconfig.  Otherwise, CONFIG_FIRMWARE_EDID
+> can be turned on pointlessly for other architectures, and causing
+> a bit confusion when doing configs across different architectures.
 
-Signed-off-by: Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
----
- drivers/staging/comedi/drivers/cb_pcidas64.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
-index 9d0b875..06cff3d 100644
---- a/drivers/staging/comedi/drivers/cb_pcidas64.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
-@@ -1153,12 +1153,14 @@ static int eeprom_read_insn(struct comedi_device *dev,
- static void check_adc_timing(struct comedi_device *dev, struct comedi_cmd *cmd);
- static unsigned int get_divisor(unsigned int ns, unsigned int flags);
- static void i2c_write(struct comedi_device *dev, unsigned int address,
--		      const uint8_t * data, unsigned int length);
-+		      const uint8_t *data, unsigned int length);
- static void caldac_write(struct comedi_device *dev, unsigned int channel,
- 			 unsigned int value);
- static int caldac_8800_write(struct comedi_device *dev, unsigned int address,
- 			     uint8_t value);
--/* static int dac_1590_write(struct comedi_device *dev, unsigned int dac_a, unsigned int dac_b); */
-+/* static int dac_1590_write(struct comedi_device *dev, unsigned int dac_a,
-+ *			     unsigned int dac_b);
-+ */
- static int caldac_i2c_write(struct comedi_device *dev,
- 			    unsigned int caldac_channel, unsigned int value);
- static void abort_dma(struct comedi_device *dev, unsigned int channel);
-@@ -1230,7 +1232,7 @@ static unsigned int hw_revision(const struct comedi_device *dev,
- }
- 
- static void set_dac_range_bits(struct comedi_device *dev,
--			       volatile uint16_t * bits, unsigned int channel,
-+			       volatile uint16_t *bits, unsigned int channel,
- 			       unsigned int range)
- {
- 	unsigned int code = board(dev)->ao_range_code[range];
-@@ -3392,8 +3394,8 @@ static int prep_ao_dma(struct comedi_device *dev, const struct comedi_cmd *cmd)
- 	num_bytes = load_ao_dma_buffer(dev, cmd);
- 	if (num_bytes == 0)
- 		return -1;
--	if (num_bytes >= DMA_BUFFER_SIZE) ;
--	load_ao_dma(dev, cmd);
-+	if (num_bytes >= DMA_BUFFER_SIZE)
-+		load_ao_dma(dev, cmd);
- 
- 	dma_start_sync(dev, 0);
- 
-@@ -4191,7 +4193,7 @@ static void i2c_stop(struct comedi_device *dev)
- }
- 
- static void i2c_write(struct comedi_device *dev, unsigned int address,
--		      const uint8_t * data, unsigned int length)
-+		      const uint8_t *data, unsigned int length)
- {
- 	unsigned int i;
- 	uint8_t bitstream;
--- 
-1.7.10.2
-
+Sorry, should be 'when doing config comparisons across different architectures'.
