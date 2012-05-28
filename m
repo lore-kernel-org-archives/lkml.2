@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab2E1D4t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:56:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51808 "EHLO
+	id S1755582Ab2E1D5d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:57:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51795 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753038Ab2E1D24 (ORCPT
+	by vger.kernel.org with ESMTP id S1752539Ab2E1D2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:28:56 -0400
-Message-Id: <20120528031204.405955018@decadent.org.uk>
+	Sun, 27 May 2012 23:28:55 -0400
+Message-Id: <20120528031203.290249940@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:13 +0100
+Date: Mon, 28 May 2012 04:12:05 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, James Bottomley <JBottomley@Parallels.com>
-Subject: [ 011/117] [PARISC] fix PA1.1 oops on boot
+        alan@lxorguk.ukuu.org.uk, Marcelo Tosatti <mtosatti@redhat.com>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 003/117] KVM: lock slots_lock around device assignment
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,42 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 5e185581d7c46ddd33cd9c01106d1fc86efb9376 upstream.
+From: Alex Williamson <alex.williamson@redhat.com>
 
-All PA1.1 systems have been oopsing on boot since
+(cherry picked from commit 21a1416a1c945c5aeaeaf791b63c64926018eb77)
 
-commit f311847c2fcebd81912e2f0caf8a461dec28db41
-Author: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date:   Wed Dec 22 10:22:11 2010 -0600
+As pointed out by Jason Baron, when assigning a device to a guest
+we first set the iommu domain pointer, which enables mapping
+and unmapping of memory slots to the iommu.  This leaves a window
+where this path is enabled, but we haven't synchronized the iommu
+mappings to the existing memory slots.  Thus a slot being removed
+at that point could send us down unexpected code paths removing
+non-existent pinnings and iommu mappings.  Take the slots_lock
+around creating the iommu domain and initial mappings as well as
+around iommu teardown to avoid this race.
 
-    parisc: flush pages through tmpalias space
-
-because a PA2.0 instruction was accidentally introduced into the PA1.1 TLB
-insertion interruption path when it was consolidated with the do_alias macro.
-Fix the do_alias macro only to use PA2.0 instructions if compiled for 64 bit.
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/parisc/kernel/entry.S |    4 ++++
- 1 file changed, 4 insertions(+)
+ virt/kvm/iommu.c |   23 +++++++++++++++--------
+ 1 files changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/arch/parisc/kernel/entry.S b/arch/parisc/kernel/entry.S
-index 6f05944..5350342 100644
---- a/arch/parisc/kernel/entry.S
-+++ b/arch/parisc/kernel/entry.S
-@@ -581,7 +581,11 @@
- 	 */
- 	cmpiclr,=	0x01,\tmp,%r0
- 	ldi		(_PAGE_DIRTY|_PAGE_READ|_PAGE_WRITE),\prot
-+#ifdef CONFIG_64BIT
- 	depd,z		\prot,8,7,\prot
-+#else
-+	depw,z		\prot,8,7,\prot
-+#endif
- 	/*
- 	 * OK, it is in the temp alias region, check whether "from" or "to".
- 	 * Check "subtle" note in pacache.S re: r23/r26.
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index fd817a2..533db33 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -239,9 +239,13 @@ int kvm_iommu_map_guest(struct kvm *kvm)
+ 		return -ENODEV;
+ 	}
+ 
++	mutex_lock(&kvm->slots_lock);
++
+ 	kvm->arch.iommu_domain = iommu_domain_alloc(&pci_bus_type);
+-	if (!kvm->arch.iommu_domain)
+-		return -ENOMEM;
++	if (!kvm->arch.iommu_domain) {
++		r = -ENOMEM;
++		goto out_unlock;
++	}
+ 
+ 	if (!allow_unsafe_assigned_interrupts &&
+ 	    !iommu_domain_has_cap(kvm->arch.iommu_domain,
+@@ -252,17 +256,16 @@ int kvm_iommu_map_guest(struct kvm *kvm)
+ 		       " module option.\n", __func__);
+ 		iommu_domain_free(kvm->arch.iommu_domain);
+ 		kvm->arch.iommu_domain = NULL;
+-		return -EPERM;
++		r = -EPERM;
++		goto out_unlock;
+ 	}
+ 
+ 	r = kvm_iommu_map_memslots(kvm);
+ 	if (r)
+-		goto out_unmap;
+-
+-	return 0;
++		kvm_iommu_unmap_memslots(kvm);
+ 
+-out_unmap:
+-	kvm_iommu_unmap_memslots(kvm);
++out_unlock:
++	mutex_unlock(&kvm->slots_lock);
+ 	return r;
+ }
+ 
+@@ -338,7 +341,11 @@ int kvm_iommu_unmap_guest(struct kvm *kvm)
+ 	if (!domain)
+ 		return 0;
+ 
++	mutex_lock(&kvm->slots_lock);
+ 	kvm_iommu_unmap_memslots(kvm);
++	kvm->arch.iommu_domain = NULL;
++	mutex_unlock(&kvm->slots_lock);
++
+ 	iommu_domain_free(domain);
+ 	return 0;
+ }
 
 
