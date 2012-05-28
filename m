@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab2E1DgT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:36:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52231 "EHLO
+	id S1754628Ab2E1DgR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:36:17 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52099 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754122Ab2E1D3q (ORCPT
+	by vger.kernel.org with ESMTP id S1753920Ab2E1D3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:46 -0400
-Message-Id: <20120528031217.901560287@decadent.org.uk>
+Message-Id: <20120528031213.651501116@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:51 +0100
+Date: Mon, 28 May 2012 04:13:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sachin Prabhu <sprabhu@redhat.com>,
-        Jian Li <jiali@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 109/117] Avoid beyond bounds copy while caching ACL
+        alan@lxorguk.ukuu.org.uk, Jan Kiszka <jan.kiszka@siemens.com>
+Subject: [ 078/117] compat: Fix RT signal mask corruption via sigprocmask
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,87 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit 5794d21ef4639f0e33440927bb903f9598c21e92 upstream.
+commit b7dafa0ef3145c31d7753be0a08b3cbda51f0209 upstream.
 
-When attempting to cache ACLs returned from the server, if the bitmap
-size + the ACL size is greater than a PAGE_SIZE but the ACL size itself
-is smaller than a PAGE_SIZE, we can read past the buffer page boundary.
+compat_sys_sigprocmask reads a smaller signal mask from userspace than
+sigprogmask accepts for setting.  So the high word of blocked.sig[0]
+will be cleared, releasing any potentially blocked RT signal.
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Reported-by: Jian Li <jiali@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This was discovered via userspace code that relies on get/setcontext.
+glibc's i386 versions of those functions use sigprogmask instead of
+rt_sigprogmask to save/restore signal mask and caused RT signal
+unblocking this way.
+
+As suggested by Linus, this replaces the sys_sigprocmask based compat
+version with one that open-codes the required logic, including the merge
+of the existing blocked set with the new one provided on SIG_SETMASK.
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4proc.c |   12 +++++-------
- fs/nfs/nfs4xdr.c  |    2 +-
- 2 files changed, 6 insertions(+), 8 deletions(-)
+ kernel/compat.c |   63 ++++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 46 insertions(+), 17 deletions(-)
 
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index f5f125f..2ce0698 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3628,16 +3628,16 @@ out:
- 	return ret;
+diff --git a/kernel/compat.c b/kernel/compat.c
+index 74ff849..d2c67aa 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -372,25 +372,54 @@ asmlinkage long compat_sys_sigpending(compat_old_sigset_t __user *set)
+ 
+ #ifdef __ARCH_WANT_SYS_SIGPROCMASK
+ 
+-asmlinkage long compat_sys_sigprocmask(int how, compat_old_sigset_t __user *set,
+-		compat_old_sigset_t __user *oset)
++/*
++ * sys_sigprocmask SIG_SETMASK sets the first (compat) word of the
++ * blocked set of signals to the supplied signal set
++ */
++static inline void compat_sig_setmask(sigset_t *blocked, compat_sigset_word set)
+ {
+-	old_sigset_t s;
+-	long ret;
+-	mm_segment_t old_fs;
++	memcpy(blocked->sig, &set, sizeof(set));
++}
+ 
+-	if (set && get_user(s, set))
+-		return -EFAULT;
+-	old_fs = get_fs();
+-	set_fs(KERNEL_DS);
+-	ret = sys_sigprocmask(how,
+-			      set ? (old_sigset_t __user *) &s : NULL,
+-			      oset ? (old_sigset_t __user *) &s : NULL);
+-	set_fs(old_fs);
+-	if (ret == 0)
+-		if (oset)
+-			ret = put_user(s, oset);
+-	return ret;
++asmlinkage long compat_sys_sigprocmask(int how,
++				       compat_old_sigset_t __user *nset,
++				       compat_old_sigset_t __user *oset)
++{
++	old_sigset_t old_set, new_set;
++	sigset_t new_blocked;
++
++	old_set = current->blocked.sig[0];
++
++	if (nset) {
++		if (get_user(new_set, nset))
++			return -EFAULT;
++		new_set &= ~(sigmask(SIGKILL) | sigmask(SIGSTOP));
++
++		new_blocked = current->blocked;
++
++		switch (how) {
++		case SIG_BLOCK:
++			sigaddsetmask(&new_blocked, new_set);
++			break;
++		case SIG_UNBLOCK:
++			sigdelsetmask(&new_blocked, new_set);
++			break;
++		case SIG_SETMASK:
++			compat_sig_setmask(&new_blocked, new_set);
++			break;
++		default:
++			return -EINVAL;
++		}
++
++		set_current_blocked(&new_blocked);
++	}
++
++	if (oset) {
++		if (put_user(old_set, oset))
++			return -EFAULT;
++	}
++
++	return 0;
  }
  
--static void nfs4_write_cached_acl(struct inode *inode, const char *buf, size_t acl_len)
-+static void nfs4_write_cached_acl(struct inode *inode, struct page **pages, size_t pgbase, size_t acl_len)
- {
- 	struct nfs4_cached_acl *acl;
- 
--	if (buf && acl_len <= PAGE_SIZE) {
-+	if (pages && acl_len <= PAGE_SIZE) {
- 		acl = kmalloc(sizeof(*acl) + acl_len, GFP_KERNEL);
- 		if (acl == NULL)
- 			goto out;
- 		acl->cached = 1;
--		memcpy(acl->data, buf, acl_len);
-+		_copy_from_pages(acl->data, pages, pgbase, acl_len);
- 	} else {
- 		acl = kmalloc(sizeof(*acl), GFP_KERNEL);
- 		if (acl == NULL)
-@@ -3670,7 +3670,6 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
- 	struct nfs_getaclres res = {
- 		.acl_len = buflen,
- 	};
--	void *resp_buf;
- 	struct rpc_message msg = {
- 		.rpc_proc = &nfs4_procedures[NFSPROC4_CLNT_GETACL],
- 		.rpc_argp = &args,
-@@ -3705,7 +3704,6 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
- 	 * the page we send as a guess */
- 	if (buf == NULL)
- 		res.acl_flags |= NFS4_ACL_LEN_REQUEST;
--	resp_buf = page_address(pages[0]);
- 
- 	dprintk("%s  buf %p buflen %zu npages %d args.acl_len %zu\n",
- 		__func__, buf, buflen, npages, args.acl_len);
-@@ -3716,9 +3714,9 @@ static ssize_t __nfs4_get_acl_uncached(struct inode *inode, void *buf, size_t bu
- 
- 	acl_len = res.acl_len - res.acl_data_offset;
- 	if (acl_len > args.acl_len)
--		nfs4_write_cached_acl(inode, NULL, acl_len);
-+		nfs4_write_cached_acl(inode, NULL, 0, acl_len);
- 	else
--		nfs4_write_cached_acl(inode, resp_buf + res.acl_data_offset,
-+		nfs4_write_cached_acl(inode, pages, res.acl_data_offset,
- 				      acl_len);
- 	if (buf) {
- 		ret = -ERANGE;
-diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
-index 9312dd7..203c096 100644
---- a/fs/nfs/nfs4xdr.c
-+++ b/fs/nfs/nfs4xdr.c
-@@ -4940,7 +4940,7 @@ static int decode_getacl(struct xdr_stream *xdr, struct rpc_rqst *req,
- 				res->acl_len = attrlen;
- 				goto out;
- 			}
--			dprintk("NFS: acl reply: attrlen %zu > page_len %u\n",
-+			dprintk("NFS: acl reply: attrlen %u > page_len %zu\n",
- 					attrlen, page_len);
- 			return -EINVAL;
- 		}
+ #endif
 
 
