@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2E1OUH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 10:20:07 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39662 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab2E1OUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 10:20:03 -0400
-From: Ben Minerds <puzzleduck@gmail.com>
-To: alan@lxorguk.ukuu.org.uk
-Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        puzzleduck@gmail.com
-Subject: [PATCH 6/6] USB: serial: Changes to conform with checkpatch.sh script. - return is not a function, parentheses not required.
-Date: Tue, 29 May 2012 00:22:00 +1000
-Message-Id: <1338214920-32708-7-git-send-email-puzzleduck@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1338214920-32708-1-git-send-email-puzzleduck@gmail.com>
-References: <1338214920-32708-1-git-send-email-puzzleduck@gmail.com>
+	id S1755013Ab2E1OUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 10:20:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754940Ab2E1OU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 10:20:29 -0400
+Message-ID: <4FC38992.8070408@redhat.com>
+Date: Mon, 28 May 2012 17:20:02 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] KVM: MMU: fix huge page adapted on non-PAE host
+References: <4FC316E3.6080607@linux.vnet.ibm.com> <4FC35A15.6080000@redhat.com> <4FC363EE.6060204@linux.vnet.ibm.com> <4FC36E85.4010909@redhat.com> <4FC37600.1060301@linux.vnet.ibm.com> <4FC37A18.10809@redhat.com> <4FC38084.40409@linux.vnet.ibm.com> <4FC38362.6010802@redhat.com> <4FC3863F.5020902@linux.vnet.ibm.com>
+In-Reply-To: <4FC3863F.5020902@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed 1 checkpatch.sh error.
+On 05/28/2012 05:05 PM, Xiao Guangrong wrote:
+>>>
+>>>
+>>> I think the reason we move refcount in current code is, we should increase the
+>>> refcount of the page we will mapped into shadow page table, since we always
+>>> decrease its refcount after it is mapped. (That is this patch does.)
+>>>
+>> 
+>> 
+>> As far as I can tell __get_user_pages_fast() will take the reference
+>> count in the page head in the first place.
+> 
+> 
+> IIUC, the refcount used in the Compound Page is like this:
+> 
+> get_user_pages / get_page(page):
+> 	head_page = page->first_page;
+> 	if (page is not the head page)
+> 		page->__mapcount++
+> 	head_page->_count++
+> 
+> 	
+> put_page(page):
+> 	head_page = page->first_page;
+> 	if (page is not the head page)
+> 		page->__mapcount--
+> 	head_page->_count--
+> 
 
-Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
----
- drivers/usb/serial/keyspan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Aha.
 
-diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
-index f205e9b..ccb24e6 100644
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -1240,7 +1240,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
- 
- 	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev)) {
- 		dev_err(&serial->dev->dev, "Required keyspan firmware image (%s) unavailable.\n", fw_name);
--		return(1);
-+		return 1;
- 	}
- 
- 	dbg("Uploading Keyspan %s firmware.", fw_name);
+The "right thing" we should be doing is running get_page() on every
+small page within the frame (we asked for a small page but are
+opportunistrically using the pages around it, without a proper ref).
+That's a bit slow though, so we cheat.
+
+Maybe we should do it anyway.  Large page maps/unmaps should be rare.
+
+But I guess we can start with your fix.  But what about shifting mask by
+one bit?  Isn't it sufficient?
+
+-		mask = KVM_PAGES_PER_HPAGE(level) - 1;
++		mask = KVM_PAGES_PER_HPAGE(level);
++		mask *= KVM_HOST_HPAGES_PER_HPAGE;
++		mask -= 1;
+
+This should move the reference to the right place.
+
 -- 
-1.7.2.5
-
+error compiling committee.c: too many arguments to function
