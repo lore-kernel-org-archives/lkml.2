@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab2E1OUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 10:20:11 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63848 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab2E1OUD (ORCPT
+	id S1754912Ab2E1OUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 10:20:07 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39662 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754018Ab2E1OUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 28 May 2012 10:20:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120528135433.GC7392@kroah.com>
-References: <20120426001529.GA14006@kroah.com>
-	<CALF0-+UeGxjML71sWGr8A-mEwBQRyFd6fcXa2Q0VZ3dxgWPwZg@mail.gmail.com>
-	<20120528135433.GC7392@kroah.com>
-Date: Mon, 28 May 2012 11:20:02 -0300
-Message-ID: <CALF0-+WHP-w8LYQsBDjDjyZisL1m4FmB3DS0kGRK4UxAyr79vA@mail.gmail.com>
-Subject: Re: [RFC PATCH] USB: remove CONFIG_USB_DEVICEFS
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>
-Content-Type: text/plain; charset=ISO-8859-1
+From: Ben Minerds <puzzleduck@gmail.com>
+To: alan@lxorguk.ukuu.org.uk
+Cc: gregkh@linuxfoundation.org, richard.weinberger@gmail.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        puzzleduck@gmail.com
+Subject: [PATCH 6/6] USB: serial: Changes to conform with checkpatch.sh script. - return is not a function, parentheses not required.
+Date: Tue, 29 May 2012 00:22:00 +1000
+Message-Id: <1338214920-32708-7-git-send-email-puzzleduck@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1338214920-32708-1-git-send-email-puzzleduck@gmail.com>
+References: <1338214920-32708-1-git-send-email-puzzleduck@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Removed 1 checkpatch.sh error.
 
-On Mon, May 28, 2012 at 10:54 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, May 28, 2012 at 09:37:44AM -0300, Ezequiel Garcia wrote:
->> Hi Greg,
->>
->> On Wed, Apr 25, 2012 at 9:15 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->> > This option has been deprecated for many years now, and no userspace
->> > tools use it anymore, so it should be safe to finally remove it.
->> >
->>
->> Does this mean usbview will be completely deprecated?
->> Do you think is it possible to write an update for it?
->
-> It works just fine if you point usbview at
-> /sys/kernel/debug/usb/devices, right?
->
+Signed-off-by: Ben Minerds <puzzleduck@gmail.com>
+---
+ drivers/usb/serial/keyspan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yes, it does.
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index f205e9b..ccb24e6 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -1240,7 +1240,7 @@ static int keyspan_fake_startup(struct usb_serial *serial)
+ 
+ 	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev)) {
+ 		dev_err(&serial->dev->dev, "Required keyspan firmware image (%s) unavailable.\n", fw_name);
+-		return(1);
++		return 1;
+ 	}
+ 
+ 	dbg("Uploading Keyspan %s firmware.", fw_name);
+-- 
+1.7.2.5
 
-Thanks,
-Ezequiel.
