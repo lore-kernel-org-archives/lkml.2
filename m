@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab2E1Sjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 14:39:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46649 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab2E1Sj1 (ORCPT
+	id S1754836Ab2E1Snl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 14:43:41 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40549 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753305Ab2E1Snj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 14:39:27 -0400
-Date: Mon, 28 May 2012 19:39:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roland Stigge <stigge@antcom.de>
-Cc: alan@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de
-Subject: Re: [PATCH] serial/of-serial: Add 16654 chip to compatible string
-	list
-Message-ID: <20120528183913.GD28290@n2100.arm.linux.org.uk>
-References: <1338199134-23885-1-git-send-email-stigge@antcom.de> <20120528100338.GI24149@n2100.arm.linux.org.uk> <4FC35F97.2030400@antcom.de> <20120528150311.GA28290@n2100.arm.linux.org.uk> <4FC3A768.3060208@antcom.de> <20120528163151.GB28290@n2100.arm.linux.org.uk> <4FC3BA89.4060804@antcom.de> <20120528180139.GC28290@n2100.arm.linux.org.uk> <4FC3C156.5040609@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC3C156.5040609@antcom.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 28 May 2012 14:43:39 -0400
+From: Vincent Sanders <vincent.sanders@collabora.co.uk>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Vincent Sanders <vince@collabora.co.uk>,
+        Vincent Sanders <vincent.sanders@collabora.co.uk>
+Subject: [PATCH 2/2] Enable gcov support on the ARM architecture
+Date: Mon, 28 May 2012 19:33:38 +0100
+Message-Id: <1338230018-31052-3-git-send-email-vincent.sanders@collabora.co.uk>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1338230018-31052-1-git-send-email-vincent.sanders@collabora.co.uk>
+References: <1338230018-31052-1-git-send-email-vincent.sanders@collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 08:17:58PM +0200, Roland Stigge wrote:
-> On 28/05/12 20:01, Russell King - ARM Linux wrote:
-> >> Now, introducing a new type, can I add to 8250.c's uart_config[] by
-> >> introducing a new type (no. 22) after PORT_XR17D15X? Unfortunately,
-> >> there are the "ARM specific type numbers" after current PORT_MAX_8250
-> >> (21), but those are not listed in 8250.c's uart_config[]. Or how am I
-> >> supposed to add a new type?
-> > 
-> > If it's 8250, stick it in with the group, otherwise the array will
-> > become stupidly large.  That's why there's a separation of the two.
-> 
-> Do you mean adding one element to uart_config[] and increasing
-> PORT_MAX_8250 (actually, the size of uart_config[]) by one? I would also
-> need to increase the indices of all the following "ARM specific type
-> numbers" by one (the second group).
+From: Vincent Sanders <vince@collabora.co.uk>
 
-#define PORT_XR17D15X   21      /* Exar XR17D15x UART */
-#define PORT_MAX_8250   21      /* max port ID */
+Enable gcov support for ARM based on original patches by David
+Singleton and George G. Davis
 
-#define PORT_PXA        31
+Signed-off-by: Vincent Sanders <vincent.sanders@collabora.co.uk>
+---
+ arch/arm/boot/bootp/Makefile      |    2 ++
+ arch/arm/boot/compressed/Makefile |    2 ++
+ arch/arm/include/asm/elf.h        |    1 +
+ arch/arm/kernel/module.c          |    1 +
+ kernel/gcov/Kconfig               |    2 +-
+ 5 files changed, 7 insertions(+), 1 deletion(-)
 
-There's space between 21 and 31...
+diff --git a/arch/arm/boot/bootp/Makefile b/arch/arm/boot/bootp/Makefile
+index c394e30..5761f00 100644
+--- a/arch/arm/boot/bootp/Makefile
++++ b/arch/arm/boot/bootp/Makefile
+@@ -5,6 +5,8 @@
+ # architecture-specific flags and dependencies.
+ #
+ 
++GCOV_PROFILE	:= n
++
+ LDFLAGS_bootp	:=-p --no-undefined -X \
+ 		 --defsym initrd_phys=$(INITRD_PHYS) \
+ 		 --defsym params_phys=$(PARAMS_PHYS) -T
+diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
+index bb26756..7482fcd 100644
+--- a/arch/arm/boot/compressed/Makefile
++++ b/arch/arm/boot/compressed/Makefile
+@@ -30,6 +30,8 @@ FONTC	= $(srctree)/drivers/video/console/font_acorn_8x8.c
+ OBJS		+= string.o
+ CFLAGS_string.o	:= -Os
+ 
++GCOV_PROFILE		:= n
++
+ #
+ # Architecture dependencies
+ #
+diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
+index 38050b1..64afbd0 100644
+--- a/arch/arm/include/asm/elf.h
++++ b/arch/arm/include/asm/elf.h
+@@ -52,6 +52,7 @@ typedef struct user_fp elf_fpregset_t;
+ #define R_ARM_ABS32		2
+ #define R_ARM_CALL		28
+ #define R_ARM_JUMP24		29
++#define R_ARM_TARGET1		38
+ #define R_ARM_V4BX		40
+ #define R_ARM_PREL31		42
+ #define R_ARM_MOVW_ABS_NC	43
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index 1e9be5d..b22fc22 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -89,6 +89,7 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
+ 			break;
+ 
+ 		case R_ARM_ABS32:
++		case R_ARM_TARGET1:
+ 			*(u32 *)loc += sym->st_value;
+ 			break;
+ 
+diff --git a/kernel/gcov/Kconfig b/kernel/gcov/Kconfig
+index a920281..2a02dae 100644
+--- a/kernel/gcov/Kconfig
++++ b/kernel/gcov/Kconfig
+@@ -35,7 +35,7 @@ config GCOV_KERNEL
+ config GCOV_PROFILE_ALL
+ 	bool "Profile entire Kernel"
+ 	depends on GCOV_KERNEL
+-	depends on SUPERH || S390 || X86 || (PPC && EXPERIMENTAL) || MICROBLAZE
++	depends on SUPERH || S390 || X86 || (PPC && EXPERIMENTAL) || MICROBLAZE || ARM
+ 	default n
+ 	---help---
+ 	This options activates profiling for the entire kernel.
+-- 
+1.7.10
+
