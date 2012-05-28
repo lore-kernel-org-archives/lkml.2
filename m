@@ -1,165 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab2E1Qwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 12:52:38 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:43147 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750892Ab2E1Qwg (ORCPT
+	id S1754756Ab2E1RKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 13:10:19 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40014 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab2E1RKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 12:52:36 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: FlorianSchandinat@gmx.de
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH v2] video: bfin_adv7393fb: Fix cleanup code
-Date: Mon, 28 May 2012 18:54:51 +0200
-Message-Id: <1338224091-8322-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Mon, 28 May 2012 13:10:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120528114124.GA6813@localhost>
+References: <20120528114124.GA6813@localhost>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 28 May 2012 10:09:56 -0700
+X-Google-Sender-Auth: CiuH7BNWq2KOFu1dUEVG_InvP0w
+Message-ID: <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
+Subject: Re: [GIT PULL] writeback changes for 3.5-rc1
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the cleanup code of the bfin_adv7393_fb_probe
-function.
+Ok, pulled.
 
-1) The resources were not freed in the order that we allocated them
-   so we call dma_free_coherent() before it was allocated.
-2) The labels weren't in the right place which also meant that we
-   freed resources that weren't allocated.
-3) We should free gpio_free(P_IDENT(P_PPI0_FS3)) before returning.
-4) Lets change the label names into something more meaningful.
+However, I have an independent question for you - have you looked at
+any kind of per-file write-behind kind of logic?
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
-v2: Changed the label names as well.
+The reason I ask is that pretty much every time I write some big file
+(usually when over-writing a harddisk), I tend to use my own hackish
+model, which looks like this:
 
- drivers/video/bfin_adv7393fb.c |   43 +++++++++++++++++++++-------------------
- 1 file changed, 23 insertions(+), 20 deletions(-)
+#define BUFSIZE (8*1024*1024ul)
 
-diff --git a/drivers/video/bfin_adv7393fb.c b/drivers/video/bfin_adv7393fb.c
-index 1a268a2..33ea874 100644
---- a/drivers/video/bfin_adv7393fb.c
-+++ b/drivers/video/bfin_adv7393fb.c
-@@ -414,14 +414,14 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
- 		if (ret) {
- 			dev_err(&client->dev, "PPI0_FS3 GPIO request failed\n");
- 			ret = -EBUSY;
--			goto out_8;
-+			goto free_fbdev;
- 		}
- 	}
- 
- 	if (peripheral_request_list(ppi_pins, DRIVER_NAME)) {
- 		dev_err(&client->dev, "requesting PPI peripheral failed\n");
- 		ret = -EFAULT;
--		goto out_8;
-+		goto free_gpio;
- 	}
- 
- 	fbdev->fb_mem =
-@@ -432,7 +432,7 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
- 		dev_err(&client->dev, "couldn't allocate dma buffer (%d bytes)\n",
- 		       (u32) fbdev->fb_len);
- 		ret = -ENOMEM;
--		goto out_7;
-+		goto free_ppi_pins;
- 	}
- 
- 	fbdev->info.screen_base = (void *)fbdev->fb_mem;
-@@ -464,27 +464,27 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
- 	if (!fbdev->info.pseudo_palette) {
- 		dev_err(&client->dev, "failed to allocate pseudo_palette\n");
- 		ret = -ENOMEM;
--		goto out_6;
-+		goto free_fb_mem;
- 	}
- 
- 	if (fb_alloc_cmap(&fbdev->info.cmap, BFIN_LCD_NBR_PALETTE_ENTRIES, 0) < 0) {
- 		dev_err(&client->dev, "failed to allocate colormap (%d entries)\n",
- 			   BFIN_LCD_NBR_PALETTE_ENTRIES);
- 		ret = -EFAULT;
--		goto out_5;
-+		goto free_palette;
- 	}
- 
- 	if (request_dma(CH_PPI, "BF5xx_PPI_DMA") < 0) {
- 		dev_err(&client->dev, "unable to request PPI DMA\n");
- 		ret = -EFAULT;
--		goto out_4;
-+		goto free_cmap;
- 	}
- 
- 	if (request_irq(IRQ_PPI_ERROR, ppi_irq_error, 0,
- 			"PPI ERROR", fbdev) < 0) {
- 		dev_err(&client->dev, "unable to request PPI ERROR IRQ\n");
- 		ret = -EFAULT;
--		goto out_3;
-+		goto free_ch_ppi;
- 	}
- 
- 	fbdev->open = 0;
-@@ -494,14 +494,14 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
- 
- 	if (ret) {
- 		dev_err(&client->dev, "i2c attach: init error\n");
--		goto out_1;
-+		goto free_irq_ppi;
- 	}
- 
- 
- 	if (register_framebuffer(&fbdev->info) < 0) {
- 		dev_err(&client->dev, "unable to register framebuffer\n");
- 		ret = -EFAULT;
--		goto out_1;
-+		goto free_irq_ppi;
- 	}
- 
- 	dev_info(&client->dev, "fb%d: %s frame buffer device\n",
-@@ -512,7 +512,7 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
- 	if (!entry) {
- 		dev_err(&client->dev, "unable to create /proc entry\n");
- 		ret = -EFAULT;
--		goto out_0;
-+		goto free_fb;
- 	}
- 
- 	entry->read_proc = adv7393_read_proc;
-@@ -521,22 +521,25 @@ static int __devinit bfin_adv7393_fb_probe(struct i2c_client *client,
- 
- 	return 0;
- 
-- out_0:
-+free_fb:
- 	unregister_framebuffer(&fbdev->info);
-- out_1:
-+free_irq_ppi:
- 	free_irq(IRQ_PPI_ERROR, fbdev);
-- out_3:
-+free_ch_ppi:
- 	free_dma(CH_PPI);
-- out_4:
--	dma_free_coherent(NULL, fbdev->fb_len, fbdev->fb_mem,
--			  fbdev->dma_handle);
-- out_5:
-+free_cmap:
- 	fb_dealloc_cmap(&fbdev->info.cmap);
-- out_6:
-+free_palette:
- 	kfree(fbdev->info.pseudo_palette);
-- out_7:
-+free_fb_mem:
-+	dma_free_coherent(NULL, fbdev->fb_len, fbdev->fb_mem,
-+			  fbdev->dma_handle);
-+free_ppi_pins:
- 	peripheral_free_list(ppi_pins);
-- out_8:
-+free_gpio:
-+	if (ANOMALY_05000400)
-+		gpio_free(P_IDENT(P_PPI0_FS3));
-+free_fbdev:
- 	kfree(fbdev);
- 
- 	return ret;
--- 
-1.7.10
+        ...
+        for (..) {
+                ...
+                if (write(fd, buffer, BUFSIZE) != BUFSIZE)
+                        break;
+                sync_file_range(fd, index*BUFSIZE, BUFSIZE,
+SYNC_FILE_RANGE_WRITE);
+                if (index)
+                        sync_file_range(fd, (index-1)*BUFSIZE,
+BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+                ....
 
+and it tends to be *beautiful* for both disk IO performane and for
+system responsiveness while the big write is in progress.
+
+And I'm wondering if we couldn't expose this kind of write-behind
+logic from the kernel. Sure, it only works for the "contiguous write
+of a single large file" model, but that model isn't actually all
+*that* unusual.
+
+Right now all the write-back logic is based on the
+balance_dirty_pages() model, which is more of a global dirty model.
+Which obviously is needed too - this isn't an "either or" kind of
+thing, it's more of a "maybe we could have a streaming detector *and*
+the 'random writes' code". So I was wondering if anybody had ever been
+looking more at an explicit write-behind model that uses the same kind
+of "per-file window" that the read-ahead code does.
+
+(The above code only works well for known streaming writes, but the
+*model* of saying "ok, let's start writeout for the previous streaming
+block, and then wait for the writeout of the streaming block before
+that" really does tend to result in very smooth IO and minimal
+disruption of other processes..)
+
+                      Linus
+
+On Mon, May 28, 2012 at 4:41 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+>
+> Please pull the writeback changes, mainly from Jan Kara to avoid
+> iput() in the flusher threads.
