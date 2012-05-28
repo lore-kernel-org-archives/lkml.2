@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087Ab2E1C5q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 22:57:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36293 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930Ab2E1C5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 22:57:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="157794325"
-Message-ID: <4FC2E944.6060903@intel.com>
-Date: Mon, 28 May 2012 10:56:04 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v3 2/2] x86 mce: use new printk recursion disabling interface
-References: <4FBC444A.6060500@intel.com>  <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com>  <20120524061145.GA18284@liondog.tnic>  <20120524155611.b7aeff4d.akpm@linux-foundation.org>  <1337905811.14538.206.camel@ymzhang.sh.intel.com>  <4FBF3295.7090608@intel.com>  <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com> <1338165058.14538.209.camel@ymzhang.sh.intel.com> <4FC2E8CF.2040109@intel.com>
-In-Reply-To: <4FC2E8CF.2040109@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753124Ab2E1DJL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:09:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39966 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab2E1DJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 27 May 2012 23:09:09 -0400
+Date: Mon, 28 May 2012 13:08:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the pinctrl tree with Linus' tree
+Message-Id: <20120528130851.10cca27f0d48da3ccd9d9f95@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__28_May_2012_13_08_51_+1000_APGmlCxUwOGT1Kp8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+--Signature=_Mon__28_May_2012_13_08_51_+1000_APGmlCxUwOGT1Kp8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Disable printk recursion to make sure MCE logs printed out.
+Hi Linus,
 
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Today's linux-next merge of the pinctrl tree got conflicts in
+Documentation/driver-model/devres.txt, drivers/pinctrl/Kconfig,
+drivers/pinctrl/Makefile, and drivers/pinctrl/pinctrl-tegra.c between
+various commits from Linus' tree and various commits from the pinctrl
+tree.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 2afcbd2..365c35d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1015,6 +1015,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
- 	char *msg = "Unknown";
- 
-+	printk_recursion_check_disable();
- 	atomic_inc(&mce_entry);
- 
- 	this_cpu_inc(mce_exception_count);
-@@ -1144,6 +1145,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
- out:
- 	atomic_dec(&mce_entry);
-+	printk_recursion_check_enable();
- 	sync_core();
- }
- EXPORT_SYMBOL_GPL(do_machine_check);
--- 
-1.7.1
+The root cause of these conflicts is that the pinctrl tree was merged into
+other trees that were meregd into Linus' tree (see commit 813a95e5b4fa on
+May 23). Somewhere along the line the pinctrl tree was rebased/rewritten
+(May 25 or so) and a new commit added to it.  Also there have been more
+commits in Linus' tree that affect these files.
 
+<rant>So, if your tree/branch is merged into other trees, DO NOT REBASE
+IT.</rant>
+
+I fixed it up (by using the versions of these files from Linus' tree -
+and removing the call to pinctrl_remove_gpio_range()) and can carry the
+fixes as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__28_May_2012_13_08_51_+1000_APGmlCxUwOGT1Kp8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPwuxDAAoJEECxmPOUX5FEO5oQAKMHR3x8ImzCBMBq5JhUQXJI
+OP0Gi6py3j9baGxOFp/6fo4mqT8/SD4A9p4OC86AhX2lOSRefLAD1EI4woVtImik
+vx+OZXfDWDaQh3Zo9Fi8Y7TK9gowym38y7+FhCDGkv5+nLI/MXkK2kjq8WYD6pxo
+pVeQB5TRjBRvsO+XRhpB79trmZLeezl4xqhpzJV6MZjo55SCyOm2E8rYPbjz3rjL
+a1PBjDGW1RRJyVTTM3XnOW11m2QPsjxsbshrW2+zUfV/5sOTuYEivdsZLdOC0818
+UotSTLi/0HcGjuaEgd0ZH+ESOIv8xVXTUcyO23F+NTLWg46N2ILVJr/xQp+AIJoe
+EeqtXWEoZNITLP8JJMwTyIHdl/YcLC35fQy6ncC6XKXg9xYJ6YtycZf73V+Bdlq1
+A3HZiH4jw4DZ8MQLUBAR4GU7R4+a7RUPhIGQgSXcopZBpkm645GkUjuxzZtsRp6k
+BKlFf95DM0LyhX54on8kW7GBkZTLjrCi6p03/VWRljdI6lEabbDIxnRX5cNtqgpI
+mAdGf/6gdcHneaLV29Nggch4sqdIj8uwR57ZQV3+z3VTjBEEIgzpgPlDkvXuUwvL
++k+h4jojSHLg94v039s0VEzp5AmkVtNkem7d3YMV8j6PFD5WAa4058ysd1sX4nzX
+v7Zicu8CDYhdVYl/YWHh
+=WtKr
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__28_May_2012_13_08_51_+1000_APGmlCxUwOGT1Kp8--
