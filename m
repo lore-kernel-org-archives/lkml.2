@@ -1,44 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab2E1KKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 06:10:55 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46107 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab2E1KKx convert rfc822-to-8bit (ORCPT
+	id S1753410Ab2E1KQE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 06:16:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58955 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab2E1KQC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 06:10:53 -0400
+	Mon, 28 May 2012 06:16:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <20120528133540.19498993351d66f959f079b6@canb.auug.org.au>
-References: <20120528133540.19498993351d66f959f079b6@canb.auug.org.au>
-From: Sumit Semwal <sumit.semwal@linaro.org>
-Date: Mon, 28 May 2012 18:10:32 +0800
-Message-ID: <CAO_48GGkMemXg2nMiU5y-Kb3BJPVP6adY+dtCUDKJV9U+7bo-A@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the dma-buf tree with Linus' tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 28 May 2012 15:46:00 +0530
+Message-ID: <CANc+2y48M+K4jvGEes_srYO7rCQcPt4pvcxcvm-Hd+7kKJr6BQ@mail.gmail.com>
+Subject: Break point not hit while debugging linux kernel with kgdb
+From: prasannatsmkumar <prasannatsmkumar@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 May 2012 11:35, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Sumit,
-Hi Stephen,
->
-> Today's linux-next merge of the dma-buf tree got conflicts in
-> drivers/base/dma-buf.c and include/linux/dma-buf.h between various
-> commits from Linus' tree and various commits from the dma-buf tree.
->
-> Again, another tree that was rebased before or after being sent
-> upstream.  Please don't do this.
-My apologies - I have updated this tree now, and you won't see this
-problem going forward.
->
-> I have used the versions of these files from Linus' tree.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+Hi,
 
-Thanks and regards,
-Sumit
+I tried to debug the linux kernel with kgdb (over serial port). I have
+configured the host and target machines and I am able to connect, step
+in the kernel code. In gdb I gave "break usb_register_dev" and "break
+usb_deregister_dev" and continued the execution (continue in gdb).
+Once the desktop is up, I connected a USB device (first tried with USB
+keyboard). Break point was not hit. I tried some more functions and
+break points are never hit. What should I do for it? Am I missing
+something?
+
+Thanks,
+Prasanna Kumar T S M
