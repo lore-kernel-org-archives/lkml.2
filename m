@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754875Ab2E1Dgf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:36:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52241 "EHLO
+	id S1754757Ab2E1DgW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:36:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52194 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754116Ab2E1D3o (ORCPT
+	by vger.kernel.org with ESMTP id S1754164Ab2E1D3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 27 May 2012 23:29:44 -0400
-Message-Id: <20120528031216.926897101@decadent.org.uk>
+	Sun, 27 May 2012 23:29:46 -0400
+Message-Id: <20120528031215.570708861@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:13:44 +0100
+Date: Mon, 28 May 2012 04:13:34 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Woodhouse <dwmw2@infradead.org>,
-        Xudong Hao <xudong.hao@intel.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 102/117] intel-iommu: Add device info into list before doing context mapping
+        alan@lxorguk.ukuu.org.uk, Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 092/117] drm/i915: Avoid a double-read of PCH_IIR during interrupt handling
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,61 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <dwmw2@infradead.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit e2ad23d04c1304431ab5176c89b7b476ded2d995 upstream.
+commit 9adab8b5a7fde248504f484e197589f3e3c922e2 upstream.
 
-Add device info into list before doing context mapping, because device
-info will be used by iommu_enable_dev_iotlb(). Without it, ATS won't get
-enabled as it should be.
+Currently the code re-reads PCH_IIR during the hotplug interrupt
+processing. Not only is this a wasted read, but introduces a potential
+for handling a spurious interrupt as we then may not clear all the
+interrupts processed (since the re-read IIR may contains more interrupts
+asserted than we clear using the result of the original read).
 
-ATS, while a dubious decision from a security point of view, can be very
-important for performance.
-
-Signed-off-by: Xudong Hao <xudong.hao@intel.com>
-Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
-Acked-by: Chris Wright <chrisw@sous-sol.org>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/iommu/intel-iommu.c |   17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c |    9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index bf2fbaa..abab245 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -2287,12 +2287,6 @@ static int domain_add_dev_info(struct dmar_domain *domain,
- 	if (!info)
- 		return -ENOMEM;
- 
--	ret = domain_context_mapping(domain, pdev, translation);
--	if (ret) {
--		free_devinfo_mem(info);
--		return ret;
--	}
--
- 	info->segment = pci_domain_nr(pdev->bus);
- 	info->bus = pdev->bus->number;
- 	info->devfn = pdev->devfn;
-@@ -2305,6 +2299,17 @@ static int domain_add_dev_info(struct dmar_domain *domain,
- 	pdev->dev.archdata.iommu = info;
- 	spin_unlock_irqrestore(&device_domain_lock, flags);
- 
-+	ret = domain_context_mapping(domain, pdev, translation);
-+	if (ret) {
-+		spin_lock_irqsave(&device_domain_lock, flags);
-+		list_del(&info->link);
-+		list_del(&info->global);
-+		pdev->dev.archdata.iommu = NULL;
-+		spin_unlock_irqrestore(&device_domain_lock, flags);
-+		free_devinfo_mem(info);
-+		return ret;
-+	}
-+
- 	return 0;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -424,14 +424,11 @@
+ 	mutex_unlock(&dev_priv->dev->struct_mutex);
  }
  
+-static void pch_irq_handler(struct drm_device *dev)
++static void pch_irq_handler(struct drm_device *dev, u32 pch_iir)
+ {
+ 	drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
+-	u32 pch_iir;
+ 	int pipe;
+ 
+-	pch_iir = I915_READ(SDEIIR);
+-
+ 	if (pch_iir & SDE_AUDIO_POWER_MASK)
+ 		DRM_DEBUG_DRIVER("PCH audio power change on port %d\n",
+ 				 (pch_iir & SDE_AUDIO_POWER_MASK) >>
+@@ -529,7 +526,7 @@
+ 	if (de_iir & DE_PCH_EVENT_IVB) {
+ 		if (pch_iir & SDE_HOTPLUG_MASK_CPT)
+ 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
+-		pch_irq_handler(dev);
++		pch_irq_handler(dev, pch_iir);
+ 	}
+ 
+ 	if (pm_iir & GEN6_PM_DEFERRED_EVENTS) {
+@@ -629,7 +626,7 @@
+ 	if (de_iir & DE_PCH_EVENT) {
+ 		if (pch_iir & hotplug_mask)
+ 			queue_work(dev_priv->wq, &dev_priv->hotplug_work);
+-		pch_irq_handler(dev);
++		pch_irq_handler(dev, pch_iir);
+ 	}
+ 
+ 	if (de_iir & DE_PCU_EVENT) {
 
 
