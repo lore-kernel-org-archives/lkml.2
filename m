@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755136Ab2E1DpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:45:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52061 "EHLO
+	id S1755253Ab2E1DpY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:45:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52078 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753895Ab2E1D3a (ORCPT
+	by vger.kernel.org with ESMTP id S1753900Ab2E1D3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:30 -0400
-Message-Id: <20120528031205.518379925@decadent.org.uk>
+Message-Id: <20120528031210.757569840@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:21 +0100
+Date: Mon, 28 May 2012 04:12:59 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "Luis R. Rodriguez" <mcgrof@frijolero.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Youngsin Lee <youngsin@qualcomm.com>,
-        Raja Mani <rmani@qca.qualcomm.com>,
-        Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>,
-        Vipin Mehta <vipimeht@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 019/117] cfg80211: warn if db.txt is empty with
- CONFIG_CFG80211_INTERNAL_REGDB
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Oliver Neukum <oliver@neukum.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 057/117] USB: cdc-wdm: cannot use dev_printk when device is gone
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,84 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Luis R. Rodriguez" <mcgrof@frijolero.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 80007efeff0568375b08faf93c7aad65602cb97e upstream.
+commit 6b0b79d38806481c1c8fffa7c5842f3c83679a42 upstream.
 
-It has happened twice now where elaborate troubleshooting has
-undergone on systems where CONFIG_CFG80211_INTERNAL_REGDB [0]
-has been set but yet net/wireless/db.txt was not updated.
+We cannot dereference a removed USB interface for
+dev_printk. Use pr_debug instead where necessary.
 
-Despite the documentation on this it seems system integrators could
-use some more help with this, so throw out a kernel warning at boot time
-when their database is empty.
+Flush errors are expected if device is unplugged and are
+therefore best ingored at this point.
 
-This does mean that the error-prone system integrator won't likely
-realize the issue until they boot the machine but -- it does not seem
-to make sense to enable a build bug breaking random build testing.
+Move the kill_urbs() call in wdm_release with dev_dbg()
+for the non disconnect, as we know it has already been
+called if WDM_DISCONNECTING is set.  This does not
+actually fix anything, but keeps the code more consistent.
 
-[0] http://wireless.kernel.org/en/developers/Regulatory/CRDA#CONFIG_CFG80211_INTERNAL_REGDB
-
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Youngsin Lee <youngsin@qualcomm.com>
-Cc: Raja Mani <rmani@qca.qualcomm.com>
-Cc: Senthil Kumar Balasubramanian <senthilb@qca.qualcomm.com>
-Cc: Vipin Mehta <vipimeht@qca.qualcomm.com>
-Cc: yahuan@qca.qualcomm.com
-Cc: jjan@qca.qualcomm.com
-Cc: vthiagar@qca.qualcomm.com
-Cc: henrykim@qualcomm.com
-Cc: jouni@qca.qualcomm.com
-Cc: athiruve@qca.qualcomm.com
-Cc: cjkim@qualcomm.com
-Cc: philipk@qca.qualcomm.com
-Cc: sunnykim@qualcomm.com
-Cc: sskwak@qualcomm.com
-Cc: kkim@qualcomm.com
-Cc: mattbyun@qualcomm.com
-Cc: ryanlee@qualcomm.com
-Cc: simbap@qualcomm.com
-Cc: krislee@qualcomm.com
-Cc: conner@qualcomm.com
-Cc: hojinkim@qualcomm.com
-Cc: honglee@qualcomm.com
-Cc: johnwkim@qualcomm.com
-Cc: jinyong@qca.qualcomm.com
-Signed-off-by: Luis R. Rodriguez <mcgrof@frijolero.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/wireless/reg.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/usb/class/cdc-wdm.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index e9a0ac8..15f3474 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -388,7 +388,15 @@ static void reg_regdb_query(const char *alpha2)
+--- a/drivers/usb/class/cdc-wdm.c
++++ b/drivers/usb/class/cdc-wdm.c
+@@ -496,7 +496,9 @@
+ 	struct wdm_device *desc = file->private_data;
  
- 	schedule_work(&reg_regdb_work);
- }
+ 	wait_event(desc->wait, !test_bit(WDM_IN_USE, &desc->flags));
+-	if (desc->werr < 0)
 +
-+/* Feel free to add any other sanity checks here */
-+static void reg_regdb_size_check(void)
-+{
-+	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
-+	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
-+}
- #else
-+static inline void reg_regdb_size_check(void) {}
- static inline void reg_regdb_query(const char *alpha2) {}
- #endif /* CONFIG_CFG80211_INTERNAL_REGDB */
++	/* cannot dereference desc->intf if WDM_DISCONNECTING */
++	if (desc->werr < 0 && !test_bit(WDM_DISCONNECTING, &desc->flags))
+ 		dev_err(&desc->intf->dev, "Error in flush path: %d\n",
+ 			desc->werr);
  
-@@ -2322,6 +2330,8 @@ int __init regulatory_init(void)
- 	spin_lock_init(&reg_requests_lock);
- 	spin_lock_init(&reg_pending_beacons_lock);
+@@ -586,12 +588,13 @@
+ 	mutex_unlock(&desc->wlock);
  
-+	reg_regdb_size_check();
-+
- 	cfg80211_regdomain = cfg80211_world_regdom;
- 
- 	user_alpha2[0] = '9';
+ 	if (!desc->count) {
+-		dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
+-		kill_urbs(desc);
+ 		if (!test_bit(WDM_DISCONNECTING, &desc->flags)) {
++			dev_dbg(&desc->intf->dev, "wdm_release: cleanup");
++			kill_urbs(desc);
+ 			desc->intf->needs_remote_wakeup = 0;
+ 		} else {
+-			dev_dbg(&desc->intf->dev, "%s: device gone - cleaning up\n", __func__);
++			/* must avoid dev_printk here as desc->intf is invalid */
++			pr_debug(KBUILD_MODNAME " %s: device gone - cleaning up\n", __func__);
+ 			cleanup(desc);
+ 		}
+ 	}
 
 
