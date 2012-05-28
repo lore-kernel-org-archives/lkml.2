@@ -1,96 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab2E1NaG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 09:30:06 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:36762 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab2E1NaE (ORCPT
+	id S1753807Ab2E1Ngu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 09:36:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:33519 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752334Ab2E1Ngs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 09:30:04 -0400
-Message-ID: <4FC37DD6.7090000@web.de>
-Date: Mon, 28 May 2012 15:29:58 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Mon, 28 May 2012 09:36:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105056399"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@amd64.org>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
+Subject: RE: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
+ platform (v2)
+Thread-Topic: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
+ platform (v2)
+Thread-Index: AQHNOqBYr6jLO/PX8Ee8ZH/5SHvSCZba1ybwgARWupA=
+Date: Mon, 28 May 2012 13:36:45 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923351F4313@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
+ <20120522092354.GB18578@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
+ <20120524103023.GA27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524184947.GA28338@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
+ <20120525180102.GA27280@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE
- NIC as broken
-References: <4FBF90E5.8030800@siemens.com> <20120528123934.GB21778@redhat.com> <4FC374CD.5000509@web.de> <20120528132109.GB22623@redhat.com>
-In-Reply-To: <20120528132109.GB22623@redhat.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB9AA42A9FC14B52246BE44AE"
-X-Provags-ID: V02:K0:WHWvN7trlxhwMvIJ3P8mnVKlpgXaIvA7okSzC+/TIqj
- 8bwD4AnKDdUu5sBEdpc+hT4cTZSTyutqtomRtZtkskXi+fxVIb
- glfW36BYVEIarsKBRAQIhLt2E6tmX3fl9goo9xhDiV0sqoHz4q
- VodSlDnsAcpvJYyPYY52CNsNKvxRp1djUiow/E3xTJcLL8unmF
- /pvdV5WymyakihqsgcD8A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB9AA42A9FC14B52246BE44AE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+>> On Fri, May 25, 2012 at 05:56:56PM +0000, Liu, Jinsong wrote:
+>>> Konrad Rzeszutek Wilk wrote:
+>>>>>>>>> -static struct miscdevice mce_chrdev_device = {
+>>>>>>>>> +struct miscdevice mce_chrdev_device = {
+>>>>>>>>>  	MISC_MCELOG_MINOR,
+>>>>>>>>>  	"mcelog",
+>>>>>>>>>  	&mce_chrdev_ops,
+>>>>>>>> 
+>>>>>>>> You're still reusing those - pls, define your own 'struct
+>>>>>>>> miscdevice mce_chrdev_device' in drivers/xen/ or somewhere
+>>>>>>>> convenient and your own mce_chrdev_ops. The only thing you
+>>>>>>>> should be touching in arch/x86/.../mcheck/ is the export of
+>>>>>>>> MISC_MCELOG_MINOR. 
+>>>>>>>> 
+>>>>>>>> Thanks.
+>>>>>>> 
+>>>>>>> I'm *not* reuse native code.
+>>>>>>> I have defined 'struct miscdevice xen_mce_chrdev_device' in
+>>>>>>> drivers/xen, and I also implement xen_mce_chrdev_ops, they are
+>>>>>>> all xen-self-contained. 
+>>>>>>> 
+>>>>>>> The patch just redirect native mce_chrdev_device to
+>>>>>>> xen_mce_chrdev_device when running under xen environment.
+>>>>>>> It didn't change any native code (except just cancel
+>>>>>>> mce_chrdev_device 'static'), and will not break native logic.
+>>>>>> 
+>>>>>> Why are you doing that?
+>>>>>> 
+>>>>>> Why don't you do
+>>>>>> 
+>>>>>> 	misc_register(&xen_mce_chrdev_device);
+>>>>>> 
+>>>>>> in xen_early_init_mcelog() ?
+>>>>>> 
+>>>>>> This way there'll be no arch/x86/ dependencies at all.
+>>>>> 
+>>>>> The reason is, if we do so, it would be covered by native
+>>>>> misc_register(&mce_chrdev_device) later when native kernel init
+>>>>> (xen init first and then start native kernel).
+>>>> 
+>>>> Won't the second registration (so the original one) of the major
+>>>> fail? So the mce_log would just error out since somebody already
+>>>> registered?
+>>> 
+>>> No, that would be device confliction, the 2nd register return as
+>>> -EBUSY and un-predicetable result.
+>> 
+>> And the existing code does not actually check the 'misc_register'
+>> return value? Ah yes. Perhaps then a fix to
+>> arch/x86/kernel/cpu/mcheck/mce.c to do the proper de-registration if
+>> 'misc_register' fails?
+> 
+> It's weird. From code point of view, it indeed not check return value
+> so it should go silently. mce.c didn't do misc_deregister. 
 
-On 2012-05-28 15:21, Michael S. Tsirkin wrote:
-> On Mon, May 28, 2012 at 02:51:25PM +0200, Jan Kiszka wrote:
->> On 2012-05-28 14:39, Michael S. Tsirkin wrote:
->>> On Fri, May 25, 2012 at 11:02:13AM -0300, Jan Kiszka wrote:
->>>> According to Alexey, the T310 does not properly support INTx masking=
- as
->>>> it fails to keep the PCI_STATUS_INTERRUPT bit updated once the inter=
-rupt
->>>> is masked. Mark this adapter as broken so that pci_intx_mask_support=
-ed
->>>> won't report it as compatible.
->>>>
->>>> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->>>> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
->>>
->>>
->>> Just a thought: would be nice to have a way to discover
->>> the quirk was activated. Add an attribute so that
->>> userspace can detect and report this properly to users?
->>> Or just log a warning message ...
->>
->> pr_notice_once?
->=20
-> OK IMO.
->=20
->> A flag for userspace would be significantly more
->> complicated (and not PCI layer hands).
->=20
-> Why not? I meant e.g. an attribute in pci-sysfs.
+Have a debug it, the root cause is, 
+1). it does misc_register(&xen_mce_chrdev_device) at xen_early_init_mcelog(), it's very early stage (at xen_start_kernel), linux kernel and dd didn't start yet, so it fail to register xen_mce_chrdev_device.
+2). After native start_kernel, native mce_chrdev_device registered successfully, then it point to *native* mcelog logic.
 
-Possible. But what is the preferred way of doing this? Are there any
-precedences?
+> 
+>> 
+>> Or just set 'mce_disabled=1' in the bootup of Xen, similar to
+>> how lguest.c does it?
 
-Jan
+Have a look at lguest, it disable whole mce logic.
+Xen dom0 cannot do so since we need keep dom0 mce logic to handle memory error which belong to dom0 (hypervisor will inject vMCE to dom0 in the case).
 
 
---------------enigB9AA42A9FC14B52246BE44AE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+===================
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+Borislav and Konrad,
 
-iEYEARECAAYFAk/DfdYACgkQitSsb3rl5xSVfACfebwPII9PPy5fmXRH0rBr4fWI
-djIAoLIFcpLgdi3EJZZ23uTqdr5XvyjA
-=5cfg
------END PGP SIGNATURE-----
+An approach which basically same as you suggested but w/ slightly update, is
+1). at xen/mcelog.c, do misc_register(&xen_mce_chrdev_device) at xen_late_init_mcelog, define it as device_initcall(xen_late_init_mcelog) --> now linux dd ready, so xen mcelog divice would register successfully;
+2). at native mce.c, change 1 line from device_initcall(mcheck_init_device) to device_initcall_sync(mcheck_init_device) --> so misc_register(&mce_chrdev_device) would be blocked by xen mcelog device;
 
---------------enigB9AA42A9FC14B52246BE44AE--
+I have draft test it and works fine.
+Thought?
+
+Thanks,
+Jinsong
