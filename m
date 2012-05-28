@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab2E1DmD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 27 May 2012 23:42:03 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52123 "EHLO
+	id S1755065Ab2E1Dl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 27 May 2012 23:41:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52185 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753994Ab2E1D3j (ORCPT
+	by vger.kernel.org with ESMTP id S1754120Ab2E1D3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 27 May 2012 23:29:39 -0400
-Message-Id: <20120528031210.194028483@decadent.org.uk>
+Message-Id: <20120528031218.170012094@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 28 May 2012 04:12:55 +0100
+Date: Mon, 28 May 2012 04:13:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jonathan Nieder <jrnieder@gmail.com>,
-        Hugo Osvaldo Barrera <hugo@osvaldobarrera.com.ar>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 053/117] HID: logitech: read all 32 bits of report type bitfield
+        alan@lxorguk.ukuu.org.uk,
+        Marcus Folkesson <marcus.folkesson@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: [ 111/117] i2c: davinci: Free requested IRQ in remove
 In-Reply-To: <20120528031202.829379252@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.185
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,68 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Nieder <jrnieder@gmail.com>
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
 
-commit 44d27f7dfedd9aadc082cda31462f6600f56e4ec upstream.
+commit 9868a060ccf769c08ec378a9829137e272e9a92c upstream.
 
-On big-endian systems (e.g., Apple PowerBook), trying to use a
-logitech wireless mouse with the Logitech Unifying Receiver does not
-work with v3.2 and later kernels.  The device doesn't show up in
-/dev/input.  Older kernels work fine.
+The freed IRQ is not necessary the one requested in probe.
+Even if it was, with two or more i2c-controllers it will fails anyway.
 
-That is because the new hid-logitech-dj driver claims the device.  The
-device arrival notification appears:
-
-	20 00 41 02 00 00 00 00 00 00 00 00 00 00 00
-
-and we read the report_types bitfield (02 00 00 00) to find out what
-kind of device it is.  Unfortunately the driver only reads the first 8
-bits and treats that value as a 32-bit little-endian number, so on a
-powerpc the report type seems to be 0x02000000 and is not recognized.
-
-Even on little-endian machines, connecting a media center remote
-control (report type 00 01 00 00) with this driver loaded would
-presumably fail for the same reason.
-
-Fix both problems by using get_unaligned_le32() to read all four
-bytes, which is a little clearer anyway.  After this change, the
-wireless mouse works on Hugo's PowerBook again.
-
-Based on a patch by Nestor Lopez Casado.
-Addresses http://bugs.debian.org/671292
-
-Reported-by: Hugo Osvaldo Barrera <hugo@osvaldobarrera.com.ar>
-Inspired-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Marcus Folkesson <marcus.folkesson@gmail.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-logitech-dj.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-davinci.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index 2b56efc..d44ea58 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -26,6 +26,7 @@
- #include <linux/hid.h>
- #include <linux/module.h>
- #include <linux/usb.h>
-+#include <asm/unaligned.h>
- #include "usbhid/usbhid.h"
- #include "hid-ids.h"
- #include "hid-logitech-dj.h"
-@@ -265,8 +266,8 @@ static void logi_dj_recv_add_djhid_device(struct dj_receiver_dev *djrcv_dev,
- 		goto dj_device_allocate_fail;
- 	}
+diff --git a/drivers/i2c/busses/i2c-davinci.c b/drivers/i2c/busses/i2c-davinci.c
+index a76d85f..79b4bcb 100644
+--- a/drivers/i2c/busses/i2c-davinci.c
++++ b/drivers/i2c/busses/i2c-davinci.c
+@@ -755,7 +755,7 @@ static int davinci_i2c_remove(struct platform_device *pdev)
+ 	dev->clk = NULL;
  
--	dj_dev->reports_supported = le32_to_cpu(
--		dj_report->report_params[DEVICE_PAIRED_RF_REPORT_TYPE]);
-+	dj_dev->reports_supported = get_unaligned_le32(
-+		dj_report->report_params + DEVICE_PAIRED_RF_REPORT_TYPE);
- 	dj_dev->hdev = dj_hiddev;
- 	dj_dev->dj_receiver_dev = djrcv_dev;
- 	dj_dev->device_index = dj_report->device_index;
+ 	davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
+-	free_irq(IRQ_I2C, dev);
++	free_irq(dev->irq, dev);
+ 	iounmap(dev->base);
+ 	kfree(dev);
+ 
 
 
