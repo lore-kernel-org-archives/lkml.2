@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab2E2XeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 19:34:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60181 "EHLO
+	id S1756041Ab2E2Xe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 19:34:59 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53063 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755840Ab2E2Xd6 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755840Ab2E2Xe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 19:33:58 -0400
+	Tue, 29 May 2012 19:34:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo44TViNFcZivjr5hAu8w8kpEpUjxNAWtazhAqwwsorZbw@mail.gmail.com>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
-	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
-	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
-	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
-	<CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
-	<20120525043651.GA1391@google.com>
-	<CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
-	<CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
-	<20120525193716.GA8817@google.com>
-	<CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
-	<CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
-	<CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
-	<CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
-	<CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
-	<4FC50E09.4000204@zytor.com>
-	<CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
-	<CAErSpo4ywho4UmPVAjT7yZNROc9e1zCx+UoaS5un+v4aN=akJA@mail.gmail.com>
-	<CAE9FiQWORRjxEQwr+933ReNAAKAEoJ5B6AWte4gr33_BO+4heQ@mail.gmail.com>
-	<CAErSpo44TViNFcZivjr5hAu8w8kpEpUjxNAWtazhAqwwsorZbw@mail.gmail.com>
-Date: Tue, 29 May 2012 16:33:58 -0700
-X-Google-Sender-Auth: oMdvHtkv4Gpzsx_lPSsR9IR3lyI
-Message-ID: <CAE9FiQWmXLV4QsPP3Zab4iFogh1Lb6hxOwc8YnGyE5uTmwxB6Q@mail.gmail.com>
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20120529.192438.1186076504142998357.davem@davemloft.net>
+References: <1338333250-11974-1-git-send-email-devendra.aaru@gmail.com>
+	<20120529.191810.2141710455829509698.davem@davemloft.net>
+	<CAHdPZaMfSKRzT4MN-5g3c1bOah4CB80aWyVhGKu1Z5AXTj2uTw@mail.gmail.com>
+	<20120529.192438.1186076504142998357.davem@davemloft.net>
+Date: Wed, 30 May 2012 05:04:57 +0530
+Message-ID: <CAHdPZaOsMKHzT_JGnHtJE11ibtzb-hbHVp=tmuv_nL6Dnamwyw@mail.gmail.com>
+Subject: Re: [PATCH] r6040: disable pci device if the subsequent calls (after
+ pci_enable_device) fails
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: florian@openwrt.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 4:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> I don't understand this one at all.  It looks like you mashed together
-> at least two changes: (1) prefer I/O space above 64K if available, and
-> (2) mark secondary bus resources with IORESOURCE_IO_32 when the P2P
-> bridge I/O window address decode type is PCI_IO_RANGE_TYPE_32 and use
-> that to limit allocations.
+Hello David,
 
-let drop the one about IORESOURCE_IO_32.
+On Wed, May 30, 2012 at 4:54 AM, David Miller <davem@davemloft.net> wrote:
+> From: "devendra.aaru" <devendra.aaru@gmail.com>
+> Date: Wed, 30 May 2012 04:52:08 +0530
+>
+>> Hello David,
+>>
+>>
+>> OK, so may i put these two changes into one and send it? or you want
+>> it to be two patches?
+>
+> It's up to you.
 
-that should only fix one reallocation bug in theory out of x86.
+OK, i will be sending two patches shortly(with sequence numbers (git
+format-patch -s -n)).
 
-Thanks
+This time i have done compile testing and got no warnings.
 
-Yinghai
+Thanks,
+Devendra.
