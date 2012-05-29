@@ -1,144 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2E2XFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 19:05:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20131 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab2E2XF3 (ORCPT
+	id S1755918Ab2E2XIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 19:08:04 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15929 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab2E2XID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 19:05:29 -0400
-X-Authority-Analysis: v=2.0 cv=PqgRnnw3 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=75BMjhiLndgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=3nbZYyFuAAAA:8 a=82JP02mcxBk9sS2aJ_AA:9 a=PUjeQqilurYA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338332727.13348.301.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH -tip 2/9] ftrace/x86-64: support SAVE_REGS feature
- on x86-64
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Tue, 29 May 2012 19:05:27 -0400
-In-Reply-To: <20120529124905.9191.91563.stgit@localhost.localdomain>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-	 <20120529124905.9191.91563.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Tue, 29 May 2012 19:08:03 -0400
+Message-ID: <4FC556D1.5060105@cavium.com>
+Date: Tue, 29 May 2012 16:08:01 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Daniel Walker <dwalker@fifo99.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Cavium Linux EDAC Drivers?
+References: <20120529221556.GA6503@fifo99.com> <4FC54F41.4080408@cavium.com> <20120529225551.GA7575@fifo99.com>
+In-Reply-To: <20120529225551.GA7575@fifo99.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-OriginalArrivalTime: 29 May 2012 23:08:02.0016 (UTC) FILETIME=[E57B6600:01CD3DEF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 21:49 +0900, Masami Hiramatsu wrote:
-> Add register saving/restoring sequence in ftrace_caller
-> on x86-64 for enabling SAVE_REGS feature.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
-> 
->  arch/x86/include/asm/ftrace.h |    4 ++++
->  arch/x86/kernel/entry_64.S    |   38 +++++++++++++++++++++++++++++++++-----
->  2 files changed, 37 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index 18d9005..ffb9564 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -32,6 +32,10 @@
->  #define MCOUNT_ADDR		((long)(mcount))
->  #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
->  
-> +#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
-> +#define ARCH_SUPPORTS_FTRACE_SAVE_REGS 1
-> +#endif
-> +
->  #ifndef __ASSEMBLY__
->  extern void mcount(void);
->  extern int modifying_ftrace_code;
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 320852d..6d0545b 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -73,21 +73,44 @@ ENTRY(mcount)
->  	retq
->  END(mcount)
->  
-> +	.macro MCOUNT_SAVE_ALL
-> +	SAVE_ARGS (RSP-ORIG_RAX)
-> +	SAVE_REST
-> +	/* Adjust eflags, rsp and rip */
-> +	movq RSP(%rsp), %rdx
-> +	movq %rdx, EFLAGS(%rsp)
-> +	leaq SS+8(%rsp), %rdx
-> +	movq %rdx, RSP(%rsp)
-> +	movq SS(%rsp), %rdi
-> +	subq $MCOUNT_INSN_SIZE, %rdi
-> +	movq %rdi, RIP(%rsp)
-> +	.endm
-> +
-> +	.macro MCOUNT_RESTORE_ALL
-> +	/* store eflags into regs->rsp */
-> +	movq EFLAGS(%rsp), %rax
-> +	movq %rax, RSP(%rsp)
-> +	RESTORE_REST
-> +	RESTORE_ARGS 1, (RSP-ORIG_RAX)
-> +	.endm
-> +
->  ENTRY(ftrace_caller)
-> +	CFI_STARTPROC	simple
-> +	pushfq_cfi
->  	cmpl $0, function_trace_stop
-> -	jne  ftrace_stub
-> +	jne  ftrace_exit
->  
-> -	MCOUNT_SAVE_FRAME
-> +	MCOUNT_SAVE_ALL
+On 05/29/2012 03:55 PM, Daniel Walker wrote:
+> On Tue, May 29, 2012 at 03:35:45PM -0700, David Daney wrote:
+>> On 05/29/2012 03:15 PM, Daniel Walker wrote:
+>>> Hi,
+>>>
+>>> Lets try this again.. Please respond as a Linux community maintainer..
+>>
+>> If that is the case, those types of requests should go to a public
+>> mailing list.  This one time I will make an exception and answer...
+>
+> Ok, we're on a mailing list now are you happy?
 
-No! Please do not make ftrace save all regs for everyone. This is
-critical. This will slow down function tracing even more. We do not need
-to save all regs for every function call, unless it is asked for.
+Yes.  And by doing it this way, you might receive useful information 
+from others as well.
 
-It should only save all regs if the ftrace_ops that is registered asked
-for it. I had code that actually does that. I can merge your patches
-with them if you would like.
+>
+>>>
+>>> Does Cavium mips or ARM processors have EDAC drivers that you know of?
+>>> If not, does the hardware have the ability to support such a driver?
+>>>
+>>
+>> OCTEON has EDAC hardware.  The kernel.org kernel doesn't have any
+>> software support for this.
+>
+> Do you have a driver waiting to be submitted?
 
-Thanks,
+No, but that isn't to say that this will always be the case.
 
--- Steve
+> What about your arm platforms?
+>
 
->  
-> -	movq 0x38(%rsp), %rdi
->  	movq 8(%rbp), %rsi
-> -	subq $MCOUNT_INSN_SIZE, %rdi
-> +	movq %rsp, %rdx
->  
->  GLOBAL(ftrace_call)
->  	call ftrace_stub
->  
-> -	MCOUNT_RESTORE_FRAME
-> +	MCOUNT_RESTORE_ALL
->  
-> +	popfq_cfi
->  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
->  GLOBAL(ftrace_graph_call)
->  	jmp ftrace_stub
-> @@ -95,6 +118,11 @@ GLOBAL(ftrace_graph_call)
->  
->  GLOBAL(ftrace_stub)
->  	retq
-> +
-> +ftrace_exit:
-> +	popfq_cfi
-> +	retq
-> +	CFI_ENDPROC
->  END(ftrace_caller)
->  
->  #else /* ! CONFIG_DYNAMIC_FTRACE */
+I don't know.
 
-
+David Daney
