@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab2E2OCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:02:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51571 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab2E2OC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:02:29 -0400
-Message-ID: <4FC4D6E2.9060501@redhat.com>
-Date: Tue, 29 May 2012 11:02:10 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753476Ab2E2ODJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:03:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:41464 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab2E2ODG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 10:03:06 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-References: <1337358773-6919-38-git-send-email-mchehab@redhat.com> <1337854460-25191-1-git-send-email-mchehab@redhat.com> <20120524105604.GC27063@aftab.osrc.amd.com> <4FBE5E1D.7070804@redhat.com> <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com>
-In-Reply-To: <20120529115851.GB29157@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
+In-Reply-To: <4FC48570.404@panasas.com>
+References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
+	<4FC48570.404@panasas.com>
+Date: Tue, 29 May 2012 16:03:05 +0200
+Message-ID: <CAB9VWqAN40ObJ9=CMP1BvupfGJN9NYTuWLTpcrsBwTd6ifz=-A@mail.gmail.com>
+Subject: Re: atime and filesystems with snapshots (especially Btrfs)
+From: Alexander Block <ablock84@googlemail.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 29-05-2012 08:58, Borislav Petkov escreveu:
-> On Thu, May 24, 2012 at 03:00:53PM -0300, Mauro Carvalho Chehab wrote:
-
-<ironic comments skipped>
- 
->> the address and address mask is needed, as most memory controllers can't point
->> to a single address, because the register that stores the address doesn't have
->> enough bits to store the full content of the instruction pointer register, or because
->> of some other internal device issues.
->>
->> So, two different "addresses" could atually point to the same group of transistors
->> inside a DIMM.
->>
->> Also, higher values of grains may affect the error statistics. For example, i3200_edac
->> driver has a grain that can be 64 MB, while other devices have a grain of 1.
-> 
-> I think you mean
-> 
-> #define I3200_TOM_SHIFT         26      /* 64MiB grain */
-
-> 
-> which is the Top-Of-Memory shift value. How is that grain in the sense of error
-> granularity I can't fathom.
-> 
-
-It seems you were unable to read the comments at the function that fills dimm->grain:
-
-	/*
-	 * The dram rank boundary (DRB) reg values are boundary addresses
-	 * for each DRAM rank with a granularity of 64MB.  DRB regs are
-	 * cumulative; the last one will contain the total memory
-	 * contained in all ranks.
-	 */
-	for (i = 0; i < mci->nr_csrows; i++) {
-		unsigned long nr_pages;
-		struct csrow_info *csrow = &mci->csrows[i];
-
-		nr_pages = drb_to_nr_pages(drbs, stacked,
-			i / I3200_RANKS_PER_CHANNEL,
-			i % I3200_RANKS_PER_CHANNEL);
-
-		if (nr_pages == 0)
-			continue;
-
-		for (j = 0; j < nr_channels; j++) {
-			struct dimm_info *dimm = csrow->channels[j].dimm;
-
-			dimm->nr_pages = nr_pages / nr_channels;
-			dimm->grain = nr_pages << PAGE_SHIFT;
-	...
-
-
-Assuming that errors are given by a Gausian distribution, the PDF parameters (mean, standard
-derivation) when grain is equal to 1 is completely different than when grain is 64 MB.
-
-That means that any correlation function used by an stochastic process analysis
-will need to take the grain into account, in order to detect if a series of errors
-are due to a random noise, or if they're due to a physical problem at the device.
-
-> Oh, and by the way, this define is unused and can be removed.
-
-Feel free to submit a patch for it.
-
-Regards,
-Mauro
+On Tue, May 29, 2012 at 10:14 AM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+>
+> Sounds like a real problem. I would suggest a few remedies.
+> 1. Make a filesystem persistent parameter that says noatime/relatime/atime
+>   So the default if not specified on mount is taken as a property of
+>   the FS (mkfs can set it)
+That would be possible. But again, I'm not sure if it is allowed for
+one fs type to
+differ from all the other filesystems in its default behavior.
+> 2. The snapshot program should check and complain if it is on, and recommend
+>   an off. Since the problem only starts with a snapshot.
+That would definitely cause awareness for the problem and many people would
+probably switch to noatime on mount.
+> 3. If space availability drops under some threshold, disable atime. As you said
+>   this is catastrophic in this case. So user can always search and delete files.
+>   In fact if the IO was only because of atime, it should be a soft error, warned,
+>   and ignored.
+It would be hard to determine a good threshold. This really depends on the way
+snapshots are used.
+>
+> But perhaps the true solution is to put atime on a side table, so only the atime
+> info gets COW and not the all MetaData
+This would definitely reduce the problem to a minimum. But it may be harder
+to implement as it sounds. You would either have to keep 2 trees per subvolume
+(one for the fs and one for atime) or share one tree for all subvols.
+I don't think
+2 trees per subvolume would be acceptable, but I'm not sure. A shared tree
+would require to implement some kind of custom refcounting for the items, as
+changes to one fs tree should not change atime of the other and thus create
+new items on demand. It would probably also require snapshot origin tracking,
+because on a freshly snapshotted subvolume, no atime entries would exist at
+all and must be read from the parent/origin.
+>
+> Just my $0.017
+> Boaz
+>
+>> Alex.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
