@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755714Ab2E2Tb6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 15:31:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57378 "EHLO mx1.redhat.com"
+	id S1755741Ab2E2Tcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 15:32:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56435 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755672Ab2E2Tbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 15:31:52 -0400
-Date: Tue, 29 May 2012 21:30:08 +0200
+	id S1755531Ab2E2Tbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 15:31:33 -0400
+Date: Tue, 29 May 2012 21:29:47 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -15,8 +15,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120529193008.GG8057@redhat.com>
+Subject: [PATCH 6/7] uprobes: teach handle_swbp() to rely on "is_swbp"
+	rather than uprobes_srcu
+Message-ID: <20120529192947.GF8057@redhat.com>
 References: <20120529192721.GA8048@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,116 +28,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kill the no longer needed uprobes_srcu/uprobe_srcu_id code.
+Currently handle_swbp() assumes that it can't race with unregister,
+so it roughly does:
 
-It doesn't really work anyway. synchronize_srcu() can only synchronize
-with the code "inside" the srcu_read_lock/srcu_read_unlock section,
-while uprobe_pre_sstep_notifier() does srcu_read_lock() _after_ we
-already hit the breakpoint.
+	if (find_uprobe(vaddr))
+		process_uprobe();
+	else
+		send_sig(SIGTRAP);
 
-I guess this probably works "in practice". synchronize_srcu() is slow
-and it implies synchronize_sched(), and the probed task enters the non-
-preemptible section at the start of exception handler. Still this is not
-right at least in theory, and task->uprobe_srcu_id blows task_struct.
+This relies on the not-really-working uprobes_srcu code we are going
+to remove, see the next patch.
+
+With this patch we rely on the result of is_swbp_at_addr(bp_vaddr)
+if find_uprobe() fails.
+
+If is_swbp == 1, then we hit the normal int3, we should send SIGTRAP.
+
+If is_swbp == 0, we raced with uprobe_unregister(), we simply restart
+this insn again.
+
+The "difficult" case is is_swbp == -EFAULT, when we can't read this
+memory. In this case I think we should restart too, and this is more
+correct compared to the current code which sends SIGTRAP.
+
+Ignoring ENOMEM/etc from get_user_pages(), this can only happen if
+another thread unmaps this memory before find_active_uprobe() takes
+mmap_sem. It would be better to pretend it was unmapped before this
+insn was executed, restart, and get SIGSEGV.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/sched.h   |    1 -
- kernel/events/uprobes.c |   22 +++-------------------
- 2 files changed, 3 insertions(+), 20 deletions(-)
+ kernel/events/uprobes.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f45c0b2..411827e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1574,7 +1574,6 @@ struct task_struct {
- #endif
- #ifdef CONFIG_UPROBES
- 	struct uprobe_task *utask;
--	int uprobe_srcu_id;
- #endif
- };
- 
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 1f02e3b..8c5e043 100644
+index a2ed82b..1f02e3b 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -38,7 +38,6 @@
- #define UINSNS_PER_PAGE			(PAGE_SIZE/UPROBE_XOL_SLOT_BYTES)
- #define MAX_UPROBE_XOL_SLOTS		UINSNS_PER_PAGE
+@@ -1530,14 +1530,26 @@ static void handle_swbp(struct pt_regs *regs)
+ 	struct uprobe_task *utask;
+ 	struct uprobe *uprobe;
+ 	unsigned long bp_vaddr;
+-	int is_swbp;
++	int uninitialized_var(is_swbp);
  
--static struct srcu_struct uprobes_srcu;
- static struct rb_root uprobes_tree = RB_ROOT;
+ 	bp_vaddr = uprobe_get_swbp_addr(regs);
+ 	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
  
- static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
-@@ -738,20 +737,14 @@ remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, loff_t vaddr)
- }
- 
- /*
-- * There could be threads that have hit the breakpoint and are entering the
-- * notifier code and trying to acquire the uprobes_treelock. The thread
-- * calling delete_uprobe() that is removing the uprobe from the rb_tree can
-- * race with these threads and might acquire the uprobes_treelock compared
-- * to some of the breakpoint hit threads. In such a case, the breakpoint
-- * hit threads will not find the uprobe. The current unregistering thread
-- * waits till all other threads have hit a breakpoint, to acquire the
-- * uprobes_treelock before the uprobe is removed from the rbtree.
-+ * There could be threads that have already hit the breakpoint. They
-+ * will recheck the current insn and restart if find_uprobe() fails.
-+ * See find_active_uprobe().
-  */
- static void delete_uprobe(struct uprobe *uprobe)
- {
- 	unsigned long flags;
- 
--	synchronize_srcu(&uprobes_srcu);
- 	spin_lock_irqsave(&uprobes_treelock, flags);
- 	rb_erase(&uprobe->rb_node, &uprobes_tree);
- 	spin_unlock_irqrestore(&uprobes_treelock, flags);
-@@ -1388,9 +1381,6 @@ void uprobe_free_utask(struct task_struct *t)
- {
- 	struct uprobe_task *utask = t->utask;
- 
--	if (t->uprobe_srcu_id != -1)
--		srcu_read_unlock_raw(&uprobes_srcu, t->uprobe_srcu_id);
--
- 	if (!utask)
+ 	if (!uprobe) {
+-		/* No matching uprobe; signal SIGTRAP. */
+-		send_sig(SIGTRAP, current, 0);
++		if (is_swbp > 0) {
++			/* No matching uprobe; signal SIGTRAP. */
++			send_sig(SIGTRAP, current, 0);
++		} else {
++			/*
++			 * Either we raced with uprobe_unregister() or we can't
++			 * access this memory. The latter is only possible if
++			 * another thread plays with our ->mm. In both cases
++			 * we can simply restart. If this vma was unmapped we
++			 * can pretend this insn was not executed yet and get
++			 * the (correct) SIGSEGV after restart.
++			 */
++			instruction_pointer_set(regs, bp_vaddr);
++		}
  		return;
- 
-@@ -1408,7 +1398,6 @@ void uprobe_free_utask(struct task_struct *t)
- void uprobe_copy_process(struct task_struct *t)
- {
- 	t->utask = NULL;
--	t->uprobe_srcu_id = -1;
- }
- 
- /*
-@@ -1513,9 +1502,6 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	} else {
- 		*is_swbp = -EFAULT;
  	}
--
--	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
--	current->uprobe_srcu_id = -1;
- 	up_read(&mm->mmap_sem);
  
- 	return uprobe;
-@@ -1656,7 +1642,6 @@ int uprobe_pre_sstep_notifier(struct pt_regs *regs)
- 		utask->state = UTASK_BP_HIT;
- 
- 	set_thread_flag(TIF_UPROBE);
--	current->uprobe_srcu_id = srcu_read_lock_raw(&uprobes_srcu);
- 
- 	return 1;
- }
-@@ -1691,7 +1676,6 @@ static int __init init_uprobes(void)
- 		mutex_init(&uprobes_mutex[i]);
- 		mutex_init(&uprobes_mmap_mutex[i]);
- 	}
--	init_srcu_struct(&uprobes_srcu);
- 
- 	return register_die_notifier(&uprobe_exception_nb);
- }
 -- 
 1.5.5.1
 
