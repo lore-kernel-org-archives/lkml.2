@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab2E2Wjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 18:39:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753189Ab2E2Wjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 18:39:36 -0400
-Date: Tue, 29 May 2012 18:39:23 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Russ Anderson <rja@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rja@americas.sgi.com
-Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on
- multi-processor systems
-Message-ID: <20120529223923.GF32472@redhat.com>
-References: <20120524144229.GA27713@sgi.com>
- <20120529175352.GA31524@redhat.com>
- <20120529191935.GB29726@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120529191935.GB29726@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753910Ab2E2WpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 18:45:00 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:15400 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752176Ab2E2Wo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 18:44:58 -0400
+Message-ID: <1338331496.2722.18.camel@lorien2>
+Subject: RE: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
+From: Shuah Khan <shuahkhan@gmail.com>
+Reply-To: shuahkhan@gmail.com
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: shuahkhan@gmail.com, Toshi Kani <toshi.kani@hp.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "liuj97@gmail.com" <liuj97@gmail.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 29 May 2012 16:44:56 -0600
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC639@ORSMSX101.amr.corp.intel.com>
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
+	 <1337880880.2718.68.camel@lorien2>
+	 <1337888931.16730.393.camel@misato.fc.hp.com>
+	 <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC639@ORSMSX101.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 02:19:35PM -0500, Russ Anderson wrote:
-> On Tue, May 29, 2012 at 01:53:53PM -0400, Don Zickus wrote:
-> > On Thu, May 24, 2012 at 09:42:29AM -0500, Russ Anderson wrote:
-> > > When multiple cpus on a multi-processor system call dump_stack()
-> > > at the same time, the backtrace lines get intermixed, making 
-> > > the output worthless.  Add a lock so each cpu stack dump comes
-> > > out as a coherent set.
-> > > 
-> > > For example, when a multi-processor system is NMIed, all of the
-> > > cpus call dump_stack() at the same time, resulting in output for
-> > > all of cpus getting intermixed, making it impossible to tell what
-> > > any individual cpu was doing.  With this patch each cpu prints
-> > > its stack lines as a coherent set, so one can see what each cpu
-> > > was doing.
+On Tue, 2012-05-29 at 22:27 +0000, Moore, Robert wrote:
+> > > 2. Calling acpi_get_handle() on _OST prior to executing the method.
+> > > This will ensure that this method only gets run if it is present
+> > under
+> > > the device in question. Coupled with what is already outlined in #1
+> > > above, now _OST gets executed only when it is defined under the
+> > device object.
+> > > Example case in the existing code, please see
+> > acpi_processor_ppc_ost()
+> > > implementation.
 > > 
-> > For this particular test case, it sounds like you are doing what
-> > trigger_all_cpu_backtrace() is doing?  It doesn't solve the general
-> > problem, but probably your particular usage?
+> > Yes, I did look at acpi_processor_ppc_ost() when I implemented the
+> > function.  I believe calling acpi_get_handle() is redundant since
+> > acpi_ns_get_node() is called within acpi_evaluate_object() as well.
+> > acpi_evaluate_object() simply returns with AE_NOT_FOUND when _OST
+> > method does not exist.
+> >
 > 
-> In this case, I am just using the hardware NMI, which sends the NMI
-> signal to each logical cpu.  Since each cpu receives the NMI at nearly
-> the exact same time, they end up in dump_stack() at the same time.
-> Without some form of locking, trace lines from different cpus end
-> up intermixed, making it impossible to tell what any individual 
-> cpu was doing.
+> This is correct. If _OST does not exist, AE_NOT_FOUND will be returned from evaluate_object.
 
-I forgot the original reasons for having the NMI go to each CPU instead of
-just the boot CPU (commit 78c06176), but it seems like if you revert that
-patch and have the nmi handler just call trigger_all_cpu_backtrace()
-instead (which does stack trace locking for pretty output), that would
-solve your problem, no?  That locking is safe because it is only called in
-the NMI context.
+Yes that is correct from the ACPI Spec and implementation point of view.
+My thinking is that a call to acpi_get_handle() might not penalize the
+OS as much as acpi_evaluate_object() would on systems that don't
+actually implement _OST. In other words, acpi_get_handle() might not go
+as deep as acpi_evaluate_object() would go into the ACPI layer, hence
+might be a safer measure on platforms that don't actually implement this
+optional method under all devices included in this patch set.
 
-Whereas the lock you are proposing can be called in a mixture of NMI and
-IRQ which could cause deadlocks I believe.
+-- Shuah
 
-Cheers,
-Don
+
