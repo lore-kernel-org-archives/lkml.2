@@ -1,109 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab2E2Tee (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 15:34:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53048 "EHLO mx1.redhat.com"
+	id S1755378Ab2E2TmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 15:42:23 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40960 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755267Ab2E2Ta6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 15:30:58 -0400
-Date: Tue, 29 May 2012 21:29:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] uprobes: teach find_active_uprobe() to provide the
-	"is_swbp" info
-Message-ID: <20120529192914.GD8057@redhat.com>
-References: <20120529192721.GA8048@redhat.com>
+	id S1754581Ab2E2TmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 15:42:22 -0400
+Message-ID: <4FC52612.5060006@parallels.com>
+Date: Tue, 29 May 2012 23:40:02 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120529192721.GA8048@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-14-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290932530.4666@router.home> <4FC4F1A7.2010206@parallels.com> <alpine.DEB.2.00.1205291101580.6723@router.home> <4FC501E9.60607@parallels.com> <alpine.DEB.2.00.1205291222360.8495@router.home> <4FC506E6.8030108@parallels.com> <alpine.DEB.2.00.1205291424130.8495@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205291424130.8495@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.255.67.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A separate patch to simplify the review, and for the documentation.
+On 05/29/2012 11:26 PM, Christoph Lameter wrote:
+> On Tue, 29 May 2012, Glauber Costa wrote:
+>
+>> But we really need a page to be filled with objects from the same cgroup, and
+>> the non-shared objects to be accounted to the right place.
+>
+> No other subsystem has such a requirement. Even the NUMA nodes are mostly
+> suggestions and can be ignored by the allocators to use memory from other
+> pages.
 
-The patch adds another "int *is_swbp" argument to find_active_uprobe(),
-so far its only caller doesn't use this info.
+Of course it does. Memcg itself has such a requirement. The collective 
+set of processes needs to have the pages it uses accounted to it, and 
+never go over limit.
 
-With this patch find_active_uprobe() additionally does:
+>> Otherwise, I don't think we can meet even the lighter of isolation guarantees.
+>
+> The approach works just fine with NUMA and cpusets. Isolation is mostly
+> done on the per node boundaries and you already have per node statistics.
 
-	- if find_vma() + ->vm_start check fails, *is_swbp = -EFAULT
+I don't know about cpusets in details, but at least with NUMA, this is 
+not an apple-to-apple comparison. a NUMA node is not meant to contain 
+you. A container is, and that is why it is called a container.
 
-	- otherwise, if valid_vma() + find_uprobe() fails, it holds
-	  the result of is_swbp_at_addr(), can be negative too. The
-	  latter is only possible if we raced with another thread
-	  which did munmap/etc after we hit this bp.
+NUMA just means what is the *best* node to put my memory.
+Now, if you actually say, through you syscalls "this is the node it 
+should live in", then you have a constraint, that to the best of my 
+knowledge is respected.
 
-IOW. If find_active_uprobe(&is_swbp) returns NULL, the caller can
-look at is_swbp to figure out whether the current insn is bp or not,
-or detect the race with another thread if it is negative.
-
-Note: I think that performance-wise this change is fine. This adds
-is_swbp_at_addr(), but only if we raced with uprobe_unregister() or
-if we hit the "normal" int3 but this mm has uprobes as well. And even
-in this case the slow read_opcode() path is very unlikely, this insn
-recently triggered do_int3(), __copy_from_user_inatomic() shouldn't
-fail in the likely case.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/events/uprobes.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index eaf4d55..ee3df70 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1489,7 +1489,7 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
- 	return false;
- }
- 
--static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
-+static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- {
- 	struct mm_struct *mm = current->mm;
- 	struct uprobe *uprobe = NULL;
-@@ -1497,7 +1497,6 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
- 
- 	down_read(&mm->mmap_sem);
- 	vma = find_vma(mm, bp_vaddr);
--
- 	if (vma && vma->vm_start <= bp_vaddr) {
- 		if (valid_vma(vma, false)) {
- 			struct inode *inode;
-@@ -1508,6 +1507,11 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
- 			offset += (vma->vm_pgoff << PAGE_SHIFT);
- 			uprobe = find_uprobe(inode, offset);
- 		}
-+
-+		if (!uprobe)
-+			*is_swbp = is_swbp_at_addr(mm, bp_vaddr);
-+	} else {
-+		*is_swbp = -EFAULT;
- 	}
- 
- 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
-@@ -1526,9 +1530,10 @@ static void handle_swbp(struct pt_regs *regs)
- 	struct uprobe_task *utask;
- 	struct uprobe *uprobe;
- 	unsigned long bp_vaddr;
-+	int is_swbp;
- 
- 	bp_vaddr = uprobe_get_swbp_addr(regs);
--	uprobe = find_active_uprobe(bp_vaddr);
-+	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
- 
- 	if (!uprobe) {
- 		/* No matching uprobe; signal SIGTRAP. */
--- 
-1.5.5.1
-
-
+Now isolation here, is done in the container boundary. (cgroups, to be 
+generic).
