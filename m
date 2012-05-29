@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab2E1X71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 19:59:27 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:40934 "EHLO
+	id S1751505Ab2E2AAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 20:00:23 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:41344 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2E1X70 (ORCPT
+	with ESMTP id S1751082Ab2E2AAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 19:59:26 -0400
-X-AuditID: cbfee61a-b7fe76d0000023f5-33-4fc4115c97fa
+	Mon, 28 May 2012 20:00:13 -0400
+X-AuditID: cbfee61a-b7fe76d0000023f5-fb-4fc4118ccaa0
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Hans-Christian Egtvedt'" <egtvedt@samfundet.no>,
+        "'Christian Gmeiner'" <christian.gmeiner@gmail.com>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH v2 1/3][RESEND] backlight: atmel-pwm-bl: use devm_ functions
-Date: Tue, 29 May 2012 08:59:24 +0900
-Message-id: <001b01cd3d2d$e84aeee0$b8e0cca0$%han@samsung.com>
+Subject: [PATCH v2 2/3][RESEND] backlight: ot200_bl: use devm_ functions
+Date: Tue, 29 May 2012 09:00:12 +0900
+Message-id: <001c01cd3d2e$0505f980$0f11ec80$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac09LefqJwF+o3IwSsCV8uzQz9GVRg==
+Thread-index: Ac09LgTpC8JRVfwgSUSLVwSYjO0zbA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jQd0YwSP+BjffyFpc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6Mrbf/sxWs5qo4tGMWawPjTY4uRk4OCQETiZd/lzNB2GISF+6t
-	Z+ti5OIQEpjOKDHp21UmCGc2k0T/rgXMIFVsAmoSX74cZgexRQQiJJpnzGIGKWIWaGSU2Ltz
-	AWsXIweHsICPxNePESA1LAKqEnvvrQDbwCtgK7Fk7wsoW1Dix+R7LCA2s4CWxPqdx5kgbHmJ
-	zWveMoOMkRBQl3j0VxdilZ7E8gOHWSFKRCT2vXjHOIFRYBaSSbOQTJqFZNIsJC0LGFlWMYqm
-	FiQXFCel5xrqFSfmFpfmpesl5+duYgQH5jOpHYwrGywOMQpwMCrx8O5Yc9hfiDWxrLgy9xCj
-	BAezkgjv+36gEG9KYmVValF+fFFpTmrxIUZpDhYlcV67xTv8hQTSE0tSs1NTC1KLYLJMHJxS
-	DYzeS9WWtBSWHAvuv5TC2L4muLHIrT4hIYE7eqF8Rkbeh3vLH836Xj/rVE1O/pRN+ecNC3kz
-	EsKT1a/dd8uJKDTzneS/4Mnsd3ZxjpY8Fxtk1vYVveZseqr8qaVh2vJunV9eTX4yW2PmhYvK
-	b2Nl6L+oItnLL71y7pfluz8kHPyTXyd+rVg5V4mlOCPRUIu5qDgRAJoA5ABIAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jAd0ewSP+Bo+e61hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MSTvPsxR84au40RXZwLidp4uRk0NCwESi6c18RghbTOLCvfVs
+	XYxcHEICixglFlxfxQLhzGaS2D3xDFgVm4CaxJcvh9lBbBGBCInmGbOYQYqYBZoZJVYu3whW
+	JCzgIbHi3SQwm0VAVWLmjdNADRwcvAK2Ens6tEHCvAKCEj8m32MBsZkFtCTW7zzOBGHLS2xe
+	85YZpFxCQF3i0V9diFV6EgtPHGeGKBGR2PfiHeMERoFZSCbNQjJpFpJJs5C0LGBkWcUomlqQ
+	XFCclJ5rqFecmFtcmpeul5yfu4kRHJbPpHYwrmywOMQowMGoxMO7Y81hfyHWxLLiytxDjBIc
+	zEoivO/7gUK8KYmVValF+fFFpTmpxYcYpTlYlMR57Rbv8BcSSE8sSc1OTS1ILYLJMnFwSjUw
+	Olqz1yd/KE9htXcvPFXbyGPCxBtzejPrkSde6zawiPusOnyZ74BpxY63zd2TXFivcSz+UZpQ
+	JRzzMbCBf6vU6i/533kK8rrvGZxJNWRvkuTYFiWyOk5jyQUfPVvvzyt3neJRzrx3aJvxo7pO
+	1f85xpvOsiTsETlzx83b/3z+JN/9FxO+b21XYinOSDTUYi4qTgQAonZ5+0cCAAA=
 X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The devm_ functions allocate memory that is released when a driver
-detaches. This patch uses devm_kzalloc of these functions.
+detaches. This patch uses devm_kzalloc of these functions
 
-Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/atmel-pwm-bl.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/video/backlight/ot200_bl.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/video/backlight/atmel-pwm-bl.c b/drivers/video/backlight/atmel-pwm-bl.c
-index 0443a4f..cd64073 100644
---- a/drivers/video/backlight/atmel-pwm-bl.c
-+++ b/drivers/video/backlight/atmel-pwm-bl.c
-@@ -127,7 +127,8 @@ static int atmel_pwm_bl_probe(struct platform_device *pdev)
- 	struct atmel_pwm_bl *pwmbl;
- 	int retval;
+diff --git a/drivers/video/backlight/ot200_bl.c b/drivers/video/backlight/ot200_bl.c
+index f519d55..ef637ff 100644
+--- a/drivers/video/backlight/ot200_bl.c
++++ b/drivers/video/backlight/ot200_bl.c
+@@ -97,10 +97,10 @@ static int ot200_backlight_probe(struct platform_device *pdev)
+ 		goto error_mfgpt_alloc;
+ 	}
  
--	pwmbl = kzalloc(sizeof(struct atmel_pwm_bl), GFP_KERNEL);
-+	pwmbl = devm_kzalloc(&pdev->dev, sizeof(struct atmel_pwm_bl),
-+				GFP_KERNEL);
- 	if (!pwmbl)
- 		return -ENOMEM;
+-	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+ 	if (!data) {
+ 		retval = -ENOMEM;
+-		goto error_kzalloc;
++		goto error_devm_kzalloc;
+ 	}
  
-@@ -202,7 +203,6 @@ err_free_gpio:
- err_free_pwm:
- 	pwm_channel_free(&pwmbl->pwmc);
- err_free_mem:
--	kfree(pwmbl);
- 	return retval;
- }
+ 	/* setup gpio */
+@@ -122,16 +122,14 @@ static int ot200_backlight_probe(struct platform_device *pdev)
+ 	if (IS_ERR(bl)) {
+ 		dev_err(&pdev->dev, "failed to register backlight\n");
+ 		retval = PTR_ERR(bl);
+-		goto error_backlight_device_register;
++		goto error_devm_kzalloc;
+ 	}
  
-@@ -218,7 +218,6 @@ static int __exit atmel_pwm_bl_remove(struct platform_device *pdev)
- 	pwm_channel_free(&pwmbl->pwmc);
- 	backlight_device_unregister(pwmbl->bldev);
- 	platform_set_drvdata(pdev, NULL);
--	kfree(pwmbl);
+ 	platform_set_drvdata(pdev, bl);
  
  	return 0;
+ 
+-error_backlight_device_register:
+-	kfree(data);
+-error_kzalloc:
++error_devm_kzalloc:
+ 	cs5535_mfgpt_free_timer(pwm_timer);
+ error_mfgpt_alloc:
+ 	gpio_free(GPIO_DIMM);
+@@ -141,7 +139,6 @@ error_mfgpt_alloc:
+ static int ot200_backlight_remove(struct platform_device *pdev)
+ {
+ 	struct backlight_device *bl = platform_get_drvdata(pdev);
+-	struct ot200_backlight_data *data = bl_get_data(bl);
+ 
+ 	backlight_device_unregister(bl);
+ 
+@@ -154,7 +151,6 @@ static int ot200_backlight_remove(struct platform_device *pdev)
+ 	cs5535_mfgpt_free_timer(pwm_timer);
+ 	gpio_free(GPIO_DIMM);
+ 
+-	kfree(data);
+ 	return 0;
  }
+ 
 -- 
 1.7.1
 
