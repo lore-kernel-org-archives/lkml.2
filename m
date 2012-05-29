@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab2E2JYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:24:06 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:34949 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab2E2JYD convert rfc822-to-8bit (ORCPT
+	id S1753261Ab2E2J11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:27:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35276 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2E2J10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:24:03 -0400
+	Tue, 29 May 2012 05:27:26 -0400
+Message-ID: <4FC4967A.2040608@linaro.org>
+Date: Tue, 29 May 2012 17:27:22 +0800
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120528073609.GG24149@n2100.arm.linux.org.uk>
-References: <1317189007-23033-1-git-send-email-alim.akhtar@samsung.com>
- <CACRpkdZC8LOOLkWbrPbXN_nKaw-WvueusYDyrX48Q1Pcdwv3Aw@mail.gmail.com>
- <CAGOxZ52w1nn8g4d_vuNAzjA9qYZ1=yEfihFvSOK+pBz=ZD=J7Q@mail.gmail.com>
- <CACRpkdZO=B9gWkhvgf4Ewi1GKibFxki36uF06ispQzDK7T+4sA@mail.gmail.com> <20120528073609.GG24149@n2100.arm.linux.org.uk>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Tue, 29 May 2012 14:53:20 +0530
-Message-ID: <CAGOxZ51q8abGnHGUagi-x7VBeevTvu4Y3pGtMYwHXod9-A6AUQ@mail.gmail.com>
-Subject: Re: [PATCH V2 0/1] dmaengine/amba-pl08x: Add support for s3c64xx DMAC
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, vinod.koul@intel.com,
-        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
-        dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
+References: <1338272340.3127.1.camel@phoenix> <4FC47CEB.8090106@linaro.org> <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com> <4FC488E1.3080406@linaro.org> <20120529091556.GB18977@sortiz-mobl>
+In-Reply-To: <20120529091556.GB18977@sortiz-mobl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Hi Sam,
 
-Sorry, did not get time to rework on s3c pl080 dma patches.
-
-I will re-base s3c pl080 patches on top of your virt-dma changes.
-
-
-Regards,
-
-Alim
-
-On Mon, May 28, 2012 at 1:06 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, May 28, 2012 at 12:41:42PM +0800, Linus Walleij wrote:
->> On Thu, Dec 8, 2011 at 9:03 AM, Alim Akhtar <alim.akhtar@gmail.com> wrote:
+> On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
+>> On 29/05/12 15:53, Axel Lin wrote:
+>>> 2012/5/29 Lee Jones<lee.jones@linaro.org>:
+>>>> On 29/05/12 14:19, Axel Lin wrote:
+>>>>>
+>>>>> config AB8500_I2C_CORE is not used after commit d28f1db
+>>>>> "mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
+>>>>> Thus remove it.
+>>>>>
+>>>>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+>>>>
+>>>>
+>>>> I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
+>>>> inclusion into -rc1 this afternoon. Would you mind leaving this one?
+>>>
+>>> I don't mind.
+>>> But AFAIK, commit d28f1db is in mfd tree.
+>>> Any reason you want to send the patch to ARM-SoC instead of mfd tree.
 >>
->> > Hello Linus,
->> > sorry for the delay in submitting V3 of the pl080 patches for s3c64xx.
->> > I am very busy with my current assignment.
->> > I will come back to my patch series incorporating yours and Viresh
->> > suggestions in v3.
->>
->> Ping on this, is there something in specific that you need help on here?
->> We really need to get rid of this forked code, and it should be beneficial
->> to S3C because we have fixed a lot of bugs in the PL08x driver now,
->> plus it'll likely be a prerequisite to DT support for S3C.
->
-> So this hasn't gone in?
->
-> This is going to be painful - I have 40 odd patches to PL08x converting it
-> to virt-dma now...  It's probably going to be easier for the S3C conversion
-> to be based upon my work rather than me having to rework all those patches.
+>> I don't actually have a preference as to which tree it goes into, so
+>> long as it's sent to Mainline on or before -rc1.
+> I sent a pull request to Linus yesterday, including this commit.
+
+This is something different and wasn't part of the pull-request.
+
+Kind regards,
+Lee
+
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
