@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab2E2ILf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:11:35 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48409 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222Ab2E2ILb (ORCPT
+	id S1752703Ab2E2IPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:15:12 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:44010 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab2E2IPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:11:31 -0400
-Message-ID: <4FC48272.9040904@linux.vnet.ibm.com>
-Date: Tue, 29 May 2012 13:31:54 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Tue, 29 May 2012 04:15:03 -0400
+Message-ID: <4FC48570.404@panasas.com>
+Date: Tue, 29 May 2012 11:14:40 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: linux-kernel@vger.kernel.org, ralf@linux-mips.org, sshtylyov@mvista.com,
-        david.daney@cavium.com, nikunj@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
-        tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 08/10] SPARC: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com> <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
-In-Reply-To: <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alexander Block <ablock84@googlemail.com>
+CC: <linux-btrfs@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: atime and filesystems with snapshots (especially Btrfs)
+References: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
+In-Reply-To: <CAB9VWqAUkHH2xBXZ+edTSCffiLtEXamfugKrPZ6T0Py92kyZdA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12052908-2000-0000-0000-000007BB60C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 12:46 PM, Yong Zhang wrote:
+On 05/25/2012 06:35 PM, Alexander Block wrote:
 
-> From: Yong Zhang <yong.zhang@windriver.com>
+> Hello,
 > 
-> 1) call_function.lock used in smp_call_function_many() is just to protect
->    call_function.queue and &data->refs, cpu_online_mask is outside of the
->    lock. And it's not necessary to protect cpu_online_mask,
->    because data->cpumask is pre-calculate and even if a cpu is brougt up
->    when calling arch_send_call_function_ipi_mask(), it's harmless because
->    validation test in generic_smp_call_function_interrupt() will take care
->    of it.
+> (this is a resend with proper CC for linux-fsdevel and linux-kernel)
 > 
-> 2) For cpu down issue, stop_machine() will guarantee that no concurrent
->    smp_call_fuction() is processing.
+> I would like to start a discussion on atime in Btrfs (and other
+> filesystems with snapshot support).
 > 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: sparclinux@vger.kernel.org
-> ---
->  arch/sparc/kernel/smp_64.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+> As atime is updated on every access of a file or directory, we get
+> many changes to the trees in btrfs that as always trigger cow
+> operations. This is no problem as long as the changed tree blocks are
+> not shared by other subvolumes. Performance is also not a problem, no
+> matter if shared or not (thanks to relatime which is the default).
+> The problems start when someone starts to use snapshots. If you for
+> example snapshot your root and continue working on your root, after
+> some time big parts of the tree will be cowed and unshared. In the
+> worst case, the whole tree gets unshared and thus takes up the double
+> space. Normally, a user would expect to only use extra space for a
+> tree if he changes something.
+> A worst case scenario would be if someone took regular snapshots for
+> backup purposes and later greps the contents of all snapshots to find
+> a specific file. This would touch all inodes in all trees and thus
+> make big parts of the trees unshared.
 > 
-> diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
-> index f591598..60e745c 100644
-> --- a/arch/sparc/kernel/smp_64.c
-> +++ b/arch/sparc/kernel/smp_64.c
-> @@ -124,9 +124,9 @@ void __cpuinit smp_callin(void)
->  	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
->  		rmb();
+> relatime (which is the default) reduces this problem a little bit, as
+> it by default only updates atime once a day. This means, if anyone
+> wants to test this problem, mount with relatime disabled or change the
+> system date before you try to update atime (that's the way i tested
+> it).
 > 
-> -	ipi_call_lock_irq();
-> +	local_irq_disable();
-
-
-This looks odd. IRQs must not have been enabled at this point.
-Just remove the call to local_irq_enable() that is found a few lines above
-this line and then you won't have to add this call to local_irq_disable().
-
->  	set_cpu_online(cpuid, true);
-> -	ipi_call_unlock_irq();
-> +	local_irq_enable();
-> 
-
->  	/* idle thread is expected to have preempt disabled */
-
->  	preempt_disable();
-> @@ -1308,9 +1308,7 @@ int __cpu_disable(void)
->  	mdelay(1);
->  	local_irq_disable();
-> 
-> -	ipi_call_lock();
->  	set_cpu_online(cpu, false);
-> -	ipi_call_unlock();
-> 
->  	cpu_map_rebuild();
+> As a solution, I would suggest to make noatime the default for btrfs.
+> I'm however not sure if it is allowed in linux to have different
+> default mount options for different filesystem types. I know this
+> discussion pops up every few years (last time it resulted in making
+> relatime the default). But this is a special case for btrfs. atime is
+> already bad on other filesystems, but it's much much worse in btrfs.
 > 
 
 
+Sounds like a real problem. I would suggest a few remedies.
+1. Make a filesystem persistent parameter that says noatime/relatime/atime
+   So the default if not specified on mount is taken as a property of
+   the FS (mkfs can set it)
+2. The snapshot program should check and complain if it is on, and recommend
+   an off. Since the problem only starts with a snapshot.
+3. If space availability drops under some threshold, disable atime. As you said
+   this is catastrophic in this case. So user can always search and delete files.
+   In fact if the IO was only because of atime, it should be a soft error, warned,
+   and ignored.
 
-Regards,
-Srivatsa S. Bhat
+But perhaps the true solution is to put atime on a side table, so only the atime
+info gets COW and not the all MetaData
+
+Just my $0.017
+Boaz
+
+> Alex.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
