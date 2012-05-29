@@ -1,59 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab2E2I31 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:29:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44797 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab2E2I3Y (ORCPT
+	id S1752769Ab2E2IbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:31:08 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:39492 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab2E2IbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:29:24 -0400
-Message-ID: <4FC488E1.3080406@linaro.org>
-Date: Tue, 29 May 2012 16:29:21 +0800
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 29 May 2012 04:31:05 -0400
+Message-ID: <4FC48915.3000900@linux.vnet.ibm.com>
+Date: Tue, 29 May 2012 14:00:13 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-To: axel.lin@gmail.com
-CC: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
-References: <1338272340.3127.1.camel@phoenix> <4FC47CEB.8090106@linaro.org> <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
-In-Reply-To: <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel@vger.kernel.org, ralf@linux-mips.org, sshtylyov@mvista.com,
+        david.daney@cavium.com, nikunj@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
+        tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [UPDATED] [RFC PATCH 08/10] SPARC: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
+References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com> <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com> <4FC48272.9040904@linux.vnet.ibm.com> <20120529082732.GA4250@zhy>
+In-Reply-To: <20120529082732.GA4250@zhy>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12052908-5816-0000-0000-000002E9515E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/12 15:53, Axel Lin wrote:
-> 2012/5/29 Lee Jones<lee.jones@linaro.org>:
->> On 29/05/12 14:19, Axel Lin wrote:
->>>
->>> config AB8500_I2C_CORE is not used after commit d28f1db
->>> "mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
->>> Thus remove it.
->>>
->>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
->>
->>
->> I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
->> inclusion into -rc1 this afternoon. Would you mind leaving this one?
->
-> I don't mind.
-> But AFAIK, commit d28f1db is in mfd tree.
-> Any reason you want to send the patch to ARM-SoC instead of mfd tree.
+On 05/29/2012 01:57 PM, Yong Zhang wrote:
 
-I don't actually have a preference as to which tree it goes into, so 
-long as it's sent to Mainline on or before -rc1. This patch isn't too 
-important, but the others in the patch-set are and I'd like to keep them 
-together if possible. Unless of course Sam or Mark have any issues with 
-that. In which case I will bow down to them and do as they wish.
+> On Tue, May 29, 2012 at 01:31:54PM +0530, Srivatsa S. Bhat wrote:
+>> This looks odd. IRQs must not have been enabled at this point.
+>> Just remove the call to local_irq_enable() that is found a few lines above
+>> this line and then you won't have to add this call to local_irq_disable().
+> 
+> Yeah, have thought about it. But because I was not sure there is
+> special need to enalbe irq that early (don't know much about sparc),
+> I decided to make minor change :)
+> 
+> Since we have gotten confirmation from David, I'm sending out the
+> new version. Please check it.
+> 
+> Thanks,
+> Yong
+> 
+> ---
+> From: Yong Zhang <yong.zhang@windriver.com>
+> Date: Tue, 29 May 2012 12:56:08 +0800
+> Subject: [UPDATED] [RFC PATCH 8/10] SPARC: smp: remove call to
+>  ipi_call_lock_irq()/ipi_call_unlock_irq()
+> 
+> 1) call_function.lock used in smp_call_function_many() is just to protect
+>    call_function.queue and &data->refs, cpu_online_mask is outside of the
+>    lock. And it's not necessary to protect cpu_online_mask,
+>    because data->cpumask is pre-calculate and even if a cpu is brougt up
+>    when calling arch_send_call_function_ipi_mask(), it's harmless because
+>    validation test in generic_smp_call_function_interrupt() will take care
+>    of it.
+> 
+> 2) For cpu down issue, stop_machine() will guarantee that no concurrent
+>    smp_call_fuction() is processing.
+> 
+> And also delay irq enable to after set_cpu_online().
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: sparclinux@vger.kernel.org
 
-Kind regards,
-Lee
+> ---
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+Looks good.
+Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+
+>  arch/sparc/kernel/smp_64.c |    7 +------
+>  1 files changed, 1 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+> index f591598..781bcb1 100644
+> --- a/arch/sparc/kernel/smp_64.c
+> +++ b/arch/sparc/kernel/smp_64.c
+> @@ -103,8 +103,6 @@ void __cpuinit smp_callin(void)
+>  	if (cheetah_pcache_forced_on)
+>  		cheetah_enable_pcache();
+> 
+> -	local_irq_enable();
+> -
+>  	callin_flag = 1;
+>  	__asm__ __volatile__("membar #Sync\n\t"
+>  			     "flush  %%g6" : : : "memory");
+> @@ -124,9 +122,8 @@ void __cpuinit smp_callin(void)
+>  	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+>  		rmb();
+> 
+> -	ipi_call_lock_irq();
+>  	set_cpu_online(cpuid, true);
+> -	ipi_call_unlock_irq();
+> +	local_irq_enable();
+> 
+>  	/* idle thread is expected to have preempt disabled */
+>  	preempt_disable();
+> @@ -1308,9 +1305,7 @@ int __cpu_disable(void)
+>  	mdelay(1);
+>  	local_irq_disable();
+> 
+> -	ipi_call_lock();
+>  	set_cpu_online(cpu, false);
+> -	ipi_call_unlock();
+> 
+>  	cpu_map_rebuild();
+> 
+
