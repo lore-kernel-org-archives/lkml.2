@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754030Ab2E2Oyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:54:52 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:27021 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab2E2Oyt (ORCPT
+	id S1753996Ab2E2PHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 11:07:45 -0400
+Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:37804 "HELO
+	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753943Ab2E2PHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:54:49 -0400
-Date: Tue, 29 May 2012 10:47:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: William Dauchy <wdauchy@gmail.com>, shli@fusionio.com,
-        stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        xen-devel@lists.xensource.com, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [Xen-devel] swap: don't do discard if no discard option added
-Message-ID: <20120529144743.GG3558@phenom.dumpdata.com>
-References: <CAJ75kXbC3gqQAaghKo2i1L650dw9-vrFuEwoy4defagoyR8p4Q@mail.gmail.com>
- <20120521181558.GA7829@phenom.dumpdata.com>
- <alpine.LSU.2.00.1205261113470.2033@eggly.anvils>
+	Tue, 29 May 2012 11:07:44 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 8_WCybAVM1k7rxZepbN1UGgOMwxqQGJwjDZumE.g_cKa7SU
+ 73ohm.1FqQ.3BaJoybzI6zb9Dp4pk1jrXbyV0Ht0D5puTm6pWbQtzTdZkcLI
+ NSvO0V.UOK_tFyiFVcK5J628979R40almJpAIvJTnh6ec2QMweUaWxBWc_xo
+ ITATXaYvltIqw_3ZpLPfkIUOlkM7PTKAvyA3dWtHhPN6pSJHqmGD_G.fuX5j
+ jhC_94hdSB3hiVorDRdIJjeTvmhKnTxVpbU0Hf2ZGMyGNlRgD0wDNJtewtTb
+ oDv3NpsR5MPl7s1_pXYDP_6gF0KBBNU5odsjskvzBEw3w6qk6f_7FeNheoHp
+ 0OfZXf12G9O29PGYfbBqBHzc4EpNV5DEOikcduzektzEw1glUMe_gJecAhpm
+ vHPuVBk2XYtxTYJeziXu4GjLSC7UkXdoAZIge
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 29 May 2012 10:07:39 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
+In-Reply-To: <4FC3381C.9020608@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205290955270.4666@router.home>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120525133441.GB30527@tiehlicka.suse.cz> <alpine.DEB.2.00.1205250933170.22597@router.home> <4FC3381C.9020608@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1205261113470.2033@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 11:29:37AM -0700, Hugh Dickins wrote:
-> On Mon, 21 May 2012, Konrad Rzeszutek Wilk wrote:
-> > On Mon, May 21, 2012 at 12:30:45AM +0200, William Dauchy wrote:
-> > > Hello,
-> > > 
-> > > On Xen, when booting a guest with a system disk and an additional swap
-> > > disk I'm getting a calltrace.
-> > > xen hypervisor: 4.1.2; linux dom0: v3.3.6; linux guest: v3.2.17
-> > > When booting without a swap disk, I don't have the issue.
-> > > I also tested a guest with v3.3.6: same problem. But from v3.4-rc2,
-> > > the issue is fixed.
-> > > I cherry-picked:
-> > 
-> > > 052b198 swap: don't do discard if no discard option added
-> > 
-> > So you are asking for 052b198 to be back-ported.
-> > 
-> > I am OK with that but I think Shaohua needs to Ack that and
-> > ask Greg to put it on stable@kernel.org
-> 
-> Since that commit did indeed go into v3.4, I won't quarrel with it
-> now going to stable.
-> 
-> But the commit went in to work around the slow discard implementation
-> on OCZ Vertex II SSDs.
-> 
-> Please, could someone explain to me the meaning of the stacktrace
-> below (which is missing a WARNING or BUG line?), and how disabling
-> swap discard fixes it?
+On Mon, 28 May 2012, Glauber Costa wrote:
 
-I think I know and just narrowed down the issue this Friday.
+> > It would be best to merge these with my patchset to extract common code
+> > from the allocators. The modifications of individual slab allocators would
+> > then be not necessary anymore and it would save us a lot of work.
+> >
+> Some of them would not, some of them would still be. But also please note that
+> the patches here that deal with differences between allocators are usually the
+> low hanging fruits compared to the rest.
+>
+> I agree that long term it not only better, but inevitable, if we are going to
+> merge both.
+>
+> But right now, I think we should agree with the implementation itself - so if
+> you have any comments on how I am handling these, I'd be happy to hear. Then
+> we can probably set up a tree that does both, or get your patches merged and
+> I'll rebase, etc.
 
-William, could you please apply the patch outlined in
-https://bugzilla.redhat.com/show_bug.cgi?id=824641
-to your dom0 and see if that (so do not have 052b198 in your branch)
+Just looked over the patchset and its quite intrusive. I have never been
+fond of cgroups (IMHO hardware needs to be partitioned at physical
+boundaries) so I have not too much insight into what is going on in that
+area.
 
-> 
-> At present I see no connection (beyond the fact that the patch fixes
-> the symptom): in the absence of understanding, I have to beware that
-> the underlying issue may remain unfixed.
+The idea to just duplicate the caches leads to some weird stuff like the
+refcounting and the recovery of the arguments used during slab creation.
 
-<nods>
-> 
-> Hugh
-> 
-> > 
-> > 
-> > 
-> > > Applied and tested on top of v3.2.17 and v3.3.6, it fixes the issue.
-> > > 
-> > > Pid: 0, comm: swapper/0 Not tainted 3.2.17-x86_64 #12
-> > > Call Trace:
-> > >  <IRQ>
-> > >  [<ffffffff810919da>] ? handle_irq_event_percpu+0x3a/0x140
-> > >  [<ffffffff81091b29>] ? handle_irq_event+0x49/0x80
-> > >  [<ffffffff81094e7d>] ? handle_edge_irq+0x6d/0x120
-> > >  [<ffffffff81229088>] ? __xen_evtchn_do_upcall+0x1b8/0x280
-> > >  [<ffffffff8122a442>] ? xen_evtchn_do_upcall+0x22/0x40
-> > >  [<ffffffff8133f4fe>] ? xen_do_hypervisor_callback+0x1e/0x30
-> > >  <EOI>
-> > >  [<ffffffff810013aa>] ? hypercall_page+0x3aa/0x1000
-> > >  [<ffffffff810013aa>] ? hypercall_page+0x3aa/0x1000
-> > >  [<ffffffff8100768c>] ? xen_safe_halt+0xc/0x20
-> > >  [<ffffffff81013563>] ? default_idle+0x23/0x40
-> > >  [<ffffffff8100b073>] ? cpu_idle+0x63/0xb0
-> > >  [<ffffffff81654c43>] ? start_kernel+0x362/0x36d
-> > >  [<ffffffff81657491>] ? xen_start_kernel+0x558/0x55e
-> > > Code: 39 ed 0f 84 1c 02 00 00 44 8b 7b 48 4c 8b 73 50 41 83 ef 01 41
-> > > 21 ef 49 6b c7 70 4d 8b 64 06 40 49 69 c4 d0 00 00 00 48 8d 14 03 <48>
-> > > 8b 8a 78 02 00 00 48 89 4c 24 10 80 ba 09 02 00 00 00 74 6d
-> > > RIP  [<ffffffff8125ed66>] blkif_interrupt+0x66/0x320
-> > >  RSP <ffff88001fc03e18>
-> > > ---[ end trace dfd4e5623eb06620 ]---
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+I think it may be simplest to only account for the pages used by a slab in
+a memcg. That code could be added to the functions in the slab allocators
+that interface with the page allocators. Those are not that performance
+critical and would do not much harm.
+
+If you need per object accounting then the cleanest solution would be to
+duplicate the per node arrays per memcg (or only the statistics) and have
+the kmem_cache structure only once in memory.
+
+Its best if information is only in one place for design and for performance.
