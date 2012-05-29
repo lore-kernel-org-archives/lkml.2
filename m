@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab2E2MtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 08:49:05 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:53922 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab2E2MtA (ORCPT
+	id S1752155Ab2E2MtK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 08:49:10 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:58016 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751766Ab2E2MtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 08:49:00 -0400
-X-AuditID: b753bd60-a1c87ba000000655-67-4fc4c5b97917
-X-AuditID: b753bd60-a1c87ba000000655-67-4fc4c5b97917
+	Tue, 29 May 2012 08:49:07 -0400
+X-AuditID: b753bd60-9a705ba000007aa1-f0-4fc4c5c01765
+X-AuditID: b753bd60-9a705ba000007aa1-f0-4fc4c5c01765
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC PATCH -tip 2/9] ftrace/x86-64: support SAVE_REGS feature on
- x86-64
+Subject: [RFC PATCH -tip  3/9] ftrace/x86: Support SAVE_REGS feature on i386
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -22,8 +21,8 @@ Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 29 May 2012 21:49:06 +0900
-Message-ID: <20120529124905.9191.91563.stgit@localhost.localdomain>
+Date: Tue, 29 May 2012 21:49:13 +0900
+Message-ID: <20120529124912.9191.36919.stgit@localhost.localdomain>
 In-Reply-To: <20120529124833.9191.23007.stgit@localhost.localdomain>
 References: <20120529124833.9191.23007.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -36,94 +35,117 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Add register saving/restoring sequence in ftrace_caller
-on x86-64 for enabling SAVE_REGS feature.
+on i386 for enabling SAVE_REGS feature.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
 
- arch/x86/include/asm/ftrace.h |    4 ++++
- arch/x86/kernel/entry_64.S    |   38 +++++++++++++++++++++++++++++++++-----
- 2 files changed, 37 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/ftrace.h |    2 +
+ arch/x86/kernel/entry_32.S    |   64 +++++++++++++++++++++++++++++++++++------
+ 2 files changed, 56 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-index 18d9005..ffb9564 100644
+index ffb9564..e2f7269 100644
 --- a/arch/x86/include/asm/ftrace.h
 +++ b/arch/x86/include/asm/ftrace.h
-@@ -32,6 +32,10 @@
+@@ -32,7 +32,7 @@
  #define MCOUNT_ADDR		((long)(mcount))
  #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
  
-+#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
-+#define ARCH_SUPPORTS_FTRACE_SAVE_REGS 1
-+#endif
-+
- #ifndef __ASSEMBLY__
- extern void mcount(void);
- extern int modifying_ftrace_code;
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 320852d..6d0545b 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -73,21 +73,44 @@ ENTRY(mcount)
- 	retq
+-#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_X86_64)
++#if defined(CONFIG_DYNAMIC_FTRACE)
+ #define ARCH_SUPPORTS_FTRACE_SAVE_REGS 1
+ #endif
+ 
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index 01ccf9b..79c45a2 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1095,24 +1095,66 @@ ENTRY(mcount)
+ 	ret
  END(mcount)
  
-+	.macro MCOUNT_SAVE_ALL
-+	SAVE_ARGS (RSP-ORIG_RAX)
-+	SAVE_REST
-+	/* Adjust eflags, rsp and rip */
-+	movq RSP(%rsp), %rdx
-+	movq %rdx, EFLAGS(%rsp)
-+	leaq SS+8(%rsp), %rdx
-+	movq %rdx, RSP(%rsp)
-+	movq SS(%rsp), %rdi
-+	subq $MCOUNT_INSN_SIZE, %rdi
-+	movq %rdi, RIP(%rsp)
++	.macro FTRACE_SAVE_ALL
++	/* eflags is saved on cs */
++	subl $8, %esp		/* skip ip and orig_ax */
++	pushl %gs
++	pushl %fs
++	pushl %es
++	pushl %ds
++	pushl %eax
++	pushl %ebp
++	pushl %edi
++	pushl %esi
++	pushl %edx
++	pushl %ecx
++	pushl %ebx
++	movl 14*4(%esp), %eax	/* Load return address */
++	pushl %eax		/* Save return address (+4) */
++	subl $MCOUNT_INSN_SIZE, %eax
++	movl %eax, 12*4+4(%esp)	/* Store IP */
++	movl 13*4+4(%esp), %edx	/* Load flags */
++	movl %edx, 14*4+4(%esp)	/* Store flags */
++	movl $__KERNEL_CS, %edx
++	movl %edx, 13*4+4(%esp)
 +	.endm
 +
-+	.macro MCOUNT_RESTORE_ALL
-+	/* store eflags into regs->rsp */
-+	movq EFLAGS(%rsp), %rax
-+	movq %rax, RSP(%rsp)
-+	RESTORE_REST
-+	RESTORE_ARGS 1, (RSP-ORIG_RAX)
++	.macro FTRACE_RESTORE_ALL
++	movl 14*4+4(%esp), %eax	/* Load flags */
++	movl %eax, 13*4+4(%esp)	/* Restore flags */
++	popl %eax
++	movl %eax, 14*4(%esp)	/* Restore return address */
++	popl %ebx
++	popl %ecx
++	popl %edx
++	popl %esi
++	popl %edi
++	popl %ebp
++	popl %eax
++	popl %ds
++	popl %es
++	popl %fs
++	popl %gs
++	addl $8, %esp
 +	.endm
 +
  ENTRY(ftrace_caller)
-+	CFI_STARTPROC	simple
-+	pushfq_cfi
++	pushf	/* flags on regs->cs */
  	cmpl $0, function_trace_stop
 -	jne  ftrace_stub
 +	jne  ftrace_exit
++
++	FTRACE_SAVE_ALL
  
--	MCOUNT_SAVE_FRAME
-+	MCOUNT_SAVE_ALL
+-	pushl %eax
+-	pushl %ecx
+-	pushl %edx
+-	movl 0xc(%esp), %eax
+ 	movl 0x4(%ebp), %edx
+-	subl $MCOUNT_INSN_SIZE, %eax
++	lea  4(%esp), %ecx
  
--	movq 0x38(%rsp), %rdi
- 	movq 8(%rbp), %rsi
--	subq $MCOUNT_INSN_SIZE, %rdi
-+	movq %rsp, %rdx
- 
- GLOBAL(ftrace_call)
+ .globl ftrace_call
+ ftrace_call:
  	call ftrace_stub
  
--	MCOUNT_RESTORE_FRAME
-+	MCOUNT_RESTORE_ALL
- 
-+	popfq_cfi
+-	popl %edx
+-	popl %ecx
+-	popl %eax
++	FTRACE_RESTORE_ALL
++
++	popf
  #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- GLOBAL(ftrace_graph_call)
- 	jmp ftrace_stub
-@@ -95,6 +118,11 @@ GLOBAL(ftrace_graph_call)
- 
- GLOBAL(ftrace_stub)
- 	retq
+ .globl ftrace_graph_call
+ ftrace_graph_call:
+@@ -1122,6 +1164,10 @@ ftrace_graph_call:
+ .globl ftrace_stub
+ ftrace_stub:
+ 	ret
 +
 +ftrace_exit:
-+	popfq_cfi
-+	retq
-+	CFI_ENDPROC
++	popf
++	ret
  END(ftrace_caller)
  
  #else /* ! CONFIG_DYNAMIC_FTRACE */
