@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab2E2KGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 06:06:25 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:47220 "EHLO
+	id S1753521Ab2E2KGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 06:06:50 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:47229 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751501Ab2E2KGX (ORCPT
+	by vger.kernel.org with ESMTP id S1751501Ab2E2KGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 06:06:23 -0400
-Date: Tue, 29 May 2012 12:06:19 +0200
+	Tue, 29 May 2012 06:06:49 -0400
+Date: Tue, 29 May 2012 12:06:46 +0200
 From: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
         Christian Dietrich 
 	<christian.dietrich@informatik.uni-erlangen.de>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, alsa-devel@alsa-project.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         vamos-dev@lists.cs.fau.de
-Subject: [PATCH] netwinder: nw_gpio_lock is a raw_spinlock_t
-Message-ID: <20120529100619.GA23186@faui49q.informatik.uni-erlangen.de>
+Subject: [PATCH] mtd: dc21285.c: remove double check of CONFIG_ARCH_NETWINDER
+Message-ID: <20120529100646.GA23383@faui49q.informatik.uni-erlangen.de>
 References: <1338040464.2525.38.camel@koala>
  <20120525082812.GA12238@faui49q.informatik.uni-erlangen.de>
 MIME-Version: 1.0
@@ -33,99 +29,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since nw_gpio_lock is a raw_spinlock_t it should be used with the
-raw_spinlock_* functions and not the spinlock_* variants. Functionally
-this is equivalent at the moment, because the raw_spinlock_t is the
-first field of spinlock_t, and therefore &nw_gpio_lock ==
-&(nw_gpio_lock->rlock). But when other spinlock_t functions use other
-field they read and write random memory.
+When CONFIG_ARCH_NETWINDER is unset nw_en_write is a NOP. But
+machine_is_netwinder() also checks for
+CONFIG_ARCH_NETWINDER. Therefore in the !netwinder case the
+preprocessed code is:
+
+if (0)
+   do {} while(0);
 
 Signed-off-by: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
 ---
- drivers/char/ds1620.c      |    8 ++++----
- drivers/char/nwflash.c     |    4 ++--
- drivers/mtd/maps/dc21285.c |    4 ++--
- sound/oss/waveartist.c     |    4 ++--
- 4 files changed, 10 insertions(+), 10 deletions(-)
+ drivers/mtd/maps/dc21285.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/char/ds1620.c b/drivers/char/ds1620.c
-index aab9605..7d86139 100644
---- a/drivers/char/ds1620.c
-+++ b/drivers/char/ds1620.c
-@@ -74,21 +74,21 @@ static inline void netwinder_ds1620_reset(void)
- 
- static inline void netwinder_lock(unsigned long *flags)
- {
--	spin_lock_irqsave(&nw_gpio_lock, *flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, *flags);
- }
- 
- static inline void netwinder_unlock(unsigned long *flags)
- {
--	spin_unlock_irqrestore(&nw_gpio_lock, *flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, *flags);
- }
- 
- static inline void netwinder_set_fan(int i)
- {
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	netwinder_lock(&flags);
- 	nw_gpio_modify_op(GPIO_FAN, i ? GPIO_FAN : 0);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	netwinder_unlock(&flags);
- }
- 
- static inline int netwinder_get_fan(void)
-diff --git a/drivers/char/nwflash.c b/drivers/char/nwflash.c
-index d45c334..04e2a94 100644
---- a/drivers/char/nwflash.c
-+++ b/drivers/char/nwflash.c
-@@ -617,9 +617,9 @@ static void kick_open(void)
- 	 * we want to write a bit pattern XXX1 to Xilinx to enable
- 	 * the write gate, which will be open for about the next 2ms.
- 	 */
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_FLASH_WR_ENABLE, CPLD_FLASH_WR_ENABLE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
- 
- 	/*
- 	 * let the ISA bus to catch on...
 diff --git a/drivers/mtd/maps/dc21285.c b/drivers/mtd/maps/dc21285.c
-index 080f060..86598a1 100644
+index 86598a1..38fbf23 100644
 --- a/drivers/mtd/maps/dc21285.c
 +++ b/drivers/mtd/maps/dc21285.c
-@@ -38,9 +38,9 @@ static void nw_en_write(void)
- 	 * we want to write a bit pattern XXX1 to Xilinx to enable
- 	 * the write gate, which will be open for about the next 2ms.
- 	 */
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_FLASH_WR_ENABLE, CPLD_FLASH_WR_ENABLE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+@@ -79,8 +79,7 @@ static void dc21285_copy_from(struct map_info *map, void *to, unsigned long from
  
- 	/*
- 	 * let the ISA bus to catch on...
-diff --git a/sound/oss/waveartist.c b/sound/oss/waveartist.c
-index 24c430f..672af8b 100644
---- a/sound/oss/waveartist.c
-+++ b/sound/oss/waveartist.c
-@@ -1482,9 +1482,9 @@ vnc_mute_spkr(wavnc_info *devc)
+ static void dc21285_write8(struct map_info *map, const map_word d, unsigned long adr)
  {
- 	unsigned long flags;
+-	if (machine_is_netwinder())
+-		nw_en_write();
++	nw_en_write();
+ 	*CSR_ROMWRITEREG = adr & 3;
+ 	adr &= ~3;
+ 	*(uint8_t*)(map->virt + adr) = d.x[0];
+@@ -88,8 +87,7 @@ static void dc21285_write8(struct map_info *map, const map_word d, unsigned long
  
--	spin_lock_irqsave(&nw_gpio_lock, flags);
-+	raw_spin_lock_irqsave(&nw_gpio_lock, flags);
- 	nw_cpld_modify(CPLD_UNMUTE, devc->spkr_mute_state ? 0 : CPLD_UNMUTE);
--	spin_unlock_irqrestore(&nw_gpio_lock, flags);
-+	raw_spin_unlock_irqrestore(&nw_gpio_lock, flags);
+ static void dc21285_write16(struct map_info *map, const map_word d, unsigned long adr)
+ {
+-	if (machine_is_netwinder())
+-		nw_en_write();
++	nw_en_write();
+ 	*CSR_ROMWRITEREG = adr & 3;
+ 	adr &= ~3;
+ 	*(uint16_t*)(map->virt + adr) = d.x[0];
+@@ -97,8 +95,7 @@ static void dc21285_write16(struct map_info *map, const map_word d, unsigned lon
+ 
+ static void dc21285_write32(struct map_info *map, const map_word d, unsigned long adr)
+ {
+-	if (machine_is_netwinder())
+-		nw_en_write();
++	nw_en_write();
+ 	*(uint32_t*)(map->virt + adr) = d.x[0];
  }
  
- static void
 -- 
 1.7.5.4
 
