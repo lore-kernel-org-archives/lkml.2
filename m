@@ -1,105 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab2E2Itv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:49:51 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37784 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab2E2Itt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:49:49 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Date: Tue, 29 May 2012 17:49:39 +0900
-From: Taku Izumi <izumi.taku@jp.fujitsu.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Keping Chen <chenkeping@huawei.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [RFC PATCH v2 0/7] dmaengine: enhance dmaengine to support DMA
- device hotplug
-Message-Id: <20120529174939.5ddfe690.izumi.taku@jp.fujitsu.com>
-In-Reply-To: <4FC1070B.2040403@gmail.com>
-References: <1337003229-9158-1-git-send-email-jiang.liu@huawei.com>
-	<20120525094919.078fdff9.izumi.taku@jp.fujitsu.com>
-	<4FC1070B.2040403@gmail.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1752750Ab2E2I6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:58:23 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:39438 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab2E2I6W convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 29 May 2012 04:58:22 -0400
+Message-Id: <4FC4A10F0200007800086842@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 29 May 2012 09:12:31 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "axboe@kernel.dk" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] xen/blkfront: Add BUG_ON to deal
+ with misbehaving backends.
+References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com>
+ <1337982603-15692-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1205281111460.26786@kaball-desktop>
+In-Reply-To: <alpine.DEB.2.00.1205281111460.26786@kaball-desktop>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 28.05.12 at 12:18, Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+wrote:
+> On Fri, 25 May 2012, Konrad Rzeszutek Wilk wrote:
+>> Part of the ring structure is the 'id' field which is under
+>> control of the frontend. The frontend stamps it with "some"
+>> value (this some in this implementation being a value less
+>> than BLK_RING_SIZE), and when it gets a response expects
+>> said value to be in the response structure. We have a check
+>> for the id field when spolling new requests but not when
+>> de-spolling responses.
+>> 
+>> We also add an extra check in add_id_to_freelist to make
+>> sure that the 'struct request' was not NULL - as we cannot
+>> pass a NULL to __blk_end_request_all, otherwise that crashes
+>> (and all the operations that the response is dealing with
+>> end up with __blk_end_request_all).
+>> 
+>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> ---
+>>  drivers/block/xen-blkfront.c |    7 +++++++
+>>  1 files changed, 7 insertions(+), 0 deletions(-)
+>> 
+>> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+>> index 60eed4b..8e177ca 100644
+>> --- a/drivers/block/xen-blkfront.c
+>> +++ b/drivers/block/xen-blkfront.c
+>> @@ -145,6 +145,7 @@ static void add_id_to_freelist(struct blkfront_info 
+> *info,
+>>  			       unsigned long id)
+>>  {
+>>  	info->shadow[id].req.u.rw.id  = info->shadow_free;
+>> +	BUG_ON(info->shadow[id].request == NULL);
 
+This only catches a small sub-portion of possible bad backend
+behavior. Checking (as the very first thing in the function) e.g.
 
-On Sun, 27 May 2012 00:38:35 +0800
-Jiang Liu <liuj97@gmail.com> wrote:
+info->shadow[id].req.u.rw.id == id
 
-> Hi Taku,
-> 	Sorry, forgot to export the percpu variable. Could you please
-> help to test the patch below?
-> 	Thanks!
+would seem to cover a broader set (based on my recent looking
+at similar mismatches apparently resulting from the qdisk
+backend occasionally sending bad/duplicate responses).
 
-  Hi Jiang,
+But take this with the below applied here too.
 
-  Thank you. 
-  This patch can fix my build issue.
- 
-  Best regards,
-  Taku Izumi
-
-
-> ---
-> diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-> index 8a41bdf..26316f6 100644
-> --- a/drivers/dma/dmaengine.c
-> +++ b/drivers/dma/dmaengine.c
-> @@ -73,6 +73,7 @@ static atomic_t dmaengine_dirty;
->  static struct static_key dmaengine_quiesce = STATIC_KEY_INIT_FALSE;
->  static DECLARE_WAIT_QUEUE_HEAD(dmaengine_wait_queue);
->  DEFINE_PER_CPU(long, dmaengine_chan_ref_count);
-> +EXPORT_PER_CPU_SYMBOL(dmaengine_chan_ref_count);
->  #endif /* CONFIG_DMA_ENGINE_HOTPLUG */
->  
->  /* --- sysfs implementation --- */
+>>  	info->shadow[id].request = NULL;
+>>  	info->shadow_free = id;
+>>  }
+>> @@ -746,6 +747,12 @@ static irqreturn_t blkif_interrupt(int irq, void 
+> *dev_id)
+>>  
+>>  		bret = RING_GET_RESPONSE(&info->ring, i);
+>>  		id   = bret->id;
+>> +		/*
+>> +		 * The backend has messed up and given us an id that we would
+>> +		 * never have given to it (we stamp it up to BLK_RING_SIZE -
+>> +		 * look in get_id_from_freelist.
+>> +		 */
+>> +		BUG_ON(id >= BLK_RING_SIZE);
+>>  		req  = info->shadow[id].request;
+>>  
+>>  		if (bret->operation != BLKIF_OP_DISCARD)
 > 
-> On 05/25/2012 08:49 AM, Taku Izumi wrote:
-> > Hi Jiang,
-> > 
-> >  Build failed with "Device Drivers/DMA Engine Support/Async_tx: Offload
-> >   support for the async_tx api" enabled because of undefined symbol. 
-> >  Patch 5/7 needs a fix?
-> > 
-> > (snip)
-> >   CHK     include/linux/version.h
-> >   CHK     include/generated/utsrelease.h
-> >   CALL    scripts/checksyscalls.sh
-> >   CHK     include/generated/compile.h
-> >   CHK     include/linux/version.h
-> > make[2]: Nothing to be done for `all'.
-> >   Building modules, stage 2.
-> >   TEST    posttest
-> >   MODPOST 2201 modules
-> > Succeed: decoded and checked 1356146 instructions
-> >   TEST    posttest
-> > Success: decoded and checked 1000000 random instructions with 0 errors (seed:0x9432fb9e)
-> > Kernel: arch/x86/boot/bzImage is ready  (#13)
-> > ERROR: "dmaengine_chan_ref_count" [crypto/async_tx/async_xor.ko] undefined!
-> > ERROR: "dmaengine_chan_ref_count" [crypto/async_tx/async_raid6_recov.ko] undefined!
-> > ERROR: "dmaengine_chan_ref_count" [crypto/async_tx/async_pq.ko] undefined!
-> > ERROR: "dmaengine_chan_ref_count" [crypto/async_tx/async_memcpy.ko] undefined!
-> > make[1]: *** [__modpost] Error 1
-> > make: *** [modules] Error 2
-> > 
-> > Best regards,
-> > Taku Izumi <izumi.taku@jp.fujitsu.com>
-> > 
+> While we should certainly check whether bret->id is valid before
+> using it, is it actually correct that the frontend BUGs in response of a
+> backend bug?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> If the IO doesn't involve the root disk, the guest might be able to
+> function correctly without communicating with the backend at all.
+> I think we should WARN and return error. Maybe also call blkfront_remove
+> if we can.
 
+I very much agree to this.
 
+Jan
 
