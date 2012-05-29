@@ -1,46 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab2E2ROx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:14:53 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53194 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab2E2ROv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:14:51 -0400
+	id S1754680Ab2E2RPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:15:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754644Ab2E2RPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:15:02 -0400
+Date: Tue, 29 May 2012 19:14:07 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 35/35] autonuma: page_autonuma
+Message-ID: <20120529171407.GH21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-36-git-send-email-aarcange@redhat.com>
+ <1338309855.26856.130.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20120529115900.GA31679@richard>
-References: <20120410090306.GA7056@richard>
-	<20120422155202.GA13540@richard>
-	<4F95B17B.3030401@redhat.com>
-	<20120514015536.GA3331@richard>
-	<CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
-	<20120514064615.GB26605@richard>
-	<CAE9FiQUuHFoEXMz_Va+FOGnqEbi9=cnnoSB+h7Ug2e4Y2sFTGQ@mail.gmail.com>
-	<20120516011833.GA6599@richard>
-	<CAE9FiQVUcYu-KM8fBs3zO5ZnL9jxHmJSN6-Ue5-kdC-niM6=Jw@mail.gmail.com>
-	<20120529115900.GA31679@richard>
-Date: Tue, 29 May 2012 10:14:51 -0700
-X-Google-Sender-Auth: BenxFhnzpXIw8zodMHhfCW3iwNc
-Message-ID: <CAE9FiQWO1C76ppjZF4Lm4FVpQYPRv5ZirGp9iOM3pm-xrm3Epg@mail.gmail.com>
-Subject: Re: One problem in reassign pci bus number?
-From: Yinghai Lu <yinghai@kernel.org>
-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338309855.26856.130.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 4:59 AM, Richard Yang
-<weiyang@linux.vnet.ibm.com> wrote:
->
-> I think about this issue again, this behavior of kernel will bring some
-> unconvenience to the user.
->
-> Do you think the kernel could handle this situation?
+On Tue, May 29, 2012 at 06:44:15PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
+> > Move the AutoNUMA per page information from the "struct page" to a
+> > separate page_autonuma data structure allocated in the memsection
+> > (with sparsemem) or in the pgdat (with flatmem).
+> > 
+> > This is done to avoid growing the size of the "struct page" and the
+> > page_autonuma data is only allocated if the kernel has been booted on
+> > real NUMA hardware (or if noautonuma is passed as parameter to the
+> > kernel).
+> > 
+> 
+> Argh, please fold this change back into the series proper. If you want
+> to keep it.. as it is its not really an improvement IMO, see below.
 
-in this extreme case, you may need user to do some comprise.
+The whole objective of this patch is to avoid allocating the
+page_autonuma structures when the kernel is booted on not NUMA
+hardware.
 
-We should always try to use setting from BIOS if it is sane.
+It's not an improvement when booting the kernel on NUMA hardware
+that's for sure.
 
-Yinghai
+I didn't merge it with the previous because this was the most
+experimental recent change, so I wanted bisectability here. When
+something goes wrong here, the kernel won't boot, so unless you use
+kvm with gdbstub it's a little tricky to debug (indeed I debugged it
+with gdbstub, there it's trivial).
+
+> > +struct page_autonuma {
+> > +       /*
+> > +        * FIXME: move to pgdat section along with the memcg and allocate
+> > +        * at runtime only in presence of a numa system.
+> > +        */
+> > +       /*
+> > +        * To modify autonuma_last_nid lockless the architecture,
+> > +        * needs SMP atomic granularity < sizeof(long), not all archs
+> > +        * have that, notably some alpha. Archs without that requires
+> > +        * autonuma_last_nid to be a long.
+> > +        */
+> 
+> Looking at arch/alpha/include/asm/xchg.h it looks to have that just
+> fine, so maybe we simply don't support SMP on those early Alphas that
+> had that weirdness.
+
+I agree we should never risk that.
+
+> This makes a shadow page frame of 32 bytes per page, or ~0.8% of memory.
+> This isn't in fact an improvement.
+> 
+> The suggestion done by Rik was to have something like a sqrt(nr_pages)
+> (?) scaled array of such things containing the list_head and page
+> pointer -- and leave the two nids in the regular page frame. Although I
+> think you've got to fight the memcg people over that last word in struct
+> page.
+> 
+> That places a limit on the amount of pages that can be in migration
+> concurrently, but also greatly reduces the memory overhead.
+
+Yes, however for the last_nid I'd still need it for every page (and if
+I allocate it dynamic I still first need to find a way to remove the
+struct page pointer).
+
+I thought to add a pointer in the memsection (or maybe to use a vmemmap
+so that it won't even require a pointer in every memsection). I've to
+check a few more things before I allow_the autonuma->page translation
+without a page pointer, notably to verify the boot time allocations
+points won't just allocate power of two blocks of memory (they
+shouldn't but I didn't verify).
+
+This is clearly a move in the right direction to avoid the memory
+overhead when not booted on NUMA hardware, and I don't think there's
+anything fundamental that prevents us remove the page pointer from the
+page_autonuma structure, and to later experiment with a limited size
+array of async migration structures.
