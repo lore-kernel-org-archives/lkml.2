@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752761Ab2E2Dgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 23:36:35 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49334 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2E2Dgc (ORCPT
+	id S1751122Ab2E2EUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 00:20:51 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56528 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab2E2EUu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 23:36:32 -0400
-Date: Mon, 28 May 2012 23:36:28 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dave Chinner <david@fromorbit.com>, Mikulas Patocka <mpatocka@redhat.com>,
-        Alasdair G Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
-        yehuda@hq.newdream.net, vgoyal@redhat.com, bharrosh@panasas.com,
-        sage@newdream.net, drbd-dev@lists.linbit.com,
-        Dave Chinner <dchinner@redhat.com>, tytso@google.com,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
-Message-ID: <20120529033628.GD10175@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <20120525204651.GA24246@redhat.com>
- <20120525210944.GB14196@google.com>
- <20120525223937.GF5761@agk-dp.fab.redhat.com>
- <Pine.LNX.4.64.1205281129180.2227@file.rdu.redhat.com>
- <20120528202839.GA18537@dhcp-172-17-108-109.mtv.corp.google.com>
- <Pine.LNX.4.64.1205281659580.11763@file.rdu.redhat.com>
- <20120528213839.GB18537@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120528230208.GA20954@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120529020815.GB5091@dastard>
- <20120529021558.GG20954@dhcp-172-17-108-109.mtv.corp.google.com>
+	Tue, 29 May 2012 00:20:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120529021558.GG20954@dhcp-172-17-108-109.mtv.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FC43018.9040702@samsung.com>
+References: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
+	<CAKew6eXsf5UKe4t5m3MAuU1OUSZcUPBoSRUCjyR-gKRmDC8MOw@mail.gmail.com>
+	<4FC43018.9040702@samsung.com>
+Date: Tue, 29 May 2012 09:50:50 +0530
+Message-ID: <CAKew6eXq-5vCDgncYYPKUdKE2CNyqDErKUUdPbWeYe0uurpQ-w@mail.gmail.com>
+Subject: Re: [PATCH v4] regulator: MAX77686: Add Maxim 77686 regulator driver
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: jonghwa3.lee@samsung.com
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 11:15:58AM +0900, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, May 29, 2012 at 12:08:15PM +1000, Dave Chinner wrote:
-> > > i thought a bit more about it and the only thing which makes sense to
-> > > me is exposing the stripe granularity for striped devices -
-> > > ie. something which says "if you go across this boundary, the
-> > > performance characteristics including latency might get affected",
-> > > which should fit nicely with the rest of topology information.
-> > > Martin, adding that shouldn't be difficult, right?
-> > 
-> > We already have the optimal IO size/alignment field in the topology.
-> > Doesn't this fit what you want exactly?
-> 
-> I don't know how xfs/ext4 is currently benefiting from
-> merge_bvec_fn(), so I'm unsure.  If the existing ones are enough,
-> great.
+On Tue, May 29, 2012 at 7:40 AM,  <jonghwa3.lee@samsung.com> wrote:
+ Hi Jonghwa,
 
-Excepting readahead I don't think they are at all.
+>>> +
+>>> +       for (i = 0; i < MAX77686_REGULATORS; i++) {
+>>> +               if (pdata)
+>>> +                       init_data[pdata->regulators[i].id] =
+>>> +                                                pdata->regulators[i].initdata;
+>>
+>> I  think we can directly use  pdata->regulators[i].initdata instead of
+>> init_data[i].
+>> In case if pdata is not their we can use same instance of
+>> init_data(default)  for all regulators.
+>>
+>
+>
+> This if for some situation that pdata's initdata doensn't line up. When
 
-For readahead all we need is a hint - call it "atomic IO size" or
-something. Assuming one of the gazillion things in queue_limits doesn't
-already mean that anyways.
+Ok, but I think this not right place for sorting (sorting is not taking
+place.) You have to sort it before entering in loop for registering
+regulators.
+
+> user sets only initdata considered it being used, there may be
+> regulators not having initdata, also its order is not clear. So for
+
+Ok, I think this is a bug in present driver also, because
+without checking pdata->num_regulators, you are running in
+loop  for (i = 0; i < MAX77686_REGULATORS; i++)
+where MAX77686_REGULATORS should be equal to
+pdata->num_regulators for this driver to work fine.
+
+If we consider a case pdata->num_regulators is
+equal to MAX77686_REGULATORS and initdata is
+not their(i.e. NULL) than I think it will initialise
+init_data[pdata->regulators[i].id to NULL, which again will be a bug.
+
+> those state, i think just using temporary array which satisfies
+> regulator's id order is fine while it can't use pdata's initdata directly.
+>
+
+If I am not wrong, I think we can also sort pdata's initdata also using
+kernel's sort api and use one instance of (default)initdata for
+all unused or uninitialized regulators in platform file.
+
+>>> +
+>>> +               config.init_data = init_data[i];
+>>> +               rdev[i] = regulator_register(&regulators[i], &config);
+>>> +
+>>
+
+
+Regards,
+ Yadwinder.
