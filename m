@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab2E2MD1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 08:03:27 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61379 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab2E2MDZ (ORCPT
+	id S1753881Ab2E2MOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 08:14:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54529 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab2E2MOk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 08:03:25 -0400
-Date: Tue, 29 May 2012 07:03:12 -0500
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: stable@vger.kernel.org
-Cc: Steven Harms <sjharms@gmail.com>, Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [3.0.y, 3.2.y] Re: [PATCH 1/1] Add Foxconn / Hon Hai IDs for btusb
- module
-Message-ID: <20120529120312.GA16584@burratino>
-References: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1334342755-7371-1-git-send-email-sjharms@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 May 2012 08:14:40 -0400
+Message-ID: <1338293627.26856.51.camel@twins>
+Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched
+ domain support
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, mingo@kernel.org,
+        torvalds@linux-foundation.org, cmetcalf@tilera.com,
+        tony.luck@intel.com, sivanich@sgi.com, akpm@linux-foundation.org,
+        ralf@linux-mips.org, greg.pearson@hp.com, ink@jurassic.park.msu.ru,
+        tglx@linutronix.de, rth@twiddle.net, kamezawa.hiroyu@jp.fujitsu.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        anton@samba.org, lethal@linux-sh.org, davem@davemloft.net,
+        benh@kernel.crashing.org, dhowells@redhat.com, mattst88@gmail.com,
+        fenghua.yu@intel.com, linux-tip-commits@vger.kernel.org
+Date: Tue, 29 May 2012 14:13:47 +0200
+In-Reply-To: <4FC41903.1060705@gmail.com>
+References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
+	 <CAE9FiQWat=55Ygp-f6ovJx+CD=Knjic9Xvpp+Ngf-o19zNUy7g@mail.gmail.com>
+	 <1336671883.27020.128.camel@laptop>
+	 <CAE9FiQWB23V=XoyzQaq1X+JNtUcV=4bLQ1sGCMOTjKRqAV7XuQ@mail.gmail.com>
+	 <4FC41903.1060705@gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben and Greg,
+On Tue, 2012-05-29 at 08:32 +0800, Jiang Liu wrote:
+>         Does this patch fix your issue? https://lkml.org/lkml/2012/5/9/183.
+> I have encountered a similar issue on an IA64 platform and the patch above 
+> works around it. But the root cause is a BIOS bug that the order of CPUs 
+> in MADT table doesn't conform to the ACPI specification and the first CPU 
+> in MADT is not the BSP, which breaks some assumption of the booting code
+> and causes the core dump. 
 
-Steven Harms wrote:
+Is that IA64 arch code that contains those false assumptions or is it
+generic (sched) code that contains them? Esp in the latter case I'd be
+very interested to hear where these are so we can fix them.
 
-> This change adds 0x0489:0xe033 to the btusb module.
->
-> This bluetooth usb device is integrated in the Acer TimelineX
-> AS4830TG-6808 notebook.
-[...]
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -107,6 +107,9 @@ static struct usb_device_id btusb_table[] = {
->  	{ USB_DEVICE(0x0a5c, 0x21f3) },
->  	{ USB_DEVICE(0x413c, 0x8197) },
->  
-> +	/* Foxconn - Hon Hai */
-> +	{ USB_DEVICE(0x0489, 0xe033) },
-> +
->  	{ }	/* Terminating entry */
 
-Please consider
-
-  985140369be1 Add Foxconn / Hon Hai IDs for btusb module
-
-for application to the 3.0.y and 3.2.y kernels.  The driver was
-tested by Steven Harms on a Acer TimelineX AS4830TG-6808 using
-Ubuntu's 3.2.y-based kernel: http://www.sharms.org/blog/2012/04/
-
-Thanks,
-Jonathan
