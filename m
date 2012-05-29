@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab2E2SRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 14:17:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59227 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754963Ab2E2SRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 14:17:12 -0400
-Message-ID: <1338315431.18974.10.camel@joe2Laptop>
-Subject: [PATCH] printk: Shrink printk_sched buffer size, eliminate it when
- !CONFIG_PRINTK
-From: Joe Perches <joe@perches.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
+	id S1755026Ab2E2SZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:25:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754985Ab2E2SZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 14:25:24 -0400
+Date: Tue, 29 May 2012 20:24:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 29 May 2012 11:17:11 -0700
-In-Reply-To: <20120523155003.GA8202@gmail.com>
-References: <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
-	 <1337086834.27020.162.camel@laptop>
-	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
-	 <1337096141.27694.82.camel@twins> <1337193010.27694.146.camel@twins>
-	 <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
-	 <1337468148.573.139.camel@twins>
-	 <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
-	 <20120523150359.GB26974@gmail.com> <1337787838.1734.15.camel@joe2Laptop>
-	 <20120523155003.GA8202@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 22/35] autonuma: sched_set_autonuma_need_balance
+Message-ID: <20120529182440.GN21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-23-git-send-email-aarcange@redhat.com>
+ <1338307942.26856.111.camel@twins>
+ <20120529173347.GJ21339@redhat.com>
+ <1338313407.26856.163.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338313407.26856.163.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the per-cpu printk_sched buf is much larger
-than necessary.  The maximum sched message emitted is
-~80 bytes. Shrink the allocation for this printk_sched
-buffer from 512 bytes to 128.
+On Tue, May 29, 2012 at 07:43:27PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-05-29 at 19:33 +0200, Andrea Arcangeli wrote:
+> > So the cost on a 24-way SMP 
+> 
+> is irrelevant.. also, not every cpu gets to the 24 cpu domain, just 2
+> do.
+> 
+> When you do for_each_cpu() think at least 4096, if you do
+> for_each_node() think at least 256.
+> 
+> Add to that the knowledge that doing 4096 remote memory accesses will
+> cost multiple jiffies, then realize you're wanting to do that with
+> preemption disabled.
+> 
+> That's just a very big no go.
 
-printk_sched creates an unnecessary per-cpu buffer when
-CONFIG_PRINTK is not enabled.  Remove it when appropriate
-so embedded uses save a bit of space too.
+I'm thinking 4096/256, this is why I mentioned it's a 24-way system. I
+think the hackbench should be repeated on a much bigger system to see
+what happens, I'm not saying it'll work fine already.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- kernel/printk.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+But from autonuma13 to 14 it's a world of difference in hackbench
+terms, to the point the cost is zero on a 24-way.
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 32462d2..61cff0b 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1726,24 +1726,30 @@ int is_console_locked(void)
- }
- 
- /*
-- * Delayed printk version, for scheduler-internal messages:
-+ * Delayed printk version, for scheduler-internal messages.
-+ * Not the normal 512 as it's a bit wasteful, sched messages are short,
-+ * and 128 is more than sufficient for all current messages.
-  */
--#define PRINTK_BUF_SIZE		512
-+#define PRINTK_SCHED_BUF_SIZE	128
- 
- #define PRINTK_PENDING_WAKEUP	0x01
- #define PRINTK_PENDING_SCHED	0x02
- 
- static DEFINE_PER_CPU(int, printk_pending);
--static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
-+#ifdef CONFIG_PRINTK
-+static DEFINE_PER_CPU(char [PRINTK_SCHED_BUF_SIZE], printk_sched_buf);
-+#endif
- 
- void printk_tick(void)
- {
- 	if (__this_cpu_read(printk_pending)) {
- 		int pending = __this_cpu_xchg(printk_pending, 0);
-+#ifdef CONFIG_PRINTK
- 		if (pending & PRINTK_PENDING_SCHED) {
- 			char *buf = __get_cpu_var(printk_sched_buf);
- 			printk(KERN_WARNING "[sched_delayed] %s", buf);
- 		}
-+#endif
- 		if (pending & PRINTK_PENDING_WAKEUP)
- 			wake_up_interruptible(&log_wait);
- 	}
-@@ -2189,7 +2195,7 @@ int printk_sched(const char *fmt, ...)
- 	buf = __get_cpu_var(printk_sched_buf);
- 
- 	va_start(args, fmt);
--	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
-+	r = vsnprintf(buf, PRINTK_SCHED_BUF_SIZE, fmt, args);
- 	va_end(args);
- 
- 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
+My idea down the road, with multi hop systems, is to balance across
+the 1 hop at the regular load_balance interval, and move to the 2 hops
+at half frequency, and 3 hops at 1/4th frequency etc... That change
+alone should help tremendously with 256 nodes and 5/6 hops. And it
+should be quite easy to implement too.
 
+knuma_migrated also need to learn more about the hops and probably
+scan at higher frequency the lru heads coming from the closer hops.
 
+The code is not "hops" aware yet and certainly there are still lots of
+optimization to do for the very big systems. I think it's already
+quite ideal right now for most servers and I don't see blockers in
+optimizing it for the extreme big cases (and I expect it'd already
+work better than nothing in the extreme setups). I removed [RFC]
+because I'm quite happy with it now (there were things I wasn't happy
+with before), but I didn't mean it's finished.
