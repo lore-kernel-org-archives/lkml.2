@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751122Ab2E2EUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 00:20:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56528 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab2E2EUu convert rfc822-to-8bit (ORCPT
+	id S1751228Ab2E2EXL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 00:23:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37705 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab2E2EXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 00:20:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FC43018.9040702@samsung.com>
-References: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
-	<CAKew6eXsf5UKe4t5m3MAuU1OUSZcUPBoSRUCjyR-gKRmDC8MOw@mail.gmail.com>
-	<4FC43018.9040702@samsung.com>
-Date: Tue, 29 May 2012 09:50:50 +0530
-Message-ID: <CAKew6eXq-5vCDgncYYPKUdKE2CNyqDErKUUdPbWeYe0uurpQ-w@mail.gmail.com>
-Subject: Re: [PATCH v4] regulator: MAX77686: Add Maxim 77686 regulator driver
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: jonghwa3.lee@samsung.com
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chiwoong Byun <woong.byun@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 29 May 2012 00:23:10 -0400
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/7] perf ui: Add basic error handling for GTK2 front-end (v3)
+Date: Tue, 29 May 2012 13:22:55 +0900
+Message-Id: <1338265382-6872-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 7:40 AM,  <jonghwa3.lee@samsung.com> wrote:
- Hi Jonghwa,
+Hi,
 
->>> +
->>> +       for (i = 0; i < MAX77686_REGULATORS; i++) {
->>> +               if (pdata)
->>> +                       init_data[pdata->regulators[i].id] =
->>> +                                                pdata->regulators[i].initdata;
->>
->> I  think we can directly use  pdata->regulators[i].initdata instead of
->> init_data[i].
->> In case if pdata is not their we can use same instance of
->> init_data(default)  for all regulators.
->>
->
->
-> This if for some situation that pdata's initdata doensn't line up. When
+This patchset implements ui__warning/error() functions for GTK2.
+Patch 1 is a resend (which forgot to cc LKML) and independent of
+this series. Patch 2 converts invocations of ui__warning followed
+by exit (or similar effect) into ui__error.
 
-Ok, but I think this not right place for sorting (sorting is not taking
-place.) You have to sort it before entering in loop for registering
-regulators.
+I chose GtkInfoBar widget to implement ui__warning since it provides
+a simple way to do what we want IMHO. In fact, a guy sat next to me
+at the Korean GNOME hackfest suggested to use it. The only problem
+is it requires 2.18 (or newer) version of GTK+ libraries. So I added
+status bar as a fallback when info bar is not supported, and this
+can be used to implement helpline functions later.
 
-> user sets only initdata considered it being used, there may be
-> regulators not having initdata, also its order is not clear. So for
+Changes from v2:
+ * Convert critical use of ui__warning to ui__error (by Ingo)
+ * Use GtkInfoBar instead of a message dialog (by Pekka)
 
-Ok, I think this is a bug in present driver also, because
-without checking pdata->num_regulators, you are running in
-loop  for (i = 0; i < MAX77686_REGULATORS; i++)
-where MAX77686_REGULATORS should be equal to
-pdata->num_regulators for this driver to work fine.
+Any comments are welcome.
 
-If we consider a case pdata->num_regulators is
-equal to MAX77686_REGULATORS and initdata is
-not their(i.e. NULL) than I think it will initialise
-init_data[pdata->regulators[i].id to NULL, which again will be a bug.
-
-> those state, i think just using temporary array which satisfies
-> regulator's id order is fine while it can't use pdata's initdata directly.
->
-
-If I am not wrong, I think we can also sort pdata's initdata also using
-kernel's sort api and use one instance of (default)initdata for
-all unused or uninitialized regulators in platform file.
-
->>> +
->>> +               config.init_data = init_data[i];
->>> +               rdev[i] = regulator_register(&regulators[i], &config);
->>> +
->>
+Thanks,
+Namhyung
 
 
-Regards,
- Yadwinder.
+Namhyung Kim (7):
+  perf ui: Make --stdio default when TUI is not supported
+  perf tools: Convert critical messages to ui__error()
+  perf ui: Introduce struct perf_error_ops
+  perf ui/gtk: Introduce struct perf_gtk_context
+  perf ui/gtk: Add GTK statusbar widget to browser window
+  perf ui/gtk: Add GTK info_bar widget to browser window
+  perf ui/gtk: Use struct perf_error_ops
+
+ tools/perf/Makefile                 |    6 +
+ tools/perf/builtin-annotate.c       |    2 +-
+ tools/perf/builtin-record.c         |   14 +-
+ tools/perf/builtin-report.c         |   14 +-
+ tools/perf/builtin-top.c            |   22 +--
+ tools/perf/config/feature-tests.mak |   13 ++
+ tools/perf/ui/gtk/browser.c         |   67 ++++++++-
+ tools/perf/ui/gtk/gtk.h             |   31 ++++
+ tools/perf/ui/gtk/setup.c           |    5 +
+ tools/perf/ui/gtk/util.c            |  129 ++++++++++++++++
+ tools/perf/ui/setup.c               |    1 +
+ tools/perf/ui/tui/setup.c           |    6 +
+ tools/perf/ui/tui/util.c            |  243 ++++++++++++++++++++++++++++++
+ tools/perf/ui/util.c                |  277 +++++++----------------------------
+ tools/perf/ui/util.h                |    9 +-
+ tools/perf/util/debug.c             |    2 +-
+ tools/perf/util/debug.h             |   23 ++-
+ 17 files changed, 609 insertions(+), 255 deletions(-)
+ create mode 100644 tools/perf/ui/gtk/util.c
+ create mode 100644 tools/perf/ui/tui/util.c
+
+-- 
+1.7.9.2
+
