@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755795Ab2E2TeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 15:34:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18849 "EHLO mx1.redhat.com"
+	id S1755296Ab2E2Tee (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 15:34:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53048 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755373Ab2E2TeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 15:34:08 -0400
-Date: Tue, 29 May 2012 21:27:21 +0200
+	id S1755267Ab2E2Ta6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 15:30:58 -0400
+Date: Tue, 29 May 2012 21:29:14 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -15,27 +15,95 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/7] uprobes: kill uprobes_srcu/uprobe_srcu_id
-Message-ID: <20120529192721.GA8048@redhat.com>
+Subject: [PATCH 4/7] uprobes: teach find_active_uprobe() to provide the
+	"is_swbp" info
+Message-ID: <20120529192914.GD8057@redhat.com>
+References: <20120529192721.GA8048@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120529192721.GA8048@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+A separate patch to simplify the review, and for the documentation.
 
-Basically the same changes we discussed before.
+The patch adds another "int *is_swbp" argument to find_active_uprobe(),
+so far its only caller doesn't use this info.
 
-Changes:
+With this patch find_active_uprobe() additionally does:
 
-	- do not introduce is_swbp_at_addr_fast(), change
-	  is_swbp_at_addr() to check current->mm == mm as
-	  Peter suggested
+	- if find_vma() + ->vm_start check fails, *is_swbp = -EFAULT
 
-	- 2/7 is new
+	- otherwise, if valid_vma() + find_uprobe() fails, it holds
+	  the result of is_swbp_at_addr(), can be negative too. The
+	  latter is only possible if we raced with another thread
+	  which did munmap/etc after we hit this bp.
 
-Oleg.
+IOW. If find_active_uprobe(&is_swbp) returns NULL, the caller can
+look at is_swbp to figure out whether the current insn is bp or not,
+or detect the race with another thread if it is negative.
+
+Note: I think that performance-wise this change is fine. This adds
+is_swbp_at_addr(), but only if we raced with uprobe_unregister() or
+if we hit the "normal" int3 but this mm has uprobes as well. And even
+in this case the slow read_opcode() path is very unlikely, this insn
+recently triggered do_int3(), __copy_from_user_inatomic() shouldn't
+fail in the likely case.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index eaf4d55..ee3df70 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1489,7 +1489,7 @@ static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
+ 	return false;
+ }
+ 
+-static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
++static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
+ {
+ 	struct mm_struct *mm = current->mm;
+ 	struct uprobe *uprobe = NULL;
+@@ -1497,7 +1497,6 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
+ 
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_vma(mm, bp_vaddr);
+-
+ 	if (vma && vma->vm_start <= bp_vaddr) {
+ 		if (valid_vma(vma, false)) {
+ 			struct inode *inode;
+@@ -1508,6 +1507,11 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr)
+ 			offset += (vma->vm_pgoff << PAGE_SHIFT);
+ 			uprobe = find_uprobe(inode, offset);
+ 		}
++
++		if (!uprobe)
++			*is_swbp = is_swbp_at_addr(mm, bp_vaddr);
++	} else {
++		*is_swbp = -EFAULT;
+ 	}
+ 
+ 	srcu_read_unlock_raw(&uprobes_srcu, current->uprobe_srcu_id);
+@@ -1526,9 +1530,10 @@ static void handle_swbp(struct pt_regs *regs)
+ 	struct uprobe_task *utask;
+ 	struct uprobe *uprobe;
+ 	unsigned long bp_vaddr;
++	int is_swbp;
+ 
+ 	bp_vaddr = uprobe_get_swbp_addr(regs);
+-	uprobe = find_active_uprobe(bp_vaddr);
++	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+ 
+ 	if (!uprobe) {
+ 		/* No matching uprobe; signal SIGTRAP. */
+-- 
+1.5.5.1
+
 
