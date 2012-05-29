@@ -1,99 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab2E2Gec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 02:34:32 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55928 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab2E2Geb (ORCPT
+	id S1752844Ab2E2Gen (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 02:34:43 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:45060 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab2E2Gek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 02:34:31 -0400
-Message-ID: <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by>
-From: "Victor Miasnikov" <vvm@tut.by>
-To: "Greg KH" <gregkh@linuxfoundation.org>, <stable@vger.kernel.org>
-Cc: "Jonathan Nieder" <jrnieder@gmail.com>, <linux-kernel@vger.kernel.org>,
-        "KY Srinivasan" <kys@microsoft.com>
-References: <20120527010903.GA18244@kroah.com> <B4A84D892D5742FE83F71F788F6EAF48@local.st.by> <20120528203518.GA12623@kroah.com>
-Subject: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the CD-ROM)
-Date: Tue, 29 May 2012 09:34:23 +0300
+	Tue, 29 May 2012 02:34:40 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Louis Rilling <louis.rilling@kerlabs.com>,
+        Mike Galbraith <efault@gmx.de>
+References: <87zk95kper.fsf@xmission.com> <20120521124414.GA20391@redhat.com>
+	<87d35x5ank.fsf_-_@xmission.com>
+	<20120522122315.c3f2118c.akpm@linux-foundation.org>
+	<20120523145239.GA20378@redhat.com>
+	<20120525151526.GA13111@redhat.com>
+	<20120525155941.GA16885@redhat.com>
+	<20120525160008.GB16885@redhat.com> <87pq9sdjhn.fsf@xmission.com>
+	<20120527191032.GB13929@redhat.com>
+	<20120527191106.GC13929@redhat.com>
+Date: Tue, 29 May 2012 00:34:27 -0600
+In-Reply-To: <20120527191106.GC13929@redhat.com> (Oleg Nesterov's message of
+	"Sun, 27 May 2012 21:11:06 +0200")
+Message-ID: <874nqzmr64.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.3790.4548
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=208.38.5.102;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19Do11mrUdegGmtKxlAE9DtqUUAvCgRvV0=
+X-SA-Exim-Connect-IP: 208.38.5.102
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 TVD_RCVD_IP TVD_RCVD_IP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_05 8+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2 -mm 1/1] pidns: find_new_reaper() can no longer switch to init_pid_ns.child_reaper
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Oleg Nesterov <oleg@redhat.com> writes:
+
+> find_new_reaper() changes pid_ns->child_reaper, see add0d4df
+> "pid_ns: zap_pid_ns_processes: fix the ->child_reaper changing".
+>
+> The original reason has gone away after the previous patch,
+> ->children list must be empty after zap_pid_ns_processes().
+>
+> However now we can not switch to init_pid_ns.child_reaper.
+> __unhash_process() relies on the "->child_reaper == parent"
+> check, but this check does not work if the last exiting task
+> is also the child reaper.
+>
+> As Eric sugested, we can change __unhash_process() to use the
+> parent's pid_ns and remove this code.
+>
+> Also, with this change we can move detach_pid(PIDTYPE_PID) back,
+> where it was before the previous fix.
+
+This looks good to me. 
+
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+I will be on the road for next two days so I don't expect I will
+be particularly active in this converation for a while.
+
+Eric
 
 
-> And it's too late for 3.4.1, as that is already out for review.
-
- Ok: "Please, backport to 3.4.2"
-
-{ P.S.
-And "to 3.3.x" and "to 3.2.x"  i.e. to all actual version after 3.1
-
-}
-
->>> use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the CD-ROM)
-VVM> Please, backport to 3.4.2-stable all related this:
->>      ...Ugly MSFT Hyper-V workaround in ata_piix
->>      ata_piix: defer disks to the Hyper-V drivers...
-
-> I do not understand, what exactly are the git commit ids that you wish
-> to see applied to the stable tree?
-
- Sorry:
-
- 1)
-db63a4c8115a0bb904496e1cdd3e7488e68b0d06
- 2)
-cd006086fa5d91414d8ff9ff2b78fbb593878e3c
-
-{
-Jonathan Nieder think:
-
-  cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default
-
-and its prerequisite
-
-  db63a4c8115a libata: add a host flag to ignore detected ATA devices
-
-}
-
-
-Some details:
-1:
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;h=db63a4c8115a0bb904496e1cdd3e7488e68b0d06
-==
-libata: add a host flag to ignore detected ATA devices
-      author Andy Whitcroft < apw ( at ) canonical.com >
-     Fri, 4 May 2012 21:15:10 +0000 (22:15 +0100)
-      committer Jeff Garzik < jgarzik ( at ) redhat.com >
-     Mon, 7 May 2012 19:32:23 +0000 (15:32 -0400)
-      commit db63a4c8115a0bb904496e1cdd3e7488e68b0d06
-      tree 326448b28bf8de7c6205ed9e598070111e8a5020
-==
-
-2:
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;h=cd006086fa5d91414d8ff9ff2b78fbb593878e3c;hp=db63a4c8115a0bb904496e1cdd3e7488e68b0d06
-==
-ata_piix: defer disks to the Hyper-V drivers by default
-      author Andy Whitcroft  < apw ( at ) canonical.com >
-     Fri, 4 May 2012 21:15:11 +0000 (22:15 +0100)
-      committer Jeff Garzik < jgarzik ( at ) redhat.com >
-     Mon, 7 May 2012 19:32:58 +0000 (15:32 -0400)
-      commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c
-
-==
-
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/exit.c |   10 ++--------
+>  1 files changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 6d66cd2..6424e6b 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -64,6 +64,7 @@ static void exit_mm(struct task_struct * tsk);
+>  static void __unhash_process(struct task_struct *p, bool group_dead)
+>  {
+>  	nr_threads--;
+> +	detach_pid(p, PIDTYPE_PID);
+>  	if (group_dead) {
+>  		detach_pid(p, PIDTYPE_PGID);
+>  		detach_pid(p, PIDTYPE_SID);
+> @@ -79,13 +80,12 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
+>  		if (IS_ENABLED(CONFIG_PID_NS)) {
+>  			struct task_struct *parent = p->real_parent;
+>  
+> -			if ((task_active_pid_ns(p)->child_reaper == parent) &&
+> +			if ((task_active_pid_ns(parent)->child_reaper == parent) &&
+>  			    list_empty(&parent->children) &&
+>  			    (parent->flags & PF_EXITING))
+>  				wake_up_process(parent);
+>  		}
+>  	}
+> -	detach_pid(p, PIDTYPE_PID);
+>  	list_del_rcu(&p->thread_group);
+>  }
+>  
+> @@ -732,12 +732,6 @@ static struct task_struct *find_new_reaper(struct task_struct *father)
+>  
+>  		zap_pid_ns_processes(pid_ns);
+>  		write_lock_irq(&tasklist_lock);
+> -		/*
+> -		 * We can not clear ->child_reaper or leave it alone.
+> -		 * There may by stealth EXIT_DEAD tasks on ->children,
+> -		 * forget_original_parent() must move them somewhere.
+> -		 */
+> -		pid_ns->child_reaper = init_pid_ns.child_reaper;
+>  	} else if (father->signal->has_child_subreaper) {
+>  		struct task_struct *reaper;
