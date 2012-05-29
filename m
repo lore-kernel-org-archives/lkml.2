@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab2E2Lzb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 07:55:31 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:57561 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab2E2Lz3 (ORCPT
+	id S1753820Ab2E2L6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 07:58:25 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:57894 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab2E2L6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 07:55:29 -0400
-Message-ID: <4FC4B902.7030702@linux.vnet.ibm.com>
-Date: Tue, 29 May 2012 17:24:42 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Tue, 29 May 2012 07:58:23 -0400
+Date: Tue, 29 May 2012 13:58:51 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Message-ID: <20120529115851.GB29157@aftab.osrc.amd.com>
+References: <1337358773-6919-38-git-send-email-mchehab@redhat.com>
+ <1337854460-25191-1-git-send-email-mchehab@redhat.com>
+ <20120524105604.GC27063@aftab.osrc.amd.com>
+ <4FBE5E1D.7070804@redhat.com>
+ <20120524164554.GM27063@aftab.osrc.amd.com>
+ <4FBE7755.2080301@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, mingo@kernel.org, lenb@kernel.org,
-        pavel@ucw.cz, linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ftrace: Disable function tracing during suspend/resume
- and hibernation, again
-References: <20120521065651.4142.36898.stgit@srivatsabhat.in.ibm.com> <201205212355.45929.rjw@sisk.pl> <1337638586.13348.7.camel@gandalf.stny.rr.com> <4FBB2E38.60804@linux.vnet.ibm.com>
-In-Reply-To: <4FBB2E38.60804@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-x-cbid: 12052911-8878-0000-0000-000002B446C2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FBE7755.2080301@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2012 11:42 AM, Srivatsa S. Bhat wrote:
+On Thu, May 24, 2012 at 03:00:53PM -0300, Mauro Carvalho Chehab wrote:
+> On the current drivers, the grain static. I'm not sure if the grain is really
+> a per-memory controller or if this is again yet-another-issue with the way
+> EDAC core handles such information.
+> 
+> I suspect that, on sophisticated memory controllers that can do any type of
+> DIMM interleaving, including no interleave at all, the grain can vary from
+> one memory address range to the other.
 
-> On 05/22/2012 03:46 AM, Steven Rostedt wrote:
-> 
->> On Mon, 2012-05-21 at 23:55 +0200, Rafael J. Wysocki wrote:
->>> On Monday, May 21, 2012, Srivatsa S. Bhat wrote:
->>>> If function tracing is enabled for some of the low-level suspend/resume
->>>> functions, it leads to triple fault during resume from suspend, ultimately
->>>> ending up in a reboot instead of a resume (or a total refusal to come out
->>>> of suspended state, on some machines).
->>>>
->>>> This issue was explained in more detail in commit f42ac38c59e0a03d (ftrace:
->>>> disable tracing for suspend to ram). However, the changes made by that commit
->>>> got reverted by commit cbe2f5a6e84eebb (tracing: allow tracing of
->>>> suspend/resume & hibernation code again). So, unfortunately since things are
->>>> not yet robust enough to allow tracing of low-level suspend/resume functions,
->>>> suspend/resume is still broken when ftrace is enabled.
->>>>
->>>> So fix this by disabling function tracing during suspend/resume & hibernation.
->>>
->>> Steve, any comments?
->>
->> I was actually the one to recommend this solution ;-)
->>
-> 
-> 
-> And I am grateful to you for that :-)
-> 
->> But that said, I actually do have some.
->>
->>>
->>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->>>> Cc: stable@vger.kernel.org
->>>> ---
->>>>
->>>>  kernel/power/hibernate.c |    6 ++++++
->>>>  kernel/power/suspend.c   |    3 +++
->>>>  2 files changed, 9 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->>>> index e09dfbf..52a1817 100644
->>>> --- a/kernel/power/hibernate.c
->>>> +++ b/kernel/power/hibernate.c
->>>> @@ -352,6 +352,7 @@ int hibernation_snapshot(int platform_mode)
->>>>  	}
->>>>  
->>>>  	suspend_console();
->>>> +	ftrace_stop();
->>
->>
->> Is this a point of no return?
->>
-> 
-> Yes, especially as far as userspace is concerned.
-> 
->> This probably isn't a problem, but I'm being a little paranoid. As
->> ftrace_stop/start() is just an on off switch, anyplace that calls
->> ftrace_start() will enable function tracing again. Ftrace_start() is
->> called by tracing_start() which is called when
->> the /sys/kernel/debug/tracing/trace file is opened and then closed. If
->> the close happens while the suspend is starting, it possibly can start
->> function tracing again.
->>
->> But this race would have to be done by the user, which should have full
->> control as they are in the process of suspending the machine. But they
->> may do it by accident.
->>
-> 
-> 
-> Luckily, at all these places, all the userspace processes (and the freezable
-> kernel threads) are already frozen. So nobody will be running at this point
-> to open/close the trace file.
-> 
-> So there is no problem right?
-> 
-> (Of course, the non-freezable kernel threads might be running at this point,
-> but IIUC, they can't trigger ftrace_start() from some other internal path..)
-> 
+Ah, you suspect. Well, since you suspect, then it has to be true.
 
+Granularity of reported error doesn't have anything direct to do with
+memory interleaving.
 
-Steve, do you have any other concerns about this patch or is it fine?
+> If we change the API to have an explicit sysfs node to express the grain,
+> and latter we end by needing a per-address range grain, we'll need to break
+> the kABI. 
+> 
+> So, keeping the grain information at the tracepoint is more flexible, as it
+> can cover both situations.
 
-(I addressed your concern about some other event leading to ftrace_start() above).
+And adding useless fields is bloating it.
 
-Regards,
-Srivatsa S. Bhat
+> >>> But the more important question is: does the grain help us when handling
+> >>> the error info in userspace?
+> >>>
+> >>> It tells us that at this physical address with "grain" granularity we
+> >>> had an error. So?
+> >>
+> >> While a certain number of corrected errors that happened on different, sparsed,
+> >> addresses may not mean a damaged memory, the same number of corrected errors
+> >> happening at the same physical address/grain means that the DRAM chip that
+> >> contains such address is damaged, so the corresponding DIMM needs to be 
+> >> replaced.
+> >>
+> >> So, the address/grain can be used by userspace algorithms to increase the
+> >> probability that a DIMM is damaged.
+> > 
+> > I have no idea what you're saying here.
+> > 
+> > The DIMM can be pinpointed using the address only, why do you need the
+> > grain too?
+> 
+> You can pinpoint a DIMM but in order to pinpoint the affected MOSFET transistors,
 
+The MOSFET transistors, every single one of them??! Wohahahah, this just
+made my day!
+
+> the address and address mask is needed, as most memory controllers can't point
+> to a single address, because the register that stores the address doesn't have
+> enough bits to store the full content of the instruction pointer register, or because
+> of some other internal device issues.
+> 
+> So, two different "addresses" could atually point to the same group of transistors
+> inside a DIMM.
+> 
+> Also, higher values of grains may affect the error statistics. For example, i3200_edac
+> driver has a grain that can be 64 MB, while other devices have a grain of 1.
+
+I think you mean
+
+#define I3200_TOM_SHIFT         26      /* 64MiB grain */
+
+which is the Top-Of-Memory shift value. How is that grain in the sense of error
+granularity I can't fathom.
+
+Oh, and by the way, this define is unused and can be removed.
+
+So, to sum up, I'm still completely unconvinced 'grain' is needed so remove it.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
