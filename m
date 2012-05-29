@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab2E2HQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 03:16:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49507 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108Ab2E2HQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 03:16:01 -0400
-Message-ID: <4FC477A1.4010709@zytor.com>
-Date: Tue, 29 May 2012 00:15:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Alessandro Rubini <rubini@gnudd.com>
-CC: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, tglx@linutronix.de, mingo@redhat.com,
-        sameo@linux.intel.com, x86@kernel.org
-Subject: Re: [PATCH] x86/platform: sta2x11: add platform code
-References: <4FC47003.1080906@zytor.com>  <4FC40C74.8050003@zytor.com>  <20120527205020.GA3050@mail.gnudd.com> <20120529063738.GA22711@mail.gnudd.com> <20120529070557.GA23373@mail.gnudd.com>
-In-Reply-To: <20120529070557.GA23373@mail.gnudd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753267Ab2E2HQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 03:16:18 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50104 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821Ab2E2HQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 03:16:16 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
+        nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
+        mingo@kernel.org, tglx@linutronix.de, peterz@infradead.org,
+        akpm@linux-foundation.org, srivatsa.bhat@linux.vnet.ibm.com
+Subject: [RFC PATCH 00/10] Cleanup ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
+Date: Tue, 29 May 2012 15:15:55 +0800
+Message-Id: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 12:05 AM, Alessandro Rubini wrote:
-> 
-> Yes, it indeed does (the original code I received did not, but mine
-> doesn't break stuff for other systems). What I posted uses a kernel
-> command-line argument to tell what board it is: the sta2x11 is the
-> computer's chipset in most cases, so it should know the wiring soon.
-> 
+As discussed with Srivatsa [1], it seems there is no need to keep
+ipi_call_[un]lock_irq() when cpu bring-up/down. Because:
 
-I am not going to accept into the kernel a bunch of board-specific
-files.  PCI cards are different: they have PCI IDs, and they can be
-loaded, as modules, at runtime.  Furthermore, they tend to be very
-limited in the amount of variation: a single chip (represented PCI ID)
-may be slightly differently wired on different boards (represented by
-subsystem ID), but the variation tends to be limited; in the rare case
-it is not, there is usually some form of discovery mechanism.
+1) call_function.lock used in smp_call_function_many() is just to protect
+   call_function.queue and &data->refs, cpu_online_mask is outside of the
+   lock. And it's not necessary to protect cpu_online_mask,
+   because data->cpumask is pre-calculate and even if a cpu is brougt up
+   when calling arch_send_call_function_ipi_mask(), it's harmless because
+   validation test in generic_smp_call_function_interrupt() will take care
+   of it.
 
-Those are the *only* kinds conditions under which that kind of things,
-in drivers, is acceptable.  A list of mainboards and their wirings in C
-code?  No way in hell.
+2) For cpu down issue, stop_machine() will guarantee that no concurrent
+   smp_call_fuction() is processing.
 
->> The best is for the firmware on your platforms to provide the ACPI or
->> DTB information, as it should.  If it doesn't, it gets nastier, but
->> there is absolutely no way we are going into the ARM swamp of having
->> different kernels for different boards.
-> 
-> It doesn't. I'm currently developing using an add-on pci card running
-> on a more conventional computer (and there you may object it is not
-> even x86-specific, actually I'd love to see it sold as a separate card
-> for industrial use).
-> 
-> In short, the whole thing is about passing different platform data
-> according to which card it is (which includes the DMA configuration
-> for uart ports, the card-detect pin for mmci etc). Most such drivers
-> are already in the kernel and we are reusing them -- whereas original
-> code I got rewrote them all from scratch. But for this we need to pass
-> the platform data. 
-> 
-> I'm pretty sure we don't have ACPI, and I'd avoid device tree if
-> possible (especially thinking of add-on cards).  If you think it makes
-> more sense, I can offer the code to drivers/pci or other more generic
-> places.
+In short it's more likely that keeping ipi_call_[un]lock() is leftover
+before we introduce generic smp helper. This patchset is just to clean
+things up.
 
-What does "offer the code" mean here?  Just put the same sh*t in a
-different place?  No, no, no, no.
+[1] http://marc.info/?l=linux-kernel&m=133766786814484&w=2
 
-We have the device tree mechanism as an escape valve for the systems
-built without any sane consideration for the platform, and that is the
-last resort.  I am generally not happy with that in the x86 space, even,
-because it means yet another failed platform, but it is still better
-than ad hoc hacks.
+Yong Zhang (10):
+  hexagon: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  mn10300: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  parisc: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  S390: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  tile: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  x86: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  ia64: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
+  SPARC: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
+  POWERPC: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+  smp: remove ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
 
-	-hpa
+ arch/hexagon/kernel/smp.c  |    2 --
+ arch/ia64/kernel/smpboot.c |    2 --
+ arch/mn10300/kernel/smp.c  |    2 --
+ arch/parisc/kernel/smp.c   |    2 --
+ arch/powerpc/kernel/smp.c  |    2 --
+ arch/s390/kernel/smp.c     |    2 --
+ arch/sparc/kernel/smp_64.c |    6 ++----
+ arch/tile/kernel/smpboot.c |   10 ----------
+ arch/x86/kernel/smpboot.c  |    9 ---------
+ arch/x86/xen/smp.c         |    2 --
+ include/linux/smp.h        |    4 ----
+ kernel/smp.c               |   20 --------------------
+ 12 files changed, 2 insertions(+), 61 deletions(-)
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.5.4
 
