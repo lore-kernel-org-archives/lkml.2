@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2E2NKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 09:10:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48810 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2E2NKp convert rfc822-to-8bit (ORCPT
+	id S1751924Ab2E2NQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 09:16:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55507 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab2E2NQo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 09:10:45 -0400
-Message-ID: <1338297004.26856.70.camel@twins>
-Subject: Re: [PATCH 12/35] autonuma: CPU follow memory algorithm
+	Tue, 29 May 2012 09:16:44 -0400
+Message-ID: <1338297385.26856.74.camel@twins>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
@@ -26,10 +26,10 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Date: Tue, 29 May 2012 15:10:04 +0200
-In-Reply-To: <1337965359-29725-13-git-send-email-aarcange@redhat.com>
+Date: Tue, 29 May 2012 15:16:25 +0200
+In-Reply-To: <1337965359-29725-14-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-	 <1337965359-29725-13-git-send-email-aarcange@redhat.com>
+	 <1337965359-29725-14-git-send-email-aarcange@redhat.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -39,27 +39,51 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
-> + * This function is responsible for deciding which is the best CPU
-> + * each process should be running on according to the NUMA
-> + * affinity. To do that it evaluates all CPUs and checks if there's
-> + * any remote CPU where the current process has more NUMA affinity
-> + * than with the current CPU, and where the process running on the
-> + * remote CPU has less NUMA affinity than the current process to run
-> + * on the remote CPU. Ideally this should be expanded to take all
-> + * runnable processes into account but this is a good
-> + * approximation. When we compare the NUMA affinity between the
-> + * current and remote CPU we use the per-thread information if the
-> + * remote CPU runs a thread of the same process that the current task
-> + * belongs to, or the per-process information if the remote CPU runs
-> a
-> + * different process than the current one. If the remote CPU runs the
-> + * idle task we require both the per-thread and per-process
-> + * information to have more affinity with the remote CPU than with
-> the
-> + * current CPU for a migration to happen. 
 
-This doesn't explain anything in the dense code that follows.
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 780ded7..e8dc82c 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -126,6 +126,31 @@ struct page {
+>  		struct page *first_page;	/* Compound tail pages */
+>  	};
+>  
+> +#ifdef CONFIG_AUTONUMA
+> +	/*
+> +	 * FIXME: move to pgdat section along with the memcg and allocate
+> +	 * at runtime only in presence of a numa system.
+> +	 */
+> +	/*
+> +	 * To modify autonuma_last_nid lockless the architecture,
+> +	 * needs SMP atomic granularity < sizeof(long), not all archs
+> +	 * have that, notably some alpha. Archs without that requires
+> +	 * autonuma_last_nid to be a long.
+> +	 */
+> +#if BITS_PER_LONG > 32
+> +	int autonuma_migrate_nid;
+> +	int autonuma_last_nid;
+> +#else
+> +#if MAX_NUMNODES >= 32768
+> +#error "too many nodes"
+> +#endif
+> +	/* FIXME: remember to check the updates are atomic */
+> +	short autonuma_migrate_nid;
+> +	short autonuma_last_nid;
+> +#endif
+> +	struct list_head autonuma_migrate_node;
+> +#endif
+> +
+>  	/*
+>  	 * On machines where all RAM is mapped into kernel address space,
+>  	 * we can simply calculate the virtual address. On machines with
 
-What statistics, how are they used, with what goal etc..
+
+24 bytes per page.. or ~0.6% of memory gone. This is far too great a
+price to pay.
+
+At LSF/MM Rik already suggested you limit the number of pages that can
+be migrated concurrently and use this to move the extra list_head out of
+struct page and into a smaller amount of extra structures, reducing the
+total overhead.
 
 
