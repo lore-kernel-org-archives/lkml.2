@@ -1,58 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755979Ab2E2XQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 19:16:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43459 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab2E2XQA (ORCPT
+	id S1755974Ab2E2XSQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 19:18:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:60715 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab2E2XSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 19:16:00 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Florian Fainelli <florian@openwrt.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] r6040: Do a Proper deinit at errorpath and also when driver unloads (calling r6040_remove_one)
-Date: Wed, 30 May 2012 04:45:54 +0530
-Message-Id: <1338333354-12100-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 29 May 2012 19:18:15 -0400
+Date: Tue, 29 May 2012 19:18:10 -0400 (EDT)
+Message-Id: <20120529.191810.2141710455829509698.davem@davemloft.net>
+To: devendra.aaru@gmail.com
+Cc: florian@openwrt.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r6040: disable pci device if the subsequent calls
+ (after pci_enable_device) fails
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1338333250-11974-1-git-send-email-devendra.aaru@gmail.com>
+References: <1338333250-11974-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 May 2012 16:18:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-so if mdiobus_alloc fails, the errorpath doesnt do a netif_napi_del and also
-doesn't set the priv data of the driver to NULL.
 
-at the driver unload stage the driver doesn't remove the NAPI context, and
-doesnt' set the priv data to NULL, and also doesn't call the pci_iounmap.
+Please number your patches so that there is no ambguity as to what
+order the patches should be applied.
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/net/ethernet/rdc/r6040.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/net/ethernet/rdc/r6040.c b/drivers/net/ethernet/rdc/r6040.c
-index 8f5079a..231b9a6 100644
---- a/drivers/net/ethernet/rdc/r6040.c
-+++ b/drivers/net/ethernet/rdc/r6040.c
-@@ -1233,6 +1233,8 @@ err_out_mdio_irq:
- err_out_mdio:
- 	mdiobus_free(lp->mii_bus);
- err_out_unmap:
-+	netif_napi_del(&lp->napi);
-+	pci_set_drvdata(pdev, NULL);
- 	pci_iounmap(pdev, ioaddr);
- err_out_free_res:
- 	pci_release_regions(pdev);
-@@ -1253,6 +1255,9 @@ static void __devexit r6040_remove_one(struct pci_dev *pdev)
- 	mdiobus_unregister(lp->mii_bus);
- 	kfree(lp->mii_bus->irq);
- 	mdiobus_free(lp->mii_bus);
-+	netif_napi_del(&lp->napi);
-+	pci_set_drvdata(pdev, NULL);
-+	pci_iounmap(pdev, lp->base);
- 	pci_release_regions(pdev);
- 	free_netdev(dev);
- 	pci_disable_device(pdev);
--- 
-1.7.9.5
-
+That is especially important for patches like these two which make
+changes in the same areas of code.
