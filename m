@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754184Ab2E2QCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:02:40 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:44061 "EHLO mx2.parallels.com"
+	id S1754187Ab2E2QEH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:04:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7180 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab2E2QCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:02:39 -0400
-Message-ID: <4FC4F297.4080202@parallels.com>
-Date: Tue, 29 May 2012 20:00:23 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1752129Ab2E2QEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:04:05 -0400
+Date: Tue, 29 May 2012 18:01:29 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 03/35] xen: document Xen is using an unused bit for the
+ pagetables
+Message-ID: <20120529160128.GC21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-4-git-send-email-aarcange@redhat.com>
+ <20120525202656.GA23655@phenom.dumpdata.com>
+ <20120526155912.GA4054@redhat.com>
+ <20120529141049.GB3558@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge infrastructure
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-17-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290944040.4666@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205290944040.4666@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.70]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120529141049.GB3558@phenom.dumpdata.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 06:47 PM, Christoph Lameter wrote:
-> On Fri, 25 May 2012, Glauber Costa wrote:
->
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -696,7 +696,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
->>   	  then swapaccount=0 does the trick).
->>   config CGROUP_MEM_RES_CTLR_KMEM
->>   	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
->> -	depends on CGROUP_MEM_RES_CTLR&&  EXPERIMENTAL
->> +	depends on CGROUP_MEM_RES_CTLR&&  EXPERIMENTAL&&  !SLOB
->>   	default n
->
-> Ok so SLOB is not supported at all.
->
-Yes, at least I see no reason to.
+Hi,
 
+On Tue, May 29, 2012 at 10:10:49AM -0400, Konrad Rzeszutek Wilk wrote:
+> Oh, your git comment says "the last reserved bit". Let me
+> look through all your patches to see how the AutoNUMA code works -
+> I am probably just missing something simple.
+
+Ah, with "the last reserved bit" I didn't mean AutoNUMA is using
+it. It just means there is nothing left if somebody in the future
+needs it. AutoNUMA happened to need it initially, but I figured how I
+was better off not using it. Initially I had to make AUTONUMA=y
+mutually exclusive with XEN=y but it's not the case anymore. So at
+this point the patch is only a cleanup, I could drop it too but I
+thought it was cleaner to keep it.
