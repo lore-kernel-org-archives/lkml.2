@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2E2JG2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:06:28 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46843 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641Ab2E2JG1 (ORCPT
+	id S1753160Ab2E2JKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:10:20 -0400
+Received: from mail.work-microwave.de ([62.245.205.51]:40553 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752150Ab2E2JKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:06:27 -0400
-Date: Tue, 29 May 2012 10:06:14 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Vincent Sanders <vincent.sanders@collabora.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Vincent Sanders <vince@collabora.co.uk>
-Subject: Re: [PATCH 1/2] Allow constructor name selection by architecture.
-Message-ID: <20120529090614.GD12217@n2100.arm.linux.org.uk>
-References: <1338230018-31052-1-git-send-email-vincent.sanders@collabora.co.uk> <1338230018-31052-2-git-send-email-vincent.sanders@collabora.co.uk> <20120528203005.GA20560@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120528203005.GA20560@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 29 May 2012 05:10:17 -0400
+From: Roland Stigge <stigge@antcom.de>
+To: alan@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux@arm.linux.org.uk
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 1/2] serial/8250: Add LPC3220 standard UART type
+Date: Tue, 29 May 2012 11:09:29 +0200
+Message-Id: <1338282570-19799-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 10:30:05PM +0200, Sam Ravnborg wrote:
-> On Mon, May 28, 2012 at 07:33:37PM +0100, Vincent Sanders wrote:
-> > From: Vincent Sanders <vince@collabora.co.uk>
-> > 
-> > The constructor symbol name is different between platforms. Allow this
-> > to be selected by configuration and set suitable default values.
-> > 
-> > Signed-off-by: Vincent Sanders <vincent.sanders@collabora.co.uk>
-> > ---
-> >  include/asm-generic/vmlinux.lds.h |    6 +++---
-> >  init/Kconfig                      |    6 ++++++
-> >  kernel/module.c                   |    2 +-
-> >  3 files changed, 10 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> > index 8aeadf6..fd34808 100644
-> > --- a/include/asm-generic/vmlinux.lds.h
-> > +++ b/include/asm-generic/vmlinux.lds.h
-> > @@ -471,9 +471,9 @@
-> >  	}
-> >  
-> >  #ifdef CONFIG_CONSTRUCTORS
-> > -#define KERNEL_CTORS()	. = ALIGN(8);			   \
-> > -			VMLINUX_SYMBOL(__ctors_start) = .; \
-> > -			*(.ctors)			   \
-> > +#define KERNEL_CTORS()	. = ALIGN(8);					\
-> > +			VMLINUX_SYMBOL(__ctors_start) = .;		\
-> > +			*(CONFIG_CONSTRUCTORS_NAME)			\
-> >  			VMLINUX_SYMBOL(__ctors_end) = .;
-> 
-> What is wrong with adding both "standard" names for ctors uncnditionally?
-> Like this:
-> > 			*(.ctors)			   \
-> > +			*(.init_array)			   \
+LPC32xx has "Standard" UARTs that are actually 16550A compatible but have
+bigger FIFOs. Since the already supported 16X50 line still doesn't match here,
+we agreed on adding a new type.
 
-That doesn't get rid of CONFIG_CONSTRUCTORS_NAME, because it's needed
-in the module code.  Do you have a suggestion to solve that as well?
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+
+---
+Applies to v3.4
+
+ drivers/tty/serial/8250/8250.c |    8 ++++++++
+ include/linux/serial_core.h    |    3 ++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+--- linux-2.6.orig/drivers/tty/serial/8250/8250.c
++++ linux-2.6/drivers/tty/serial/8250/8250.c
+@@ -282,6 +282,14 @@ static const struct serial8250_config ua
+ 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+ 		.flags		= UART_CAP_FIFO | UART_CAP_AFE | UART_CAP_EFR,
+ 	},
++	[PORT_LPC3220] = {
++		.name		= "LPC3220",
++		.fifo_size	= 64,
++		.tx_loadsz	= 32,
++		.fcr		= UART_FCR_DMA_SELECT | UART_FCR_ENABLE_FIFO |
++				  UART_FCR_R_TRIG_00 | UART_FCR_T_TRIG_00,
++		.flags		= UART_CAP_FIFO,
++	},
+ };
+ 
+ #if defined(CONFIG_MIPS_ALCHEMY)
+--- linux-2.6.orig/include/linux/serial_core.h
++++ linux-2.6/include/linux/serial_core.h
+@@ -47,7 +47,8 @@
+ #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
+ #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
+ #define PORT_XR17D15X	21	/* Exar XR17D15x UART */
+-#define PORT_MAX_8250	21	/* max port ID */
++#define PORT_LPC3220	22	/* NXP LPC32xx SoC "Standard" UART */
++#define PORT_MAX_8250	22	/* max port ID */
+ 
+ /*
+  * ARM specific type numbers.  These are not currently guaranteed
