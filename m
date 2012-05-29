@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab2E2HV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 03:21:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:48243 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab2E2HV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 03:21:57 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Parav Pandit <parav.pandit@emulex.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] RDMA/ocrdma: Remove version.h includes
-Date: Tue, 29 May 2012 12:51:47 +0530
-Message-Id: <1338276107-22169-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753209Ab2E2H3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 03:29:16 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:60166 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab2E2H3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 03:29:15 -0400
+Date: Tue, 29 May 2012 09:28:53 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC -mm] memcg: prevent from OOM with too many dirty pages
+Message-ID: <20120529072853.GD1734@cmpxchg.org>
+References: <1338219535-7874-1-git-send-email-mhocko@suse.cz>
+ <20120529030857.GA7762@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120529030857.GA7762@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-when ran with make versioncheck the ocrdma_verbs.h ocrdma_main.c includes
-version.h which are not needed.
+On Tue, May 29, 2012 at 11:08:57AM +0800, Fengguang Wu wrote:
+> Hi Michal,
+> 
+> On Mon, May 28, 2012 at 05:38:55PM +0200, Michal Hocko wrote:
+> > Current implementation of dirty pages throttling is not memcg aware which makes
+> > it easy to have LRUs full of dirty pages which might lead to memcg OOM if the
+> > hard limit is small and so the lists are scanned faster than pages written
+> > back.
+> > 
+> > This patch fixes the problem by throttling the allocating process (possibly
+> > a writer) during the hard limit reclaim by waiting on PageReclaim pages.
+> > We are waiting only for PageReclaim pages because those are the pages
+> > that made one full round over LRU and that means that the writeback is much
+> > slower than scanning.
+> > The solution is far from being ideal - long term solution is memcg aware
+> > dirty throttling - but it is meant to be a band aid until we have a real
+> > fix.
+> 
+> IMHO it's still an important "band aid" -- perhaps worthwhile for
+> sending to Greg's stable trees. Because it fixes a really important
+> use case: it enables the users to put backups into a small memcg.
+> 
+> The users visible changes are:
+> 
+>         the backup program get OOM killed
+> =>
+>         it runs now, although being a bit slow and bumpy
 
-drivers/infiniband/hw/ocrdma/ocrdma_main.c: 29 linux/version.h not needed.
-drivers/infiniband/hw/ocrdma/ocrdma_verbs.h: 31 linux/version.h not needed.
+The problem is workloads that /don't/ have excessive dirty pages, but
+instantiate clean page cache at a much faster rate than writeback can
+clean the few dirties.  The dirty/writeback pages reach the end of the
+lru several times while there are always easily reclaimable pages
+around.
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/infiniband/hw/ocrdma/ocrdma_main.c  |    1 -
- drivers/infiniband/hw/ocrdma/ocrdma_verbs.h |    1 -
- 2 files changed, 2 deletions(-)
+This was the rationale for introducing the backoff function that
+considers the dirty page percentage of all pages looked at (bottom of
+shrink_active_list) and removing all other sleeps that didn't look at
+the bigger picture and made problems.  I'd hate for them to come back.
 
-diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_main.c b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-index a20d16e..04fef3d 100644
---- a/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-+++ b/drivers/infiniband/hw/ocrdma/ocrdma_main.c
-@@ -26,7 +26,6 @@
-  *******************************************************************/
- 
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/idr.h>
- #include <rdma/ib_verbs.h>
- #include <rdma/ib_user_verbs.h>
-diff --git a/drivers/infiniband/hw/ocrdma/ocrdma_verbs.h b/drivers/infiniband/hw/ocrdma/ocrdma_verbs.h
-index e648343..633f03d 100644
---- a/drivers/infiniband/hw/ocrdma/ocrdma_verbs.h
-+++ b/drivers/infiniband/hw/ocrdma/ocrdma_verbs.h
-@@ -28,7 +28,6 @@
- #ifndef __OCRDMA_VERBS_H__
- #define __OCRDMA_VERBS_H__
- 
--#include <linux/version.h>
- int ocrdma_post_send(struct ib_qp *, struct ib_send_wr *,
- 		     struct ib_send_wr **bad_wr);
- int ocrdma_post_recv(struct ib_qp *, struct ib_recv_wr *,
--- 
-1.7.9.5
-
+On the other hand, is there a chance to make this backoff function
+work for memcgs?  Right now it only applies to the global case to not
+mark a whole zone congested because of some dirty pages on a single
+memcg LRU.  But maybe it can work by considering congestion on a
+per-lruvec basis rather than per-zone?
