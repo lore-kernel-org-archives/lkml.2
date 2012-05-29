@@ -1,83 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591Ab2E2Crb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 22:47:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6832 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751951Ab2E2Cra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 22:47:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="145593062"
-From: Feng Tang <feng.tang@intel.com>
-To: len.brown@intel.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Cc: rui.zhang@intel.com, fazerxlo@o2.pl, Feng Tang <feng.tang@intel.com>,
-        x86@kernel.org
-Subject: [PATCH] ACPI: Fix the irq0 assigning issue for AMILO PRO V2030 platform
-Date: Tue, 29 May 2012 10:43:38 +0800
-Message-Id: <1338259418-6167-1-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752641Ab2E2C43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 22:56:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:1860 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752320Ab2E2C41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 22:56:27 -0400
+X-IronPort-AV: E=Sophos;i="4.75,674,1330876800"; 
+   d="scan'208";a="5063591"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        bsingharora@gmail.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.linux-foundation.org,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+Date: Tue, 29 May 2012 10:56:54 +0800
+Message-Id: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/29 10:54:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/05/29 10:54:40,
+	Serialize complete at 2012/05/29 10:54:40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to fix the kernel bugzilla 40002: "IRQ 0 assigned to VGA"
- https://bugzilla.kernel.org/show_bug.cgi?id=40002
+cgroup and namespaces are used for creating containers but some of
+information is not isolated/virtualized. This patch is for isolating /proc/meminfo
+information per container, which uses memory cgroup. By this, top,free
+and other tools under container can work as expected(show container's
+usage) without changes.
 
-The root cause is the buggy FW, whose ACPI tables assign the GSI 16
-to 2 irqs 0 and 16(VGA), and the VGA is the right owner of GSI 16.
-So add a quirk to ignore the irq0 overriding GSI 16 for the
-FUJITSU SIEMENS AMILO PRO V2030 platform will solve this issue.
+This patch is a trial to show memcg's info in /proc/meminfo if 'current'
+is under a memcg other than root.
 
-This also slightly modify the current irq0 override handling, as it
-only covered the irq0 overriding GSI 2 case.
+we show /proc/meminfo base on container's memory cgroup.
+because there are lots of info can't be provide by memcg, and
+the cmds such as top, free just use some entries of /proc/meminfo,
+we replace those entries by memory cgroup.
 
-Reported-and-tested-by: Szymon Kowalczyk <fazerxlo@o2.pl>
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Cc: x86@kernel.org
+if container has no memcg, we will show host's /proc/meminfo
+as before.
+
+there is no idea how to deal with Buffers,I just set it zero,
+It's strange if Buffers bigger than MemTotal.
+
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
 ---
- arch/x86/kernel/acpi/boot.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+ fs/proc/meminfo.c          |   11 +++++---
+ include/linux/memcontrol.h |   15 +++++++++++
+ mm/memcontrol.c            |   56 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 78 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 4558f0d..06c78c3 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -416,12 +416,14 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
- 		return 0;
- 	}
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 80e4645..29a1fcd 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -13,6 +13,7 @@
+ #include <linux/atomic.h>
+ #include <asm/page.h>
+ #include <asm/pgtable.h>
++#include <linux/memcontrol.h>
+ #include "internal.h"
  
--	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
-+	if (intsrc->source_irq == 0) {
- 		if (acpi_skip_timer_override) {
--			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
-+			printk(PREFIX "BIOS IRQ0 override ignored.\n");
- 			return 0;
- 		}
--		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
-+
-+		if ((intsrc->global_irq == 2) && acpi_fix_pin2_polarity
-+			&& (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
- 			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
- 			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
- 		}
-@@ -1466,6 +1468,15 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
- 		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq 6715b"),
- 		     },
- 	 },
-+	{
-+	 .callback = dmi_ignore_irq0_timer_override,
-+	 .ident = "FUJITSU SIEMENS",
-+	 .matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "AMILO PRO V2030"),
-+		     },
-+	 },
-+
- 	{}
- };
+ void __attribute__((weak)) arch_report_meminfo(struct seq_file *m)
+@@ -27,7 +28,6 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 	struct vmalloc_info vmi;
+ 	long cached;
+ 	unsigned long pages[NR_LRU_LISTS];
+-	int lru;
  
+ /*
+  * display in kilobytes.
+@@ -39,16 +39,19 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 	allowed = ((totalram_pages - hugetlb_total_pages())
+ 		* sysctl_overcommit_ratio / 100) + total_swap_pages;
+ 
++	memcg_meminfo(&i);
+ 	cached = global_page_state(NR_FILE_PAGES) -
+ 			total_swapcache_pages - i.bufferram;
++	/*
++	 * If 'current' is in root memory cgroup, returns global status.
++	 * If not, returns the status of memcg under which current runs.
++	 */
++	sys_page_state(pages, &cached);
+ 	if (cached < 0)
+ 		cached = 0;
+ 
+ 	get_vmalloc_info(&vmi);
+ 
+-	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
+-		pages[lru] = global_page_state(NR_LRU_BASE + lru);
+-
+ 	/*
+ 	 * Tagged format, for easy grepping and expansion.
+ 	 */
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 0316197..6220764 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -21,6 +21,7 @@
+ #define _LINUX_MEMCONTROL_H
+ #include <linux/cgroup.h>
+ #include <linux/vm_event_item.h>
++#include <linux/mm.h>
+ 
+ struct mem_cgroup;
+ struct page_cgroup;
+@@ -116,6 +117,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *,
+ 				   struct mem_cgroup_reclaim_cookie *);
+ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
+ 
++extern void memcg_meminfo(struct sysinfo *si);
++extern void sys_page_state(unsigned long *page, long *cached);
++
+ /*
+  * For memory reclaim.
+  */
+@@ -323,6 +327,17 @@ static inline void mem_cgroup_iter_break(struct mem_cgroup *root,
+ {
+ }
+ 
++static inline void memcg_meminfo(struct sysinfo *si)
++{
++}
++
++static inline void sys_page_state(unsigned long *pages, long *cached)
++{
++	int lru;
++	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
++		pages[lru] = global_page_state(NR_LRU_BASE + lru);
++}
++
+ static inline bool mem_cgroup_disabled(void)
+ {
+ 	return true;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index f142ea9..c25e160 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -52,6 +52,7 @@
+ #include "internal.h"
+ #include <net/sock.h>
+ #include <net/tcp_memcontrol.h>
++#include <linux/pid_namespace.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -4345,6 +4346,61 @@ mem_cgroup_get_total_stat(struct mem_cgroup *memcg, struct mcs_total_stat *s)
+ 		mem_cgroup_get_local_stat(iter, s);
+ }
+ 
++void memcg_meminfo(struct sysinfo *val)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_task(current);
++	__kernel_ulong_t totalram, totalswap;
++	if (current->nsproxy->pid_ns == &init_pid_ns ||
++	    memcg == NULL || mem_cgroup_is_root(memcg))
++		return;
++
++	totalram = res_counter_read_u64(&memcg->res,
++					RES_LIMIT) >> PAGE_SHIFT;
++	if (totalram < val->totalram) {
++		__kernel_ulong_t usageram;
++		usageram = res_counter_read_u64(&memcg->res,
++						RES_USAGE) >> PAGE_SHIFT;
++		val->totalram = totalram;
++		val->freeram = totalram - usageram;
++		val->bufferram = 0;
++		val->totalhigh = 0;
++		val->freehigh = 0;
++	} else
++		return;
++
++	totalswap = res_counter_read_u64(&memcg->memsw,
++					 RES_LIMIT) >> PAGE_SHIFT;
++	if (totalswap < val->totalswap) {
++		__kernel_ulong_t usageswap;
++		usageswap = res_counter_read_u64(&memcg->memsw,
++						 RES_USAGE) >> PAGE_SHIFT;
++		val->totalswap = totalswap - val->totalram;
++		val->freeswap = totalswap - usageswap - val->freeram;
++	}
++}
++
++void sys_page_state(unsigned long *pages, long *cached)
++{
++	struct mem_cgroup *memcg = mem_cgroup_from_task(current);
++
++	if (current->nsproxy->pid_ns == &init_pid_ns ||
++	    memcg == NULL || mem_cgroup_is_root(memcg)) {
++		int lru;
++		for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)
++			pages[lru] = global_page_state(NR_LRU_BASE + lru);
++	} else {
++		struct mcs_total_stat s;
++		memset(&s, 0, sizeof(s));
++		mem_cgroup_get_total_stat(memcg, &s);
++		*cached = s.stat[MCS_CACHE] >> PAGE_SHIFT;
++		pages[LRU_ACTIVE_ANON] = s.stat[MCS_ACTIVE_ANON] >> PAGE_SHIFT;
++		pages[LRU_ACTIVE_FILE] = s.stat[MCS_ACTIVE_FILE] >> PAGE_SHIFT;
++		pages[LRU_INACTIVE_ANON] = s.stat[MCS_INACTIVE_ANON] >> PAGE_SHIFT;
++		pages[LRU_INACTIVE_FILE] = s.stat[MCS_INACTIVE_FILE] >> PAGE_SHIFT;
++		pages[LRU_UNEVICTABLE] = s.stat[MCS_UNEVICTABLE] >> PAGE_SHIFT;
++	}
++}
++
+ #ifdef CONFIG_NUMA
+ static int mem_control_numa_stat_show(struct seq_file *m, void *arg)
+ {
 -- 
-1.7.9
+1.7.7.6
 
