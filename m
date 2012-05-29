@@ -1,31 +1,57 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1756061Ab2ESKT2 (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Sat, 19 May 2012 06:19:28 -0400
-Received: from out-77.smtp.ucla.edu ([169.232.46.175]:55874 "EHLO
-        out-77.smtp.ucla.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1755267Ab2ESKT0 convert rfc822-to-8bit (ORCPT
+        id S1752539Ab2E2H5O (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Tue, 29 May 2012 03:57:14 -0400
+Received: from mail19i.g19.rapidsite.net ([204.202.242.121]:33879 "HELO
+        mail19i.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with SMTP id S1752285Ab2E2H5N (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Sat, 19 May 2012 06:19:26 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 May 2012 06:19:26 EDT
-Message-Id: <201205191003.q4J9qkoY026557@mail.ucla.edu>
-Content-Type: text/plain; charset=US-ASCII
+        Tue, 29 May 2012 03:57:13 -0400
+thread-index: Ac09cKgaS0Uen0QzR/67PNJRDOVYnA==
+Thread-Topic: Your order is complete - Please save this email Recommends Advanced Sports to you
+From: <christian@ymail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: Your order is complete - Please save this email Recommends Advanced Sports to you
+Date: Tue, 29 May 2012 03:57:12 -0400
+Message-ID: <1D192B51BF294BE79DF8C90041E9AFBD@g19.win.smewh.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Hello
-To: Recipients <dr.weiihua02@rogers.com>
-From: "''Dr. Ma Weihua''" <dr.weiihua02@rogers.com>
-Date: Sat, 19 May 2012 11:02:06 +0100
-Reply-To: dr.weihua02@rogers.com
-X-Probable-Spam: no
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012052901)]
+X-MAIL-FROM: <christian@ymail.com>
+X-SOURCE-IP: [199.239.254.58]
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Hello to you,
-My letter may come to you as a surprise but I had to contact you in this manner due to the importance and urgent business situation I have at hand. I need you as a partner in a lucratice business which involve the transfer of $32,500,000.00 U.S Dollars from China to your country. We shall share in a ratio to be agreed by both of us when the deal is completed. Please reply for more information if you are interested in doing business with me and also getting to know each other better before proceeding.
+>From         :Your order is complete - Please save this email
+Email        :christian@ymail.com
+Friend Name  :Friend
+Friend Email :linux-kernel@vger.kernel.org
+comment      :
 
-Kind Regards,
+Hey Friend,
+ 
+Click on the link below to access your download:
 
-Dr. Ma Weihua
+==> http://www.mass-money-machine.com/?code=4fc415cc27d22 
+
+This expires in 48 hours.
+
+Have A Great Day!
+
+Christian
+
+PS: You have NOT been charged anything.
+
+I just hooked you up with an awesome
+product for ???!
+
+
+
+
+
