@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab2E2XhU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 19:37:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:63631 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755995Ab2E2XhT (ORCPT
+	id S1756060Ab2E2Xiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 19:38:52 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57473 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab2E2Xiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 19:37:19 -0400
-Message-ID: <1338334286.2658.536.camel@shawn-ssd>
-Subject: include/linux/dynamic_debug.h:111:2: error: implicit declaration of
- function =?UTF-8?Q?=E2=80=98strstr=E2=80=99?=
-From: shawn <shawnlandden@gmail.com>
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: Jason Baron <jbaron@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 29 May 2012 16:31:26 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 29 May 2012 19:38:51 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: David Miller <davem@davemloft.net>, Florian Fainelli <florian@openwrt.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH V2 1/2] r6040: disable pci device if the subsequent calls (after pci_enable_device) fails
+Date: Wed, 30 May 2012 05:08:42 +0530
+Message-Id: <1338334722-14730-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  SHIPPED arch/arm/boot/compressed/lib1funcs.S
-In file included from include/linux/kernel.h:23:0,
-                 from
-arch/arm/boot/compressed/../../../../lib/xz/xz_private.h:15,
-                 from
-arch/arm/boot/compressed/../../../../lib/decompress_unxz.c:145,
-                 from arch/arm/boot/compressed/decompress.c:50:
-include/linux/dynamic_debug.h: In function
-‘ddebug_dyndbg_module_param_cb’:
-include/linux/dynamic_debug.h:111:2: error: implicit declaration of
-function ‘strstr’ [-Werror=implicit-function-declaration]
-  SHIPPED arch/arm/boot/compressed/ashldi3.S
-  AS      arch/arm/boot/compressed/lib1funcs.o
-  AS      arch/arm/boot/compressed/ashldi3.o
-cc1: some warnings being treated as errors
-make[2]: *** [arch/arm/boot/compressed/decompress.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [arch/arm/boot/compressed/vmlinux] Error 2
-make: *** [uImage] Error 2
+the calls after the pci_enable_device may fail, and will error out with out
+disabling it. disable the device at error paths.
 
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/net/ethernet/rdc/r6040.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-git blame shows b48420c1d3019ce8d84fb8e58f4ca86b8e3655b8 as introducing
-this call
-
+diff --git a/drivers/net/ethernet/rdc/r6040.c b/drivers/net/ethernet/rdc/r6040.c
+index 4de7364..f5e6f1f 100644
+--- a/drivers/net/ethernet/rdc/r6040.c
++++ b/drivers/net/ethernet/rdc/r6040.c
+@@ -1096,20 +1096,20 @@ static int __devinit r6040_init_one(struct pci_dev *pdev,
+ 	if (err) {
+ 		dev_err(&pdev->dev, "32-bit PCI DMA addresses"
+ 				"not supported by the card\n");
+-		goto err_out;
++		goto err_out_disable_dev;
+ 	}
+ 	err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+ 	if (err) {
+ 		dev_err(&pdev->dev, "32-bit PCI DMA addresses"
+ 				"not supported by the card\n");
+-		goto err_out;
++		goto err_out_disable_dev;
+ 	}
+ 
+ 	/* IO Size check */
+ 	if (pci_resource_len(pdev, bar) < io_size) {
+ 		dev_err(&pdev->dev, "Insufficient PCI resources, aborting\n");
+ 		err = -EIO;
+-		goto err_out;
++		goto err_out_disable_dev;
+ 	}
+ 
+ 	pci_set_master(pdev);
+@@ -1117,7 +1117,7 @@ static int __devinit r6040_init_one(struct pci_dev *pdev,
+ 	dev = alloc_etherdev(sizeof(struct r6040_private));
+ 	if (!dev) {
+ 		err = -ENOMEM;
+-		goto err_out;
++		goto err_out_disable_dev;
+ 	}
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+ 	lp = netdev_priv(dev);
+@@ -1238,6 +1238,8 @@ err_out_free_res:
+ 	pci_release_regions(pdev);
+ err_out_free_dev:
+ 	free_netdev(dev);
++err_out_disable_dev:
++	pci_disable_device(pdev);
+ err_out:
+ 	return err;
+ }
 -- 
--Shawn Landden
+1.7.9.5
 
