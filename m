@@ -1,109 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab2E2Byp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 21:54:45 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:12777 "EHLO
+	id S1752298Ab2E2CHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 22:07:10 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:62812 "EHLO
 	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751944Ab2E2Byo (ORCPT
+	by vger.kernel.org with ESMTP id S1751885Ab2E2CHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 21:54:44 -0400
+	Mon, 28 May 2012 22:07:06 -0400
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlAJADQrxE95LJr7/2dsb2JhbABEFrQjBIEkgQiCFwEBAwEBOhwjBQsIAw4KLhQlAyETiAYEDLgSFIpvFAwvhGIDlRaBEIgPhlOCcoFEAQ
-Date: Tue, 29 May 2012 11:54:38 +1000
+X-IronPort-Anti-Spam-Result: Ak4JAKIuxE95LJr7/2dsb2JhbABEtDMEgSSBCIIXAQEEATocIwULCAMOCi4UJQMhE4gGBLgjFIpvT4QCYAOVFokfhlOCcg
+Date: Tue, 29 May 2012 12:07:02 +1000
 From: Dave Chinner <david@fromorbit.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
+To: Tejun Heo <tj@kernel.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
+        Kent Overstreet <koverstreet@google.com>,
+        Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
         linux-bcache@vger.kernel.org, dm-devel@redhat.com,
         linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net,
-        mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com,
-        tj@kernel.org, sage@newdream.net, agk@redhat.com,
+        vgoyal@redhat.com, bharrosh@panasas.com, sage@newdream.net,
         drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>,
         tytso@google.com
 Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
-Message-ID: <20120529015438.GZ5091@dastard>
+Message-ID: <20120529020702.GA5091@dastard>
 References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
  <1337977539-16977-15-git-send-email-koverstreet@google.com>
  <20120525204651.GA24246@redhat.com>
  <20120525210944.GB14196@google.com>
+ <20120525223937.GF5761@agk-dp.fab.redhat.com>
+ <Pine.LNX.4.64.1205281129180.2227@file.rdu.redhat.com>
+ <20120528202839.GA18537@dhcp-172-17-108-109.mtv.corp.google.com>
+ <Pine.LNX.4.64.1205281659580.11763@file.rdu.redhat.com>
+ <20120528213839.GB18537@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120525210944.GB14196@google.com>
+In-Reply-To: <20120528213839.GB18537@dhcp-172-17-108-109.mtv.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 02:09:44PM -0700, Kent Overstreet wrote:
-> On Fri, May 25, 2012 at 04:46:51PM -0400, Mike Snitzer wrote:
-> > I'd love to see the merge_bvec stuff go away but it does serve a
-> > purpose: filesystems benefit from accurately building up much larger
-> > bios (based on underlying device limits).  XFS has leveraged this for
-> > some time and ext4 adopted this (commit bd2d0210cf) because of the
-> > performance advantage.
+On Tue, May 29, 2012 at 06:38:39AM +0900, Tejun Heo wrote:
+> On Mon, May 28, 2012 at 05:27:33PM -0400, Mikulas Patocka wrote:
+> > > Isn't it more like you shouldn't be sending read requested by user and
+> > > read ahead in the same bio?
+> > 
+> > If the user calls read with 512 bytes, you would send bio for just one 
+> > sector. That's too small and you'd get worse performance because of higher 
+> > command overhead. You need to send larger bios.
 > 
-> That commit only talks about skipping buffer heads, from the patch
-> description I don't see how merge_bvec_fn would have anything to do with
-> what it's after.
+> All modern FSes are page granular, so the granularity would be
+> per-page.
 
-XFS has used it since 2.6.16 as building our own bios enabled the Io
-path form IOs of sizes that are independent of the filesystem block
-size.
+Most modern filesystems support sparse files and block sizes smaller
+than page size, so a single page may require multiple unmergable
+bios to fill all the data in them. Hence IO granularity is
+definitely not per-page even though that is the granularity of the
+page cache.
 
-http://oss.sgi.com/projects/xfs/papers/ols2006/ols-2006-paper.pdf
+> Also, RAHEAD is treated differently in terms of
+> error-handling.  Do filesystems implement their own rahead
+> (independent from the common logic in vfs layer) on their own?
 
-And it's not just the XFS write path that uses bio_add_page - the XFS
-metadata read/write IO code uses it as well because we have metadata
-constructs that are larger than a single page...
+Yes. Keep in mind there is no rule that says filesystems must use
+the generic IO paths, or even the page cache for that matter.
+Indeed, XFS (and I think btrfs now) do no use the page cache for
+their metadata caching and IO.
 
-> > So if you don't have a mechanism for the filesystem's IO to have
-> > accurate understanding of the limits of the device the filesystem is
-> > built on (merge_bvec was the mechanism) and are leaning on late
-> > splitting does filesystem performance suffer?
-> 
-> So is the issue that it may take longer for an IO to complete, or is it
-> CPU utilization/scalability?
+So just off the top of my head, XFS has it's own readahead for
+metadata constructs (btrees, directory data, etc) , and btrfs
+implements it's own readpage/readpages and readahead paths (see the
+btrfs compression support, for example).
 
-Both. Moving to this code reduced the CPU overhead per MB of data
-written to disk by 80-90%. It also allowed us to build IOs that span
-entire RAID stripe widths, thereby avoiding potential RAID RMW
-cycles, and even allowing high end raid controllers to trigger BBWC
-bypass fast paths that could double or triple the write throughput
-of the arrays...
-
-> If it's the former, we've got a real problem.
-
-... then you have a real problem.
-
-> If it's the latter - it
-> might be a problem in the interim (I don't expect generic_make_request()
-> to be splitting bios in the common case long term), but I doubt it's
-> going to be much of an issue.
-
-I think this will also be an issue - the typical sort of throughput
-I've been hearing about over the past year for typical HPC
-deployments is >20GB/s buffered write throughput to disk on a single
-XFS filesystem, and that is typically limited by the flusher thread
-being CPU bound. So if you changes have a CPU usage impact, then
-these systems will definitely see reduced performance....
-
-> > Would be nice to see before and after XFS and ext4 benchmarks against a
-> > RAID device (level 5 or 6).  I'm especially interested to get Dave
-> > Chinner's and Ted's insight here.
-> 
-> Yeah.
-> 
-> I can't remember who it was, but Ted knows someone who was able to
-> benchmark on a 48 core system. I don't think we need numbers from a 48
-> core machine for these patches, but whatever workloads they were testing
-> that were problematic CPU wise would be useful to test.
-
-Eric Whitney.
-
-http://downloads.linux.hp.com/~enw/ext4/3.2/
-
-His storage hardware probably isn't fast enough to demonstrate the
-sort of problems I'm expecting that would occur...
+And FWIW, XFS has variable sized metadata, so to complete the
+circle, some metadata requires sector granularity, some filesystem
+block size granularity, and some multiple page granularity.
 
 Cheers,
 
