@@ -1,120 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290Ab2E2Mtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 08:49:49 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:53961 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab2E2Mtr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 08:49:47 -0400
-X-AuditID: b753bd60-903faba000003d24-fb-4fc4c5e9b745
-X-AuditID: b753bd60-903faba000003d24-fb-4fc4c5e9b745
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC PATCH -tip 9/9] kprobes/x86: ftrace based optiomization for x86
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 29 May 2012 21:49:51 +0900
-Message-ID: <20120529124951.9191.90658.stgit@localhost.localdomain>
-In-Reply-To: <20120529124833.9191.23007.stgit@localhost.localdomain>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1751806Ab2E2MzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 08:55:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35247 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab2E2My7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 08:54:59 -0400
+Date: Tue, 29 May 2012 14:54:52 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
+ flexible proportions
+Message-ID: <20120529125452.GB23991@quack.suse.cz>
+References: <1337878751-22942-1-git-send-email-jack@suse.cz>
+ <1337878751-22942-3-git-send-email-jack@suse.cz>
+ <1338220185.4284.19.camel@lappy>
+ <20120529123408.GA23991@quack.suse.cz>
+ <1338295111.26856.57.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338295111.26856.57.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add function tracer based kprobe optimization support
-handlers on x86. This allows kprobes to use function
-tracer for probing on mcount call.
+On Tue 29-05-12 14:38:31, Peter Zijlstra wrote:
+> On Tue, 2012-05-29 at 14:34 +0200, Jan Kara wrote:
+> 
+> > The only safe solution seems to be to create a variant of percpu counters
+> > that can be used from an interrupt. Or do you have other idea Peter?
+> 
+> > > [   20.680186]  [<ffffffff8325ac9b>] _raw_spin_lock+0x3b/0x70
+> > > [   20.680186]  [<ffffffff81993527>] ? __percpu_counter_sum+0x17/0xc0
+> > > [   20.680186]  [<ffffffff81993527>] __percpu_counter_sum+0x17/0xc0
+> > > [   20.680186]  [<ffffffff810ebf90>] ? init_timer_deferrable_key+0x20/0x20
+> > > [   20.680186]  [<ffffffff8195b5c2>] fprop_new_period+0x12/0x60
+> > > [   20.680186]  [<ffffffff811d929d>] writeout_period+0x3d/0xa0
+> > > [   20.680186]  [<ffffffff810ec0bf>] call_timer_fn+0x12f/0x260
+> > > [   20.680186]  [<ffffffff810ebf90>] ? init_timer_deferrable_key+0x20/0x20
+> 
+> Yeah, just make sure IRQs are disabled around doing that ;-)
+  Evil ;) But we'd need to have IRQs disabled also in each
+fprop_fraction_percpu() call, and generally, if we want things clean, we'd
+need to disable them in all entry points to proportion code (or at least
+around all percpu calls)...
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
-
- arch/x86/include/asm/kprobes.h |    1 +
- arch/x86/kernel/kprobes.c      |   48 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-index 5478825..d3ddd17 100644
---- a/arch/x86/include/asm/kprobes.h
-+++ b/arch/x86/include/asm/kprobes.h
-@@ -27,6 +27,7 @@
- #include <asm/insn.h>
- 
- #define  __ARCH_WANT_KPROBES_INSN_SLOT
-+#define  ARCH_SUPPORTS_KPROBES_ON_FTRACE
- 
- struct pt_regs;
- struct kprobe;
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index e2f751e..4c46c55 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1052,6 +1052,54 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	return 0;
- }
- 
-+#ifdef KPROBES_CAN_USE_FTRACE
-+/* Ftrace callback handler for kprobes */
-+void __kprobes kprobe_ftrace_handler(unsigned long ip, unsigned long parent_ip,
-+				     struct pt_regs *regs)
-+{
-+	struct kprobe *p;
-+	struct kprobe_ctlblk *kcb;
-+	unsigned long flags;
-+
-+	/* Disable irq for emulating a breakpoint and avoiding preempt */
-+	local_irq_save(flags);
-+
-+	p = get_kprobe((kprobe_opcode_t *)ip);
-+	if (unlikely(!p) || kprobe_disabled(p))
-+		goto end;
-+
-+	kcb = get_kprobe_ctlblk();
-+	if (kprobe_running()) {
-+		kprobes_inc_nmissed_count(p);
-+	} else {
-+		regs->ip += sizeof(kprobe_opcode_t);
-+
-+		__this_cpu_write(current_kprobe, p);
-+		kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-+		if (p->pre_handler)
-+			p->pre_handler(p, regs);
-+
-+		if (unlikely(p->post_handler)) {
-+			/* Emulate singlestep as if there is a 5byte nop */
-+			regs->ip = ip + MCOUNT_INSN_SIZE;
-+			kcb->kprobe_status = KPROBE_HIT_SSDONE;
-+			p->post_handler(p, regs, 0);
-+		}
-+		__this_cpu_write(current_kprobe, NULL);
-+		regs->ip = ip;	/* Recover for next callback */
-+	}
-+end:
-+	local_irq_restore(flags);
-+}
-+
-+int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
-+{
-+	p->ainsn.insn = NULL;
-+	p->ainsn.boostable = -1;
-+	return 0;
-+}
-+#endif
-+
- int __init arch_init_kprobes(void)
- {
- 	return arch_init_optprobes();
-
+								Honza
