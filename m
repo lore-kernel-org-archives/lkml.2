@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab2E2Ri5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:38:57 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61886 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754547Ab2E2Ri4 (ORCPT
+	id S1754762Ab2E2RoI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:44:08 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37954 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2E2RoG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:38:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120529163849.GF21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-14-git-send-email-aarcange@redhat.com> <1338297385.26856.74.camel@twins>
- <20120529163849.GF21339@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 29 May 2012 10:38:34 -0700
-X-Google-Sender-Auth: WtmBFWKI2rwE3GFXCPbINp2MgIY
-Message-ID: <CA+55aFwmhM2a2HjB_MEjVDDL-AP4j-t202ozmHgT0azSptjnoA@mail.gmail.com>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+	Tue, 29 May 2012 13:44:06 -0400
+Message-ID: <1338313407.26856.163.camel@twins>
+Subject: Re: [PATCH 22/35] autonuma: sched_set_autonuma_need_balance
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Paul Turner <pjt@google.com>,
@@ -33,28 +26,30 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 29 May 2012 19:43:27 +0200
+In-Reply-To: <20120529173347.GJ21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	 <1337965359-29725-23-git-send-email-aarcange@redhat.com>
+	 <1338307942.26856.111.camel@twins> <20120529173347.GJ21339@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 9:38 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> On Tue, May 29, 2012 at 03:16:25PM +0200, Peter Zijlstra wrote:
->> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
->> price to pay.
->
-> I don't think it's too great, memcg uses for half of that and yet
-> nobody is booting with cgroup_disable=memory even on not-NUMA servers
-> with less RAM.
+On Tue, 2012-05-29 at 19:33 +0200, Andrea Arcangeli wrote:
+> So the cost on a 24-way SMP 
 
-A big fraction of one percent is absolutely unacceptable.
+is irrelevant.. also, not every cpu gets to the 24 cpu domain, just 2
+do.
 
-Our "struct page" is one of our biggest memory users, there's no way
-we should cavalierly make it even bigger.
+When you do for_each_cpu() think at least 4096, if you do
+for_each_node() think at least 256.
 
-It's also a huge performance sink, the cache miss on struct page tends
-to be one of the biggest problems in managing memory. We may not ever
-fix that, but making struct page bigger certainly isn't going to help
-the bad cache behavior.
+Add to that the knowledge that doing 4096 remote memory accesses will
+cost multiple jiffies, then realize you're wanting to do that with
+preemption disabled.
 
-                    Linus
+That's just a very big no go.
