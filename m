@@ -1,43 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab2E2Jis (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:38:48 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:51994 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753140Ab2E2Jiq (ORCPT
+	id S1753287Ab2E2Jvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:51:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59205 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2E2Jvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:38:46 -0400
-Date: Tue, 29 May 2012 18:38:32 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 00/91] 3.4.1-stable review
-Message-ID: <20120529093832.GA20303@kroah.com>
-References: <20120527010903.GA18244@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120527010903.GA18244@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 May 2012 05:51:31 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>, Devendra Naga <devendra.aaru@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] [staging] bcm: Replace the BCM_DEBUG_* and BCM_SHOW_* macros with functions
+Date: Tue, 29 May 2012 15:21:17 +0530
+Message-Id: <1338285078-17785-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 27, 2012 at 10:09:03AM +0900, Greg KH wrote:
-> Note, I've tested this release a bit differently than I have in the
-> past.  For this release, I've only tested it on one machine, my laptop,
-> with a pretty minimal configuration to save on build times.  That means,
-> while this release works for me, it might not for you, and it might not
-> even build at all for you.  Please test to verify that I haven't messed
-> anything up.  I'll give everyone at least an extra day than "normal" for
-> this review cycle before I cut a final 3.4.1 release.
+This patch is made by following the improvements told by Joe Perches,
+replaced the BCM_DEBUG* and BCM_SHOW* macros into functions and added them
+in a file and added macros in the Debug.h file. This patch also improves the if
+check in bcm_show_debug_bitmap,
 
-It looks like people get even more time to test as I'm not going to be
-able to push these updates out until Thursday or Friday at the earliest,
-due to me being stuck in an area of Asia where the internet connectivity
-really isn't all that good.
+the check was
+	if ((i == 1) || (i == 2) || (i == 4) || (i == 8));
+anyway its a check to find whether its a power of two, and replaces
+it like the following,
+	if ((i != 0) && !(i & (i - 1)))
 
-Sorry for the delay,
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/staging/bcm/Debug.c  |   54 ++++++++++++++++++++++++++++++++++++
+ drivers/staging/bcm/Debug.h  |   62 ++++++++++++++----------------------------
+ drivers/staging/bcm/Makefile |    2 +-
+ 3 files changed, 76 insertions(+), 42 deletions(-)
+ create mode 100644 drivers/staging/bcm/Debug.c
 
-greg k-h
+diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
+new file mode 100644
+index 0000000..5ae629a
+--- /dev/null
++++ b/drivers/staging/bcm/Debug.c
+@@ -0,0 +1,54 @@
++#include "headers.h"
++
++void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
++			int dbg_level, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	UINT debug_level = Adapter->stDebugState.debug_level;
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	if (DBG_TYPE_PRINTK == Type)
++		pr_info("%s: %pV", __func__, &vaf);
++	else if (Adapter &&
++		(dbg_level & DBG_LVL_BITMASK) <= debug_level &&
++		(Type & Adapter->stDebugState.type) &&
++		(SubType & Adapter->stDebugState.subtype[Type])) {
++		if (dbg_level & DBG_NO_FUNC_PRINT)
++			printk(KERN_DEBUG "%pV" , &vaf);
++		else
++			printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
++	}
++
++	va_end(args);
++}
++
++void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
++			    int dbg_level, const void *buffer, size_t bufferlen)
++{
++	if (DBG_TYPE_PRINTK == Type ||
++	   (Adapter &&
++	   (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
++	   (Type & Adapter->stDebugState.type) &&
++	   (SubType & Adapter->stDebugState.subtype[Type]))) {
++		printk(KERN_DEBUG "%s:\n", __func__);
++		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
++			       16, 1, buffer, bufferlen, false);
++	}
++}
++
++void bcm_show_debug_bitmap(PMINI_ADAPTER Adapter)
++{
++	int i;
++	for (i = 0; i < (NUMTYPES * 2) + 1; i++) {
++		if ((i != 0) && !(i & (i - 1))) {
++			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
++					"subtype[%d] = 0x%08x\n",
++					i, Adapter->stDebugState.subtype[i]);
++		}
++	}
++}
+diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
+index 420382d..030c737 100644
+--- a/drivers/staging/bcm/Debug.h
++++ b/drivers/staging/bcm/Debug.h
+@@ -203,57 +203,37 @@ typedef struct _S_BCM_DEBUG_STATE {
+ 	 * corresponding to valid Type values. Hence we use the 'Type' field
+ 	 * as the index value, ignoring the array entries 0,3,5,6,7 !
+ 	 */
+-	UINT subtype[(NUMTYPES*2)+1];
++	UINT subtype[(NUMTYPES * 2) + 1];
+ 	UINT debug_level;
+ } S_BCM_DEBUG_STATE;
+ /* Instantiated in the Adapter structure */
+ /* We'll reuse the debug level parameter to include a bit (the MSB) to indicate whether or not
+  * we want the function's name printed.  */
+-#define DBG_NO_FUNC_PRINT	1 << 31
++#define DBG_NO_FUNC_PRINT	(1 << 31)
+ #define DBG_LVL_BITMASK		0xFF
+ 
+ //--- Only for direct printk's; "hidden" to API.
+ #define DBG_TYPE_PRINTK		3
+ 
+-#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, string, args...) \
+-	do {								\
+-		if (DBG_TYPE_PRINTK == Type)				\
+-			pr_info("%s:" string, __func__, ##args);	\
+-		else if (Adapter &&					\
+-			 (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level && \
+-			 (Type & Adapter->stDebugState.type) &&		\
+-			 (SubType & Adapter->stDebugState.subtype[Type])) { \
+-			if (dbg_level & DBG_NO_FUNC_PRINT)		\
+-				printk(KERN_DEBUG string, ##args);	\
+-			else						\
+-				printk(KERN_DEBUG "%s:" string, __func__, ##args);	\
+-		}							\
+-	} while (0)
+-
+-#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,  buffer, bufferlen) do { \
+-	if (DBG_TYPE_PRINTK == Type ||					\
+-	    (Adapter &&							\
+-	     (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level  && \
+-	     (Type & Adapter->stDebugState.type) &&			\
+-	     (SubType & Adapter->stDebugState.subtype[Type]))) {	\
+-		printk(KERN_DEBUG "%s:\n", __func__);			\
+-		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,	\
+-			       16, 1, buffer, bufferlen, false);	\
+-	}								\
+-} while(0)
+-
+-
+-#define BCM_SHOW_DEBUG_BITMAP(Adapter)	do { \
+-	int i;									\
+-	for (i=0; i<(NUMTYPES*2)+1; i++) {		\
+-		if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {		\
+-		/* CAUTION! Forcefully turn on ALL debug paths and subpaths!	\
+-		Adapter->stDebugState.subtype[i] = 0xffffffff;	*/ \
+-		BCM_DEBUG_PRINT (Adapter, DBG_TYPE_PRINTK, 0, 0, "subtype[%d] = 0x%08x\n", 	\
+-		i, Adapter->stDebugState.subtype[i]);	\
+-		}	\
+-	}		\
+-} while (0)
++struct _MINI_ADAPTER;
++
++__printf(5, 6)
++
++void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
++			int dbg_level, const char *fmt, ...);
++void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
++			int dbg_level, const void *buffer, size_t bufferlen);
++void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
++
++#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...)	\
++	bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
++
++#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,	\
++				buffer, bufferlen)			\
++	bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,	\
++				buffer, bufferlen)
++#define BCM_SHOW_DEBUG_BITMAP(Adapter)					\
++	bcm_show_debug_bitmap(Adapter)
+ 
+ #endif
+ 
+diff --git a/drivers/staging/bcm/Makefile b/drivers/staging/bcm/Makefile
+index 652b7f8..85b134d 100644
+--- a/drivers/staging/bcm/Makefile
++++ b/drivers/staging/bcm/Makefile
+@@ -7,6 +7,6 @@ obj-$(CONFIG_BCM_WIMAX) +=	bcm_wimax.o
+ bcm_wimax-y :=  InterfaceDld.o InterfaceIdleMode.o InterfaceInit.o InterfaceRx.o \
+ 		InterfaceIsr.o InterfaceMisc.o InterfaceTx.o \
+ 		CmHost.o IPv6Protocol.o Qos.o Transmit.o\
+-		Bcmnet.o DDRInit.o HandleControlPacket.o\
++		Debug.o Bcmnet.o DDRInit.o HandleControlPacket.o\
+ 		LeakyBucket.o Misc.o sort.o Bcmchar.o hostmibs.o PHSModule.o\
+ 		led_control.o nvm.o vendorspecificextn.o
+-- 
+1.7.9.5
+
