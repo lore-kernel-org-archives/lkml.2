@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab2E2RZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:25:20 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:43961 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754088Ab2E2RZS (ORCPT
+	id S1754733Ab2E2RZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:25:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37272 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690Ab2E2RZc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:25:18 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: krBrtQ4VM1k333sFklkuiQtgL3In3ygfHfMhqwpQ3CMfvVl
- huymnCBahm2tsLwndNu8EkLOmbEGRfg8B80Brh8PJsHGiTAb3J50BDfFHk17
- _.sZ1PGCsh7lYJs3K5Wf154sA_ipsvLkyz2ZQzPdKR1RdEI3BwF9AbktcL_O
- M1iXUGRK2dDx18gfHwRvijPOGGADATYqWdhqhf3B4iWGHg.XVcTv3gXRlqNJ
- jU72Iwcr3f5p4gOPxS2RLharKtOsocP3XioYiL9rqIzNDsFQI8gjFngCsIN7
- BwXZdf8lVLF.jc6dTZDFVrA_XkL6DehN0WrXdDtOSVThXtN4EaKxOfwOlyu1
- iiF2OGsoerajQLNByzy0_kRTSvclonFrrMRph0crSAUFRsqkXERs6EOTOTrD
- w8z_.po1od_ia209WLp_AyFE.8egrqlvA82Dc
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 29 May 2012 12:25:12 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
-In-Reply-To: <4FC501E9.60607@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205291222360.8495@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-14-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290932530.4666@router.home> <4FC4F1A7.2010206@parallels.com> <alpine.DEB.2.00.1205291101580.6723@router.home>
- <4FC501E9.60607@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 May 2012 13:25:32 -0400
+Message-ID: <1338312319.26856.159.camel@twins>
+Subject: Re: WARNING: at arch/x86/kernel/smpboot.c:310
+ topology_sane.clone.1+0x6e/0x81()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        hpa <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 29 May 2012 19:25:19 +0200
+In-Reply-To: <20120529171305.GK29157@aftab.osrc.amd.com>
+References: <20120529135442.GE29157@aftab.osrc.amd.com>
+	 <1338303106.26856.92.camel@twins> <20120529152944.GA8263@alberich.amd.com>
+	 <1338310743.26856.141.camel@twins>
+	 <20120529171305.GK29157@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 May 2012, Glauber Costa wrote:
+On Tue, 2012-05-29 at 19:13 +0200, Borislav Petkov wrote:
+> 
+> > As it stands I think we should discuss the definition for the generic
+> > topology bits (drivers/base/topology.c), because I think your
+> > Magny-Cours thing does the wrong thing here.
+> 
+> "wrong" is such a strong word :-) Please elaborate and I'll have a look.
 
-> I will try to at least have the page accounting done in a consistent way. How
-> about that?
+Right, so I meant LLC is the useful mask, and in my mind LLC is what
+makes a multi-core, without shared cache its just SMP. So core_siblings
+to me would mean LLC sharing cores.
 
-Ok. What do you mean by "consistent"? Since objects and pages can be used
-in a shared way and since accounting in many areas of the kernel is
-intentional fuzzy to avoid performance issues there is not that much of a
-requirement for accuracy. We have problems even just defining what the
-exact set of pages belonging to a task/process is.
+But its all very subjective I guess, but using strong words gets the
+discussion going better ;-)
 
+> > The core span in a phys_id is all nice and such, but what does it mean?
+> 
+> AFAICT, this is the physical package id to which the cores belong, i.e.
+> physical socket.
+> 
+> > IOW what would you do with it?
+> 
+> Shoot empty cans with it... :-) 
+
+Right, I actually came up with proper use-case, physical hotplug :-)
+
+Its not immediately obvious the sysfs topo bits have the llc mask, which
+is the more 'useful' one IMO.
+
+Another funny case I don't see represented well is where there's
+multiple sockets to a node -- I know this is like ancient tech and
+unlikely in these days of multi-node sockets, but still ;-)
+
+I guess what I'm asking is what is the purpose of the sys topo bits?
