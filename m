@@ -1,108 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab2E2Q2Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:28:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58451 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab2E2Q2W convert rfc822-to-8bit (ORCPT
+	id S1754241Ab2E2Q3C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:29:02 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:57956 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754196Ab2E2Q27 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:28:22 -0400
-Message-ID: <1338308875.26856.121.camel@twins>
-Subject: Re: [PATCH 23/35] autonuma: core
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Tue, 29 May 2012 12:28:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338039549-24498-2-git-send-email-anton.vorontsov@linaro.org>
+References: <20120526133412.GA18001@lizard>
+	<1338039549-24498-2-git-send-email-anton.vorontsov@linaro.org>
+Date: Tue, 29 May 2012 09:28:57 -0700
+X-Google-Sender-Auth: NlqBP_gFOJCJITBxSfE1WXrYVUo
+Message-ID: <CAGXu5jL0E7ybLPvhFdwNxiHSa==QJr+fX45A-T8Ug7iXLhtW_A@mail.gmail.com>
+Subject: Re: [PATCH 2/5] pstore: Introduce write_buf backend callback
+From: Kees Cook <keescook@chromium.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Date: Tue, 29 May 2012 18:27:55 +0200
-In-Reply-To: <1337965359-29725-24-git-send-email-aarcange@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-	 <1337965359-29725-24-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
-> This implements knuma_scand, the numa_hinting faults started by
-> knuma_scand, the knuma_migrated that migrates the memory queued by the
-> NUMA hinting faults, the statistics gathering code that is done by
-> knuma_scand for the mm_autonuma and by the numa hinting page faults
-> for the sched_autonuma, and most of the rest of the AutoNUMA core
-> logics like the false sharing detection, sysfs and initialization
-> routines.
-> 
-> The AutoNUMA algorithm when knuma_scand is not running is a full
-> bypass and it must not alter the runtime of memory management and
-> scheduler.
-> 
-> The whole AutoNUMA logic is a chain reaction as result of the actions
-> of the knuma_scand. The various parts of the code can be described
-> like different gears (gears as in glxgears).
-> 
-> knuma_scand is the first gear and it collects the mm_autonuma per-process
-> statistics and at the same time it sets the pte/pmd it scans as
-> pte_numa and pmd_numa.
-> 
-> The second gear are the numa hinting page faults. These are triggered
-> by the pte_numa/pmd_numa pmd/ptes. They collect the sched_autonuma
-> per-thread statistics. They also implement the memory follow CPU logic
-> where we track if pages are repeatedly accessed by remote nodes. The
-> memory follow CPU logic can decide to migrate pages across different
-> NUMA nodes by queuing the pages for migration in the per-node
-> knuma_migrated queues.
-> 
-> The third gear is knuma_migrated. There is one knuma_migrated daemon
-> per node. Pages pending for migration are queued in a matrix of
-> lists. Each knuma_migrated (in parallel with each other) goes over
-> those lists and migrates the pages queued for migration in round robin
-> from each incoming node to the node where knuma_migrated is running
-> on.
-> 
-> The fourth gear is the NUMA scheduler balancing code. That computes
-> the statistical information collected in mm->mm_autonuma and
-> p->sched_autonuma and evaluates the status of all CPUs to decide if
-> tasks should be migrated to CPUs in remote nodes. 
+On Sat, May 26, 2012 at 6:39 AM, Anton Vorontsov
+<anton.vorontsov@linaro.org> wrote:
+> For function tracing we need to stop using pstore.buf directly, since
+> in a tracing callback we can't use spinlocks, and thus we can't safely
+> use the global buffer.
+>
+> With write_buf callback, backends no longer need to access pstore.buf
+> directly, and thus we can pass any buffers (e.g. allocated on stack).
 
-IOW:
+Hrm, I thought the point of having pstore.buf pre-mapped was to allow
+Oopses to be able to write directly to it without needing to hit any
+additional kernel code. Maybe I'm misunderstanding this change,
+though. I'd like to see Tony's opinion on it.
 
-"knuma_scand 'unmaps' ptes and collects mm stats, this triggers
-numa_hinting pagefaults, using these we collect per task stats.
+-Kees
 
-knuma_migrated migrates pages to their destination node. Something
-queues pages.
+> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> ---
+>  fs/pstore/platform.c   |   10 ++++++++++
+>  include/linux/pstore.h |    4 ++++
+>  2 files changed, 14 insertions(+)
+>
+> diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+> index be4614f..e7c0a52 100644
+> --- a/fs/pstore/platform.c
+> +++ b/fs/pstore/platform.c
+> @@ -198,6 +198,14 @@ static void pstore_register_console(void)
+>  static void pstore_register_console(void) {}
+>  #endif
+>
+> +static int pstore_write_compat(enum pstore_type_id type,
+> +                              enum kmsg_dump_reason reason,
+> +                              u64 *id, unsigned int part,
+> +                              size_t size, struct pstore_info *psi)
+> +{
+> +       return psi->write_buf(type, reason, id, part, psinfo->buf, size, psi);
+> +}
+> +
+>  /*
+>  * platform specific persistent storage driver registers with
+>  * us here. If pstore is already mounted, call the platform
+> @@ -222,6 +230,8 @@ int pstore_register(struct pstore_info *psi)
+>                return -EINVAL;
+>        }
+>
+> +       if (!psi->write)
+> +               psi->write = pstore_write_compat;
+>        psinfo = psi;
+>        mutex_init(&psinfo->read_mutex);
+>        spin_unlock(&pstore_lock);
+> diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+> index 1bd014b..b107484 100644
+> --- a/include/linux/pstore.h
+> +++ b/include/linux/pstore.h
+> @@ -48,6 +48,10 @@ struct pstore_info {
+>        int             (*write)(enum pstore_type_id type,
+>                        enum kmsg_dump_reason reason, u64 *id,
+>                        unsigned int part, size_t size, struct pstore_info *psi);
+> +       int             (*write_buf)(enum pstore_type_id type,
+> +                       enum kmsg_dump_reason reason, u64 *id,
+> +                       unsigned int part, const char *buf, size_t size,
+> +                       struct pstore_info *psi);
+>        int             (*erase)(enum pstore_type_id type, u64 id,
+>                        struct pstore_info *psi);
+>        void            *data;
+> --
+> 1.7.9.2
+>
 
-The numa scheduling code uses the gathered stats to place tasks."
 
 
-That covers just about all you said, now the interesting bits are still
-missing:
-
- - how do you do false sharing;
-
- - what stats do you gather, and how are they used at each stage;
-
- - what's your balance goal, and how is that expressed and 
-   converged upon.
-
-Also, what I've not seen anywhere are scheduling stats, what if, despite
-you giving a hint a particular process should run on a particular node
-it doesn't and sticks to where its at (granted with strict this can't
-happen -- but it should).
-
-
+-- 
+Kees Cook
+Chrome OS Security
