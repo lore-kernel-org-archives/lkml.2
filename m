@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab2E2DN1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 23:13:27 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:60178 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2E2DN0 (ORCPT
+	id S1752632Ab2E2DOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 23:14:48 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61726 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab2E2DOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 23:13:26 -0400
+	Mon, 28 May 2012 23:14:47 -0400
 From: Fabio Estevam <festevam@gmail.com>
 To: linus.walleij@linaro.org
 Cc: shawn.guo@linaro.org, kernel@pengutronix.de, linux-kernel@vger.kernel.org,
         Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] dummies
-Date: Tue, 29 May 2012 00:13:15 -0300
-Message-Id: <1338261195-17924-1-git-send-email-festevam@gmail.com>
+Subject: [PATCH] drivers: pinctrl: Remove redefinition of 'pinctrl_provide_dummies'
+Date: Tue, 29 May 2012 00:14:38 -0300
+Message-Id: <1338261278-17962-1-git-send-email-festevam@gmail.com>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
