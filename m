@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab2E2N5g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 09:57:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19099 "EHLO mx1.redhat.com"
+	id S1753219Ab2E2OCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:02:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51571 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab2E2N5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 09:57:32 -0400
-Message-ID: <4FC4D58A.50800@redhat.com>
-Date: Tue, 29 May 2012 09:56:26 -0400
-From: Rik van Riel <riel@redhat.com>
+	id S1751810Ab2E2OC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 10:02:29 -0400
+Message-ID: <4FC4D6E2.9060501@redhat.com>
+Date: Tue, 29 May 2012 11:02:10 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>  <1337965359-29725-14-git-send-email-aarcange@redhat.com> <1338297385.26856.74.camel@twins>
-In-Reply-To: <1338297385.26856.74.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <1337358773-6919-38-git-send-email-mchehab@redhat.com> <1337854460-25191-1-git-send-email-mchehab@redhat.com> <20120524105604.GC27063@aftab.osrc.amd.com> <4FBE5E1D.7070804@redhat.com> <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com>
+In-Reply-To: <20120529115851.GB29157@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 09:16 AM, Peter Zijlstra wrote:
-> On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
+Em 29-05-2012 08:58, Borislav Petkov escreveu:
+> On Thu, May 24, 2012 at 03:00:53PM -0300, Mauro Carvalho Chehab wrote:
 
-> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
-> price to pay.
->
-> At LSF/MM Rik already suggested you limit the number of pages that can
-> be migrated concurrently and use this to move the extra list_head out of
-> struct page and into a smaller amount of extra structures, reducing the
-> total overhead.
+<ironic comments skipped>
+ 
+>> the address and address mask is needed, as most memory controllers can't point
+>> to a single address, because the register that stores the address doesn't have
+>> enough bits to store the full content of the instruction pointer register, or because
+>> of some other internal device issues.
+>>
+>> So, two different "addresses" could atually point to the same group of transistors
+>> inside a DIMM.
+>>
+>> Also, higher values of grains may affect the error statistics. For example, i3200_edac
+>> driver has a grain that can be 64 MB, while other devices have a grain of 1.
+> 
+> I think you mean
+> 
+> #define I3200_TOM_SHIFT         26      /* 64MiB grain */
 
-For THP, we should be able to track this NUMA info on a
-2MB page granularity.
+> 
+> which is the Top-Of-Memory shift value. How is that grain in the sense of error
+> granularity I can't fathom.
+> 
 
-It is not like we will ever want to break up a large
-page into small pages anyway (with different 4kB pages
-going to different NUMA nodes), because the THP benefit
-is on the same order of magnitude as the NUMA benefit.
+It seems you were unable to read the comments at the function that fills dimm->grain:
 
--- 
-All rights reversed
+	/*
+	 * The dram rank boundary (DRB) reg values are boundary addresses
+	 * for each DRAM rank with a granularity of 64MB.  DRB regs are
+	 * cumulative; the last one will contain the total memory
+	 * contained in all ranks.
+	 */
+	for (i = 0; i < mci->nr_csrows; i++) {
+		unsigned long nr_pages;
+		struct csrow_info *csrow = &mci->csrows[i];
+
+		nr_pages = drb_to_nr_pages(drbs, stacked,
+			i / I3200_RANKS_PER_CHANNEL,
+			i % I3200_RANKS_PER_CHANNEL);
+
+		if (nr_pages == 0)
+			continue;
+
+		for (j = 0; j < nr_channels; j++) {
+			struct dimm_info *dimm = csrow->channels[j].dimm;
+
+			dimm->nr_pages = nr_pages / nr_channels;
+			dimm->grain = nr_pages << PAGE_SHIFT;
+	...
+
+
+Assuming that errors are given by a Gausian distribution, the PDF parameters (mean, standard
+derivation) when grain is equal to 1 is completely different than when grain is 64 MB.
+
+That means that any correlation function used by an stochastic process analysis
+will need to take the grain into account, in order to detect if a series of errors
+are due to a random noise, or if they're due to a physical problem at the device.
+
+> Oh, and by the way, this define is unused and can be removed.
+
+Feel free to submit a patch for it.
+
+Regards,
+Mauro
