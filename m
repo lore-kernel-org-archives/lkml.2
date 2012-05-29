@@ -1,126 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2E2P6n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 11:58:43 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41675 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754104Ab2E2P6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 11:58:42 -0400
-Message-ID: <4FC4F1A7.2010206@parallels.com>
-Date: Tue, 29 May 2012 19:56:23 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1754121Ab2E2QBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:01:10 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:36717 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752617Ab2E2QBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:01:08 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: feJFvTAVM1mIQl9pfal2cfbZLBo8o92a8zNViHJeOtufGAt
+ YgOTh2ksB83MfO49MUb8dHzkMyS5ps3T3K_ePp53oLiiYHaQSbORdCNV4dS5
+ MDoEEJ6HMUkFB5xSN9D5DgXDTK_7cK79wI21lgsuwonYgvDT0rQlt5gg8Krc
+ uXBG55V7TIOxUlZ.fgBKJOAu4wYK9D48Ywi_YnwwTdfv.b.Ag5DdU_SzpMMv
+ pZ151svNjoHjJbV0l8qy2M_P6DceX3EhVPsD0hY5R7SD2xVoLJYTgFWrSzr5
+ aXS3aStcHy2P2UG_9sMRPHzwMohSIGaTPr5f8cuny3eZrQioaZp1ttgezIoy
+ 0Vn1lZPmTakQJKFCEiMkGO1hIYCMSK9BPCOHU3RVGoqghRscv1iNZjGv6hN_
+ V
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 29 May 2012 11:01:03 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
+In-Reply-To: <4FC4EEF6.2050204@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205291056440.6723@router.home>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120525133441.GB30527@tiehlicka.suse.cz> <alpine.DEB.2.00.1205250933170.22597@router.home> <4FC3381C.9020608@parallels.com> <alpine.DEB.2.00.1205290955270.4666@router.home>
+ <4FC4EEF6.2050204@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-14-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290932530.4666@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205290932530.4666@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.70]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 06:36 PM, Christoph Lameter wrote:
-> On Fri, 25 May 2012, Glauber Costa wrote:
+On Tue, 29 May 2012, Glauber Costa wrote:
+
+> > I think it may be simplest to only account for the pages used by a slab in
+> > a memcg. That code could be added to the functions in the slab allocators
+> > that interface with the page allocators. Those are not that performance
+> > critical and would do not much harm.
 >
->> index dacd1fb..4689034 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -467,6 +467,23 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
->>   EXPORT_SYMBOL(tcp_proto_cgroup);
->>   #endif /* CONFIG_INET */
->>
->> +char *mem_cgroup_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
->> +{
->> +	char *name;
->> +	struct dentry *dentry;
->> +
->> +	rcu_read_lock();
->> +	dentry = rcu_dereference(memcg->css.cgroup->dentry);
->> +	rcu_read_unlock();
->> +
->> +	BUG_ON(dentry == NULL);
->> +
->> +	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
->> +	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
->> +
->> +	return name;
->> +}
+> No, I don't think so. Well, accounting the page is easy, but when we do a new
+> allocation, we need to match a process to its correspondent page. This will
+> likely lead to flushing the internal cpu caches of the slub, for instance,
+> hurting performance. That is because once we allocate a page, all objects on
+> that page need to belong to the same cgroup.
+
+Matching a process to its page is a complex thing even for pages used by
+userspace.
+
+How can you make sure that all objects on a page belong to the same
+cgroup? There are various kernel allocations that have uses far beyond a
+single context. There is already a certain degree of fuzziness there and
+we tolerate that in other contexts as well.
+
+
+> Also, you talk about intrusiveness, accounting pages is a lot more intrusive,
+> since then you need to know a lot about the internal structure of each cache.
+> Having the cache replicated has exactly the effect of isolating it better.
+
+Why would you need to know about the internal structure? Just get the
+current process context and use the cgroup that is readily available there
+to account for the pages.
+
+> > If you need per object accounting then the cleanest solution would be to
+> > duplicate the per node arrays per memcg (or only the statistics) and have
+> > the kmem_cache structure only once in memory.
 >
-> Function allocates a string that is supposed to be disposed of by the
-> caller. That needs to be documented and maybe even the name needs to
-> reflect that.
+> No, it's all per-page. Nothing here is per-object, maybe you misunderstood
+> something?
 
-Okay, I can change it.
+There are free/used object counters in each page. You could account for
+objects in the l3 lists or kmem_cache_node strcut and thereby avoid
+having to deal with the individual objects at the per cpu level.
 
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -4002,6 +4002,38 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
->>   }
->>   EXPORT_SYMBOL(kmem_cache_create);
->>
->> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
->> +struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
->> +				  struct kmem_cache *s)
->> +{
->> +	char *name;
->> +	struct kmem_cache *new;
->> +
->> +	name = mem_cgroup_cache_name(memcg, s);
->> +	if (!name)
->> +		return NULL;
->> +
->> +	new = kmem_cache_create_memcg(memcg, name, s->objsize, s->align,
->> +				      (s->allocflags&  ~SLAB_PANIC), s->ctor);
->
-> Hmmm... A full duplicate of the slab cache? We may have many sparsely
-> used portions of the per node and per cpu structure as a result.
-
-I've already commented on patch 0, but I will repeat it here. This 
-approach leads to more fragmentation, yes, but this is exactly to be 
-less intrusive.
-
-With a full copy, all I need to do is:
-
-1) relay the allocation to the right cache.
-2) account for a new page when it is needed.
-
-How does the cache work from inside? I don't care.
-
-Accounting pages seems just crazy to me. If new allocators come in the 
-future, organizing the pages in a different way, instead of patching it 
-here and there, we need to totally rewrite this.
-
-If those allocators happen to depend on a specific placement for 
-performance, then we're destroying this as well too.
-
->
->> +	 * prevent it from being deleted. If kmem_cache_destroy() is
->> +	 * called for the root cache before we call it for a child cache,
->> +	 * it will be queued for destruction when we finally drop the
->> +	 * reference on the child cache.
->> +	 */
->> +	if (new) {
->> +		down_write(&slub_lock);
->> +		s->refcount++;
->> +		up_write(&slub_lock);
->> +	}
->
-> Why do you need to increase the refcount? You made a full copy right?
-
-Yes, but I don't want this copy to go away while we have other caches 
-around.
-
-So, in the memcg internals, I used a different reference counter, to 
-avoid messing with this one. I could use that, and leave the original 
-refcnt alone. Would you prefer this?
