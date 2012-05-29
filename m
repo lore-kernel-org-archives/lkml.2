@@ -1,46 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab2E2ArL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 20:47:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42553 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab2E2ArJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 20:47:09 -0400
-Date: Tue, 29 May 2012 01:47:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Drewry <wad@chromium.org>, wade_farnsworth@mentor.com,
-        stevenrwalter@gmail.com, will.deacon@arm.com,
-        Olof Johansson <olof@lixom.net>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: New ARM asm/syscall.h incompatible? (commit
- bf2c9f9866928df60157bc4f1ab39f93a32c754e)
-Message-ID: <20120529004700.GR11775@ZenIV.linux.org.uk>
-References: <CABqD9hao8sYHimbs1SjT3uRiht2ACnS8TMPyUnPt7AMrM3kVGA@mail.gmail.com>
- <20120523185610.GB6908@n2100.arm.linux.org.uk>
- <CABqD9hah+26ZNJ8OsvSUFSx-dnxekTSLCkUf-8QXQqZ+mn6kmg@mail.gmail.com>
- <20120523191439.GC6908@n2100.arm.linux.org.uk>
- <CABqD9hbsnCL=vHpsE3HNmiB-Qv0DyhWpq5KCN0USWDm8m-6=RA@mail.gmail.com>
- <20120524161130.GE6908@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524161130.GE6908@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751895Ab2E2BO7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 21:14:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577Ab2E2BO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 21:14:58 -0400
+From: Asias He <asias@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Asias He <asias@redhat.com>
+Subject: [PATCH V2] block: Avoid missed wakeup in request waitqueue
+Date: Tue, 29 May 2012 09:15:00 +0800
+Message-Id: <1338254100-13336-1-git-send-email-asias@redhat.com>
+In-Reply-To: <20120528102614.GC15202@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <20120528102614.GC15202@dhcp-172-17-108-109.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 05:11:30PM +0100, Russell King - ARM Linux wrote:
-> +__sys_slow:
-> +	tst	r10, #_TIF_SECCOMP
-> +	beq	__sys_trace
-> +
-> +	bl	__secure_computing
-> +	add	r0, sp, #S_R0 + S_OFF		@ pointer to regs
-> +	ldmia	r0, {r0 - r3}
-> +
-> +	tst	r10, #_TIF_SYSCALL_WORK
-> +	beq	__sys_fast
+After hot-unplug a stressed disk, I found that rl->wait[] is not empty
+while rl->count[] is empty and there are theads still sleeping on
+get_request after the queue cleanup. With simple debug code, I found
+there are exactly nr_sleep - nr_wakeup of theads in D state. So there
+are missed wakeup.
 
-What is it doing outside of syscall_trace(), anyway?
+  $ dmesg | grep nr_sleep
+  [   52.917115] ---> nr_sleep=1046, nr_wakeup=873, delta=173
+  $ vmstat 1
+  1 173  0 712640  24292  96172 0 0  0  0  419  757  0  0  0 100  0
+
+To quote Tejun:
+
+  Ah, okay, freed_request() wakes up single waiter with the assumption
+  that after the wakeup there will at least be one successful allocation
+  which in turn will continue the wakeup chain until the wait list is
+  empty - ie. waiter wakeup is dependent on successful request
+  allocation happening after each wakeup.  With queue marked dead, any
+  woken up waiter fails the allocation path, so the wakeup chaining is
+  lost and we're left with hung waiters. What we need is wake_up_all()
+  after drain completion.
+
+This patch fixes the missed wakeup by waking up all the theads which
+are sleeping on wait queue after queue drain.
+
+Changes in v2: Drop waitqueue_active() optimization
+
+Signed-off-by: Asias He <asias@redhat.com>
+---
+ block/blk-core.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 1f61b74..232fe89 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -359,9 +359,10 @@ EXPORT_SYMBOL(blk_put_queue);
+  */
+ void blk_drain_queue(struct request_queue *q, bool drain_all)
+ {
++	int i;
++
+ 	while (true) {
+ 		bool drain = false;
+-		int i;
+ 
+ 		spin_lock_irq(q->queue_lock);
+ 
+@@ -400,6 +401,16 @@ void blk_drain_queue(struct request_queue *q, bool drain_all)
+ 			break;
+ 		msleep(10);
+ 	}
++
++	/*
++	 * With queue marked dead, any woken up waiter will fail the
++	 * allocation path, so the wakeup chaining is lost and we're
++	 * left with hung waiters. We need to wake up those waiters.
++	 */
++	spin_lock_irq(q->queue_lock);
++	for (i = 0; i < ARRAY_SIZE(q->rq.wait); i++)
++		wake_up_all(&q->rq.wait[i]);
++	spin_unlock_irq(q->queue_lock);
+ }
+ 
+ /**
+-- 
+1.7.10.2
+
