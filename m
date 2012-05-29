@@ -1,14 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab2E2Qjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:39:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab2E2Qje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:39:34 -0400
-Date: Tue, 29 May 2012 18:38:49 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+	id S1754322Ab2E2QpC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:45:02 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58830 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab2E2QpA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:45:00 -0400
+Message-ID: <1338309855.26856.130.camel@twins>
+Subject: Re: [PATCH 35/35] autonuma: page_autonuma
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -24,42 +26,76 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-Message-ID: <20120529163849.GF21339@redhat.com>
+Date: Tue, 29 May 2012 18:44:15 +0200
+In-Reply-To: <1337965359-29725-36-git-send-email-aarcange@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-14-git-send-email-aarcange@redhat.com>
- <1338297385.26856.74.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338297385.26856.74.camel@twins>
+	 <1337965359-29725-36-git-send-email-aarcange@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 03:16:25PM +0200, Peter Zijlstra wrote:
-> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
-> price to pay.
+On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
+> Move the AutoNUMA per page information from the "struct page" to a
+> separate page_autonuma data structure allocated in the memsection
+> (with sparsemem) or in the pgdat (with flatmem).
+> 
+> This is done to avoid growing the size of the "struct page" and the
+> page_autonuma data is only allocated if the kernel has been booted on
+> real NUMA hardware (or if noautonuma is passed as parameter to the
+> kernel).
+> 
 
-I don't think it's too great, memcg uses for half of that and yet
-nobody is booting with cgroup_disable=memory even on not-NUMA servers
-with less RAM.
+Argh, please fold this change back into the series proper. If you want
+to keep it.. as it is its not really an improvement IMO, see below.
 
-> At LSF/MM Rik already suggested you limit the number of pages that can
-> be migrated concurrently and use this to move the extra list_head out of
-> struct page and into a smaller amount of extra structures, reducing the
-> total overhead.
+> +struct page_autonuma {
+> +       /*
+> +        * FIXME: move to pgdat section along with the memcg and allocate
+> +        * at runtime only in presence of a numa system.
+> +        */
+> +       /*
+> +        * To modify autonuma_last_nid lockless the architecture,
+> +        * needs SMP atomic granularity < sizeof(long), not all archs
+> +        * have that, notably some alpha. Archs without that requires
+> +        * autonuma_last_nid to be a long.
+> +        */
 
-It would reduce the memory overhead but it'll make the code more
-complex and it'll require more locking, plus allowing for very long
-migration lrus, provides an additional means of false-sharing
-avoidance. Those are lrus, if the last_nid false sharing logic will
-pass, the page still has to reach the tail of the list before being
-migrated, if false sharing happens in the meanwhile we'll remove it
-from the lru.
+Looking at arch/alpha/include/asm/xchg.h it looks to have that just
+fine, so maybe we simply don't support SMP on those early Alphas that
+had that weirdness.
 
-But I'm all for experimenting. It's just not something I had the time
-to try yet. I will certainly love to see how it performs by reducing
-the max size of the list. I totally agree it's a good idea to try it
-out, and I don't exclude it will work fine, but it's not obvious it's
-worth the memory saving.
+> +#if BITS_PER_LONG > 32
+> +       int autonuma_migrate_nid;
+> +       int autonuma_last_nid;
+> +#else
+> +#if MAX_NUMNODES >= 32768
+> +#error "too many nodes"
+> +#endif
+> +       /* FIXME: remember to check the updates are atomic */
+> +       short autonuma_migrate_nid;
+> +       short autonuma_last_nid;
+> +#endif
+> +       struct list_head autonuma_migrate_node;
+> +
+> +       /*
+> +        * To find the page starting from the autonuma_migrate_node we
+> +        * need a backlink.
+> +        */
+> +       struct page *page;
+> +}; 
+
+This makes a shadow page frame of 32 bytes per page, or ~0.8% of memory.
+This isn't in fact an improvement.
+
+The suggestion done by Rik was to have something like a sqrt(nr_pages)
+(?) scaled array of such things containing the list_head and page
+pointer -- and leave the two nids in the regular page frame. Although I
+think you've got to fight the memcg people over that last word in struct
+page.
+
+That places a limit on the amount of pages that can be in migration
+concurrently, but also greatly reduces the memory overhead.
