@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2E2RPG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:15:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S1754652Ab2E2RQV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:16:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43337 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754644Ab2E2RPC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:15:02 -0400
-Date: Tue, 29 May 2012 19:14:07 +0200
+	id S1754348Ab2E2RQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:16:20 -0400
+Date: Tue, 29 May 2012 19:15:26 +0200
 From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -24,90 +25,64 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 35/35] autonuma: page_autonuma
-Message-ID: <20120529171407.GH21339@redhat.com>
+Subject: Re: [PATCH 00/35] AutoNUMA alpha14
+Message-ID: <20120529171526.GI21339@redhat.com>
 References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-36-git-send-email-aarcange@redhat.com>
- <1338309855.26856.130.camel@twins>
+ <20120529133627.GA7637@shutemov.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338309855.26856.130.camel@twins>
+In-Reply-To: <20120529133627.GA7637@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 06:44:15PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
-> > Move the AutoNUMA per page information from the "struct page" to a
-> > separate page_autonuma data structure allocated in the memsection
-> > (with sparsemem) or in the pgdat (with flatmem).
-> > 
-> > This is done to avoid growing the size of the "struct page" and the
-> > page_autonuma data is only allocated if the kernel has been booted on
-> > real NUMA hardware (or if noautonuma is passed as parameter to the
-> > kernel).
-> > 
-> 
-> Argh, please fold this change back into the series proper. If you want
-> to keep it.. as it is its not really an improvement IMO, see below.
+Hi Kirill,
 
-The whole objective of this patch is to avoid allocating the
-page_autonuma structures when the kernel is booted on not NUMA
-hardware.
+The anon page was munmapped just after get_page_unless_zero obtained a
+refcount in knuma_migrated. This can happen for example if a big
+process exits while knuma_migrated starts to migrate the page. In that
+case split_huge_page would do nothing but when it does nothing it
+notifies the caller returning 1. When it returns 1, we just need to
+put_page and bail out (the page isn't splitted in that case and it's
+pointless to try to migrate a freed page).
 
-It's not an improvement when booting the kernel on NUMA hardware
-that's for sure.
+I also made the code more strict now, to be sure the reason of the bug
+wasn't an hugepage in the LRU that wasn't Anon, such a thing must not
+exist, but this will verify it just in case.
 
-I didn't merge it with the previous because this was the most
-experimental recent change, so I wanted bisectability here. When
-something goes wrong here, the kernel won't boot, so unless you use
-kvm with gdbstub it's a little tricky to debug (indeed I debugged it
-with gdbstub, there it's trivial).
+I'll push it to the origin/autonuma branch of aa.git shortly
+(rebased), could you try if it helps?
 
-> > +struct page_autonuma {
-> > +       /*
-> > +        * FIXME: move to pgdat section along with the memcg and allocate
-> > +        * at runtime only in presence of a numa system.
-> > +        */
-> > +       /*
-> > +        * To modify autonuma_last_nid lockless the architecture,
-> > +        * needs SMP atomic granularity < sizeof(long), not all archs
-> > +        * have that, notably some alpha. Archs without that requires
-> > +        * autonuma_last_nid to be a long.
-> > +        */
-> 
-> Looking at arch/alpha/include/asm/xchg.h it looks to have that just
-> fine, so maybe we simply don't support SMP on those early Alphas that
-> had that weirdness.
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index 3d4c2a7..c2a5a82 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -840,9 +840,17 @@ static int isolate_migratepages(struct list_head *migratepages,
+ 
+ 		VM_BUG_ON(nid != page_to_nid(page));
+ 
+-		if (PageAnon(page) && PageTransHuge(page))
++		if (PageTransHuge(page)) {
++			VM_BUG_ON(!PageAnon(page));
+ 			/* FIXME: remove split_huge_page */
+-			split_huge_page(page);
++			if (unlikely(split_huge_page(page))) {
++				autonuma_printk("autonuma migrate THP free\n");
++				__autonuma_migrate_page_remove(page,
++							       page_autonuma);
++				put_page(page);
++				continue;
++			}
++		}
+ 
+ 		__autonuma_migrate_page_remove(page, page_autonuma);
+ 
 
-I agree we should never risk that.
+Thanks a lot,
+Andrea
 
-> This makes a shadow page frame of 32 bytes per page, or ~0.8% of memory.
-> This isn't in fact an improvement.
-> 
-> The suggestion done by Rik was to have something like a sqrt(nr_pages)
-> (?) scaled array of such things containing the list_head and page
-> pointer -- and leave the two nids in the regular page frame. Although I
-> think you've got to fight the memcg people over that last word in struct
-> page.
-> 
-> That places a limit on the amount of pages that can be in migration
-> concurrently, but also greatly reduces the memory overhead.
-
-Yes, however for the last_nid I'd still need it for every page (and if
-I allocate it dynamic I still first need to find a way to remove the
-struct page pointer).
-
-I thought to add a pointer in the memsection (or maybe to use a vmemmap
-so that it won't even require a pointer in every memsection). I've to
-check a few more things before I allow_the autonuma->page translation
-without a page pointer, notably to verify the boot time allocations
-points won't just allocate power of two blocks of memory (they
-shouldn't but I didn't verify).
-
-This is clearly a move in the right direction to avoid the memory
-overhead when not booted on NUMA hardware, and I don't think there's
-anything fundamental that prevents us remove the page pointer from the
-page_autonuma structure, and to later experiment with a limited size
-array of async migration structures.
+BTW, interesting the knuma_migrated0 runs on CPU24, just in case, you
+may also want to verify that it's correct with numactl --hardware, in
+my case the highest cpuid in node0 is 17. It's not related to the
+above, which is needed anyway.
