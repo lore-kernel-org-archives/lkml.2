@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab2E2EXf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 00:23:35 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46113 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab2E2EXc (ORCPT
+	id S1752757Ab2E2EXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 00:23:22 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37705 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758Ab2E2EXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 00:23:32 -0400
+	Tue, 29 May 2012 00:23:20 -0400
 From: Namhyung Kim <namhyung@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/7] perf ui/gtk: Use struct perf_error_ops
-Date: Tue, 29 May 2012 13:23:02 +0900
-Message-Id: <1338265382-6872-8-git-send-email-namhyung@gmail.com>
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH 3/7] perf ui: Introduce struct perf_error_ops
+Date: Tue, 29 May 2012 13:22:58 +0900
+Message-Id: <1338265382-6872-4-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1338265382-6872-1-git-send-email-namhyung@gmail.com>
 References: <1338265382-6872-1-git-send-email-namhyung@gmail.com>
@@ -22,144 +23,742 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define and use perf_gtk_eops to provide a GTK2 message
-dialog for error reporting and a info_bar for warning.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-As GtkInfoBar requires recent GTK+ libraries, provides
-a fallback implementation using statusbar widget too.
+The struct perf_error_ops is for flexible error logging.
+We can register appropriate functions based on front-end.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
 ---
- tools/perf/ui/gtk/setup.c |    5 +++
- tools/perf/ui/gtk/util.c  |   86 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 91 insertions(+)
+ tools/perf/Makefile       |    3 +
+ tools/perf/ui/gtk/util.c  |   20 ++++
+ tools/perf/ui/tui/setup.c |    6 +
+ tools/perf/ui/tui/util.c  |  243 +++++++++++++++++++++++++++++++++++++++
+ tools/perf/ui/util.c      |  277 +++++++++------------------------------------
+ tools/perf/ui/util.h      |    9 +-
+ tools/perf/util/debug.c   |    2 +-
+ tools/perf/util/debug.h   |   23 +++-
+ 8 files changed, 357 insertions(+), 226 deletions(-)
+ create mode 100644 tools/perf/ui/gtk/util.c
+ create mode 100644 tools/perf/ui/tui/util.c
 
-diff --git a/tools/perf/ui/gtk/setup.c b/tools/perf/ui/gtk/setup.c
-index 829529957766..92879ce61e2f 100644
---- a/tools/perf/ui/gtk/setup.c
-+++ b/tools/perf/ui/gtk/setup.c
-@@ -1,12 +1,17 @@
- #include "gtk.h"
- #include "../../util/cache.h"
-+#include "../../util/debug.h"
-+
-+extern struct perf_error_ops perf_gtk_eops;
- 
- int perf_gtk__init(void)
- {
-+	perf_error__register(&perf_gtk_eops);
- 	return gtk_init_check(NULL, NULL) ? 0 : -1;
- }
- 
- void perf_gtk__exit(bool wait_for_ok __used)
- {
-+	perf_error__unregister(&perf_gtk_eops);
- 	gtk_main_quit();
- }
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 1d3d513beb9b..7034b3c70d42 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -503,6 +503,7 @@ else
+ 		LIB_OBJS += $(OUTPUT)ui/progress.o
+ 		LIB_OBJS += $(OUTPUT)ui/util.o
+ 		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
++		LIB_OBJS += $(OUTPUT)ui/tui/util.o
+ 		LIB_H += ui/browser.h
+ 		LIB_H += ui/browsers/map.h
+ 		LIB_H += ui/helpline.h
+@@ -526,9 +527,11 @@ else
+ 		EXTLIBS += $(shell pkg-config --libs gtk+-2.0)
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/browser.o
+ 		LIB_OBJS += $(OUTPUT)ui/gtk/setup.o
++		LIB_OBJS += $(OUTPUT)ui/gtk/util.o
+ 		# Make sure that it'd be included only once.
+ 		ifneq ($(findstring -DNO_NEWT_SUPPORT,$(BASIC_CFLAGS)),)
+ 			LIB_OBJS += $(OUTPUT)ui/setup.o
++			LIB_OBJS += $(OUTPUT)ui/util.o
+ 		endif
+ 	endif
+ endif
 diff --git a/tools/perf/ui/gtk/util.c b/tools/perf/ui/gtk/util.c
-index 6fe13fdc513e..0ead373c0dfb 100644
---- a/tools/perf/ui/gtk/util.c
+new file mode 100644
+index 000000000000..a727fe394e91
+--- /dev/null
 +++ b/tools/perf/ui/gtk/util.c
-@@ -2,6 +2,8 @@
- #include "../../util/debug.h"
- #include "gtk.h"
- 
-+#include <string.h>
+@@ -0,0 +1,20 @@
++#include "../util.h"
++#include "../../util/debug.h"
++#include "gtk.h"
 +
++
++/*
++ * FIXME: Functions below should be implemented properly.
++ *        For now, just add stubs for NO_NEWT=1 build.
++ */
++#ifdef NO_NEWT_SUPPORT
++int ui_helpline__show_help(const char *format __used, va_list ap __used)
++{
++	return 0;
++}
++
++void ui_progress__update(u64 curr __used, u64 total __used,
++			 const char *title __used)
++{
++}
++#endif
+diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
+index d33e943ac434..e813c1d17346 100644
+--- a/tools/perf/ui/tui/setup.c
++++ b/tools/perf/ui/tui/setup.c
+@@ -15,6 +15,8 @@ pthread_mutex_t ui__lock = PTHREAD_MUTEX_INITIALIZER;
  
- struct perf_gtk_context *pgctx;
+ static volatile int ui__need_resize;
  
-@@ -26,6 +28,90 @@ int perf_gtk__deactivate_context(struct perf_gtk_context **ctx)
- 	return 0;
++extern struct perf_error_ops perf_tui_eops;
++
+ void ui__refresh_dimensions(bool force)
+ {
+ 	if (force || ui__need_resize) {
+@@ -122,6 +124,8 @@ int ui__init(void)
+ 	signal(SIGINT, ui__signal);
+ 	signal(SIGQUIT, ui__signal);
+ 	signal(SIGTERM, ui__signal);
++
++	perf_error__register(&perf_tui_eops);
+ out:
+ 	return err;
+ }
+@@ -137,4 +141,6 @@ void ui__exit(bool wait_for_ok)
+ 	SLsmg_refresh();
+ 	SLsmg_reset_smg();
+ 	SLang_reset_tty();
++
++	perf_error__unregister(&perf_tui_eops);
+ }
+diff --git a/tools/perf/ui/tui/util.c b/tools/perf/ui/tui/util.c
+new file mode 100644
+index 000000000000..092902e30cee
+--- /dev/null
++++ b/tools/perf/ui/tui/util.c
+@@ -0,0 +1,243 @@
++#include "../../util/util.h"
++#include <signal.h>
++#include <stdbool.h>
++#include <string.h>
++#include <sys/ttydefaults.h>
++
++#include "../../util/cache.h"
++#include "../../util/debug.h"
++#include "../browser.h"
++#include "../keysyms.h"
++#include "../helpline.h"
++#include "../ui.h"
++#include "../util.h"
++#include "../libslang.h"
++
++static void ui_browser__argv_write(struct ui_browser *browser,
++				   void *entry, int row)
++{
++	char **arg = entry;
++	bool current_entry = ui_browser__is_current_entry(browser, row);
++
++	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
++						       HE_COLORSET_NORMAL);
++	slsmg_write_nstring(*arg, browser->width);
++}
++
++static int popup_menu__run(struct ui_browser *menu)
++{
++	int key;
++
++	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
++		return -1;
++
++	while (1) {
++		key = ui_browser__run(menu, 0);
++
++		switch (key) {
++		case K_RIGHT:
++		case K_ENTER:
++			key = menu->index;
++			break;
++		case K_LEFT:
++		case K_ESC:
++		case 'q':
++		case CTRL('c'):
++			key = -1;
++			break;
++		default:
++			continue;
++		}
++
++		break;
++	}
++
++	ui_browser__hide(menu);
++	return key;
++}
++
++int ui__popup_menu(int argc, char * const argv[])
++{
++	struct ui_browser menu = {
++		.entries    = (void *)argv,
++		.refresh    = ui_browser__argv_refresh,
++		.seek	    = ui_browser__argv_seek,
++		.write	    = ui_browser__argv_write,
++		.nr_entries = argc,
++	};
++
++	return popup_menu__run(&menu);
++}
++
++int ui_browser__input_window(const char *title, const char *text, char *input,
++			     const char *exit_msg, int delay_secs)
++{
++	int x, y, len, key;
++	int max_len = 60, nr_lines = 0;
++	static char buf[50];
++	const char *t;
++
++	t = text;
++	while (1) {
++		const char *sep = strchr(t, '\n');
++
++		if (sep == NULL)
++			sep = strchr(t, '\0');
++		len = sep - t;
++		if (max_len < len)
++			max_len = len;
++		++nr_lines;
++		if (*sep == '\0')
++			break;
++		t = sep + 1;
++	}
++
++	max_len += 2;
++	nr_lines += 8;
++	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
++	x = SLtt_Screen_Cols / 2 - max_len / 2;
++
++	SLsmg_set_color(0);
++	SLsmg_draw_box(y, x++, nr_lines, max_len);
++	if (title) {
++		SLsmg_gotorc(y, x + 1);
++		SLsmg_write_string((char *)title);
++	}
++	SLsmg_gotorc(++y, x);
++	nr_lines -= 7;
++	max_len -= 2;
++	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
++				   nr_lines, max_len, 1);
++	y += nr_lines;
++	len = 5;
++	while (len--) {
++		SLsmg_gotorc(y + len - 1, x);
++		SLsmg_write_nstring((char *)" ", max_len);
++	}
++	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
++
++	SLsmg_gotorc(y + 3, x);
++	SLsmg_write_nstring((char *)exit_msg, max_len);
++	SLsmg_refresh();
++
++	x += 2;
++	len = 0;
++	key = ui__getch(delay_secs);
++	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
++		if (key == K_BKSPC) {
++			if (len == 0)
++				goto next_key;
++			SLsmg_gotorc(y, x + --len);
++			SLsmg_write_char(' ');
++		} else {
++			buf[len] = key;
++			SLsmg_gotorc(y, x + len++);
++			SLsmg_write_char(key);
++		}
++		SLsmg_refresh();
++
++		/* XXX more graceful overflow handling needed */
++		if (len == sizeof(buf) - 1) {
++			ui_helpline__push("maximum size of symbol name reached!");
++			key = K_ENTER;
++			break;
++		}
++next_key:
++		key = ui__getch(delay_secs);
++	}
++
++	buf[len] = '\0';
++	strncpy(input, buf, len+1);
++	return key;
++}
++
++int ui__question_window(const char *title, const char *text,
++			const char *exit_msg, int delay_secs)
++{
++	int x, y;
++	int max_len = 0, nr_lines = 0;
++	const char *t;
++
++	t = text;
++	while (1) {
++		const char *sep = strchr(t, '\n');
++		int len;
++
++		if (sep == NULL)
++			sep = strchr(t, '\0');
++		len = sep - t;
++		if (max_len < len)
++			max_len = len;
++		++nr_lines;
++		if (*sep == '\0')
++			break;
++		t = sep + 1;
++	}
++
++	max_len += 2;
++	nr_lines += 4;
++	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
++	x = SLtt_Screen_Cols / 2 - max_len / 2;
++
++	SLsmg_set_color(0);
++	SLsmg_draw_box(y, x++, nr_lines, max_len);
++	if (title) {
++		SLsmg_gotorc(y, x + 1);
++		SLsmg_write_string((char *)title);
++	}
++	SLsmg_gotorc(++y, x);
++	nr_lines -= 2;
++	max_len -= 2;
++	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
++				   nr_lines, max_len, 1);
++	SLsmg_gotorc(y + nr_lines - 2, x);
++	SLsmg_write_nstring((char *)" ", max_len);
++	SLsmg_gotorc(y + nr_lines - 1, x);
++	SLsmg_write_nstring((char *)exit_msg, max_len);
++	SLsmg_refresh();
++	return ui__getch(delay_secs);
++}
++
++int ui__help_window(const char *text)
++{
++	return ui__question_window("Help", text, "Press any key...", 0);
++}
++
++int ui__dialog_yesno(const char *msg)
++{
++	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
++}
++
++static int __ui__warning(const char *title, const char *format, va_list args)
++{
++	char *s;
++
++	if (vasprintf(&s, format, args) > 0) {
++		int key;
++
++		pthread_mutex_lock(&ui__lock);
++		key = ui__question_window(title, s, "Press any key...", 0);
++		pthread_mutex_unlock(&ui__lock);
++		free(s);
++		return key;
++	}
++
++	fprintf(stderr, "%s\n", title);
++	vfprintf(stderr, format, args);
++	return K_ESC;
++}
++
++static int perf_tui__error(const char *format, va_list args)
++{
++	return __ui__warning("Error:", format, args);
++}
++
++static int perf_tui__warning(const char *format, va_list args)
++{
++	return __ui__warning("Warning:", format, args);
++}
++
++struct perf_error_ops perf_tui_eops = {
++	.error		= perf_tui__error,
++	.warning	= perf_tui__warning,
++};
+diff --git a/tools/perf/ui/util.c b/tools/perf/ui/util.c
+index ad4374a16bb0..4f989774c8c6 100644
+--- a/tools/perf/ui/util.c
++++ b/tools/perf/ui/util.c
+@@ -1,250 +1,85 @@
+-#include "../util.h"
+-#include <signal.h>
+-#include <stdbool.h>
+-#include <string.h>
+-#include <sys/ttydefaults.h>
+-
+-#include "../cache.h"
+-#include "../debug.h"
+-#include "browser.h"
+-#include "keysyms.h"
+-#include "helpline.h"
+-#include "ui.h"
+ #include "util.h"
+-#include "libslang.h"
+-
+-static void ui_browser__argv_write(struct ui_browser *browser,
+-				   void *entry, int row)
+-{
+-	char **arg = entry;
+-	bool current_entry = ui_browser__is_current_entry(browser, row);
+-
+-	ui_browser__set_color(browser, current_entry ? HE_COLORSET_SELECTED :
+-						       HE_COLORSET_NORMAL);
+-	slsmg_write_nstring(*arg, browser->width);
+-}
+-
+-static int popup_menu__run(struct ui_browser *menu)
+-{
+-	int key;
+-
+-	if (ui_browser__show(menu, " ", "ESC: exit, ENTER|->: Select option") < 0)
+-		return -1;
++#include "../debug.h"
+ 
+-	while (1) {
+-		key = ui_browser__run(menu, 0);
+-
+-		switch (key) {
+-		case K_RIGHT:
+-		case K_ENTER:
+-			key = menu->index;
+-			break;
+-		case K_LEFT:
+-		case K_ESC:
+-		case 'q':
+-		case CTRL('c'):
+-			key = -1;
+-			break;
+-		default:
+-			continue;
+-		}
+-
+-		break;
+-	}
+-
+-	ui_browser__hide(menu);
+-	return key;
+-}
+ 
+-int ui__popup_menu(int argc, char * const argv[])
++/*
++ * Default error logging functions
++ */
++static int perf_stdio__error(const char *format, va_list args)
+ {
+-	struct ui_browser menu = {
+-		.entries    = (void *)argv,
+-		.refresh    = ui_browser__argv_refresh,
+-		.seek	    = ui_browser__argv_seek,
+-		.write	    = ui_browser__argv_write,
+-		.nr_entries = argc,
+-	};
+-
+-	return popup_menu__run(&menu);
++	fprintf(stderr, "Error:\n");
++	vfprintf(stderr, format, args);
++	return 0;
  }
  
-+static int perf_gtk__error(const char *format, va_list args)
-+{
-+	char *msg;
-+	GtkWidget *dialog;
+-int ui_browser__input_window(const char *title, const char *text, char *input,
+-			     const char *exit_msg, int delay_secs)
++static int perf_stdio__warning(const char *format, va_list args)
+ {
+-	int x, y, len, key;
+-	int max_len = 60, nr_lines = 0;
+-	static char buf[50];
+-	const char *t;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	max_len += 2;
+-	nr_lines += 8;
+-	y = SLtt_Screen_Rows / 2 - nr_lines / 2;
+-	x = SLtt_Screen_Cols / 2 - max_len / 2;
+-
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, x++, nr_lines, max_len);
+-	if (title) {
+-		SLsmg_gotorc(y, x + 1);
+-		SLsmg_write_string((char *)title);
+-	}
+-	SLsmg_gotorc(++y, x);
+-	nr_lines -= 7;
+-	max_len -= 2;
+-	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+-				   nr_lines, max_len, 1);
+-	y += nr_lines;
+-	len = 5;
+-	while (len--) {
+-		SLsmg_gotorc(y + len - 1, x);
+-		SLsmg_write_nstring((char *)" ", max_len);
+-	}
+-	SLsmg_draw_box(y++, x + 1, 3, max_len - 2);
+-
+-	SLsmg_gotorc(y + 3, x);
+-	SLsmg_write_nstring((char *)exit_msg, max_len);
+-	SLsmg_refresh();
+-
+-	x += 2;
+-	len = 0;
+-	key = ui__getch(delay_secs);
+-	while (key != K_TIMER && key != K_ENTER && key != K_ESC) {
+-		if (key == K_BKSPC) {
+-			if (len == 0)
+-				goto next_key;
+-			SLsmg_gotorc(y, x + --len);
+-			SLsmg_write_char(' ');
+-		} else {
+-			buf[len] = key;
+-			SLsmg_gotorc(y, x + len++);
+-			SLsmg_write_char(key);
+-		}
+-		SLsmg_refresh();
+-
+-		/* XXX more graceful overflow handling needed */
+-		if (len == sizeof(buf) - 1) {
+-			ui_helpline__push("maximum size of symbol name reached!");
+-			key = K_ENTER;
+-			break;
+-		}
+-next_key:
+-		key = ui__getch(delay_secs);
+-	}
+-
+-	buf[len] = '\0';
+-	strncpy(input, buf, len+1);
+-	return key;
++	fprintf(stderr, "Warning:\n");
++	vfprintf(stderr, format, args);
++	return 0;
+ }
+ 
+-int ui__question_window(const char *title, const char *text,
+-			const char *exit_msg, int delay_secs)
++static struct perf_error_ops default_eops =
+ {
+-	int x, y;
+-	int max_len = 0, nr_lines = 0;
+-	const char *t;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-		int len;
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	max_len += 2;
+-	nr_lines += 4;
+-	y = SLtt_Screen_Rows / 2 - nr_lines / 2,
+-	x = SLtt_Screen_Cols / 2 - max_len / 2;
+-
+-	SLsmg_set_color(0);
+-	SLsmg_draw_box(y, x++, nr_lines, max_len);
+-	if (title) {
+-		SLsmg_gotorc(y, x + 1);
+-		SLsmg_write_string((char *)title);
+-	}
+-	SLsmg_gotorc(++y, x);
+-	nr_lines -= 2;
+-	max_len -= 2;
+-	SLsmg_write_wrapped_string((unsigned char *)text, y, x,
+-				   nr_lines, max_len, 1);
+-	SLsmg_gotorc(y + nr_lines - 2, x);
+-	SLsmg_write_nstring((char *)" ", max_len);
+-	SLsmg_gotorc(y + nr_lines - 1, x);
+-	SLsmg_write_nstring((char *)exit_msg, max_len);
+-	SLsmg_refresh();
+-	return ui__getch(delay_secs);
+-}
++	.error		= perf_stdio__error,
++	.warning	= perf_stdio__warning,
++};
+ 
+-int ui__help_window(const char *text)
+-{
+-	return ui__question_window("Help", text, "Press any key...", 0);
+-}
++static struct perf_error_ops *perf_eops = &default_eops;
+ 
+-int ui__dialog_yesno(const char *msg)
+-{
+-	return ui__question_window(NULL, msg, "Enter: Yes, ESC: No", 0);
+-}
+ 
+-int __ui__warning(const char *title, const char *format, va_list args)
++int ui__error(const char *format, ...)
+ {
+-	char *s;
+-
+-	if (use_browser > 0 && vasprintf(&s, format, args) > 0) {
+-		int key;
++	int ret;
++	va_list args;
+ 
+-		pthread_mutex_lock(&ui__lock);
+-		key = ui__question_window(title, s, "Press any key...", 0);
+-		pthread_mutex_unlock(&ui__lock);
+-		free(s);
+-		return key;
+-	}
++	va_start(args, format);
++	ret = perf_eops->error(format, args);
++	va_end(args);
+ 
+-	fprintf(stderr, "%s:\n", title);
+-	vfprintf(stderr, format, args);
+-	return K_ESC;
++	return ret;
+ }
+ 
+ int ui__warning(const char *format, ...)
+ {
+-	int key;
++	int ret;
+ 	va_list args;
+ 
+ 	va_start(args, format);
+-	key = __ui__warning("Warning", format, args);
++	ret = perf_eops->warning(format, args);
+ 	va_end(args);
+-	return key;
 +
-+	if (!perf_gtk__is_active_context(pgctx) ||
-+	    vasprintf(&msg, format, args) < 0) {
-+		fprintf(stderr, "Error:\n");
-+		vfprintf(stderr, format, args);
-+		fprintf(stderr, "\n");
++	return ret;
+ }
+ 
+-int ui__error(const char *format, ...)
++
++/**
++ * perf_error__register - Register error logging functions
++ * @eops: The pointer to error logging function struct
++ *
++ * Register UI-specific error logging functions. Before calling this,
++ * other logging functions should be unregistered, if any.
++ */
++int perf_error__register(struct perf_error_ops *eops)
+ {
+-	int key;
+-	va_list args;
++	if (perf_eops != &default_eops)
 +		return -1;
-+	}
-+
-+	dialog = gtk_message_dialog_new_with_markup(GTK_WINDOW(pgctx->main_window),
-+					GTK_DIALOG_DESTROY_WITH_PARENT,
-+					GTK_MESSAGE_ERROR,
-+					GTK_BUTTONS_CLOSE,
-+					"<b>Error</b>\n\n%s", msg);
-+	gtk_dialog_run(GTK_DIALOG(dialog));
-+
-+	gtk_widget_destroy(dialog);
-+	free(msg);
+ 
+-	va_start(args, format);
+-	key = __ui__warning("Error", format, args);
+-	va_end(args);
+-	return key;
++	perf_eops = eops;
 +	return 0;
 +}
 +
-+#ifdef HAVE_GTK_INFO_BAR
-+static int perf_gtk__warning_info_bar(const char *format, va_list args)
++/**
++ * perf_error__unregister - Unregister error logging functions
++ * @eops: The pointer to error logging function struct
++ *
++ * Unregister already registered error logging functions.
++ */
++int perf_error__unregister(struct perf_error_ops *eops)
 +{
-+	char *msg;
-+
-+	if (!perf_gtk__is_active_context(pgctx) ||
-+	    vasprintf(&msg, format, args) < 0) {
-+		fprintf(stderr, "Warning:\n");
-+		vfprintf(stderr, format, args);
-+		fprintf(stderr, "\n");
++	if (perf_eops != eops)
 +		return -1;
-+	}
 +
-+	gtk_label_set_text(GTK_LABEL(pgctx->message_label), msg);
-+	gtk_info_bar_set_message_type(GTK_INFO_BAR(pgctx->info_bar),
-+				      GTK_MESSAGE_WARNING);
-+	gtk_widget_show(pgctx->info_bar);
-+
-+	free(msg);
++	perf_eops = &default_eops;
 +	return 0;
-+}
-+#else
-+static int perf_gtk__warning_statusbar(const char *format, va_list args)
-+{
-+	char *msg, *p;
+ }
+diff --git a/tools/perf/ui/util.h b/tools/perf/ui/util.h
+index 2d1738bd71c8..361f08c52d37 100644
+--- a/tools/perf/ui/util.h
++++ b/tools/perf/ui/util.h
+@@ -9,6 +9,13 @@ int ui__help_window(const char *text);
+ int ui__dialog_yesno(const char *msg);
+ int ui__question_window(const char *title, const char *text,
+ 			const char *exit_msg, int delay_secs);
+-int __ui__warning(const char *title, const char *format, va_list args);
 +
-+	if (!perf_gtk__is_active_context(pgctx) ||
-+	    vasprintf(&msg, format, args) < 0) {
-+		fprintf(stderr, "Warning:\n");
-+		vfprintf(stderr, format, args);
-+		fprintf(stderr, "\n");
-+		return -1;
-+	}
-+
-+	gtk_statusbar_pop(GTK_STATUSBAR(pgctx->statbar),
-+			  pgctx->statbar_ctx_id);
-+
-+	/* Only first line can be displayed */
-+	p = strchr(msg, '\n');
-+	if (p)
-+		*p = '\0';
-+
-+	gtk_statusbar_push(GTK_STATUSBAR(pgctx->statbar),
-+			   pgctx->statbar_ctx_id, msg);
-+
-+	free(msg);
-+	return 0;
-+}
-+#endif
-+
-+struct perf_error_ops perf_gtk_eops = {
-+	.error		= perf_gtk__error,
-+#ifdef HAVE_GTK_INFO_BAR
-+	.warning	= perf_gtk__warning_info_bar,
-+#else
-+	.warning	= perf_gtk__warning_statusbar,
-+#endif
++struct perf_error_ops {
++	int (*error)(const char *format, va_list args);
++	int (*warning)(const char *format, va_list args);
 +};
 +
- /*
-  * FIXME: Functions below should be implemented properly.
-  *        For now, just add stubs for NO_NEWT=1 build.
++int perf_error__register(struct perf_error_ops *eops);
++int perf_error__unregister(struct perf_error_ops *eops);
+ 
+ #endif /* _PERF_UI_UTIL_H_ */
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index efb1fce259a4..4dfe0bb3c322 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -47,7 +47,7 @@ int dump_printf(const char *fmt, ...)
+ 	return ret;
+ }
+ 
+-#ifdef NO_NEWT_SUPPORT
++#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ int ui__warning(const char *format, ...)
+ {
+ 	va_list args;
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 6bebe7f0a20c..015c91dbc096 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -12,8 +12,9 @@ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+ void trace_event(union perf_event *event);
+ 
+ struct ui_progress;
++struct perf_error_ops;
+ 
+-#ifdef NO_NEWT_SUPPORT
++#if defined(NO_NEWT_SUPPORT) && defined(NO_GTK2_SUPPORT)
+ static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
+ {
+ 	return 0;
+@@ -23,12 +24,28 @@ static inline void ui_progress__update(u64 curr __used, u64 total __used,
+ 				       const char *title __used) {}
+ 
+ #define ui__error(format, arg...) ui__warning(format, ##arg)
+-#else
++
++static inline int
++perf_error__register(struct perf_error_ops *eops __used)
++{
++	return 0;
++}
++
++static inline int
++perf_error__unregister(struct perf_error_ops *eops __used)
++{
++	return 0;
++}
++
++#else /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
++
+ extern char ui_helpline__last_msg[];
+ int ui_helpline__show_help(const char *format, va_list ap);
+ #include "../ui/progress.h"
+ int ui__error(const char *format, ...) __attribute__((format(printf, 1, 2)));
+-#endif
++#include "../ui/util.h"
++
++#endif /* NO_NEWT_SUPPORT && NO_GTK2_SUPPORT */
+ 
+ int ui__warning(const char *format, ...) __attribute__((format(printf, 1, 2)));
+ int ui__error_paranoid(void);
 -- 
 1.7.9.2
 
