@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531Ab2E2J7v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:59:51 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14256 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab2E2J7t (ORCPT
+	id S1753460Ab2E2KCf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 06:02:35 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35626 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501Ab2E2KCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:59:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 29 May 2012 02:59:40 -0700
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Mike Turquette <mturquette@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] clk: add extension API
-Date: Tue, 29 May 2012 12:58:59 +0300
-Message-ID: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
-X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 29 May 2012 06:02:34 -0400
+Date: Tue, 29 May 2012 11:04:56 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Roland Stigge <stigge@antcom.de>
+Cc: alan@linux.intel.com, gregkh@linuxfoundation.org,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
+        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linux@arm.linux.org.uk
+Subject: Re: [PATCH 1/2] serial/8250: Add LPC3220 standard UART type
+Message-ID: <20120529110456.1faf85ad@pyramind.ukuu.org.uk>
+In-Reply-To: <1338282570-19799-1-git-send-email-stigge@antcom.de>
+References: <1338282570-19799-1-git-send-email-stigge@antcom.de>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an extension API for clocks. This allows clocktypes to provide extensions
-for features which are uncommon and cannot be easily mapped onto normal clock
-framework concecpts. eg: resetting blocks, configuring clock phase etc.
+On Tue, 29 May 2012 11:09:29 +0200
+Roland Stigge <stigge@antcom.de> wrote:
 
-Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
----
- drivers/clk/clk.c            |    8 ++++++++
- include/linux/clk-provider.h |    2 ++
- include/linux/clk.h          |    2 ++
- 3 files changed, 12 insertions(+), 0 deletions(-)
+> LPC32xx has "Standard" UARTs that are actually 16550A compatible but have
+> bigger FIFOs. Since the already supported 16X50 line still doesn't match here,
+> we agreed on adding a new type.
+> 
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index e5d5dc1..39bc458 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -956,6 +956,14 @@ struct clk *clk_get_parent(struct clk *clk)
- }
- EXPORT_SYMBOL_GPL(clk_get_parent);
- 
-+int clk_ext(struct clk *clk, unsigned int op, unsigned long param)
-+{
-+	if (clk->ops->ext)
-+		return clk->ops->ext(clk->hw, op, param);
-+
-+	return -EINVAL;
-+}
-+
- /*
-  * .get_parent is mandatory for clocks with multiple possible parents.  It is
-  * optional for single-parent clocks.  Always call .get_parent if it is
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 6803fb4..08025d3 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -109,6 +109,8 @@ struct clk_ops {
- 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
- 				    unsigned long);
- 	void		(*init)(struct clk_hw *hw);
-+	int		(*ext)(struct clk_hw *hw, unsigned int op,
-+					unsigned long param);
- };
- 
- /**
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 0e078bd..74be656 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -278,4 +278,6 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id);
- int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
- 			struct device *dev);
- 
-+int clk_ext(struct clk *clk, unsigned int op, unsigned long param);
-+
- #endif
--- 
-1.7.9.1
-
+Acked-by: Alan Cox <alan@linux.intel.com>
