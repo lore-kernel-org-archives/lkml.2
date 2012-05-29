@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab2E2Bli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 21:41:38 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52624 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751885Ab2E2Blg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 21:41:36 -0400
-Date: Tue, 29 May 2012 10:41:28 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Asias He <asias@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] block: Mitigate lock unbalance caused by lock
- switching
-Message-ID: <20120529014128.GF20954@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <20120528102214.GB15202@dhcp-172-17-108-109.mtv.corp.google.com>
- <1338255542-22247-1-git-send-email-asias@redhat.com>
+	id S1752177Ab2E2BsN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 21:48:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56241 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760Ab2E2BsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 21:48:12 -0400
+Message-ID: <4FC42B11.8060202@redhat.com>
+Date: Tue, 29 May 2012 09:49:05 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338255542-22247-1-git-send-email-asias@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@infradead.org>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] block: Fix lock unbalance caused by lock disconnect
+References: <1337911859-22913-1-git-send-email-asias@redhat.com> <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com> <4FC2DFB6.6080701@redhat.com> <20120528102055.GA15202@dhcp-172-17-108-109.mtv.corp.google.com>
+In-Reply-To: <20120528102055.GA15202@dhcp-172-17-108-109.mtv.corp.google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 09:39:01AM +0800, Asias He wrote:
-> Commit 777eb1bf15b8532c396821774bf6451e563438f5 disconnects externally
-> supplied queue_lock before blk_drain_queue(). Switching the lock would
-> introduce lock unbalance because theads which have taken the external
-> lock might unlock the internal lock in the during the queue drain. This
-> patch mitigate this by disconnecting the lock after the queue draining
-> since queue draining makes a lot of request_queue users go away.
-> 
-> However, please note, this patch only makes the problem less likely to
-> happen. Anyone who still holds a ref might try to issue a new request on
-> a dead queue after the blk_cleanup_queue() finishes draining, the lock
-> unbalance might still happen in this case.
-> 
->  =====================================
->  [ BUG: bad unlock balance detected! ]
->  3.4.0+ #288 Not tainted
->  -------------------------------------
->  fio/17706 is trying to release lock (&(&q->__queue_lock)->rlock) at:
->  [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
->  but there are no more locks to release!
-> 
->  other info that might help us debug this:
->  1 lock held by fio/17706:
->   #0:  (&(&vblk->lock)->rlock){......}, at: [<ffffffff81327f1a>]
->  get_request_wait+0x19a/0x250
-> 
->  stack backtrace:
->  Pid: 17706, comm: fio Not tainted 3.4.0+ #288
->  Call Trace:
->   [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
->   [<ffffffff810dea49>] print_unlock_inbalance_bug+0xf9/0x100
->   [<ffffffff810dfe4f>] lock_release_non_nested+0x1df/0x330
->   [<ffffffff811dae24>] ? dio_bio_end_aio+0x34/0xc0
->   [<ffffffff811d6935>] ? bio_check_pages_dirty+0x85/0xe0
->   [<ffffffff811daea1>] ? dio_bio_end_aio+0xb1/0xc0
->   [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
->   [<ffffffff81329372>] ? blk_queue_bio+0x2a2/0x380
->   [<ffffffff810e0079>] lock_release+0xd9/0x250
->   [<ffffffff81a74553>] _raw_spin_unlock_irq+0x23/0x40
->   [<ffffffff81329372>] blk_queue_bio+0x2a2/0x380
->   [<ffffffff81328faa>] generic_make_request+0xca/0x100
->   [<ffffffff81329056>] submit_bio+0x76/0xf0
->   [<ffffffff8115470c>] ? set_page_dirty_lock+0x3c/0x60
->   [<ffffffff811d69e1>] ? bio_set_pages_dirty+0x51/0x70
->   [<ffffffff811dd1a8>] do_blockdev_direct_IO+0xbf8/0xee0
->   [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
->   [<ffffffff811dd4e5>] __blockdev_direct_IO+0x55/0x60
->   [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
->   [<ffffffff811d92e7>] blkdev_direct_IO+0x57/0x60
->   [<ffffffff811d8620>] ? blkdev_get_block+0x80/0x80
->   [<ffffffff8114c6ae>] generic_file_aio_read+0x70e/0x760
->   [<ffffffff810df7c5>] ? __lock_acquire+0x215/0x5a0
->   [<ffffffff811e9924>] ? aio_run_iocb+0x54/0x1a0
->   [<ffffffff8114bfa0>] ? grab_cache_page_nowait+0xc0/0xc0
->   [<ffffffff811e82cc>] aio_rw_vect_retry+0x7c/0x1e0
->   [<ffffffff811e8250>] ? aio_fsync+0x30/0x30
->   [<ffffffff811e9936>] aio_run_iocb+0x66/0x1a0
->   [<ffffffff811ea9b0>] do_io_submit+0x6f0/0xb80
->   [<ffffffff8134de2e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->   [<ffffffff811eae50>] sys_io_submit+0x10/0x20
->   [<ffffffff81a7c9e9>] system_call_fastpath+0x16/0x1b
-> 
-> Changes since v2: Update commit log to explain how the code is still
->                   broken even if we delay the lock switching after the drain.
-> Changes since v1: Update commit log as Tejun suggested.
-> 
-> Signed-off-by: Asias He <asias@redhat.com>
+On 05/28/2012 06:20 PM, Tejun Heo wrote:
+> Hello, Asias.
+>
+> On Mon, May 28, 2012 at 10:15:18AM +0800, Asias He wrote:
+>>> I don't think the patch description is correct.  The lock switcihng is
+>>> inherently broken and the patch doesn't really fix the problem
+>>> although it *might* make the problem less likely.  Trying to switch
+>>> locks while there are other accessors of the lock is simply broken, it
+>>> can never work without outer synchronization.
+>>
+>> Since the lock switching is broken, is it a good idea to force all
+>> the drivers to use the block layer provided lock? i.e. Change the
+>> API from
+>> blk_init_queue(rfn, driver_lock) to blk_init_queue(rfn). Any reason
+>> not to use the block layer provided one.
+>
+> I think hch tried to do that a while ago.  Dunno what happened to the
+> patches.  IIRC, the whole external lock thing was about sharing a
+> single lock across different request_queues.  Not sure whether it's
+> actually beneficial enough or just a crazy broken optimization.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Do we have any existing use case of sharing a single lock across 
+different request_queues? What's point of this sharing. Christoph?
 
-Thanks.
+If nobody has any objections I'd like to make the patches. Jens, any 
+comments?
+
+>>> Your patch might make
+>>> the problem somewhat less likely simply because queue draining makes a
+>>> lot of request_queue users go away.
+>>
+>> Who will use the request_queue after blk_cleanup_queue()?
+>
+> Anyone who still holds a ref might try to issue a new request on a
+> dead queue.  ie. blkdev with filesystem mounted goes away and the FS
+> issues a new read request after blk_cleanup_queue() finishes drainig.
+
+OK. Thanks for explaining.
+
 
 -- 
-tejun
+Asias
