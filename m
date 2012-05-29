@@ -1,61 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2E2V2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 17:28:51 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:60021 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871Ab2E2V2t (ORCPT
+	id S1755946Ab2E2Vdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 17:33:54 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:54930 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755915Ab2E2Vdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 17:28:49 -0400
-Date: Tue, 29 May 2012 17:28:43 -0400 (EDT)
-Message-Id: <20120529.172843.1775456038320356018.davem@davemloft.net>
-To: florian@openwrt.org
-Cc: devendra.aaru@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] r6040: disable pci device if the subsequent calls
- (after pci_enable_device) fails
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120529.172229.277102319861990758.davem@davemloft.net>
-References: <1338206223-26781-1-git-send-email-devendra.aaru@gmail.com>
-	<1659482.3g1Zl6FDuM@flexo>
-	<20120529.172229.277102319861990758.davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 May 2012 14:28:46 -0700 (PDT)
+	Tue, 29 May 2012 17:33:52 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: Greg Ungerer <gerg@uclinux.org>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(), and strnlen_user()
+Date: Tue, 29 May 2012 23:33:36 +0200
+Message-Id: <1338327216-15309-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 29 May 2012 17:22:29 -0400 (EDT)
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+Do we also want
 
-> From: Florian Fainelli <florian@openwrt.org>
-> Date: Tue, 29 May 2012 11:20:50 +0200
-> 
->> On Monday 28 May 2012 17:27:03 Devendra Naga wrote:
->>> the calls after the pci_enable_device may fail, and will error out with out
->>> disabling it. disable the device at error paths.
->> 
->> Looks good, thanks Devendra!
->> 
->>> 
->>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
->> 
->> Acked-by: Florian Fainelli <florian@openwrt.org>
-> 
-> Applied.
+    select HAVE_EFFICIENT_UNALIGNED_ACCESS if (!COLDFIRE && !M68000)
 
-Actually, reverted, you didn't test this patch at all.
+???
 
-You didn't even look at the warnings emitted by the compiler
-with your changes installed.
+ arch/m68k/Kconfig                  |    2 +
+ arch/m68k/include/asm/Kbuild       |    2 +
+ arch/m68k/include/asm/uaccess_mm.h |   11 +++--
+ arch/m68k/lib/uaccess.c            |   74 ------------------------------------
+ 4 files changed, 11 insertions(+), 78 deletions(-)
 
-You're passing a network device pointer into the PCI device
-disable routine, which takes a PCI device pointer.
+diff --git a/arch/m68k/Kconfig b/arch/m68k/Kconfig
+index cac5b6b..1471201 100644
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -7,6 +7,8 @@ config M68K
+ 	select GENERIC_IRQ_SHOW
+ 	select ARCH_HAVE_NMI_SAFE_CMPXCHG if RMW_INSNS
+ 	select GENERIC_CPU_DEVICES
++	select GENERIC_STRNCPY_FROM_USER if MMU
++	select GENERIC_STRNLEN_USER if MMU
+ 	select FPU if MMU
+ 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
+ 
+diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
+index 1a922fa..eafa253 100644
+--- a/arch/m68k/include/asm/Kbuild
++++ b/arch/m68k/include/asm/Kbuild
+@@ -1,2 +1,4 @@
+ include include/asm-generic/Kbuild.asm
+ header-y += cachectl.h
++
++generic-y += word-at-a-time.h
+diff --git a/arch/m68k/include/asm/uaccess_mm.h b/arch/m68k/include/asm/uaccess_mm.h
+index 9c80cd5..472c891 100644
+--- a/arch/m68k/include/asm/uaccess_mm.h
++++ b/arch/m68k/include/asm/uaccess_mm.h
+@@ -379,12 +379,15 @@ __constant_copy_to_user(void __user *to, const void *from, unsigned long n)
+ #define copy_from_user(to, from, n)	__copy_from_user(to, from, n)
+ #define copy_to_user(to, from, n)	__copy_to_user(to, from, n)
+ 
+-long strncpy_from_user(char *dst, const char __user *src, long count);
+-long strnlen_user(const char __user *src, long n);
++#define user_addr_max() \
++	(segment_eq(get_fs(), USER_DS) ? TASK_SIZE : ~0UL)
++
++extern long strncpy_from_user(char *dst, const char __user *src, long count);
++extern __must_check long strlen_user(const char __user *str);
++extern __must_check long strnlen_user(const char __user *str, long n);
++
+ unsigned long __clear_user(void __user *to, unsigned long n);
+ 
+ #define clear_user	__clear_user
+ 
+-#define strlen_user(str) strnlen_user(str, 32767)
+-
+ #endif /* _M68K_UACCESS_H */
+diff --git a/arch/m68k/lib/uaccess.c b/arch/m68k/lib/uaccess.c
+index 5664386..5e97f2e 100644
+--- a/arch/m68k/lib/uaccess.c
++++ b/arch/m68k/lib/uaccess.c
+@@ -104,80 +104,6 @@ unsigned long __generic_copy_to_user(void __user *to, const void *from,
+ EXPORT_SYMBOL(__generic_copy_to_user);
+ 
+ /*
+- * Copy a null terminated string from userspace.
+- */
+-long strncpy_from_user(char *dst, const char __user *src, long count)
+-{
+-	long res;
+-	char c;
+-
+-	if (count <= 0)
+-		return count;
+-
+-	asm volatile ("\n"
+-		"1:	"MOVES".b	(%2)+,%4\n"
+-		"	move.b	%4,(%1)+\n"
+-		"	jeq	2f\n"
+-		"	subq.l	#1,%3\n"
+-		"	jne	1b\n"
+-		"2:	sub.l	%3,%0\n"
+-		"3:\n"
+-		"	.section .fixup,\"ax\"\n"
+-		"	.even\n"
+-		"10:	move.l	%5,%0\n"
+-		"	jra	3b\n"
+-		"	.previous\n"
+-		"\n"
+-		"	.section __ex_table,\"a\"\n"
+-		"	.align	4\n"
+-		"	.long	1b,10b\n"
+-		"	.previous"
+-		: "=d" (res), "+a" (dst), "+a" (src), "+r" (count), "=&d" (c)
+-		: "i" (-EFAULT), "0" (count));
+-
+-	return res;
+-}
+-EXPORT_SYMBOL(strncpy_from_user);
+-
+-/*
+- * Return the size of a string (including the ending 0)
+- *
+- * Return 0 on exception, a value greater than N if too long
+- */
+-long strnlen_user(const char __user *src, long n)
+-{
+-	char c;
+-	long res;
+-
+-	asm volatile ("\n"
+-		"1:	subq.l	#1,%1\n"
+-		"	jmi	3f\n"
+-		"2:	"MOVES".b	(%0)+,%2\n"
+-		"	tst.b	%2\n"
+-		"	jne	1b\n"
+-		"	jra	4f\n"
+-		"\n"
+-		"3:	addq.l	#1,%0\n"
+-		"4:	sub.l	%4,%0\n"
+-		"5:\n"
+-		"	.section .fixup,\"ax\"\n"
+-		"	.even\n"
+-		"20:	sub.l	%0,%0\n"
+-		"	jra	5b\n"
+-		"	.previous\n"
+-		"\n"
+-		"	.section __ex_table,\"a\"\n"
+-		"	.align	4\n"
+-		"	.long	2b,20b\n"
+-		"	.previous\n"
+-		: "=&a" (res), "+d" (n), "=&d" (c)
+-		: "0" (src), "r" (src));
+-
+-	return res;
+-}
+-EXPORT_SYMBOL(strnlen_user);
+-
+-/*
+  * Zero Userspace
+  */
+ 
+-- 
+1.7.0.4
 
-I can't express to you how extremely irritating it is when
-people submit patches like this.
-
-The bug in question is 1,000 times less harmful than your fix.
