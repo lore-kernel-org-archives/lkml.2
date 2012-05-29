@@ -1,84 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab2E2RMi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:12:38 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59559 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab2E2RMh (ORCPT
+	id S1754675Ab2E2RMp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:12:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58574 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754631Ab2E2RMk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:12:37 -0400
-Date: Tue, 29 May 2012 19:13:05 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        hpa <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: WARNING: at arch/x86/kernel/smpboot.c:310
- topology_sane.clone.1+0x6e/0x81()
-Message-ID: <20120529171305.GK29157@aftab.osrc.amd.com>
-References: <20120529135442.GE29157@aftab.osrc.amd.com>
- <1338303106.26856.92.camel@twins>
- <20120529152944.GA8263@alberich.amd.com>
- <1338310743.26856.141.camel@twins>
+	Tue, 29 May 2012 13:12:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338310743.26856.141.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FC41903.1060705@gmail.com>
+References: <tip-r74n3n8hhuc2ynbrnp3vt954@git.kernel.org>
+	<CAE9FiQWat=55Ygp-f6ovJx+CD=Knjic9Xvpp+Ngf-o19zNUy7g@mail.gmail.com>
+	<1336671883.27020.128.camel@laptop>
+	<CAE9FiQWB23V=XoyzQaq1X+JNtUcV=4bLQ1sGCMOTjKRqAV7XuQ@mail.gmail.com>
+	<4FC41903.1060705@gmail.com>
+Date: Tue, 29 May 2012 10:12:40 -0700
+X-Google-Sender-Auth: NO8ngH6MFcbFZMUi9zn1WNnm6a4
+Message-ID: <CAE9FiQVpVRiipjmBj0qCSRdE2FP3QBdHk0C1BF-NJxPCcy7Dsg@mail.gmail.com>
+Subject: Re: [tip:sched/core] sched/numa: Rewrite the CONFIG_NUMA sched domain support
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@kernel.org,
+        torvalds@linux-foundation.org, cmetcalf@tilera.com,
+        tony.luck@intel.com, sivanich@sgi.com, akpm@linux-foundation.org,
+        ralf@linux-mips.org, greg.pearson@hp.com, ink@jurassic.park.msu.ru,
+        tglx@linutronix.de, rth@twiddle.net, kamezawa.hiroyu@jp.fujitsu.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        anton@samba.org, lethal@linux-sh.org, davem@davemloft.net,
+        benh@kernel.crashing.org, dhowells@redhat.com, mattst88@gmail.com,
+        fenghua.yu@intel.com, linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 06:59:03PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-29 at 17:29 +0200, Andreas Herrmann wrote:
-> 
-> > I've also looked at this. core_siblings mask is broken with this patch.
-> > And there is this new irritating warning ...
-> 
-> Hehe, you made this irritating hardware ;-) But fair enough.
-> 
-> > I second Boris' suggestion for a fix. But I think the check for
-> > X86_FEATURE_AMD_DCM should go into topology_sane() which in theory
-> > could check other things as well.
-> 
-> Unless you plan to go span cache (or even SMT siblings) over physical
-> IDs I'd strongly argue against putting it in topology_sane().
+On Mon, May 28, 2012 at 5:32 PM, Jiang Liu <liuj97@gmail.com> wrote:
+> Hi Yinghai,
+>        Does this patch fix your issue? https://lkml.org/lkml/2012/5/9/183.
+> I have encountered a similar issue on an IA64 platform and the patch above
+> works around it. But the root cause is a BIOS bug that the order of CPUs
+> in MADT table doesn't conform to the ACPI specification and the first CPU
+> in MADT is not the BSP, which breaks some assumption of the booting code
+> and causes the core dump.
 
-Nah, the check goes in match_mc - we just talked it over with Andreas.
+yes, with another patch from PeterZ.
 
-> As it stands I think we should discuss the definition for the generic
-> topology bits (drivers/base/topology.c), because I think your
-> Magny-Cours thing does the wrong thing here.
+---
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6396,8 +6396,7 @@ static void sched_init_numa(void)
+                       sched_domains_numa_masks[i][j] = mask;
 
-"wrong" is such a strong word :-) Please elaborate and I'll have a look.
+                       for (k = 0; k < nr_node_ids; k++) {
+-                               if (node_distance(cpu_to_node(j), k) >
+-                                               sched_domains_numa_distance[i])
++                               if (node_distance(j, k) >
+sched_domains_numa_distance[i])
+                                       continue;
 
-> The core span in a phys_id is all nice and such, but what does it mean?
-
-AFAICT, this is the physical package id to which the cores belong, i.e.
-physical socket.
-
-> IOW what would you do with it?
-
-Shoot empty cans with it... :-)
-
-Andreas?
-
-> I would think the LLC range and the node-span are much more useful
-> things to have. Once you have nodes the sysfs node topology takes
-> over.
-
-Yes, the LLC range should be the cores belonging to an internal node and
-the node-span is the cores belonging to a physical socket. I think you
-can compute anything else from those topo-wise.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+                               cpumask_or(mask, mask, cpumask_of_node(k));
