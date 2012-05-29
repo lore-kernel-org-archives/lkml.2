@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2E2PSa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 11:18:30 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35963 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab2E2PS3 (ORCPT
+	id S1753974Ab2E2PUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 11:20:31 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50469 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab2E2PUa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 11:18:29 -0400
-Date: Tue, 29 May 2012 10:10:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 03/35] xen: document Xen is using an unused bit for the
- pagetables
-Message-ID: <20120529141049.GB3558@phenom.dumpdata.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-4-git-send-email-aarcange@redhat.com>
- <20120525202656.GA23655@phenom.dumpdata.com>
- <20120526155912.GA4054@redhat.com>
+	Tue, 29 May 2012 11:20:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120526155912.GA4054@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1338299104.2202.34.camel@joe2Laptop>
+References: <1338289626-9021-1-git-send-email-devendra.aaru@gmail.com>
+	<1338299104.2202.34.camel@joe2Laptop>
+Date: Tue, 29 May 2012 20:50:30 +0530
+Message-ID: <CAHdPZaPeGe6FtrU7u1JLCUKs5H3PruXBPA5zpHmEsy=w97bj2w@mail.gmail.com>
+Subject: Re: [PATCH V3] [staging] bcm: Replace the BCM_DEBUG_* and BCM_SHOW_*
+ macros with functions
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Kevin McKinney <klmckinney1@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 05:59:12PM +0200, Andrea Arcangeli wrote:
-> Hi Konrad,
-> 
-> On Fri, May 25, 2012 at 04:26:56PM -0400, Konrad Rzeszutek Wilk wrote:
-> > On Fri, May 25, 2012 at 07:02:07PM +0200, Andrea Arcangeli wrote:
-> > > Xen has taken over the last reserved bit available for the pagetables
-> > > which is set through ioremap, this documents it and makes the code
-> > > more readable.
-> > 
-> > Andrea, my previous respone had a question about this - was wondering
-> > if you had a chance to look at that in your busy schedule and provide
-> > some advice on how to remove the _PAGE_IOMAP altogether?
-> 
-> I read you response but I didn't look into the P2M tree and
-> xen_val_pte code yet sorry. Thanks for looking into this, if it's
-> possible to remove it without downsides, it would be a nice
+Hi Joe,
 
-Yeah, I am not really thrilled about it.
+On Tue, May 29, 2012 at 7:15 PM, Joe Perches <joe@perches.com> wrote:
+>> diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
+> []
+>> +void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
+>> +                     int dbg_level, const char *fmt, ...)
+>> +{
+>> +     struct va_format vaf;
+>> +     va_list args;
+>> +     UINT debug_level = Adapter->stDebugState.debug_level;
+>> +
+>> +     va_start(args, fmt);
+>> +
+>> +     vaf.fmt = fmt;
+>> +     vaf.va = &args;
+>> +
+>> +     if (DBG_TYPE_PRINTK == Type)
+>> +             pr_info("%s: %pV", __func__, &vaf);
+>
+> func
+>
+>> +     else if (Adapter &&
+>> +             (dbg_level & DBG_LVL_BITMASK) <= debug_level &&
+>> +             (Type & Adapter->stDebugState.type) &&
+>> +             (SubType & Adapter->stDebugState.subtype[Type])) {
+>> +             if (dbg_level & DBG_NO_FUNC_PRINT)
+>> +                     printk(KERN_DEBUG "%pV" , &vaf);
+>> +             else
+>> +                     printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
+>
+> func
+>
+>> +     }
+>> +
+>> +     va_end(args);
+>> +}
+>> +
+>> +void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
+>> +                         int dbg_level, const void *buffer, size_t bufferlen)
+>> +{
+>> +     if (DBG_TYPE_PRINTK == Type ||
+>> +        (Adapter &&
+>> +        (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
+>> +        (Type & Adapter->stDebugState.type) &&
+>> +        (SubType & Adapter->stDebugState.subtype[Type]))) {
+>> +             printk(KERN_DEBUG "%s:\n", __func__);
+>
+> func
+>
+>> +             print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
+>> +                            16, 1, buffer, bufferlen, false);
+>> +     }
+>> +}
+>
+> []
+>
+>> diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
+> []
+>> +struct _MINI_ADAPTER;
+>> +
+>> +__printf(5, 6)
+>> +
+>> +void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
+>> +                     int dbg_level, const char *fmt, ...);
+>
+> No blank line between __printf and prototype
+>
+>> +void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
+>> +                     int dbg_level, const void *buffer, size_t bufferlen);
+>> +void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
+>> +
+>> +#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...) \
+>> +     bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
+>> +
+>> +#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,    \
+>> +                             buffer, bufferlen)                      \
+>> +     bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,       \
+>> +                             buffer, bufferlen)
+>> +#define BCM_SHOW_DEBUG_BITMAP(Adapter)                                       \
+>> +     bcm_show_debug_bitmap(Adapter)
+>
+> Turns out to keep the same behavior, you need to add
+> a const char *func argument to these functions and
+> change the macros to pass __func__.
+>
+>
+>
+Ok. so what i am doing now is wrong as its a function, and __func__
+gives the dbg function name, instead the called function since we
+changed it to functions rather from Macros.
 
-> cleanup. It's not urgent though, we're not running out of reserved
-> pte bits yet :).
+Ok, i will send out new changes.
 
-Oh, your git comment says "the last reserved bit". Let me
-look through all your patches to see how the AutoNUMA code works -
-I am probably just missing something simple.
+Thanks,
+Devendra.
