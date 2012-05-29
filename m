@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab2E2I2u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:28:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43782 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab2E2I2t convert rfc822-to-8bit (ORCPT
+	id S1752818Ab2E2I3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:29:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:36737 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752309Ab2E2I25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:28:49 -0400
-Message-ID: <1338280115.14636.26.camel@twins>
-Subject: Re: [RFC PATCH 00/10] Cleanup
- ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, ralf@linux-mips.org, sshtylyov@mvista.com,
-        david.daney@cavium.com, nikunj@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Tue, 29 May 2012 10:28:35 +0200
-In-Reply-To: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 29 May 2012 04:28:57 -0400
+From: Eyal Shapira <eyal@wizery.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, Luciano Coelho <coelho@ti.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH v2] wlcore: fix undefined symbols when CONFIG_PM is not defined
+Date: Tue, 29 May 2012 01:28:42 -0700
+Message-Id: <1338280122-28648-1-git-send-email-eyal@wizery.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 15:15 +0800, Yong Zhang wrote:
-> As discussed with Srivatsa [1], it seems there is no need to keep
-> ipi_call_[un]lock_irq() when cpu bring-up/down. Because:
-> 
-> 1) call_function.lock used in smp_call_function_many() is just to protect
->    call_function.queue and &data->refs, cpu_online_mask is outside of the
->    lock. And it's not necessary to protect cpu_online_mask,
->    because data->cpumask is pre-calculate and even if a cpu is brougt up
->    when calling arch_send_call_function_ipi_mask(), it's harmless because
->    validation test in generic_smp_call_function_interrupt() will take care
->    of it.
-> 
-> 2) For cpu down issue, stop_machine() will guarantee that no concurrent
->    smp_call_fuction() is processing. 
+commit c21eebb50379a96e1335e933583dcd5b455c6b64
+"wl12xx: add RX filters ACX commands" breaks the build
+when CONFIG_PM isn't defined:
 
-But that lock was only taken around setting a cpu online, so the offline
-case is pretty much irrelevant for these patches, right?
+ERROR: "wl1271_rx_filter_get_fields_size"
+[drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
+ERROR: "wl1271_rx_filter_flatten_fields"
+[drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
 
-That said, is there an alternative to stop_machine on the down side?
+code in drivers/net/wireless/ti/wlcore/acx.c is using these
+functions unconditionally while they are #ifdefed CONFIG_PM.
+Fix it by ifdefing all relevant RX filters code with CONFIG_PM.
 
-I guess flipping the cpu offline and then doing synchronize_sched()
-should suffice.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Eyal Shapira <eyal@wizery.com>
+---
+v2: reference the correct commit in linux-next (Thanks Stephen!)
+
+ drivers/net/wireless/ti/wlcore/acx.c |    2 ++
+ drivers/net/wireless/ti/wlcore/acx.h |    4 +++-
+ drivers/net/wireless/ti/wlcore/rx.c  |    2 ++
+ 3 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireless/ti/wlcore/acx.c
+index 0fd78a0..755b225 100644
+--- a/drivers/net/wireless/ti/wlcore/acx.c
++++ b/drivers/net/wireless/ti/wlcore/acx.c
+@@ -1715,6 +1715,7 @@ out:
+ 
+ }
+ 
++#ifdef CONFIG_PM
+ /* Set the global behaviour of RX filters - On/Off + default action */
+ int wl1271_acx_default_rx_filter_enable(struct wl1271 *wl, bool enable,
+ 					enum rx_filter_action action)
+@@ -1793,3 +1794,4 @@ out:
+ 	kfree(acx);
+ 	return ret;
+ }
++#endif /* CONFIG_PM */
+diff --git a/drivers/net/wireless/ti/wlcore/acx.h b/drivers/net/wireless/ti/wlcore/acx.h
+index 8106b2e..e6a7486 100644
+--- a/drivers/net/wireless/ti/wlcore/acx.h
++++ b/drivers/net/wireless/ti/wlcore/acx.h
+@@ -1330,9 +1330,11 @@ int wl1271_acx_set_inconnection_sta(struct wl1271 *wl, u8 *addr);
+ int wl1271_acx_fm_coex(struct wl1271 *wl);
+ int wl12xx_acx_set_rate_mgmt_params(struct wl1271 *wl);
+ int wl12xx_acx_config_hangover(struct wl1271 *wl);
++
++#ifdef CONFIG_PM
+ int wl1271_acx_default_rx_filter_enable(struct wl1271 *wl, bool enable,
+ 					enum rx_filter_action action);
+ int wl1271_acx_set_rx_filter(struct wl1271 *wl, u8 index, bool enable,
+ 			     struct wl12xx_rx_filter *filter);
+-
++#endif /* CONFIG_PM */
+ #endif /* __WL1271_ACX_H__ */
+diff --git a/drivers/net/wireless/ti/wlcore/rx.c b/drivers/net/wireless/ti/wlcore/rx.c
+index 1f1d948..d6a3c6b 100644
+--- a/drivers/net/wireless/ti/wlcore/rx.c
++++ b/drivers/net/wireless/ti/wlcore/rx.c
+@@ -279,6 +279,7 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
+ 	wl12xx_rearm_rx_streaming(wl, active_hlids);
+ }
+ 
++#ifdef CONFIG_PM
+ int wl1271_rx_filter_enable(struct wl1271 *wl,
+ 			    int index, bool enable,
+ 			    struct wl12xx_rx_filter *filter)
+@@ -314,3 +315,4 @@ void wl1271_rx_filter_clear_all(struct wl1271 *wl)
+ 		wl1271_rx_filter_enable(wl, i, 0, NULL);
+ 	}
+ }
++#endif /* CONFIG_PM */
+-- 
+1.7.4.1
+
