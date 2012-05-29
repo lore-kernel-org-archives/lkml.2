@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab2E2SGR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 14:06:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41567 "EHLO comal.ext.ti.com"
+	id S1754906Ab2E2SLH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:11:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20965 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754517Ab2E2SGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 14:06:16 -0400
-Message-ID: <4FC51008.1050004@ti.com>
-Date: Tue, 29 May 2012 13:06:00 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754547Ab2E2SLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 14:11:04 -0400
+Date: Tue, 29 May 2012 20:09:28 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+Message-ID: <20120529180928.GL21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-14-git-send-email-aarcange@redhat.com>
+ <1338297385.26856.74.camel@twins>
+ <20120529163849.GF21339@redhat.com>
+ <CA+55aFwmhM2a2HjB_MEjVDDL-AP4j-t202ozmHgT0azSptjnoA@mail.gmail.com>
 MIME-Version: 1.0
-To: <jgq516@gmail.com>
-CC: <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <rob.herring@calxeda.com>,
-        <grant.likely@secretlab.ca>, <rnayak@ti.com>, <tony@atomide.com>,
-        <wim@iguana.be>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 3/3] watchdog: omap_wdt: add device tree support
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-4-git-send-email-jgq516@gmail.com>
-In-Reply-To: <1337942552-28218-4-git-send-email-jgq516@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwmhM2a2HjB_MEjVDDL-AP4j-t202ozmHgT0azSptjnoA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
-> From: Xiao Jiang <jgq516@gmail.com>
+On Tue, May 29, 2012 at 10:38:34AM -0700, Linus Torvalds wrote:
+> A big fraction of one percent is absolutely unacceptable.
 > 
-> Add device table for omap_wdt to support dt.
+> Our "struct page" is one of our biggest memory users, there's no way
+> we should cavalierly make it even bigger.
 > 
-> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
-> ---
->  drivers/watchdog/omap_wdt.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-> index 8285d65..d98c615 100644
-> --- a/drivers/watchdog/omap_wdt.c
-> +++ b/drivers/watchdog/omap_wdt.c
-> @@ -430,6 +430,13 @@ static int omap_wdt_resume(struct platform_device *pdev)
->  #define	omap_wdt_resume		NULL
->  #endif
->  
-> +static const struct of_device_id omap_wdt_of_match[] = {
-> +	{ .compatible = "ti,omap3-wdt", },
-> +	{ .compatible = "ti,omap4-wdt", },
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
-> +
->  static struct platform_driver omap_wdt_driver = {
->  	.probe		= omap_wdt_probe,
->  	.remove		= __devexit_p(omap_wdt_remove),
-> @@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
->  	.driver		= {
->  		.owner	= THIS_MODULE,
->  		.name	= "omap_wdt",
-> +		.of_match_table = omap_wdt_of_match,
->  	},
->  };
->  
+> It's also a huge performance sink, the cache miss on struct page tends
+> to be one of the biggest problems in managing memory. We may not ever
+> fix that, but making struct page bigger certainly isn't going to help
+> the bad cache behavior.
 
-I think we need to add some code to the probe function that calls
-of_match_device() and ensures we find a match. For example ...
+The cache effects on the VM fast paths shouldn't be altered, and no
+additional memory per-page is allocated when booting the same bzImage
+on not NUMA hardware.
 
-	if (of_have_populated_dt())
-		if (!of_match_device(omap_wdt_of_match, &pdev->dev))
-			return -EINVAL;
+But now when booted on NUMA hardware it takes 8 bytes more than
+before. There are 32 bytes allocated for every page (with autonuma13
+it was only 24 bytes). The struct page itself isn't modified.
 
-Cheers
-Jon
+I want to remove the page pointer from the page_autonuma structure, to
+keep the overhead at 0.58% instead of the current 0.78% (like it was
+on autonuma alpha13 before the page_autonuma introduction). That
+shouldn't be difficult and it's the next step.
+
+Those changes aren't visible to anything but *autonuma.* files and the
+cache misses in accessing the page_autonuma structure shouldn't be
+measurable (the only fast path access is from
+autonuma_free_page). Even if we find a way to shrink it below 0.58%,
+it won't be intrusive over the rest of the kernel.
+
+memcg takes 0.39% on every system built with
+CONFIG_CGROUP_MEM_RES_CTLR=y unless the kernel is booted with
+cgroup_disable=memory (and nobody does).
+
+I'll do my best to shrink it further, like mentioned I'm very willing
+to experiment with a fixed size array in function of the RAM per node,
+to reduce the overhead (Michel and Rik suggested that at MM summit
+too). Maybe it'll just work fine even if the max size of the lru is
+reduced by a factor of 10. In the worst case I personally believe lots
+of people would be ok to pay 0.58% considering they're paying 0.39%
+even on much smaller not-NUMA systems to boot with memcg. And I'm sure
+I can reduce it at least to 0.58% without any downside.
+
+It's lots of work to reduce it below 0.58%, so before doing that I
+believe it's fair enough to do enough performance measurement and
+reviews to be sure the design flies.
