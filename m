@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2E2Bic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 21:38:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60337 "EHLO mx1.redhat.com"
+	id S1752224Ab2E2BjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 21:39:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20291 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab2E2Bia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 21:38:30 -0400
+	id S1752092Ab2E2Bie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 28 May 2012 21:38:34 -0400
 From: Asias He <asias@redhat.com>
 To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         Asias He <asias@redhat.com>
-Subject: [PATCH V3] block: Mitigate lock unbalance caused by lock switching
-Date: Tue, 29 May 2012 09:39:01 +0800
-Message-Id: <1338255542-22247-1-git-send-email-asias@redhat.com>
-In-Reply-To: <20120528102214.GB15202@dhcp-172-17-108-109.mtv.corp.google.com>
+Subject: [PATCH] block: Mitigate lock unbalance caused by lock switching
+Date: Tue, 29 May 2012 09:39:02 +0800
+Message-Id: <1338255542-22247-2-git-send-email-asias@redhat.com>
+In-Reply-To: <1338255542-22247-1-git-send-email-asias@redhat.com>
 References: <20120528102214.GB15202@dhcp-172-17-108-109.mtv.corp.google.com>
+ <1338255542-22247-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
