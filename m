@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab2E2Qre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:47:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64282 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab2E2Qrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:47:33 -0400
-Message-ID: <4FC4FD51.2080001@redhat.com>
-Date: Tue, 29 May 2012 12:46:09 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754399Ab2E2Qts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:49:48 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:33575 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754200Ab2E2Qtq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:49:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: _KDeAu0VM1liWAxWY4IRaWEp7txi40OtGu.A7EQ.OCuGqqu
+ USfTW7GhQ7sGZ4VwNQY5Av_aeoWCH6yzeT7.S.IEJ8D2fqchRFd_jtKO5cvO
+ sGPSY4FWUTx0RsKeOdYyGmEIYESHnrMIIfSSA9vOpFFXdK8vRsbkgmwgbmrt
+ kt.UeVJuMbEpJjIC9iUlohXQ06nQ32hHO9g67RPU7_tkBxzPssicsWGjFDNh
+ K1O6j2BnJkxxmItIW.8oOZG_h5wCh8XlJoSSXsj84dyCpQFqWKHabEGeGIRS
+ nRgm4E_HW_kPeq26d4rsu4BE3gguLf6myzo0RN22.TCsW_Wv0KsyqTfwtbs2
+ WwyuzZInTvhXhOn7mVLWup3783MNmWr_zHsCTiTVe2IQhl5SlHsTBijDmaCD
+ l
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 29 May 2012 11:05:16 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
+In-Reply-To: <4FC4F1A7.2010206@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205291101580.6723@router.home>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-14-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290932530.4666@router.home> <4FC4F1A7.2010206@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com> <1337965359-29725-14-git-send-email-aarcange@redhat.com> <1338297385.26856.74.camel@twins> <20120529163849.GF21339@redhat.com>
-In-Reply-To: <20120529163849.GF21339@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 12:38 PM, Andrea Arcangeli wrote:
-> On Tue, May 29, 2012 at 03:16:25PM +0200, Peter Zijlstra wrote:
->> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
->> price to pay.
+On Tue, 29 May 2012, Glauber Costa wrote:
+
+> Accounting pages seems just crazy to me. If new allocators come in the future,
+> organizing the pages in a different way, instead of patching it here and
+> there, we need to totally rewrite this.
+
+Quite to the contrary. We could either pass a THIS_IS_A_SLAB page flag to
+the page allocator call or have a special call that does the accounting
+and then calls the page allocator. The code could be completely in
+cgroups. There would be no changes to the allocators aside from setting
+the flag or calling the alternate page allocator functions.
+
+> > Why do you need to increase the refcount? You made a full copy right?
 >
-> I don't think it's too great, memcg uses for half of that and yet
-> nobody is booting with cgroup_disable=memory even on not-NUMA servers
-> with less RAM.
+> Yes, but I don't want this copy to go away while we have other caches around.
 
-Not any more.
+You copied all metadata so what is there that you would still need should
+the other copy go away?
 
-Ever since the memcg naturalization work by Johannes,
-a page is only ever on one LRU list and the memcg
-memory overhead is gone.
+> So, in the memcg internals, I used a different reference counter, to avoid
+> messing with this one. I could use that, and leave the original refcnt alone.
+> Would you prefer this?
 
-> But I'm all for experimenting. It's just not something I had the time
-> to try yet. I will certainly love to see how it performs by reducing
-> the max size of the list. I totally agree it's a good idea to try it
-> out, and I don't exclude it will work fine, but it's not obvious it's
-> worth the memory saving.
+The refcounter is really not the issue.
 
-That's fair enough.
+I am a bit worried about the various duplicate features here and there.
+The approach is not tightened down yet.
 
--- 
-All rights reversed
