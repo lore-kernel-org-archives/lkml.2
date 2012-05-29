@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab2E2SgN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 14:36:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789Ab2E2SgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 14:36:12 -0400
-Date: Tue, 29 May 2012 20:35:16 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-Message-ID: <20120529183516.GO21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-14-git-send-email-aarcange@redhat.com>
- <1338297385.26856.74.camel@twins>
- <20120529163849.GF21339@redhat.com>
- <4FC4FD51.2080001@redhat.com>
- <1338310613.26856.139.camel@twins>
+	id S1755082Ab2E2Sqy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:46:54 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:42454 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab2E2Sqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 14:46:53 -0400
+Date: Tue, 29 May 2012 14:39:52 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 1/3] xen/mce: Add mcelog support for Xen
+ platform (v2)
+Message-ID: <20120529183952.GA31237@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
+ <20120522092354.GB18578@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
+ <20120524103023.GA27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524184947.GA28338@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
+ <20120525180102.GA27280@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F4313@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338310613.26856.139.camel@twins>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351F4313@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 06:56:53PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-29 at 12:46 -0400, Rik van Riel wrote:
-> > > I don't think it's too great, memcg uses for half of that and yet
-> > > nobody is booting with cgroup_disable=memory even on not-NUMA servers
-> > > with less RAM.
+> An approach which basically same as you suggested but w/ slightly update, is
+> 1). at xen/mcelog.c, do misc_register(&xen_mce_chrdev_device) at xen_late_init_mcelog, define it as device_initcall(xen_late_init_mcelog) --> now linux dd ready, so xen mcelog divice would register successfully;
+
+OK.
+> 2). at native mce.c, change 1 line from device_initcall(mcheck_init_device) to device_initcall_sync(mcheck_init_device) --> so misc_register(&mce_chrdev_device) would be blocked by xen mcelog device;
+
+You mean that the registration would be delayed to the next initcall level.
+Ok, that sounds right.. but you also need to actually check the 'misc_register' return
+value and if it fails (which it would in this case) unroll all the registration
+that the generic code I think?
+
 > 
-> Right, it was such a hit we had to disable that by default on RHEL6.
-
-CONFIG_CGROUP_MEM_RES_CTLR is =y, do you mean it's set to
-cgroup_disable=memory by default in grub? I didn't notice that.
-
-If a certain amount of users is passing cgroup_disable=memory at boot
-because they don't need the feature, well that's perfectly reasonable
-and the way it should be. That's why such an option exists and why I
-also provided a noautonuma parameter for the same reason.
-
-> Right, hnaz did great work there, but wasn't there still some few pieces
-> of the shadow page frame left? ISTR LSF/MM talk of moving the last few
-> bits into the regular page frame, taking the word that became available
-> through: fc9bb8c768 ("mm: Rearrange struct page").
-
-memcg diet topic is there for a long time, they started working on it
-more than 1 year ago, I'm currently referring to current upstream
-(maybe 1 week ago old).
-
-But this is normal, first you focus on the algorithm, then you worry
-how to optimize the implementation to reduce the memory usage without
-altering the runtime (well, without altering it too much at least...).
+> I have draft test it and works fine.
+> Thought?
+> 
+> Thanks,
+> Jinsong
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
