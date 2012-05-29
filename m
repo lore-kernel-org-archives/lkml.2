@@ -1,100 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab2E2P3z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 11:29:55 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:28240 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751524Ab2E2P3x (ORCPT
+	id S1753484Ab2E2Phl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 11:37:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51242 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab2E2Phk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 11:29:53 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h93fhd25hf0ah)
-X-WSS-ID: 0M4SJ1M-02-H33-02
-X-M-MSG: 
-Date: Tue, 29 May 2012 17:29:44 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, hpa <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: WARNING: at arch/x86/kernel/smpboot.c:310
- topology_sane.clone.1+0x6e/0x81()
-Message-ID: <20120529152944.GA8263@alberich.amd.com>
-References: <20120529135442.GE29157@aftab.osrc.amd.com>
- <1338303106.26856.92.camel@twins>
+	Tue, 29 May 2012 11:37:40 -0400
+Message-ID: <4FC4ED3F.4050108@linaro.org>
+Date: Tue, 29 May 2012 23:37:35 +0800
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1338303106.26856.92.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
+References: <1338272340.3127.1.camel@phoenix> <4FC47CEB.8090106@linaro.org> <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com> <4FC488E1.3080406@linaro.org> <20120529091556.GB18977@sortiz-mobl> <4FC4967A.2040608@linaro.org> <20120529105255.GC18977@sortiz-mobl> <4FC4E5EF.9080703@linaro.org> <20120529152728.GF18977@sortiz-mobl>
+In-Reply-To: <20120529152728.GF18977@sortiz-mobl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 04:51:46PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-29 at 15:54 +0200, Borislav Petkov wrote:
-> > Dudes,
-> > 
-> > I'm getting the warning below on current linus. AFAICT, it is caused by
-> > 
-> > static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-> > {
-> >         if (c->phys_proc_id == o->phys_proc_id)
-> >                 return topology_sane(c, o, "mc");
-> > 
-> >         return false;
-> > }
-> > 
-> > and the reason is, IMHO, that because this is a MCM box which has two
-> > nodes in one physical package, i.e., phys_proc_id is 0 on both CPU6 and
-> > CPU0 but it has two internal nodes, 0 and 1 and CPUs 0-5 are on node 0
-> > and CPUs 6-11 are on node 1, the warning fires.
-> > 
-> > Maybe we could do something like this untested hunk:
-> > 
-> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> > index 433529e29be4..e52538cd48bb 100644
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -348,7 +348,8 @@ static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-> >  static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-> >  {
-> >         if (c->phys_proc_id == o->phys_proc_id)
-> > -               return topology_sane(c, o, "mc");
-> > +               if (!cpu_has(c, X86_FEATURE_AMD_DCM))
-> > +                       return topology_sane(c, o, "mc");
-> >  
-> >         return false;
-> >  }
-> > 
-> > or you have a better idea...?
-> 
-> Ah,.. uhm.. unfortunate this... we only seem to use cpu_core_mask for
-> topology_core_cpumask() and its purpose is to enumerate cores in a
-> package for some very limited generic functions.
-> 
-> Its a bit sad we defined it thus, the multi-core concept only really
-> make sense if you share caches, otherwise its just smp.
-> 
-> Also, our generic topology as defined doesn't match nodes. Which is
-> weird to say the least.
-> 
-> I'd almost be tempted to say you should fake phys_id, but I can only
-> imagine what all would explode if we'd do that :-)
-> 
-> Yeah, I guess we should do the thing you propose, unless someone else
-> has a sane idea?
+On 29/05/12 23:27, Samuel Ortiz wrote:
+> Hi Lee,
+>
+> On Tue, May 29, 2012 at 11:06:23PM +0800, Lee Jones wrote:
+>> On 29/05/12 18:52, Samuel Ortiz wrote:
+>>> Hi Lee,
+>>>
+>>> On Tue, May 29, 2012 at 05:27:22PM +0800, Lee Jones wrote:
+>>>> Hi Sam,
+>>>>
+>>>>> On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
+>>>>>> On 29/05/12 15:53, Axel Lin wrote:
+>>>>>>> 2012/5/29 Lee Jones<lee.jones@linaro.org>:
+>>>>>>>> On 29/05/12 14:19, Axel Lin wrote:
+>>>>>>>>>
+>>>>>>>>> config AB8500_I2C_CORE is not used after commit d28f1db
+>>>>>>>>> "mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
+>>>>>>>>> Thus remove it.
+>>>>>>>>>
+>>>>>>>>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
+>>>>>>>> inclusion into -rc1 this afternoon. Would you mind leaving this one?
+>>>>>>>
+>>>>>>> I don't mind.
+>>>>>>> But AFAIK, commit d28f1db is in mfd tree.
+>>>>>>> Any reason you want to send the patch to ARM-SoC instead of mfd tree.
+>>>>>>
+>>>>>> I don't actually have a preference as to which tree it goes into, so
+>>>>>> long as it's sent to Mainline on or before -rc1.
+>>>>> I sent a pull request to Linus yesterday, including this commit.
+>>>>
+>>>> This is something different and wasn't part of the pull-request.
+>>> d28f1d was part of the pull request.
+>>
+>> Right. But this is not the same thing. The patch I (and Axel) wrote
+>> removes remnant cruft from d28f1d. I didn't see that on moving
+>> AB8500_I2C_CORE to AB8500_CORE I left a Kconfig entry behind which
+>> is no longer used by anything. This patch removes that cruft.
+> Yes, I saw the patch. I though you were saying that d28f1d was not part of the
+> pull request and that you were going to push it through arm-soc.
+> Anyway, I think the Kconfig cleanup patch should go through my tree unless you
+> already sent it for arm-soc inclusion.
 
-I've also looked at this. core_siblings mask is broken with this patch.
-And there is this new irritating warning ...
+I haven't. I sent the entire patch-set to Arnd for first review today. 
+After he's okay:ed it, I'll send it to the MLs sometime tomorrow. I will 
+ensure you are CC'ed. I don't have any issues with the patch going 
+through your tree.
 
-I second Boris' suggestion for a fix. But I think the check for
-X86_FEATURE_AMD_DCM should go into topology_sane() which in theory
-could check other things as well.
+Thanks Sam.
 
+Kind regards,
+Lee
 
-Andreas
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
