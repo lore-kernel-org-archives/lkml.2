@@ -1,85 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab2E2Oe2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:34:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45231 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab2E2Oe1 (ORCPT
+	id S1753925Ab2E2OhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:37:03 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:35908 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753851Ab2E2OhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:34:27 -0400
-Date: Tue, 29 May 2012 16:34:14 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: Daniel Mack <daniel@zonque.org>, "Hans J. Koch" <hjk@hansjkoch.de>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: mx35: add cpufreq support
-Message-ID: <20120529143414.GE16535@pengutronix.de>
-References: <20120507141437.GA9636@lovely.krouter>
- <20120509072239.GG27341@pengutronix.de>
- <20120509075618.GA4412@lovely.krouter>
- <20120509081306.GK27341@pengutronix.de>
- <1337276960.4970.4.camel@lovely>
- <20120517182036.GK30400@pengutronix.de>
- <1337280058.4970.6.camel@lovely>
- <20120517224205.GA7021@mars>
+	Tue, 29 May 2012 10:37:00 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: lB0Hj8gVM1lKxK1P43ZuQLhohiRoOYBBVbRSIRDFnADHDel
+ yIWoAFhEOyjNlHxMXBXgKQ_twlRKGTIp_Focwy_0shoipiBuRiNby2xMUeR3
+ FixcVGUYxpQ1w.PEjicRz2wiPMcBasFQRUUqZQdvnN6Zt946KJpIhKzlXKt5
+ wVG7SABf9A6WZQUMsg4wFqF52M9lvgJ3LRgHPDSUjnUpFqlbI.Q05xqKkPcK
+ pjpaZfZChmn8fXuZNBnij9xDiCcdY3YVAayFFDmYVCeHjBvkj.eve8ssi8VK
+ i0YrjKaYK52UQ.DfxWVXP7D6.FQBcMsX5Uk9r_ud8dgdnCPtrUNhFRRAFDVq
+ a1W_w5IQOgAklHJPZCVGe.o8PBK4u7vdScGUrK392PtzJ4qW1LGwMtOKyoEJ
+ iRVVwtyBgn_8Dgj6M3AZAKiwHUyLOk8SPJXqut9A30yVhS0QOqn9YH4pLCne
+ wYUywU_iYgftAJkEbZc8ssNqV4o3UQcg-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 29 May 2012 09:36:55 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
+In-Reply-To: <1337951028-3427-14-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205290932530.4666@router.home>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-14-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120517224205.GA7021@mars>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:29:31 up 198 days, 22:16, 70 users,  load average: 0.08, 0.13,
- 0.37
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 12:42:05AM +0200, Christoph Fritz wrote:
-> On Thu, May 17, 2012 at 08:40:58PM +0200, Christoph Fritz wrote:
-> > On Thu, 2012-05-17 at 20:20 +0200, Sascha Hauer wrote:
-> > > On Thu, May 17, 2012 at 07:49:20PM +0200, Christoph Fritz wrote:
-> > 
-> > > > Is there already a version I can rebase the patch?
-> > > > 
-> > > > On your repo at git://git.pengutronix.de/git/imx/linux-2.6.git I can't
-> > > > find the new clock framework or even a work-in-progress version.
-> > > 
-> > > They are in linux-next now.
-> 
-> There changed a lot of stuff: Where should I register the function to
-> set/get the cpu frequency?
-> 
-> To get an idea of how it should be done, I looked at imx51: Is there
-> cpufreq-support still implemented/working?  I can see the
-> arch/arm/mach-imx/cpu_op-mx51.c but not its correlating
-> clk_cpu_set_rate function in arch/arm/mach-imx/clk-imx51-imx53.c.
+On Fri, 25 May 2012, Glauber Costa wrote:
 
->From what I see there must be a clkdev registered for the cpu clock.
-Seems this got lost during conversion to the generic clock framework.
+> index dacd1fb..4689034 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -467,6 +467,23 @@ struct cg_proto *tcp_proto_cgroup(struct mem_cgroup *memcg)
+>  EXPORT_SYMBOL(tcp_proto_cgroup);
+>  #endif /* CONFIG_INET */
+>
+> +char *mem_cgroup_cache_name(struct mem_cgroup *memcg, struct kmem_cache *cachep)
+> +{
+> +	char *name;
+> +	struct dentry *dentry;
+> +
+> +	rcu_read_lock();
+> +	dentry = rcu_dereference(memcg->css.cgroup->dentry);
+> +	rcu_read_unlock();
+> +
+> +	BUG_ON(dentry == NULL);
+> +
+> +	name = kasprintf(GFP_KERNEL, "%s(%d:%s)",
+> +	    cachep->name, css_id(&memcg->css), dentry->d_name.name);
+> +
+> +	return name;
+> +}
 
-in arch/arm/plat-mxc/cpufreq.c:
+Function allocates a string that is supposed to be disposed of by the
+caller. That needs to be documented and maybe even the name needs to
+reflect that.
 
-	cpu_clk = clk_get(NULL, "cpu_clk");
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -4002,6 +4002,38 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
+>  }
+>  EXPORT_SYMBOL(kmem_cache_create);
+>
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
+> +struct kmem_cache *kmem_cache_dup(struct mem_cgroup *memcg,
+> +				  struct kmem_cache *s)
+> +{
+> +	char *name;
+> +	struct kmem_cache *new;
+> +
+> +	name = mem_cgroup_cache_name(memcg, s);
+> +	if (!name)
+> +		return NULL;
+> +
+> +	new = kmem_cache_create_memcg(memcg, name, s->objsize, s->align,
+> +				      (s->allocflags & ~SLAB_PANIC), s->ctor);
 
-should be:
+Hmmm... A full duplicate of the slab cache? We may have many sparsely
+used portions of the per node and per cpu structure as a result.
 
-	cpu_clk = clk_get(NULL, "cpu");
+> +	 * prevent it from being deleted. If kmem_cache_destroy() is
+> +	 * called for the root cache before we call it for a child cache,
+> +	 * it will be queued for destruction when we finally drop the
+> +	 * reference on the child cache.
+> +	 */
+> +	if (new) {
+> +		down_write(&slub_lock);
+> +		s->refcount++;
+> +		up_write(&slub_lock);
+> +	}
 
-I don't know if that's enough though.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Why do you need to increase the refcount? You made a full copy right?
