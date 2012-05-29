@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2E2WVA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 18:21:00 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63948 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab2E2WU6 (ORCPT
+	id S1755114Ab2E2WV5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 18:21:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40097 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab2E2WV4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 18:20:58 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: Unhandled IRQs on AMD E-450
-To: Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com>,
-        Clemens Ladisch <clemens@ladisch.de>
-Cc: Josh Boyer <jwboyer@gmail.com>, Borislav Petkov <borislav.petkov@amd.com>,
-        andymatei@gmail.com, "Huang, Shane" <Shane.Huang@amd.com>,
-        Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org,
+	Tue, 29 May 2012 18:21:56 -0400
+Message-ID: <1338330077.26856.187.camel@twins>
+Subject: Re: [PATCH 22/35] autonuma: sched_set_autonuma_need_balance
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <CAPRPZsBV-qJswWDfwMYjidEDsRzR-r5TG0or1--k599=Cju+tw@mail.gmail.com>
-References: <fa.CZQqvHf3CBfYWzhSDPNOWxTTD9w@ifi.uio.no> <fa.Vmg5vDod2/oKvwyy9BcalhoT+Lo@ifi.uio.no> <14969994.2790.1335342903511.JavaMail.geo-discussion-forums@vbbfr18> <4F97BA60.4080505@ladisch.de> <20120427082203.GB9233@aftab.osrc.amd.com> <CAPRPZsCHAOvemogn7mWnWfykhANeEx5K=OG9Xt+veDjEWOiDYA@mail.gmail.com> <CA+5PVA6e-JaS809t9=4=SoxX4cFEYfxxb9-KAXk68ENGg6Kw8w@mail.gmail.com> <CAPRPZsDDEYUf2a+=ZbwvFw+qJku0UvMLf0+eNDvw+FbinCbysA@mail.gmail.com> <CA+5PVA4NJ4fB-qEVB45sz48E7kCdwZ+O5D9jvk16z4hrXSgCwQ@mail.gmail.com> <CAPRPZsB=axM88+fGkghbh3qxDv=vRQtfrKqT0e59EZPrrS0V+A@mail.gmail.com> <4F9E61FC.8070409@ladisch.de> <CAPRPZsBV-qJswWDfwMYjidEDsRzR-r5TG0or1--k599=Cju+tw@mail.gmail.com>
-Date: Wed, 30 May 2012 06:20:55 +0800
-Message-Id: <20120529222055.0F4B23E07FB@localhost>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Date: Wed, 30 May 2012 00:21:17 +0200
+In-Reply-To: <20120529173347.GJ21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	 <1337965359-29725-23-git-send-email-aarcange@redhat.com>
+	 <1338307942.26856.111.camel@twins> <20120529173347.GJ21339@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 30 Apr 2012 12:41:24 +0200, Jeroen Van den Keybus <jeroen.vandenkeybus@gmail.com> wrote:
-> >> --- linux-3.2.16.orig/include/linux/irqdesc.h 2012-04-23
-> >> 00:31:32.000000000 +0200
-> >
-> > Your mailer wraps lines; see Documentation/email-clients.txt.
-> 
-> Great. I only have gmail accounts. Documentation states it won't work
-> with gmail. Any suggestions ?
+On Tue, 2012-05-29 at 19:33 +0200, Andrea Arcangeli wrote:
 
-Only the web interface is the problem.  You need to send your mail
-using SMTP from a mail client.  The best way is to use the git
-send-email tool.  I've not tried the following, but it looks like it
-should work (I personally use a postfix spooler so I can queue up sent
-mail while I'm offline, but that's more complex to set up):
+> No worries, I didn't mean to leave it like this forever. I was
+> considering using the stop cpu _nowait variant but I didn't have
+> enough time to realize if it would work for my case. I need to rethink
+> about that.
 
-http://morefedora.blogspot.com/2009/02/configuring-git-send-email-to-use-gmail.html
+No, you're not going to use any stop_cpu variant at all. Nothing is
+_that_ urgent. Your whole strict mode needs to go, it completely wrecks
+the regular balancer.
 
-g.
+> The moment I gave up on the _nowait variant before releasing is when I
+> couldn't understand what is tlb_migrate_finish doing, and why it's not
+> present in the _nowait version in fair.c. Can you explain me that?
+
+Its an optional tlb flush, I guess they didn't find the active_balance
+worth the effort -- it should be fairly rare anyway.
+
+> I'm glad you acknowledge load_balance already takes a bulk of the time
+> as it needs to find the busiest runqueue checking other CPU runqueues
+> too...
+
+I've never said otherwise, its always been about where you do it, in the
+middle of schedule() just isn't it. And I'm getting very tired of having
+to repeat myself.
+
+Also for regular load-balance only 2 cpus will ever scan all cpus, the
+rest will only scan smaller ranges. Your thing does n-1 nodes worth of
+cpus for every cpu.
+
 
