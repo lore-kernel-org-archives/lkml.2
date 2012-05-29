@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab2E2R3Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:29:24 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:60983 "EHLO mx2.parallels.com"
+	id S1754736Ab2E2RaN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:30:13 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63338 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab2E2R3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:29:22 -0400
-Message-ID: <4FC506E6.8030108@parallels.com>
-Date: Tue, 29 May 2012 21:27:02 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-14-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290932530.4666@router.home> <4FC4F1A7.2010206@parallels.com> <alpine.DEB.2.00.1205291101580.6723@router.home> <4FC501E9.60607@parallels.com> <alpine.DEB.2.00.1205291222360.8495@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205291222360.8495@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.70]
+	id S1754547Ab2E2RaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:30:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="149060618"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] sched: Don't try allocating memory from offline nodes
+Date: Tue, 29 May 2012 10:30:10 -0700
+Message-Id: <4fc507a211523c4a14@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 09:25 PM, Christoph Lameter wrote:
->> I will try to at least have the page accounting done in a consistent way. How
->> >  about that?
-> Ok. What do you mean by "consistent"? Since objects and pages can be used
-> in a shared way and since accounting in many areas of the kernel is
-> intentional fuzzy to avoid performance issues there is not that much of a
-> requirement for accuracy. We have problems even just defining what the
-> exact set of pages belonging to a task/process is.
->
-I mean consistent between allocators, done in a shared place.
-Note that what we do here *is* still fuzzy to some degree. We can have a 
-level of sharing, and always account to the first one to touch, we don't 
-go worrying about this because that would be hell. We also don't
-carry a process' objects around when we send it to a different cgroup. 
-Those are all already simplications for performance and simplicity sake.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-But we really need a page to be filled with objects from the same 
-cgroup, and the non-shared objects to be accounted to the right place.
+Allocators don't appreciate it when you try and allocate memory from
+offline nodes.
 
-Otherwise, I don't think we can meet even the lighter of isolation 
-guarantees.
+Reported-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+
+This patch has been sitting around since Friday.
+
+ kernel/sched/core.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/kernel/sched/core.c
+===================================================================
+--- linux-2.6.orig/kernel/sched/core.c
++++ linux-2.6/kernel/sched/core.c
+@@ -6449,7 +6449,7 @@ static void sched_init_numa(void)
+ 			return;
+ 
+ 		for (j = 0; j < nr_node_ids; j++) {
+-			struct cpumask *mask = kzalloc_node(cpumask_size(), GFP_KERNEL, j);
++			struct cpumask *mask = kzalloc(cpumask_size(), GFP_KERNEL);
+ 			if (!mask)
+ 				return;
+ 
+
 
