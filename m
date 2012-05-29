@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab2E2RQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:16:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43337 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754348Ab2E2RQU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:16:20 -0400
-Date: Tue, 29 May 2012 19:15:26 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 00/35] AutoNUMA alpha14
-Message-ID: <20120529171526.GI21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <20120529133627.GA7637@shutemov.name>
+	id S1754656Ab2E2RSp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:18:45 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:52356 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754386Ab2E2RSo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:18:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120529133627.GA7637@shutemov.name>
+In-Reply-To: <aabb3c7d-1c1a-4558-805a-b6d8478d1494@default>
+References: <aabb3c7d-1c1a-4558-805a-b6d8478d1494@default>
+Date: Tue, 29 May 2012 10:18:43 -0700
+X-Google-Sender-Auth: 8sOnI4FZ6C55wL0YGN59bCkhoUQ
+Message-ID: <CAE9FiQV1ckyhy+cWVZC+=rU9s2nrBO6qV0Yt5xkYuv_gS9ZSWQ@mail.gmail.com>
+Subject: Re: [PATCH] Fix an overflow in range_to_mtrr func
+From: Yinghai Lu <yinghai@kernel.org>
+To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Cc: mingo@redhat.com, x86@kernel.org, tglx@linutronix.de, hpa@zytor.com,
+        Feng Jin <joe.jin@oracle.com>, ethan.zhao@oracle.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
+On Mon, May 28, 2012 at 5:29 AM, Zhenzhong Duan
+<zhenzhong.duan@oracle.com> wrote:
+> When boot x86_64 kernel on sun G5+ with 4T mem, see an overflow in mtrr cleanup as below.
+>
+> *BAD*gran_size: 2G      chunk_size: 2G  num_reg: 10     lose cover RAM:
+> -18014398505283592M
+>
+> This is because 1<<31 sign extended.
+> Use explicit type conversion to force a 64bit constant to fix it.
+> Useful for mem larger than or equal to 4T.
+>
+> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+> ---
+>  arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> index ac140c7..853a4c6 100644
+> --- a/arch/x86/kernel/cpu/mtrr/cleanup.c
+> +++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+> @@ -266,7 +266,7 @@ range_to_mtrr(unsigned int reg, unsigned long range_startk,
+>                if (align > max_align)
+>                        align = max_align;
+>
+> -               sizek = 1 << align;
+> +               sizek = (unsigned long)1 << align;
 
-The anon page was munmapped just after get_page_unless_zero obtained a
-refcount in knuma_migrated. This can happen for example if a big
-process exits while knuma_migrated starts to migrate the page. In that
-case split_huge_page would do nothing but when it does nothing it
-notifies the caller returning 1. When it returns 1, we just need to
-put_page and bail out (the page isn't splitted in that case and it's
-pointless to try to migrate a freed page).
+how about
 
-I also made the code more strict now, to be sure the reason of the bug
-wasn't an hugepage in the LRU that wasn't Anon, such a thing must not
-exist, but this will verify it just in case.
+            sizek = 1UL << align;
 
-I'll push it to the origin/autonuma branch of aa.git shortly
-(rebased), could you try if it helps?
 
-diff --git a/mm/autonuma.c b/mm/autonuma.c
-index 3d4c2a7..c2a5a82 100644
---- a/mm/autonuma.c
-+++ b/mm/autonuma.c
-@@ -840,9 +840,17 @@ static int isolate_migratepages(struct list_head *migratepages,
- 
- 		VM_BUG_ON(nid != page_to_nid(page));
- 
--		if (PageAnon(page) && PageTransHuge(page))
-+		if (PageTransHuge(page)) {
-+			VM_BUG_ON(!PageAnon(page));
- 			/* FIXME: remove split_huge_page */
--			split_huge_page(page);
-+			if (unlikely(split_huge_page(page))) {
-+				autonuma_printk("autonuma migrate THP free\n");
-+				__autonuma_migrate_page_remove(page,
-+							       page_autonuma);
-+				put_page(page);
-+				continue;
-+			}
-+		}
- 
- 		__autonuma_migrate_page_remove(page, page_autonuma);
- 
-
-Thanks a lot,
-Andrea
-
-BTW, interesting the knuma_migrated0 runs on CPU24, just in case, you
-may also want to verify that it's correct with numactl --hardware, in
-my case the highest cpuid in node0 is 17. It's not related to the
-above, which is needed anyway.
+>                if (debug_print) {
+>                        char start_factor = 'K', size_factor = 'K';
+>                        unsigned long start_base, size_base;
+> --
+> 1.7.3
+>
