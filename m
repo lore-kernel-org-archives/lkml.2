@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566Ab2E2CQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 May 2012 22:16:11 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49423 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752212Ab2E2CQJ (ORCPT
+	id S1752573Ab2E2CUg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 May 2012 22:20:36 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57076 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752386Ab2E2CUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 May 2012 22:16:09 -0400
-Date: Tue, 29 May 2012 11:15:58 +0900
+	Mon, 28 May 2012 22:20:35 -0400
+Date: Tue, 29 May 2012 11:20:25 +0900
 From: Tejun Heo <tj@kernel.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Alasdair G Kergon <agk@redhat.com>,
-        Kent Overstreet <koverstreet@google.com>,
-        Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net,
-        vgoyal@redhat.com, bharrosh@panasas.com, sage@newdream.net,
-        drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>,
-        tytso@google.com, "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
-Message-ID: <20120529021558.GG20954@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1337977539-16977-15-git-send-email-koverstreet@google.com>
- <20120525204651.GA24246@redhat.com>
- <20120525210944.GB14196@google.com>
- <20120525223937.GF5761@agk-dp.fab.redhat.com>
- <Pine.LNX.4.64.1205281129180.2227@file.rdu.redhat.com>
- <20120528202839.GA18537@dhcp-172-17-108-109.mtv.corp.google.com>
- <Pine.LNX.4.64.1205281659580.11763@file.rdu.redhat.com>
- <20120528213839.GB18537@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120528230208.GA20954@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120529020815.GB5091@dastard>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk,
+        agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com,
+        bharrosh@panasas.com, vgoyal@redhat.com, mpatocka@redhat.com,
+        sage@newdream.net, yehuda@hq.newdream.net
+Subject: Re: [PATCH v3 05/16] block: Kill bi_destructor
+Message-ID: <20120529022025.GH20954@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-6-git-send-email-koverstreet@google.com>
+ <20120528013608.GE9891@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120529021042.GA6472@dhcp-172-18-216-138.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120529020815.GB5091@dastard>
+In-Reply-To: <20120529021042.GA6472@dhcp-172-18-216-138.mtv.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello, Kent.
 
-On Tue, May 29, 2012 at 12:08:15PM +1000, Dave Chinner wrote:
-> > i thought a bit more about it and the only thing which makes sense to
-> > me is exposing the stripe granularity for striped devices -
-> > ie. something which says "if you go across this boundary, the
-> > performance characteristics including latency might get affected",
-> > which should fit nicely with the rest of topology information.
-> > Martin, adding that shouldn't be difficult, right?
+On Mon, May 28, 2012 at 10:10:42PM -0400, Kent Overstreet wrote:
+> Heh. Well, in my view deleting stuff is good by default, and if you can
+> delete things without user visible effects and without making the code
+> more complicated... 
 > 
-> We already have the optimal IO size/alignment field in the topology.
-> Doesn't this fit what you want exactly?
+> So I guess given the simplicity of this particular patch in the series
+> I'm not sure what there is to justify here. Any suggestions on what
+> would make sense to put in...?
 
-I don't know how xfs/ext4 is currently benefiting from
-merge_bvec_fn(), so I'm unsure.  If the existing ones are enough,
-great.
+So, what I would prefer to see is the justification of the whole
+changes somewhere in the patch stream, so that patches can do,n
+
+patch 1: update X to not use bi_destructor which will soon be removed.
+patch 2: ditto for Y
+...
+patch N: bi_destructor is stupid because blah blah and after preceding
+         changes is no longer used.  Kill it.
+
+so that when one sees a patch in the series and wonders why the change
+is being made, [s]he can follow the patch stream and understand.
 
 Thanks.
 
