@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab2E2PNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 11:13:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44482 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab2E2PNM (ORCPT
+	id S1753943Ab2E2POe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 11:14:34 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:35142 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750860Ab2E2POc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 11:13:12 -0400
-Message-ID: <4FC4E5EF.9080703@linaro.org>
-Date: Tue, 29 May 2012 23:06:23 +0800
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 29 May 2012 11:14:32 -0400
+Date: Tue, 29 May 2012 11:07:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'KOSAKI Motohiro'" <kosaki.motohiro@gmail.com>,
+        "'Paul Mundt'" <lethal@linux-sh.org>,
+        "'Minchan Kim'" <minchan@kernel.org>,
+        linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Krishna Reddy'" <vdumpa@nvidia.com>,
+        "'Hiroshi Doyu'" <hdoyu@nvidia.com>,
+        "'Subash Patel'" <subashrp@gmail.com>,
+        "'Nick Piggin'" <npiggin@gmail.com>
+Subject: Re: [PATCHv2 3/4] mm: vmalloc: add VM_DMA flag to indicate areas
+ used by dma-mapping framework
+Message-ID: <20120529150714.GA8293@phenom.dumpdata.com>
+References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
+ <1337252085-22039-4-git-send-email-m.szyprowski@samsung.com>
+ <4FBB3B41.8010102@kernel.org>
+ <01e501cd39a8$67f34ea0$37d9ebe0$%szyprowski@samsung.com>
+ <20120524122854.GD11860@linux-sh.org>
+ <CAHGf_=qmBMFfV=UhXFtepO8styaQonfBA0E0+FO0qSi7RLfJFA@mail.gmail.com>
+ <001d01cd3caa$a05d0510$e1170f30$%szyprowski@samsung.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
-References: <1338272340.3127.1.camel@phoenix> <4FC47CEB.8090106@linaro.org> <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com> <4FC488E1.3080406@linaro.org> <20120529091556.GB18977@sortiz-mobl> <4FC4967A.2040608@linaro.org> <20120529105255.GC18977@sortiz-mobl>
-In-Reply-To: <20120529105255.GC18977@sortiz-mobl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <001d01cd3caa$a05d0510$e1170f30$%szyprowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/12 18:52, Samuel Ortiz wrote:
-> Hi Lee,
->
-> On Tue, May 29, 2012 at 05:27:22PM +0800, Lee Jones wrote:
->> Hi Sam,
->>
->>> On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
->>>> On 29/05/12 15:53, Axel Lin wrote:
->>>>> 2012/5/29 Lee Jones<lee.jones@linaro.org>:
->>>>>> On 29/05/12 14:19, Axel Lin wrote:
->>>>>>>
->>>>>>> config AB8500_I2C_CORE is not used after commit d28f1db
->>>>>>> "mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
->>>>>>> Thus remove it.
->>>>>>>
->>>>>>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
->>>>>>
->>>>>>
->>>>>> I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
->>>>>> inclusion into -rc1 this afternoon. Would you mind leaving this one?
->>>>>
->>>>> I don't mind.
->>>>> But AFAIK, commit d28f1db is in mfd tree.
->>>>> Any reason you want to send the patch to ARM-SoC instead of mfd tree.
->>>>
->>>> I don't actually have a preference as to which tree it goes into, so
->>>> long as it's sent to Mainline on or before -rc1.
->>> I sent a pull request to Linus yesterday, including this commit.
->>
->> This is something different and wasn't part of the pull-request.
-> d28f1d was part of the pull request.
+On Mon, May 28, 2012 at 10:19:39AM +0200, Marek Szyprowski wrote:
+> Hello,
+> 
+> On Sunday, May 27, 2012 2:35 PM KOSAKI Motohiro wrote:
+> 
+> > On Thu, May 24, 2012 at 8:28 AM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > > On Thu, May 24, 2012 at 02:26:12PM +0200, Marek Szyprowski wrote:
+> > >> On Tuesday, May 22, 2012 9:08 AM Minchan Kim wrote:
+> > >> > Hmm, VM_DMA would become generic flag?
+> > >> > AFAIU, maybe VM_DMA would be used only on ARM arch.
+> > >>
+> > >> Right now yes, it will be used only on ARM architecture, but maybe other architecture will
+> > >> start using it once it is available.
+> > >>
+> > > There's very little about the code in question that is ARM-specific to
+> > > begin with. I plan to adopt similar changes on SH once the work has
+> > > settled one way or the other, so we'll probably use the VMA flag there,
+> > > too.
+> > 
+> > I don't think VM_DMA is good idea because x86_64 has two dma zones. x86 unaware
+> > patches make no sense.
+> 
+> I see no problems to add VM_DMA64 later if x86_64 starts using vmalloc areas for creating 
+> kernel mappings for the dma buffers (I assume that there are 2 dma zones: one 32bit and one
+> 64bit). Right now x86 and x86_64 don't use vmalloc areas for dma buffers, so I hardly see
+> how this patch can be considered as 'x86 unaware'.
 
-Right. But this is not the same thing. The patch I (and Axel) wrote 
-removes remnant cruft from d28f1d. I didn't see that on moving 
-AB8500_I2C_CORE to AB8500_CORE I left a Kconfig entry behind which is no 
-longer used by anything. This patch removes that cruft.
+Well they do - kind off. It is usually done by calling vmalloc_32 and then using
+the DMA API on top of those pages (or sometimes the non-portable virt_to_phys macro).
 
-Kind regards,
-Lee
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Introducing this and replacing the vmalloc_32 with this seems like a nice step in making
+those device drivers APIs more portable?
