@@ -1,161 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2E2SuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 14:50:25 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:50602 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754420Ab2E2SuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 14:50:24 -0400
-Date: Tue, 29 May 2012 13:50:15 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rja@americas.sgi.com
-Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on multi-processor systems
-Message-ID: <20120529185015.GA29726@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20120524144229.GA27713@sgi.com> <20120524153409.GM1663@somewhere>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755150Ab2E2S64 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:58:56 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:30293
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755029Ab2E2S6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 14:58:55 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -12
+X-BigFish: VPS-12(zz936eK1432N98dKzz1202hzzz2dh668h839h93fhd25hf0ah)
+X-WSS-ID: 0M4SSPY-01-3WP-02
+X-M-MSG: 
+Date: Tue, 29 May 2012 20:58:43 +0200
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Mike Galbraith <efault@gmx.de>, lkml <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Paul Turner <pjt@google.com>, Arjan Van De Ven <arjan@linux.intel.com>
+Subject: Re: [rfc][patch] select_idle_sibling() inducing bouncing on westmere
+Message-ID: <20120529185843.GA20289@alberich.amd.com>
+References: <1337857490.7300.19.camel@marge.simpson.net>
+ <1337865431.9783.148.camel@laptop>
+ <1337865641.9783.149.camel@laptop>
+ <1337926468.5415.48.camel@marge.simpson.net>
+ <1338014259.7302.26.camel@marge.simpson.net>
+ <1338017364.14636.9.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20120524153409.GM1663@somewhere>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1338017364.14636.9.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 05:34:13PM +0200, Frederic Weisbecker wrote:
-> On Thu, May 24, 2012 at 09:42:29AM -0500, Russ Anderson wrote:
-> > When multiple cpus on a multi-processor system call dump_stack()
-> > at the same time, the backtrace lines get intermixed, making 
-> > the output worthless.  Add a lock so each cpu stack dump comes
-> > out as a coherent set.
-> > 
-> > For example, when a multi-processor system is NMIed, all of the
-> > cpus call dump_stack() at the same time, resulting in output for
-> > all of cpus getting intermixed, making it impossible to tell what
-> > any individual cpu was doing.  With this patch each cpu prints
-> > its stack lines as a coherent set, so one can see what each cpu
-> > was doing.
-> > 
-> > It has been tested on a 4069 cpu system.
-> > 
-> > Signed-off-by: Russ Anderson <rja@sgi.com>
+On Sat, May 26, 2012 at 09:29:24AM +0200, Peter Zijlstra wrote:
+> On Sat, 2012-05-26 at 08:37 +0200, Mike Galbraith wrote:
 > 
-> I don't think this is a good idea. What if an interrupt comes
-> and calls this at the same time? Sure you can mask irqs but NMIs
-> can call that too. In this case I prefer to have a messy report
-> rather than a deadlock on the debug path.
-
-Below is an updated patch with your recommnded changes.
-
-> May be something like that:
+> > Ew. 3.4 went broke for Q6600, and performance went... far far away.
+> > 
+> > [    0.200057] CPU0 attaching sched-domain:
+> > [    0.204016]  domain 0: span 0-3 level MC
+> > [    0.208015]   groups: 0 1 2 3
+> > [    0.210970] CPU1 attaching sched-domain:
+> > [    0.212014]  domain 0: span 0-3 level MC
+> > [    0.216016]   groups: 1 2 3 0
+> > [    0.220016] CPU2 attaching sched-domain:
+> > [    0.224015]  domain 0: span 0-3 level MC
+> > [    0.228016]   groups: 2 3 0 1
+> > [    0.232015] CPU3 attaching sched-domain:
+> > [    0.236016]  domain 0: span 0-3 level MC
+> > [    0.240017]   groups: 3 0 1 2
 > 
-> static atomic_t dump_lock = ATOMIC_INIT(-1);
 > 
-> static void dump_stack(void)
+> Oh yikes, I guess I wrecked
+> arch/x86/kernel/smpboot.c:cpu_coregroup_mask() in
+> 8e7fbcbc22c12414bcc9dfdd683637f58fb32759.
+> 
+> That should very much always return llc mask, I just got that AMD case
+> confused. It looks like it should look like:
+> 
+> 
+> const struct cpumask *cpu_coregroup_mask(int cpu)
 > {
-> 	int was_locked;
-> 	int old;
-> 	int cpu;
-> 
-> 	preempt_disable();
-> retry:
-> 	cpu = smp_processor_id();
-> 	old = atomic_cmpxchg(&dump_lock, -1, cpu);
-> 	if (old == -1) {
-> 		was_locked = 0;
-> 	} else if (old == cpu) {
-> 		was_locked = 1;
-> 	} else {
-> 		cpu_relax();
-> 		goto retry;
-> 	}
-> 
-> 	__dump_trace();
-> 
-> 	if (!was_locked)
-> 		atomic_set(&dump_lock, -1);
-> 
-> 	preempt_enable();
+> 	return cpu_llc_mask(cpu);
 > }
 > 
-> You could also use a spinlock with irq disabled and test in_nmi()
-> but we could have a dump_trace() in an NMI before the nmi count is
-> incremented. So the above is perhaps more robust.
-> --
----
+> And the AMD_DCM check was just to undo powersavings damage on
+> Magny-Cours or somesuch.
 
-When multiple cpus on a multi-processor system call dump_stack()
-at the same time, the backtrace lines get intermixed, making 
-the output worthless.  Add a lock so each cpu stack dump comes
-out as a coherent set.
-
-For example, when a multi-processor system is NMIed, all of the
-cpus call dump_stack() at the same time, resulting in output for
-all of cpus getting intermixed, making it impossible to tell what
-any individual cpu was doing.  With this patch each cpu prints
-its stack lines as a coherent set, so one can see what each cpu
-was doing.
-
-It has been tested on a 4069 cpu system.
-
-Signed-off-by: Russ Anderson <rja@sgi.com>
-
----
- arch/x86/kernel/dumpstack.c |   28 +++++++++++++++++++++++++++-
- 1 file changed, 27 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/kernel/dumpstack.c
-===================================================================
---- linux.orig/arch/x86/kernel/dumpstack.c	2012-05-24 10:05:36.477576977 -0500
-+++ linux/arch/x86/kernel/dumpstack.c	2012-05-27 16:58:26.527212233 -0500
-@@ -182,7 +182,7 @@ void show_stack(struct task_struct *task
- /*
-  * The architecture-independent dump_stack generator
-  */
--void dump_stack(void)
-+void __dump_stack(void)
- {
- 	unsigned long bp;
- 	unsigned long stack;
-@@ -195,6 +195,32 @@ void dump_stack(void)
- 		init_utsname()->version);
- 	show_trace(NULL, NULL, &stack, bp);
- }
-+
-+static atomic_t dump_lock = ATOMIC_INIT(-1);
-+
-+void dump_stack(void)
-+{
-+	int was_locked, old, cpu;
-+
-+	preempt_disable();
-+retry:
-+	cpu = smp_processor_id();
-+	old = atomic_cmpxchg(&dump_lock, -1, cpu);
-+	if (old == -1) {
-+		was_locked = 0;
-+	} else if (old == cpu) {
-+		was_locked = 1;
-+	} else {
-+		cpu_relax();
-+		goto retry;
-+	}
-+
-+	__dump_stack();
-+
-+	if (!was_locked)
-+		atomic_set(&dump_lock, -1);
-+	preempt_enable();
-+}
- EXPORT_SYMBOL(dump_stack);
+IIRC returning cpu_core_mask() could even cause a panic in the
+scheduler, because the hierarchy of scheduling groups/domains was
+broken.
  
- static arch_spinlock_t die_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+> Andreas?
 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Returning cpu_llc_mask is the right thing to do on AMD.
+
+
+
+Andreas
+
+
