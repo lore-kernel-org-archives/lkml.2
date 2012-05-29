@@ -1,78 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab2E2JgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:36:14 -0400
-Received: from www.linutronix.de ([62.245.132.108]:47255 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2E2JgN (ORCPT
+	id S1753272Ab2E2Jhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:37:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61820 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab2E2Jhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:36:13 -0400
-Date: Tue, 29 May 2012 11:36:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sundar Iyer <sundar.iyer@intel.com>
-cc: linux-kernel@vger.kernel.org, arjan.van.de.ven@intel.com,
-        german.monroy@intel.com
-Subject: Re: [PATCH] x86/irq: handle chained interrupts during IRQ
- migration
-In-Reply-To: <1338208817-3673-1-git-send-email-sundar.iyer@intel.com>
-Message-ID: <alpine.LFD.2.02.1205291135000.3231@ionos>
-References: <1338208817-3673-1-git-send-email-sundar.iyer@intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 29 May 2012 05:37:53 -0400
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] test_power: add support for USB AC source
+Date: Tue, 29 May 2012 13:37:43 +0400
+Message-Id: <1338284264-6193-1-git-send-email-dmitry_eremin@mentor.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 May 2012, Sundar Iyer wrote:
+Usually a device has both AC plug and UDC plug usable for charging.
+Provide both AC sources.
 
-> chained interrupt handlers dont have an irqaction and hence
-> are not handled during migrating interrupts when some cores
-> go offline.
-> 
-> Handle this by introducing a new flag is_chained in the irq
-> descriptor; fixup_irq() can then handle such interrupts and not
-> skip them over.
-> 
-> Signed-off-by: Sundar Iyer <sundar.iyer@intel.com>
-> ---
->  arch/x86/kernel/irq.c   |    5 +++--
->  include/linux/irqdesc.h |    8 ++++++++
->  kernel/irq/chip.c       |    1 +
->  3 files changed, 12 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-> index 6c0802e..29f2f63 100644
-> --- a/arch/x86/kernel/irq.c
-> +++ b/arch/x86/kernel/irq.c
-> @@ -249,8 +249,9 @@ void fixup_irqs(void)
->  
->  		data = irq_desc_get_irq_data(desc);
->  		affinity = data->affinity;
-> -		if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
-> -		    cpumask_subset(affinity, cpu_online_mask)) {
-> +		if ((!irq_has_action(irq) && !irq_is_chained(irq)) ||
-> +			irqd_is_per_cpu(data) ||
-> +			cpumask_subset(affinity, cpu_online_mask)) {
->  			raw_spin_unlock(&desc->lock);
->  			continue;
->  		}
-> diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-> index 2d921b3..0c7b474 100644
-> --- a/include/linux/irqdesc.h
-> +++ b/include/linux/irqdesc.h
-> @@ -50,6 +50,7 @@ struct irq_desc {
->  	unsigned int		depth;		/* nested irq disables */
->  	unsigned int		wake_depth;	/* nested wake enables */
->  	unsigned int		irq_count;	/* For detecting broken IRQs */
-> +	bool			is_chained;	/* for chained handlers */
+Signed-off-by: Dmitry Eremin-Solenikov <dmitry_eremin@mentor.com>
+---
+ drivers/power/test_power.c |   59 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 59 insertions(+)
 
-No. We have flags and properties already. Please follow the existing
-mechanisms instead of adding random fields to irq_desc.
+diff --git a/drivers/power/test_power.c b/drivers/power/test_power.c
+index b527c93..a61b596 100644
+--- a/drivers/power/test_power.c
++++ b/drivers/power/test_power.c
+@@ -22,6 +22,7 @@
+ #include <linux/vermagic.h>
+ 
+ static int ac_online			= 1;
++static int usb_online			= 1;
+ static int battery_status		= POWER_SUPPLY_STATUS_DISCHARGING;
+ static int battery_health		= POWER_SUPPLY_HEALTH_GOOD;
+ static int battery_present		= 1; /* true */
+@@ -42,6 +43,20 @@ static int test_power_get_ac_property(struct power_supply *psy,
+ 	return 0;
+ }
+ 
++static int test_power_get_usb_property(struct power_supply *psy,
++				      enum power_supply_property psp,
++				      union power_supply_propval *val)
++{
++	switch (psp) {
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = usb_online;
++		break;
++	default:
++		return -EINVAL;
++	}
++	return 0;
++}
++
+ static int test_power_get_battery_property(struct power_supply *psy,
+ 					   enum power_supply_property psp,
+ 					   union power_supply_propval *val)
+@@ -135,6 +150,14 @@ static struct power_supply test_power_supplies[] = {
+ 		.properties = test_power_battery_props,
+ 		.num_properties = ARRAY_SIZE(test_power_battery_props),
+ 		.get_property = test_power_get_battery_property,
++	}, {
++		.name = "test_usb",
++		.type = POWER_SUPPLY_TYPE_USB,
++		.supplied_to = test_power_ac_supplied_to,
++		.num_supplicants = ARRAY_SIZE(test_power_ac_supplied_to),
++		.properties = test_power_ac_props,
++		.num_properties = ARRAY_SIZE(test_power_ac_props),
++		.get_property = test_power_get_usb_property,
+ 	},
+ };
+ 
+@@ -167,6 +190,7 @@ static void __exit test_power_exit(void)
+ 
+ 	/* Let's see how we handle changes... */
+ 	ac_online = 0;
++	usb_online = 0;
+ 	battery_status = POWER_SUPPLY_STATUS_DISCHARGING;
+ 	for (i = 0; i < ARRAY_SIZE(test_power_supplies); i++)
+ 		power_supply_changed(&test_power_supplies[i]);
+@@ -275,6 +299,19 @@ static int param_get_ac_online(char *buffer, const struct kernel_param *kp)
+ 	return strlen(buffer);
+ }
+ 
++static int param_set_usb_online(const char *key, const struct kernel_param *kp)
++{
++	usb_online = map_get_value(map_ac_online, key, usb_online);
++	power_supply_changed(&test_power_supplies[2]);
++	return 0;
++}
++
++static int param_get_usb_online(char *buffer, const struct kernel_param *kp)
++{
++	strcpy(buffer, map_get_key(map_ac_online, usb_online, "unknown"));
++	return strlen(buffer);
++}
++
+ static int param_set_battery_status(const char *key,
+ 					const struct kernel_param *kp)
+ {
+@@ -350,13 +387,31 @@ static int param_set_battery_capacity(const char *key,
+ 
+ #define param_get_battery_capacity param_get_int
+ 
++static int param_set_battery_voltage(const char *key,
++					const struct kernel_param *kp)
++{
++	int tmp;
+ 
++	if (1 != sscanf(key, "%d", &tmp))
++		return -EINVAL;
++
++	battery_voltage = tmp;
++	power_supply_changed(&test_power_supplies[1]);
++	return 0;
++}
++
++#define param_get_battery_voltage param_get_int
+ 
+ static struct kernel_param_ops param_ops_ac_online = {
+ 	.set = param_set_ac_online,
+ 	.get = param_get_ac_online,
+ };
+ 
++static struct kernel_param_ops param_ops_usb_online = {
++	.set = param_set_usb_online,
++	.get = param_get_usb_online,
++};
++
+ static struct kernel_param_ops param_ops_battery_status = {
+ 	.set = param_set_battery_status,
+ 	.get = param_get_battery_status,
+@@ -384,6 +439,7 @@ static struct kernel_param_ops param_ops_battery_capacity = {
+ 
+ 
+ #define param_check_ac_online(name, p) __param_check(name, p, void);
++#define param_check_usb_online(name, p) __param_check(name, p, void);
+ #define param_check_battery_status(name, p) __param_check(name, p, void);
+ #define param_check_battery_present(name, p) __param_check(name, p, void);
+ #define param_check_battery_technology(name, p) __param_check(name, p, void);
+@@ -394,6 +450,9 @@ static struct kernel_param_ops param_ops_battery_capacity = {
+ module_param(ac_online, ac_online, 0644);
+ MODULE_PARM_DESC(ac_online, "AC charging state <on|off>");
+ 
++module_param(usb_online, usb_online, 0644);
++MODULE_PARM_DESC(usb_online, "USB charging state <on|off>");
++
+ module_param(battery_status, battery_status, 0644);
+ MODULE_PARM_DESC(battery_status,
+ 	"battery status <charging|discharging|not-charging|full>");
+-- 
+1.7.10
 
-Thanks,
-
-	tglx
