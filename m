@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752818Ab2E2I3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:29:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36737 "EHLO
+	id S1752711Ab2E2I31 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:29:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44797 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309Ab2E2I25 (ORCPT
+	with ESMTP id S1752572Ab2E2I3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:28:57 -0400
-From: Eyal Shapira <eyal@wizery.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, Luciano Coelho <coelho@ti.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH v2] wlcore: fix undefined symbols when CONFIG_PM is not defined
-Date: Tue, 29 May 2012 01:28:42 -0700
-Message-Id: <1338280122-28648-1-git-send-email-eyal@wizery.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 29 May 2012 04:29:24 -0400
+Message-ID: <4FC488E1.3080406@linaro.org>
+Date: Tue, 29 May 2012 16:29:21 +0800
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: axel.lin@gmail.com
+CC: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
+References: <1338272340.3127.1.camel@phoenix> <4FC47CEB.8090106@linaro.org> <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
+In-Reply-To: <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit c21eebb50379a96e1335e933583dcd5b455c6b64
-"wl12xx: add RX filters ACX commands" breaks the build
-when CONFIG_PM isn't defined:
+On 29/05/12 15:53, Axel Lin wrote:
+> 2012/5/29 Lee Jones<lee.jones@linaro.org>:
+>> On 29/05/12 14:19, Axel Lin wrote:
+>>>
+>>> config AB8500_I2C_CORE is not used after commit d28f1db
+>>> "mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
+>>> Thus remove it.
+>>>
+>>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+>>
+>>
+>> I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
+>> inclusion into -rc1 this afternoon. Would you mind leaving this one?
+>
+> I don't mind.
+> But AFAIK, commit d28f1db is in mfd tree.
+> Any reason you want to send the patch to ARM-SoC instead of mfd tree.
 
-ERROR: "wl1271_rx_filter_get_fields_size"
-[drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
-ERROR: "wl1271_rx_filter_flatten_fields"
-[drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
+I don't actually have a preference as to which tree it goes into, so 
+long as it's sent to Mainline on or before -rc1. This patch isn't too 
+important, but the others in the patch-set are and I'd like to keep them 
+together if possible. Unless of course Sam or Mark have any issues with 
+that. In which case I will bow down to them and do as they wish.
 
-code in drivers/net/wireless/ti/wlcore/acx.c is using these
-functions unconditionally while they are #ifdefed CONFIG_PM.
-Fix it by ifdefing all relevant RX filters code with CONFIG_PM.
+Kind regards,
+Lee
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Eyal Shapira <eyal@wizery.com>
----
-v2: reference the correct commit in linux-next (Thanks Stephen!)
-
- drivers/net/wireless/ti/wlcore/acx.c |    2 ++
- drivers/net/wireless/ti/wlcore/acx.h |    4 +++-
- drivers/net/wireless/ti/wlcore/rx.c  |    2 ++
- 3 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/wireless/ti/wlcore/acx.c b/drivers/net/wireless/ti/wlcore/acx.c
-index 0fd78a0..755b225 100644
---- a/drivers/net/wireless/ti/wlcore/acx.c
-+++ b/drivers/net/wireless/ti/wlcore/acx.c
-@@ -1715,6 +1715,7 @@ out:
- 
- }
- 
-+#ifdef CONFIG_PM
- /* Set the global behaviour of RX filters - On/Off + default action */
- int wl1271_acx_default_rx_filter_enable(struct wl1271 *wl, bool enable,
- 					enum rx_filter_action action)
-@@ -1793,3 +1794,4 @@ out:
- 	kfree(acx);
- 	return ret;
- }
-+#endif /* CONFIG_PM */
-diff --git a/drivers/net/wireless/ti/wlcore/acx.h b/drivers/net/wireless/ti/wlcore/acx.h
-index 8106b2e..e6a7486 100644
---- a/drivers/net/wireless/ti/wlcore/acx.h
-+++ b/drivers/net/wireless/ti/wlcore/acx.h
-@@ -1330,9 +1330,11 @@ int wl1271_acx_set_inconnection_sta(struct wl1271 *wl, u8 *addr);
- int wl1271_acx_fm_coex(struct wl1271 *wl);
- int wl12xx_acx_set_rate_mgmt_params(struct wl1271 *wl);
- int wl12xx_acx_config_hangover(struct wl1271 *wl);
-+
-+#ifdef CONFIG_PM
- int wl1271_acx_default_rx_filter_enable(struct wl1271 *wl, bool enable,
- 					enum rx_filter_action action);
- int wl1271_acx_set_rx_filter(struct wl1271 *wl, u8 index, bool enable,
- 			     struct wl12xx_rx_filter *filter);
--
-+#endif /* CONFIG_PM */
- #endif /* __WL1271_ACX_H__ */
-diff --git a/drivers/net/wireless/ti/wlcore/rx.c b/drivers/net/wireless/ti/wlcore/rx.c
-index 1f1d948..d6a3c6b 100644
---- a/drivers/net/wireless/ti/wlcore/rx.c
-+++ b/drivers/net/wireless/ti/wlcore/rx.c
-@@ -279,6 +279,7 @@ void wl12xx_rx(struct wl1271 *wl, struct wl_fw_status *status)
- 	wl12xx_rearm_rx_streaming(wl, active_hlids);
- }
- 
-+#ifdef CONFIG_PM
- int wl1271_rx_filter_enable(struct wl1271 *wl,
- 			    int index, bool enable,
- 			    struct wl12xx_rx_filter *filter)
-@@ -314,3 +315,4 @@ void wl1271_rx_filter_clear_all(struct wl1271 *wl)
- 		wl1271_rx_filter_enable(wl, i, 0, NULL);
- 	}
- }
-+#endif /* CONFIG_PM */
 -- 
-1.7.4.1
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
