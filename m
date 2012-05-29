@@ -1,104 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab2E2U5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 16:57:44 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:54420 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab2E2U5m convert rfc822-to-8bit (ORCPT
+	id S1755888Ab2E2VNL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 17:13:11 -0400
+Received: from mail.datadirectnet.com ([74.62.46.229]:26015 "EHLO
+	mail.datadirectnet.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755678Ab2E2VNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 16:57:42 -0400
+	Tue, 29 May 2012 17:13:09 -0400
+X-Greylist: delayed 309 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 May 2012 17:13:09 EDT
+Message-ID: <4FC53AAA.3060203@ddn.com>
+Date: Tue, 29 May 2012 17:07:54 -0400
+From: Karandeep Chahal <kchahal@ddn.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205291514090.2504@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
-	<1337951028-3427-14-git-send-email-glommer@parallels.com>
-	<alpine.DEB.2.00.1205290932530.4666@router.home>
-	<4FC4F1A7.2010206@parallels.com>
-	<alpine.DEB.2.00.1205291101580.6723@router.home>
-	<4FC501E9.60607@parallels.com>
-	<alpine.DEB.2.00.1205291222360.8495@router.home>
-	<4FC506E6.8030108@parallels.com>
-	<alpine.DEB.2.00.1205291424130.8495@router.home>
-	<4FC52612.5060006@parallels.com>
-	<alpine.DEB.2.00.1205291454030.2504@router.home>
-	<4FC52CC6.7020109@parallels.com>
-	<alpine.DEB.2.00.1205291514090.2504@router.home>
-Date: Tue, 29 May 2012 13:57:41 -0700
-Message-ID: <CABCjUKCPoL1+qzjX85RVGpRBn_javD3JY2avstYuoM=tsJa8dA@mail.gmail.com>
-Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
-From: Suleiman Souhlal <suleiman@google.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        devel@openvz.org, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: dillowda@ornl.gov, roland@kernel.org, sean.hefty@intel.com
+Subject: [PATCH 1/1] ib_srp: Infiniband srp fast failover patch.
+Content-Type: multipart/mixed;
+	boundary="------------000800000401030407040103"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+--------------000800000401030407040103
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On Tue, May 29, 2012 at 1:21 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Wed, 30 May 2012, Glauber Costa wrote:
->
->> Well, I'd have to dive in the code a bit more, but that the impression that
->> the documentation gives me, by saying:
->>
->> "Cpusets constrain the CPU and Memory placement of tasks to only
->> the resources within a task's current cpuset."
->>
->> is that you can't allocate from a node outside that set. Is this correct?
->
-> Basically yes but there are exceptions (like slab queues etc). Look at the
-> hardwall stuff too that allows more exceptions for kernel allocations to
-> use memory from other nodes.
->
->> So extrapolating this to memcg, the situation is as follows:
->>
->> * You can't use more memory than what you are assigned to.
->> * In order to do that, you need to account the memory you are using
->> * and to account the memory you are using, all objects in the page
->>   must belong to you.
->
-> Cpusets work at the page boundary and they do not have the requirement you
-> are mentioning of all objects in the page having to belong to a certain
-> cpusets. Let that go and things become much easier.
->
->> With a predictable enough workload, this is a recipe for working around the
->> very protection we need to establish: one can DoS a physical box full of
->> containers, by always allocating in someone else's pages, and pinning kernel
->> memory down. Never releasing it, so the shrinkers are useless.
->
-> Sure you can construct hyperthetical cases like that. But then that is
-> true already of other container like logic in the kernel already.
->
->> So I still believe that if a page is allocated to a cgroup, all the objects in
->> there belong to it  - unless of course the sharing actually means something -
->> and identifying this is just too complicated.
->
-> We have never worked container like logic like that in the kernel due to
-> the complicated logic you would have to put in. The requirement that all
-> objects in a page come from the same container is not necessary. If you
-> drop this notion then things become very easy and the patches will become
-> simple.
+Subject: [PATCH] Infiniband srp fast failover patch. Currently ib_srp does
+  not do anything on receiving a DREQ from the target, it
+  only sends a response back. Further it also does not
+  monitor port (down) events. I have patched srp to remove
+  scsi devices when a port down event is received or if the
+  target sends a DREQ. Currently even though the target
+  notifies the initiator of its intentions of going away, the
+  initiator ignores that information. Later the initiator
+  gets upset when the devices "suddenly" disappear resulting
+  in srp initiating an error recovery process which takes a
+  long time. This caused high failover latencies as compared
+  to fibre channel. In my experiments with RHEL 6.0 and 6.2 I
+  encountered failover time that exceeded 2 minutes and 20
+  seconds (despite tweaking /etc/multipath.conf and
+  /sys/block/<>/timeout). With this patch the failover takes
+  30 seconds. I have tested this patch with and without a
+  switch.
 
-Back when we (Google) started using cpusets for memory isolation (fake
-NUMA), we found that there was a significant isolation breakage coming
-from slab pages belonging to one cpuset being used by other cpusets,
-which caused us problems: It was very easy for one job to cause slab
-growth in another container, which would cause it to OOM, despite
-being well-behaved.
+Yours, etc.
+Karan
 
-Because of this, we had to add logic to prevent that from happening
-(by making sure we only allocate objects from pages coming from our
-allowed nodes).
 
-Now that we're switching to doing containers with memcg, I think this
-is a hard requirement, for us. :-(
+--------------000800000401030407040103
+Content-Type: text/x-patch;
+	name="0001-Infiniband-srp-fast-failover-patch.-Currently-ib_srp.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename*0="0001-Infiniband-srp-fast-failover-patch.-Currently-ib_srp.pa";
+	filename*1="tch"
 
--- Suleiman
+>From 4ebb453ccde59cf0b674bd4a23fb85f4a3333618 Mon Sep 17 00:00:00 2001
+From: Karandeep Chahal <kchahal@ddn.com>
+Date: Tue, 29 May 2012 16:48:20 -0400
+Subject: [PATCH] Infiniband srp fast failover patch. Currently ib_srp does
+ not do anything on receiving a DREQ from the target, it
+ only sends a response back. Further it also does not
+ monitor port (down) events. I have patched srp to remove
+ scsi devices when a port down event is received or if the
+ target sends a DREQ. Currently even though the target
+ notifies the initiator of its intentions of going away, the
+ initiator ignores that information. Later the initiator
+ gets upset when the devices "suddenly" disappear resulting
+ in srp initiating an error recovery process which takes a
+ long time. This caused high failover latencies as compared
+ to fibre channel. In my experiments with RHEL 6.0 and 6.2 I
+ encountered failover time that exceeded 2 minutes and 20
+ seconds (despite tweaking /etc/multipath.conf and
+ /sys/block/<>/timeout). With this patch the failover takes
+ 30 seconds. I have tested this patch with and without a
+ switch.
+
+
+Signed-off-by: Karandeep Chahal <kchahal@ddn.com>
+---
+ drivers/infiniband/ulp/srp/ib_srp.c |   64 +++++++++++++++++++++++++++++++++++
+ drivers/infiniband/ulp/srp/ib_srp.h |    1 +
+ 2 files changed, 65 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.c b/drivers/infiniband/ulp/srp/ib_srp.c
+index bcbf22e..088215b 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.c
++++ b/drivers/infiniband/ulp/srp/ib_srp.c
+@@ -1524,6 +1524,37 @@ static void srp_cm_rej_handler(struct ib_cm_id *cm_id,
+ 	}
+ }
+ 
++static void srp_mark_all_devices_dead(int port_num, struct srp_device *srp_dev,
++				    struct ib_cm_id *cm_id)
++{
++	struct srp_host *host, *tmp_host;
++	struct srp_target_port *target;
++
++	list_for_each_entry_safe(host, tmp_host, &srp_dev->dev_list, list) {
++		/*
++		 * Mark all target ports as removed, so we stop queueing
++		 * commands and don't try to reconnect.
++		 */
++		if ((port_num != -1) && (port_num != host->port))
++			continue;
++
++		spin_lock(&host->target_lock);
++		list_for_each_entry(target, &host->target_list, list) {
++			if (!cm_id || (target->cm_id == cm_id)) {
++
++				shost_printk(KERN_WARNING, target->scsi_host,
++				     PFX "Removing all scsi devices\n");
++				spin_lock_irq(&target->lock);
++				target->state = SRP_TARGET_DEAD;
++				INIT_WORK(&target->work, srp_remove_work);
++				queue_work(ib_wq, &target->work);
++				spin_unlock_irq(&target->lock);
++			}
++		}
++		spin_unlock(&host->target_lock);
++	}
++}
++
+ static int srp_cm_handler(struct ib_cm_id *cm_id, struct ib_cm_event *event)
+ {
+ 	struct srp_target_port *target = cm_id->context;
+@@ -1555,6 +1586,8 @@ static int srp_cm_handler(struct ib_cm_id *cm_id, struct ib_cm_event *event)
+ 		if (ib_send_cm_drep(cm_id, NULL, 0))
+ 			shost_printk(KERN_ERR, target->scsi_host,
+ 				     PFX "Sending CM DREP failed\n");
++		srp_mark_all_devices_dead(-1, target->srp_host->srp_dev,
++				     cm_id);
+ 		break;
+ 
+ 	case IB_CM_TIMEWAIT_EXIT:
+@@ -2284,6 +2317,31 @@ free_host:
+ 	return NULL;
+ }
+ 
++static void srp_event_handler(struct ib_event_handler *handler,
++				    struct ib_event *event)
++{
++	struct srp_device *srp_dev;
++
++	switch (event->event) {
++
++	case IB_EVENT_DEVICE_FATAL:
++	case IB_EVENT_PORT_ERR:
++		srp_dev = container_of(handler, struct srp_device,
++				    event_handler);
++
++		printk(KERN_INFO PFX "%s port %d down detected\n",
++				    srp_dev->dev->name,
++				    event->element.port_num);
++
++		srp_mark_all_devices_dead(event->element.port_num,
++				    srp_dev, NULL);
++		break;
++
++	default:
++		break;
++	}
++}
++
+ static void srp_add_one(struct ib_device *device)
+ {
+ 	struct srp_device *srp_dev;
+@@ -2366,6 +2424,10 @@ static void srp_add_one(struct ib_device *device)
+ 
+ 	ib_set_client_data(device, &srp_client, srp_dev);
+ 
++	INIT_IB_EVENT_HANDLER(&srp_dev->event_handler, device,
++				    srp_event_handler);
++	ib_register_event_handler(&srp_dev->event_handler);
++
+ 	goto free_attr;
+ 
+ err_pd:
+@@ -2387,6 +2449,8 @@ static void srp_remove_one(struct ib_device *device)
+ 
+ 	srp_dev = ib_get_client_data(device, &srp_client);
+ 
++	ib_unregister_event_handler(&srp_dev->event_handler);
++
+ 	list_for_each_entry_safe(host, tmp_host, &srp_dev->dev_list, list) {
+ 		device_unregister(&host->dev);
+ 		/*
+diff --git a/drivers/infiniband/ulp/srp/ib_srp.h b/drivers/infiniband/ulp/srp/ib_srp.h
+index 020caf0..e0737a1 100644
+--- a/drivers/infiniband/ulp/srp/ib_srp.h
++++ b/drivers/infiniband/ulp/srp/ib_srp.h
+@@ -97,6 +97,7 @@ struct srp_device {
+ 	struct ib_pd	       *pd;
+ 	struct ib_mr	       *mr;
+ 	struct ib_fmr_pool     *fmr_pool;
++	struct ib_event_handler event_handler;
+ 	u64			fmr_page_mask;
+ 	int			fmr_page_size;
+ 	int			fmr_max_size;
+-- 
+1.7.7.6
+
+
+--------------000800000401030407040103--
