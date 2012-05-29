@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2E2RgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:36:10 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51207 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab2E2RgI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:36:08 -0400
+	id S1754773Ab2E2Rg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:36:28 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:8273 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754602Ab2E2Rg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:36:27 -0400
+X-IronPort-AV: E=Sophos;i="4.75,678,1330923600"; 
+   d="scan'208";a="196787778"
+Message-ID: <4FC50918.4000608@citrix.com>
+Date: Tue, 29 May 2012 18:36:24 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <20120529155759.GA11326@localhost>
-References: <20120528114124.GA6813@localhost> <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
- <20120529155759.GA11326@localhost>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 29 May 2012 10:35:46 -0700
-X-Google-Sender-Auth: 1MqYFi0c77lRVMUuivUOQSXJP24
-Message-ID: <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
-Subject: Re: write-behind on streaming writes
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] xen/balloon: Subtract from xen_released_pages the count
+ that is populated.
+References: <1338310689-5967-1-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1338310689-5967-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 8:57 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
->
-> Actually O_SYNC is pretty close to the below code for the purpose of
-> limiting the dirty and writeback pages, except that it's not on by
-> default, hence means nothing for normal users.
+On 29/05/12 17:58, Konrad Rzeszutek Wilk wrote:
+> We did not take into account that xen_released_pages would be
+> used outside the initial E820 parsing code. As such we would
+> not subtract from xen_released_pages the count of pages
+> that we had populated back. Instead we just did a simple
+> extra_pages = released - populated calculation.
+> 
+> However the balloon worker uses xen_released_pages to figure
+> out how many more pages it can balloon up to and not having
+> the proper numbers we would balloon more than we should have.
 
-Absolutely not.
+I would probably rephrase this paragraph to be a bit clearer but it's
+not a big deal.  Something like this perhaps:
 
-O_SYNC syncs the *current* write, syncs your metadata, and just
-generally makes your writer synchronous. It's just a f*cking moronic
-idea. Nobody sane ever uses it, since you are much better off just
-using fsync() if you want that kind of behavior. That's one of those
-"stupid legacy flags" things that have no sane use.
+"The balloon driver uses xen_released_pages to set the initial
+current_pages count.  If this is wrong (too low) then when a new
+(higher) target is set, the balloon driver will request too many pages
+from Xen."
 
-The whole point is that doing that is never the right thing to do. You
-want to sync *past* writes, and you never ever want to wait on them
-unless you just sent more (newer) writes to the disk that you are
-*not* waiting on - so that you always have more IO pending.
+> This fixes errors such as:
+> 
+> (XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (51 of 512)
+> during bootup and
+> free_memory            : 0
+> 
+> where the free_memory should be 128.
+> 
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-O_SYNC is the absolutely anti-thesis of that kind of "multiple levels
-of overlapping IO". Because it requires that the IO is _done_ by the
-time you start more, which is against the whole point.
+Acked-by: David Vrabel <david.vrabel@citrix.com>
 
-> It seems to me all about optimizing the 1-dd case for desktop users,
-> and the most beautiful thing about per-file write behind is, it keeps
-> both the number of dirty and writeback pages low in the system when
-> there are only one or two sequential dirtier tasks. Which is good for
-> responsiveness.
+> ---
+>  arch/x86/xen/setup.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+> index 3ebba07..a4790bf 100644
+> --- a/arch/x86/xen/setup.c
+> +++ b/arch/x86/xen/setup.c
+> @@ -371,7 +371,8 @@ char * __init xen_memory_setup(void)
+>  	populated = xen_populate_chunk(map, memmap.nr_entries,
+>  			max_pfn, &last_pfn, xen_released_pages);
+>  
+> -	extra_pages += (xen_released_pages - populated);
+> +	xen_released_pages -= populated;
+> +	extra_pages += xen_released_pages;
+>  
+>  	if (last_pfn > max_pfn) {
+>  		max_pfn = min(MAX_DOMAIN_PAGES, last_pfn);
 
-Yes, but I don't think it's about a single-dd case - it's about just
-trying to handle one common case (streaming writes) efficiently and
-naturally. Try to get those out of the system so that you can then
-worry about the *other* cases knowing that they don't have that kind
-of big streaming behavior.
-
-For example, right now our main top-level writeback logic is *not*
-about streaming writes (just dirty counts), but then we try to "find"
-the locality by making the lower-level writeback do the whole "write
-back by chunking inodes" without really having any higher-level
-information.
-
-I just suspect that we'd be better off teaching upper levels about the
-streaming. I know for a fact that if I do it by hand, system
-responsiveness was *much* better, and IO throughput didn't go down at
-all.
-
-> Note that the above user space code won't work well when there are 10+
-> dirtier tasks. It effectively creates 10+ IO submitters on different
-> regions of the disk and thus create lots of seeks.
-
-Not really much more than our current writeback code does. It
-*schedules* data for writing, but doesn't wait for it until much
-later.
-
-You seem to think it was synchronous. It's not. Look at the second
-sync_file_range() thing, and the important part is the "index-1". The
-fact that you confused this with O_SYNC seems to be the same thing.
-This has absolutely *nothing* to do with O_SYNC.
-
-The other important part is that the chunk size is fairly large. We do
-read-ahead in 64k kind of things, to make sense the write-behind
-chunking needs to be in "multiple megabytes".  8MB is probably the
-minimum size it makes sense.
-
-The write-behind would be for things like people writing disk images
-and video files. Not for random IO in smaller chunks.
-
-                       Linus
