@@ -1,74 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2E2QNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:13:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62139 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752753Ab2E2QNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:13:06 -0400
-Date: Tue, 29 May 2012 18:11:57 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 08/35] autonuma: introduce kthread_bind_node()
-Message-ID: <20120529161157.GE21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-9-git-send-email-aarcange@redhat.com>
- <1338295753.26856.60.camel@twins>
+	id S1754237Ab2E2QOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:14:19 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:32714 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab2E2QOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:14:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6725"; a="195607165"
+Date: Tue, 29 May 2012 11:14:15 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: hexagon: signal bugs
+Message-ID: <20120529161415.GA2486@codeaurora.org>
+References: <20120519210911.GB11775@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338295753.26856.60.camel@twins>
+In-Reply-To: <20120519210911.GB11775@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 02:49:13PM +0200, Peter Zijlstra wrote:
-> On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
-> >  /**
-> > + * kthread_bind_node - bind a just-created kthread to the CPUs of a node.
-> > + * @p: thread created by kthread_create().
-> > + * @nid: node (might not be online, must be possible) for @k to run on.
-> > + *
-> > + * Description: This function is equivalent to set_cpus_allowed(),
-> > + * except that @nid doesn't need to be online, and the thread must be
-> > + * stopped (i.e., just returned from kthread_create()).
-> > + */
-> > +void kthread_bind_node(struct task_struct *p, int nid)
-> > +{
-> > +       /* Must have done schedule() in kthread() before we set_task_cpu */
-> > +       if (!wait_task_inactive(p, TASK_UNINTERRUPTIBLE)) {
-> > +               WARN_ON(1);
-> > +               return;
-> > +       }
-> > +
-> > +       /* It's safe because the task is inactive. */
-> > +       do_set_cpus_allowed(p, cpumask_of_node(nid));
-> > +       p->flags |= PF_THREAD_BOUND;
+On Sat, May 19, 2012 at 10:09:11PM +0100, Al Viro wrote:
+> 	1) spot the braino:
+> void do_trap0(struct pt_regs *regs)
+> ...
+>         unsigned long syscallret = 0;
+> 	...
+>                 if ((unsigned long) regs->syscall_nr >= __NR_syscalls) {
+>                         regs->r00 = -1;
+>                 } else {
+>                         syscall = (syscall_fn)
+>                                   (sys_call_table[regs->syscall_nr]);
+>                         syscallret = syscall(regs->r00, regs->r01,
+>                                    regs->r02, regs->r03,
+>                                    regs->r04, regs->r05);
+>                 }
 > 
-> No, I've said before, this is wrong. You should only ever use
-> PF_THREAD_BOUND when its strictly per-cpu. Moving the your numa threads
-> to a different node is silly but not fatal in any way.
+>                 if (regs->syscall_nr != __NR_rt_sigreturn)
+>                         regs->r00 = syscallret;
+> IOW, the last if () should've been inside the "syscall_nr is not too high"
+> branch of the if () just above...
+> 
+> 	2) you do _not_ want syscall restarts to happen on sigreturn().
+> Whatever adjustment needed to be done had already been done back before
+> we'd saved the registers into sigcontext.  So doing
+>         regs->syscall_nr = __NR_rt_sigreturn;
+> in sys_rt_sigreturn() is exactly the wrong thing - for syscall restart
+> purposes you want it to look like a non-syscall (i.e. it should be
+> regs->syscall_nr = -1 to make your check in handle_signal() work).
+> Incidentally, I would suggest just having that thing return regs->r00;
+> then you can avoid all special-casing for "do we want to put the
+> return value of sys_...() into regs->r00?" in do_trap0().
+> 
+> 	3) if you have multiple pending signals, you need to handle all
+> of them before returning to userland.  And you need to make sure that
+> syscall restart logics does not trigger on anything past the first time
+> around.
+> 
+> 	4) checking for !user_mode(regs) needs to be done in the loop (created
+> while fixing #3) in vm_entry.S where you are calling do_notify_resume();
+> you need to leave the loop if it's true (if you can get there on return
+> to kernel in the first place).
 
-I changed the semantics of that bitflag, now it means: userland isn't
-allowed to shoot itself in the foot and mess with whatever CPU
-bindings the kernel has set for the kernel thread.
+Just wanted to say thanks so much for reviewing the code; I didn't get
+around to making the changes until late last week, but I've got the fixes
+in my tree and will submit a patch for review after I've given it some
+testing.
 
-It'd be a clear regress not to set PF_THREAD_BOUND there. It would be
-even worse to remove the CPU binding to the node: it'd risk to copy
-memory with both src and dst being in remote nodes from the CPU where
-knuma_migrate runs on (there aren't just 2 node systems out there).
+
+Thanks again,
+Richard Kuo
+
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
