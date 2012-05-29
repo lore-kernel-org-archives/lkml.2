@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab2E2KN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 06:13:28 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50332 "EHLO
+	id S1753526Ab2E2KPR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 06:15:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61168 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab2E2KN1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753082Ab2E2KPP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 06:13:27 -0400
+	Tue, 29 May 2012 06:15:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <3646407.261CWqact8@flexo>
-References: <1338206223-26781-1-git-send-email-devendra.aaru@gmail.com>
-	<1659482.3g1Zl6FDuM@flexo>
-	<CAHdPZaPWM3MfyARfwOm2KkKPPvm4dEfncF47N2xASyp27HdzsA@mail.gmail.com>
-	<3646407.261CWqact8@flexo>
-Date: Tue, 29 May 2012 15:43:26 +0530
-Message-ID: <CAHdPZaM+UyaHv=HF0q1=qp7wTk_LXaF_+W8q5K-x+So5Bd0FSw@mail.gmail.com>
-Subject: Re: [PATCH] r6040: disable pci device if the subsequent calls (after
- pci_enable_device) fails
+In-Reply-To: <1338285973.2840.1.camel@edumazet-glaptop>
+References: <1338285078-17785-1-git-send-email-devendra.aaru@gmail.com>
+	<1338285973.2840.1.camel@edumazet-glaptop>
+Date: Tue, 29 May 2012 15:45:14 +0530
+Message-ID: <CAHdPZaOkFa-=boq6eXVZUyhGN80TXg+iWoE7sQKbnyxBjej44A@mail.gmail.com>
+Subject: Re: [PATCH V2] [staging] bcm: Replace the BCM_DEBUG_* and BCM_SHOW_*
+ macros with functions
 From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+Hello Eric,
 
->> On Tue, May 29, 2012 at 2:50 PM, Florian Fainelli <florian@openwrt.org>
-> wrote:
->
+On Tue, May 29, 2012 at 3:36 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Tue, 2012-05-29 at 15:21 +0530, Devendra Naga wrote:
+>> This patch is made by following the improvements told by Joe Perches,
+>> replaced the BCM_DEBUG* and BCM_SHOW* macros into functions and added them
+>> in a file and added macros in the Debug.h file. This patch also improves the if
+>> check in bcm_show_debug_bitmap,
 >>
->> Thanks for the Ack.
->> I found one more problem. Its when mdiobus_alloc fails in
->> r6040_init_one, we need to do call to the netif_napi_del and set the
->> NULL to pci_set_drvdata, at  err_out_unmap.
+>> the check was
+>>       if ((i == 1) || (i == 2) || (i == 4) || (i == 8));
+>> anyway its a check to find whether its a power of two, and replaces
+>> it like the following,
+>>       if ((i != 0) && !(i & (i - 1)))
 >
-> Ok, can you please submit a patch to fix this issue as well? Thanks!
-> --
-Ok sure. will be doing it shortly.
-> Florian
+> So why not using is_power_of_2() ?
+>
+I really dont know its there. Thanks for letting me know, :), will do
+and submit the change.
+>
 
 Thanks,
 Devendra.
