@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab2E2Qyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:54:51 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45659 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab2E2Qyt (ORCPT
+	id S1754530Ab2E2Q5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:57:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59032 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753680Ab2E2Q5W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:54:49 -0400
-From: Emil Goode <emilgoode@gmail.com>
-To: FlorianSchandinat@gmx.de
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] video: bfin_adv7393fb: Convert to kstrtouint_from_user
-Date: Tue, 29 May 2012 18:57:00 +0200
-Message-Id: <1338310620-6886-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	Tue, 29 May 2012 12:57:22 -0400
+Message-ID: <1338310613.26856.139.camel@twins>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Date: Tue, 29 May 2012 18:56:53 +0200
+In-Reply-To: <4FC4FD51.2080001@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	 <1337965359-29725-14-git-send-email-aarcange@redhat.com>
+	 <1338297385.26856.74.camel@twins> <20120529163849.GF21339@redhat.com>
+	 <4FC4FD51.2080001@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes a call to the deprecated simple_strtoul function
-and simplifies the code by replacing two function calls with one
-call to kstrtouint_from_user.
+On Tue, 2012-05-29 at 12:46 -0400, Rik van Riel wrote:
+> > I don't think it's too great, memcg uses for half of that and yet
+> > nobody is booting with cgroup_disable=memory even on not-NUMA servers
+> > with less RAM.
 
--Simplify the adv7393_write_proc function by replacing the
- simple_strtoul and copy_from_user calls with one call
- to kstrtouint_from_user.
+Right, it was such a hit we had to disable that by default on RHEL6.
 
--Change the count parameter from unsigned long to size_t as
- this is the type that the kstrtouint_from_user function expects.
- (size_t is what will be passed to the adv7393_write_proc function
- by the proc write handler function proc_file_write anyway)
+> Not any more. 
 
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/video/bfin_adv7393fb.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Right, hnaz did great work there, but wasn't there still some few pieces
+of the shadow page frame left? ISTR LSF/MM talk of moving the last few
+bits into the regular page frame, taking the word that became available
+through: fc9bb8c768 ("mm: Rearrange struct page").
 
-diff --git a/drivers/video/bfin_adv7393fb.c b/drivers/video/bfin_adv7393fb.c
-index 1a268a2..8c6edfd 100644
---- a/drivers/video/bfin_adv7393fb.c
-+++ b/drivers/video/bfin_adv7393fb.c
-@@ -353,18 +353,16 @@ adv7393_read_proc(char *page, char **start, off_t off,
- 
- static int
- adv7393_write_proc(struct file *file, const char __user * buffer,
--		   unsigned long count, void *data)
-+		   size_t count, void *data)
- {
- 	struct adv7393fb_device *fbdev = data;
--	char line[8];
- 	unsigned int val;
- 	int ret;
- 
--	ret = copy_from_user(line, buffer, count);
-+	ret = kstrtouint_from_user(buffer, count, 0, &val);
- 	if (ret)
- 		return -EFAULT;
- 
--	val = simple_strtoul(line, NULL, 0);
- 	adv7393_write(fbdev->client, val >> 8, val & 0xff);
- 
- 	return count;
--- 
-1.7.10
 
