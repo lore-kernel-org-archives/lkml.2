@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab2E2Ulf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 16:41:35 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:1205 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab2E2Ule (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 16:41:34 -0400
-Message-ID: <1338324091.2722.9.camel@lorien2>
-Subject: Re: [PATCH] x86: kernel/early_printk.c simple_strtoul cleanup
-From: Shuah Khan <shuahkhan@gmail.com>
-Reply-To: shuahkhan@gmail.com
-To: Joe Perches <joe@perches.com>
-Cc: shuahkhan@gmail.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 29 May 2012 14:41:31 -0600
-In-Reply-To: <1338151872.28188.16.camel@joe2Laptop>
-References: <1338137317.2968.27.camel@lorien2>
-	 <1338151872.28188.16.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1755132Ab2E2Uo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 16:44:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23324 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754420Ab2E2Uoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 16:44:54 -0400
+Message-ID: <4FC534B0.2000505@redhat.com>
+Date: Tue, 29 May 2012 16:42:24 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com> <1337965359-29725-14-git-send-email-aarcange@redhat.com> <1338297385.26856.74.camel@twins> <20120529163849.GF21339@redhat.com> <CA+55aFwmhM2a2HjB_MEjVDDL-AP4j-t202ozmHgT0azSptjnoA@mail.gmail.com>
+In-Reply-To: <CA+55aFwmhM2a2HjB_MEjVDDL-AP4j-t202ozmHgT0azSptjnoA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-05-27 at 13:51 -0700, Joe Perches wrote:
-> On Sun, 2012-05-27 at 10:48 -0600, Shuah Khan wrote:
-> > Change early_serial_init() to call kstrtoul() instead of calling obsoleted
-> > simple_strtoul().
-> []
-> > diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-> []
-> > @@ -119,22 +119,27 @@ static __init void early_serial_init(char *s)
-> >  	unsigned char c;
-> >  	unsigned divisor;
-> >  	unsigned baud = DEFAULT_BAUD;
-> > -	char *e;
-> > +	unsigned long val;
-> > +	ssize_t ret;
-> >  
-> >  	if (*s == ',')
-> >  		++s;
-> >  
-> >  	if (*s) {
-> > -		unsigned port;
-> > +		unsigned port = 0;
-> >  		if (!strncmp(s, "0x", 2)) {
-> > -			early_serial_base = simple_strtoul(s, &e, 16);
-> > +			ret = kstrtoul(s, 16, &val);
-> > +			if (!ret)
-> > +				early_serial_base = val;
-> 
-> I believe none of the kstrto<foo> calls set
-> the value in the pointer unless successful so
-> you don't need a temporary and can simply use:
-> 
-> 		ret = kstrtoint(s, 16, &early_serial_base)
-> 		if (ret)
-> 
-> etc...
+On 05/29/2012 01:38 PM, Linus Torvalds wrote:
+> On Tue, May 29, 2012 at 9:38 AM, Andrea Arcangeli<aarcange@redhat.com>  wrote:
+>> On Tue, May 29, 2012 at 03:16:25PM +0200, Peter Zijlstra wrote:
+>>> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
+>>> price to pay.
+>>
+>> I don't think it's too great, memcg uses for half of that and yet
+>> nobody is booting with cgroup_disable=memory even on not-NUMA servers
+>> with less RAM.
+>
+> A big fraction of one percent is absolutely unacceptable.
 
-Will re-work the patch and resend it.
+Andrea, here is a quick back of the envelope idea.
 
-Thanks,
--- Shuah
+In every zone, we keep an array of pointers to pages and
+other needed info for knumad.  We do not need as many as
+we have pages in a zone, because we do not want to move
+all that memory across anyway (especially in larger systems).
+Maybe the number of entries can scale up with the square
+root of the zone size?
 
+struct numa_pq_entry {
+	struct page *page;
+	pg_data_t *destination;
+};
 
+For each zone, we can have a numa queueing struct
+
+struct numa_queue {
+	struct numa_pq_entry *current_knumad;
+	struct numa_pq_entry *current_queue;
+	struct numa_pq_entry[];
+};
+
+Pages can get added to the knumad queue by filling
+in a pointer and a destination node, and by setting
+a page flag indicating that this page should be
+moved to another NUMA node.
+
+If something happens to the page that would cancel
+the queuing, we simply clear that page flag.
+
+When knumad gets around to an entry in the array,
+it will check to see if the "should migrate" page
+flag is still set. If it is not, it skips the entry.
+
+The current_knumad and current_queue entries can
+be used to simply keep circular buffer semantics.
+
+Does this look reasonable?
+
+-- 
+All rights reversed
