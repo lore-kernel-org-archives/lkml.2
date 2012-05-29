@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab2E2Kac (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 06:30:32 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:52069 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753629Ab2E2Ka3 (ORCPT
+	id S1753600Ab2E2Kfk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 06:35:40 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:57162 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab2E2Kfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 06:30:29 -0400
-Date: Tue, 29 May 2012 20:30:19 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: Re: [PATCH 1/2] crypto: Add new test cases for Blackfin CRC crypto
- driver.
-Message-ID: <20120529103019.GA2237@gondor.apana.org.au>
-References: <1337939654-12222-1-git-send-email-sonic.adi@gmail.com>
- <CAJxxZ0NK5HnvBUxBWdKq+saJfyWG1Uk0nDpRJ-uAmApgZBP7CQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJxxZ0NK5HnvBUxBWdKq+saJfyWG1Uk0nDpRJ-uAmApgZBP7CQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 29 May 2012 06:35:39 -0400
+From: Avik Sil <avik.sil@linaro.org>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Perf: Use /usr/bin/pager if available for perf pager
+Date: Tue, 29 May 2012 16:05:25 +0530
+Message-Id: <1338287725-26382-1-git-send-email-avik.sil@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 06:28:45PM +0800, Sonic Zhang wrote:
-> PING
+Some Distributions may lack "less" package being included by default, e.g., Linaro nano rootfs. In those cases use the portable "pager" command instead of "less".
 
-Please be patient.  Your patch is in my queue.
+Signed-off-by: Avik Sil <avik.sil@linaro.org>
+---
+ tools/perf/util/pager.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Cheers,
+diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
+index 1915de2..3322b84 100644
+--- a/tools/perf/util/pager.c
++++ b/tools/perf/util/pager.c
+@@ -57,6 +57,10 @@ void setup_pager(void)
+ 	}
+ 	if (!pager)
+ 		pager = getenv("PAGER");
++	if (!pager) {
++		if (!access("/usr/bin/pager", X_OK))
++			pager = "/usr/bin/pager";
++	}
+ 	if (!pager)
+ 		pager = "less";
+ 	else if (!*pager || !strcmp(pager, "cat"))
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.9.5
+
