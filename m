@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab2E2JTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:19:39 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:33813 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab2E2JTi (ORCPT
+	id S1753178Ab2E2JW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:22:59 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:65427 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab2E2JW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:19:38 -0400
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, mingo@kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH] spinlock: indicate that a lockup is only suspected
-Date: Tue, 29 May 2012 11:18:44 +0200
-Message-Id: <1338283124-7063-1-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.7.10.3
-x-cbid: 12052909-8372-0000-0000-000002B31A9A
+	Tue, 29 May 2012 05:22:57 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r6040: disable pci device if the subsequent calls (after pci_enable_device) fails
+Date: Tue, 29 May 2012 11:20:50 +0200
+Message-ID: <1659482.3g1Zl6FDuM@flexo>
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <1338206223-26781-1-git-send-email-devendra.aaru@gmail.com>
+References: <1338206223-26781-1-git-send-email-devendra.aaru@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On an over-committed KVM system we got a
-"BUG: spinlock lockup on CPU#2, swapper/2/0" on the heavily contended
-virtio blk spinlock.
-While we might want to reconsider the locking of virtio-blk (lock is
-held while switching to the host) this patch tries to make the message
-clearer: the lockup is only suspected
+On Monday 28 May 2012 17:27:03 Devendra Naga wrote:
+> the calls after the pci_enable_device may fail, and will error out with out
+> disabling it. disable the device at error paths.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
----
- lib/spinlock_debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Looks good, thanks Devendra!
 
-diff --git a/lib/spinlock_debug.c b/lib/spinlock_debug.c
-index 525d160..1d2be56 100644
---- a/lib/spinlock_debug.c
-+++ b/lib/spinlock_debug.c
-@@ -118,7 +118,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
- 		/* lockup suspected: */
- 		if (print_once) {
- 			print_once = 0;
--			spin_dump(lock, "lockup");
-+			spin_dump(lock, "lockup suspected");
- #ifdef CONFIG_SMP
- 			trigger_all_cpu_backtrace();
- #endif
--- 
-1.7.10.3
+> 
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 
+Acked-by: Florian Fainelli <florian@openwrt.org>
+
+> ---
+>  drivers/net/ethernet/rdc/r6040.c |   10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/rdc/r6040.c 
+b/drivers/net/ethernet/rdc/r6040.c
+> index 4de7364..8f5079a 100644
+> --- a/drivers/net/ethernet/rdc/r6040.c
+> +++ b/drivers/net/ethernet/rdc/r6040.c
+> @@ -1096,20 +1096,20 @@ static int __devinit r6040_init_one(struct pci_dev 
+*pdev,
+>  	if (err) {
+>  		dev_err(&pdev->dev, "32-bit PCI DMA addresses"
+>  				"not supported by the card\n");
+> -		goto err_out;
+> +		goto err_out_disable_dev;
+>  	}
+>  	err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+>  	if (err) {
+>  		dev_err(&pdev->dev, "32-bit PCI DMA addresses"
+>  				"not supported by the card\n");
+> -		goto err_out;
+> +		goto err_out_disable_dev;
+>  	}
+>  
+>  	/* IO Size check */
+>  	if (pci_resource_len(pdev, bar) < io_size) {
+>  		dev_err(&pdev->dev, "Insufficient PCI resources, aborting\n");
+>  		err = -EIO;
+> -		goto err_out;
+> +		goto err_out_disable_dev;
+>  	}
+>  
+>  	pci_set_master(pdev);
+> @@ -1117,7 +1117,7 @@ static int __devinit r6040_init_one(struct pci_dev 
+*pdev,
+>  	dev = alloc_etherdev(sizeof(struct r6040_private));
+>  	if (!dev) {
+>  		err = -ENOMEM;
+> -		goto err_out;
+> +		goto err_out_disable_dev;
+>  	}
+>  	SET_NETDEV_DEV(dev, &pdev->dev);
+>  	lp = netdev_priv(dev);
+> @@ -1238,6 +1238,8 @@ err_out_free_res:
+>  	pci_release_regions(pdev);
+>  err_out_free_dev:
+>  	free_netdev(dev);
+> +err_out_disable_dev:
+> +	pci_disable_device(dev);
+>  err_out:
+>  	return err;
+>  }
+> -- 
+> 1.7.9.5
+> 
