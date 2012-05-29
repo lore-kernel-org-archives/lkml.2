@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2E2SRM (ORCPT <rfc822;w@1wt.eu>);
+	id S1754787Ab2E2SRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:17:14 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59227 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754963Ab2E2SRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 May 2012 14:17:12 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:41534 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab2E2SRL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 14:17:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FC50E09.4000204@zytor.com>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
-	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
-	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
-	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
-	<CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
-	<20120525043651.GA1391@google.com>
-	<CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
-	<CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
-	<20120525193716.GA8817@google.com>
-	<CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
-	<CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
-	<CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
-	<CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
-	<CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
-	<4FC50E09.4000204@zytor.com>
-Date: Tue, 29 May 2012 11:17:10 -0700
-X-Google-Sender-Auth: OTewGZd3wMuJBtnzFd9kIj1YEsU
-Message-ID: <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
+Message-ID: <1338315431.18974.10.camel@joe2Laptop>
+Subject: [PATCH] printk: Shrink printk_sched buffer size, eliminate it when
+ !CONFIG_PRINTK
+From: Joe Perches <joe@perches.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 29 May 2012 11:17:11 -0700
+In-Reply-To: <20120523155003.GA8202@gmail.com>
+References: <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
+	 <1337086834.27020.162.camel@laptop>
+	 <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
+	 <1337096141.27694.82.camel@twins> <1337193010.27694.146.camel@twins>
+	 <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
+	 <1337468148.573.139.camel@twins>
+	 <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
+	 <20120523150359.GB26974@gmail.com> <1337787838.1734.15.camel@joe2Laptop>
+	 <20120523155003.GA8202@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 10:57 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/29/2012 10:55 AM, Yinghai Lu wrote:
->>
->> x86 are using 16bits.
->>
->> some others use 32 bits.
->> #define IO_SPACE_LIMIT 0xffffffff
->>
->> ia64 and sparc are using 64bits.
->> #define IO_SPACE_LIMIT               0xffffffffffffffffUL
->>
->> but pci only support 16bits and 32bits.
->>
->> maybe later we can add
->> PCI_MAX_RESOURCE_16
->>
->> to handle 16bits and 32bit io ports.
->>
->
-> Shouldn't this be dealt by root port apertures?
->
+The size of the per-cpu printk_sched buf is much larger
+than necessary.  The maximum sched message emitted is
+~80 bytes. Shrink the allocation for this printk_sched
+buffer from 512 bytes to 128.
 
-pci bridge could support 16bits and 32bits io port.
-but we did not record if 32bits is supported.
+printk_sched creates an unnecessary per-cpu buffer when
+CONFIG_PRINTK is not enabled.  Remove it when appropriate
+so embedded uses save a bit of space too.
 
-so during allocating, could have allocated above 64k address to non
-32bit bridge.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ kernel/printk.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-but  x86 is ok, because ioport.end always set to 0xffff.
-other arches with IO_SPACE_LIMIT with 0xffffffff or
-0xffffffffffffffffUL may have problem.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..61cff0b 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1726,24 +1726,30 @@ int is_console_locked(void)
+ }
+ 
+ /*
+- * Delayed printk version, for scheduler-internal messages:
++ * Delayed printk version, for scheduler-internal messages.
++ * Not the normal 512 as it's a bit wasteful, sched messages are short,
++ * and 128 is more than sufficient for all current messages.
+  */
+-#define PRINTK_BUF_SIZE		512
++#define PRINTK_SCHED_BUF_SIZE	128
+ 
+ #define PRINTK_PENDING_WAKEUP	0x01
+ #define PRINTK_PENDING_SCHED	0x02
+ 
+ static DEFINE_PER_CPU(int, printk_pending);
+-static DEFINE_PER_CPU(char [PRINTK_BUF_SIZE], printk_sched_buf);
++#ifdef CONFIG_PRINTK
++static DEFINE_PER_CPU(char [PRINTK_SCHED_BUF_SIZE], printk_sched_buf);
++#endif
+ 
+ void printk_tick(void)
+ {
+ 	if (__this_cpu_read(printk_pending)) {
+ 		int pending = __this_cpu_xchg(printk_pending, 0);
++#ifdef CONFIG_PRINTK
+ 		if (pending & PRINTK_PENDING_SCHED) {
+ 			char *buf = __get_cpu_var(printk_sched_buf);
+ 			printk(KERN_WARNING "[sched_delayed] %s", buf);
+ 		}
++#endif
+ 		if (pending & PRINTK_PENDING_WAKEUP)
+ 			wake_up_interruptible(&log_wait);
+ 	}
+@@ -2189,7 +2195,7 @@ int printk_sched(const char *fmt, ...)
+ 	buf = __get_cpu_var(printk_sched_buf);
+ 
+ 	va_start(args, fmt);
+-	r = vsnprintf(buf, PRINTK_BUF_SIZE, fmt, args);
++	r = vsnprintf(buf, PRINTK_SCHED_BUF_SIZE, fmt, args);
+ 	va_end(args);
+ 
+ 	__this_cpu_or(printk_pending, PRINTK_PENDING_SCHED);
 
-Yinghai
+
