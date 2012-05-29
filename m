@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab2E2O17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:27:59 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:43867 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753506Ab2E2O15 (ORCPT
+	id S1753837Ab2E2Oe2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:34:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45231 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab2E2Oe1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:27:57 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: z97BlZwVM1mFgVadALvOzSz0wouvqspdlfnk1oaZs6uifqo
- 1_BgaFKIii8.a3_2wwy4SNn9mOtCbpR6n.FcZzm2olgNja7DAowzVAx19WZZ
- ZNdq9p3IKeoXnixIU2rf9ek4sKKC124nJv2oxyCHZ7Ndhzw..hm13AlaoeiB
- N5yYobY.M6nlvDfaUZmYcG05DQ0p0iOxMkwL3iQXUvyvK7nos.MuADk978Hp
- QcwdorNgGSDDnyo2WnsdwJJ2GwBRYPpcVDuOz0jSL185o.8atDKR4dfq2fIU
- Kd5sO2Jh.XqqPzk480ti7PA7pjoeHCpDTQ19.4zBSDXV7lG4M5aQFwvN5U5X
- 0OrXVGB61ZvakFiYGqWfoYigCSrcEuQXb_Nv7VfAzVYb2gBhSpBjPM6zEFQN
- MjznjNWabYJguFqPJZhxmvMfHdE4Gt_ldvjCK
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 29 May 2012 09:27:52 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 12/28] slab: pass memcg parameter to
- kmem_cache_create
-In-Reply-To: <1337951028-3427-13-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205290922340.4666@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-13-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 29 May 2012 10:34:27 -0400
+Date: Tue, 29 May 2012 16:34:14 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Christoph Fritz <chf.fritz@googlemail.com>
+Cc: Daniel Mack <daniel@zonque.org>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: mx35: add cpufreq support
+Message-ID: <20120529143414.GE16535@pengutronix.de>
+References: <20120507141437.GA9636@lovely.krouter>
+ <20120509072239.GG27341@pengutronix.de>
+ <20120509075618.GA4412@lovely.krouter>
+ <20120509081306.GK27341@pengutronix.de>
+ <1337276960.4970.4.camel@lovely>
+ <20120517182036.GK30400@pengutronix.de>
+ <1337280058.4970.6.camel@lovely>
+ <20120517224205.GA7021@mars>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120517224205.GA7021@mars>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:29:31 up 198 days, 22:16, 70 users,  load average: 0.08, 0.13,
+ 0.37
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Glauber Costa wrote:
+On Fri, May 18, 2012 at 12:42:05AM +0200, Christoph Fritz wrote:
+> On Thu, May 17, 2012 at 08:40:58PM +0200, Christoph Fritz wrote:
+> > On Thu, 2012-05-17 at 20:20 +0200, Sascha Hauer wrote:
+> > > On Thu, May 17, 2012 at 07:49:20PM +0200, Christoph Fritz wrote:
+> > 
+> > > > Is there already a version I can rebase the patch?
+> > > > 
+> > > > On your repo at git://git.pengutronix.de/git/imx/linux-2.6.git I can't
+> > > > find the new clock framework or even a work-in-progress version.
+> > > 
+> > > They are in linux-next now.
+> 
+> There changed a lot of stuff: Where should I register the function to
+> set/get the cpu frequency?
+> 
+> To get an idea of how it should be done, I looked at imx51: Is there
+> cpufreq-support still implemented/working?  I can see the
+> arch/arm/mach-imx/cpu_op-mx51.c but not its correlating
+> clk_cpu_set_rate function in arch/arm/mach-imx/clk-imx51-imx53.c.
 
-> index 06e4a3e..7c0cdd6 100644
-> --- a/include/linux/slab_def.h
-> +++ b/include/linux/slab_def.h
-> @@ -102,6 +102,13 @@ struct kmem_cache {
->  	 */
->  };
->
-> +static inline void store_orig_align(struct kmem_cache *cachep, int orig_align)
-> +{
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +	cachep->memcg_params.orig_align = orig_align;
-> +#endif
-> +}
-> +
+>From what I see there must be a clkdev registered for the cpu clock.
+Seems this got lost during conversion to the generic clock framework.
 
-Why do you need to store the original alignment? Is the calculated
-alignment not enough?
+in arch/arm/plat-mxc/cpufreq.c:
 
-> +++ b/mm/slab.c
-> @@ -1729,6 +1729,31 @@ void __init kmem_cache_init_late(void)
->  	 */
->  }
->
-> +static int __init memcg_slab_register_all(void)
-> +{
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
-> +	struct kmem_cache *cachep;
-> +	struct cache_sizes *sizes;
-> +
-> +	sizes = malloc_sizes;
-> +
-> +	while (sizes->cs_size != ULONG_MAX) {
-> +		if (sizes->cs_cachep)
-> +			mem_cgroup_register_cache(NULL, sizes->cs_cachep);
-> +		if (sizes->cs_dmacachep)
-> +			mem_cgroup_register_cache(NULL, sizes->cs_dmacachep);
-> +		sizes++;
-> +	}
-> +
-> +	mutex_lock(&cache_chain_mutex);
-> +	list_for_each_entry(cachep, &cache_chain, next)
-> +		mem_cgroup_register_cache(NULL, cachep);
-> +
-> +	mutex_unlock(&cache_chain_mutex);
-> +#endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
-> +	return 0;
-> +}
+	cpu_clk = clk_get(NULL, "cpu_clk");
 
-Ok this only duplicates the kmalloc arrays. Why not the others?
+should be:
 
-> @@ -2331,7 +2350,7 @@ kmem_cache_create (const char *name, size_t size, size_t align,
->  			continue;
->  		}
->
-> -		if (!strcmp(pc->name, name)) {
-> +		if (!memcg && !strcmp(pc->name, name)) {
->  			printk(KERN_ERR
->  			       "kmem_cache_create: duplicate cache %s\n", name);
->  			dump_stack();
+	cpu_clk = clk_get(NULL, "cpu");
 
-This implementation means that duplicate cache detection will no longer
-work within a cgroup?
+I don't know if that's enough though.
 
-> @@ -2543,7 +2564,12 @@ kmem_cache_create (const char *name, size_t size, size_t align,
->  	cachep->ctor = ctor;
->  	cachep->name = name;
->
-> +	if (g_cpucache_up >= FULL)
-> +		mem_cgroup_register_cache(memcg, cachep);
+Sascha
 
-What happens if a cgroup was active during creation of slab xxy but
-then a process running in a different cgroup uses that slab to allocate
-memory? Is it charged to the first cgroup?
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
