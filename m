@@ -1,123 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab2E2Lof (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 07:44:35 -0400
-Received: from shutemov.name ([176.9.204.213]:43030 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab2E2Lod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 07:44:33 -0400
-Date: Tue, 29 May 2012 14:45:54 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 23/35] autonuma: core
-Message-ID: <20120529114554.GA7017@shutemov.name>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-24-git-send-email-aarcange@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337965359-29725-24-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753789Ab2E2Lp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 07:45:29 -0400
+Received: from hedgehog.storkhole.cz ([90.183.218.18]:3442 "EHLO
+	hedgehog.storkhole.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab2E2Lp2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 07:45:28 -0400
+X-Greylist: delayed 965 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 May 2012 07:45:28 EDT
+From: Martin Pelikan <pelikan@storkhole.cz>
+To: tglx@linutronix.de
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Martin Pelikan <pelikan@storkhole.cz>
+Subject: [PATCH] Unbreak UM on newer GCCs.
+Date: Tue, 29 May 2012 13:27:44 +0200
+Message-Id: <1338290864-12461-1-git-send-email-pelikan@storkhole.cz>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 07:02:27PM +0200, Andrea Arcangeli wrote:
+---
+ arch/x86/um/sys_call_table_32.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> +static int knumad_do_scan(void)
-> +{
-
-...
-
-> +	if (knumad_test_exit(mm) || !vma) {
-> +		mm_autonuma = mm->mm_autonuma;
-> +		if (mm_autonuma->mm_node.next != &knumad_scan.mm_head) {
-> +			mm_autonuma = list_entry(mm_autonuma->mm_node.next,
-> +						 struct mm_autonuma, mm_node);
-> +			knumad_scan.mm = mm_autonuma->mm;
-> +			atomic_inc(&knumad_scan.mm->mm_count);
-> +			knumad_scan.address = 0;
-> +			knumad_scan.mm->mm_autonuma->numa_fault_pass++;
-> +		} else
-> +			knumad_scan.mm = NULL;
-
-knumad_scan.mm should be nulled only after list_del otherwise you will
-have race with autonuma_exit():
-
-[   22.905208] ------------[ cut here ]------------
-[   23.003620] WARNING: at /home/kas/git/public/linux/lib/list_debug.c:50 __list_del_entry+0x63/0xd0()
-[   23.003621] Hardware name: QSSC-S4R
-[   23.003624] list_del corruption, ffff880771a49300->next is LIST_POISON1 (dead000000100100)
-[   23.003626] Modules linked in: megaraid_sas
-[   23.003629] Pid: 569, comm: udevd Not tainted 3.4.0+ #31
-[   23.003630] Call Trace:
-[   23.003640]  [<ffffffff8105956f>] warn_slowpath_common+0x7f/0xc0
-[   23.003643]  [<ffffffff81059666>] warn_slowpath_fmt+0x46/0x50
-[   23.003645]  [<ffffffff813202e3>] __list_del_entry+0x63/0xd0
-[   23.003648]  [<ffffffff81320361>] list_del+0x11/0x40
-[   23.003654]  [<ffffffff8117b80f>] autonuma_exit+0x5f/0xb0
-[   23.003657]  [<ffffffff810567ab>] mmput+0x7b/0x120
-[   23.003663]  [<ffffffff8105e7d8>] exit_mm+0x108/0x130
-[   23.003674]  [<ffffffff8165da5b>] ? _raw_spin_unlock_irq+0x2b/0x40
-[   23.003677]  [<ffffffff8105e94a>] do_exit+0x14a/0x8d0
-[   23.003682]  [<ffffffff811b71c6>] ? mntput+0x26/0x40
-[   23.003688]  [<ffffffff8119a599>] ? fput+0x1c9/0x270
-[   23.003693]  [<ffffffff81319dd9>] ? lockdep_sys_exit_thunk+0x35/0x67
-[   23.003696]  [<ffffffff8105f41f>] do_group_exit+0x4f/0xc0
-[   23.003698]  [<ffffffff8105f4a7>] sys_exit_group+0x17/0x20
-[   23.003703]  [<ffffffff816663e9>] system_call_fastpath+0x16/0x1b
-[   23.003705] ---[ end trace 8b21c7adb0af191b ]---
-
-> +
-> +		if (knumad_test_exit(mm))
-> +			list_del(&mm->mm_autonuma->mm_node);
-> +		else
-> +			mm_numa_fault_flush(mm);
-> +
-> +		mmdrop(mm);
-> +	}
-> +
-> +	return progress;
-> +}
-
-...
-
-> +
-> +static int knuma_scand(void *none)
-> +{
-
-...
-
-> +	mm = knumad_scan.mm;
-> +	knumad_scan.mm = NULL;
-
-The same problem here.
-
-> +	if (mm)
-> +		list_del(&mm->mm_autonuma->mm_node);
-> +	mutex_unlock(&knumad_mm_mutex);
-> +
-> +	if (mm)
-> +		mmdrop(mm);
-> +
-> +	return 0;
-> +}
-
+diff --git a/arch/x86/um/sys_call_table_32.c b/arch/x86/um/sys_call_table_32.c
+index 416bd40..68d1dc9 100644
+--- a/arch/x86/um/sys_call_table_32.c
++++ b/arch/x86/um/sys_call_table_32.c
+@@ -39,9 +39,9 @@
+ #undef __SYSCALL_I386
+ #define __SYSCALL_I386(nr, sym, compat) [ nr ] = sym,
+ 
+-typedef void (*sys_call_ptr_t)(void);
++typedef asmlinkage void (*sys_call_ptr_t)(void);
+ 
+-extern void sys_ni_syscall(void);
++extern asmlinkage void sys_ni_syscall(void);
+ 
+ const sys_call_ptr_t sys_call_table[] __cacheline_aligned = {
+ 	/*
 -- 
- Kirill A. Shutemov
+1.7.8.6
+
