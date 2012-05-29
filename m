@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab2E2NyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 09:54:15 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58331 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab2E2NyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 09:54:14 -0400
-Date: Tue, 29 May 2012 15:54:42 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: WARNING: at arch/x86/kernel/smpboot.c:310
- topology_sane.clone.1+0x6e/0x81()
-Message-ID: <20120529135442.GE29157@aftab.osrc.amd.com>
+	id S1753206Ab2E2N5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 09:57:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752102Ab2E2N53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 09:57:29 -0400
+Message-ID: <4FC4D513.7010700@redhat.com>
+Date: Tue, 29 May 2012 09:54:27 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 12/35] autonuma: CPU follow memory algorithm
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>  <1337965359-29725-13-git-send-email-aarcange@redhat.com> <1338296453.26856.68.camel@twins>
+In-Reply-To: <1338296453.26856.68.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dudes,
+On 05/29/2012 09:00 AM, Peter Zijlstra wrote:
+> On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
+>> @@ -3274,6 +3268,8 @@ need_resched:
+>>
+>>          post_schedule(rq);
+>>
+>> +       sched_autonuma_balance();
+>> +
+>>          sched_preempt_enable_no_resched();
+>>          if (need_resched())
+>>                  goto need_resched;
+>
+>
+>
+>> +void sched_autonuma_balance(void)
+>> +{
+>
+>> +       for_each_online_node(nid) {
+>> +       }
+>
+>> +       for_each_online_node(nid) {
+>> +               for_each_cpu_and(cpu, cpumask_of_node(nid), allowed) {
+>
+>
+>> +               }
+>> +       }
+>
+>> +       stop_one_cpu(this_cpu, migration_cpu_stop,&arg);
+>> +}
+>
+> NAK
+>
+> You do _NOT_ put a O(nr_cpus) or even O(nr_nodes) loop in the middle of
+> schedule().
+>
+> I see you've made it conditional, but schedule() taking that long --
+> even occasionally -- is just not cool.
+>
+> schedule() calling schedule() is also an absolute abomination.
+>
+> You were told to fix this several times..
 
-I'm getting the warning below on current linus. AFAICT, it is caused by
+Do you have any suggestions for how Andrea could fix this?
 
-static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
-{
-        if (c->phys_proc_id == o->phys_proc_id)
-                return topology_sane(c, o, "mc");
-
-        return false;
-}
-
-and the reason is, IMHO, that because this is a MCM box which has two
-nodes in one physical package, i.e., phys_proc_id is 0 on both CPU6 and
-CPU0 but it has two internal nodes, 0 and 1 and CPUs 0-5 are on node 0
-and CPUs 6-11 are on node 1, the warning fires.
-
-Maybe we could do something like this untested hunk:
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 433529e29be4..e52538cd48bb 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -348,7 +348,8 @@ static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
- static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
- {
-        if (c->phys_proc_id == o->phys_proc_id)
--               return topology_sane(c, o, "mc");
-+               if (!cpu_has(c, X86_FEATURE_AMD_DCM))
-+                       return topology_sane(c, o, "mc");
- 
-        return false;
- }
-
-or you have a better idea...?
-
-[    0.444413] Booting Node   0, Processors  #1 #2 #3 #4 #5 Ok.
-[    0.461388] ------------[ cut here ]------------
-[    0.465997] WARNING: at arch/x86/kernel/smpboot.c:310 topology_sane.clone.1+0x6e/0x81()
-[    0.473960] Hardware name: Dinar
-[    0.477170] sched: CPU #6's mc-sibling CPU #0 is not on the same node! [node: 1 != 0]. Ignoring dependency.
-[    0.486860] Booting Node   1, Processors  #6
-[    0.491104] Modules linked in:
-[    0.494141] Pid: 0, comm: swapper/6 Not tainted 3.4.0+ #1
-[    0.499510] Call Trace:
-[    0.501946]  [<ffffffff8144bf92>] ? topology_sane.clone.1+0x6e/0x81
-[    0.508185]  [<ffffffff8102f1fc>] warn_slowpath_common+0x85/0x9d
-[    0.514163]  [<ffffffff8102f2b7>] warn_slowpath_fmt+0x46/0x48
-[    0.519881]  [<ffffffff8144bf92>] topology_sane.clone.1+0x6e/0x81
-[    0.525943]  [<ffffffff8144c234>] set_cpu_sibling_map+0x251/0x371
-[    0.532004]  [<ffffffff8144c4ee>] start_secondary+0x19a/0x218
-[    0.537729] ---[ end trace 4eaa2a86a8e2da22 ]---
-[    0.628197]  #7 #8 #9 #10 #11 Ok.
-[    0.807108] Booting Node   3, Processors  #12 #13 #14 #15 #16 #17 Ok.
-[    0.897587] Booting Node   2, Processors  #18 #19 #20 #21 #22 #23 Ok.
-[    0.917443] Brought up 24 CPUs
-
-Thanks.
+Pairwise comparisons with a busy CPU/node?
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+All rights reversed
