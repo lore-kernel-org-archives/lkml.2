@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab2E2LKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 07:10:37 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65179 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2E2LKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 07:10:36 -0400
-Message-ID: <4FC4AEA6.2090209@linaro.org>
-Date: Tue, 29 May 2012 16:40:30 +0530
-From: Avik Sil <avik.sil@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751970Ab2E2LVq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 07:21:46 -0400
+Received: from fieldses.org ([174.143.236.118]:45785 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037Ab2E2LVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 07:21:44 -0400
+Date: Tue, 29 May 2012 07:21:41 -0400
+From: "bfields@fieldses.org" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Dave Jones <davej@redhat.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4. sunrpc oops during shutdown
+Message-ID: <20120529112140.GA1946@fieldses.org>
+References: <20120521171411.GA15562@redhat.com>
+ <1337623475.9583.13.camel@lade.trondhjem.org>
+ <4FBF3EF2.4090804@parallels.com>
+ <1337951250.2535.5.camel@lade.trondhjem.org>
+ <4FBF89C0.2030805@parallels.com>
+ <1338248617.3057.5.camel@lade.trondhjem.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Perf: Use /usr/bin/pager if available for perf pager
-References: <1338287725-26382-1-git-send-email-avik.sil@linaro.org> <20120529114506.7c8d6157@pyramind.ukuu.org.uk>
-In-Reply-To: <20120529114506.7c8d6157@pyramind.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338248617.3057.5.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Mon, May 28, 2012 at 11:43:40PM +0000, Myklebust, Trond wrote:
+> On Fri, 2012-05-25 at 17:31 +0400, Stanislav Kinsbursky wrote:
+> > Yes. But unfortunately, this won't be enough.
+> > "NFS: callback threads containerization" patch set is required as well.
+> > 
+> > A a bugfix, I can suggest "SUNRPC: separate per-net data creation from service" 
+> > patch set + pass hard-coded "init_net" for NFS callback shutdown routines 
+> > (instead of current->nsproxy->net_ns). This should work.
+> 
+> Hi Stanislav,
+> 
+> My question is why should svc_destroy() care about net namespaces at
+> all? Once an application is calling svc_destroy(), it is trying to close
+> down the entire service. It really should not matter to which net
+> namespace a particular socket belongs: they _all_ need to be destroyed.
 
-On Tuesday 29 May 2012 04:15 PM, Alan Cox wrote:
-> On Tue, 29 May 2012 16:05:25 +0530
-> Avik Sil<avik.sil@linaro.org>  wrote:
->
->> Some Distributions may lack "less" package being included by default, e.g., Linaro nano rootfs. In those cases use the portable "pager" command instead of "less".
->>
->> Signed-off-by: Avik Sil<avik.sil@linaro.org>
->> ---
->>   tools/perf/util/pager.c |    4 ++++
->>   1 file changed, 4 insertions(+)
->>
->> diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
->> index 1915de2..3322b84 100644
->> --- a/tools/perf/util/pager.c
->> +++ b/tools/perf/util/pager.c
->> @@ -57,6 +57,10 @@ void setup_pager(void)
->>   	}
->>   	if (!pager)
->>   		pager = getenv("PAGER");
->> +	if (!pager) {
->> +		if (!access("/usr/bin/pager", X_OK))
->> +			pager = "/usr/bin/pager";
->> +	}
->
-> What is "portable" about /usr/bin/pager ? and what is wrong with just
-> doing
->
-> export PAGER=/usr/bin/pager
->
-This patch basically avoids explicitly setting PAGER=/usr/bin/pager 
-before running say 'perf list' on the system where less is not installed.
+Services started in different network namespaces should be
+independent--for example, starting nfsd in container A and then again in
+container B, then shutting it down in container A, shouldn't also shut
+down container B's service.
 
-Regards,
-Avik
+*But* there is currently only a single global server object, because
+we're sharing threads:
+
+	http://marc.info/?l=linux-nfs&m=133405747330055&w=2
+
+	"Having Lockd thread (or NFSd threads) per container looks easy
+	to implement on first sight. But kernel threads currently
+	supported only in initial pid namespace. I.e. it means that
+	per-container kernel thread won't be visible in container, if it
+	has it's own pid namespace. And there is no way to put a kernel
+	thread into container.  In OpenVZ we have per-container kernel
+	threads. But integrating this feature to mainline looks hopeless
+	(or very difficult) to me. At least for now.  So this problem
+	with signals remains unsolved.
+
+	"So, as it looks to me, this "one service per all" is the only
+	one suitable for now."
+
+so Stanislav is simulating multiple servers by shutting down sockets on
+a per-net basis.
+
+But I think it should be possible to share threads between servers while
+still behaving in every other way as if the servers are completely
+independent.
+
+--b.
