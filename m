@@ -1,198 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2E2Jvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:51:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59205 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab2E2Jvb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:51:31 -0400
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>, Devendra Naga <devendra.aaru@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2] [staging] bcm: Replace the BCM_DEBUG_* and BCM_SHOW_* macros with functions
-Date: Tue, 29 May 2012 15:21:17 +0530
-Message-Id: <1338285078-17785-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753378Ab2E2JwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:52:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753082Ab2E2JwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 05:52:07 -0400
+Date: Tue, 29 May 2012 12:51:55 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE NIC
+ as broken
+Message-ID: <20120529095155.GA27043@redhat.com>
+References: <4FBF90E5.8030800@siemens.com>
+ <20120528123934.GB21778@redhat.com>
+ <4FC374CD.5000509@web.de>
+ <20120528132109.GB22623@redhat.com>
+ <4FC37DD6.7090000@web.de>
+ <20120528133946.GA23024@redhat.com>
+ <4FC47FED.1060000@siemens.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC47FED.1060000@siemens.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is made by following the improvements told by Joe Perches,
-replaced the BCM_DEBUG* and BCM_SHOW* macros into functions and added them
-in a file and added macros in the Debug.h file. This patch also improves the if
-check in bcm_show_debug_bitmap,
+On Tue, May 29, 2012 at 09:51:09AM +0200, Jan Kiszka wrote:
+> On 2012-05-28 15:39, Michael S. Tsirkin wrote:
+> > On Mon, May 28, 2012 at 03:29:58PM +0200, Jan Kiszka wrote:
+> >> On 2012-05-28 15:21, Michael S. Tsirkin wrote:
+> >>> On Mon, May 28, 2012 at 02:51:25PM +0200, Jan Kiszka wrote:
+> >>>> On 2012-05-28 14:39, Michael S. Tsirkin wrote:
+> >>>>> On Fri, May 25, 2012 at 11:02:13AM -0300, Jan Kiszka wrote:
+> >>>>>> According to Alexey, the T310 does not properly support INTx masking as
+> >>>>>> it fails to keep the PCI_STATUS_INTERRUPT bit updated once the interrupt
+> >>>>>> is masked. Mark this adapter as broken so that pci_intx_mask_supported
+> >>>>>> won't report it as compatible.
+> >>>>>>
+> >>>>>> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> >>>>>> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
+> >>>>>
+> >>>>>
+> >>>>> Just a thought: would be nice to have a way to discover
+> >>>>> the quirk was activated. Add an attribute so that
+> >>>>> userspace can detect and report this properly to users?
+> >>>>> Or just log a warning message ...
+> >>>>
+> >>>> pr_notice_once?
+> >>>
+> >>> OK IMO.
+> >>>
+> >>>> A flag for userspace would be significantly more
+> >>>> complicated (and not PCI layer hands).
+> >>>
+> >>> Why not? I meant e.g. an attribute in pci-sysfs.
+> >>
+> >> Possible. But what is the preferred way of doing this? Are there any
+> >> precedences?
+> >>
+> >> Jan
+> >>
+> > 
+> > E.g. a reset attribute is there only if device reset is supported.
+> > I don't insist on this - merely asking how does userspace report
+> > an attempt to share IRQs and whether the reason is
+> > discoverable in some way.
+> 
+> Well, so far there is no attribute associated with INTx masking that we
+> could hide to express this.
+> 
+> Jan
 
-the check was
-	if ((i == 1) || (i == 2) || (i == 4) || (i == 8));
-anyway its a check to find whether its a power of two, and replaces
-it like the following,
-	if ((i != 0) && !(i & (i - 1)))
+Thinking about it some more, userspace using this functionality
+is pretty recent. So if we just teach it to report
+'intx mask or status bit unsupported' on failure,
+plus add pr_notice as you suggested, then that's
+probably enough.
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
- drivers/staging/bcm/Debug.c  |   54 ++++++++++++++++++++++++++++++++++++
- drivers/staging/bcm/Debug.h  |   62 ++++++++++++++----------------------------
- drivers/staging/bcm/Makefile |    2 +-
- 3 files changed, 76 insertions(+), 42 deletions(-)
- create mode 100644 drivers/staging/bcm/Debug.c
 
-diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
-new file mode 100644
-index 0000000..5ae629a
---- /dev/null
-+++ b/drivers/staging/bcm/Debug.c
-@@ -0,0 +1,54 @@
-+#include "headers.h"
-+
-+void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
-+			int dbg_level, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	UINT debug_level = Adapter->stDebugState.debug_level;
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	if (DBG_TYPE_PRINTK == Type)
-+		pr_info("%s: %pV", __func__, &vaf);
-+	else if (Adapter &&
-+		(dbg_level & DBG_LVL_BITMASK) <= debug_level &&
-+		(Type & Adapter->stDebugState.type) &&
-+		(SubType & Adapter->stDebugState.subtype[Type])) {
-+		if (dbg_level & DBG_NO_FUNC_PRINT)
-+			printk(KERN_DEBUG "%pV" , &vaf);
-+		else
-+			printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
-+	}
-+
-+	va_end(args);
-+}
-+
-+void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
-+			    int dbg_level, const void *buffer, size_t bufferlen)
-+{
-+	if (DBG_TYPE_PRINTK == Type ||
-+	   (Adapter &&
-+	   (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
-+	   (Type & Adapter->stDebugState.type) &&
-+	   (SubType & Adapter->stDebugState.subtype[Type]))) {
-+		printk(KERN_DEBUG "%s:\n", __func__);
-+		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
-+			       16, 1, buffer, bufferlen, false);
-+	}
-+}
-+
-+void bcm_show_debug_bitmap(PMINI_ADAPTER Adapter)
-+{
-+	int i;
-+	for (i = 0; i < (NUMTYPES * 2) + 1; i++) {
-+		if ((i != 0) && !(i & (i - 1))) {
-+			BCM_DEBUG_PRINT(Adapter, DBG_TYPE_PRINTK, 0, 0,
-+					"subtype[%d] = 0x%08x\n",
-+					i, Adapter->stDebugState.subtype[i]);
-+		}
-+	}
-+}
-diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
-index 420382d..030c737 100644
---- a/drivers/staging/bcm/Debug.h
-+++ b/drivers/staging/bcm/Debug.h
-@@ -203,57 +203,37 @@ typedef struct _S_BCM_DEBUG_STATE {
- 	 * corresponding to valid Type values. Hence we use the 'Type' field
- 	 * as the index value, ignoring the array entries 0,3,5,6,7 !
- 	 */
--	UINT subtype[(NUMTYPES*2)+1];
-+	UINT subtype[(NUMTYPES * 2) + 1];
- 	UINT debug_level;
- } S_BCM_DEBUG_STATE;
- /* Instantiated in the Adapter structure */
- /* We'll reuse the debug level parameter to include a bit (the MSB) to indicate whether or not
-  * we want the function's name printed.  */
--#define DBG_NO_FUNC_PRINT	1 << 31
-+#define DBG_NO_FUNC_PRINT	(1 << 31)
- #define DBG_LVL_BITMASK		0xFF
- 
- //--- Only for direct printk's; "hidden" to API.
- #define DBG_TYPE_PRINTK		3
- 
--#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, string, args...) \
--	do {								\
--		if (DBG_TYPE_PRINTK == Type)				\
--			pr_info("%s:" string, __func__, ##args);	\
--		else if (Adapter &&					\
--			 (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level && \
--			 (Type & Adapter->stDebugState.type) &&		\
--			 (SubType & Adapter->stDebugState.subtype[Type])) { \
--			if (dbg_level & DBG_NO_FUNC_PRINT)		\
--				printk(KERN_DEBUG string, ##args);	\
--			else						\
--				printk(KERN_DEBUG "%s:" string, __func__, ##args);	\
--		}							\
--	} while (0)
--
--#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,  buffer, bufferlen) do { \
--	if (DBG_TYPE_PRINTK == Type ||					\
--	    (Adapter &&							\
--	     (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level  && \
--	     (Type & Adapter->stDebugState.type) &&			\
--	     (SubType & Adapter->stDebugState.subtype[Type]))) {	\
--		printk(KERN_DEBUG "%s:\n", __func__);			\
--		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,	\
--			       16, 1, buffer, bufferlen, false);	\
--	}								\
--} while(0)
--
--
--#define BCM_SHOW_DEBUG_BITMAP(Adapter)	do { \
--	int i;									\
--	for (i=0; i<(NUMTYPES*2)+1; i++) {		\
--		if ((i == 1) || (i == 2) || (i == 4) || (i == 8)) {		\
--		/* CAUTION! Forcefully turn on ALL debug paths and subpaths!	\
--		Adapter->stDebugState.subtype[i] = 0xffffffff;	*/ \
--		BCM_DEBUG_PRINT (Adapter, DBG_TYPE_PRINTK, 0, 0, "subtype[%d] = 0x%08x\n", 	\
--		i, Adapter->stDebugState.subtype[i]);	\
--		}	\
--	}		\
--} while (0)
-+struct _MINI_ADAPTER;
-+
-+__printf(5, 6)
-+
-+void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
-+			int dbg_level, const char *fmt, ...);
-+void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
-+			int dbg_level, const void *buffer, size_t bufferlen);
-+void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
-+
-+#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...)	\
-+	bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
-+
-+#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,	\
-+				buffer, bufferlen)			\
-+	bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,	\
-+				buffer, bufferlen)
-+#define BCM_SHOW_DEBUG_BITMAP(Adapter)					\
-+	bcm_show_debug_bitmap(Adapter)
- 
- #endif
- 
-diff --git a/drivers/staging/bcm/Makefile b/drivers/staging/bcm/Makefile
-index 652b7f8..85b134d 100644
---- a/drivers/staging/bcm/Makefile
-+++ b/drivers/staging/bcm/Makefile
-@@ -7,6 +7,6 @@ obj-$(CONFIG_BCM_WIMAX) +=	bcm_wimax.o
- bcm_wimax-y :=  InterfaceDld.o InterfaceIdleMode.o InterfaceInit.o InterfaceRx.o \
- 		InterfaceIsr.o InterfaceMisc.o InterfaceTx.o \
- 		CmHost.o IPv6Protocol.o Qos.o Transmit.o\
--		Bcmnet.o DDRInit.o HandleControlPacket.o\
-+		Debug.o Bcmnet.o DDRInit.o HandleControlPacket.o\
- 		LeakyBucket.o Misc.o sort.o Bcmchar.o hostmibs.o PHSModule.o\
- 		led_control.o nvm.o vendorspecificextn.o
--- 
-1.7.9.5
-
+> -- 
+> Siemens AG, Corporate Technology, CT T DE IT 1
+> Corporate Competence Center Embedded Linux
