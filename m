@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400Ab2E2J6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:58:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46344 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753319Ab2E2J6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753480Ab2E2J6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:58:34 -0400
+Received: from flounder.pepperfish.net ([89.238.129.35]:54163 "EHLO
+	flounder.pepperfish.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab2E2J6b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 May 2012 05:58:31 -0400
-Date: Tue, 29 May 2012 11:58:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
-        akpm@linux-foundation.org, rientjes@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/hugetlb: Use compound page head in migrate_huge_page
-Message-ID: <20120529095827.GC15293@tiehlicka.suse.cz>
-References: <1338218490-30978-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120528191322.GA10071@tiehlicka.suse.cz>
- <87obp7u13r.fsf@skywalker.in.ibm.com>
+X-Greylist: delayed 2222 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 May 2012 05:58:31 EDT
+Date: Tue, 29 May 2012 10:21:20 +0100
+From: Vincent Sanders <vincent.sanders@collabora.co.uk>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Vincent Sanders <vincent.sanders@collabora.co.uk>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] Allow constructor name selection by architecture.
+Message-ID: <20120529092120.GA6433@kyllikki.org>
+References: <1338230018-31052-1-git-send-email-vincent.sanders@collabora.co.uk>
+ <1338230018-31052-2-git-send-email-vincent.sanders@collabora.co.uk>
+ <20120528203005.GA20560@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87obp7u13r.fsf@skywalker.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120528203005.GA20560@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-05-12 08:48:00, Aneesh Kumar K.V wrote:
-> Michal Hocko <mhocko@suse.cz> writes:
+On Mon, May 28, 2012 at 10:30:05PM +0200, Sam Ravnborg wrote:
+> On Mon, May 28, 2012 at 07:33:37PM +0100, Vincent Sanders wrote:
+> > From: Vincent Sanders <vince@collabora.co.uk>
+> > 
+> > The constructor symbol name is different between platforms. Allow this
+> > to be selected by configuration and set suitable default values.
+> > 
+> > Signed-off-by: Vincent Sanders <vincent.sanders@collabora.co.uk>
+> > ---
+> >  include/asm-generic/vmlinux.lds.h |    6 +++---
+> >  init/Kconfig                      |    6 ++++++
+> >  kernel/module.c                   |    2 +-
+> >  3 files changed, 10 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> > index 8aeadf6..fd34808 100644
+> > --- a/include/asm-generic/vmlinux.lds.h
+> > +++ b/include/asm-generic/vmlinux.lds.h
+> > @@ -471,9 +471,9 @@
+> >  	}
+> >  
+> >  #ifdef CONFIG_CONSTRUCTORS
+> > -#define KERNEL_CTORS()	. = ALIGN(8);			   \
+> > -			VMLINUX_SYMBOL(__ctors_start) = .; \
+> > -			*(.ctors)			   \
+> > +#define KERNEL_CTORS()	. = ALIGN(8);					\
+> > +			VMLINUX_SYMBOL(__ctors_start) = .;		\
+> > +			*(CONFIG_CONSTRUCTORS_NAME)			\
+> >  			VMLINUX_SYMBOL(__ctors_end) = .;
 > 
-> > On Mon 28-05-12 20:51:30, Aneesh Kumar K.V wrote:
-> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> >> 
-> >> The change was introduced by "hugetlb: simplify migrate_huge_page() "
-> >> 
-> >> We should use compound page head instead of tail pages in
-> >> migrate_huge_page().
-> >> 
-> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> >> ---
-> >>  mm/memory-failure.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >> 
-> >> This is an important bug fix. If we want we can fold it with the not
-> >> yet merged upstream patch mentioned above in linux-next. The stack
-> >> trace for the crash is
-> >> 
-> >> [   75.337421] BUG: unable to handle kernel NULL pointer dereference at 0000000000000080
-> >> [   75.338386] IP: [<ffffffff816b3f0f>] __mutex_lock_common+0xa1/0x350
-> >> [   75.338386] PGD 1d700067 PUD 1d7dd067 PMD 0
-> >> [   75.338386] Oops: 0002 [#1] SMP
-> >> [   75.338386] CPU 1
-> >> [   75.338386] Modules linked in:
-> >> ...
-> >> ...
-> >> 
-> >> [   75.338386] Call Trace:
-> >> [   75.338386]  [<ffffffff810ffc04>] ? try_to_unmap_file+0x38/0x51c
-> >> [   75.338386]  [<ffffffff810ffc04>] ? try_to_unmap_file+0x38/0x51c
-> >> [   75.338386]  [<ffffffff813b5f8b>] ? vsnprintf+0x83/0x421
-> >> [   75.338386]  [<ffffffff816b427d>] mutex_lock_nested+0x2a/0x31
-> >> [   75.338386]  [<ffffffff8110999b>] ? alloc_huge_page_node+0x1d/0x55
-> >> [   75.338386]  [<ffffffff810ffc04>] try_to_unmap_file+0x38/0x51c
-> >> [   75.338386]  [<ffffffff8110999b>] ? alloc_huge_page_node+0x1d/0x55
-> >> [   75.338386]  [<ffffffff810a06b9>] ? arch_local_irq_save+0x9/0xc
-> >> [   75.338386]  [<ffffffff816b5e3b>] ? _raw_spin_unlock+0x23/0x27
-> >> [   75.338386]  [<ffffffff81100839>] try_to_unmap+0x25/0x3c
-> >> [   75.338386]  [<ffffffff810641c2>] ? console_unlock+0x210/0x238
-> >> [   75.338386]  [<ffffffff811141e3>] migrate_huge_page+0x8d/0x178
-> >
-> > This should be part of the changelog.
+> What is wrong with adding both "standard" names for ctors uncnditionally?
+> Like this:
+> > 			*(.ctors)			   \
+> > +			*(.init_array)			   \
 > 
-> I was expecting the patch to be folded back to the existing patch in
-> -mm. That is the reason I added stack trace in the notes section so that
-> if we decided to keep it as a separate patch we can pull the stack trace
-> and add it to commit message.
 
-OK.
+Persoinally I have no strong opinion and would alter approach.
+
+As I understand it the previous objections to the "put them all in"
+approach (this change has been round the loop before) were:
+
+ - It contaminates the x86 symbol namespace and if init_array was used on
+   not ARM it might lead to surprises
+
+ - If another architecture needs something different again then we are
+   going to end up with another symbol.
+
+ - The module loading code has to be changed to allow either symbol.
+
+The only technical issue really is the module symbol handling and I am
+unsure how to robustly handle that.
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Regards Vincent
+http://www.kyllikki.org/
