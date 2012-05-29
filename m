@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2E2R5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:57:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55018 "EHLO mail.zytor.com"
+	id S1754913Ab2E2SAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:00:20 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33003 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab2E2R5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:57:47 -0400
-Message-ID: <4FC50E09.4000204@zytor.com>
-Date: Tue, 29 May 2012 10:57:29 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754303Ab2E2SAS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 14:00:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="145883895"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Kees Cook <keescook@chromium.org>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Colin Cross <ccross@android.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        "arve@android.com" <arve@android.com>,
+        Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "kernel-team@android.com" <kernel-team@android.com>
+Subject: RE: [PATCH 2/5] pstore: Introduce write_buf backend callback
+Thread-Topic: [PATCH 2/5] pstore: Introduce write_buf backend callback
+Thread-Index: AQHNO0U5XSurDYwhFEKM6MvB2BU9WZbhbxiA//+idTA=
+Date: Tue, 29 May 2012 18:00:16 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F5FC4@ORSMSX104.amr.corp.intel.com>
+References: <20120526133412.GA18001@lizard>
+	<1338039549-24498-2-git-send-email-anton.vorontsov@linaro.org>
+ <CAGXu5jL0E7ybLPvhFdwNxiHSa==QJr+fX45A-T8Ug7iXLhtW_A@mail.gmail.com>
+In-Reply-To: <CAGXu5jL0E7ybLPvhFdwNxiHSa==QJr+fX45A-T8Ug7iXLhtW_A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org> <1337754877-19759-3-git-send-email-yinghai@kernel.org> <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com> <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com> <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com> <20120525043651.GA1391@google.com> <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com> <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com> <20120525193716.GA8817@google.com> <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com> <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com> <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com> <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com> <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
-In-Reply-To: <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 10:55 AM, Yinghai Lu wrote:
-> 
-> x86 are using 16bits.
-> 
-> some others use 32 bits.
-> #define IO_SPACE_LIMIT 0xffffffff
-> 
-> ia64 and sparc are using 64bits.
-> #define IO_SPACE_LIMIT               0xffffffffffffffffUL
-> 
-> but pci only support 16bits and 32bits.
-> 
-> maybe later we can add
-> PCI_MAX_RESOURCE_16
-> 
-> to handle 16bits and 32bit io ports.
-> 
+> Hrm, I thought the point of having pstore.buf pre-mapped was to allow
+> Oopses to be able to write directly to it without needing to hit any
+> additional kernel code. Maybe I'm misunderstanding this change,
+> though. I'd like to see Tony's opinion on it.
 
-Shouldn't this be dealt by root port apertures?
+Yes - the ERST backend needs to have a bunch of header ugliness (with
+special UUIDs) at the front of the buffer that is stored to non-volatile
+storage. So it allocates its own buffer with all that junk, and then
+passes the address of the plain data portion of the buffer on to the
+pstore layer.
 
-	-hpa
+As we add more backends, it might be that this is only applicable to
+ERST, and so it might make sense to have it copy the data from some
+other buffer into its specially crafted one.  But we should not lose
+the "no allocations" property ... everything needed should be pre-allocated
+so we don't have to try to allocate any memory during a panic.
+
+-Tony
