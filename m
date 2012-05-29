@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab2E2JC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:02:29 -0400
-Received: from mail-vb0-f74.google.com ([209.85.212.74]:45616 "EHLO
-	mail-vb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab2E2JC1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:02:27 -0400
-X-Greylist: delayed 55863 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 May 2012 05:02:27 EDT
-From: "Torne (Richard Coles)" <torne@google.com>
-To: cjb@laptop.org
-Cc: linus.walleij@linaro.org, jh80.chung@samsung.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ben@decadent.org.uk, "Torne (Richard Coles)" <torne@google.com>
-Subject: [PATCH] MMC: core: cap MMC card timeouts at 2 seconds.
-Date: Tue, 29 May 2012 10:02:20 +0100
-Message-Id: <1338282140-11106-1-git-send-email-torne@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <CAEV-rjeEKMNs2N8KEatCi+guFKihgFok4k4nDnd=vTQ5x7iStg@mail.gmail.com>
-References: <CAEV-rjeEKMNs2N8KEatCi+guFKihgFok4k4nDnd=vTQ5x7iStg@mail.gmail.com>
+	id S1752502Ab2E2JFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:05:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2607 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab2E2JFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 05:05:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105323977"
+Date: Tue, 29 May 2012 11:15:56 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
+Message-ID: <20120529091556.GB18977@sortiz-mobl>
+References: <1338272340.3127.1.camel@phoenix>
+ <4FC47CEB.8090106@linaro.org>
+ <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
+ <4FC488E1.3080406@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC488E1.3080406@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Torne (Richard Coles)" <torne@google.com>
+Hi Lee,
 
-MMC CSD info can specify very large, ridiculous timeouts, big enough to
-overflow timeout_ns on 32-bit machines. This can result in the card
-timing out on every operation because the wrapped timeout value is far
-too small.
+On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
+> On 29/05/12 15:53, Axel Lin wrote:
+> >2012/5/29 Lee Jones<lee.jones@linaro.org>:
+> >>On 29/05/12 14:19, Axel Lin wrote:
+> >>>
+> >>>config AB8500_I2C_CORE is not used after commit d28f1db
+> >>>"mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
+> >>>Thus remove it.
+> >>>
+> >>>Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> >>
+> >>
+> >>I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
+> >>inclusion into -rc1 this afternoon. Would you mind leaving this one?
+> >
+> >I don't mind.
+> >But AFAIK, commit d28f1db is in mfd tree.
+> >Any reason you want to send the patch to ARM-SoC instead of mfd tree.
+> 
+> I don't actually have a preference as to which tree it goes into, so
+> long as it's sent to Mainline on or before -rc1. 
+I sent a pull request to Linus yesterday, including this commit.
 
-Fix the overflow by capping the result at 2 seconds.  Cards specifying
-longer timeouts are almost certainly insane, and host controllers
-generally cannot support timeouts that long in any case.
+Cheers,
+Samuel.
 
-2 seconds should be plenty of time for any card to actually function;
-the timeout calculation code is already using 1 second as a "worst case"
-timeout for cards running in SPI mode.
-
-Signed-off-by: Torne (Richard Coles) <torne@google.com>
----
- drivers/mmc/core/core.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index 0b6141d..3b4a9fc 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
- 	if (data->flags & MMC_DATA_WRITE)
- 		mult <<= card->csd.r2w_factor;
- 
--	data->timeout_ns = card->csd.tacc_ns * mult;
-+	/*
-+	 * The timeout in nanoseconds may overflow with some cards. Cap it at
-+	 * two seconds both to avoid the overflow and also because host
-+	 * controllers cannot generally generate timeouts that long anyway.
-+	 */
-+	if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
-+		data->timeout_ns = card->csd.tacc_ns * mult;
-+	else
-+		data->timeout_ns = 2 * NSEC_PER_SEC;
-+
- 	data->timeout_clks = card->csd.tacc_clks * mult;
- 
- 	/*
 -- 
-1.7.7.3
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
