@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab2E2Ov0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:51:26 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:23327 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753942Ab2E2OvZ (ORCPT
+	id S1753993Ab2E2OwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:52:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56946 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab2E2OwB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:51:25 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: MsRLOVEVM1mK2qKLV9LVsWnCayV.pi1UbXcBaOpf5aNSwsB
- sJoIoIbCzQSbEVkBwOtGzns4urh.d7LsH4xyfj8Zz9iTSR6.kZ3AjeQxZfOx
- r9lk167Jhvj0Pve0gAqLQnthqE2ps2baguAXfYjfcJUisl4t_ouYQh6qMrhV
- G1OtS2EezAFYDLIBm4w7K1TgmwYxfeYpSabfMd.x6VN5Lw6cexjABajdCWbW
- BNYA_Q9jWYDtEWNmb9TWzcyXAHfSf6wBYs.CJ3qGOaGjiF2DrmDtXO2otPmQ
- UVv3EeWSkIme18Ger6VD2WwJNND3FEHJFuxpvAsSrtCxCPv6IP4j2EjJ_vqv
- ih2JV13iJSIaLyChLRGbtrTXfVTXGgJJsAZO3AEZlUC_5.15tLxmpP8XsbRU
- x
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 29 May 2012 09:51:20 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 18/28] slub: charge allocation to a memcg
-In-Reply-To: <1337951028-3427-19-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205290948250.4666@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-19-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 May 2012 10:52:01 -0400
+Message-ID: <1338303106.26856.92.camel@twins>
+Subject: Re: WARNING: at arch/x86/kernel/smpboot.c:310
+ topology_sane.clone.1+0x6e/0x81()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, hpa <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 29 May 2012 16:51:46 +0200
+In-Reply-To: <20120529135442.GE29157@aftab.osrc.amd.com>
+References: <20120529135442.GE29157@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Glauber Costa wrote:
+On Tue, 2012-05-29 at 15:54 +0200, Borislav Petkov wrote:
+> Dudes,
+> 
+> I'm getting the warning below on current linus. AFAICT, it is caused by
+> 
+> static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+> {
+>         if (c->phys_proc_id == o->phys_proc_id)
+>                 return topology_sane(c, o, "mc");
+> 
+>         return false;
+> }
+> 
+> and the reason is, IMHO, that because this is a MCM box which has two
+> nodes in one physical package, i.e., phys_proc_id is 0 on both CPU6 and
+> CPU0 but it has two internal nodes, 0 and 1 and CPUs 0-5 are on node 0
+> and CPUs 6-11 are on node 1, the warning fires.
+> 
+> Maybe we could do something like this untested hunk:
+> 
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index 433529e29be4..e52538cd48bb 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -348,7 +348,8 @@ static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+>  static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+>  {
+>         if (c->phys_proc_id == o->phys_proc_id)
+> -               return topology_sane(c, o, "mc");
+> +               if (!cpu_has(c, X86_FEATURE_AMD_DCM))
+> +                       return topology_sane(c, o, "mc");
+>  
+>         return false;
+>  }
+> 
+> or you have a better idea...?
 
-> This patch charges allocation of a slab object to a particular
-> memcg.
+Ah,.. uhm.. unfortunate this... we only seem to use cpu_core_mask for
+topology_core_cpumask() and its purpose is to enumerate cores in a
+package for some very limited generic functions.
 
-I am wondering why you need all the other patches. The simplest approach
-would just to hook into page allocation and freeing from the slab
-allocators as done here and charge to the currently active cgroup. This
-avoids all the duplication of slab caches and per node as well as per cpu
-structures. A certain degree of fuzziness cannot be avoided given that
-objects are cached and may be served to multiple cgroups. If that can be
-tolerated then the rest would be just like this patch which could be made
-more simple and non intrusive.
+Its a bit sad we defined it thus, the multi-core concept only really
+make sense if you share caches, otherwise its just smp.
+
+Also, our generic topology as defined doesn't match nodes. Which is
+weird to say the least.
+
+I'd almost be tempted to say you should fake phys_id, but I can only
+imagine what all would explode if we'd do that :-)
+
+Yeah, I guess we should do the thing you propose, unless someone else
+has a sane idea?
+
 
