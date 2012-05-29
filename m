@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2E2Gmf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 02:42:35 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41830 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab2E2Gmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 02:42:33 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch 2/4] timers: Consolidate base->next_timer update
-In-Reply-To: <20120525214819.189946224@linutronix.de>
-References: <20120525214617.051888729@linutronix.de> <20120525214819.189946224@linutronix.de>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 29 May 2012 12:04:01 +0530
-Message-ID: <87likbxzqe.fsf@abhimanyu.in.ibm.com>
+	id S1751915Ab2E2Gni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 02:43:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49245 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750841Ab2E2Gnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 02:43:37 -0400
+Message-ID: <4FC47003.1080906@zytor.com>
+Date: Mon, 28 May 2012 23:43:15 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12052906-3864-0000-0000-00000317790D
+To: Alessandro Rubini <rubini@gnudd.com>
+CC: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, tglx@linutronix.de, mingo@redhat.com,
+        sameo@linux.intel.com, x86@kernel.org
+Subject: Re: [PATCH] x86/platform: sta2x11: add platform code
+References: <4FC40C74.8050003@zytor.com>  <20120527205020.GA3050@mail.gnudd.com> <20120529063738.GA22711@mail.gnudd.com>
+In-Reply-To: <20120529063738.GA22711@mail.gnudd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/28/2012 11:37 PM, Alessandro Rubini wrote:
+>> There is absolutely NO WAY this kind of ARM-like sh*t is going into the
+>> x86 kernel.
 > 
-> -static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
-> +static void
-> +__internal_add_timer(struct tvec_base *base, struct timer_list *timer)
->  {
->  	unsigned long expires = timer->expires;
->  	unsigned long idx = expires - base->timer_jiffies;
-> @@ -372,6 +373,17 @@ static void internal_add_timer(struct tv
->  	list_add_tail(&timer->entry, vec);
->  }
+> Ok. Then, how do you suggest to provide platform data to the various
+> drivers?  It really depends on how the board is wired.
 > 
-> +static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
-> +{
-> +	__internal_add_timer(base, timer);
-> +	/*
-> +	 * Update base->next_timer if this is the earliest one.
-> +	 */
-> +	if (time_before(timer->expires, base->next_timer) &&
-> +	    !tbase_get_deferrable(timer->base))
-> +		base->next_timer = timer->expires;
-> +}
-> +
->
-Shouldn't this be like this?
+> BTW: it's not uncommon for pci cards to differ in the same way, see
+> drivers/media/video/bt8xx/bttv-cards.c for example.  I can have all
+> board configurations without config choices or whatever is acceptable.
+> Just tell me how to proceed.
+> 
 
-+	/*
-+	 * Update base->next_timer if this is the earliest one.
-+	 */
-+	if (time_before(timer->expires, base->next_timer) &&
-+	    !tbase_get_deferrable(timer->base))
-+		base->next_timer = timer->expires;
-+	__internal_add_timer(base, timer);
+We have two mechanisms for parameterizing this kind of information: ACPI
+5 (which can be considered the "native" method on x86) or flattened
+device tree (as already used by the CE4100 platform.)  Keep in mind that
+an explicit goal for Linux/x86 is that the same kernel should boot on
+all platforms, and backsliding on that is not acceptable.
 
-As per the below code?
+The best is for the firmware on your platforms to provide the ACPI or
+DTB information, as it should.  If it doesn't, it gets nastier, but
+there is absolutely no way we are going into the ARM swamp of having
+different kernels for different boards.
 
->  #ifdef CONFIG_TIMER_STATS
->  void __timer_stats_timer_set_start_info(struct timer_list *timer, void *addr)
->  {
-> @@ -757,9 +769,6 @@ __mod_timer(struct timer_list *timer, un
->  	}
-> 
->  	timer->expires = expires;
-> -	if (time_before(timer->expires, base->next_timer) &&
-> -	    !tbase_get_deferrable(timer->base))
-> -		base->next_timer = timer->expires;
->  	internal_add_timer(base, timer);
-> 
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
