@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab2E2IRl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:17:41 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54546 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab2E2IRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:17:38 -0400
-Date: Tue, 29 May 2012 04:14:58 -0400 (EDT)
-Message-Id: <20120529.041458.1686171726483755640.davem@davemloft.net>
-To: srivatsa.bhat@linux.vnet.ibm.com
-Cc: yong.zhang0@gmail.com, linux-kernel@vger.kernel.org, ralf@linux-mips.org,
-        sshtylyov@mvista.com, david.daney@cavium.com,
-        nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
-        mingo@kernel.org, tglx@linutronix.de, peterz@infradead.org,
-        akpm@linux-foundation.org, sparclinux@vger.kernel.org
-Subject: Re: [PATCH 08/10] SPARC: smp: remove call to
- ipi_call_lock_irq()/ipi_call_unlock_irq()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FC48272.9040904@linux.vnet.ibm.com>
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
-	<1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
-	<4FC48272.9040904@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752388Ab2E2I0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:26:40 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:54156 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab2E2I0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 04:26:37 -0400
+Message-ID: <4FC487B7.6090505@parallels.com>
+Date: Tue, 29 May 2012 12:24:23 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>, <mhocko@suse.cz>,
+        <bsingharora@gmail.com>, <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com>
+In-Reply-To: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 May 2012 01:15:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 29 May 2012 13:31:54 +0530
+On 05/29/2012 06:56 AM, Gao feng wrote:
+> cgroup and namespaces are used for creating containers but some of
+> information is not isolated/virtualized. This patch is for isolating /proc/meminfo
+> information per container, which uses memory cgroup. By this, top,free
+> and other tools under container can work as expected(show container's
+> usage) without changes.
+>
+> This patch is a trial to show memcg's info in /proc/meminfo if 'current'
+> is under a memcg other than root.
+>
+> we show /proc/meminfo base on container's memory cgroup.
+> because there are lots of info can't be provide by memcg, and
+> the cmds such as top, free just use some entries of /proc/meminfo,
+> we replace those entries by memory cgroup.
+>
+> if container has no memcg, we will show host's /proc/meminfo
+> as before.
+>
+> there is no idea how to deal with Buffers,I just set it zero,
+> It's strange if Buffers bigger than MemTotal.
+>
+> Signed-off-by: Gao feng<gaofeng@cn.fujitsu.com>
 
-> On 05/29/2012 12:46 PM, Yong Zhang wrote:
-> 
->> From: Yong Zhang <yong.zhang@windriver.com>
->> 
->> 1) call_function.lock used in smp_call_function_many() is just to protect
->>    call_function.queue and &data->refs, cpu_online_mask is outside of the
->>    lock. And it's not necessary to protect cpu_online_mask,
->>    because data->cpumask is pre-calculate and even if a cpu is brougt up
->>    when calling arch_send_call_function_ipi_mask(), it's harmless because
->>    validation test in generic_smp_call_function_interrupt() will take care
->>    of it.
->> 
->> 2) For cpu down issue, stop_machine() will guarantee that no concurrent
->>    smp_call_fuction() is processing.
->> 
->> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: sparclinux@vger.kernel.org
->> ---
->>  arch/sparc/kernel/smp_64.c |    6 ++----
->>  1 files changed, 2 insertions(+), 4 deletions(-)
->> 
->> diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
->> index f591598..60e745c 100644
->> --- a/arch/sparc/kernel/smp_64.c
->> +++ b/arch/sparc/kernel/smp_64.c
->> @@ -124,9 +124,9 @@ void __cpuinit smp_callin(void)
->>  	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
->>  		rmb();
->> 
->> -	ipi_call_lock_irq();
->> +	local_irq_disable();
-> 
-> 
-> This looks odd. IRQs must not have been enabled at this point.
-> Just remove the call to local_irq_enable() that is found a few lines above
-> this line and then you won't have to add this call to local_irq_disable().
+This is the very same problem that exists with CPU cgroup.
+So I'll tell you what kind of resistance we faced, and why I sort of 
+agree with it.
 
-Agreed.
+In summary, there is no guarantee that current wants to see this. This 
+is true for containers environments, but doing this unconditionally can
+break applications out there.
+
+With cpu is easier to demonstrate, because you would still see all other 
+tasks in the system (no pid namespaces used), but the tick figures won't 
+match. But not only memory falls prey to the same issue,
+but we really need a common solution to that.
+
+A flag is too ugly, or mount options are too ugly, and when parenting is 
+in place, hard to get right.
+
+So I've seen a lot of people advocating we should just use a userspace 
+filesystem that would bind mount that ontop of normal proc.
+
+For instance: bind mount your special meminfo into /proc/meminfo inside 
+a container. Reads of the later would redirect to the former, that would 
+then assemble the proper results from the cgroup filesystem, and display it.
+
+I do believe this is a more neutral way to go, and we have all the 
+tools. It also does not risk breaking anything, since only people that 
+want it would use it.
+
