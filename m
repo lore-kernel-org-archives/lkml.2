@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab2E2IdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:33:12 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:40447 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752337Ab2E2IdK (ORCPT
+	id S1752911Ab2E2IfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:35:19 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:42677 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751702Ab2E2IfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:33:10 -0400
-Message-ID: <1338280385.15008.74.camel@cumari.coelho.fi>
-Subject: Re: [PATCH v2] wlcore: fix undefined symbols when CONFIG_PM is not
- defined
-From: Luciano Coelho <coelho@ti.com>
-To: eyal@wizery.com, "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Tue, 29 May 2012 11:33:05 +0300
-In-Reply-To: <1338280122-28648-1-git-send-email-eyal@wizery.com>
-References: <1338280122-28648-1-git-send-email-eyal@wizery.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1
+	Tue, 29 May 2012 04:35:17 -0400
+Message-ID: <4FC48A14.70008@linux.vnet.ibm.com>
+Date: Tue, 29 May 2012 14:04:28 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
+        nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
+        mingo@kernel.org, tglx@linutronix.de, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH 00/10] Cleanup ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
+References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com> <1338280115.14636.26.camel@twins>
+In-Reply-To: <1338280115.14636.26.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12052822-0260-0000-0000-0000013F23BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 01:28 -0700, Eyal Shapira wrote:
-> commit c21eebb50379a96e1335e933583dcd5b455c6b64
-> "wl12xx: add RX filters ACX commands" breaks the build
-> when CONFIG_PM isn't defined:
-> 
-> ERROR: "wl1271_rx_filter_get_fields_size"
-> [drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
-> ERROR: "wl1271_rx_filter_flatten_fields"
-> [drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
-> 
-> code in drivers/net/wireless/ti/wlcore/acx.c is using these
-> functions unconditionally while they are #ifdefed CONFIG_PM.
-> Fix it by ifdefing all relevant RX filters code with CONFIG_PM.
-> 
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Eyal Shapira <eyal@wizery.com>
-> ---
-> v2: reference the correct commit in linux-next (Thanks Stephen!)
+On 05/29/2012 01:58 PM, Peter Zijlstra wrote:
 
-Thanks for the correction.  For v2:
 
-Acked-by: Luciano Coelho <coelho@ti.com>
+> That said, is there an alternative to stop_machine on the down side?
+> 
+> I guess flipping the cpu offline and then doing synchronize_sched()
+> should suffice.
+> 
 
--- 
-Cheers,
-Luca.
+
+Yes I think so. Even Paul McKenney had suggested this.
+
+Regards,
+Srivatsa S. Bhat
 
