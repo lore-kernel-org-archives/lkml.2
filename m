@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab2E2QBK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:01:10 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:36717 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752617Ab2E2QBI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:01:08 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: feJFvTAVM1mIQl9pfal2cfbZLBo8o92a8zNViHJeOtufGAt
- YgOTh2ksB83MfO49MUb8dHzkMyS5ps3T3K_ePp53oLiiYHaQSbORdCNV4dS5
- MDoEEJ6HMUkFB5xSN9D5DgXDTK_7cK79wI21lgsuwonYgvDT0rQlt5gg8Krc
- uXBG55V7TIOxUlZ.fgBKJOAu4wYK9D48Ywi_YnwwTdfv.b.Ag5DdU_SzpMMv
- pZ151svNjoHjJbV0l8qy2M_P6DceX3EhVPsD0hY5R7SD2xVoLJYTgFWrSzr5
- aXS3aStcHy2P2UG_9sMRPHzwMohSIGaTPr5f8cuny3eZrQioaZp1ttgezIoy
- 0Vn1lZPmTakQJKFCEiMkGO1hIYCMSK9BPCOHU3RVGoqghRscv1iNZjGv6hN_
- V
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 29 May 2012 11:01:03 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v3 00/28] kmem limitation for memcg
-In-Reply-To: <4FC4EEF6.2050204@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205291056440.6723@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <20120525133441.GB30527@tiehlicka.suse.cz> <alpine.DEB.2.00.1205250933170.22597@router.home> <4FC3381C.9020608@parallels.com> <alpine.DEB.2.00.1205290955270.4666@router.home>
- <4FC4EEF6.2050204@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754143Ab2E2QCF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:02:05 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:44005 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752617Ab2E2QCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:02:03 -0400
+Message-ID: <4FC4F273.6060807@parallels.com>
+Date: Tue, 29 May 2012 19:59:47 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 15/28] slub: always get the cache from its page in
+ kfree
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-16-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290939540.4666@router.home>
+In-Reply-To: <alpine.DEB.2.00.1205290939540.4666@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.255.67.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 May 2012, Glauber Costa wrote:
-
-> > I think it may be simplest to only account for the pages used by a slab in
-> > a memcg. That code could be added to the functions in the slab allocators
-> > that interface with the page allocators. Those are not that performance
-> > critical and would do not much harm.
+On 05/29/2012 06:42 PM, Christoph Lameter wrote:
+> On Fri, 25 May 2012, Glauber Costa wrote:
 >
-> No, I don't think so. Well, accounting the page is easy, but when we do a new
-> allocation, we need to match a process to its correspondent page. This will
-> likely lead to flushing the internal cpu caches of the slub, for instance,
-> hurting performance. That is because once we allocate a page, all objects on
-> that page need to belong to the same cgroup.
-
-Matching a process to its page is a complex thing even for pages used by
-userspace.
-
-How can you make sure that all objects on a page belong to the same
-cgroup? There are various kernel allocations that have uses far beyond a
-single context. There is already a certain degree of fuzziness there and
-we tolerate that in other contexts as well.
-
-
-> Also, you talk about intrusiveness, accounting pages is a lot more intrusive,
-> since then you need to know a lot about the internal structure of each cache.
-> Having the cache replicated has exactly the effect of isolating it better.
-
-Why would you need to know about the internal structure? Just get the
-current process context and use the cgroup that is readily available there
-to account for the pages.
-
-> > If you need per object accounting then the cleanest solution would be to
-> > duplicate the per node arrays per memcg (or only the statistics) and have
-> > the kmem_cache structure only once in memory.
+>> struct page already have this information. If we start chaining
+>> caches, this information will always be more trustworthy than
+>> whatever is passed into the function
 >
-> No, it's all per-page. Nothing here is per-object, maybe you misunderstood
-> something?
+> Yes but the lookup of the page struct also costs some cycles. SLAB in
+> !NUMA mode and SLOB avoid these lookups and can improve their freeing
+> speed because of that.
 
-There are free/used object counters in each page. You could account for
-objects in the l3 lists or kmem_cache_node strcut and thereby avoid
-having to deal with the individual objects at the per cpu level.
+But for our case, I don't really see a way around. What I can do, is 
+wrap it further, so when we're not using it, code goes exactly the same 
+way as before, instead of always calculating the page. Would it be better?
 
+>> diff --git a/mm/slub.c b/mm/slub.c
+>> index 0eb9e72..640872f 100644
+>> --- a/mm/slub.c
+>> +++ b/mm/slub.c
+>> @@ -2598,10 +2598,14 @@ redo:
+>>   void kmem_cache_free(struct kmem_cache *s, void *x)
+>>   {
+>>   	struct page *page;
+>> +	bool slab_match;
+>>
+>>   	page = virt_to_head_page(x);
+>>
+>> -	slab_free(s, page, x, _RET_IP_);
+>> +	slab_match = (page->slab == s) | slab_is_parent(page->slab, s);
+>> +	VM_BUG_ON(!slab_match);
+>
+> Why add a slab_match bool if you do not really need it?
+
+style. I find aux variables a very human readable way to deal with the 
+80-col limitation.
