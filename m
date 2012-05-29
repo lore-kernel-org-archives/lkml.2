@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab2E2IjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:39:00 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:54704 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab2E2Ii5 (ORCPT
+	id S1752916Ab2E2Ijb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:39:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51391 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2E2Ija convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:38:57 -0400
-Date: Tue, 29 May 2012 04:36:30 -0400 (EDT)
-Message-Id: <20120529.043630.590431449662750806.davem@davemloft.net>
-To: yong.zhang0@gmail.com
-Cc: srivatsa.bhat@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
-        nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
-        mingo@kernel.org, tglx@linutronix.de, peterz@infradead.org,
-        akpm@linux-foundation.org, sparclinux@vger.kernel.org
-Subject: Re: [UPDATED] [RFC PATCH 08/10] SPARC: smp: remove call to
- ipi_call_lock_irq()/ipi_call_unlock_irq()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120529082732.GA4250@zhy>
-References: <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
-	<4FC48272.9040904@linux.vnet.ibm.com>
-	<20120529082732.GA4250@zhy>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 29 May 2012 04:39:30 -0400
+Message-ID: <1338280752.26856.2.camel@twins>
+Subject: Re: [RFCv2 0/8] perf tool: Add new event group management
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ulrich Drepper <drepper@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        acme@redhat.com, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+Date: Tue, 29 May 2012 10:39:12 +0200
+In-Reply-To: <CAOPLpQfveNoXkorqfk=zSp72-YXskxtDebJqhGarngaJY89Rmg@mail.gmail.com>
+References: <1333574176-11388-1-git-send-email-jolsa@redhat.com>
+	 <20120525223646.GL27374@one.firstfloor.org>
+	 <20120526123858.GA1679@m.brq.redhat.com>
+	 <CAOPLpQfveNoXkorqfk=zSp72-YXskxtDebJqhGarngaJY89Rmg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 May 2012 01:36:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yong Zhang <yong.zhang0@gmail.com>
-Date: Tue, 29 May 2012 16:27:33 +0800
+On Sun, 2012-05-27 at 03:56 -0400, Ulrich Drepper wrote:
+> Therefore it is important to recognize when two groups
+> can be scheduled concurrently even if the total number of counters
+> needed would be high but due to intersections it is possible. 
 
-> From: Yong Zhang <yong.zhang@windriver.com>
-> Date: Tue, 29 May 2012 12:56:08 +0800
-> Subject: [UPDATED] [RFC PATCH 8/10] SPARC: smp: remove call to
->  ipi_call_lock_irq()/ipi_call_unlock_irq()
-> 
-> 1) call_function.lock used in smp_call_function_many() is just to protect
->    call_function.queue and &data->refs, cpu_online_mask is outside of the
->    lock. And it's not necessary to protect cpu_online_mask,
->    because data->cpumask is pre-calculate and even if a cpu is brougt up
->    when calling arch_send_call_function_ipi_mask(), it's harmless because
->    validation test in generic_smp_call_function_interrupt() will take care
->    of it.
-> 
-> 2) For cpu down issue, stop_machine() will guarantee that no concurrent
->    smp_call_fuction() is processing.
-> 
-> And also delay irq enable to after set_cpu_online().
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-
-Acked-by: David S. Miller <davem@davemloft.net>
+We currently don't do counter multiplexing like that. I'd love to see a
+readable and efficient implementation of that though, preferably in the
+core and not the arch code.
