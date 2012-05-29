@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab2E2Qia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:38:30 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:41508 "EHLO mx2.parallels.com"
+	id S1754366Ab2E2Qjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:39:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18839 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753906Ab2E2Qi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:38:29 -0400
-Message-ID: <4FC4FAF6.8060900@parallels.com>
-Date: Tue, 29 May 2012 20:36:06 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	id S1752981Ab2E2Qje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:39:34 -0400
+Date: Tue, 29 May 2012 18:38:49 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+Message-ID: <20120529163849.GF21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-14-git-send-email-aarcange@redhat.com>
+ <1338297385.26856.74.camel@twins>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 12/28] slab: pass memcg parameter to kmem_cache_create
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-13-git-send-email-glommer@parallels.com> <alpine.DEB.2.00.1205290922340.4666@router.home> <4FC4F04F.1070401@parallels.com> <alpine.DEB.2.00.1205291131590.6723@router.home>
-In-Reply-To: <alpine.DEB.2.00.1205291131590.6723@router.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [188.255.67.70]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338297385.26856.74.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 08:33 PM, Christoph Lameter wrote:
-> On Tue, 29 May 2012, Glauber Costa wrote:
->
->>> Ok this only duplicates the kmalloc arrays. Why not the others?
->>
->> It does duplicate the others.
->>
->> First it does a while look on the kmalloc caches, then a list_for_each_entry
->> in the rest. You probably missed it.
->
-> There is no need to separately duplicate the kmalloc_caches. Those are
-> included on the cache_chain.
->
->>>> @@ -2543,7 +2564,12 @@ kmem_cache_create (const char *name, size_t size,
->>>> size_t align,
->>>>    	cachep->ctor = ctor;
->>>>    	cachep->name = name;
->>>>
->>>> +	if (g_cpucache_up>= FULL)
->>>> +		mem_cgroup_register_cache(memcg, cachep);
->>>
->>> What happens if a cgroup was active during creation of slab xxy but
->>> then a process running in a different cgroup uses that slab to allocate
->>> memory? Is it charged to the first cgroup?
->>
->> I don't see this situation ever happening. kmem_cache_create, when called
->> directly, will always create a global cache. It doesn't matter which cgroups
->> are or aren't active at this time or any other. We create copies per-cgroup,
->> but we create it lazily, when someone will touch it.
->
-> How do you detect that someone is touching it?
+On Tue, May 29, 2012 at 03:16:25PM +0200, Peter Zijlstra wrote:
+> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
+> price to pay.
 
-kmem_alloc_cache will create mem_cgroup_get_kmem_cache.
-(protected by static_branches, so won't happen if you don't have at 
-least non-root memcg using it)
+I don't think it's too great, memcg uses for half of that and yet
+nobody is booting with cgroup_disable=memory even on not-NUMA servers
+with less RAM.
 
-* Then it detects which memcg the calling process belongs to,
-* if it is the root memcg, go back to the allocation as quickly as we
-   can
-* otherwise, in the creation process, you will notice that each cache
-   has an index. memcg will store pointers to the copies and find them by
-   the index.
+> At LSF/MM Rik already suggested you limit the number of pages that can
+> be migrated concurrently and use this to move the extra list_head out of
+> struct page and into a smaller amount of extra structures, reducing the
+> total overhead.
 
- From this point on, all the code of the caches is reused (except for 
-accounting the page)
+It would reduce the memory overhead but it'll make the code more
+complex and it'll require more locking, plus allowing for very long
+migration lrus, provides an additional means of false-sharing
+avoidance. Those are lrus, if the last_nid false sharing logic will
+pass, the page still has to reach the tail of the list before being
+migrated, if false sharing happens in the meanwhile we'll remove it
+from the lru.
 
+But I'm all for experimenting. It's just not something I had the time
+to try yet. I will certainly love to see how it performs by reducing
+the max size of the list. I totally agree it's a good idea to try it
+out, and I don't exclude it will work fine, but it's not obvious it's
+worth the memory saving.
