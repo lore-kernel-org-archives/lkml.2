@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab2E2Q5X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:57:23 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36512 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab2E2Q5W (ORCPT
+	id S1754495Ab2E2Q7S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:59:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59638 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088Ab2E2Q7R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:57:22 -0400
-Date: Wed, 30 May 2012 01:57:04 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 00/91] 3.4.1-stable review
-Message-ID: <20120529165704.GA25721@kroah.com>
-References: <20120527010903.GA18244@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120527010903.GA18244@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 29 May 2012 12:59:17 -0400
+Message-ID: <1338310743.26856.141.camel@twins>
+Subject: Re: WARNING: at arch/x86/kernel/smpboot.c:310
+ topology_sane.clone.1+0x6e/0x81()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, hpa <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 29 May 2012 18:59:03 +0200
+In-Reply-To: <20120529152944.GA8263@alberich.amd.com>
+References: <20120529135442.GE29157@aftab.osrc.amd.com>
+	 <1338303106.26856.92.camel@twins> <20120529152944.GA8263@alberich.amd.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 27, 2012 at 10:09:03AM +0900, Greg KH wrote:
-> Note, I've tested this release a bit differently than I have in the
-> past.  For this release, I've only tested it on one machine, my laptop,
-> with a pretty minimal configuration to save on build times.  That means,
-> while this release works for me, it might not for you, and it might not
-> even build at all for you.  Please test to verify that I haven't messed
-> anything up.  I'll give everyone at least an extra day than "normal" for
-> this review cycle before I cut a final 3.4.1 release.
+On Tue, 2012-05-29 at 17:29 +0200, Andreas Herrmann wrote:
 
-It looks like people get even more time to test as I'm not going to be
-able to push these updates out until Thursday or Friday at the earliest,
-due to me being stuck in an area of Asia where the internet connectivity
-really isn't all that good.
+> I've also looked at this. core_siblings mask is broken with this patch.
+> And there is this new irritating warning ...
 
-Sorry for the delay,
+Hehe, you made this irritating hardware ;-) But fair enough.
 
-greg k-h
+> I second Boris' suggestion for a fix. But I think the check for
+> X86_FEATURE_AMD_DCM should go into topology_sane() which in theory
+> could check other things as well.
+
+Unless you plan to go span cache (or even SMT siblings) over physical
+IDs I'd strongly argue against putting it in topology_sane().
+
+As it stands I think we should discuss the definition for the generic
+topology bits (drivers/base/topology.c), because I think your
+Magny-Cours thing does the wrong thing here.
+
+The core span in a phys_id is all nice and such, but what does it mean?
+IOW what would you do with it?
+
+I would think the LLC range and the node-span are much more useful
+things to have. Once you have nodes the sysfs node topology takes over.
+
