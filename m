@@ -1,134 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab2E2LhZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 07:37:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3723 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab2E2LhX (ORCPT
+	id S1753666Ab2E2Lhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 07:37:55 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:10841 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751536Ab2E2Lhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 07:37:23 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Aua4qMZyJ18A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=zVF3SNT0W3Oze7jcm2UA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338291441.13348.291.camel@gandalf.stny.rr.com>
-Subject: Re: BUG - function tracing with breakpoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Date: Tue, 29 May 2012 07:37:21 -0400
-In-Reply-To: <1337979086.13348.269.camel@gandalf.stny.rr.com>
-References: <20120524160146.GA6226@redhat.com>
-	 <1337876398.13348.178.camel@gandalf.stny.rr.com>
-	 <20120524172223.GA10689@redhat.com>
-	 <1337902816.13348.224.camel@gandalf.stny.rr.com>
-	 <4FBEC9E6.8040301@linux.intel.com>
-	 <1337909963.13348.232.camel@gandalf.stny.rr.com>
-	 <1337910106.13348.234.camel@gandalf.stny.rr.com>
-	 <1337956262.13348.257.camel@gandalf.stny.rr.com>
-	 <1337959746.13348.264.camel@gandalf.stny.rr.com>
-	 <4FBFC421.3020901@linux.intel.com>
-	 <1337971575.13348.268.camel@gandalf.stny.rr.com>
-	 <1337979086.13348.269.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 29 May 2012 07:37:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6725"; a="193186731"
+Message-ID: <d98d78ec2312cbc5edb1b2c337ab788d.squirrel@www.codeaurora.org>
+In-Reply-To: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
+References: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
+Date: Tue, 29 May 2012 04:37:54 -0700 (PDT)
+Subject: Re: [PATCH v6 1/3] mmc: core: Add packed command feature of eMMC4.5
+From: merez@codeaurora.org
+To: "Seungwon Jeon" <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        merez@codeaurora.org, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 16:51 -0400, Steven Rostedt wrote:
-> 
-> /me continues his search.
+> @@ -1244,6 +1249,25 @@ static int mmc_init_card(struct mmc_host *host, u32
+> ocr,
+>  		}
+>  	}
+>
+> +	if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
+> +			(card->ext_csd.max_packed_writes > 0) &&
+> +			(card->ext_csd.max_packed_reads > 0)) {
+> +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> +				EXT_CSD_EXP_EVENTS_CTRL,
+> +				EXT_CSD_PACKED_EVENT_EN,
+> +				card->ext_csd.generic_cmd6_time);
+> +		if (err && err != -EBADMSG)
+> +			goto free_card;
+> +		if (err) {
+> +			pr_warning("%s: Enabling packed event failed\n",
+> +					mmc_hostname(card->host));
+> +			card->ext_csd.packed_event_en = 0;
+> +			err = 0;
+> +		} else {
+> +			card->ext_csd.packed_event_en = 1;
+> +		}
+> +	}
+> +
+The above shoud not be performed in case of resume. Therefore it needs to
+be done only if (!oldcard)
 
-Found it!
-
-The int3 handler uses paranoidzeroentry_ist:
-
-.macro paranoidzeroentry_ist sym do_sym ist
-ENTRY(\sym)
-	INTR_FRAME
-	PARAVIRT_ADJUST_EXCEPTION_FRAME
-	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
-	subq $ORIG_RAX-R15, %rsp
-	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
-	call save_paranoid
-	TRACE_IRQS_OFF
-	movq %rsp,%rdi		/* pt_regs pointer */
-	xorl %esi,%esi		/* no error code */
-	subq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
-	call \do_sym
-	addq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
-	jmp paranoid_exit	/* %ebx: no swapgs flag */
-	CFI_ENDPROC
-END(\sym)
-
-Which calls paranoid_exit, which does:
-
-paranoid_restore:
-	TRACE_IRQS_IRETQ 0
-	RESTORE_ALL 8
-	jmp irq_return
-
-The problem is with TRACE_IRQS_IRETQ which happens to call into lockdep.
-Now we are still using the debug stack here outside that little
-subtraction trick of the INIT_TSS_IST.
-
-.macro TRACE_IRQS_IRETQ offset=ARGOFFSET
-#ifdef CONFIG_TRACE_IRQFLAGS
-	bt   $9,EFLAGS-\offset(%rsp)	/* interrupts off? */
-	jnc  1f
-	TRACE_IRQS_ON
-1:
-#endif
-.endm
-
-
-#  define TRACE_IRQS_ON		call trace_hardirqs_on_thunk;
-
-THUNK trace_hardirqs_on_thunk,trace_hardirqs_on_caller,1
-
-which eventually leads to:
-
-trace_hardirqs_on_caller {
-	__trace_hardirqs_on_caller(ip) {
-		mark_locks_held() {
-			mark_lock() {
-				save_trace() {
-					save_stack_trace()...
-
-
-Unfortunately, the save_stack_trace() is traced by the function tracer.
-Which means that it will hit a breakpoint and jump into the breakpoint
-code. But here it will reset the stack and corrupt the current stack,
-causing strange hard-to-debug bugs.
-
-There's no reason to function trace stack dumps, and this stops the bug
-from triggering when I apply it.
-
-Dave, can you give this a try too?
-
-Thanks!
-
--- Steve
-
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 532d2e0..0026999 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -14,6 +14,10 @@ CFLAGS_REMOVE_paravirt-spinlocks.o = -pg
- CFLAGS_REMOVE_pvclock.o = -pg
- CFLAGS_REMOVE_kvmclock.o = -pg
- CFLAGS_REMOVE_ftrace.o = -pg
-+CFLAGS_REMOVE_dumpstack.o = -pg
-+CFLAGS_REMOVE_dumpstack_32.o = -pg
-+CFLAGS_REMOVE_dumpstack_64.o = -pg
-+CFLAGS_REMOVE_stacktrace.o = -pg
- CFLAGS_REMOVE_early_printk.o = -pg
- endif
- 
-
+Thanks,
+Maya Erez
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
