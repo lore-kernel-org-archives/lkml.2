@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab2E2J7A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:59:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59719 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab2E2J6t convert rfc822-to-8bit (ORCPT
+	id S1753531Ab2E2J7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:59:51 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14256 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab2E2J7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:58:49 -0400
-Message-ID: <1338285486.26856.16.camel@twins>
-Subject: Re: [PATCH 13/15] sched: add bandwidth management for sched_dl.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Juri Lelli <juri.lelli@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, rostedt@goodmis.org, oleg@redhat.com,
-        fweisbec@gmail.com, darren@dvhart.com, johan.eker@ericsson.com,
-        p.faure@akatech.ch, linux-kernel@vger.kernel.org,
-        claudio@evidence.eu.com, michael@amarulasolutions.com,
-        fchecconi@gmail.com, tommaso.cucinotta@sssup.it,
-        nicola.manica@disi.unitn.it, luca.abeni@unitn.it,
-        dhaval.giani@gmail.com, hgu1972@gmail.com, paulmck@linux.vnet.ibm.com,
-        raistlin@linux.it, insop.song@ericsson.com, liming.wang@windriver.com,
-        jkacur@redhat.com, harald.gustafsson@ericsson.com
-Date: Tue, 29 May 2012 11:58:06 +0200
-In-Reply-To: <4FC0B95C.5060207@gmail.com>
-References: <1337809375-24295-1-git-send-email-juri.lelli@gmail.com>
-	  <1337809375-24295-14-git-send-email-juri.lelli@gmail.com>
-	 <1337942292.9783.178.camel@laptop> <4FC0B95C.5060207@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 29 May 2012 05:59:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 29 May 2012 02:59:40 -0700
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] clk: add extension API
+Date: Tue, 29 May 2012 12:58:59 +0300
+Message-ID: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-26 at 13:07 +0200, Juri Lelli wrote:
-> Hi,
-> 
-> On 05/25/2012 12:38 PM, Peter Zijlstra wrote:
-> > On Wed, 2012-05-23 at 23:42 +0200, Juri Lelli wrote:
-> >> +/*
-> >> + * Coupling of -dl and -rt bandwidth.
-> >> + *
-> >> + * Here we check, while setting the system wide bandwidth available
-> >> + * for -dl tasks and groups, if the new values are consistent with
-> >> + * the system settings for the bandwidth available to -rt entities.
-> >> + *
-> >> + * IOW, we want to enforce that
-> >> + *
-> >> + *   rt_bandwidth + dl_bandwidth<= 100%
-> >> + *
-> >> + * is always true.
-> >> + */
-> >
-> > I was thinking we could do it the other way around, have have
-> > dl_bandwidth included in rt_bandwidth.
-> >
-> 
-> If I understand correctly, you are proposing to treat -dl tasks as a
-> special case of "real-time" tasks. Then we could reserve some bw to
-> "real-time" (rt_bandwidth cap) activities and give a piece of this
-> bw to -dl tasks (what remains is for -rt tasks). This is in principle
-> nice and useful, but I'm not quite sure that this is the right point
-> to achieve this logical behavior.
-> I mean, -dl and -rt tasks are separately treated, so it is probably
-> cleaner to manage their knobs separately. They have to coexist rather
-> than be considered one a sub-case of the other. A better way to go
-> for a common cap for them is probably the (long-term) hierarchical
-> scheduling mechanism.
-> 
-> So, I would prefer to keep the interface as is for now, but I can also
-> completely misunderstood your thoughts :-P.
+Add an extension API for clocks. This allows clocktypes to provide extensions
+for features which are uncommon and cannot be easily mapped onto normal clock
+framework concecpts. eg: resetting blocks, configuring clock phase etc.
 
-The thing is, keeping it separate makes for an impossible configuration
-scenario. Esp. once we enable !root usage. The proposed 5% is very
-limiting and regular users won't have sufficient privilege to change it.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ drivers/clk/clk.c            |    8 ++++++++
+ include/linux/clk-provider.h |    2 ++
+ include/linux/clk.h          |    2 ++
+ 3 files changed, 12 insertions(+), 0 deletions(-)
 
-Also lowering FIFO/RR by default isn't a real option since people expect
-that to get all time already (however silly that expectation is).
-
-
-
-
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index e5d5dc1..39bc458 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -956,6 +956,14 @@ struct clk *clk_get_parent(struct clk *clk)
+ }
+ EXPORT_SYMBOL_GPL(clk_get_parent);
+ 
++int clk_ext(struct clk *clk, unsigned int op, unsigned long param)
++{
++	if (clk->ops->ext)
++		return clk->ops->ext(clk->hw, op, param);
++
++	return -EINVAL;
++}
++
+ /*
+  * .get_parent is mandatory for clocks with multiple possible parents.  It is
+  * optional for single-parent clocks.  Always call .get_parent if it is
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 6803fb4..08025d3 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -109,6 +109,8 @@ struct clk_ops {
+ 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
+ 				    unsigned long);
+ 	void		(*init)(struct clk_hw *hw);
++	int		(*ext)(struct clk_hw *hw, unsigned int op,
++					unsigned long param);
+ };
+ 
+ /**
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 0e078bd..74be656 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -278,4 +278,6 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id);
+ int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
+ 			struct device *dev);
+ 
++int clk_ext(struct clk *clk, unsigned int op, unsigned long param);
++
+ #endif
+-- 
+1.7.9.1
 
