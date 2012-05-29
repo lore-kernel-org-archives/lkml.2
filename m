@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab2E2HRr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 03:17:47 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:57666 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab2E2HRo (ORCPT
+	id S1753407Ab2E2HR6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 03:17:58 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:50086 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab2E2HR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 03:17:44 -0400
+	Tue, 29 May 2012 03:17:56 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
         nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
         mingo@kernel.org, tglx@linutronix.de, peterz@infradead.org,
         akpm@linux-foundation.org, srivatsa.bhat@linux.vnet.ibm.com,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org
-Subject: [RFC PATCH 07/10] ia64: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
-Date: Tue, 29 May 2012 15:16:02 +0800
-Message-Id: <1338275765-3217-8-git-send-email-yong.zhang0@gmail.com>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 08/10] SPARC: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
+Date: Tue, 29 May 2012 15:16:03 +0800
+Message-Id: <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
 References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
@@ -39,32 +38,37 @@ From: Yong Zhang <yong.zhang@windriver.com>
    smp_call_fuction() is processing.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
 ---
- arch/ia64/kernel/smpboot.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ arch/sparc/kernel/smp_64.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/ia64/kernel/smpboot.c b/arch/ia64/kernel/smpboot.c
-index 1113b8a..963d2db 100644
---- a/arch/ia64/kernel/smpboot.c
-+++ b/arch/ia64/kernel/smpboot.c
-@@ -382,7 +382,6 @@ smp_callin (void)
- 	set_numa_node(cpu_to_node_map[cpuid]);
- 	set_numa_mem(local_memory_node(cpu_to_node_map[cpuid]));
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index f591598..60e745c 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -124,9 +124,9 @@ void __cpuinit smp_callin(void)
+ 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+ 		rmb();
  
 -	ipi_call_lock_irq();
- 	spin_lock(&vector_lock);
- 	/* Setup the per cpu irq handling data structures */
- 	__setup_vector_irq(cpuid);
-@@ -390,7 +389,6 @@ smp_callin (void)
++	local_irq_disable();
  	set_cpu_online(cpuid, true);
- 	per_cpu(cpu_state, cpuid) = CPU_ONLINE;
- 	spin_unlock(&vector_lock);
 -	ipi_call_unlock_irq();
++	local_irq_enable();
  
- 	smp_setup_percpu_timer();
+ 	/* idle thread is expected to have preempt disabled */
+ 	preempt_disable();
+@@ -1308,9 +1308,7 @@ int __cpu_disable(void)
+ 	mdelay(1);
+ 	local_irq_disable();
+ 
+-	ipi_call_lock();
+ 	set_cpu_online(cpu, false);
+-	ipi_call_unlock();
+ 
+ 	cpu_map_rebuild();
  
 -- 
 1.7.5.4
