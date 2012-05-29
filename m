@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab2E2Ic1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:32:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51284 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751702Ab2E2Ic0 convert rfc822-to-8bit (ORCPT
+	id S1752984Ab2E2IdM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:33:12 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:40447 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752337Ab2E2IdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 04:32:26 -0400
-Message-ID: <1338280335.14636.27.camel@twins>
-Subject: Re: [RFC PATCH 00/10] Cleanup
- ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, ralf@linux-mips.org, sshtylyov@mvista.com,
-        david.daney@cavium.com, nikunj@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
-        tglx@linutronix.de, akpm@linux-foundation.org,
-        srivatsa.bhat@linux.vnet.ibm.com
-Date: Tue, 29 May 2012 10:32:15 +0200
-In-Reply-To: <1338280115.14636.26.camel@twins>
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
-	 <1338280115.14636.26.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
+	Tue, 29 May 2012 04:33:10 -0400
+Message-ID: <1338280385.15008.74.camel@cumari.coelho.fi>
+Subject: Re: [PATCH v2] wlcore: fix undefined symbols when CONFIG_PM is not
+ defined
+From: Luciano Coelho <coelho@ti.com>
+To: eyal@wizery.com, "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Tue, 29 May 2012 11:33:05 +0300
+In-Reply-To: <1338280122-28648-1-git-send-email-eyal@wizery.com>
+References: <1338280122-28648-1-git-send-email-eyal@wizery.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 10:28 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-29 at 15:15 +0800, Yong Zhang wrote:
-> > As discussed with Srivatsa [1], it seems there is no need to keep
-> > ipi_call_[un]lock_irq() when cpu bring-up/down. Because:
-> > 
-> > 1) call_function.lock used in smp_call_function_many() is just to protect
-> >    call_function.queue and &data->refs, cpu_online_mask is outside of the
-> >    lock. And it's not necessary to protect cpu_online_mask,
-> >    because data->cpumask is pre-calculate and even if a cpu is brougt up
-> >    when calling arch_send_call_function_ipi_mask(), it's harmless because
-> >    validation test in generic_smp_call_function_interrupt() will take care
-> >    of it.
-> > 
-> > 2) For cpu down issue, stop_machine() will guarantee that no concurrent
-> >    smp_call_fuction() is processing. 
+On Tue, 2012-05-29 at 01:28 -0700, Eyal Shapira wrote:
+> commit c21eebb50379a96e1335e933583dcd5b455c6b64
+> "wl12xx: add RX filters ACX commands" breaks the build
+> when CONFIG_PM isn't defined:
 > 
-> But that lock was only taken around setting a cpu online, so the offline
-> case is pretty much irrelevant for these patches, right?
-
-Ah, I see, some archs also did it on offline.
-
-> That said, is there an alternative to stop_machine on the down side?
+> ERROR: "wl1271_rx_filter_get_fields_size"
+> [drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
+> ERROR: "wl1271_rx_filter_flatten_fields"
+> [drivers/net/wireless/ti/wlcore/wlcore.ko] undefined!
 > 
-> I guess flipping the cpu offline and then doing synchronize_sched()
-> should suffice.
+> code in drivers/net/wireless/ti/wlcore/acx.c is using these
+> functions unconditionally while they are #ifdefed CONFIG_PM.
+> Fix it by ifdefing all relevant RX filters code with CONFIG_PM.
+> 
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Signed-off-by: Eyal Shapira <eyal@wizery.com>
+> ---
+> v2: reference the correct commit in linux-next (Thanks Stephen!)
+
+Thanks for the correction.  For v2:
+
+Acked-by: Luciano Coelho <coelho@ti.com>
+
+-- 
+Cheers,
+Luca.
 
