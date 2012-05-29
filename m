@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862Ab2E2NjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 09:39:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:55463 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab2E2NjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 09:39:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158216589"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com,
-        devel@linuxdriverproject.org, Tomas Winkler <tomas.winkler@intel.com>
-Subject: [PATCH 1/4 V2] mei: mei.txt: minor grammar fixes
-Date: Tue, 29 May 2012 16:39:09 +0300
-Message-Id: <1338298752-15445-2-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1338298752-15445-1-git-send-email-tomas.winkler@intel.com>
-References: <1338298752-15445-1-git-send-email-tomas.winkler@intel.com>
+	id S1752717Ab2E2NpH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 09:45:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54798 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752370Ab2E2NpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 09:45:06 -0400
+Message-ID: <1338299104.2202.34.camel@joe2Laptop>
+Subject: Re: [PATCH V3] [staging] bcm: Replace the BCM_DEBUG_* and
+ BCM_SHOW_* macros with functions
+From: Joe Perches <joe@perches.com>
+To: Devendra Naga <devendra.aaru@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Kevin McKinney <klmckinney1@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 29 May 2012 06:45:04 -0700
+In-Reply-To: <1338289626-9021-1-git-send-email-devendra.aaru@gmail.com>
+References: <1338289626-9021-1-git-send-email-devendra.aaru@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
-V2: just resend
- Documentation/misc-devices/mei/mei.txt |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+On Tue, 2012-05-29 at 16:37 +0530, Devendra Naga wrote:
+[]
+> diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
+[]
+> +void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
+> +			int dbg_level, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +	UINT debug_level = Adapter->stDebugState.debug_level;
+> +
+> +	va_start(args, fmt);
+> +
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> +
+> +	if (DBG_TYPE_PRINTK == Type)
+> +		pr_info("%s: %pV", __func__, &vaf);
 
-diff --git a/Documentation/misc-devices/mei/mei.txt b/Documentation/misc-devices/mei/mei.txt
-index 2785697..6ec7029 100644
---- a/Documentation/misc-devices/mei/mei.txt
-+++ b/Documentation/misc-devices/mei/mei.txt
-@@ -50,25 +50,25 @@ Intel MEI Driver
- The driver exposes a misc device called /dev/mei.
+func
+
+> +	else if (Adapter &&
+> +		(dbg_level & DBG_LVL_BITMASK) <= debug_level &&
+> +		(Type & Adapter->stDebugState.type) &&
+> +		(SubType & Adapter->stDebugState.subtype[Type])) {
+> +		if (dbg_level & DBG_NO_FUNC_PRINT)
+> +			printk(KERN_DEBUG "%pV" , &vaf);
+> +		else
+> +			printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
+
+func
+
+> +	}
+> +
+> +	va_end(args);
+> +}
+> +
+> +void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
+> +			    int dbg_level, const void *buffer, size_t bufferlen)
+> +{
+> +	if (DBG_TYPE_PRINTK == Type ||
+> +	   (Adapter &&
+> +	   (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
+> +	   (Type & Adapter->stDebugState.type) &&
+> +	   (SubType & Adapter->stDebugState.subtype[Type]))) {
+> +		printk(KERN_DEBUG "%s:\n", __func__);
+
+func
+
+> +		print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
+> +			       16, 1, buffer, bufferlen, false);
+> +	}
+> +}
+
+[]
+
+> diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
+[]
+> +struct _MINI_ADAPTER;
+> +
+> +__printf(5, 6)
+> +
+> +void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
+> +			int dbg_level, const char *fmt, ...);
+
+No blank line between __printf and prototype
+
+> +void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
+> +			int dbg_level, const void *buffer, size_t bufferlen);
+> +void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
+> +
+> +#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...)	\
+> +	bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
+> +
+> +#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,	\
+> +				buffer, bufferlen)			\
+> +	bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,	\
+> +				buffer, bufferlen)
+> +#define BCM_SHOW_DEBUG_BITMAP(Adapter)					\
+> +	bcm_show_debug_bitmap(Adapter)
+
+Turns out to keep the same behavior, you need to add
+a const char *func argument to these functions and
+change the macros to pass __func__.
  
- An application maintains communication with an Intel ME feature while
--/dev/mei is open. The binding to a specific features is performed by calling
-+/dev/mei is open. The binding to a specific feature is performed by calling
- MEI_CONNECT_CLIENT_IOCTL, which passes the desired UUID.
- The number of instances of an Intel ME feature that can be opened
- at the same time depends on the Intel ME feature, but most of the
- features allow only a single instance.
- 
- The Intel AMT Host Interface (Intel AMTHI) feature supports multiple
--simultaneous user applications. Therefore, the Intel MEI driver handles
--this internally by maintaining request queues for the applications.
-+simultaneous user connected applications. The Intel MEI driver
-+handles this internally by maintaining request queues for the applications.
- 
--The driver is oblivious to data that is passed between firmware feature
-+The driver is transparent to data that are passed between firmware feature
- and host application.
- 
- Because some of the Intel ME features can change the system
- configuration, the driver by default allows only a privileged
- user to access it.
- 
--A code snippet for an application communicating with
--Intel AMTHI client:
-+A code snippet for an application communicating with Intel AMTHI client:
-+
- 	struct mei_connect_client_data data;
- 	fd = open(MEI_DEVICE);
- 
-@@ -185,7 +185,7 @@ The Intel AMT Watchdog is composed of two parts:
- 	2) Intel MEI driver - connects to the watchdog feature, configures the
- 	   watchdog and sends the heartbeats.
- 
--The Intel MEI driver uses the kernel watchdog to configure the Intel AMT
-+The Intel MEI driver uses the kernel watchdog API to configure the Intel AMT
- Watchdog and to send heartbeats to it. The default timeout of the
- watchdog is 120 seconds.
- 
--- 
-1.7.4.4
+
 
