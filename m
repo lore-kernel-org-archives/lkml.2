@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344Ab2E2MkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 08:40:19 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54529 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab2E2MkR (ORCPT
+	id S1751527Ab2E2Mpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 08:45:52 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:17978 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab2E2Mpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 08:40:17 -0400
-Message-ID: <4FC4C391.50700@mvista.com>
-Date: Tue, 29 May 2012 16:39:45 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 29 May 2012 08:45:51 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6725"; a="193202893"
+From: "Subhash Jadavani" <subhashj@codeaurora.org>
+To: <merez@codeaurora.org>, "'Seungwon Jeon'" <tgih.jun@samsung.com>
+Cc: <linux-mmc@vger.kernel.org>, "'Chris Ball'" <cjb@laptop.org>,
+        <linux-kernel@vger.kernel.org>
+References: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com> <d98d78ec2312cbc5edb1b2c337ab788d.squirrel@www.codeaurora.org>
+In-Reply-To: <d98d78ec2312cbc5edb1b2c337ab788d.squirrel@www.codeaurora.org>
+Subject: RE: [PATCH v6 1/3] mmc: core: Add packed command feature of eMMC4.5
+Date: Tue, 29 May 2012 18:15:29 +0530
+Message-ID: <000001cd3d98$f015db60$d0419220$@codeaurora.org>
 MIME-Version: 1.0
-To: Christian Dietrich <christian.dietrich@informatik.uni-erlangen.de>
-CC: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@lists.cs.fau.de
-Subject: Re: [PATCH] ide: icside.c: Fix compile with CONFIG_BLK_DEV_IDEDMA_ICS=n
-References: <20120529103002.GA13283@faui49q.informatik.uni-erlangen.de>
-In-Reply-To: <20120529103002.GA13283@faui49q.informatik.uni-erlangen.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQFcCsV+SUy7m9HOCPoh/CTR9DueOALLFy6Yl6zDHjA=
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
 
-On 29-05-2012 14:30, Christian Dietrich wrote:
 
-> The icside driver can be configured without DMA support, but it
-> doesn't compile in this case, because DMA operations are referenced.
+> -----Original Message-----
+> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+> owner@vger.kernel.org] On Behalf Of merez@codeaurora.org
+> Sent: Tuesday, May 29, 2012 5:08 PM
+> To: Seungwon Jeon
+> Cc: linux-mmc@vger.kernel.org; 'Chris Ball'; merez@codeaurora.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH v6 1/3] mmc: core: Add packed command feature of
+> eMMC4.5
+> 
+> > @@ -1244,6 +1249,25 @@ static int mmc_init_card(struct mmc_host *host,
+> > u32 ocr,
+> >  		}
+> >  	}
+> >
+> > +	if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
+> > +			(card->ext_csd.max_packed_writes > 0) &&
+> > +			(card->ext_csd.max_packed_reads > 0)) {
+> > +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> > +				EXT_CSD_EXP_EVENTS_CTRL,
+> > +				EXT_CSD_PACKED_EVENT_EN,
+> > +				card->ext_csd.generic_cmd6_time);
+> > +		if (err && err != -EBADMSG)
+> > +			goto free_card;
+> > +		if (err) {
+> > +			pr_warning("%s: Enabling packed event failed\n",
+> > +					mmc_hostname(card->host));
+> > +			card->ext_csd.packed_event_en = 0;
+> > +			err = 0;
+> > +		} else {
+> > +			card->ext_csd.packed_event_en = 1;
+> > +		}
+> > +	}
+> > +
+> The above shoud not be performed in case of resume. Therefore it needs to
+be
+> done only if (!oldcard)
 
-> drivers/ide/icside.c:523: error: ‘icside_v6_port_ops’ undeclared
-> drivers/ide/icside.c:522: error: ‘icside_dma_init’ undeclared
+Maya,
+What if eMMC power (VCC and VCCQ) was removed during suspend? Then in that
+case during resume, we have to send this mmc_switch() command again. So this
+operation should not be under "if (!oldcard)" check.
 
-> Signed-off-by: Christian Dietrich<christian.dietrich@informatik.uni-erlangen.de>
-> ---
->   drivers/ide/icside.c |    6 +++++-
->   1 files changed, 5 insertions(+), 1 deletions(-)
+Regards,
+Subhash
 
-> I attach the configuration, that exposes this compilation error.
 
-    Apparently, you forgot to do it. :-)
+> 
+> Thanks,
+> Maya Erez
+> Consultant for Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+the body
+> of a message to majordomo@vger.kernel.org More majordomo info at
+> http://vger.kernel.org/majordomo-info.html
 
-> This patch was
-> *NOT* tested on real hardware. I don't if the fix really does solve the
-> problem, but at least it is a hint that there is a problem.
-
-> diff --git a/drivers/ide/icside.c b/drivers/ide/icside.c
-> index 8716066..62c59c1 100644
-> --- a/drivers/ide/icside.c
-> +++ b/drivers/ide/icside.c
-> @@ -271,7 +271,7 @@ static void icside_set_dma_mode(ide_hwif_t *hwif, ide_drive_t *drive)
->
->   	ide_set_drivedata(drive, (void *)cycle_time);
->
-> -	printk("%s: %s selected (peak %dMB/s)\n", drive->name,
-> +	printk("%s: %s selected (peak %ldMB/s)\n", drive->name,
-
-    Unrelated change, should go into its own patch.
-
->   		ide_xfer_verbose(xfer_mode),
->   		2000 / (unsigned long)ide_get_drivedata(drive));
->   }
-> @@ -456,7 +456,9 @@ err_free:
->   static const struct ide_port_info icside_v6_port_info __initdata = {
->   	.init_dma		= icside_dma_off_init,
->   	.port_ops		=&icside_v6_no_dma_port_ops,
-> +#ifdef CONFIG_BLK_DEV_IDEDMA_ICS
-
-    You forgot to remove the useless '#define icside_v6_dma_ops NULL' above.
-Also, you could set .dma_ops inside the 'if' below (and get rid of 'else' 
-then), removing this line.
-
->   	.dma_ops		=&icside_v6_dma_ops,
-> +#endif
->   	.host_flags		= IDE_HFLAG_SERIALIZE | IDE_HFLAG_MMIO,
->   	.mwdma_mask		= ATA_MWDMA2,
->   	.swdma_mask		= ATA_SWDMA2,
-> @@ -518,10 +520,12 @@ icside_register_v6(struct icside_state *state, struct expansion_card *ec)
->
->   	ecard_set_drvdata(ec, state);
->
-> +#ifdef CONFIG_BLK_DEV_IDEDMA_ICS
->   	if (ec->dma != NO_DMA && !request_dma(ec->dma, DRV_NAME)) {
->   		d.init_dma = icside_dma_init;
->   		d.port_ops = &icside_v6_port_ops;
->   	} else
-> +#endif
->   		d.dma_ops = NULL;
->
->   	ret = ide_host_register(host,&d, hws);
-
-MBR, Sergei
