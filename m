@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab2E2J11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:27:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35276 "EHLO
+	id S1753162Ab2E2Jcl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:32:41 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:34582 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228Ab2E2J10 (ORCPT
+	with ESMTP id S1751267Ab2E2Jck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:27:26 -0400
-Message-ID: <4FC4967A.2040608@linaro.org>
-Date: Tue, 29 May 2012 17:27:22 +0800
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Tue, 29 May 2012 05:32:40 -0400
+Date: Tue, 29 May 2012 18:32:31 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] tty changes for the locking warnings.
+Message-ID: <20120529093231.GA19992@kroah.com>
+References: <20120528094741.3001.29866.stgit@bob.linux.org.uk>
+ <20120528112906.GA6188@kroah.com>
+ <20120528131358.793c127e@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
-References: <1338272340.3127.1.camel@phoenix> <4FC47CEB.8090106@linaro.org> <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com> <4FC488E1.3080406@linaro.org> <20120529091556.GB18977@sortiz-mobl>
-In-Reply-To: <20120529091556.GB18977@sortiz-mobl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120528131358.793c127e@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+On Mon, May 28, 2012 at 01:13:58PM +0100, Alan Cox wrote:
+> On Mon, 28 May 2012 20:29:06 +0900
+> Greg KH <greg@kroah.com> wrote:
+> 
+> > On Mon, May 28, 2012 at 10:48:37AM +0100, Alan Cox wrote:
+> > > Fix the tty locking warnings. This doesn't include the patches to the
+> > > lock markup as I'm not sure which are the final valid ones there.
+> > 
+> > So this should take care of the issues people have reported?  Or are
+> > Peter's patches still needed?
+> 
+> 
+> These fix all the known actual locking issues. I'm not clear if one of
+> the other various mark up patches are also needed to babysit the lockdep
+> analyser
 
-> On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
->> On 29/05/12 15:53, Axel Lin wrote:
->>> 2012/5/29 Lee Jones<lee.jones@linaro.org>:
->>>> On 29/05/12 14:19, Axel Lin wrote:
->>>>>
->>>>> config AB8500_I2C_CORE is not used after commit d28f1db
->>>>> "mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
->>>>> Thus remove it.
->>>>>
->>>>> Signed-off-by: Axel Lin<axel.lin@gmail.com>
->>>>
->>>>
->>>> I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
->>>> inclusion into -rc1 this afternoon. Would you mind leaving this one?
->>>
->>> I don't mind.
->>> But AFAIK, commit d28f1db is in mfd tree.
->>> Any reason you want to send the patch to ARM-SoC instead of mfd tree.
->>
->> I don't actually have a preference as to which tree it goes into, so
->> long as it's sent to Mainline on or before -rc1.
-> I sent a pull request to Linus yesterday, including this commit.
+Ok, great, thanks for fixing this up.
 
-This is something different and wasn't part of the pull-request.
+But, it turns out I don't think I'll have internet access at all for the
+next 4 days, due to travel arrangements, so can you send these directly
+to Linus before 3.5-rc1 is out so they get in and we don't see a zillion
+people complaining about it?
 
-Kind regards,
-Lee
+Feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+to them.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+thanks,
+
+greg k-h
