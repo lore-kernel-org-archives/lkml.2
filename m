@@ -1,125 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753974Ab2E2PUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 11:20:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50469 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab2E2PUa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 11:20:30 -0400
+	id S1753956Ab2E2PXm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 11:23:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28572 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860Ab2E2PXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 11:23:41 -0400
+Message-ID: <4FC4E9EB.5030801@redhat.com>
+Date: Tue, 29 May 2012 12:23:23 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1338299104.2202.34.camel@joe2Laptop>
-References: <1338289626-9021-1-git-send-email-devendra.aaru@gmail.com>
-	<1338299104.2202.34.camel@joe2Laptop>
-Date: Tue, 29 May 2012 20:50:30 +0530
-Message-ID: <CAHdPZaPeGe6FtrU7u1JLCUKs5H3PruXBPA5zpHmEsy=w97bj2w@mail.gmail.com>
-Subject: Re: [PATCH V3] [staging] bcm: Replace the BCM_DEBUG_* and BCM_SHOW_*
- macros with functions
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Kevin McKinney <klmckinney1@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Borislav Petkov <bp@amd64.org>
+CC: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Luck, Tony" <tony.luck@intel.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <1337358773-6919-38-git-send-email-mchehab@redhat.com> <1337854460-25191-1-git-send-email-mchehab@redhat.com> <20120524105604.GC27063@aftab.osrc.amd.com> <4FBE5E1D.7070804@redhat.com> <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com> <4FC4D6E2.9060501@redhat.com> <20120529145245.GG29157@aftab.osrc.amd.com>
+In-Reply-To: <20120529145245.GG29157@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+Em 29-05-2012 11:52, Borislav Petkov escreveu:
+> On Tue, May 29, 2012 at 11:02:10AM -0300, Mauro Carvalho Chehab wrote:
+>> It seems you were unable to read the comments at the function that fills dimm->grain:
+>>
+>> 	/*
+>> 	 * The dram rank boundary (DRB) reg values are boundary addresses
+>> 	 * for each DRAM rank with a granularity of 64MB.  DRB regs are
+>> 	 * cumulative; the last one will contain the total memory
+>> 	 * contained in all ranks.
+> 
+> This looks like a bug:
+> 
+> "The DRAM Rank Boundary Register defines the upper boundary address
+> of each DRAM rank with a granularity of 32 MB. Each rank has its own
+> single-byte DRB register. These registers are used to determine which
+> chip select will be active for a given address."
+> 
+> This is from http://www.intel.com/Assets/PDF/datasheet/306828.pdf which
+> is 955X but it should be documenting the same thing - DRB.
 
-On Tue, May 29, 2012 at 7:15 PM, Joe Perches <joe@perches.com> wrote:
->> diff --git a/drivers/staging/bcm/Debug.c b/drivers/staging/bcm/Debug.c
-> []
->> +void bcm_debug_print(PMINI_ADAPTER Adapter, int Type, int SubType,
->> +                     int dbg_level, const char *fmt, ...)
->> +{
->> +     struct va_format vaf;
->> +     va_list args;
->> +     UINT debug_level = Adapter->stDebugState.debug_level;
->> +
->> +     va_start(args, fmt);
->> +
->> +     vaf.fmt = fmt;
->> +     vaf.va = &args;
->> +
->> +     if (DBG_TYPE_PRINTK == Type)
->> +             pr_info("%s: %pV", __func__, &vaf);
->
-> func
->
->> +     else if (Adapter &&
->> +             (dbg_level & DBG_LVL_BITMASK) <= debug_level &&
->> +             (Type & Adapter->stDebugState.type) &&
->> +             (SubType & Adapter->stDebugState.subtype[Type])) {
->> +             if (dbg_level & DBG_NO_FUNC_PRINT)
->> +                     printk(KERN_DEBUG "%pV" , &vaf);
->> +             else
->> +                     printk(KERN_DEBUG "%s: %pV", __func__, &vaf);
->
-> func
->
->> +     }
->> +
->> +     va_end(args);
->> +}
->> +
->> +void bcm_debug_print_buffer(PMINI_ADAPTER Adapter, int Type, int SubType,
->> +                         int dbg_level, const void *buffer, size_t bufferlen)
->> +{
->> +     if (DBG_TYPE_PRINTK == Type ||
->> +        (Adapter &&
->> +        (dbg_level & DBG_LVL_BITMASK) <= Adapter->stDebugState.debug_level &&
->> +        (Type & Adapter->stDebugState.type) &&
->> +        (SubType & Adapter->stDebugState.subtype[Type]))) {
->> +             printk(KERN_DEBUG "%s:\n", __func__);
->
-> func
->
->> +             print_hex_dump(KERN_DEBUG, " ", DUMP_PREFIX_OFFSET,
->> +                            16, 1, buffer, bufferlen, false);
->> +     }
->> +}
->
-> []
->
->> diff --git a/drivers/staging/bcm/Debug.h b/drivers/staging/bcm/Debug.h
-> []
->> +struct _MINI_ADAPTER;
->> +
->> +__printf(5, 6)
->> +
->> +void bcm_debug_print(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
->> +                     int dbg_level, const char *fmt, ...);
->
-> No blank line between __printf and prototype
->
->> +void bcm_debug_print_buffer(struct _MINI_ADAPTER *Adapter, int Type, int SubType,
->> +                     int dbg_level, const void *buffer, size_t bufferlen);
->> +void bcm_show_debug_bitmap(struct _MINI_ADAPTER *Adapter);
->> +
->> +#define BCM_DEBUG_PRINT(Adapter, Type, SubType, dbg_level, fmt, ...) \
->> +     bcm_debug_print(Adapter, Type, SubType, dbg_level, fmt, ##__VA_ARGS__)
->> +
->> +#define BCM_DEBUG_PRINT_BUFFER(Adapter, Type, SubType, dbg_level,    \
->> +                             buffer, bufferlen)                      \
->> +     bcm_debug_print_buffer(Adapter, Type, SubType, dbg_level,       \
->> +                             buffer, bufferlen)
->> +#define BCM_SHOW_DEBUG_BITMAP(Adapter)                                       \
->> +     bcm_show_debug_bitmap(Adapter)
->
-> Turns out to keep the same behavior, you need to add
-> a const char *func argument to these functions and
-> change the macros to pass __func__.
->
->
->
-Ok. so what i am doing now is wrong as its a function, and __func__
-gives the dbg function name, instead the called function since we
-changed it to functions rather from Macros.
+Maybe i3200 is similar to 955x. I dunno, as I didn't write this driver.
 
-Ok, i will send out new changes.
+> Now, if I'm reporting an error address and I'm saying "you had an error
+> at X, but this error is somewhere in the X+64MB region", then I can
+> simply say which rank it is. And we're doing that already with the
+> layer-things.
 
-Thanks,
-Devendra.
+Doesn't make sense, as a rank is bigger than 64 MB. I suspect that the
+work "rank" is used to indicate something else, like the DRAM bank.
+
+If so, an address at the 64MB region could be used to identify the DRAM
+chip.
+
+> 
+> [ â€¦ ]
+> 
+>> That means that any correlation function used by an stochastic process
+>> analysis will need to take the grain into account, in order to detect
+>> if a series of errors are due to a random noise, or if they're due to
+>> a physical problem at the device.
+> 
+> Dude, stop talking crap and concentrate. On which planet is granularity
+> of the error 64 MB?
+> 
+> From <Documentation/edac.txt>:
+> 
+> ============================================================================
+> SYSTEM LOGGING
+> 
+> If logging for UEs and CEs are enabled then system logs will have
+> error notices indicating errors that have been detected:
+> 
+> EDAC MC0: CE page 0x283, offset 0xce0, grain 8, syndrome 0x6ec3, row 0,
+> channel 1 "DIMM_B1": amd76x_edac
+> 
+> EDAC MC0: CE page 0x1e5, offset 0xfb0, grain 8, syndrome 0xb741, row 0,
+> channel 1 "DIMM_B1": amd76x_edac
+> 
+> 
+> The structure of the message is:
+>         the memory controller                   (MC0)
+>         Error type                              (CE)
+>         memory page                             (0x283)
+>         offset in the page                      (0xce0)
+>         the byte granularity                    (grain 8)
+>                 or resolution of the error
+> 	^^^^
+> 
+> and
+> 
+> struct csrow_info {
+>         unsigned long first_page;       /* first page number in dimm */
+>         unsigned long last_page;        /* last page number in dimm */
+>         unsigned long page_mask;        /* used for interleaving -
+>                                          * 0UL for non intlv
+>                                          */
+>         u32 nr_pages;           /* number of pages in csrow */
+>         u32 grain;              /* granularity of reported error in bytes */
+> 				   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+>> 			dimm->grain = nr_pages << PAGE_SHIFT;
+
+Grain unity is bytes, so it seems ok.
+
+Also, you might not be noticed, but, at least on this driver, the grain
+is per-memory module (and not a per-memory controller value).
+
+> But none of that matters - the only thing that matters is that this
+> thing is static and doesn't change for the module's lifetime.
+
+I'm not so sure about that.
+
+@Tony: Can you ensure us that, on Intel memory controllers, the address
+mask remains contant at module's lifetime, or are there any events that
+may change it (memory hot-plug, mirror mode changes, interleaving 
+reconfiguration, ...)?
+
+> 
+> So add it as a part of some EDAC initialization printk which we print
+> once on boot in dmesg and userspace tools can read it. Or to sysfs, if
+> it makes more sense.
+> 
+> But not in _each_ tracepoint record, filling the buffers with useless info.
+> 
+
+Regards,
+Mauro
