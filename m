@@ -1,175 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2E2Lmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 07:42:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3660 "EHLO mx1.redhat.com"
+	id S1753663Ab2E2Lof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 07:44:35 -0400
+Received: from shutemov.name ([176.9.204.213]:43030 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab2E2Lmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 07:42:32 -0400
-Message-ID: <4FC4B622.9000302@redhat.com>
-Date: Tue, 29 May 2012 08:42:26 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752062Ab2E2Lod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 07:44:33 -0400
+Date: Tue, 29 May 2012 14:45:54 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 23/35] autonuma: core
+Message-ID: <20120529114554.GA7017@shutemov.name>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-24-git-send-email-aarcange@redhat.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [GIT PULL for 3.5-rc1] EDAC internal API changes
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337965359-29725-24-git-send-email-aarcange@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, May 25, 2012 at 07:02:27PM +0200, Andrea Arcangeli wrote:
 
-Please pull from:
-	 git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
+> +static int knumad_do_scan(void)
+> +{
 
-This changeset is the first part of a series of patches that fixes the EDAC
-sybsystem. On this set, it changes the Kernel EDAC API in order to properly 
-represent the Intel i3/i5/i7, Xeon 3xxx/5xxx/7xxx, and Intel E5-xxxx memory 
-controllers.
+...
 
-The EDAC core used to assume that:
+> +	if (knumad_test_exit(mm) || !vma) {
+> +		mm_autonuma = mm->mm_autonuma;
+> +		if (mm_autonuma->mm_node.next != &knumad_scan.mm_head) {
+> +			mm_autonuma = list_entry(mm_autonuma->mm_node.next,
+> +						 struct mm_autonuma, mm_node);
+> +			knumad_scan.mm = mm_autonuma->mm;
+> +			atomic_inc(&knumad_scan.mm->mm_count);
+> +			knumad_scan.address = 0;
+> +			knumad_scan.mm->mm_autonuma->numa_fault_pass++;
+> +		} else
+> +			knumad_scan.mm = NULL;
 
-	- the DRAM chip select pin is directly accessed by the memory controller;
+knumad_scan.mm should be nulled only after list_del otherwise you will
+have race with autonuma_exit():
 
-	- when multiple channels are used, they're all filled with the same type
-	  of memory.
+[   22.905208] ------------[ cut here ]------------
+[   23.003620] WARNING: at /home/kas/git/public/linux/lib/list_debug.c:50 __list_del_entry+0x63/0xd0()
+[   23.003621] Hardware name: QSSC-S4R
+[   23.003624] list_del corruption, ffff880771a49300->next is LIST_POISON1 (dead000000100100)
+[   23.003626] Modules linked in: megaraid_sas
+[   23.003629] Pid: 569, comm: udevd Not tainted 3.4.0+ #31
+[   23.003630] Call Trace:
+[   23.003640]  [<ffffffff8105956f>] warn_slowpath_common+0x7f/0xc0
+[   23.003643]  [<ffffffff81059666>] warn_slowpath_fmt+0x46/0x50
+[   23.003645]  [<ffffffff813202e3>] __list_del_entry+0x63/0xd0
+[   23.003648]  [<ffffffff81320361>] list_del+0x11/0x40
+[   23.003654]  [<ffffffff8117b80f>] autonuma_exit+0x5f/0xb0
+[   23.003657]  [<ffffffff810567ab>] mmput+0x7b/0x120
+[   23.003663]  [<ffffffff8105e7d8>] exit_mm+0x108/0x130
+[   23.003674]  [<ffffffff8165da5b>] ? _raw_spin_unlock_irq+0x2b/0x40
+[   23.003677]  [<ffffffff8105e94a>] do_exit+0x14a/0x8d0
+[   23.003682]  [<ffffffff811b71c6>] ? mntput+0x26/0x40
+[   23.003688]  [<ffffffff8119a599>] ? fput+0x1c9/0x270
+[   23.003693]  [<ffffffff81319dd9>] ? lockdep_sys_exit_thunk+0x35/0x67
+[   23.003696]  [<ffffffff8105f41f>] do_group_exit+0x4f/0xc0
+[   23.003698]  [<ffffffff8105f4a7>] sys_exit_group+0x17/0x20
+[   23.003703]  [<ffffffff816663e9>] system_call_fastpath+0x16/0x1b
+[   23.003705] ---[ end trace 8b21c7adb0af191b ]---
 
-None of the above premises is true on Intel memory controllers since 2002, when
-RAMBUS and FB-DIMMs were introduced, and Advanced Memory Buffer or by some similar
-technologies hides the direct access to the DRAM pins.
+> +
+> +		if (knumad_test_exit(mm))
+> +			list_del(&mm->mm_autonuma->mm_node);
+> +		else
+> +			mm_numa_fault_flush(mm);
+> +
+> +		mmdrop(mm);
+> +	}
+> +
+> +	return progress;
+> +}
 
-So, the existing drivers for those chipsets had to lie to the EDAC core, in
-general telling that just one channel is filled. That produces some hard to
-understand error messages like:
+...
 
-	EDAC MC0: CE row 3, channel 0, label "DIMM1": 1 Unknown error(s): memory read error on FATAL area : cpu=0 Err=0008:00c2 (ch=2), addr = 0xad1f73480 => socket=0, Channel=0(mask=2), rank=1
+> +
+> +static int knuma_scand(void *none)
+> +{
 
-The location information there (row3 channel 0) is completely bogus: it has no
-physical meaning, and are just some random values that the driver uses to talk
-with the EDAC core. The error actually happened at CPU socket 0, channel 0, slot 1,
-but this is not reported anywhere, as the EDAC core doesn't know anything about
-the memory layout. So, only advanced users that know how the EDAC driver works
-and that tests their systems to see how DIMMs are mapped can actually benefit
-for such error logs.
+...
 
-This patch series fixes the error report logic, in order to allow the EDAC
-to expose the memory architecture used by them to the EDAC core. So, as the
-EDAC core now understands how the memory is organized, it can provide an
-useful report:
+> +	mm = knumad_scan.mm;
+> +	knumad_scan.mm = NULL;
 
-	EDAC MC0: CE memory read error on DIMM1 (channel:0 slot:1 page:0x364b1b offset:0x600 grain:32 syndrome:0x0 - count:1 area:DRAM err_code:0001:0090 socket:0 channel_mask:1 rank:4)
+The same problem here.
 
-The location of the DIMM where the error happened is reported by 
-"MC0" (cpu socket #0), at "channel:0 slot:1" location, and matches the
-physical location of the DIMM.
+> +	if (mm)
+> +		list_del(&mm->mm_autonuma->mm_node);
+> +	mutex_unlock(&knumad_mm_mutex);
+> +
+> +	if (mm)
+> +		mmdrop(mm);
+> +
+> +	return 0;
+> +}
 
-There are two remaining issues not covered by this patch series:
-
-	- The EDAC sysfs API will still report bogus values. So, userspace
-tools like edac-utils will still use the bogus data;
-
-	- Add a new tracepoint-based way to get the binary information about
-the errors.
-
-Those are on a second series of patches (also at -next), but will probably
-miss the train for 3.5, due to the slow review process.
-
-Thanks!
-Mauro
-
--
-
-Latest commit at the branch: 
-0bf09e829dd4b07227ed5a8bc4ac85752a044458 i7core: fix ranks information at the per-channel struct
-The following changes since commit 76e10d158efb6d4516018846f60c2ab5501900bc:
-
-  Linux 3.4 (2012-05-20 15:29:13 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-Mauro Carvalho Chehab (42):
-      edac: Create a dimm struct and move the labels into it
-      edac: move dimm properties to struct dimm_info
-      edac: Don't initialize csrow's first_page & friends when not needed
-      edac: move nr_pages to dimm struct
-      edac: rewrite edac_align_ptr()
-      edac.h: Add generic layers for describing a memory location
-      edac: Change internal representation to work with layers
-      amd64_edac: convert driver to use the new edac ABI
-      amd76x_edac: convert driver to use the new edac ABI
-      cell_edac: convert driver to use the new edac ABI
-      cpc925_edac: convert driver to use the new edac ABI
-      e752x_edac: convert driver to use the new edac ABI
-      e7xxx_edac: convert driver to use the new edac ABI
-      i3000_edac: convert driver to use the new edac ABI
-      i3200_edac: convert driver to use the new edac ABI
-      i5000_edac: convert driver to use the new edac ABI
-      i5100_edac: convert driver to use the new edac ABI
-      i5400_edac: convert driver to use the new edac ABI
-      i7300_edac: convert driver to use the new edac ABI
-      i7core_edac: convert driver to use the new edac ABI
-      i82443bxgx_edac: convert driver to use the new edac ABI
-      i82860_edac: convert driver to use the new edac ABI
-      i82875p_edac: convert driver to use the new edac ABI
-      i82975x_edac: convert driver to use the new edac ABI
-      mpc85xx_edac: convert driver to use the new edac ABI
-      mv64x60_edac: convert driver to use the new edac ABI
-      pasemi_edac: convert driver to use the new edac ABI
-      ppc4xx_edac: convert driver to use the new edac ABI
-      r82600_edac: convert driver to use the new edac ABI
-      sb_edac: convert driver to use the new edac ABI
-      tile_edac: convert driver to use the new edac ABI
-      x38_edac: convert driver to use the new edac ABI
-      edac: Remove the legacy EDAC ABI
-      edac: Initialize the dimm label with the known information
-      edac: Cleanup the logs for i7core and sb edac drivers
-      i5400_edac: improve debug messages to better represent the filled memory
-      i5000_edac: Fix the logic that retrieves memory information
-      e752x_edac: provide more info about how DIMMS/ranks are mapped
-      i82975x_edac: Test nr_pages earlier to save a few CPU cycles
-      i5100_edac: Fix a warning when compiled with 32 bits
-      i5000: Fix the fatal error handling
-      i7core: fix ranks information at the per-channel struct
-
- drivers/edac/amd64_edac.c      |  200 +++++++-----
- drivers/edac/amd76x_edac.c     |   42 ++-
- drivers/edac/cell_edac.c       |   42 ++-
- drivers/edac/cpc925_edac.c     |   91 +++--
- drivers/edac/e752x_edac.c      |  116 +++++--
- drivers/edac/e7xxx_edac.c      |   86 ++++--
- drivers/edac/edac_core.h       |   47 +--
- drivers/edac/edac_device.c     |   27 +-
- drivers/edac/edac_mc.c         |  716 ++++++++++++++++++++++++++--------------
- drivers/edac/edac_mc_sysfs.c   |   70 +++--
- drivers/edac/edac_module.h     |    2 +-
- drivers/edac/edac_pci.c        |    6 +-
- drivers/edac/i3000_edac.c      |   49 ++-
- drivers/edac/i3200_edac.c      |   56 ++--
- drivers/edac/i5000_edac.c      |  236 +++++++------
- drivers/edac/i5100_edac.c      |  106 +++---
- drivers/edac/i5400_edac.c      |  265 ++++++++-------
- drivers/edac/i7300_edac.c      |  115 +++----
- drivers/edac/i7core_edac.c     |  270 +++++-----------
- drivers/edac/i82443bxgx_edac.c |   41 ++-
- drivers/edac/i82860_edac.c     |   55 ++-
- drivers/edac/i82875p_edac.c    |   51 ++-
- drivers/edac/i82975x_edac.c    |   58 +++-
- drivers/edac/mpc85xx_edac.c    |   37 ++-
- drivers/edac/mv64x60_edac.c    |   47 ++-
- drivers/edac/pasemi_edac.c     |   49 ++--
- drivers/edac/ppc4xx_edac.c     |   50 ++--
- drivers/edac/r82600_edac.c     |   40 ++-
- drivers/edac/sb_edac.c         |  212 +++++--------
- drivers/edac/tile_edac.c       |   33 ++-
- drivers/edac/x38_edac.c        |   52 ++--
- include/linux/edac.h           |  182 +++++++++--
- 32 files changed, 1981 insertions(+), 1468 deletions(-)
-
+-- 
+ Kirill A. Shutemov
