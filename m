@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab2E2Rg2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:36:28 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:8273 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab2E2Rg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:36:27 -0400
-X-IronPort-AV: E=Sophos;i="4.75,678,1330923600"; 
-   d="scan'208";a="196787778"
-Message-ID: <4FC50918.4000608@citrix.com>
-Date: Tue, 29 May 2012 18:36:24 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Icedove/3.0.11
+	id S1754765Ab2E2Ri5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:38:57 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61886 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab2E2Ri4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:38:56 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/balloon: Subtract from xen_released_pages the count
- that is populated.
-References: <1338310689-5967-1-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1338310689-5967-1-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120529163849.GF21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-14-git-send-email-aarcange@redhat.com> <1338297385.26856.74.camel@twins>
+ <20120529163849.GF21339@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 29 May 2012 10:38:34 -0700
+X-Google-Sender-Auth: WtmBFWKI2rwE3GFXCPbINp2MgIY
+Message-ID: <CA+55aFwmhM2a2HjB_MEjVDDL-AP4j-t202ozmHgT0azSptjnoA@mail.gmail.com>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/05/12 17:58, Konrad Rzeszutek Wilk wrote:
-> We did not take into account that xen_released_pages would be
-> used outside the initial E820 parsing code. As such we would
-> not subtract from xen_released_pages the count of pages
-> that we had populated back. Instead we just did a simple
-> extra_pages = released - populated calculation.
-> 
-> However the balloon worker uses xen_released_pages to figure
-> out how many more pages it can balloon up to and not having
-> the proper numbers we would balloon more than we should have.
+On Tue, May 29, 2012 at 9:38 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Tue, May 29, 2012 at 03:16:25PM +0200, Peter Zijlstra wrote:
+>> 24 bytes per page.. or ~0.6% of memory gone. This is far too great a
+>> price to pay.
+>
+> I don't think it's too great, memcg uses for half of that and yet
+> nobody is booting with cgroup_disable=memory even on not-NUMA servers
+> with less RAM.
 
-I would probably rephrase this paragraph to be a bit clearer but it's
-not a big deal.  Something like this perhaps:
+A big fraction of one percent is absolutely unacceptable.
 
-"The balloon driver uses xen_released_pages to set the initial
-current_pages count.  If this is wrong (too low) then when a new
-(higher) target is set, the balloon driver will request too many pages
-from Xen."
+Our "struct page" is one of our biggest memory users, there's no way
+we should cavalierly make it even bigger.
 
-> This fixes errors such as:
-> 
-> (XEN) memory.c:133:d0 Could not allocate order=0 extent: id=0 memflags=0 (51 of 512)
-> during bootup and
-> free_memory            : 0
-> 
-> where the free_memory should be 128.
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+It's also a huge performance sink, the cache miss on struct page tends
+to be one of the biggest problems in managing memory. We may not ever
+fix that, but making struct page bigger certainly isn't going to help
+the bad cache behavior.
 
-Acked-by: David Vrabel <david.vrabel@citrix.com>
-
-> ---
->  arch/x86/xen/setup.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-> index 3ebba07..a4790bf 100644
-> --- a/arch/x86/xen/setup.c
-> +++ b/arch/x86/xen/setup.c
-> @@ -371,7 +371,8 @@ char * __init xen_memory_setup(void)
->  	populated = xen_populate_chunk(map, memmap.nr_entries,
->  			max_pfn, &last_pfn, xen_released_pages);
->  
-> -	extra_pages += (xen_released_pages - populated);
-> +	xen_released_pages -= populated;
-> +	extra_pages += xen_released_pages;
->  
->  	if (last_pfn > max_pfn) {
->  		max_pfn = min(MAX_DOMAIN_PAGES, last_pfn);
-
+                    Linus
