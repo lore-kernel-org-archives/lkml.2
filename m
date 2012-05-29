@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753916Ab2E2Oux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:50:53 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:36306 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2E2Ouw (ORCPT
+	id S1753969Ab2E2Ov0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:51:26 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:23327 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753942Ab2E2OvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:50:52 -0400
-Date: Tue, 29 May 2012 16:50:45 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [GIT PULL] CMA and ARM DMA-mapping updates for v3.5
-In-reply-to: <20120529122932.GA24623@n2100.arm.linux.org.uk>
-To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
-Cc: "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Message-id: <015e01cd3daa$6d910e50$48b32af0$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Ac09lrl9VH+GBg6ASKSeY+9pdx8APAADT39A
-References: <1337672417-10065-1-git-send-email-m.szyprowski@samsung.com>
- <20120529122932.GA24623@n2100.arm.linux.org.uk>
-X-TM-AS-MML: No
+	Tue, 29 May 2012 10:51:25 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: MsRLOVEVM1mK2qKLV9LVsWnCayV.pi1UbXcBaOpf5aNSwsB
+ sJoIoIbCzQSbEVkBwOtGzns4urh.d7LsH4xyfj8Zz9iTSR6.kZ3AjeQxZfOx
+ r9lk167Jhvj0Pve0gAqLQnthqE2ps2baguAXfYjfcJUisl4t_ouYQh6qMrhV
+ G1OtS2EezAFYDLIBm4w7K1TgmwYxfeYpSabfMd.x6VN5Lw6cexjABajdCWbW
+ BNYA_Q9jWYDtEWNmb9TWzcyXAHfSf6wBYs.CJ3qGOaGjiF2DrmDtXO2otPmQ
+ UVv3EeWSkIme18Ger6VD2WwJNND3FEHJFuxpvAsSrtCxCPv6IP4j2EjJ_vqv
+ ih2JV13iJSIaLyChLRGbtrTXfVTXGgJJsAZO3AEZlUC_5.15tLxmpP8XsbRU
+ x
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 29 May 2012 09:51:20 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Glauber Costa <glommer@parallels.com>
+cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 18/28] slub: charge allocation to a memcg
+In-Reply-To: <1337951028-3427-19-git-send-email-glommer@parallels.com>
+Message-ID: <alpine.DEB.2.00.1205290948250.4666@router.home>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-19-git-send-email-glommer@parallels.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 25 May 2012, Glauber Costa wrote:
 
-On Tuesday, May 29, 2012 2:30 PM Russell King - ARM Linux wrote:
+> This patch charges allocation of a slab object to a particular
+> memcg.
 
-> I notice we have new warnings as a result of CMA being merged, though
-> thankfully they're just in Kconfig:
-> 
-> warning: (ARM) selects CMA which has unmet direct dependencies (HAVE_DMA_CONTIGUOUS &&
-> HAVE_MEMBLOCK && EXPERIMENTAL)
-> 
-> This seems totally weird: you're mandating that ARM must have CMA
-> selected, but it's an experimental feature?  So you're implying that
-> the entire ARM kernel becomes totally experimental for the next
-> release cycle?
-> 
-> I think this needs fixing.
-
-No, that wasn't my intention. I will provide a patch which removes unconditional dependency
-on CMA - it will let one to disable CMA and use old allocation method if needed, but this 
-requires a few more changes in the dma-mapping implementation. I wasn't aware of the 
-consequences and no one has complained about this since v15 of CMA patches (Aug 2011).
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+I am wondering why you need all the other patches. The simplest approach
+would just to hook into page allocation and freeing from the slab
+allocators as done here and charge to the currently active cgroup. This
+avoids all the duplication of slab caches and per node as well as per cpu
+structures. A certain degree of fuzziness cannot be avoided given that
+objects are cached and may be served to multiple cgroups. If that can be
+tolerated then the rest would be just like this patch which could be made
+more simple and non intrusive.
 
