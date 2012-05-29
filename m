@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab2E2WpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 18:45:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17058 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196Ab2E2WpR (ORCPT
+	id S1754852Ab2E2Wva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 18:51:30 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54725 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751084Ab2E2Wv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 18:45:17 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wwwCnHkgN0EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=2focIdWqE8m9eROobXYA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338331514.13348.298.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe
- optimization
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Tue, 29 May 2012 18:45:14 -0400
-In-Reply-To: <20120529124833.9191.23007.stgit@localhost.localdomain>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Tue, 29 May 2012 18:51:28 -0400
+Message-ID: <4FC54EA7.3040102@xenotime.net>
+Date: Tue, 29 May 2012 15:33:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Devendra Naga <devendra.aaru@gmail.com>
+CC: Rodolfo Giometti <giometti@enneenne.com>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/pps: Fix a small spell mistake
+References: <1338330455-6805-1-git-send-email-devendra.aaru@gmail.com>
+In-Reply-To: <1338330455-6805-1-git-send-email-devendra.aaru@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 21:48 +0900, Masami Hiramatsu wrote:
+On 05/29/2012 03:27 PM, Devendra Naga wrote:
 
-> Also, this makes all __kprobes functions "notrace", because
-> some of those functions are considered as to be called from
-> kprobes handler which is called from function tracer.
-> I think that is another discussion point. Perhaps, we need
-> to introduce another tag which means "don't put kprobe on
-> this function" instead of __kprobes and apply that.
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> ---
+>  Documentation/pps/pps.txt |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/pps/pps.txt b/Documentation/pps/pps.txt
+> index d35dcdd..c3228fd 100644
+> --- a/Documentation/pps/pps.txt
+> +++ b/Documentation/pps/pps.txt
+> @@ -34,7 +34,7 @@ and record it for userland.
+>  
+>  Common use is the combination of the NTPD as userland program, with a
+>  GPS receiver as PPS source, to obtain a wallclock-time with
+> -sub-millisecond synchronisation to UTC.
+> +sub-millisecond synchronization to UTC.
 
-Actually, instead, we can force kprobes to have all "__kprobes"
-functions added to its 'notrace' ftrace_ops. This will just keep kprobes
-from function tracing these, as I find myself tracing functions marked
-by kprobes quite a bit.
 
--- Steve
+FWIW, typically we allow either UK or US English spellings.
+
+>  
+>  
+>  RFC considerations
 
 
+
+-- 
+~Randy
