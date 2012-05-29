@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab2E2RLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:11:39 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54488 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712Ab2E2RLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:11:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172375770"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Kay Sievers <kay@vrfy.org>, Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: Greg Kroah-Hartmann <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: RE: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-Thread-Topic: [PATCH RESEND 1/3] printk: convert byte-buffer to
- variable-length record buffer
-Thread-Index: AQHNOzCOBDs565gXrkyewLY3D++soJbeJ3uAgANBpAD//5vIoA==
-Date: Tue, 29 May 2012 17:11:36 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F5F26@ORSMSX104.amr.corp.intel.com>
-References: <1336004953.4240.9.camel@mop> <20120526111143.GA32304@lizard>
-	 <CAPXgP10--rmzK8joBSrs3Abk7uuamJTDBbvrm6W6w_xODqZVtg@mail.gmail.com>
- <1338307620.886.21.camel@mop>
-In-Reply-To: <1338307620.886.21.camel@mop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="utf-8"
+	id S1754629Ab2E2RMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:12:38 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59559 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754064Ab2E2RMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:12:37 -0400
+Date: Tue, 29 May 2012 19:13:05 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        hpa <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: WARNING: at arch/x86/kernel/smpboot.c:310
+ topology_sane.clone.1+0x6e/0x81()
+Message-ID: <20120529171305.GK29157@aftab.osrc.amd.com>
+References: <20120529135442.GE29157@aftab.osrc.amd.com>
+ <1338303106.26856.92.camel@twins>
+ <20120529152944.GA8263@alberich.amd.com>
+ <1338310743.26856.141.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338310743.26856.141.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q4THBjlI027923
 
-+/*
-+ * Fill the provided buffer with as many of the the *youngest* kmsg records
-+ * that fit into it. Repeated calls will fill the buffer with the next block
-+ * of older records, not including the former ones. A return value of FALSE
-+ * indicate that all records are read, including the oldest one.
-+ */
+On Tue, May 29, 2012 at 06:59:03PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-05-29 at 17:29 +0200, Andreas Herrmann wrote:
+> 
+> > I've also looked at this. core_siblings mask is broken with this patch.
+> > And there is this new irritating warning ...
+> 
+> Hehe, you made this irritating hardware ;-) But fair enough.
+> 
+> > I second Boris' suggestion for a fix. But I think the check for
+> > X86_FEATURE_AMD_DCM should go into topology_sane() which in theory
+> > could check other things as well.
+> 
+> Unless you plan to go span cache (or even SMT siblings) over physical
+> IDs I'd strongly argue against putting it in topology_sane().
 
-I confess to not reading all of this ... but does this handle the pstore/OOPS
-case? We'll use this call to pull as many records as will fit in the pstore
-error record ... but almost certainly won't pull all of the console log, so
-we won't see the FALSE return.
+Nah, the check goes in match_mc - we just talked it over with Andreas.
 
-The system keeps on running.
+> As it stands I think we should discuss the definition for the generic
+> topology bits (drivers/base/topology.c), because I think your
+> Magny-Cours thing does the wrong thing here.
 
-Now another OOPS happens and pstore wants to grab the new "youngest" records,
-it doesn't want to continue stepping to older records from the place it got
-to on the first OOPS.  Will that work?
+"wrong" is such a strong word :-) Please elaborate and I'll have a look.
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> The core span in a phys_id is all nice and such, but what does it mean?
+
+AFAICT, this is the physical package id to which the cores belong, i.e.
+physical socket.
+
+> IOW what would you do with it?
+
+Shoot empty cans with it... :-)
+
+Andreas?
+
+> I would think the LLC range and the node-span are much more useful
+> things to have. Once you have nodes the sysfs node topology takes
+> over.
+
+Yes, the LLC range should be the cores belonging to an internal node and
+the node-span is the cores belonging to a physical socket. I think you
+can compute anything else from those topo-wise.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
