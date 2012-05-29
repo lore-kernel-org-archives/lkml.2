@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2E2ILd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 04:11:33 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:52849 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab2E2ILb (ORCPT
+	id S1752302Ab2E2ILf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 04:11:35 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48409 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab2E2ILb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 29 May 2012 04:11:31 -0400
-Message-ID: <4FC48281.4030502@linux.vnet.ibm.com>
-Date: Tue, 29 May 2012 13:32:09 +0530
+Message-ID: <4FC48272.9040904@linux.vnet.ibm.com>
+Date: Tue, 29 May 2012 13:31:54 +0530
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
@@ -16,21 +16,21 @@ To: Yong Zhang <yong.zhang0@gmail.com>
 CC: linux-kernel@vger.kernel.org, ralf@linux-mips.org, sshtylyov@mvista.com,
         david.daney@cavium.com, nikunj@linux.vnet.ibm.com,
         paulmck@linux.vnet.ibm.com, axboe@kernel.dk, mingo@kernel.org,
-        tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org
-Subject: Re: [RFC PATCH 00/10] Cleanup ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
-References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
-In-Reply-To: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
+        tglx@linutronix.de, peterz@infradead.org, akpm@linux-foundation.org,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: Re: [PATCH 08/10] SPARC: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
+References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com> <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
+In-Reply-To: <1338275765-3217-9-git-send-email-yong.zhang0@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12052908-8878-0000-0000-000002B39A3C
+x-cbid: 12052908-2000-0000-0000-000007BB60C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 12:45 PM, Yong Zhang wrote:
+On 05/29/2012 12:46 PM, Yong Zhang wrote:
 
-> As discussed with Srivatsa [1], it seems there is no need to keep
-> ipi_call_[un]lock_irq() when cpu bring-up/down. Because:
+> From: Yong Zhang <yong.zhang@windriver.com>
 > 
 > 1) call_function.lock used in smp_call_function_many() is just to protect
 >    call_function.queue and &data->refs, cpu_online_mask is outside of the
@@ -43,28 +43,49 @@ On 05/29/2012 12:45 PM, Yong Zhang wrote:
 > 2) For cpu down issue, stop_machine() will guarantee that no concurrent
 >    smp_call_fuction() is processing.
 > 
-> In short it's more likely that keeping ipi_call_[un]lock() is leftover
-> before we introduce generic smp helper. This patchset is just to clean
-> things up.
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: sparclinux@vger.kernel.org
+> ---
+>  arch/sparc/kernel/smp_64.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> [1] http://marc.info/?l=linux-kernel&m=133766786814484&w=2
+> diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+> index f591598..60e745c 100644
+> --- a/arch/sparc/kernel/smp_64.c
+> +++ b/arch/sparc/kernel/smp_64.c
+> @@ -124,9 +124,9 @@ void __cpuinit smp_callin(void)
+>  	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+>  		rmb();
 > 
-> Yong Zhang (10):
->   hexagon: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   mn10300: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   parisc: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   S390: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   tile: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   x86: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   ia64: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
->   SPARC: smp: remove call to ipi_call_lock_irq()/ipi_call_unlock_irq()
->   POWERPC: smp: remove call to ipi_call_lock()/ipi_call_unlock()
->   smp: remove ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
->
+> -	ipi_call_lock_irq();
+> +	local_irq_disable();
 
 
-All patches except the sparc one look good.
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+This looks odd. IRQs must not have been enabled at this point.
+Just remove the call to local_irq_enable() that is found a few lines above
+this line and then you won't have to add this call to local_irq_disable().
+
+>  	set_cpu_online(cpuid, true);
+> -	ipi_call_unlock_irq();
+> +	local_irq_enable();
+> 
+
+>  	/* idle thread is expected to have preempt disabled */
+
+>  	preempt_disable();
+> @@ -1308,9 +1308,7 @@ int __cpu_disable(void)
+>  	mdelay(1);
+>  	local_irq_disable();
+> 
+> -	ipi_call_lock();
+>  	set_cpu_online(cpu, false);
+> -	ipi_call_unlock();
+> 
+>  	cpu_map_rebuild();
+> 
+
+
 
 Regards,
 Srivatsa S. Bhat
