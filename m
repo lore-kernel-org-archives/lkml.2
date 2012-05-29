@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab2E2QOT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:14:19 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:32714 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab2E2QOS (ORCPT
+	id S1754262Ab2E2QOV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:14:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:58055 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab2E2QOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:14:18 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6725"; a="195607165"
-Date: Tue, 29 May 2012 11:14:15 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: hexagon: signal bugs
-Message-ID: <20120529161415.GA2486@codeaurora.org>
-References: <20120519210911.GB11775@ZenIV.linux.org.uk>
+	Tue, 29 May 2012 12:14:20 -0400
+Message-ID: <4FC4F5D8.8090701@wwwdotorg.org>
+Date: Tue, 29 May 2012 10:14:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120519210911.GB11775@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jonathan Cameron <jic23@kernel.org>, Russell King <rmk@arm.linux.org.uk>
+CC: kay.sievers@vrfy.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: arm: Remaining issue with alignment of __log_buf in printk.c
+References: <4FC22098.3070803@kernel.org> <4FC25048.109@wwwdotorg.org>
+In-Reply-To: <4FC25048.109@wwwdotorg.org>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 10:09:11PM +0100, Al Viro wrote:
-> 	1) spot the braino:
-> void do_trap0(struct pt_regs *regs)
-> ...
->         unsigned long syscallret = 0;
-> 	...
->                 if ((unsigned long) regs->syscall_nr >= __NR_syscalls) {
->                         regs->r00 = -1;
->                 } else {
->                         syscall = (syscall_fn)
->                                   (sys_call_table[regs->syscall_nr]);
->                         syscallret = syscall(regs->r00, regs->r01,
->                                    regs->r02, regs->r03,
->                                    regs->r04, regs->r05);
->                 }
-> 
->                 if (regs->syscall_nr != __NR_rt_sigreturn)
->                         regs->r00 = syscallret;
-> IOW, the last if () should've been inside the "syscall_nr is not too high"
-> branch of the if () just above...
-> 
-> 	2) you do _not_ want syscall restarts to happen on sigreturn().
-> Whatever adjustment needed to be done had already been done back before
-> we'd saved the registers into sigcontext.  So doing
->         regs->syscall_nr = __NR_rt_sigreturn;
-> in sys_rt_sigreturn() is exactly the wrong thing - for syscall restart
-> purposes you want it to look like a non-syscall (i.e. it should be
-> regs->syscall_nr = -1 to make your check in handle_signal() work).
-> Incidentally, I would suggest just having that thing return regs->r00;
-> then you can avoid all special-casing for "do we want to put the
-> return value of sys_...() into regs->r00?" in do_trap0().
-> 
-> 	3) if you have multiple pending signals, you need to handle all
-> of them before returning to userland.  And you need to make sure that
-> syscall restart logics does not trigger on anything past the first time
-> around.
-> 
-> 	4) checking for !user_mode(regs) needs to be done in the loop (created
-> while fixing #3) in vm_entry.S where you are calling do_notify_resume();
-> you need to leave the loop if it's true (if you can get there on return
-> to kernel in the first place).
+On 05/27/2012 10:03 AM, Stephen Warren wrote:
+> On 05/27/2012 06:39 AM, Jonathan Cameron wrote:
+>> Hi All,
+>>
+>> My stargate 2 board refused to start and after bisection I ended
+>> up at the same patch that Stephen found an alignment issue in.
+>> Unfortunately Stephen's patch doesn't seem to have fixed the
+>> issue for me.
+>> https://lkml.org/lkml/2012/5/10/510 is the thread.  Patch from
+>> Stephen is : f8450fca6ecdea38b5a882fdf6cd097e3ec8651c
+>>
+>> Increasing the alignement for 32 bit systems to 8 seems to do the
+>> job but I can't immediately think why...
+>>
+>> System is a pxa27x strong arm.
+...
+> #if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+> #define LOG_ALIGN 4
+> #else
+> #define LOG_ALIGN 8
+> #endif
 
-Just wanted to say thanks so much for reviewing the code; I didn't get
-around to making the changes until late last week, but I've got the fixes
-in my tree and will submit a patch for review after I've given it some
-testing.
+Actually, why not replace that with:
 
+#define LOG_ALIGN (__alignof__(struct log_buf))
 
-Thanks again,
-Richard Kuo
-
-
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+That way, the compiler will calculate the arch-/ABI-appropriate
+alignment value automatically and correctly in all cases, so we won't
+have to fix that ifdef above.
