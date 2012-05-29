@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab2E2G6F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 02:58:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57050 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951Ab2E2G6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 02:58:02 -0400
-Date: Tue, 29 May 2012 02:57:58 -0400
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
-        axboe@kernel.dk, paul.gortmaker@windriver.com
-Subject: Re: [PATCH 3/3] block: convert elevator to generic rb tree code
-Message-ID: <20120529065758.GE10175@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
- <1337979461-19654-4-git-send-email-koverstreet@google.com>
- <20120528231717.GB20954@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120529032502.GA10175@dhcp-172-18-216-138.mtv.corp.google.com>
- <20120529052458.GA17366@google.com>
+	id S1752998Ab2E2HGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 03:06:22 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:37166 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab2E2HGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 03:06:21 -0400
+Date: Tue, 29 May 2012 09:05:57 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, tglx@linutronix.de, mingo@redhat.com,
+        sameo@linux.intel.com, x86@kernel.org
+Subject: Re: [PATCH] x86/platform: sta2x11: add platform code
+Message-ID: <20120529070557.GA23373@mail.gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120529052458.GA17366@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <4FC47003.1080906@zytor.com>
+References: <4FC47003.1080906@zytor.com>  <4FC40C74.8050003@zytor.com>
+  <20120527205020.GA3050@mail.gnudd.com>
+ <20120529063738.GA22711@mail.gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 02:24:58PM +0900, Tejun Heo wrote:
-> > So in practice there's no extra stack usage. Whether this is an
-> > optimization we want to depend I'm not going to say; I suspect it's
-> > pretty safe w.r.t. the optimizer but it's definitely sketchy and if at
-> > some point someone came along and switched it to the uninline version
-> > we'd have problems.
-> 
-> I don't think we can depend on that.  Note that compiler may as well
-> decide not to inline an inline function (e.g. if it sees many calling
-> instances).  Depending on such behavior is way too fragile.
+> We have two mechanisms for parameterizing this kind of information: ACPI
+> 5 (which can be considered the "native" method on x86) or flattened
+> device tree (as already used by the CE4100 platform.)  Keep in mind that
+> an explicit goal for Linux/x86 is that the same kernel should boot on
+> all platforms, and backsliding on that is not acceptable.
 
-Bah, I forgot about the compiler uninlining stuff. There's
-__always_inline, but... yeah, I agree, too dangerous.
+Yes, it indeed does (the original code I received did not, but mine
+doesn't break stuff for other systems). What I posted uses a kernel
+command-line argument to tell what board it is: the sta2x11 is the
+computer's chipset in most cases, so it should know the wiring soon.
 
-> > So we might want to leave this one open coded. Which would make me sad,
-> > but I can't think of a sane way of implementing generic rb_search() that
-> > doesn't require passing it a type t to compare against.
-> 
-> I don't know either.  Open coding isn't the end of the world but I
-> suspect a lot of data structures which go on rbtree wouldn't be stack
-> friendly, so having common helper which can't handle that might not be
-> too helpful.
+> The best is for the firmware on your platforms to provide the ACPI or
+> DTB information, as it should.  If it doesn't, it gets nastier, but
+> there is absolutely no way we are going into the ARM swamp of having
+> different kernels for different boards.
 
-There's > 100 users in the kernel, I have no clue what the average size
-of the containing struct is.
+It doesn't. I'm currently developing using an add-on pci card running
+on a more conventional computer (and there you may object it is not
+even x86-specific, actually I'd love to see it sold as a separate card
+for industrial use).
 
-I think I'm gonna split rb_search() out into its own patch, as
-rb_insert() fortunately doesn't have this problem.
+In short, the whole thing is about passing different platform data
+according to which card it is (which includes the DMA configuration
+for uart ports, the card-detect pin for mmci etc). Most such drivers
+are already in the kernel and we are reusing them -- whereas original
+code I got rewrote them all from scratch. But for this we need to pass
+the platform data. 
 
-I'm starting to think the sanest solution is a macro (not quite my
-original RB_SEARCH() macro, though).
+I'm pretty sure we don't have ACPI, and I'd avoid device tree if
+possible (especially thinking of add-on cards).  If you think it makes
+more sense, I can offer the code to drivers/pci or other more generic
+places.
+
+thanks
+/alessandro
