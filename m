@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab2E2JwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 05:52:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49912 "EHLO mx1.redhat.com"
+	id S1753400Ab2E2J6c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 05:58:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46344 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753082Ab2E2JwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 05:52:07 -0400
-Date: Tue, 29 May 2012 12:51:55 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE NIC
- as broken
-Message-ID: <20120529095155.GA27043@redhat.com>
-References: <4FBF90E5.8030800@siemens.com>
- <20120528123934.GB21778@redhat.com>
- <4FC374CD.5000509@web.de>
- <20120528132109.GB22623@redhat.com>
- <4FC37DD6.7090000@web.de>
- <20120528133946.GA23024@redhat.com>
- <4FC47FED.1060000@siemens.com>
+	id S1753319Ab2E2J6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 05:58:31 -0400
+Date: Tue, 29 May 2012 11:58:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, rientjes@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/hugetlb: Use compound page head in migrate_huge_page
+Message-ID: <20120529095827.GC15293@tiehlicka.suse.cz>
+References: <1338218490-30978-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <20120528191322.GA10071@tiehlicka.suse.cz>
+ <87obp7u13r.fsf@skywalker.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FC47FED.1060000@siemens.com>
+In-Reply-To: <87obp7u13r.fsf@skywalker.in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 09:51:09AM +0200, Jan Kiszka wrote:
-> On 2012-05-28 15:39, Michael S. Tsirkin wrote:
-> > On Mon, May 28, 2012 at 03:29:58PM +0200, Jan Kiszka wrote:
-> >> On 2012-05-28 15:21, Michael S. Tsirkin wrote:
-> >>> On Mon, May 28, 2012 at 02:51:25PM +0200, Jan Kiszka wrote:
-> >>>> On 2012-05-28 14:39, Michael S. Tsirkin wrote:
-> >>>>> On Fri, May 25, 2012 at 11:02:13AM -0300, Jan Kiszka wrote:
-> >>>>>> According to Alexey, the T310 does not properly support INTx masking as
-> >>>>>> it fails to keep the PCI_STATUS_INTERRUPT bit updated once the interrupt
-> >>>>>> is masked. Mark this adapter as broken so that pci_intx_mask_supported
-> >>>>>> won't report it as compatible.
-> >>>>>>
-> >>>>>> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> >>>>>> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
-> >>>>>
-> >>>>>
-> >>>>> Just a thought: would be nice to have a way to discover
-> >>>>> the quirk was activated. Add an attribute so that
-> >>>>> userspace can detect and report this properly to users?
-> >>>>> Or just log a warning message ...
-> >>>>
-> >>>> pr_notice_once?
-> >>>
-> >>> OK IMO.
-> >>>
-> >>>> A flag for userspace would be significantly more
-> >>>> complicated (and not PCI layer hands).
-> >>>
-> >>> Why not? I meant e.g. an attribute in pci-sysfs.
-> >>
-> >> Possible. But what is the preferred way of doing this? Are there any
-> >> precedences?
-> >>
-> >> Jan
-> >>
-> > 
-> > E.g. a reset attribute is there only if device reset is supported.
-> > I don't insist on this - merely asking how does userspace report
-> > an attempt to share IRQs and whether the reason is
-> > discoverable in some way.
+On Tue 29-05-12 08:48:00, Aneesh Kumar K.V wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
 > 
-> Well, so far there is no attribute associated with INTx masking that we
-> could hide to express this.
+> > On Mon 28-05-12 20:51:30, Aneesh Kumar K.V wrote:
+> >> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> >> 
+> >> The change was introduced by "hugetlb: simplify migrate_huge_page() "
+> >> 
+> >> We should use compound page head instead of tail pages in
+> >> migrate_huge_page().
+> >> 
+> >> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> >> ---
+> >>  mm/memory-failure.c |    4 ++--
+> >>  1 file changed, 2 insertions(+), 2 deletions(-)
+> >> 
+> >> This is an important bug fix. If we want we can fold it with the not
+> >> yet merged upstream patch mentioned above in linux-next. The stack
+> >> trace for the crash is
+> >> 
+> >> [   75.337421] BUG: unable to handle kernel NULL pointer dereference at 0000000000000080
+> >> [   75.338386] IP: [<ffffffff816b3f0f>] __mutex_lock_common+0xa1/0x350
+> >> [   75.338386] PGD 1d700067 PUD 1d7dd067 PMD 0
+> >> [   75.338386] Oops: 0002 [#1] SMP
+> >> [   75.338386] CPU 1
+> >> [   75.338386] Modules linked in:
+> >> ...
+> >> ...
+> >> 
+> >> [   75.338386] Call Trace:
+> >> [   75.338386]  [<ffffffff810ffc04>] ? try_to_unmap_file+0x38/0x51c
+> >> [   75.338386]  [<ffffffff810ffc04>] ? try_to_unmap_file+0x38/0x51c
+> >> [   75.338386]  [<ffffffff813b5f8b>] ? vsnprintf+0x83/0x421
+> >> [   75.338386]  [<ffffffff816b427d>] mutex_lock_nested+0x2a/0x31
+> >> [   75.338386]  [<ffffffff8110999b>] ? alloc_huge_page_node+0x1d/0x55
+> >> [   75.338386]  [<ffffffff810ffc04>] try_to_unmap_file+0x38/0x51c
+> >> [   75.338386]  [<ffffffff8110999b>] ? alloc_huge_page_node+0x1d/0x55
+> >> [   75.338386]  [<ffffffff810a06b9>] ? arch_local_irq_save+0x9/0xc
+> >> [   75.338386]  [<ffffffff816b5e3b>] ? _raw_spin_unlock+0x23/0x27
+> >> [   75.338386]  [<ffffffff81100839>] try_to_unmap+0x25/0x3c
+> >> [   75.338386]  [<ffffffff810641c2>] ? console_unlock+0x210/0x238
+> >> [   75.338386]  [<ffffffff811141e3>] migrate_huge_page+0x8d/0x178
+> >
+> > This should be part of the changelog.
 > 
-> Jan
+> I was expecting the patch to be folded back to the existing patch in
+> -mm. That is the reason I added stack trace in the notes section so that
+> if we decided to keep it as a separate patch we can pull the stack trace
+> and add it to commit message.
 
-Thinking about it some more, userspace using this functionality
-is pretty recent. So if we just teach it to report
-'intx mask or status bit unsupported' on failure,
-plus add pr_notice as you suggested, then that's
-probably enough.
-
-
-> -- 
-> Siemens AG, Corporate Technology, CT T DE IT 1
-> Corporate Competence Center Embedded Linux
+OK.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
