@@ -1,106 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab2E2TTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 15:19:39 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:34143 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754545Ab2E2TTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 15:19:38 -0400
-Date: Tue, 29 May 2012 14:19:35 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rja@americas.sgi.com
-Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on multi-processor systems
-Message-ID: <20120529191935.GB29726@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20120524144229.GA27713@sgi.com> <20120529175352.GA31524@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120529175352.GA31524@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1755204Ab2E2TXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 15:23:52 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51922 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754660Ab2E2TXt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 15:23:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+ <1337754877-19759-3-git-send-email-yinghai@kernel.org> <CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+ <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+ <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+ <20120525043651.GA1391@google.com> <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+ <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+ <20120525193716.GA8817@google.com> <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+ <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+ <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
+ <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
+ <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
+ <4FC50E09.4000204@zytor.com> <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 29 May 2012 13:23:28 -0600
+Message-ID: <CAErSpo4ywho4UmPVAjT7yZNROc9e1zCx+UoaS5un+v4aN=akJA@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 01:53:53PM -0400, Don Zickus wrote:
-> On Thu, May 24, 2012 at 09:42:29AM -0500, Russ Anderson wrote:
-> > When multiple cpus on a multi-processor system call dump_stack()
-> > at the same time, the backtrace lines get intermixed, making 
-> > the output worthless.  Add a lock so each cpu stack dump comes
-> > out as a coherent set.
-> > 
-> > For example, when a multi-processor system is NMIed, all of the
-> > cpus call dump_stack() at the same time, resulting in output for
-> > all of cpus getting intermixed, making it impossible to tell what
-> > any individual cpu was doing.  With this patch each cpu prints
-> > its stack lines as a coherent set, so one can see what each cpu
-> > was doing.
-> 
-> For this particular test case, it sounds like you are doing what
-> trigger_all_cpu_backtrace() is doing?  It doesn't solve the general
-> problem, but probably your particular usage?
+On Tue, May 29, 2012 at 12:17 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Tue, May 29, 2012 at 10:57 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 05/29/2012 10:55 AM, Yinghai Lu wrote:
+>>>
+>>> x86 are using 16bits.
+>>>
+>>> some others use 32 bits.
+>>> #define IO_SPACE_LIMIT 0xffffffff
+>>>
+>>> ia64 and sparc are using 64bits.
+>>> #define IO_SPACE_LIMIT               0xffffffffffffffffUL
+>>>
+>>> but pci only support 16bits and 32bits.
+>>>
+>>> maybe later we can add
+>>> PCI_MAX_RESOURCE_16
+>>>
+>>> to handle 16bits and 32bit io ports.
+>>>
+>>
+>> Shouldn't this be dealt by root port apertures?
+>>
+>
+> pci bridge could support 16bits and 32bits io port.
+> but we did not record if 32bits is supported.
+>
+> so during allocating, could have allocated above 64k address to non
+> 32bit bridge.
+>
+> but  x86 is ok, because ioport.end always set to 0xffff.
+> other arches with IO_SPACE_LIMIT with 0xffffffff or
+> 0xffffffffffffffffUL may have problem.
 
-In this case, I am just using the hardware NMI, which sends the NMI
-signal to each logical cpu.  Since each cpu receives the NMI at nearly
-the exact same time, they end up in dump_stack() at the same time.
-Without some form of locking, trace lines from different cpus end
-up intermixed, making it impossible to tell what any individual 
-cpu was doing.
+I think current IO_SPACE_LIMIT usage is a little confused.  The
+"ioport_resource.end = IO_SPACE_LIMIT" in kernel/resource.c refers to
+a CPU-side address, not a bus address.  Other uses, e.g., in
+__pci_read_base(), apply it to bus addresses from BARs, which is
+wrong.  Host bridges apply I/O port offsets just like they apply
+memory offsets.  The ia64 IO_SPACE_LIMIT of 0xffffffffffffffffUL means
+there's no restriction on CPU-side I/O port addresses, but any given
+host bridge will translate its I/O port aperture to bus addresses that
+fit in 32 bits.
 
+None of this is really relevant to the question I asked, namely, "why
+Yinghai's patch doesn't limit I/O BAR values to 32 bits?"  That
+constraint is clearly a requirement because I/O BARs are only 32 bits
+wide, but I don't think it needs to be enforced in the code here.  The
+host bridge or upstream P2P bridge apertures should already take care
+of that automatically.  I don't think the 16- or 32-bitness of P2P
+bridge apertures is relevant here, because the I/O resources available
+on the secondary bus already reflect that.
 
-> Cheers,
-> Don
-> 
-> > 
-> > It has been tested on a 4069 cpu system.
-> > 
-> > Signed-off-by: Russ Anderson <rja@sgi.com>
-> > 
-> > ---
-> >  arch/x86/kernel/dumpstack.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > Index: linux/arch/x86/kernel/dumpstack.c
-> > ===================================================================
-> > --- linux.orig/arch/x86/kernel/dumpstack.c	2012-05-03 14:31:13.602345805 -0500
-> > +++ linux/arch/x86/kernel/dumpstack.c	2012-05-03 14:51:43.805197563 -0500
-> > @@ -186,7 +186,9 @@ void dump_stack(void)
-> >  {
-> >  	unsigned long bp;
-> >  	unsigned long stack;
-> > +	static DEFINE_SPINLOCK(lock);	/* Serialise the printks */
-> >  
-> > +	spin_lock(&lock);
-> >  	bp = stack_frame(current, NULL);
-> >  	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
-> >  		current->pid, current->comm, print_tainted(),
-> > @@ -194,6 +196,7 @@ void dump_stack(void)
-> >  		(int)strcspn(init_utsname()->version, " "),
-> >  		init_utsname()->version);
-> >  	show_trace(NULL, NULL, &stack, bp);
-> > +	spin_unlock(&lock);
-> >  }
-> >  EXPORT_SYMBOL(dump_stack);
-> >  
-> > -- 
-> > Russ Anderson, OS RAS/Partitioning Project Lead  
-> > SGI - Silicon Graphics Inc          rja@sgi.com
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+After all that discussion, I think my objection here boils down to
+"you shouldn't change the I/O BAR constraints in a patch that claims
+to allocate 64-bit *memory* BARs above 4GB."
 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+I think the code below is still the clearest way to set the constraints:
+
+   if (res->flags & IORESOURCE_MEM_64) {
+       start = (resource_size_t) (1ULL << 32);
+       end = PCI_MAX_RESOURCE;
+   } else {
+       start = 0;
+       end = PCI_MAX_RESOURCE_32;
+   }
+
+It's not strictly necessary to limit I/O BARs to PCI_MAX_RESOURCE_32
+because host bridge apertures should already enforce that, but I think
+the code above just makes it clearer.
