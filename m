@@ -1,77 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385Ab2E2NfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 09:35:13 -0400
-Received: from shutemov.name ([176.9.204.213]:43052 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750980Ab2E2NfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 09:35:11 -0400
-Date: Tue, 29 May 2012 16:36:27 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 00/35] AutoNUMA alpha14
-Message-ID: <20120529133627.GA7637@shutemov.name>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	id S1752465Ab2E2Nid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 09:38:33 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:58205 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab2E2Nib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 09:38:31 -0400
+Date: Tue, 29 May 2012 15:38:59 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@amd64.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
+Message-ID: <20120529133858.GD29157@aftab.osrc.amd.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351D6892@SHSMSX101.ccr.corp.intel.com>
+ <20120522092354.GB18578@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
+ <20120524103023.GA27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524184947.GA28338@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
+ <20120525180102.GA27280@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<2>[  729.065896] kernel BUG at /home/kas/git/public/linux/mm/autonuma.c:850!
-<4>[  729.176966] invalid opcode: 0000 [#1] SMP 
-<4>[  729.287517] CPU 24 
-<4>[  729.397025] Modules linked in: sunrpc bnep bluetooth rfkill cpufreq_ondemand acpi_cpufreq freq_table mperf ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack coretemp kvm asix usbnet igb i7core_edac crc32c_intel iTCO_wdt i2c_i801 ioatdma pcspkr tpm_tis microcode joydev mii i2c_core iTCO_vendor_support tpm edac_core dca ptp tpm_bios pps_core megaraid_sas [last unloaded: scsi_wait_scan]
-<4>[  729.870867] 
-<4>[  729.989848] Pid: 342, comm: knuma_migrated0 Not tainted 3.4.0+ #32 QCI QSSC-S4R/QSSC-S4R
-<4>[  730.111497] RIP: 0010:[<ffffffff8117baf5>]  [<ffffffff8117baf5>] knuma_migrated+0x915/0xa50
-<4>[  730.234615] RSP: 0018:ffff88026c8b7d40  EFLAGS: 00010006
-<4>[  730.357993] RAX: 0000000000000000 RBX: ffff88027ffea000 RCX: 0000000000000002
-<4>[  730.482959] RDX: 0000000000000002 RSI: ffffea0017b7001c RDI: ffffea0017b70000
-<4>[  730.607709] RBP: ffff88026c8b7e90 R08: 0000000000000001 R09: 0000000000000000
-<4>[  730.733082] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000002
-<4>[  730.858424] R13: 0000000000000200 R14: ffffea0017b70000 R15: ffff88067ffeae00
-<4>[  730.983686] FS:  0000000000000000(0000) GS:ffff880272200000(0000) knlGS:0000000000000000
-<4>[  731.110169] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-<4>[  731.236396] CR2: 00007ff3463dd000 CR3: 0000000001c0b000 CR4: 00000000000007e0
-<4>[  731.363987] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-<4>[  731.490875] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-<4>[  731.616769] Process knuma_migrated0 (pid: 342, threadinfo ffff88026c8b6000, task ffff88026c8ac5a0)
-<4>[  731.745286] Stack:
-<4>[  731.871079]  ffff88027fffdef0 ffff88026c8ac5a0 0000000000000082 ffff88026c8ac5a0
-<4>[  731.999154]  ffff88026c8b7d98 0000000100000003 ffffea000f165e60 ffff88067ffeb2c0
-<4>[  732.126565]  ffffea000f165e60 ffffea000f165e20 ffffffff8107df90 ffff88026c8b7d98
-<4>[  732.253488] Call Trace:
-<4>[  732.377354]  [<ffffffff8107df90>] ? __init_waitqueue_head+0x60/0x60
-<4>[  732.501250]  [<ffffffff8107e075>] ? finish_wait+0x45/0x90
-<4>[  732.623816]  [<ffffffff8117b1e0>] ? __autonuma_migrate_page_remove+0x130/0x130
-<4>[  732.748194]  [<ffffffff8107d437>] kthread+0xb7/0xc0
-<4>[  732.872468]  [<ffffffff81668324>] kernel_thread_helper+0x4/0x10
-<4>[  732.997588]  [<ffffffff8107d380>] ? __init_kthread_worker+0x70/0x70
-<4>[  733.120411]  [<ffffffff81668320>] ? gs_change+0x13/0x13
-<4>[  733.240230] Code: 4e 00 48 8b 05 6d 05 b8 00 a8 04 0f 84 b5 f9 ff ff 48 c7 c7 b0 c9 9e 81 31 c0 e8 04 6c 4d 00 e9 a2 f9 ff ff 66 90 e8 8a 87 4d 00 <0f> 0b 48 c7 c7 d0 c9 9e 81 31 c0 e8 e8 6b 4d 00 e9 73 f9 ff ff 
-<1>[  733.489612] RIP  [<ffffffff8117baf5>] knuma_migrated+0x915/0xa50
-<4>[  733.614281]  RSP <ffff88026c8b7d40>
-<4>[  733.736855] ---[ end trace 25052e4d75b2f1f6 ]---
+On Mon, May 28, 2012 at 02:48:06PM +0000, Liu, Jinsong wrote:
+> > An approach which basically same as you suggested but w/ slightly
+> > update, is 1). at xen/mcelog.c, do
+> > misc_register(&xen_mce_chrdev_device) at xen_late_init_mcelog, define
+> > it as device_initcall(xen_late_init_mcelog) --> now linux dd ready,
+> > so xen mcelog divice would register successfully; 2). at native
+> > mce.c, change 1 line from device_initcall(mcheck_init_device) to
+> > device_initcall_sync(mcheck_init_device) --> so
+> > misc_register(&mce_chrdev_device) would be blocked by xen mcelog
+> > device;      
+> > 
+> > I have draft test it and works fine.
+> > Thought?
+> > 
+> 
+> =====================
+> RFC patch attached:
+> =====================
+> 
+> 
+> From d06e667632507d7ed8e18f952b0eb7cec3cfc55c Mon Sep 17 00:00:00 2001
+> From: Liu, Jinsong <jinsong.liu@intel.com>
+> Date: Tue, 29 May 2012 06:13:19 +0800
+> Subject: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform
+> 
+> When MCA error occurs, it would be handled by Xen hypervisor first,
+> and then the error information would be sent to initial domain for logging.
+> 
+> This patch gets error information from Xen hypervisor and convert
+> Xen format error into Linux format mcelog. This logic is basically
+> self-contained, not touching other kernel components.
+> 
+> By using tools like mcelog tool users could read specific error information,
+> like what they did under native Linux.
+> 
+> To test follow directions outlined in Documentation/acpi/apei/einj.txt
+> 
+> Signed-off-by: Ke, Liping <liping.ke@intel.com>
+> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+
+Still no go, this is current linus with your patch applied. I'll look into it
+later when there's time.
+
+[    3.644961] initlevel:6=device, 250 registered initcalls
+[    3.652666] BUG: unable to handle kernel NULL pointer dereference at 0000000000000048
+[    3.661186] IP: [<ffffffff811ced67>] kobject_get+0x11/0x34
+[    3.667018] PGD 0 
+[    3.669409] Oops: 0000 [#1] SMP 
+[    3.672988] CPU 21 
+[    3.675436] Modules linked in:
+[    3.678839] 
+[    3.680710] Pid: 1, comm: swapper/0 Tainted: G        W    3.4.0+ #1 AMD
+[    3.689103] RIP: 0010:[<ffffffff811ced67>]  [<ffffffff811ced67>] kobject_get+0x11/0x34
+[    3.697665] RSP: 0000:ffff880425c67cd0  EFLAGS: 00010202
+[    3.703322] RAX: ffff880425ff40b0 RBX: 0000000000000010 RCX: ffff880425c67c50
+[    3.710801] RDX: ffff880425ff4000 RSI: ffff8808259c5380 RDI: 0000000000000010
+[    3.718302] RBP: ffff880425c67ce0 R08: 00000000fffffffe R09: 00000000ffffffff
+[    3.725780] R10: ffff8804a5c67e5f R11: 0000000000000000 R12: 0000000000000010
+[    3.733258] R13: 00000000fffffffe R14: 000000000000cbf8 R15: 0000000000011ec0
+[    3.740738] FS:  0000000000000000(0000) GS:ffff880c27cc0000(0000) knlGS:0000000000000000
+[    3.749472] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    3.755564] CR2: 0000000000000048 CR3: 0000000001a0b000 CR4: 00000000000007e0
+[    3.763044] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[    3.770549] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[    3.778026] Process swapper/0 (pid: 1, threadinfo ffff880425c66000, task ffff880425c78000)
+[    3.786934] Stack:
+[    3.789326]  ffff880425c67d20 ffff8808259c5380 ffff880425c67d40 ffffffff811cedeb
+[    3.797368]  ffff880425c67d70 ffff880425c67da0 ffff8808259c5380 ffff8808259c5380
+[    3.805411]  0000000000000000 ffff8808259c5380 0000000000000010 0000000000000000
+[    3.813453] Call Trace:
+[    3.816253]  [<ffffffff811cedeb>] kobject_add_internal+0x61/0x249
+[    3.822693]  [<ffffffff811cf3ca>] kobject_add+0x91/0xa2
+[    3.828290]  [<ffffffff811cf5a9>] kobject_create_and_add+0x37/0x68
+[    3.834821]  [<ffffffff8144b91a>] threshold_create_device+0x1e5/0x342
+[    3.841633]  [<ffffffff814549c5>] ? mutex_lock+0x16/0x37
+[    3.847295]  [<ffffffff81031894>] ? cpu_maps_update_done+0x15/0x2d
+[    3.853824]  [<ffffffff81ad0b0e>] threshold_init_device+0x1b/0x4f
+[    3.860265]  [<ffffffff81ad0af3>] ? severities_debugfs_init+0x3b/0x3b
+[    3.867054]  [<ffffffff810002f9>] do_one_initcall+0x7f/0x136
+[    3.873062]  [<ffffffff81ac8bca>] kernel_init+0x165/0x1fd
+[    3.878807]  [<ffffffff81ac8495>] ? loglevel+0x31/0x31
+[    3.884321]  [<ffffffff8145e8d4>] kernel_thread_helper+0x4/0x10
+[    3.890590]  [<ffffffff81456d86>] ? retint_restore_args+0xe/0xe
+[    3.896885]  [<ffffffff81ac8a65>] ? start_kernel+0x2ee/0x2ee
+[    3.902893]  [<ffffffff8145e8d0>] ? gs_change+0xb/0xb
+[    3.908322] Code: aa 81 31 c0 e8 ac 90 01 00 4c 89 f7 e8 c5 42 f2 ff 5b 41 5c 41 5d 41 5e c9 c3 55 48 89 e5 53 48 89 fb 48 83 ec 08 48 85 ff 74 1c <8b> 47 38 85 c0 75 11 be 29 00 00 00 48 c7 c7 16 87 79 81 e8 95 
+[    3.928115] RIP  [<ffffffff811ced67>] kobject_get+0x11/0x34
+[    3.934032]  RSP <ffff880425c67cd0>
+[    3.937870] CR2: 0000000000000048
+[    3.941548] ---[ end trace 4eaa2a86a8e2da23 ]---
+[    3.946581] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+[    3.946581] 
 
 -- 
- Kirill A. Shutemov
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
