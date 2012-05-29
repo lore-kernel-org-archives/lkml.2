@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab2E2QOV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 12:14:21 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58055 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab2E2QOU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 12:14:20 -0400
-Message-ID: <4FC4F5D8.8090701@wwwdotorg.org>
-Date: Tue, 29 May 2012 10:14:16 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>, Russell King <rmk@arm.linux.org.uk>
-CC: kay.sievers@vrfy.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: arm: Remaining issue with alignment of __log_buf in printk.c
-References: <4FC22098.3070803@kernel.org> <4FC25048.109@wwwdotorg.org>
-In-Reply-To: <4FC25048.109@wwwdotorg.org>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754310Ab2E2QOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 12:14:51 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:57882 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754062Ab2E2QOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 12:14:49 -0400
+Message-ID: <1338308088.2202.39.camel@joe2Laptop>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to
+ variable-length record buffer
+From: Joe Perches <joe@perches.com>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Greg Kroah-Hartmann <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>, John Stultz <john.stultz@linaro.org>
+Date: Tue, 29 May 2012 09:14:48 -0700
+In-Reply-To: <1338307620.886.21.camel@mop>
+References: <1336004953.4240.9.camel@mop> <20120526111143.GA32304@lizard>
+	 <CAPXgP10--rmzK8joBSrs3Abk7uuamJTDBbvrm6W6w_xODqZVtg@mail.gmail.com>
+	 <1338307620.886.21.camel@mop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2012 10:03 AM, Stephen Warren wrote:
-> On 05/27/2012 06:39 AM, Jonathan Cameron wrote:
->> Hi All,
->>
->> My stargate 2 board refused to start and after bisection I ended
->> up at the same patch that Stephen found an alignment issue in.
->> Unfortunately Stephen's patch doesn't seem to have fixed the
->> issue for me.
->> https://lkml.org/lkml/2012/5/10/510 is the thread.  Patch from
->> Stephen is : f8450fca6ecdea38b5a882fdf6cd097e3ec8651c
->>
->> Increasing the alignement for 32 bit systems to 8 seems to do the
->> job but I can't immediately think why...
->>
->> System is a pxa27x strong arm.
-...
-> #if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-> #define LOG_ALIGN 4
-> #else
-> #define LOG_ALIGN 8
-> #endif
+On Tue, 2012-05-29 at 18:07 +0200, Kay Sievers wrote:
+[]
+> --- a/include/linux/kmsg_dump.h
+> +++ b/include/linux/kmsg_dump.h
+[]
+> @@ -56,6 +69,18 @@ static inline void kmsg_dump(enum kmsg_d
+>  {
+>  }
+>  
+> +bool kmsg_dump_get_line(struct kmsg_dumper *dumper, bool syslog,
+> +			  const char *line, size_t size, size_t *len)
+> +{
+> +	return false
+> +}
 
-Actually, why not replace that with:
+uncompilable.
 
-#define LOG_ALIGN (__alignof__(struct log_buf))
 
-That way, the compiler will calculate the arch-/ABI-appropriate
-alignment value automatically and correctly in all cases, so we won't
-have to fix that ifdef above.
+
