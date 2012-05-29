@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2E2KgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 06:36:22 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47722 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab2E2Kfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 06:35:54 -0400
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch 2/4] timers: Consolidate base->next_timer update
-In-Reply-To: <alpine.LFD.2.02.1205291137580.3231@ionos>
-References: <20120525214617.051888729@linutronix.de> <20120525214819.189946224@linutronix.de> <87likbxzqe.fsf@abhimanyu.in.ibm.com> <alpine.LFD.2.02.1205291137580.3231@ionos>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 29 May 2012 16:05:12 +0530
-Message-ID: <87fwajxokf.fsf@abhimanyu.in.ibm.com>
+	id S1753629Ab2E2Kmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 06:42:39 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13343 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753053Ab2E2Kmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 06:42:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="158163929"
+Date: Tue, 29 May 2012 12:52:55 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
+Message-ID: <20120529105255.GC18977@sortiz-mobl>
+References: <1338272340.3127.1.camel@phoenix>
+ <4FC47CEB.8090106@linaro.org>
+ <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
+ <4FC488E1.3080406@linaro.org>
+ <20120529091556.GB18977@sortiz-mobl>
+ <4FC4967A.2040608@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-x-cbid: 12052900-7014-0000-0000-00000142A5A0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC4967A.2040608@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 May 2012 11:38:27 +0200 (CEST), Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 29 May 2012, Nikunj A Dadhania wrote:
+Hi Lee,
+
+On Tue, May 29, 2012 at 05:27:22PM +0800, Lee Jones wrote:
+> Hi Sam,
 > 
-> > > 
-> > > -static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
-> > > +static void
-> > > +__internal_add_timer(struct tvec_base *base, struct timer_list *timer)
-> > >  {
-> > >  	unsigned long expires = timer->expires;
-> > >  	unsigned long idx = expires - base->timer_jiffies;
-> > > @@ -372,6 +373,17 @@ static void internal_add_timer(struct tv
-> > >  	list_add_tail(&timer->entry, vec);
-> > >  }
-> > > 
-> > > +static void internal_add_timer(struct tvec_base *base, struct timer_list *timer)
-> > > +{
-> > > +	__internal_add_timer(base, timer);
-> > > +	/*
-> > > +	 * Update base->next_timer if this is the earliest one.
-> > > +	 */
-> > > +	if (time_before(timer->expires, base->next_timer) &&
-> > > +	    !tbase_get_deferrable(timer->base))
-> > > +		base->next_timer = timer->expires;
-> > > +}
-> > > +
-> > >
-> > Shouldn't this be like this?
-> > 
-> > +	/*
-> > +	 * Update base->next_timer if this is the earliest one.
-> > +	 */
-> > +	if (time_before(timer->expires, base->next_timer) &&
-> > +	    !tbase_get_deferrable(timer->base))
-> > +		base->next_timer = timer->expires;
-> > +	__internal_add_timer(base, timer);
-> > 
-> > As per the below code?
+> >On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
+> >>On 29/05/12 15:53, Axel Lin wrote:
+> >>>2012/5/29 Lee Jones<lee.jones@linaro.org>:
+> >>>>On 29/05/12 14:19, Axel Lin wrote:
+> >>>>>
+> >>>>>config AB8500_I2C_CORE is not used after commit d28f1db
+> >>>>>"mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
+> >>>>>Thus remove it.
+> >>>>>
+> >>>>>Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> >>>>
+> >>>>
+> >>>>I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
+> >>>>inclusion into -rc1 this afternoon. Would you mind leaving this one?
+> >>>
+> >>>I don't mind.
+> >>>But AFAIK, commit d28f1db is in mfd tree.
+> >>>Any reason you want to send the patch to ARM-SoC instead of mfd tree.
+> >>
+> >>I don't actually have a preference as to which tree it goes into, so
+> >>long as it's sent to Mainline on or before -rc1.
+> >I sent a pull request to Linus yesterday, including this commit.
 > 
-> And why should this matter?
-> 
-Yes it does not matter, sorry for the noise.
+> This is something different and wasn't part of the pull-request.
+d28f1d was part of the pull request.
 
-Looking at the internal_add_timer(), there is no such dependency. I was
-thinking that the base->next_timer is changed and would be used in
-__internal_add_timer.
+Cheers,
+Samuel.
 
-Nikunj
-
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
