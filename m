@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab2E2Orp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 10:47:45 -0400
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:46970 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753851Ab2E2Orn (ORCPT
+	id S1753916Ab2E2Oux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 10:50:53 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:36306 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab2E2Ouw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 10:47:43 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 73ueShoVM1kOQ24MgRjlmrYX5RUYGSso2n4nAW3hRLtUOeA
- mSlatHIDESp4.546pKTjxyq7Ua_ahbbsiZ1PU7ELf0fkx1bxLbnEKOoL.Pwb
- WLrty8S73bA8zQcZXxsTqPLvW7GdUUp9NtCNNRiWGwkACBBtf2BQHAHZJk4l
- 2CN5kwyrZas5hQw8u0YiUNLX_KPJcpgKktEOO.bIGMyQkdMJZc3TMA1vyepS
- E1Cr4W.Q4R47VW7BIWXhprJqmAyGk0VV5NzbD0FGyctKXhCjcn_yDPajDThs
- hjzf98agZD6ZD_PE4SYyNG5R7tEH..yJfIWUmWTFmjZKKjL_boPQN2Ybyyry
- 18kGMyDMMXWMHFa910YNf5g8vbJWBnnwdH4XYCXi6Nr2TsuQ_aORgDzaiFG6
- k
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 29 May 2012 09:47:38 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Glauber Costa <glommer@parallels.com>
-cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge
- infrastructure
-In-Reply-To: <1337951028-3427-17-git-send-email-glommer@parallels.com>
-Message-ID: <alpine.DEB.2.00.1205290944040.4666@router.home>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-17-git-send-email-glommer@parallels.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 29 May 2012 10:50:52 -0400
+Date: Tue, 29 May 2012 16:50:45 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [GIT PULL] CMA and ARM DMA-mapping updates for v3.5
+In-reply-to: <20120529122932.GA24623@n2100.arm.linux.org.uk>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Cc: "'Linus Torvalds'" <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linaro-mm-sig@lists.linaro.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+Message-id: <015e01cd3daa$6d910e50$48b32af0$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Ac09lrl9VH+GBg6ASKSeY+9pdx8APAADT39A
+References: <1337672417-10065-1-git-send-email-m.szyprowski@samsung.com>
+ <20120529122932.GA24623@n2100.arm.linux.org.uk>
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 May 2012, Glauber Costa wrote:
+Hello,
 
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -696,7 +696,7 @@ config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
->  	  then swapaccount=0 does the trick).
->  config CGROUP_MEM_RES_CTLR_KMEM
->  	bool "Memory Resource Controller Kernel Memory accounting (EXPERIMENTAL)"
-> -	depends on CGROUP_MEM_RES_CTLR && EXPERIMENTAL
-> +	depends on CGROUP_MEM_RES_CTLR && EXPERIMENTAL && !SLOB
->  	default n
+On Tuesday, May 29, 2012 2:30 PM Russell King - ARM Linux wrote:
 
-Ok so SLOB is not supported at all.
+> I notice we have new warnings as a result of CMA being merged, though
+> thankfully they're just in Kconfig:
+> 
+> warning: (ARM) selects CMA which has unmet direct dependencies (HAVE_DMA_CONTIGUOUS &&
+> HAVE_MEMBLOCK && EXPERIMENTAL)
+> 
+> This seems totally weird: you're mandating that ARM must have CMA
+> selected, but it's an experimental feature?  So you're implying that
+> the entire ARM kernel becomes totally experimental for the next
+> release cycle?
+> 
+> I think this needs fixing.
+
+No, that wasn't my intention. I will provide a patch which removes unconditional dependency
+on CMA - it will let one to disable CMA and use old allocation method if needed, but this 
+requires a few more changes in the dma-mapping implementation. I wasn't aware of the 
+consequences and no one has complained about this since v15 of CMA patches (Aug 2011).
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
 
