@@ -1,89 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab2E2NQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 09:16:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55507 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2E2NQo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 09:16:44 -0400
-Message-ID: <1338297385.26856.74.camel@twins>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Date: Tue, 29 May 2012 15:16:25 +0200
-In-Reply-To: <1337965359-29725-14-git-send-email-aarcange@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-	 <1337965359-29725-14-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1751850Ab2E2NVR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 09:21:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43952 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887Ab2E2NVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 09:21:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="149736340"
+From: Sundar Iyer <sundar.iyer@intel.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, arjan.van.de.ven@intel.com,
+        sundar.iyer@intel.com, german.monroy@intel.com
+Subject: [PATCH v1] x86/irq: handle chained interrupts during IRQ migration
+Date: Tue, 29 May 2012 19:10:08 +0530
+Message-Id: <1338298808-2265-1-git-send-email-sundar.iyer@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-05-25 at 19:02 +0200, Andrea Arcangeli wrote:
+Chained interrupt handlers dont have an irqaction and hence are not
+handled during migrating interrupts when some cores go offline.
 
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 780ded7..e8dc82c 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -126,6 +126,31 @@ struct page {
->  		struct page *first_page;	/* Compound tail pages */
->  	};
->  
-> +#ifdef CONFIG_AUTONUMA
-> +	/*
-> +	 * FIXME: move to pgdat section along with the memcg and allocate
-> +	 * at runtime only in presence of a numa system.
-> +	 */
-> +	/*
-> +	 * To modify autonuma_last_nid lockless the architecture,
-> +	 * needs SMP atomic granularity < sizeof(long), not all archs
-> +	 * have that, notably some alpha. Archs without that requires
-> +	 * autonuma_last_nid to be a long.
-> +	 */
-> +#if BITS_PER_LONG > 32
-> +	int autonuma_migrate_nid;
-> +	int autonuma_last_nid;
-> +#else
-> +#if MAX_NUMNODES >= 32768
-> +#error "too many nodes"
-> +#endif
-> +	/* FIXME: remember to check the updates are atomic */
-> +	short autonuma_migrate_nid;
-> +	short autonuma_last_nid;
-> +#endif
-> +	struct list_head autonuma_migrate_node;
-> +#endif
-> +
->  	/*
->  	 * On machines where all RAM is mapped into kernel address space,
->  	 * we can simply calculate the virtual address. On machines with
+Handle this by introducing a irq_is_chained() check which is based
+on the IRQ_NOREQUEST flag being set for such interrupts. fixup_irq()
+can then handle such interrupts and not skip them over.
 
+Signed-off-by: Sundar Iyer <sundar.iyer@intel.com>
+---
+v1: use accessors instead of new variables to identify chained irqs
 
-24 bytes per page.. or ~0.6% of memory gone. This is far too great a
-price to pay.
+ arch/x86/kernel/irq.c   |    6 ++++--
+ include/linux/irqdesc.h |   10 ++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-At LSF/MM Rik already suggested you limit the number of pages that can
-be migrated concurrently and use this to move the extra list_head out of
-struct page and into a smaller amount of extra structures, reducing the
-total overhead.
-
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..acd7949 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -249,8 +249,10 @@ void fixup_irqs(void)
+ 
+ 		data = irq_desc_get_irq_data(desc);
+ 		affinity = data->affinity;
+-		if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
+-		    cpumask_subset(affinity, cpu_online_mask)) {
++		/* include IRQs who have no action, but are chained */
++		if ((!irq_has_action(irq) && irq_is_chained(irq)) ||
++			irqd_is_per_cpu(data) ||
++			cpumask_subset(affinity, cpu_online_mask)) {
+ 			raw_spin_unlock(&desc->lock);
+ 			continue;
+ 		}
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 2d921b3..7880722 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -120,6 +120,16 @@ static inline int irq_has_action(unsigned int irq)
+ 	return desc->action != NULL;
+ }
+ 
++/*
++ * Test to see if the IRQ is chained; it would not be requested and hence
++ * _IRQ_NOREQUEST would be set
++ */
++static inline int irq_is_chained(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	return !(desc->status_use_accessors & IRQ_NOREQUEST);
++}
++
+ /* caller has locked the irq_desc and both params are valid */
+ static inline void __irq_set_handler_locked(unsigned int irq,
+ 					    irq_flow_handler_t handler)
+-- 
+1.7.1
 
