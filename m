@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab2E2SQQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 14:16:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32985 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754694Ab2E2SQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 14:16:15 -0400
-Date: Tue, 29 May 2012 20:15:02 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 08/35] autonuma: introduce kthread_bind_node()
-Message-ID: <20120529181502.GM21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-9-git-send-email-aarcange@redhat.com>
- <1338295753.26856.60.camel@twins>
- <20120529161157.GE21339@redhat.com>
- <1338311091.26856.146.camel@twins>
- <20120529174423.GK21339@redhat.com>
- <1338313686.26856.164.camel@twins>
+	id S1754972Ab2E2SRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 14:17:12 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:41534 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754694Ab2E2SRL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 14:17:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338313686.26856.164.camel@twins>
+In-Reply-To: <4FC50E09.4000204@zytor.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
+	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+	<CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+	<20120525043651.GA1391@google.com>
+	<CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+	<CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+	<20120525193716.GA8817@google.com>
+	<CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+	<CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+	<CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
+	<CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
+	<CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
+	<4FC50E09.4000204@zytor.com>
+Date: Tue, 29 May 2012 11:17:10 -0700
+X-Google-Sender-Auth: OTewGZd3wMuJBtnzFd9kIj1YEsU
+Message-ID: <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 07:48:06PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-05-29 at 19:44 +0200, Andrea Arcangeli wrote:
-> > 
-> > But it'd be totally bad not to do the hard bindings to the cpu_s_ of
-> > the node, and not using PF_THREAD_BOUND would just allow userland to
-> > shoot itself in the foot. I mean if PF_THREAD_BOUND wouldn't exist
-> > already I wouldn't add it, but considering somebody bothered to
-> > implement it for the sake to make userland root user "safer", it'd be
-> > really silly not to take advantage of that for knuma_migrated too
-> > (even if it binds to more than 1 CPU). 
-> 
-> No, I'm absolutely ok with the user shooting himself in the foot. The
-> thing exists because you can crash stuff if you get it wrong with
-> per-cpu.
-> 
-> Crashing is not good, worse performance is his own damn fault.
+On Tue, May 29, 2012 at 10:57 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 05/29/2012 10:55 AM, Yinghai Lu wrote:
+>>
+>> x86 are using 16bits.
+>>
+>> some others use 32 bits.
+>> #define IO_SPACE_LIMIT 0xffffffff
+>>
+>> ia64 and sparc are using 64bits.
+>> #define IO_SPACE_LIMIT               0xffffffffffffffffUL
+>>
+>> but pci only support 16bits and 32bits.
+>>
+>> maybe later we can add
+>> PCI_MAX_RESOURCE_16
+>>
+>> to handle 16bits and 32bit io ports.
+>>
+>
+> Shouldn't this be dealt by root port apertures?
+>
 
-Some people don't like root to write to /dev/mem or rm -r /
-either. I'm not in that camp, but if you're not in that camp, then you
-should _never_ care to set PF_THREAD_BOUND, no matter if it's about
-crashing or just slowing down the kernel.
+pci bridge could support 16bits and 32bits io port.
+but we did not record if 32bits is supported.
 
-If such a thing exists, well using it to avoid the user either to crash or
-to screw with the system performance, can only be a bonus.
+so during allocating, could have allocated above 64k address to non
+32bit bridge.
+
+but  x86 is ok, because ioport.end always set to 0xffff.
+other arches with IO_SPACE_LIMIT with 0xffffffff or
+0xffffffffffffffffUL may have problem.
+
+Yinghai
