@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2E2RyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 13:54:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545Ab2E2RyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 13:54:07 -0400
-Date: Tue, 29 May 2012 13:53:53 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Russ Anderson <rja@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on
- multi-processor systems
-Message-ID: <20120529175352.GA31524@redhat.com>
-References: <20120524144229.GA27713@sgi.com>
+	id S1754855Ab2E2Rz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 13:55:28 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:36066 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab2E2RzZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 13:55:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120524144229.GA27713@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
+References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
+	<1337754877-19759-3-git-send-email-yinghai@kernel.org>
+	<CA+55aFzd1BWqidt95qZLc1x_YU=WeGS=mKUOMvO_3omOhc_5VA@mail.gmail.com>
+	<CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
+	<CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
+	<20120525043651.GA1391@google.com>
+	<CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
+	<CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
+	<20120525193716.GA8817@google.com>
+	<CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
+	<CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
+	<CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
+	<CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
+Date: Tue, 29 May 2012 10:55:23 -0700
+X-Google-Sender-Auth: 7MG0G_RSnoarj6L3DoUnNp3zqoo
+Message-ID: <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
+Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 09:42:29AM -0500, Russ Anderson wrote:
-> When multiple cpus on a multi-processor system call dump_stack()
-> at the same time, the backtrace lines get intermixed, making 
-> the output worthless.  Add a lock so each cpu stack dump comes
-> out as a coherent set.
-> 
-> For example, when a multi-processor system is NMIed, all of the
-> cpus call dump_stack() at the same time, resulting in output for
-> all of cpus getting intermixed, making it impossible to tell what
-> any individual cpu was doing.  With this patch each cpu prints
-> its stack lines as a coherent set, so one can see what each cpu
-> was doing.
+On Fri, May 25, 2012 at 5:12 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, May 25, 2012 at 5:10 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Fri, May 25, 2012 at 2:55 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> I think we should fix this with a separate patch that removes
+>>> PCIBIOS_MAX_MEM_32 altogether, replacing this use with an explicit
+>>> 0xffffffff (or some other "max 32-bit value" symbol).  I don't think
+>>> there's anything arch-specific about this.
+>>>
+>>> So I'd like to see two patches here:
+>>>  1) Avoid allocating 64-bit regions for 32-bit BARs
+>>>  2) Try to allocate regions above 4GB for 64-bit BARs
+>>
+>> Sure. please check updated two patches.
+>
+> I think the first one looks good.
+>
+> I'm curious about the second.  Why did you add the IORESOURCE_MEM
+> test?  That's doesn't affect the "start =" piece because
+> IORESOURCE_MEM is always set if IORESOURCE_MEM_64 is set.
+>
+> But it does affect the "end =" part.  Previously we limited all I/O
+> and 32-bit mem BARs to the low 4GB.  This patch makes it so we limit
+> 32-bit mem BARs to the low 4GB, but we don't limit I/O BARs.  But I/O
+> BARs can only have 32 bits of address, so it seems like we should
+> limit them the same way as 32-bit mem BARs.  So I expected something
+> like this:
+>
+>    if (res->flags & IORESOURCE_MEM_64) {
+>        start = (resource_size_t) (1ULL << 32);
+>        end = PCI_MAX_RESOURCE;
+>    } else {
+>        start = 0;
+>        end = PCI_MAX_RESOURCE_32;
+>    }
 
-For this particular test case, it sounds like you are doing what
-trigger_all_cpu_backtrace() is doing?  It doesn't solve the general
-problem, but probably your particular usage?
+x86 are using 16bits.
 
-Cheers,
-Don
+some others use 32 bits.
+#define IO_SPACE_LIMIT 0xffffffff
 
-> 
-> It has been tested on a 4069 cpu system.
-> 
-> Signed-off-by: Russ Anderson <rja@sgi.com>
-> 
-> ---
->  arch/x86/kernel/dumpstack.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> Index: linux/arch/x86/kernel/dumpstack.c
-> ===================================================================
-> --- linux.orig/arch/x86/kernel/dumpstack.c	2012-05-03 14:31:13.602345805 -0500
-> +++ linux/arch/x86/kernel/dumpstack.c	2012-05-03 14:51:43.805197563 -0500
-> @@ -186,7 +186,9 @@ void dump_stack(void)
->  {
->  	unsigned long bp;
->  	unsigned long stack;
-> +	static DEFINE_SPINLOCK(lock);	/* Serialise the printks */
->  
-> +	spin_lock(&lock);
->  	bp = stack_frame(current, NULL);
->  	printk("Pid: %d, comm: %.20s %s %s %.*s\n",
->  		current->pid, current->comm, print_tainted(),
-> @@ -194,6 +196,7 @@ void dump_stack(void)
->  		(int)strcspn(init_utsname()->version, " "),
->  		init_utsname()->version);
->  	show_trace(NULL, NULL, &stack, bp);
-> +	spin_unlock(&lock);
->  }
->  EXPORT_SYMBOL(dump_stack);
->  
-> -- 
-> Russ Anderson, OS RAS/Partitioning Project Lead  
-> SGI - Silicon Graphics Inc          rja@sgi.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ia64 and sparc are using 64bits.
+#define IO_SPACE_LIMIT               0xffffffffffffffffUL
+
+but pci only support 16bits and 32bits.
+
+maybe later we can add
+PCI_MAX_RESOURCE_16
+
+to handle 16bits and 32bit io ports.
+
+Yinghai
