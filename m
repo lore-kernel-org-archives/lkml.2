@@ -1,101 +1,1237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab2E2Tcg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 15:32:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755531Ab2E2Tbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 15:31:33 -0400
-Date: Tue, 29 May 2012 21:29:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] uprobes: teach handle_swbp() to rely on "is_swbp"
-	rather than uprobes_srcu
-Message-ID: <20120529192947.GF8057@redhat.com>
-References: <20120529192721.GA8048@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120529192721.GA8048@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755487Ab2E2TbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 15:31:24 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38391 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755432Ab2E2TbU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 15:31:20 -0400
+X-Greylist: delayed 1025 seconds by postgrey-1.27 at vger.kernel.org; Tue, 29 May 2012 15:31:19 EDT
+From: stefani@seibold.net
+To: linux-kernel@vger.kernel.org, greg@kroah.com, gregkh@linuxfoundation.org
+Cc: thomas.braunstorfinger@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH] add new NRP power meter USB device driver
+Date: Tue, 29 May 2012 21:14:18 +0200
+Message-Id: <1338318858-24144-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.7.8.6
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently handle_swbp() assumes that it can't race with unregister,
-so it roughly does:
+From: Stefani Seibold <stefani@seibold.net>
 
-	if (find_uprobe(vaddr))
-		process_uprobe();
-	else
-		send_sig(SIGTRAP);
+This driver supports all of the Rohde&Schwarz RF Power Meter NRP Sensors. These
+sensors are intelligent standalone instruments that communicate via USB.
 
-This relies on the not-really-working uprobes_srcu code we are going
-to remove, see the next patch.
+A power meter is a device for analyzing the RF power output level of an
+electrical device, similar to an oscilloscope.
 
-With this patch we rely on the result of is_swbp_at_addr(bp_vaddr)
-if find_uprobe() fails.
+The Power Meter Sensors will be used in a wide range of environements, like
 
-If is_swbp == 1, then we hit the normal int3, we should send SIGTRAP.
+- Manufacturing (e.g. air planes and smart phones)
+- Radio and TV broadcasting
+- Mobile communications
+- Engeeniering
+- Science Labs
+- Education
 
-If is_swbp == 0, we raced with uprobe_unregister(), we simply restart
-this insn again.
+The NRP Power Meters support the following measurements:
 
-The "difficult" case is is_swbp == -EFAULT, when we can't read this
-memory. In this case I think we should restart too, and this is more
-correct compared to the current code which sends SIGTRAP.
+ - Dynamic range: up to 90 dB (sensor dependent)
+ - Level range: -67 dBm to +45 dBm (sensor dependent)
+ - Frequency range: DC to 67 GHz (sensor dependent)
+ - Measurement speed: 1500 measurements per second in the buffered mode
+ - Linearity uncertainty: 0.007 dB
+ - Precise average power measurements irrespective of modulation and bandwidth
+ - Flexible measurements on up to 128 time slots per power sensor
+ - S parameter correction of components between sensor and test object
 
-Ignoring ENOMEM/etc from get_user_pages(), this can only happen if
-another thread unmaps this memory before find_active_uprobe() takes
-mmap_sem. It would be better to pretend it was unmapped before this
-insn was executed, restart, and get SIGSEGV.
+The device will be controlled by a SCPI like interface.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+The patch is against linux 3.5.0
+(commit 1e2aec873ad6d16538512dbb96853caa1fa076af)
+
+The source is checked with checkpatch.pl and has no errors. Only 11
+"line over 80 characters" warnings are left. I see no reason to satisfy this
+boring punch card limit for this lines, since it will make the source noisier.
+
+make C=1 is quiet.
+
+Please apply it to the kernel tree.
+Thanks.
+
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
 ---
- kernel/events/uprobes.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+ drivers/usb/misc/Kconfig       |   12 +
+ drivers/usb/misc/Makefile      |    1 +
+ drivers/usb/misc/nrpz.c        | 1069 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/usb/nrpzmodule.h |   47 ++
+ 4 files changed, 1129 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/usb/misc/nrpz.c
+ create mode 100644 include/linux/usb/nrpzmodule.h
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a2ed82b..1f02e3b 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1530,14 +1530,26 @@ static void handle_swbp(struct pt_regs *regs)
- 	struct uprobe_task *utask;
- 	struct uprobe *uprobe;
- 	unsigned long bp_vaddr;
--	int is_swbp;
-+	int uninitialized_var(is_swbp);
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index 1bfcd02..2c55d5f 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -244,3 +244,15 @@ config USB_YUREX
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called yurex.
  
- 	bp_vaddr = uprobe_get_swbp_addr(regs);
- 	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
++config USB_NRPZ
++	tristate "USB NRPZ power sensor driver support"
++	depends on USB
++	help
++	  This driver supports the Rohde&Schwarz NRP RF Power Meter Sensors.
++
++	  These sensors are intelligent standalone instruments that
++	  communicate via USB and provide a wide range of measurements.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called nrpz.
++
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index 796ce7e..9a0364c 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -25,5 +25,6 @@ obj-$(CONFIG_USB_TRANCEVIBRATOR)	+= trancevibrator.o
+ obj-$(CONFIG_USB_USS720)		+= uss720.o
+ obj-$(CONFIG_USB_SEVSEG)		+= usbsevseg.o
+ obj-$(CONFIG_USB_YUREX)			+= yurex.o
++obj-$(CONFIG_USB_NRPZ)			+= nrpz.o
  
- 	if (!uprobe) {
--		/* No matching uprobe; signal SIGTRAP. */
--		send_sig(SIGTRAP, current, 0);
-+		if (is_swbp > 0) {
-+			/* No matching uprobe; signal SIGTRAP. */
-+			send_sig(SIGTRAP, current, 0);
-+		} else {
-+			/*
-+			 * Either we raced with uprobe_unregister() or we can't
-+			 * access this memory. The latter is only possible if
-+			 * another thread plays with our ->mm. In both cases
-+			 * we can simply restart. If this vma was unmapped we
-+			 * can pretend this insn was not executed yet and get
-+			 * the (correct) SIGSEGV after restart.
-+			 */
-+			instruction_pointer_set(regs, bp_vaddr);
+ obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
+diff --git a/drivers/usb/misc/nrpz.c b/drivers/usb/misc/nrpz.c
+new file mode 100644
+index 0000000..e341703
+--- /dev/null
++++ b/drivers/usb/misc/nrpz.c
+@@ -0,0 +1,1069 @@
++/*
++ * Rohde & Schwarz USB NRP Zxx power meter kernel module driver
++ *
++ * Version: 4.0
++ *
++ * Copyright (c) 2012 by Rohde & Scharz GmbH & Co. KG
++ *  written by Stefani Seibold <stefani@seibold.net>
++ *
++ * Based on USB Skeleton driver written by Greg Kroah-Hartman <greg@kroah.com>
++ *
++ * This driver supports the RF Power Meter R&S ® NRP Sensors. These
++ * sensors are intelligent standalone instruments that communicate via USB
++ * and support the following measurements:
++ *
++ * - Dynamic range: up to 90 dB (sensor dependent)
++ * - Level range: -67 dBm to +45 dBm (sensor dependent)
++ * - Frequency range: DC to 67 GHz (sensor dependent)
++ * - Measurement speed: 1500 measurements per second in the buffered mode
++ * - Linearity uncertainty: 0.007 dB
++ * - Precise average power measurements irrespective of modulation and bandwidth
++ * - Flexible measurements on up to 128 time slots per power sensor
++ * - S parameter correction of components between sensor and test object
++ *
++ * History:
++ *
++ * 2012_05_18 - 4.0 - revamp for kernel inclusion
++ * 2007_05_15 - 2.0 - Ported the driver to kernel 2.6, mostly rewritten
++ * 2001_05_01 - 0.1 - first version
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++/*
++ * Internal format of the NRPZ USB messages:
++ *
++ *  Byte 0:	Signature
++ *  Byte 1:	Error Code
++ *  Byte 2/3:	Array Index
++ *		or State (Byte 2)
++ *		or Group Number (Byte 2) / Param Number (Byte 3)
++ *  Byte 4-15:	Data depening on signature type (Byte 0):
++ *		floats, bit fields and integer are 32 bit
++ *
++ * Signature types:
++ *  'E':	single float value
++ *  'e':	single value
++ *  'A':	float array
++ *  'P':	auxiliary or peak float array
++ *  'a':	interim float array
++ *  'p':	interim auxiliary or peak float array
++ *  'F':	feature bit field
++ *  'U':	float parameter (32 bit)
++ *  'V':	bit field parameter (32 bit)
++ *  'W':	integer parameter (32 bit)
++ *  'T':	string data
++ *  'R':	receipt data (string or binary data)
++ *  'X':	internal error
++ *  'Z':	current state (Byte 2)
++ *  'z':	life sign package
++ *  'L':	float value (32 bit)
++ *  'M':	bit field value (32 bit)
++ *  'N':	long value (32 bit)
++ *  'B':	binary data
++ *
++ * State values:
++ *   0:		trigger idle
++ *   1:		trigger reserved
++ *   2:		wait for trigger
++ *   3:		trigger measuring
++ *
++ * Communication in direction from host to the device are mostly like SCPI.
++ */
++
++#include <linux/kernel.h>
++#include <linux/sched.h>
++#include <linux/signal.h>
++#include <linux/errno.h>
++#include <linux/poll.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/fcntl.h>
++#include <linux/module.h>
++#include <linux/spinlock.h>
++#include <linux/list.h>
++#include <linux/usb.h>
++#include <linux/version.h>
++#include <linux/kref.h>
++#include <linux/bitops.h>
++#include <linux/mutex.h>
++
++#include <linux/usb/nrpzmodule.h>
++
++#if 0
++#define CONFIG_NRP_DEBUG
++#endif
++#ifdef CONFIG_NRP_DEBUG
++static int debug = 1;
++#else
++static int debug;
++#endif
++
++module_param(debug, int, 0);
++MODULE_PARM_DESC(debug, "Debug enabled or not");
++
++#define nrpz_dbg(format, arg...) \
++	do { if (debug) printk(KERN_DEBUG "nrpz: " format "\n", ##arg); } while (0)
++#define nrpz_err(format, arg...) \
++	do { printk(KERN_ERR "nrpz: " format "\n", ##arg); } while (0)
++#define nrpz_info(format, arg...) \
++	do { printk(KERN_INFO "nrpz: " format "\n", ##arg); } while (0)
++
++/* Version Information */
++#define DRIVER_VERSION	"v4.00"
++#define DRIVER_AUTHOR	"Stefani Seibold <stefani@seibold.net>"
++#define DRIVER_DESC	"Rohde&Schwarz NRP-Zxx USB Powermeter"
++
++/* Get a minor range for your devices from the usb maintainer */
++#define NRPZ_MINOR_BASE		192
++
++#define to_nrpz_dev(d) container_of(d, struct usb_nrpz, kref)
++#define list_to_urb(d) container_of(d, struct urb, urb_list)
++
++/* Define these values to match your device */
++#define USB_RS_VENDOR_ID	0x0aad
++#define USB_NRP_PRODUCT_ID	0x0002
++#define USB_NRPZ21_PRODUCT_ID	0x0003
++#define USB_NRPFU_PRODUCT_ID	0x0004
++#define USB_FSHZ1_PRODUCT_ID	0x000b
++#define USB_NRPZ11_PRODUCT_ID	0x000c
++#define USB_NRPZ22_PRODUCT_ID	0x0013
++#define USB_NRPZ23_PRODUCT_ID	0x0014
++#define USB_NRPZ24_PRODUCT_ID	0x0015
++#define USB_NRPZ51_PRODUCT_ID	0x0016
++#define USB_NRPZ52_PRODUCT_ID	0x0017
++#define USB_NRPZ55_PRODUCT_ID	0x0018
++#define USB_NRPZ56_PRODUCT_ID	0x0019
++#define USB_FSHZ18_PRODUCT_ID	0x001a
++#define USB_NRPZ91_PRODUCT_ID	0x0021
++#define USB_NRPZ81_PRODUCT_ID	0x0023
++#define USB_NRPZ31_PRODUCT_ID	0x002c
++#define USB_NRPZ37_PRODUCT_ID	0x002d
++#define USB_NRPZ96_PRODUCT_ID	0x002e
++#define USB_NRPZ27_PRODUCT_ID	0x002f
++#define USB_NRPZ28_PRODUCT_ID	0x0051
++#define USB_NRPZ98_PRODUCT_ID	0x0052
++#define USB_NRPZ92_PRODUCT_ID	0x0062
++#define USB_NRPZ57_PRODUCT_ID	0x0070
++#define USB_NRPZ85_PRODUCT_ID	0x0083
++#define USB_NRPC40_PRODUCT_ID	0x008F
++#define USB_NRPC50_PRODUCT_ID	0x0090
++#define USB_NRPZ86_PRODUCT_ID	0x0095
++#define USB_NRPZ41_PRODUCT_ID	0x0096
++#define USB_NRPZ61_PRODUCT_ID	0x0097
++#define USB_NRPZ71_PRODUCT_ID	0x0098
++#define USB_NRPZ32_PRODUCT_ID	0x009A
++#define USB_NRPZ211_PRODUCT_ID	0x00A6
++#define USB_NRPZ221_PRODUCT_ID	0x00A7
++#define USB_NRPZ58_PRODUCT_ID	0x00A8
++#define USB_NRPC33_PRODUCT_ID	0x00B6
++#define USB_NRPC18_PRODUCT_ID	0x00BF
++
++/* table of devices that work with this driver */
++static struct usb_device_id nrpz_table[] = {
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRP_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ21_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPFU_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_FSHZ1_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ11_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ22_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ23_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ24_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ51_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ52_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ55_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ56_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ57_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_FSHZ18_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ91_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ81_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ31_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ37_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ96_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ27_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ28_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ98_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ92_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ85_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPC40_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPC50_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ86_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ41_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ61_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ71_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ32_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ211_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ221_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPZ58_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPC33_PRODUCT_ID)},
++	{USB_DEVICE(USB_RS_VENDOR_ID, USB_NRPC18_PRODUCT_ID)},
++	{} /* Terminating entry */
++};
++
++MODULE_DEVICE_TABLE(usb, nrpz_table);
++
++/* Structure to hold all of our device specific stuff */
++struct usb_nrpz {
++	struct usb_device *udev;
++	struct usb_interface *intf;
++	unsigned minor;			/* minor number for this device */
++	unsigned long in_use;		/* in use flag */
++
++	size_t in_size;			/* size of the receive buffer */
++	size_t out_size;		/* size of the send buffer */
++	__u8 in_epAddr;			/* address of the bulk in endpoint */
++	__u8 out_epAddr;		/* address of the bulk out endpoint */
++
++	struct kref kref;
++	wait_queue_head_t wq;
++
++	struct usb_anchor out_running;	/* list of in use output buffers */
++	struct list_head out_avail;	/* list of available output buffers */
++	spinlock_t write_lock;		/* spinlock for transmit list */
++	struct mutex write_mutex;	/* exclusive write data semaphore */
++
++	struct usb_anchor in_running;	/* list of in use input buffers */
++	struct list_head in_avail;	/* list of available input buffers */
++	spinlock_t read_lock;		/* spinlock for receive list */
++	struct mutex read_mutex;	/* exclusive read data semaphore */
++
++	struct urb out_urbs[64];	/* array of urb's for output */
++	struct urb in_urbs[64];		/* array of urb's for input */
++};
++
++/* forward declaration */
++static struct usb_driver nrpz_driver;
++
++static inline void urb_list_add(spinlock_t *lock, struct urb *urb,
++				struct list_head *head)
++{
++	spin_lock_irq(lock);
++	list_add(&urb->urb_list, head);
++	spin_unlock_irq(lock);
++}
++
++static inline void urb_list_add_tail(spinlock_t *lock, struct urb *urb,
++				struct list_head *head)
++{
++	spin_lock_irq(lock);
++	list_add_tail(&urb->urb_list, head);
++	spin_unlock_irq(lock);
++}
++
++static struct urb *urb_list_get(spinlock_t *lock, struct list_head *head)
++{
++	struct list_head *p;
++
++	spin_lock_irq(lock);
++
++	if (list_empty(head)) {
++		spin_unlock_irq(lock);
++		return NULL;
++	}
++
++	p = head->next;
++	list_del(p);
++	spin_unlock_irq(lock);
++
++	return list_to_urb(p);
++}
++
++/*
++ * bulks_release
++ *
++ * release all allocated urb's and and usb buffers
++ */
++static void bulks_release(struct usb_nrpz *dev, struct urb *urb, unsigned n,
++		int buf_size)
++{
++	while (n--) {
++		if (urb->transfer_buffer)
++			usb_free_coherent(dev->udev,
++				buf_size,
++				urb->transfer_buffer,
++				urb->transfer_dma);
++		++urb;
++	}
++}
++
++/*
++ * bulks_init
++ *
++ * preallocate urb's and and usb buffers
++ */
++static int bulks_init(struct usb_nrpz *dev,
++		struct urb *urb,
++		unsigned n,
++		unsigned int pipe,
++		int buf_size,
++		usb_complete_t complete_fn)
++{
++	void *buffer;
++
++	while (n--) {
++		usb_init_urb(urb);
++
++		buffer = usb_alloc_coherent(dev->udev,
++				buf_size,
++				GFP_KERNEL,
++				&urb->transfer_dma);
++		if (!buffer)
++			return -ENOMEM;
++
++		/* set up our read urb */
++		usb_fill_bulk_urb(urb,
++			dev->udev,
++			pipe,
++			buffer,
++			dev->in_size,
++			complete_fn,
++			dev);
++
++		urb->transfer_flags = URB_NO_TRANSFER_DMA_MAP;
++
++		++urb;
++	}
++	return 0;
++}
++
++static void nrpz_read_callback(struct urb *urb)
++{
++	struct usb_nrpz *dev = (struct usb_nrpz *)urb->context;
++
++	if (urb->status) {
++		if (!(urb->status == -ENOENT ||
++		      urb->status == -EPIPE ||
++		      urb->status == -ECONNRESET ||
++		      urb->status == -ESHUTDOWN))
++			nrpz_err("Nonzero read bulk status: %d", urb->status);
++	}
++
++	spin_lock(&dev->read_lock);
++	list_add_tail(&urb->urb_list, &dev->in_avail);
++	spin_unlock(&dev->read_lock);
++	wake_up_all(&dev->wq);
++}
++
++static void nrpz_write_callback(struct urb *urb)
++{
++	struct usb_nrpz *dev = (struct usb_nrpz *)urb->context;
++
++	if (urb->status) {
++		if (!(urb->status == -ENOENT ||
++		      urb->status == -EPIPE ||
++		      urb->status == -ECONNRESET ||
++		      urb->status == -ESHUTDOWN))
++			nrpz_err("Nonzero write bulk status: %d", urb->status);
++	}
++
++	spin_lock(&dev->write_lock);
++	list_add_tail(&urb->urb_list, &dev->out_avail);
++	spin_unlock(&dev->write_lock);
++	wake_up_all(&dev->wq);
++}
++
++static void nrpz_delete(struct kref *kref)
++{
++	struct usb_nrpz *dev = to_nrpz_dev(kref);
++
++	usb_put_dev(dev->udev);
++	kfree(dev);
++}
++
++static ssize_t nrpz_read(struct file *file, char __user *buffer, size_t count,
++				loff_t *ppos)
++{
++	struct usb_nrpz *dev;
++	int ret;
++	struct urb *urb;
++	size_t n;
++
++	dev = (struct usb_nrpz *)file->private_data;
++
++	/* verify that we actually have some data to read */
++	if (!count)
++		return 0;
++
++	/* lock the read data */
++	ret = mutex_lock_interruptible(&dev->read_mutex);
++	if (ret)
++		return ret;
++
++	for (;;) {
++		urb = urb_list_get(&dev->read_lock, &dev->in_avail);
++		if (urb)
++			break;
++
++		if (file->f_flags & O_NONBLOCK) {
++			ret = -EAGAIN;
++			goto exit;
 +		}
- 		return;
- 	}
- 
++
++		ret = wait_event_interruptible(dev->wq,
++			!list_empty(&dev->in_avail) || !dev->intf);
++		if (ret) {
++			ret = -ERESTARTSYS;
++			goto exit;
++		}
++
++		/* verify that the device wasn't unplugged */
++		if (!dev->intf) {
++			ret = -ENODEV;
++			goto exit;
++		}
++	}
++
++	if (!urb->status) {
++		n = min(count, urb->actual_length);
++
++		if (copy_to_user(buffer, urb->transfer_buffer, n)) {
++			urb_list_add(&dev->read_lock, urb, &dev->in_avail);
++			ret = -EFAULT;
++			goto exit;
++		}
++	} else
++		n = urb->status;
++
++	usb_anchor_urb(urb, &dev->in_running);
++
++	ret = usb_submit_urb(urb, GFP_KERNEL);
++	if (ret) {
++		usb_unanchor_urb(urb);
++		urb_list_add_tail(&dev->read_lock, urb, &dev->in_avail);
++		nrpz_err("Failed submitting read urb (error %d)", ret);
++	}
++
++	ret = n;
++exit:
++	mutex_unlock(&dev->read_mutex);
++	return ret;
++}
++
++static ssize_t nrpz_write(struct file *file, const char __user *buffer,
++			size_t count, loff_t *ppos)
++{
++	struct usb_nrpz *dev;
++	int ret;
++	size_t len = 0;
++	struct urb *urb;
++	size_t n;
++
++	dev = (struct usb_nrpz *)file->private_data;
++
++	/* verify that we actually have some data to write */
++	if (!count)
++		return 0;
++
++	/* lock the write data */
++	ret = mutex_lock_interruptible(&dev->write_mutex);
++	if (ret)
++		return ret;
++
++	do {
++		for (;;) {
++			/* verify that the device wasn't unplugged */
++			if (!dev->intf) {
++				ret = -ENODEV;
++				goto exit;
++			}
++
++			urb = urb_list_get(&dev->write_lock, &dev->out_avail);
++			if (urb)
++				break;
++
++			if (file->f_flags & O_NONBLOCK) {
++				ret = -EAGAIN;
++				goto exit;
++			}
++
++			ret = wait_event_interruptible(dev->wq,
++				!list_empty(&dev->out_avail) || !dev->intf);
++			if (ret) {
++				ret = -ERESTARTSYS;
++				goto exit;
++			}
++		}
++
++		n = min(count, dev->out_size);
++
++		if (copy_from_user(urb->transfer_buffer, buffer, n)) {
++			urb_list_add(&dev->write_lock, urb, &dev->out_avail);
++			ret = -EFAULT;
++			break;
++		}
++
++		urb->transfer_buffer_length = n;
++
++		usb_anchor_urb(urb, &dev->out_running);
++
++		ret = usb_submit_urb(urb, GFP_KERNEL);
++		if (ret) {
++			usb_unanchor_urb(urb);
++			urb_list_add_tail(&dev->write_lock, urb, &dev->out_avail);
++			nrpz_err("Failed submitting write urb (error %d)", ret);
++			break;
++		}
++
++		count -= n;
++		buffer += n;
++		len += n;
++	} while (count);
++exit:
++	if (len)
++		ret = len;
++
++	mutex_unlock(&dev->write_mutex);
++	return ret;
++}
++
++#define	VRT_RESET_ALL		1
++#define	VRT_GET_DEVICE_INFO	6
++#define	VRI_DEVICE_NAME		5
++
++static long nrpz_compat_ioctl(struct file *file, unsigned int cmd,
++		unsigned long arg)
++{
++	struct usb_nrpz *dev;
++	int ret;
++
++	dev = (struct usb_nrpz *)file->private_data;
++
++	/* verify that the device wasn't unplugged */
++	if (!dev->intf)
++		return -ENODEV;
++
++	switch (cmd) {
++	case NRPZ_GETSENSORINFO:
++	 {
++		struct nrpz_sensor_info __user *sensor_info =
++			(struct nrpz_sensor_info __user *)arg;
++
++		if (!access_ok(VERIFY_WRITE, sensor_info, sizeof(*sensor_info)))
++			return -EFAULT;
++
++		__put_user(dev->udev->descriptor.bcdDevice,
++				&sensor_info->bcdDevice);
++		__put_user(dev->udev->descriptor.bcdUSB,
++				&sensor_info->bcdUSB);
++		__put_user(dev->udev->descriptor.bDescriptorType,
++				&sensor_info->bDescriptorType);
++		__put_user(dev->udev->descriptor.bDeviceClass,
++				&sensor_info->bDeviceClass);
++		__put_user(dev->udev->descriptor.bDeviceSubClass,
++				&sensor_info->bDeviceSubClass);
++		__put_user(dev->udev->descriptor.bDeviceProtocol,
++				&sensor_info->bDeviceProtocol);
++		__put_user(dev->udev->descriptor.bMaxPacketSize0,
++				&sensor_info->bMaxPacketSize0);
++		__put_user(dev->udev->descriptor.bNumConfigurations,
++				&sensor_info->bNumConfigurations);
++		__put_user(dev->udev->descriptor.iManufacturer,
++				&sensor_info->iManufacturer);
++		__put_user(dev->udev->descriptor.iProduct,
++				&sensor_info->iProduct);
++		__put_user(dev->udev->descriptor.iSerialNumber,
++				&sensor_info->iSerialNumber);
++		__put_user(dev->udev->descriptor.idVendor,
++				&sensor_info->vendorId);
++		__put_user(dev->udev->descriptor.idProduct,
++				&sensor_info->productId);
++		usb_string(dev->udev, dev->udev->descriptor.iManufacturer,
++				(char __force *)sensor_info->manufacturer,
++				sizeof(sensor_info->manufacturer));
++		usb_string(dev->udev, dev->udev->descriptor.iProduct,
++				(char __force *)sensor_info->productName,
++				sizeof(sensor_info->productName));
++		usb_string(dev->udev, dev->udev->descriptor.iSerialNumber,
++				(char __force *)sensor_info->serialNumber,
++				sizeof(sensor_info->serialNumber));
++
++		return 0;
++	 }
++	case NRPZ_START:
++	 {
++		u8 device_state[128];
++
++		memset(device_state, 0, sizeof(device_state));
++
++		ret = usb_control_msg(dev->udev,
++			usb_rcvctrlpipe(dev->udev, 0),
++			VRT_GET_DEVICE_INFO,
++			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
++			0,
++			VRI_DEVICE_NAME,
++			device_state,
++			sizeof(device_state),
++			5000);
++
++		if (ret < 0)
++			return ret;
++
++		nrpz_dbg("device state:%s", device_state);
++
++		if (strncmp(device_state, "Boot ", 5))
++			return 0;
++
++		return usb_control_msg(dev->udev,
++			usb_sndctrlpipe(dev->udev, 0),
++			VRT_RESET_ALL,
++			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
++			1,
++			1,
++			device_state,
++			sizeof(device_state),
++			5000);
++	 }
++	case NRPZ_WRITE_DONE:
++		if (arg) {
++			ret = wait_event_interruptible_timeout(
++				dev->out_running.wait,
++				list_empty(&dev->out_running.urb_list),
++				msecs_to_jiffies(arg));
++			if (!ret)
++				return -ETIMEDOUT;
++			if (ret < 0)
++				return ret;
++			return 0;
++		} else {
++			return wait_event_interruptible(
++				dev->out_running.wait,
++				list_empty(&dev->out_running.urb_list));
++		}
++		break;
++	case NRPZ_VENDOR_CONTROL_MSG_OUT:
++	 {
++		struct nrpz_control_req ncr;
++		u16 size;
++
++		if (copy_from_user(&ncr, (struct nrpz_control_req __user *)arg, sizeof(ncr)))
++			return -EFAULT;
++
++		if (ncr.data) {
++			size = ncr.size;
++
++			if (!access_ok(VERIFY_WRITE, (void __user *)ncr.data, size))
++				return -EFAULT;
++		} else {
++			size = 0;
++		}
++
++		ret = usb_control_msg(dev->udev,
++				usb_sndctrlpipe(dev->udev, 0),
++				ncr.request,
++				ncr.type,
++				ncr.value,
++				ncr.index,
++				ncr.data,
++				size,
++				0);
++
++		return ret;
++	 }
++	case NRPZ_VENDOR_CONTROL_MSG_IN:
++	 {
++		struct nrpz_control_req ncr;
++		u16 size;
++
++		if (copy_from_user(&ncr, (struct nrpz_control_req __user *)arg, sizeof(ncr)))
++			return -EFAULT;
++
++		if (ncr.data) {
++			size = ncr.size;
++
++			if (!access_ok(VERIFY_READ, (void __user *)ncr.data, size))
++				return -EFAULT;
++		} else {
++			size = 0;
++		}
++
++		ret = usb_control_msg(dev->udev,
++				usb_rcvctrlpipe(dev->udev, 0),
++				ncr.request,
++				ncr.type,
++				ncr.value,
++				ncr.index,
++				ncr.data,
++				size,
++				0);
++
++		return ret;
++	 }
++	default:
++		nrpz_err("Invalid ioctl call (%08x)", cmd);
++		return -EOPNOTSUPP;
++	}
++
++	return ret;
++}
++
++static long nrpz_ioctl(struct file *file, unsigned int cmd,
++		unsigned long arg)
++{
++	return nrpz_compat_ioctl(file, cmd, arg);
++}
++
++static int nrpz_open(struct inode *inode, struct file *file)
++{
++	struct usb_nrpz *dev;
++	int minor;
++	struct usb_interface *intf;
++	int ret;
++	unsigned i;
++
++	minor = iminor(inode);
++
++	intf = usb_find_interface(&nrpz_driver, minor);
++	if (!intf) {
++		nrpz_err("Can not find device for minor %d", minor);
++		return -ENODEV;
++	}
++
++	dev = usb_get_intfdata(intf);
++	if (!dev)
++		return -ENODEV;
++
++	if (test_and_set_bit(0, &dev->in_use))
++		return -EBUSY;
++
++	/* increment our usage count for the device */
++	kref_get(&dev->kref);
++
++	/* save our object in the file's private structure */
++	file->private_data = dev;
++
++	INIT_LIST_HEAD(&dev->in_avail);
++	INIT_LIST_HEAD(&dev->out_avail);
++
++	ret = bulks_init(dev,
++			 dev->in_urbs,
++			 ARRAY_SIZE(dev->in_urbs),
++			 usb_rcvbulkpipe(dev->udev, dev->in_epAddr),
++			 dev->in_size,
++			 nrpz_read_callback);
++	if (ret)
++		goto error;
++
++	ret = bulks_init(dev,
++			 dev->out_urbs,
++			 ARRAY_SIZE(dev->out_urbs),
++			 usb_sndbulkpipe(dev->udev, dev->out_epAddr),
++			 dev->out_size,
++			 nrpz_write_callback);
++	if (ret)
++		goto error;
++
++	for (i = 0; i != ARRAY_SIZE(dev->in_urbs); ++i) {
++		usb_anchor_urb(&dev->in_urbs[i], &dev->in_running);
++
++		ret = usb_submit_urb(&dev->in_urbs[i], GFP_KERNEL);
++		if (ret) {
++			usb_kill_anchored_urbs(&dev->in_running);
++			goto error;
++		}
++	}
++
++	for (i = 0; i != ARRAY_SIZE(dev->out_urbs); ++i)
++		list_add(&dev->out_urbs[i].urb_list, &dev->out_avail);
++
++	return 0;
++error:
++	clear_bit(0, &dev->in_use);
++
++	bulks_release(dev, dev->out_urbs, ARRAY_SIZE(dev->out_urbs),
++			dev->out_size);
++	bulks_release(dev, dev->in_urbs, ARRAY_SIZE(dev->in_urbs),
++			dev->in_size);
++
++	return 0;
++}
++
++static int nrpz_release(struct inode *inode, struct file *file)
++{
++	struct usb_nrpz *dev;
++
++	dev = (struct usb_nrpz *)file->private_data;
++	if (dev == NULL)
++		return -ENODEV;
++
++	usb_kill_anchored_urbs(&dev->in_running);
++	usb_kill_anchored_urbs(&dev->out_running);
++
++	bulks_release(dev, dev->out_urbs, ARRAY_SIZE(dev->out_urbs),
++			dev->out_size);
++	bulks_release(dev, dev->in_urbs, ARRAY_SIZE(dev->in_urbs),
++			dev->in_size);
++
++	/* decrement the count on our device */
++	kref_put(&dev->kref, nrpz_delete);
++
++	clear_bit(0, &dev->in_use);
++
++	return 0;
++}
++
++static int nrpz_flush(struct file *file, fl_owner_t id)
++{
++	struct usb_nrpz *dev;
++	int ret;
++
++	dev = (struct usb_nrpz *)file->private_data;
++	if (dev == NULL)
++		return -ENODEV;
++
++	/* lock the write data */
++	ret = mutex_lock_interruptible(&dev->write_mutex);
++	if (ret)
++		return ret;
++
++	/* verify that the device wasn't unplugged */
++	if (!dev->intf) {
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	ret = wait_event_interruptible(dev->out_running.wait,
++				list_empty(&dev->out_running.urb_list));
++	if (ret) {
++		ret = -ERESTARTSYS;
++		goto exit;
++	}
++exit:
++	mutex_unlock(&dev->write_mutex);
++
++	return ret;
++}
++
++static unsigned int nrpz_poll(struct file *file, poll_table *wait)
++{
++	struct usb_nrpz *dev;
++	int ret = 0;
++
++	dev = (struct usb_nrpz *)file->private_data;
++
++	poll_wait(file, &dev->wq, wait);
++
++	if (!dev->intf)
++		ret = POLLIN | POLLOUT | POLLPRI | POLLERR | POLLHUP;
++	else {
++		if (!list_empty(&dev->in_avail))
++			ret |= POLLIN;
++
++		if (!list_empty(&dev->out_avail))
++			ret |= POLLOUT;
++	}
++
++	return ret;
++}
++
++static const struct file_operations nrpz_fops = {
++	.owner = THIS_MODULE,
++	.read = nrpz_read,
++	.write = nrpz_write,
++	.unlocked_ioctl = nrpz_ioctl,
++	.compat_ioctl = nrpz_compat_ioctl,
++	.open = nrpz_open,
++	.release = nrpz_release,
++	.flush = nrpz_flush,
++	.poll = nrpz_poll,
++	.llseek = noop_llseek,
++};
++
++static struct usb_class_driver nrpz_class = {
++	.name = "nrpz%d",
++	.fops = &nrpz_fops,
++	.minor_base = NRPZ_MINOR_BASE,
++};
++
++static int nrpz_probe(struct usb_interface *intf,
++			const struct usb_device_id *id)
++{
++	int i;
++	int ret;
++	struct usb_endpoint_descriptor *endpoint;
++	struct usb_host_interface *iface_desc;
++	struct usb_nrpz *dev;
++
++	/* allocate memory for our device state and intialize it */
++	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
++	if (!dev) {
++		nrpz_err("Out of memory");
++		return -ENOMEM;
++	}
++
++	ret = -EIO;
++
++	init_waitqueue_head(&dev->wq);
++	kref_init(&dev->kref);
++
++	mutex_init(&dev->read_mutex);
++	mutex_init(&dev->write_mutex);
++
++	spin_lock_init(&dev->read_lock);
++	spin_lock_init(&dev->write_lock);
++
++	init_usb_anchor(&dev->in_running);
++	init_usb_anchor(&dev->out_running);
++
++	dev->in_use = 0;
++	dev->udev = usb_get_dev(interface_to_usbdev(intf));
++	dev->intf = intf;
++
++	/* set up the endpoint information */
++	/* check out the endpoints */
++	iface_desc = intf->cur_altsetting;
++	for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
++		endpoint = &iface_desc->endpoint[i].desc;
++
++		if (!dev->in_epAddr && usb_endpoint_is_bulk_in(endpoint)) {
++			/* we found a bulk in endpoint */
++			dev->in_size = le16_to_cpu(endpoint->wMaxPacketSize);
++			dev->in_epAddr = endpoint->bEndpointAddress;
++		} else
++		if (!dev->out_epAddr && usb_endpoint_is_bulk_out(endpoint)) {
++			/* we found a bulk out endpoint */
++			dev->out_size = le16_to_cpu(endpoint->wMaxPacketSize);
++			dev->out_epAddr = endpoint->bEndpointAddress;
++		}
++	}
++	if (!(dev->in_epAddr && dev->out_epAddr)) {
++		nrpz_err("Could not find both bulk in and out endpoints");
++		goto error;
++	}
++
++	usb_set_intfdata(intf, dev);
++
++	ret = usb_register_dev(intf, &nrpz_class);
++	if (ret) {
++		nrpz_err("Not able to get a minor for this device\n");
++		goto error;
++	}
++
++	dev->minor = intf->minor - NRPZ_MINOR_BASE;
++
++	/* let the user know what node this device is now attached to */
++	nrpz_info("Device now attached to USB nrpz%u", dev->minor);
++
++	return 0;
++error:
++	usb_set_intfdata(intf, NULL);
++	nrpz_delete(&dev->kref);
++	return ret;
++}
++
++static void nrpz_disconnect(struct usb_interface *intf)
++{
++	struct usb_nrpz *dev;
++	unsigned minor;
++
++	dev = usb_get_intfdata(intf);
++	usb_set_intfdata(intf, NULL);
++
++	minor = dev->minor;
++
++	/* give back our minor */
++	usb_deregister_dev(intf, &nrpz_class);
++
++	/* prevent more I/O from starting */
++	dev->intf = NULL;
++
++	usb_kill_anchored_urbs(&dev->in_running);
++	usb_kill_anchored_urbs(&dev->out_running);
++
++	wake_up_all(&dev->wq);
++
++	/* decrement our usage count */
++	kref_put(&dev->kref, nrpz_delete);
++
++	nrpz_info("nrpz%u now disconnected", minor);
++}
++
++static void nrpz_draw_down(struct usb_nrpz *dev)
++{
++	int time;
++
++	time = usb_wait_anchor_empty_timeout(&dev->out_running, 1000);
++	if (!time)
++		usb_kill_anchored_urbs(&dev->out_running);
++
++	usb_kill_anchored_urbs(&dev->in_running);
++}
++
++static int nrpz_suspend(struct usb_interface *intf, pm_message_t message)
++{
++	struct usb_nrpz *dev = usb_get_intfdata(intf);
++
++	if (dev)
++		nrpz_draw_down(dev);
++	return 0;
++}
++
++static int nrpz_resume(struct usb_interface *intf)
++{
++	return 0;
++}
++
++static int nrpz_pre_reset(struct usb_interface *intf)
++{
++	struct usb_nrpz *dev = usb_get_intfdata(intf);
++
++	if (dev)
++		nrpz_draw_down(dev);
++	return 0;
++}
++
++static int nrpz_post_reset(struct usb_interface *intf)
++{
++	return 0;
++}
++
++static struct usb_driver nrpz_driver = {
++	.name = "nrpz",
++	.probe = nrpz_probe,
++	.disconnect = nrpz_disconnect,
++	.suspend = nrpz_suspend,
++	.resume = nrpz_resume,
++	.pre_reset = nrpz_pre_reset,
++	.post_reset = nrpz_post_reset,
++	.id_table = nrpz_table,
++};
++
++static int __init usb_nrpz_init(void)
++{
++	int ret;
++
++	/* register this driver with the USB subsystem */
++	ret = usb_register(&nrpz_driver);
++	if (ret) {
++		nrpz_err("usb_register failed (%d)", ret);
++		return ret;
++	}
++
++	nrpz_info(DRIVER_DESC " " DRIVER_VERSION);
++
++	return 0;
++}
++
++static void __exit usb_nrpz_exit(void)
++{
++	/* deregister this driver with the USB subsystem */
++	usb_deregister(&nrpz_driver);
++}
++
++module_init(usb_nrpz_init);
++module_exit(usb_nrpz_exit);
++
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/usb/nrpzmodule.h b/include/linux/usb/nrpzmodule.h
+new file mode 100644
+index 0000000..8a39aef
+--- /dev/null
++++ b/include/linux/usb/nrpzmodule.h
+@@ -0,0 +1,47 @@
++#ifndef __NRPZMODULE_H_
++#define __NRPZMODULE_H_
++
++#include "linux/ioctl.h"
++
++#define NRPZ_IOC_MAGIC	'N'
++
++#define NRPZ_GETSENSORINFO		_IOR(NRPZ_IOC_MAGIC, 0x01, struct nrpz_sensor_info *)
++#define NRPZ_START			_IO(NRPZ_IOC_MAGIC, 0x02)
++#define NRPZ_WRITE_DONE			_IOW(NRPZ_IOC_MAGIC, 0x03, unsigned long)
++#define NRPZ_VENDOR_CONTROL_MSG		_IOW(NRPZ_IOC_MAGIC, 0x06, struct nrpz_control_req *)
++#define NRPZ_VENDOR_CONTROL_MSG_OUT	_IOW(NRPZ_IOC_MAGIC, 0x06, struct nrpz_control_req *)
++#define NRPZ_VENDOR_CONTROL_MSG_IN	_IOW(NRPZ_IOC_MAGIC, 0x07, struct nrpz_control_req *)
++
++struct nrpz_sensor_info {
++	unsigned char bDescriptorType;
++	unsigned short bcdUSB;
++	unsigned char bDeviceClass;
++	unsigned char bDeviceSubClass;
++	unsigned char bDeviceProtocol;
++	unsigned char bMaxPacketSize0;
++	unsigned short vendorId;
++	unsigned short productId;
++	unsigned short bcdDevice;
++	unsigned char iManufacturer;
++	unsigned char iProduct;
++	unsigned char iSerialNumber;
++	unsigned char bNumConfigurations;
++	char protocol[128];
++	char manufacturer[128];
++	char productName[128];
++	char serialNumber[128];
++};
++
++/*
++ * struct for NRPZ_VENDOR_CONTROL
++ */
++struct nrpz_control_req {
++	unsigned char request;
++	unsigned char type;
++	unsigned short value;
++	unsigned short index;
++	unsigned char *data;
++	unsigned short size;
++};
++
++#endif
 -- 
-1.5.5.1
-
+1.7.8.6
 
