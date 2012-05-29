@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab2E2Kmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 06:42:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:13343 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753053Ab2E2Kmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 06:42:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158163929"
-Date: Tue, 29 May 2012 12:52:55 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: axel.lin@gmail.com, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mfd: Remove config AB8500_I2C_CORE Kconfig entry
-Message-ID: <20120529105255.GC18977@sortiz-mobl>
-References: <1338272340.3127.1.camel@phoenix>
- <4FC47CEB.8090106@linaro.org>
- <CAF+7xWnriCRAuGzTusrtCkYTyUNPKVXE_f0kwysNJ3=AkuzvvA@mail.gmail.com>
- <4FC488E1.3080406@linaro.org>
- <20120529091556.GB18977@sortiz-mobl>
- <4FC4967A.2040608@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC4967A.2040608@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753703Ab2E2KnQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 06:43:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35702 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab2E2KnP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 06:43:15 -0400
+Date: Tue, 29 May 2012 11:45:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Avik Sil <avik.sil@linaro.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Perf: Use /usr/bin/pager if available for perf pager
+Message-ID: <20120529114506.7c8d6157@pyramind.ukuu.org.uk>
+In-Reply-To: <1338287725-26382-1-git-send-email-avik.sil@linaro.org>
+References: <1338287725-26382-1-git-send-email-avik.sil@linaro.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On Tue, 29 May 2012 16:05:25 +0530
+Avik Sil <avik.sil@linaro.org> wrote:
 
-On Tue, May 29, 2012 at 05:27:22PM +0800, Lee Jones wrote:
-> Hi Sam,
+> Some Distributions may lack "less" package being included by default, e.g., Linaro nano rootfs. In those cases use the portable "pager" command instead of "less".
 > 
-> >On Tue, May 29, 2012 at 04:29:21PM +0800, Lee Jones wrote:
-> >>On 29/05/12 15:53, Axel Lin wrote:
-> >>>2012/5/29 Lee Jones<lee.jones@linaro.org>:
-> >>>>On 29/05/12 14:19, Axel Lin wrote:
-> >>>>>
-> >>>>>config AB8500_I2C_CORE is not used after commit d28f1db
-> >>>>>"mfd: Remove confusing ab8500-i2c file and merge into ab8500-core".
-> >>>>>Thus remove it.
-> >>>>>
-> >>>>>Signed-off-by: Axel Lin<axel.lin@gmail.com>
-> >>>>
-> >>>>
-> >>>>I have this patch embedded into a patch-set I'm going to send to ARM-SoC for
-> >>>>inclusion into -rc1 this afternoon. Would you mind leaving this one?
-> >>>
-> >>>I don't mind.
-> >>>But AFAIK, commit d28f1db is in mfd tree.
-> >>>Any reason you want to send the patch to ARM-SoC instead of mfd tree.
-> >>
-> >>I don't actually have a preference as to which tree it goes into, so
-> >>long as it's sent to Mainline on or before -rc1.
-> >I sent a pull request to Linus yesterday, including this commit.
+> Signed-off-by: Avik Sil <avik.sil@linaro.org>
+> ---
+>  tools/perf/util/pager.c |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> This is something different and wasn't part of the pull-request.
-d28f1d was part of the pull request.
+> diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
+> index 1915de2..3322b84 100644
+> --- a/tools/perf/util/pager.c
+> +++ b/tools/perf/util/pager.c
+> @@ -57,6 +57,10 @@ void setup_pager(void)
+>  	}
+>  	if (!pager)
+>  		pager = getenv("PAGER");
+> +	if (!pager) {
+> +		if (!access("/usr/bin/pager", X_OK))
+> +			pager = "/usr/bin/pager";
+> +	}
 
-Cheers,
-Samuel.
+What is "portable" about /usr/bin/pager ? and what is wrong with just
+doing
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+export PAGER=/usr/bin/pager
+
+Alan
