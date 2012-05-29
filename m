@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753316Ab2E2HQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 03:16:42 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50104 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab2E2HQk (ORCPT
+	id S1753330Ab2E2HQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 03:16:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55810 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab2E2HQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 03:16:40 -0400
+	Tue, 29 May 2012 03:16:54 -0400
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: ralf@linux-mips.org, sshtylyov@mvista.com, david.daney@cavium.com,
         nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com, axboe@kernel.dk,
         mingo@kernel.org, tglx@linutronix.de, peterz@infradead.org,
         akpm@linux-foundation.org, srivatsa.bhat@linux.vnet.ibm.com,
-        David Howells <dhowells@redhat.com>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        linux-am33-list@redhat.com
-Subject: [RFC PATCH 02/10] mn10300: smp: remove call to ipi_call_lock()/ipi_call_unlock()
-Date: Tue, 29 May 2012 15:15:57 +0800
-Message-Id: <1338275765-3217-3-git-send-email-yong.zhang0@gmail.com>
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
+Subject: [RFC PATCH 03/10] parisc: smp: remove call to ipi_call_lock()/ipi_call_unlock()
+Date: Tue, 29 May 2012 15:15:58 +0800
+Message-Id: <1338275765-3217-4-git-send-email-yong.zhang0@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
 References: <1338275765-3217-1-git-send-email-yong.zhang0@gmail.com>
@@ -40,27 +39,27 @@ From: Yong Zhang <yong.zhang@windriver.com>
    smp_call_fuction() is processing.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com>
-Cc: linux-am33-list@redhat.com
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
+Cc: Helge Deller <deller@gmx.de>
+Cc: linux-parisc@vger.kernel.org
 ---
- arch/mn10300/kernel/smp.c |    2 --
+ arch/parisc/kernel/smp.c |    2 --
  1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mn10300/kernel/smp.c b/arch/mn10300/kernel/smp.c
-index 090d35d..e62c223 100644
---- a/arch/mn10300/kernel/smp.c
-+++ b/arch/mn10300/kernel/smp.c
-@@ -876,9 +876,7 @@ static void __init smp_online(void)
+diff --git a/arch/parisc/kernel/smp.c b/arch/parisc/kernel/smp.c
+index a47828d..6266730 100644
+--- a/arch/parisc/kernel/smp.c
++++ b/arch/parisc/kernel/smp.c
+@@ -300,9 +300,7 @@ smp_cpu_init(int cpunum)
  
- 	notify_cpu_starting(cpu);
+ 	notify_cpu_starting(cpunum);
  
 -	ipi_call_lock();
- 	set_cpu_online(cpu, true);
+ 	set_cpu_online(cpunum, true);
 -	ipi_call_unlock();
  
- 	local_irq_enable();
- }
+ 	/* Initialise the idle task for this CPU */
+ 	atomic_inc(&init_mm.mm_count);
 -- 
 1.7.5.4
 
