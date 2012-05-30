@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab2E3OnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:43:11 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:59543 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab2E3OnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:43:07 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Philippe De Muyter <phdm@macqel.be>, linux-m68k@vger.kernel.org,
-        Greg Ungerer <gerg@uclinux.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(), and strnlen_user()
-References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org>
-	<20120530102226.GA28628@frolo.macqel>
-	<CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
-X-Yow: Is this TERMINAL fun?
-Date: Wed, 30 May 2012 16:42:59 +0200
-In-Reply-To: <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Wed, 30 May 2012 13:20:02 +0200")
-Message-ID: <m262bdbuh8.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+	id S1755688Ab2E3Ond (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:43:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38925 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998Ab2E3Ona (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:43:30 -0400
+Message-ID: <4FC631F0.9080109@zytor.com>
+Date: Wed, 30 May 2012 07:42:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Jan Beulich <JBeulich@suse.com>
+CC: Andre Przywara <andre.przywara@amd.com>, Jacob Shin <Jacob.Shin@amd.com>,
+        mingo@elte.hu, jeremy@goop.org, tglx@linutronix.de,
+        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
+ systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC63DAF0200007800086DC5@nat28.tlf.novell.com> <4FC62888.9010407@amd.com> <4FC649790200007800086E51@nat28.tlf.novell.com>
+In-Reply-To: <4FC649790200007800086E51@nat28.tlf.novell.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On 05/30/2012 07:23 AM, Jan Beulich wrote:
+> 
+> I see - the Xen code blindly overwrites pv_cpu_ops, despite not
+> having initialized all members. That's an obvious oversight of the
+> patch that introduced the _regs variants.
+> 
+> Plus having secondary instances of things like rdmsrl_amd_safe()
+> in asm/paravirt.h seems pretty strange an approach (which was
+> why initially I didn't spot how a crash could happen there) - only
+> the lowest level functions should get re-implemented here.
+> 
 
-> On Wed, May 30, 2012 at 12:22 PM, Philippe De Muyter <phdm@macqel.be> wrote:
->> On Tue, May 29, 2012 at 11:33:36PM +0200, Geert Uytterhoeven wrote:
->>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->>> ---
->>> Do we also want
->>>
->>>     select HAVE_EFFICIENT_UNALIGNED_ACCESS if (!COLDFIRE && !M68000)
->>
->> Sorry, I did not follow what happened to unaligned accesses, but
->> CPU32 family (at least 68340) crashes on unaligned accesses.
->
-> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
+This kinds of things are part of why Xen makes me want to cry regularly.
 
-But we have CONFIG_MCPU32.
+	-hpa
 
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
