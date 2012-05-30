@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab2E3Rcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:32:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36269 "EHLO mail.skyhub.de"
+	id S1756230Ab2E3RdJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:33:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40605 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab2E3Rcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:32:51 -0400
-Date: Wed, 30 May 2012 19:32:48 +0200
-From: Borislav Petkov <bp@alien8.de>
+	id S1755976Ab2E3RdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 13:33:07 -0400
+Message-ID: <4FC6597D.4060204@zytor.com>
+Date: Wed, 30 May 2012 10:31:41 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Andre Przywara <andre.przywara@amd.com>,
+CC: Jacob Shin <jacob.shin@amd.com>, Andre Przywara <andre.przywara@amd.com>,
         jeremy@goop.org, xen-devel@lists.xensource.com,
         linux-kernel@vger.kernel.org, Jan Beulich <JBeulich@suse.com>,
-        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-Message-ID: <20120530173247.GC15635@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Jacob Shin <jacob.shin@amd.com>,
-	Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-	xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-	Jan Beulich <JBeulich@suse.com>, hpa@zytor.com, mingo@elte.hu,
-	tglx@linutronix.de
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
- <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
- <4FC62888.9010407@amd.com>
- <20120530144851.GA12184@jshin-Toonie>
- <20120530145005.GI3207@phenom.dumpdata.com>
- <20120530150334.GA13349@jshin-Toonie>
- <20120530171754.GA5115@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+        mingo@elte.hu, tglx@linutronix.de
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
+ systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC63DAF0200007800086DC5@nat28.tlf.novell.com> <4FC62888.9010407@amd.com> <20120530144851.GA12184@jshin-Toonie> <20120530145005.GI3207@phenom.dumpdata.com> <20120530150334.GA13349@jshin-Toonie> <20120530171754.GA5115@phenom.dumpdata.com>
 In-Reply-To: <20120530171754.GA5115@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 01:17:54PM -0400, Konrad Rzeszutek Wilk wrote:
-> > Yes, the following patch also fixed the crash for us:
-> > 
-> > Implement rdmsr_regs and wrmsr_regs for Xen pvops.
+On 05/30/2012 10:17 AM, Konrad Rzeszutek Wilk wrote:
+>> Yes, the following patch also fixed the crash for us:
+>>
+>> Implement rdmsr_regs and wrmsr_regs for Xen pvops.
 > 
 > That needs more data. Such as the reason for it, the crash
 > tombstone, and an analysis of the bug.
@@ -53,20 +41,14 @@ On Wed, May 30, 2012 at 01:17:54PM -0400, Konrad Rzeszutek Wilk wrote:
 > function out altogether (so altering the amd_rdmsr... to use the
 > .rdmsr/.wrdmsr). At which point I think this would all work
 > just fine?
+> 
 
-I wouldn't do that. Andre's patch switches to the
-rdmsrl_safe/checking_wrmsrl functions so you don't need to implement the
-_regs functions for pvops.
+No, you can't just do that.  Rip them out as in trap and emulate.
 
-I'll send it now with corrected commit message.
+	-hpa
 
-> I am tempted to write a patch that checks all the pv-cpu-ops to see if
-> there are any that are NULL and throw a warning so that this does not
-> hit us in the future - to be at least more proactive about this sort
-> of thing.
-
-This could be a prudent thing to do.
 
 -- 
-Regards/Gruss,
-Boris.
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
