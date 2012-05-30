@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab2E3W2h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 18:28:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23032 "EHLO mx1.redhat.com"
+	id S1757529Ab2E3Wdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 18:33:38 -0400
+Received: from plane.gmane.org ([80.91.229.3]:35954 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756238Ab2E3W2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 18:28:35 -0400
-Message-ID: <1338416978.8887.31.camel@dcbw.foobar.com>
-Subject: Re: [PATCH] USB: option: Updated Huawei K4605 has better id
-From: Dan Williams <dcbw@redhat.com>
-To: Andrew Bird <ajb@spheresystems.co.uk>
-Cc: smurf@smurf.noris.de, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 17:29:38 -0500
-In-Reply-To: <1338205386-4333-1-git-send-email-ajb@spheresystems.co.uk>
-References: <1338205386-4333-1-git-send-email-ajb@spheresystems.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1757055Ab2E3Wdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 18:33:37 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: walt <w41ter@gmail.com>
+Subject: Re: [PATCH v2 0/4] fix / cleanup async scsi scanning
+Date: Wed, 30 May 2012 15:33:24 -0700
+Message-ID: <4FC6A034.6040803@gmail.com>
+References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com> <20120530182239.GD15635@x1.osrc.amd.com> <CABE8wwsw98KZS0W1sJghzrei0mSGLiMoh+7Wn5xOzdM54qiYqA@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: adsl-69-234-181-245.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120420 Thunderbird/12.0
+In-Reply-To: <CABE8wwsw98KZS0W1sJghzrei0mSGLiMoh+7Wn5xOzdM54qiYqA@mail.gmail.com>
+Cc: linux-scsi@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-05-28 at 12:43 +0100, Andrew Bird wrote:
-> Later firmwares for this device now have proper subclass and
-> protocol info so we can identify it nicely without needing to use
-> the blacklist. I'm not removing the old 0xff matching as there
-> may be devices in the field that still need that.
-
-Yay! Somebody in the firmware department got clue...
-
-Dan
-
-> Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
-> ---
->  drivers/usb/serial/option.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+On 05/30/2012 11:29 AM, Dan Williams wrote:
+> For 3.5 I think
+> James is going with the smaller fix posted here:
 > 
-> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-> index 1aae902..3ac049e 100644
-> --- a/drivers/usb/serial/option.c
-> +++ b/drivers/usb/serial/option.c
-> @@ -666,6 +666,8 @@ static const struct usb_device_id option_ids[] = {
->  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
->  		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x31) },
-> +	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0x01, 0x32) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
->  	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
+> http://marc.info/?l=linux-scsi&m=133796775807498&w=2
 
+Hi Dan.  I replied to that thread not long ago, explaining
+that I still have a booting problem after that patch.  Just
+a corner case maybe, but it's *my* corner case ;)
+
+>From that article click twice on "next in thread" to see it.
+
+Many thanks.
 
