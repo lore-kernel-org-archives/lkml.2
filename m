@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2E3Ufb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:35:31 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43243 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754199Ab2E3UfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:35:15 -0400
-Message-ID: <1338410016.2659.6.camel@falcor.watson.ibm.com>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Eric Paris <eparis@parisplace.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 16:33:36 -0400
-In-Reply-To: <20120530202427.GW11775@ZenIV.linux.org.uk>
-References: <1337112446.20904.50.camel@falcor>
-	 <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
-	 <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
-	 <20120516004251.GO22082@ZenIV.linux.org.uk>
-	 <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
-	 <20120516021828.GP22082@ZenIV.linux.org.uk>
-	 <1337807899.15138.31.camel@falcor>
-	 <20120530043443.GA3200@ZenIV.linux.org.uk>
-	 <20120530163605.GV11775@ZenIV.linux.org.uk>
-	 <1338406967.2257.24.camel@localhost>
-	 <20120530202427.GW11775@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	id S1755069Ab2E3UgS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:36:18 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41632 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246Ab2E3UgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 16:36:17 -0400
+Date: Wed, 30 May 2012 16:36:05 -0400 (EDT)
+Message-Id: <20120530.163605.43003785250138845.davem@davemloft.net>
+To: mst@redhat.com
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH repost] virtio-net: remove useless disable on freeze
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120530142128.GA31299@redhat.com>
+References: <20120530142128.GA31299@redhat.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12053020-9360-0000-0000-000006D7CABC
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 13:36:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 21:24 +0100, Al Viro wrote:
-> On Wed, May 30, 2012 at 03:42:47PM -0400, Eric Paris wrote:
-> > security_file_mmap() would pretty much only be used in do_mmap_pgoff()
-> > (or validate_mmap_request)
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Wed, 30 May 2012 17:21:29 +0300
+
+> disable_cb is just an optimization: it
+> can not guarantee that there are no callbacks.
+> In particular it doesn't have any effect when
+> event index is on.
 > 
-> Callers, actually - the whole point is to lift it out of under ->mmap_sem.
-> The tricky part is reqprot vs. prot mess.
+> Instead, detach, napi disable and reset on freeze ensure we don't run
+> concurrently with a callback.
+> 
+> Remove the useless calls so we get same behaviour
+> with and without event index.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> Reposting a patch that seems to have fallen through cracks.
 
-Linus already addressed it in the original patch, which I split into two
-as you suggested:
-733559f - "security: move security_file_mmap() and rename to security_mmap_file()" 
-b3649e9 security: define and use the new security_mmap_addr() hook
+It seems to not make it to the lists and get properly picked up
+by patchwork.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity.  
- 
-Mimi
-
-
+In any event, I've applied this, thanks.
