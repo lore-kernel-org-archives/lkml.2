@@ -1,135 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab2E3Uza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:55:30 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61558 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab2E3Uz3 (ORCPT
+	id S1756061Ab2E3U4T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:56:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34406 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753750Ab2E3U4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:55:29 -0400
-Date: Wed, 30 May 2012 16:55:24 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 18/35] autonuma: alloc/free/init sched_autonuma
-Message-ID: <20120530205523.GD30148@localhost.localdomain>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-19-git-send-email-aarcange@redhat.com>
+	Wed, 30 May 2012 16:56:17 -0400
+Date: Wed, 30 May 2012 21:56:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+Message-ID: <20120530205612.GY11775@ZenIV.linux.org.uk>
+References: <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+ <20120516004251.GO22082@ZenIV.linux.org.uk>
+ <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+ <20120516021828.GP22082@ZenIV.linux.org.uk>
+ <1337807899.15138.31.camel@falcor>
+ <20120530043443.GA3200@ZenIV.linux.org.uk>
+ <20120530163605.GV11775@ZenIV.linux.org.uk>
+ <1338406967.2257.24.camel@localhost>
+ <20120530202427.GW11775@ZenIV.linux.org.uk>
+ <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337965359-29725-19-git-send-email-aarcange@redhat.com>
+In-Reply-To: <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 07:02:22PM +0200, Andrea Arcangeli wrote:
-> This is where the dynamically allocated sched_autonuma structure is
-> being handled.
+On Wed, May 30, 2012 at 01:28:09PM -0700, Linus Torvalds wrote:
+> On Wed, May 30, 2012 at 1:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > On Wed, May 30, 2012 at 03:42:47PM -0400, Eric Paris wrote:
+> >> security_file_mmap() would pretty much only be used in do_mmap_pgoff()
+> >> (or validate_mmap_request)
+> >
+> > Callers, actually - the whole point is to lift it out of under ->mmap_sem.
+> > The tricky part is reqprot vs. prot mess.
 > 
-> The reason for keeping this outside of the task_struct besides not
-> using too much kernel stack, is to only allocate it on NUMA
-> hardware. So the not NUMA hardware only pays the memory of a pointer
-> in the kernel stack (which remains NULL at all times in that case).
+> See how I solved reqprot vs prot in my suggested original patch. You
+> have it somewhere in your inbox, I know, because you called me out on
+> the fact that my original email forgot to attach it ;)
 > 
-> If the kernel is compiled with CONFIG_AUTONUMA=n, not even the pointer
-> is allocated on the kernel stack of course.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  kernel/fork.c |   24 ++++++++++++++----------
->  1 files changed, 14 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index 237c34e..d323eb1 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -206,6 +206,7 @@ static void account_kernel_stack(struct thread_info *ti, int account)
->  void free_task(struct task_struct *tsk)
->  {
->  	account_kernel_stack(tsk->stack, -1);
-> +	free_sched_autonuma(tsk);
->  	free_thread_info(tsk->stack);
->  	rt_mutex_debug_task_free(tsk);
->  	ftrace_graph_exit_task(tsk);
-> @@ -260,6 +261,8 @@ void __init fork_init(unsigned long mempages)
->  	/* do the arch specific task caches init */
->  	arch_task_cache_init();
->  
-> +	sched_autonuma_init();
-> +
->  	/*
->  	 * The default maximum number of threads is set to a safe
->  	 * value: the thread structures can take up at most half
-> @@ -292,21 +295,21 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
->  	struct thread_info *ti;
->  	unsigned long *stackend;
->  	int node = tsk_fork_get_node(orig);
-> -	int err;
->  
->  	tsk = alloc_task_struct_node(node);
-> -	if (!tsk)
-> +	if (unlikely(!tsk))
->  		return NULL;
->  
->  	ti = alloc_thread_info_node(tsk, node);
-> -	if (!ti) {
-> -		free_task_struct(tsk);
-> -		return NULL;
-> -	}
-> +	if (unlikely(!ti))
+> It actually cleaned things up, and made the calling conventions
+> simpler. Just always pass in "reqprot", and have the security layer do
+> the trivial "calculate final prot".
 
-Should those "unlikely" have their own commit? Did you
-run this with the likely/unlikely tracer to confirm that it
-does give a sppedup?
-
-
-> +		goto out_task_struct;
->  
-> -	err = arch_dup_task_struct(tsk, orig);
-> -	if (err)
-> -		goto out;
-> +	if (unlikely(arch_dup_task_struct(tsk, orig)))
-> +		goto out_thread_info;
-> +
-> +	if (unlikely(alloc_sched_autonuma(tsk, orig, node)))
-> +		/* free_thread_info() undoes arch_dup_task_struct() too */
-> +		goto out_thread_info;
->  
->  	tsk->stack = ti;
->  
-> @@ -334,8 +337,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
->  
->  	return tsk;
->  
-> -out:
-> +out_thread_info:
->  	free_thread_info(ti);
-> +out_task_struct:
->  	free_task_struct(tsk);
->  	return NULL;
->  }
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+If only it would be trivial ;-/  Take a look at !MMU case (or at the
+description in the posting upthread if you want to avoid seeing your
+breakfast one more time - the code in validate_mmap_request() is
+really ugly).
