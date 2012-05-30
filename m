@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab2E3Qct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 12:32:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:47080 "EHLO mga14.intel.com"
+	id S1752837Ab2E3QdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 12:33:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751955Ab2E3Qcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 12:32:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105920614"
-Date: Wed, 30 May 2012 09:32:46 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
- context v3
-Message-ID: <20120530163246.GF9850@tassilo.jf.intel.com>
-References: <1336431315-29736-1-git-send-email-andi@firstfloor.org>
- <CAHGf_=p7JbWW8jgzWGHX+xwU8JWzpSMZS0kn-rmP=eg_Uqrgow@mail.gmail.com>
- <alpine.DEB.2.00.1205082158570.10766@chino.kir.corp.google.com>
- <alpine.LFD.2.02.1205300947180.2681@tux.localdomain>
- <alpine.DEB.2.00.1205301040170.29257@router.home>
+	id S1752502Ab2E3QdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 12:33:23 -0400
+Date: Wed, 30 May 2012 12:33:17 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org
+Subject: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+Message-ID: <20120530163317.GA13189@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205301040170.29257@router.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 10:40:39AM -0500, Christoph Lameter wrote:
-> On Wed, 30 May 2012, Pekka Enberg wrote:
-> 
-> > On Tue, 8 May 2012, David Rientjes wrote:
-> > > > But this doesn't mean NAK anyway.
-> > > >
-> > > >  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > >
-> > > Sigh, this was acked by Christoph and KOSAKI when the logic is reversed
-> > > and does the exact opposite of what's intended?
-> >
-> > Ping? Anyone going to send a fixed up patch?
-> 
-> I thought this was done and fixed in another email thread?
+Just saw this on Linus tree as of 731a7378b81c2f5fa88ca1ae20b83d548d5613dc
 
-Yes the latest patch was final. But I can resend.
 
--Andi
-> 
+------------[ cut here ]------------
+WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0x13a/0x170()
+Hardware name:         
+Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_CHECKSUM iptable_mangle bridge stp llc ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables snd_emu10k1 snd_util_mem snd_ac97_codec ac97_bus snd_hwdep snd_rawmidi snd_seq_device snd_pcm microcode snd_page_alloc pcspkr snd_timer snd lpc_ich i2c_i801 mfd_core e1000e soundcore vhost_net tun macvtap macvlan kvm_intel nfsd kvm nfs_acl auth_rpcgss lockd sunrpc btrfs libcrc32c zlib_deflate firewire_ohci firewire_core sata_sil crc_itu_t floppy radeon i2c_algo_bit drm_kms_helper ttm drm i2c_core [last unloaded: scsi_wait_scan]
+Pid: 35, comm: khugepaged Not tainted 3.4.0+ #75
+Call Trace:
+ [<ffffffff8104897f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff810489da>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff81146bda>] __set_page_dirty_nobuffers+0x13a/0x170
+ [<ffffffff81193322>] migrate_page_copy+0x1e2/0x260
+ [<ffffffff811933fb>] migrate_page+0x5b/0x70
+ [<ffffffff811934b5>] move_to_new_page+0xa5/0x260
+ [<ffffffff81193ca8>] migrate_pages+0x4c8/0x540
+ [<ffffffff811610d0>] ? suitable_migration_target.isra.15+0x1d0/0x1d0
+ [<ffffffff81162056>] compact_zone+0x216/0x480
+ [<ffffffff81321ad8>] ? debug_check_no_obj_freed+0x88/0x210
+ [<ffffffff8116259d>] compact_zone_order+0x8d/0xd0
+ [<ffffffff811626a9>] try_to_compact_pages+0xc9/0x140
+ [<ffffffff81649f4e>] __alloc_pages_direct_compact+0xaa/0x1d0
+ [<ffffffff8114562b>] __alloc_pages_nodemask+0x60b/0xab0
+ [<ffffffff81321bbc>] ? debug_check_no_obj_freed+0x16c/0x210
+ [<ffffffff81185236>] alloc_pages_vma+0xb6/0x190
+ [<ffffffff81195d8d>] khugepaged+0x95d/0x1570
+ [<ffffffff81073350>] ? wake_up_bit+0x40/0x40
+ [<ffffffff81195430>] ? collect_mm_slot+0xa0/0xa0
+ [<ffffffff81072c37>] kthread+0xb7/0xc0
+ [<ffffffff8165dc14>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8165511d>] ? retint_restore_args+0xe/0xe
+ [<ffffffff81072b80>] ? flush_kthread_worker+0x190/0x190
+ [<ffffffff8165dc10>] ? gs_change+0xb/0xb
+---[ end trace 4324bd0bca27f6f0 ]---
 
--- 
-ak@linux.intel.com -- Speaking for myself only
