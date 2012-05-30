@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab2E3S4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:56:52 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:60122 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab2E3S4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:56:50 -0400
-X-ASG-Debug-ID: 1338404209-03d6a5031027110001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4FC66D3D.6080509@fusionio.com>
-Date: Wed, 30 May 2012 20:55:57 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1752997Ab2E3TEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:04:14 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59780 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab2E3TEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 15:04:12 -0400
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [GIT PULL] Block driver bits for 3.5
-References: <4FC6189B.9080909@fusionio.com> <1338402812.2760.413.camel@edumazet-glaptop>
-X-ASG-Orig-Subj: Re: [GIT PULL] Block driver bits for 3.5
-In-Reply-To: <1338402812.2760.413.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1338404209
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.98462
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+In-Reply-To: <alpine.DEB.2.00.1205301328550.31768@router.home>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
+ <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com> <alpine.DEB.2.00.1205301328550.31768@router.home>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 May 2012 12:03:50 -0700
+X-Google-Sender-Auth: GpyICsO0HDjVwnjq-9Rn__vIdcU
+Message-ID: <CA+55aFztNx+pzmEtEDanuvT7mx5=csAQ_pUXzMJHG1yyu81Tzg@mail.gmail.com>
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+To: Christoph Lameter <cl@linux.com>
+Cc: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@google.com>,
+        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        stable@vger.kernel.org, hughd@google.com, sivanich@sgi.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, andi@firstfloor.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 08:33 PM, Eric Dumazet wrote:
-> On Wed, 2012-05-30 at 14:54 +0200, Jens Axboe wrote:
->> Hi Linus,
->>
->> On top of the for-3.5/core pull request, here are the driver related
->> changes for 3.5. It contains:
-> 
-> Hi Jens
-> 
-> Not sure if this is related, but latest Linus tree cannot boot anymore
-> here...
-> 
-> BUG: soft lockup - CPU#3 stuck for 22s ! [mountall.1603]
+On Wed, May 30, 2012 at 11:34 AM, Christoph Lameter <cl@linux.com> wrote:
+>
+> Well shm support needs memory policies to spread data across nodes etc.
+> AFAICT support was put in due to requirements to support large database
+> vendors (oracle). Andi?
+>
+> Its not going to be easy to remove.
 
-Hrmpf, can you attach your .config?
+Ok. So can the people involved with this please review this patch-set
+and comment on this one? I think it needs a bit of language editing
+for the commit commentary, and I'd like it to see a *lot * of ack's
+from the relevant vm people.
 
--- 
-Jens Axboe
+Please?
 
+                      Linus
