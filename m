@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab2E3MQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:16:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44521 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab2E3MQx convert rfc822-to-8bit (ORCPT
+	id S1753407Ab2E3MRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:17:18 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:56954 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab2E3MRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:16:53 -0400
-Message-ID: <1338380201.26856.268.camel@twins>
-Subject: Re: [PATCH] perf, x86: Make cycles:p working on SNB
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>, Ingo Molnar <mingo@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 30 May 2012 14:16:41 +0200
-In-Reply-To: <CABPqkBSwpUHYcq89K-DYwa-6+hV2zNN5t2_22VHV4ROVUWsoGA@mail.gmail.com>
-References: <1337828525-1789-1-git-send-email-namhyung.kim@lge.com>
-	 <1337844471.9783.48.camel@laptop>
-	 <CABPqkBRcz1a738M7g484B0p-dJrKqP6GSLE7gpPN0H1w-72oWw@mail.gmail.com>
-	 <1337845936.9783.57.camel@laptop>
-	 <CABPqkBSwpUHYcq89K-DYwa-6+hV2zNN5t2_22VHV4ROVUWsoGA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 30 May 2012 08:17:16 -0400
+Date: Wed, 30 May 2012 14:17:09 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge
+ infrastructure
+Message-ID: <20120530121706.GB25094@somewhere.redhat.com>
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
+ <1337951028-3427-17-git-send-email-glommer@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337951028-3427-17-git-send-email-glommer@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-24 at 09:58 +0200, Stephane Eranian wrote:
-> > OK, so how about I queue the below and if the u-code updates gets
-> > released before this hits Linus' tree we'll make it all go away ;-)
-> >
-> Let me get confirmation from Intel today before we do this. 
+On Fri, May 25, 2012 at 05:03:36PM +0400, Glauber Costa wrote:
+>  #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
+> +static __always_inline struct kmem_cache *
+> +mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp)
+> +{
+> +	if (!mem_cgroup_kmem_on)
+> +		return cachep;
+> +	if (!current->mm)
+> +		return cachep;
+> +	if (in_interrupt())
+> +		return cachep;
 
-Any word from them?
+Does that mean interrupts are kept out of accounting?
