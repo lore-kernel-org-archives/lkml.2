@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab2E3HoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:44:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35245 "EHLO
+	id S1755038Ab2E3Hou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:44:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35255 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab2E3HoU (ORCPT
+	with ESMTP id S1751580Ab2E3Hot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:44:20 -0400
-Date: Wed, 30 May 2012 00:43:44 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-4ccyiebqju4uatm31ky7725b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
+	Wed, 30 May 2012 03:44:49 -0400
+Date: Wed, 30 May 2012 00:44:37 -0700
+From: tip-bot for Franck Bui-Huu <fbuihuu@gmail.com>
+Message-ID: <tip-e8cdd947776300f962d5b699c34087af45a8aea7@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, dsahern@gmail.com, fbuihuu@gmail.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fbuihuu@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1337952109-31995-1-git-send-email-fbuihuu@gmail.com>
+References: <1337952109-31995-1-git-send-email-fbuihuu@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Do not use _FORTIFY_SOURCE when DEBUG=1 is specified
-Git-Commit-ID: a83eb3ea97efbc891b2f67e91329638cd4e21622
+Subject: [tip:perf/urgent] perf tools: fix thread_map__new_by_pid_str()
+  memory leak in error path
+Git-Commit-ID: e8cdd947776300f962d5b699c34087af45a8aea7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,69 +30,71 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:43:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:44:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a83eb3ea97efbc891b2f67e91329638cd4e21622
-Gitweb:     http://git.kernel.org/tip/a83eb3ea97efbc891b2f67e91329638cd4e21622
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 24 May 2012 14:48:39 -0300
+Commit-ID:  e8cdd947776300f962d5b699c34087af45a8aea7
+Gitweb:     http://git.kernel.org/tip/e8cdd947776300f962d5b699c34087af45a8aea7
+Author:     Franck Bui-Huu <fbuihuu@gmail.com>
+AuthorDate: Fri, 25 May 2012 15:21:49 +0200
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 24 May 2012 14:48:39 -0300
+CommitDate: Fri, 25 May 2012 11:40:59 -0300
 
-perf tools: Do not use _FORTIFY_SOURCE when DEBUG=1 is specified
+perf tools: fix thread_map__new_by_pid_str() memory leak in error path
 
-As:
+The namelist array (including its content) was not freed if we fail to
+realloc a new 'threads' structure.
 
-make DEBUG=1 -C tools/perf
-
-disables optimizations and _FORTIFY_SOURCE in recent distros requires
-optimizations to be enabled, seen on a Fedora 17 system:
-
-[acme@Fedora17 linux]$ make DEBUG=1 O=/home/acme/git/build/perf/ -C
-tools/perf install
-In file included from /usr/include/sys/types.h:26:0,
-                 from /usr/include/libelf.h:53,
-                 from /usr/include/gelf.h:53,
-                 from /usr/include/elfutils/libdw.h:53,
-                 from <stdin>:2:
-/usr/include/features.h:314:4: error: #warning _FORTIFY_SOURCE requires
-compiling with optimization (-O) [-Werror=cpp
-
+Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-4ccyiebqju4uatm31ky7725b@git.kernel.org
+Link: http://lkml.kernel.org/r/1337952109-31995-1-git-send-email-fbuihuu@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/thread_map.c |   21 ++++++++++-----------
+ 1 files changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 1d3d513..0eee64c 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -80,7 +80,7 @@ ifeq ("$(origin DEBUG)", "command line")
-   PERF_DEBUG = $(DEBUG)
- endif
- ifndef PERF_DEBUG
--  CFLAGS_OPTIMIZE = -O6
-+  CFLAGS_OPTIMIZE = -O6 -D_FORTIFY_SOURCE=2
- endif
+diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
+index 84d9bd78..9b5f856 100644
+--- a/tools/perf/util/thread_map.c
++++ b/tools/perf/util/thread_map.c
+@@ -188,28 +188,27 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
+ 		nt = realloc(threads, (sizeof(*threads) +
+ 				       sizeof(pid_t) * total_tasks));
+ 		if (nt == NULL)
+-			goto out_free_threads;
++			goto out_free_namelist;
  
- ifdef PARSER_DEBUG
-@@ -89,7 +89,7 @@ ifdef PARSER_DEBUG
- 	PARSER_DEBUG_CFLAGS := -DPARSER_DEBUG
- endif
+ 		threads = nt;
  
--CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
-+CFLAGS = -fno-omit-frame-pointer -ggdb3 -Wall -Wextra -std=gnu99 $(CFLAGS_WERROR) $(CFLAGS_OPTIMIZE) $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) $(PARSER_DEBUG_CFLAGS)
- EXTLIBS = -lpthread -lrt -lelf -lm
- ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
- ALL_LDFLAGS = $(LDFLAGS)
+-		if (threads) {
+-			for (i = 0; i < items; i++)
+-				threads->map[j++] = atoi(namelist[i]->d_name);
+-			threads->nr = total_tasks;
+-		}
+-
+-		for (i = 0; i < items; i++)
++		for (i = 0; i < items; i++) {
++			threads->map[j++] = atoi(namelist[i]->d_name);
+ 			free(namelist[i]);
++		}
++		threads->nr = total_tasks;
+ 		free(namelist);
+-
+-		if (!threads)
+-			break;
+ 	}
+ 
+ out:
+ 	strlist__delete(slist);
+ 	return threads;
+ 
++out_free_namelist:
++	for (i = 0; i < items; i++)
++		free(namelist[i]);
++	free(namelist);
++
+ out_free_threads:
+ 	free(threads);
+ 	threads = NULL;
