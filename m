@@ -1,96 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab2E3OcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:32:23 -0400
-Received: from [204.209.205.32] ([204.209.205.32]:64823 "EHLO defout.telus.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754455Ab2E3OcV convert rfc822-to-8bit (ORCPT
+	id S1754472Ab2E3NiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 09:38:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38419 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754299Ab2E3NiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:32:21 -0400
-X-Authority-Analysis: v=1.1 cv=3felTBVTKDV4kUdUbqJShFvbTikv5tYY+WRXPduaGmg=
- c=1 sm=2 a=ur5R_stfBv0A:10 a=LGgl8L9ij00A:10 a=IkcTkHD0fZMA:10
- a=FGbulvE0AAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=danhDmx_AAAA:8
- a=D19gQVrFAAAA:8 a=20KFwNOVAAAA:8 a=Br9LfDWDAAAA:8 a=yrOjzl9yAAAA:8
- a=A6_IoWdwskp9QONEr-8A:9 a=QEXdDO2ut3YA:10 a=Mw4ukg_C7IkA:10 a=MSl-tDqOz04A:10
-X-Telus-Outbound-IP: 209.121.28.192
-From: "Doug Smythies" <dsmythies@telus.net>
-To: "'Jonathan Nieder'" <jrnieder@gmail.com>,
-        "=?utf-8?Q?'Anders_Bostr=C3=B6m'?=" <anders@netinsight.net>
-Cc: <linux-kernel@vger.kernel.org>,
-        "=?utf-8?Q?'Les=C5=82aw_Kope=C4=87'?=" <leslaw.kopec@nasza-klasa.pl>,
-        "'Aman Gupta'" <aman@tmm1.net>,
-        "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "Doug Smythies" <dsmythies@telus.net>
-References: <20120523.144057.899060240318474097.anders@netinsight.net> <20120523215359.GA19798@burratino> <20120524214516.GB1158@burratino>
-In-Reply-To: <20120524214516.GB1158@burratino>
-Subject: RE: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
-Date: Wed, 30 May 2012 07:30:04 -0700
-Message-ID: <000c01cd3e70$b651dd10$22f59730$@net>
+	Wed, 30 May 2012 09:38:19 -0400
+Date: Wed, 30 May 2012 06:37:59 -0700
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Message-ID: <tip-74a5ce20e6eeeb3751340b390e7ac1d1d07bbf55@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        rientjes@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de,
+        rientjes@google.com
+In-Reply-To: <1337788843.9783.14.camel@laptop>
+References: <1337788843.9783.14.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Fix SD_OVERLAP
+Git-Commit-ID: 74a5ce20e6eeeb3751340b390e7ac1d1d07bbf55
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac059oUEh4VPnoLSSpKMOVSQCqsN1AEdsIyw
-Content-Language: en-ca
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 06:38:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  74a5ce20e6eeeb3751340b390e7ac1d1d07bbf55
+Gitweb:     http://git.kernel.org/tip/74a5ce20e6eeeb3751340b390e7ac1d1d07bbf55
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 23 May 2012 18:00:43 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 30 May 2012 14:02:24 +0200
 
-The referenced PNG file was sent to everyone on the address list on 2012.05.22 and the previous version was sent 2012.05.09.
-The only reason the PNG file was made was for the e-mail and because I was instructed not to refer to external sources.
-The web page version of the PNG file, which is kept up to date, is at [3].
+sched: Fix SD_OVERLAP
 
-"does 556061b00c9f ("sched/nohz: Fix rq->cpu_load[] calculations", 2012-05-11) change anything?"
-I back edited those changes into my test environment yesterday. It made no difference with respect to this issue. (minimally tested.)
+SD_OVERLAP exists to allow overlapping groups, overlapping groups
+appear in NUMA topologies that aren't fully connected.
 
-This statement: "Starting with 3.2.17-1, the CPU load accounting is broken when the computer is idle. The CPU load is reported as >0.50 when idle. 3.2.16-1 don't suffer from this problem."
-In my opinion has the following mistakes:
-. The computer is not actually idle. If it was actually idle the reported load average would be 0.
-. Yes, the new kernel reported load average is high, as detailed in the PNG file or the web notes.
-. The older kernel suffers from a different problem, under all other conditions being the same, the reported load average would have been too low.
+The typical result of not fully connected NUMA is that each cpu (or
+rather node) will have different spans for a particular distance.
+However due to how sched domains are traversed -- only the first cpu
+in the mask goes one level up -- the next level only cares about the
+spans of the cpus that went up.
 
-[3] http://www.smythies.com/~doug/network/load_average/new.html
+Due to this two things were observed to be broken:
 
-Doug Smythies
+ - build_overlap_sched_groups() -- since its possible the cpu we're
+   building the groups for exists in multiple (or all) groups, the
+   selection criteria of the first group didn't ensure there was a cpu
+   for which is was true that cpumask_first(span) == cpu. Thus load-
+   balancing would terminate.
 
------Original Message-----
-From: Jonathan Nieder [mailto:jrnieder@gmail.com] 
-Sent: May-24-2012 14:45
-To: Anders Boström
-Cc: linux-kernel@vger.kernel.org; Lesław Kopeć; Aman Gupta; Doug Smythies; Peter Zijlstra; Thomas Gleixner
-Subject: Re: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
+ - update_group_power() -- assumed that the cpu span of the first
+   group of the domain was covered by all groups of the child domain.
+   The above explains why this isn't true, so deal with it.
 
-(cc-ing Peter and Thomas because there is a nice graph)
-> Anders Boström wrote[1]:
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David Rientjes <rientjes@google.com>
+Link: http://lkml.kernel.org/r/1337788843.9783.14.camel@laptop
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c |    7 +++++--
+ kernel/sched/fair.c |   25 ++++++++++++++++++++-----
+ 2 files changed, 25 insertions(+), 7 deletions(-)
 
->> Starting with 3.2.17-1, the CPU load accounting is broken when the 
->> computer is idle. The CPU load is reported as >0.50 when idle. 
->> 3.2.16-1 don't suffer from this problem.
->>
->> Suspected patch is the upstream patch
->> "sched: Fix nohz load accounting -- again!"
->> commit 5e2d50da11f0e6ec3ce8fe658d7c83b0b4346c68 to 3.2 and 
->> originating from c308b56b5398779cd3da0f62ab26b0453494c3d4 .
->>
->> See also:
->>
->> https://bugs.launchpad.net/unity/+bug/991370
->> https://lkml.org/lkml/2012/5/22/310
->> https://bugzilla.redhat.com/show_bug.cgi?id=822877
->> https://bbs.archlinux.org/viewtopic.php?id=141289
-
-I just found [1] from [2] which seems to describe the symptoms pretty well.  Peter, Thomas, advice?
-
-Anders et al: does 556061b00c9f ("sched/nohz: Fix rq->cpu_load[] calculations", 2012-05-11) change anything?
-
-Thanks,
-Jonathan
-
-[1] https://launchpadlibrarian.net/105809696/commit_low_load_rev2.png
-[2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/838811
-
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5573361..3a69374 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6030,11 +6030,14 @@ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
+ 
+ 		cpumask_or(covered, covered, sg_span);
+ 
+-		sg->sgp = *per_cpu_ptr(sdd->sgp, cpumask_first(sg_span));
++		sg->sgp = *per_cpu_ptr(sdd->sgp, i);
+ 		atomic_inc(&sg->sgp->ref);
+ 
+-		if (cpumask_test_cpu(cpu, sg_span))
++		if ((!groups && cpumask_test_cpu(cpu, sg_span)) ||
++			       cpumask_first(sg_span) == cpu) {
++			WARN_ON_ONCE(!cpumask_test_cpu(cpu, sg_span));
+ 			groups = sg;
++		}
+ 
+ 		if (!first)
+ 			first = sg;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 940e6d1..f0380d4 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3574,11 +3574,26 @@ void update_group_power(struct sched_domain *sd, int cpu)
+ 
+ 	power = 0;
+ 
+-	group = child->groups;
+-	do {
+-		power += group->sgp->power;
+-		group = group->next;
+-	} while (group != child->groups);
++	if (child->flags & SD_OVERLAP) {
++		/*
++		 * SD_OVERLAP domains cannot assume that child groups
++		 * span the current group.
++		 */
++
++		for_each_cpu(cpu, sched_group_cpus(sdg))
++			power += power_of(cpu);
++	} else  {
++		/*
++		 * !SD_OVERLAP domains can assume that child groups
++		 * span the current group.
++		 */ 
++
++		group = child->groups;
++		do {
++			power += group->sgp->power;
++			group = group->next;
++		} while (group != child->groups);
++	}
+ 
+ 	sdg->sgp->power = power;
+ }
