@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2E3XMS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 19:12:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42017 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2E3XMN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 19:12:13 -0400
+	id S1752298Ab2E3XSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 19:18:48 -0400
+Received: from shutemov.name ([176.9.204.213]:43064 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372Ab2E3XSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 19:18:48 -0400
+Date: Thu, 31 May 2012 02:20:05 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: David Rientjes <rientjes@google.com>
+Cc: Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, bsingharora@gmail.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+Message-ID: <20120530232004.GA15423@shutemov.name>
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <1337423333-24356-1-git-send-email-stigge@antcom.de>
-References: <1337423333-24356-1-git-send-email-stigge@antcom.de>
-Date: Wed, 30 May 2012 16:12:13 -0700
-Message-ID: <CAOesGMiUccXi6JVu2zqYizgV_076Ek-A+KyrfLGFfw8xELaSdQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: LPC32xx: Adjust dts files to gpio dt binding
-From: Olof Johansson <olof@lixom.net>
-To: Roland Stigge <stigge@antcom.de>
-Cc: arm@kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 19, 2012 at 3:28 AM, Roland Stigge <stigge@antcom.de> wrote:
-> The GPIO devicetree binding in 3.5 doesn't register the various LPC32xx GPIO
-> banks via DT subnodes but always all at once, and changes the gpio referencing
-> to 3 cells (bank, gpio, flags). This patch adjusts the DTS files to this
-> binding that was just accepted to the gpio subsystem.
->
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
+On Wed, May 30, 2012 at 02:38:25PM -0700, David Rientjes wrote:
+> Why?  Because the information exported by /proc/meminfo is considered by 
+> applications to be static whereas the limit of a memcg may change without 
+> any knowledge of the application.
 
-Thanks, applied to fixes for 3.5.
+Memory hotplug does the same, right?
 
-
--Olof
+-- 
+ Kirill A. Shutemov
