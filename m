@@ -1,179 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab2E3SGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:06:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47691 "EHLO mga01.intel.com"
+	id S1757377Ab2E3SG0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:06:26 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:47224 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757279Ab2E3SFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:05:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="172880603"
-Subject: [PATCH v2 2/4] async: make async_synchronize_full() flush all work
- regardless of domain
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Len Brown <len.brown@intel.com>, Meelis Roos <mroos@linux.ee>,
-        James Bottomley <JBottomley@parallels.com>,
-        Eldad Zack <eldadzack@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Date: Wed, 30 May 2012 11:21:35 -0700
-Message-ID: <20120530182135.23574.9220.stgit@dwillia2-linux.jf.intel.com>
-In-Reply-To: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
-References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
-User-Agent: StGit/0.16-1-g7004
+	id S1757279Ab2E3SGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:06:22 -0400
+Date: Wed, 30 May 2012 23:34:09 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
+ is_swbp_insn() == T
+Message-ID: <20120530180409.GO15587@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120530165757.GA8077@redhat.com>
+ <20120530165816.GA8085@redhat.com>
+ <1338398931.28384.7.camel@twins>
+ <20120530173717.GM15587@linux.vnet.ibm.com>
+ <1338400142.28384.12.camel@twins>
+ <1338400450.28384.16.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1338400450.28384.16.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053018-7182-0000-0000-000001A1BE16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In response to an async related regression James noted:
+> 
+> So its the -EEXIST from set_swbp() that I was thinking about. I think I
+> was also wrong on the reason that that can happen. register's vma
+> iteration is very careful not to have the same vma twice, but it can
+> race against mmap() because of the uprobe_hash() vs uprobe_mmap_hash()
+> madness, right?
 
-  "My theory is that this is an init problem: The assumption in a lot of
-   our code is that async_synchronize_full() waits for everything ... even
-   the domain specific async schedules, which isn't true."
 
-...so make this assumption true.
+right. 
 
-Each domain, including the default one, registers itself on a global domain
-list when work is scheduled.  Once all entries complete it exits that
-list.  Waiting for the list to be empty syncs all in-flight work across
-all domains.
+> 
+> Something like so?
+> 
+> ---
+>  kernel/events/uprobes.c |   16 ++++++++++++++++
+>  1 file changed, 16 insertions(+)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 985be4d..b4e749e 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -45,6 +45,19 @@ static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
+>  
+>  #define UPROBES_HASH_SZ	13
+>  
+> +/*
+> + * We need separate register/unregister and mmap/munmap lock hashes because of
+> + * mmap_sem nesting.
+> + *
+> + * {,un}egister_uprobe() needs to install probes on (potentially) all processes
+> + * and thus need to acquire multiple mmap_sems (consecutively, not
+> + * concurrently), whereas uprobe_m{,un}map() is called while holding mmap_sem
+> + * for the particular process doing the mmap.
+> + *
+> + * This all means that register_uprobe() can race with uprobe_mmap() and we
+> + * can try and install a probe where one is already installed.
+> + */
 
-Domains can opt-out of global syncing if they are declared as exclusive
-ASYNC_DOMAIN_EXCLUSIVE().  All stack-based domains have been declared
-exclusive since the domain may go out of scope as soon as the last work
-item completes.
+Nit: {,un}egister_uprobe should have been uprobe_{,un}register  at
+couple of places.
 
-Statically declared domains are mostly ok, but async_unregister_domain()
-is there to close any theoretical races with pending
-async_synchronize_full waiters at module removal time.
-
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: James Bottomley <JBottomley@parallels.com>
-Reported-by: Meelis Roos <mroos@linux.ee>
-Reported-by: Eldad Zack <eldadzack@gmail.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
- drivers/scsi/scsi.c   |    1 +
- include/linux/async.h |    1 +
- kernel/async.c        |   43 +++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 43 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index 2f92007..2dd3c93 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -1355,6 +1355,7 @@ static void __exit exit_scsi(void)
- 	scsi_exit_devinfo();
- 	scsi_exit_procfs();
- 	scsi_exit_queue();
-+	async_unregister_domain(&scsi_sd_probe_domain);
- }
- 
- subsys_initcall(init_scsi);
-diff --git a/include/linux/async.h b/include/linux/async.h
-index 364e7ff..7a24fe9 100644
---- a/include/linux/async.h
-+++ b/include/linux/async.h
-@@ -46,6 +46,7 @@ struct async_domain {
- extern async_cookie_t async_schedule(async_func_ptr *ptr, void *data);
- extern async_cookie_t async_schedule_domain(async_func_ptr *ptr, void *data,
- 					    struct async_domain *domain);
-+void async_unregister_domain(struct async_domain *domain);
- extern void async_synchronize_full(void);
- extern void async_synchronize_full_domain(struct async_domain *domain);
- extern void async_synchronize_cookie(async_cookie_t cookie);
-diff --git a/kernel/async.c b/kernel/async.c
-index ba5491d..9d31183 100644
---- a/kernel/async.c
-+++ b/kernel/async.c
-@@ -63,7 +63,9 @@ static async_cookie_t next_cookie = 1;
- 
- static LIST_HEAD(async_pending);
- static ASYNC_DOMAIN(async_running);
-+static LIST_HEAD(async_domains);
- static DEFINE_SPINLOCK(async_lock);
-+static DEFINE_MUTEX(async_register_mutex);
- 
- struct async_entry {
- 	struct list_head	list;
-@@ -145,6 +147,8 @@ static void async_run_entry_fn(struct work_struct *work)
- 	/* 3) remove self from the running queue */
- 	spin_lock_irqsave(&async_lock, flags);
- 	list_del(&entry->list);
-+	if (running->registered && --running->count == 0)
-+		list_del_init(&running->node);
- 
- 	/* 4) free the entry */
- 	kfree(entry);
-@@ -187,6 +191,8 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct a
- 	spin_lock_irqsave(&async_lock, flags);
- 	newcookie = entry->cookie = next_cookie++;
- 	list_add_tail(&entry->list, &async_pending);
-+	if (running->registered && running->count++ == 0)
-+		list_add_tail(&running->node, &async_domains);
- 	atomic_inc(&entry_count);
- 	spin_unlock_irqrestore(&async_lock, flags);
- 
-@@ -236,13 +242,43 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
-  */
- void async_synchronize_full(void)
- {
-+	mutex_lock(&async_register_mutex);
- 	do {
--		async_synchronize_cookie(next_cookie);
--	} while (!list_empty(&async_running.domain) || !list_empty(&async_pending));
-+		struct async_domain *domain = NULL;
-+
-+		spin_lock_irq(&async_lock);
-+		if (!list_empty(&async_domains))
-+			domain = list_first_entry(&async_domains, typeof(*domain), node);
-+		spin_unlock_irq(&async_lock);
-+
-+		async_synchronize_cookie_domain(next_cookie, domain);
-+	} while (!list_empty(&async_domains));
-+	mutex_unlock(&async_register_mutex);
- }
- EXPORT_SYMBOL_GPL(async_synchronize_full);
- 
- /**
-+ * async_unregister_domain - ensure no more anonymous waiters on this domain
-+ * @domain: idle domain to flush out of any async_synchronize_full instances
-+ *
-+ * async_synchronize_{cookie|full}_domain() are not flushed since callers
-+ * of these routines should know the lifetime of @domain
-+ *
-+ * Prefer ASYNC_DOMAIN_EXCLUSIVE() declarations over flushing
-+ */
-+void async_unregister_domain(struct async_domain *domain)
-+{
-+	mutex_lock(&async_register_mutex);
-+	spin_lock_irq(&async_lock);
-+	WARN_ON(!domain->registered || !list_empty(&domain->node) ||
-+		!list_empty(&domain->domain));
-+	domain->registered = 0;
-+	spin_unlock_irq(&async_lock);
-+	mutex_unlock(&async_register_mutex);
-+}
-+EXPORT_SYMBOL_GPL(async_unregister_domain);
-+
-+/**
-  * async_synchronize_full_domain - synchronize all asynchronous function within a certain domain
-  * @domain: running list to synchronize on
-  *
-@@ -268,6 +304,9 @@ void async_synchronize_cookie_domain(async_cookie_t cookie, struct async_domain
- {
- 	ktime_t uninitialized_var(starttime), delta, endtime;
- 
-+	if (!running)
-+		return;
-+
- 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
- 		printk(KERN_DEBUG "async_waiting @ %i\n", task_pid_nr(current));
- 		starttime = ktime_get();
+> +
+>  /* serialize (un)register */
+>  static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
+>  
+> @@ -356,6 +369,9 @@ int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned
+>  {
+>  	int result;
+>  
+> +	/*
+> +	 * See the comment near uprobes_hash().
+> +	 */
+>  	result = is_swbp_at_addr(mm, vaddr);
+>  	if (result == 1)
+>  		return -EEXIST;
+> 
 
