@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab2E3OlI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:41:08 -0400
-Received: from mga14.intel.com ([143.182.124.37]:16804 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752531Ab2E3OlE convert rfc822-to-8bit (ORCPT
+	id S1755618Ab2E3Olz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:41:55 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52479 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755688Ab2E3Ojz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:41:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105870046"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
-Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
-Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
-Thread-Index: AQHNPnI5hfGWqZHickegym0+xqgRxQ==
-Date: Wed, 30 May 2012 14:40:56 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FC0C8@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
- <20120524103023.GA27063@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
- <20120524184947.GA28338@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
- <20120525180102.GA27280@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
- <20120529133858.GD29157@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351F94AA@SHSMSX101.ccr.corp.intel.com>
- <20120529170604.GJ29157@aftab.osrc.amd.com>
-In-Reply-To: <20120529170604.GJ29157@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 30 May 2012 10:39:55 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V7 09/14] hugetlbfs: Make some static variables global
+Date: Wed, 30 May 2012 20:08:54 +0530
+Message-Id: <1338388739-22919-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12053014-3864-0000-0000-0000031DAD2A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> On Tue, May 29, 2012 at 04:40:19PM +0000, Liu, Jinsong wrote:
->> From calltrace seems it's related to device_initcall. Borislav, would
->> you please send me your .config? I can try to reproduce it and debug
->> it.
-> 
-> Attached. It is xen-less :).
-> 
->> (BTW, your kernel pull from
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git? I
->> want to keep same baseline with you)
-> 
-> Actually, it is
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-> 
-> but it should be the same thing (symlinked or so).
-> 
-> Head is v3.4-8261-ga01ee165a132.
-> 
->> Attached is the .config at my environment which boot linux3.4.0-rc1+
->> as dom0 at Xen platform. Under this environment & config it's OK.
-> 
-> Why does it say "linux3.4.0-rc1+"? This is old. Or do you mean 3.4 +
-> patches? See head commit id above.
-> 
-> And you need to test baremetal too with your patch, not only as a dom0
-> kernel.
-> 
-> Thanks.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-I pulled latest kernel and patched my patch, but cannot reproduce the bug (it works OK under both baremetal and xen platform).
-Anyway, it's not important now, I have found root cause, the patch will only affect amd mce logic, I will explain in next email.
+We will use them later in hugetlb_cgroup.c
 
-Thanks,
-Jinsong
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ include/linux/hugetlb.h |    5 +++++
+ mm/hugetlb.c            |    7 ++-----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index c4353ea..dcd55c7 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -21,6 +21,11 @@ struct hugepage_subpool {
+ 	long max_hpages, used_hpages;
+ };
+ 
++extern spinlock_t hugetlb_lock;
++extern int hugetlb_max_hstate;
++#define for_each_hstate(h) \
++	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
++
+ struct hugepage_subpool *hugepage_new_subpool(long nr_blocks);
+ void hugepage_put_subpool(struct hugepage_subpool *spool);
+ 
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 0f38728..53840dd 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -35,7 +35,7 @@ const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
+ static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
+ unsigned long hugepages_treat_as_movable;
+ 
+-static int hugetlb_max_hstate;
++int hugetlb_max_hstate;
+ unsigned int default_hstate_idx;
+ struct hstate hstates[HUGE_MAX_HSTATE];
+ 
+@@ -46,13 +46,10 @@ static struct hstate * __initdata parsed_hstate;
+ static unsigned long __initdata default_hstate_max_huge_pages;
+ static unsigned long __initdata default_hstate_size;
+ 
+-#define for_each_hstate(h) \
+-	for ((h) = hstates; (h) < &hstates[hugetlb_max_hstate]; (h)++)
+-
+ /*
+  * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
+  */
+-static DEFINE_SPINLOCK(hugetlb_lock);
++DEFINE_SPINLOCK(hugetlb_lock);
+ 
+ static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
+ {
+-- 
+1.7.10
+
