@@ -1,90 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab2E3MtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:49:14 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:36104 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab2E3MtN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:49:13 -0400
+	id S1753881Ab2E3Mv1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:51:27 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:38672 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753700Ab2E3MvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 08:51:25 -0400
+X-ASG-Debug-ID: 1338382284-03d6a5030e1cd30001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4FC61799.9030309@fusionio.com>
+Date: Wed, 30 May 2012 14:50:33 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-In-Reply-To: <4FC6107F.9020802@parallels.com>
-References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
- <1338371317-5980-4-git-send-email-glommer@parallels.com> <CAPM31RJanAvDB+pZ+h5J3W6KXvAwPgbbeXgw6C_56tx_Mc+cgA@mail.gmail.com>
- <4FC6107F.9020802@parallels.com>
-From: Paul Turner <pjt@google.com>
-Date: Wed, 30 May 2012 05:48:40 -0700
-Message-ID: <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
-Subject: Re: [PATCH v3 3/6] expose fine-grained per-cpu data for cpuacct stats
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, handai.szj@gmail.com,
-        Andrew.Phillips@lmax.com, Serge Hallyn <serge.hallyn@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Block/IO core bits for 3.5
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] Block/IO core bits for 3.5
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1338382284
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -1.27
+X-Barracuda-Spam-Status: No, SCORE=-1.27 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE_7580G
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.98436
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.75 BSF_RULE_7580G         Custom Rule 7580G
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 5:20 AM, Glauber Costa <glommer@parallels.com> wrote:
-> On 05/30/2012 03:24 PM, Paul Turner wrote:
->>>
->>> +static int cpuacct_stats_percpu_show(struct cgroup *cgrp, struct cftype
->>> *cft,
->>> >  +                                    struct cgroup_map_cb *cb)
->>> >  +{
->>> >  +       struct cpuacct *ca = cgroup_ca(cgrp);
->>> >  +       int cpu;
->>> >  +
->>> >  +       for_each_online_cpu(cpu) {
->>> >  +               do_fill_cb(cb, ca, "user", cpu, CPUTIME_USER);
->>> >  +               do_fill_cb(cb, ca, "nice", cpu, CPUTIME_NICE);
->>> >  +               do_fill_cb(cb, ca, "system", cpu, CPUTIME_SYSTEM);
->>> >  +               do_fill_cb(cb, ca, "irq", cpu, CPUTIME_IRQ);
->>> >  +               do_fill_cb(cb, ca, "softirq", cpu, CPUTIME_SOFTIRQ);
->>> >  +               do_fill_cb(cb, ca, "guest", cpu, CPUTIME_GUEST);
->>> >  +               do_fill_cb(cb, ca, "guest_nice", cpu,
->>> > CPUTIME_GUEST_NICE);
->>> >  +       }
->>> >  +
->>
->> I don't know if there's much that can be trivially done about it but I
->> suspect these are a bit of a memory allocation time-bomb on a many-CPU
->> machine.  The cgroup:seq_file mating (via read_map) treats everything
->> as/one/  record.  This means that seq_printf is going to end up
->> eventually allocating a buffer that can fit_everything_  (as well as
->>
->> every power-of-2 on the way there).  Adding insult to injury is that
->> that the backing buffer is kmalloc() not vmalloc().
->>
->> 200+ bytes per-cpu above really is not unreasonable (46 bytes just for
->> the text, plus a byte per base 10 digit we end up reporting), but that
->> then  leaves us looking at order-12/13 allocations just to print this
->> thing when there are O(many) cpus.
->>
->
-> And how's /proc/stat different ?
-> It will suffer from the very same problems, since it also have this very
-> same information (actually more, since I am skipping some), per-cpu.
+Hi Linus,
 
-So,
+This is the main 3.5 block/IO core pull request for 3.5. This is
+a bit bigger on the core side than usual, but that is purely because
+we decided to hold off on parts of Tejun's submission on 3.4 to give
+it a bit more time to simmer. As a consequence, it's seen a long
+cycle in for-next.
 
-a) the information in /proc/stat is actually much denser since it's
-"cpu VAL VAL VAL VAL" as opposed to "cpuX.FIELD VAL"
-b) If it became a problem the /proc/stat case is actually fairly
-trivially fixable by defining each cpu as a record and "everything
-else" as a magic im-out-of-cpus value.
+It contains:
 
->
-> Now, if you guys are okay with a file per-cpu, I can do it as well.
-> It pollutes the filesystem, but at least protects against the fact that this
-> is kmalloc-backed.
->
+- Bug fix from Dan, wrong locking type.
+- Relax splice gifting restriction from Eric.
+- A ton of updates from Tejun, primarily for blkcg. This improves
+  the code a lot, making the API nicer and cleaner, and also includes
+  fixes for how we handle and tie policies and re-activate on switches.
+  The changes also include generic bug fixes.
+- A simple fix from Vivek, along with a fix for doing proper delayed
+  allocation of the blkcg stats.
 
-As I prefaced, I'm not sure there's much that can be trivially done
-about it.  This is really a fundamental limitation of how read_map()
-works.
+Please pull.
 
-What we really need is a proper seq_file exposed through cftypes.
+  git://git.kernel.dk/linux-block.git for-3.5/core
+
+for you to fetch changes up to ff26eaadf4d914e397872b99885d45756104e9ae:
+
+  blkcg: tg_stats_alloc_lock is an irq lock (2012-05-23 12:16:21 +0200)
+
+----------------------------------------------------------------
+Dan Carpenter (1):
+      blkcg: change a spin_lock() to spin_lock_irq()
+
+Eric Dumazet (1):
+      vmsplice: relax alignement requirements for SPLICE_F_GIFT
+
+Jens Axboe (1):
+      Merge tag 'v3.4-rc5' into for-3.5/core
+
+Tejun Heo (89):
+      block: blk-throttle should be drained regardless of q->elevator
+      blkcg: make CONFIG_BLK_CGROUP bool
+      cfq: don't register propio policy if !CONFIG_CFQ_GROUP_IOSCHED
+      elevator: clear auxiliary data earlier during elevator switch
+      elevator: make elevator_init_fn() return 0/-errno
+      block: implement blk_queue_bypass_start/end()
+      block: extend queue bypassing to cover blkcg policies
+      blkcg: shoot down blkio_groups on elevator switch
+      blkcg: move rcu_read_lock() outside of blkio_group get functions
+      blkcg: update blkg get functions take blkio_cgroup as parameter
+      blkcg: use q and plid instead of opaque void * for blkio_group association
+      blkcg: add blkio_policy[] array and allow one policy per policy ID
+      blkcg: use the usual get blkg path for root blkio_group
+      blkcg: factor out blkio_group creation
+      blkcg: don't allow or retain configuration of missing devices
+      blkcg: kill blkio_policy_node
+      blkcg: kill the mind-bending blkg->dev
+      blkcg: let blkio_group point to blkio_cgroup directly
+      blkcg: add blkcg_{init|drain|exit}_queue()
+      blkcg: clear all request_queues on blkcg policy [un]registrations
+      blkcg: let blkcg core handle policy private data allocation
+      blkcg: move refcnt to blkcg core
+      blkcg: make blkg->pd an array and move configuration and stats into it
+      blkcg: don't use blkg->plid in stat related functions
+      blkcg: move per-queue blkg list heads and counters to queue and blkg
+      blkcg: let blkcg core manage per-queue blkg list and counter
+      blkcg: unify blkg's for blkcg policies
+      blkcg: use double locking instead of RCU for blkg synchronization
+      blkcg: drop unnecessary RCU locking
+      block: restructure get_request()
+      block: interface update for ioc/icq creation functions
+      block: ioc_task_link() can't fail
+      block: add io_context->active_ref
+      block: implement bio_associate_current()
+      block: make block cgroup policies follow bio task association
+      block: make blk-throttle preserve the issuing task on delayed bios
+      blkcg: don't use percpu for merged stats
+      blkcg: simplify stat reset
+      blkcg: restructure blkio_get_stat()
+      blkcg: remove blkio_group->stats_lock
+      blkcg: add blkcg->id
+      cfq: pass around cfq_io_cq instead of io_context
+      cfq: don't use icq_get_changed()
+      block: remove ioc_*_changed()
+      cfq: fix cfqg ref handling when BLK_CGROUP && !CFQ_GROUP_IOSCHED
+      Merge branch 'for-3.5' of ../cgroup into block/for-3.5/core-merged
+      blkcg: remove unused @pol and @plid parameters
+      blkcg: BLKIO_STAT_CPU_SECTORS doesn't have subcounters
+      blkcg: introduce blkg_stat and blkg_rwstat
+      blkcg: restructure statistics printing
+      blkcg: drop blkiocg_file_write_u64()
+      blkcg: restructure configuration printing
+      blkcg: restructure blkio_group configruation setting
+      blkcg: simplify blkg_conf_prep()
+      blkcg: export conf/stat helpers to prepare for reorganization
+      blkcg: implement blkio_policy_type->cftypes
+      blkcg: move conf/stat file handling code to policies
+      cfq: collapse cfq.h into cfq-iosched.c
+      blkcg: move statistics update code to policies
+      blkcg: cfq doesn't need per-cpu dispatch stats
+      blkcg: add blkio_policy_ops operations for exit and stat reset
+      blkcg: move blkio_group_stats to cfq-iosched.c
+      blkcg: move blkio_group_stats_cpu and friends to blk-throttle.c
+      blkcg: move blkio_group_conf->weight to cfq
+      blkcg: move blkio_group_conf->iops and ->bps to blk-throttle
+      blkcg: pass around pd->pdata instead of pd itself in prfill functions
+      blkcg: drop BLKCG_STAT_{PRIV|POL|OFF} macros
+      cfq: fix build breakage & warnings
+      blkcg: kill blkio_list and replace blkio_list_lock with a mutex
+      blkcg: use @pol instead of @plid in update_root_blkg_pd() and blkcg_print_blkgs()
+      blkcg: remove static policy ID enums
+      blkcg: make blkg_conf_prep() take @pol and return with queue lock held
+      blkcg: make sure blkg_lookup() returns %NULL if @q is bypassing
+      blkcg: make request_queue bypassing on allocation
+      blkcg: add request_queue->root_blkg
+      blkcg: implement per-queue policy activation
+      blkcg: drop stuff unused after per-queue policy activation update
+      blkcg: shoot down blkgs if all policies are deactivated
+      blkcg: blkg_rwstat_read() was missing inline
+      blkcg: remove blkio_group->path[]
+      blkcg: style cleanups for blk-cgroup.h
+      blkcg: mass rename of blkcg API
+      blkcg: embed struct blkg_policy_data in policy specific data
+      blkcg: collapse blkcg_policy_ops into blkcg_policy
+      block: collapse blk_alloc_request() into get_request()
+      block: fix elvpriv allocation failure handling
+      blkcg: fix blkcg->css ref leak in __blkg_lookup_create()
+      blkcg: use radix tree to index blkgs from blkcg
+      blkcg: tg_stats_alloc_lock is an irq lock
+
+Vivek Goyal (2):
+      blkcg: skip blkg printing if q isn't associated with disk
+      blkcg: alloc per cpu stats from worker thread in a delayed manner
+
+ Documentation/feature-removal-schedule.txt |    9 +
+ block/Kconfig.iosched                      |    4 -
+ block/blk-cgroup.c                         | 2109 +++++++++-------------------
+ block/blk-cgroup.h                         |  647 ++++-----
+ block/blk-core.c                           |  281 ++--
+ block/blk-ioc.c                            |  126 +-
+ block/blk-sysfs.c                          |    6 +-
+ block/blk-throttle.c                       |  697 +++++----
+ block/blk.h                                |   32 +-
+ block/cfq-iosched.c                        | 1072 +++++++++-----
+ block/cfq.h                                |  115 --
+ block/deadline-iosched.c                   |    8 +-
+ block/elevator.c                           |  121 +-
+ block/noop-iosched.c                       |    8 +-
+ fs/bio.c                                   |   61 +
+ fs/ioprio.c                                |    2 +-
+ fs/splice.c                                |    4 +-
+ include/linux/bio.h                        |    8 +
+ include/linux/blk_types.h                  |   10 +
+ include/linux/blkdev.h                     |   20 +-
+ include/linux/cgroup.h                     |   80 +-
+ include/linux/elevator.h                   |    8 +-
+ include/linux/iocontext.h                  |   39 +-
+ include/linux/ioprio.h                     |   22 +-
+ init/Kconfig                               |    2 +-
+ kernel/cgroup.c                            |  550 ++++++--
+ kernel/cgroup_freezer.c                    |   11 +-
+ kernel/cpuset.c                            |   31 +-
+ kernel/fork.c                              |    5 +-
+ kernel/sched/core.c                        |   16 +-
+ mm/memcontrol.c                            |   78 +-
+ net/core/netprio_cgroup.c                  |   30 +-
+ net/ipv4/tcp_memcontrol.c                  |   71 +-
+ net/sched/cls_cgroup.c                     |   31 +-
+ security/device_cgroup.c                   |   10 +-
+ 35 files changed, 3033 insertions(+), 3291 deletions(-)
+ delete mode 100644 block/cfq.h
+
+-- 
+Jens Axboe
+
