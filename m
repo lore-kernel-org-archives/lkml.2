@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab2E3OPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:15:31 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:59036 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab2E3OPa convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
-	Wed, 30 May 2012 10:15:30 -0400
-Message-Id: <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 30 May 2012 14:33:03 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andre Przywara" <andre.przywara@amd.com>
-Cc: <mingo@elte.hu>, <jeremy@goop.org>, <tglx@linutronix.de>,
-        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org#3.4+>,
-        <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
-In-Reply-To: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754761Ab2E3OCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:02:37 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49780 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab2E3OCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:02:35 -0400
+Message-ID: <4FC62458.7030802@linux.vnet.ibm.com>
+Date: Wed, 30 May 2012 19:14:56 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        X86 <x86@kernel.org>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xen Devel <xen-devel@lists.xensource.com>, KVM <kvm@vger.kernel.org>,
+        linux-doc@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Virtualization <virtualization@lists.linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
+        Attilio Rao <attilio.rao@citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: Re: [PATCH RFC V8 17/17] Documentation/kvm : Add documentation on
+ Hypercalls and features used for PV spinlock
+References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120502100947.13206.26518.sendpatchset@codeblue.in.ibm.com> <4FC60A71.5050804@siemens.com>
+In-Reply-To: <4FC60A71.5050804@siemens.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12053013-5564-0000-0000-00000301847F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.05.12 at 15:10, Andre Przywara <andre.przywara@amd.com> wrote:
-> Because we are behind a family check before tweaking the topology
-> bit, we can use the standard rd/wrmsr variants for the CPUID feature
-> register.
-> This fixes a crash when using the kernel as a Xen Dom0 on affected
-> Trinity systems. The wrmsrl_amd_safe is not properly paravirtualized
-> yet (this will be fixed in another patch).
+On 05/30/2012 05:24 PM, Jan Kiszka wrote:
+> On 2012-05-02 12:09, Raghavendra K T wrote:
+>> From: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+>>
+>> KVM_HC_KICK_CPU  hypercall added to wakeup halted vcpu in paravirtual spinlock
+>> enabled guest.
+>>
+>> KVM_FEATURE_PV_UNHALT enables guest to check whether pv spinlock can be enabled
+>> in guest.
+>>
+>> Thanks Alex for KVM_HC_FEATURES inputs and Vatsa for rewriting KVM_HC_KICK_CPU
+>
+> This contains valuable documentation for features that are already
+> supported. Can you break them out and post as separate patch already?
+> One comment on them below.
+>
 
-I'm not following: If the AMD variants (putting a special value into
-%edi) can be freely replaced by the non-AMD variants, why did
-the AMD special ones get used in the first place?
+That sounds like a good idea. Sure, will do that.
 
-Further, I can't see how checking_wrmsrl() is being paravirtualized
-any better than wrmsrl_amd_safe() - both have nothing but an
-exception handling fixup attached to the wrmsr invocation. Care
-to point out what actual crash it is that was seen?
+>>
+>> Signed-off-by: Srivatsa Vaddagiri<vatsa@linux.vnet.ibm.com>
+>> Signed-off-by: Raghavendra K T<raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>>   Documentation/virtual/kvm/cpuid.txt      |    4 ++
+>>   Documentation/virtual/kvm/hypercalls.txt |   60 ++++++++++++++++++++++++++++++
+>>   2 files changed, 64 insertions(+), 0 deletions(-)
+>> diff --git a/Documentation/virtual/kvm/cpuid.txt b/Documentation/virtual/kvm/cpuid.txt
+>> index 8820685..062dff9 100644
+>> --- a/Documentation/virtual/kvm/cpuid.txt
+>> +++ b/Documentation/virtual/kvm/cpuid.txt
+>> @@ -39,6 +39,10 @@ KVM_FEATURE_CLOCKSOURCE2           ||     3 || kvmclock available at msrs
+>>   KVM_FEATURE_ASYNC_PF               ||     4 || async pf can be enabled by
+>>                                      ||       || writing to msr 0x4b564d02
+>>   ------------------------------------------------------------------------------
+>> +KVM_FEATURE_PV_UNHALT              ||     6 || guest checks this feature bit
+>> +                                   ||       || before enabling paravirtualized
+>> +                                   ||       || spinlock support.
+>> +------------------------------------------------------------------------------
+>>   KVM_FEATURE_CLOCKSOURCE_STABLE_BIT ||    24 || host will warn if no guest-side
+>>                                      ||       || per-cpu warps are expected in
+>>                                      ||       || kvmclock.
+>> diff --git a/Documentation/virtual/kvm/hypercalls.txt b/Documentation/virtual/kvm/hypercalls.txt
+>> new file mode 100644
+>> index 0000000..bc3f14a
+>> --- /dev/null
+>> +++ b/Documentation/virtual/kvm/hypercalls.txt
+>> @@ -0,0 +1,60 @@
+>> +KVM Hypercalls Documentation
+>> +===========================
+>> +The template for each hypercall is:
+>> +1. Hypercall name, value.
+>> +2. Architecture(s)
+>> +3. Status (deprecated, obsolete, active)
+>> +4. Purpose
+>> +
+>> +1. KVM_HC_VAPIC_POLL_IRQ
+>> +------------------------
+>> +Value: 1
+>> +Architecture: x86
+>> +Purpose: None
+>
+> Purpose: Trigger guest exit so that the host can check for pending
+> interrupts on reentry.
 
-Finally, I would question whether re-enabling the topology
-extensions under Xen shouldn't be skipped altogether, perhaps
-even on Dom0 (as the hypervisor is controlling this MSR, but in
-any case on DomU - the hypervisor won't allow (read: ignore,
-not fault on) the write anyway (and will log a message for each
-(v)CPU that attempts this).
+will add fold this and resend.
 
-Jan
-
-> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> Cc: stable@vger.kernel.org # 3.4+
-> ---
->  arch/x86/kernel/cpu/amd.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index 146bb62..80ccd99 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -586,9 +586,9 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
->  	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
->  		u64 val;
->  
-> -		if (!rdmsrl_amd_safe(0xc0011005, &val)) {
-> +		if (!rdmsrl_safe(0xc0011005, &val)) {
->  			val |= 1ULL << 54;
-> -			wrmsrl_amd_safe(0xc0011005, val);
-> +			checking_wrmsrl(0xc0011005, val);
->  			rdmsrl(0xc0011005, val);
->  			if (val & (1ULL << 54)) {
->  				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
-
+[...]
 
