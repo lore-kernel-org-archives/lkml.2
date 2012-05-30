@@ -1,65 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab2E3WeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 18:34:17 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:35532 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757055Ab2E3WeP (ORCPT
+	id S1757531Ab2E3WhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 18:37:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42476 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab2E3WhX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 18:34:15 -0400
-Date: Thu, 31 May 2012 08:34:02 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?Q?M=FCller?= 
-	<Tilo.Mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler
- implementation
-Message-ID: <20120530223402.GA15637@gondor.apana.org.au>
-References: <20120527145112.GF17705@kronos.redsun>
- <m2396il7xc.fsf@firstfloor.org>
- <20120530103025.19252e1urui8sfb4@www.81.fi>
- <20120530113235.GO17705@kronos.redsun>
- <20120530153949.GS27374@one.firstfloor.org>
- <20120530212911.GA14884@gondor.apana.org.au>
- <20120530214006.GZ27374@one.firstfloor.org>
- <20120530214448.GA15031@gondor.apana.org.au>
- <20120530215537.GA27374@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530215537.GA27374@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 30 May 2012 18:37:23 -0400
+Date: Wed, 30 May 2012 18:37:19 -0400 (EDT)
+Message-Id: <20120530.183719.1221974908629116025.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 15:37:22 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 11:55:37PM +0200, Andi Kleen wrote:
-> On Thu, May 31, 2012 at 07:44:48AM +1000, Herbert Xu wrote:
-> > On Wed, May 30, 2012 at 11:40:06PM +0200, Andi Kleen wrote:
-> > >
-> > > > What we could do is to use the cpuid-based probing when an algorithm
-> > > > is needed to selectively load the relevant implementations instead
-> > > > of all of them.  However, for most algorithms it won't make that
-> > > > big a difference since all the available ones will be loaded anyway.
-> > > 
-> > > Yes cpuid probing does that.
-> > 
-> > I was under the impression that using cpuid meant that the algorithm
-> > would be loaded regardless of whether it has been requested, as long
-> > as the cpuid matches.
-> 
-> It loads it always correct.
 
-You mean with cpuid it'll always load the algorithm if it is
-available even if noone is using it? Then it's probably not a
-good fit for serpent.
+Several bug fixes, of note:
 
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1) Fix IPSEC header length calculation for transport mode in ESP.
+   The issue is whether to do the calculation before or after
+   alignment.  Fix from Benjamin Poirier.
+
+2) Fix regression in IPV6 IPSEC fragment length calculations, from Gao
+   Feng.  This is another transport vs. tunnel mode issue.
+
+3) Handle AF_UNSPEC connect()s properly in L2TP to avoid OOPSes.
+   Fix from James Chapman.
+
+4) Fix USB ASIX driver's reception of full sized VLAN packets, from
+   Eric Dumazet.
+
+5) Allow drop monitor (and, more generically, all generic netlink
+   protocols) to be automatically loaded as a module.  From Neil
+   Horman.
+
+Please pull, thanks a lot!
+
+The following changes since commit af56e0aa35f3ae2a4c1a6d1000702df1dd78cb76:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2012-05-30 11:17:19 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Benjamin Poirier (1):
+      xfrm: take net hdr len into account for esp payload size calculation
+
+Bjørn Mork (1):
+      net: qmi_wwan: Add Sierra Wireless device IDs
+
+Claudio Pisa (1):
+      mac80211: fix flag check for QoS NOACK frames
+
+Dan Carpenter (1):
+      NFC: potential integer overflow problem in check_crc()
+
+David Woodhouse (1):
+      solos-pci: Fix DMA support
+
+Devendra Naga (2):
+      r6040: disable pci device if the subsequent calls (after pci_enable_device) fails
+      r6040: Do a Proper deinit at errorpath and also when driver unloads (calling r6040_remove_one)
+
+Emmanuel Grumbach (1):
+      iwlwifi: fix the Transmit Frame Descriptor rings
+
+Eric Dumazet (1):
+      asix: allow full size 8021Q frames to be received
+
+Eyal Shapira (2):
+      wlcore: fix undefined symbols when CONFIG_PM is not defined
+      mac80211: fix ADDBA declined after suspend with wowlan
+
+Felix Fietkau (6):
+      ath5k: add possible wiphy interface combinations
+      ath9k: stop rx dma before stopping tx
+      ath9k: fix a use-after-free-bug when ath_tx_setup_buffer() fails
+      ath9k_hw: update AR933x initvals to fix issues with high power devices
+      ath9k_hw: apply internal regulator settings on AR933x
+      skb: avoid unnecessary reallocations in __skb_cow
+
+Gao feng (1):
+      ipv6: fix incorrect ipsec fragment
+
+Grazvydas Ignotas (1):
+      wl1251: fix oops on early interrupt
+
+Hauke Mehrtens (1):
+      brcmfmac: use vmalloc to allocate mem for the firmware
+
+James Chapman (1):
+      l2tp: fix oops in L2TP IP sockets for connect() AF_UNSPEC case
+
+Joe Perches (2):
+      net/wanrouter: Deprecate and schedule for removal
+      netdevice: Update netif_dbg for CONFIG_DYNAMIC_DEBUG
+
+Johannes Berg (2):
+      iwlwifi: remove ucode16 option
+      iwlwifi: fix memory leak if opmode fails to init
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Lee Jones (1):
+      net/smsc911x: Repair broken failure paths
+
+Meenakshi Venkataraman (3):
+      iwlwifi: update BT traffic load states correctly
+      iwlwifi: do not use shadow registers by default
+      iwlwifi: do not send lq cmd when station add fails
+
+Michael S. Tsirkin (1):
+      virtio-net: remove useless disable on freeze
+
+Neil Horman (3):
+      net: add MODULE_ALIAS_NET_PF_PROTO_NAME
+      genetlink: Build a generic netlink family module alias
+      drop_monitor: Add module alias to enable automatic module loading
+
+Simon Graham (1):
+      xen/netback: Calculate the number of SKB slots required correctly
+
+Soumik Das (1):
+      mac80211: Fix race in checking AP status by sending null frame
+
+Thadeu Lima de Souza Cascardo (1):
+      rds_rdma: don't assume infiniband device is PCI
+
+Yoshihiro Shimoda (1):
+      net: sh_eth: fix the rxdesc pointer when rx descriptor empty happens
+
+jamal (1):
+      MAINTAINERS
+
+ Documentation/feature-removal-schedule.txt         |    6 +
+ MAINTAINERS                                        |    2 +-
+ drivers/atm/solos-pci.c                            |    4 +-
+ drivers/net/ethernet/rdc/r6040.c                   |   15 +-
+ drivers/net/ethernet/renesas/sh_eth.c              |    8 +-
+ drivers/net/ethernet/smsc/smsc911x.c               |    7 +-
+ drivers/net/usb/asix.c                             |    3 +-
+ drivers/net/usb/qmi_wwan.c                         |    2 +
+ drivers/net/virtio_net.c                           |    5 -
+ drivers/net/wireless/ath/ath5k/base.c              |   19 ++
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c     |    2 +-
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.h     |    3 +
+ .../net/wireless/ath/ath9k/ar9330_1p1_initvals.h   |  178 ++++++------
+ drivers/net/wireless/ath/ath9k/hw.c                |    3 +
+ drivers/net/wireless/ath/ath9k/main.c              |    7 +-
+ drivers/net/wireless/ath/ath9k/xmit.c              |   16 +-
+ drivers/net/wireless/brcm80211/brcmfmac/usb.c      |    5 +-
+ drivers/net/wireless/iwlwifi/Kconfig               |    8 -
+ drivers/net/wireless/iwlwifi/Makefile              |    1 -
+ drivers/net/wireless/iwlwifi/iwl-2000.c            |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-6000.c            |    6 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c          |    1 +
+ drivers/net/wireless/iwlwifi/iwl-agn-sta.c         |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-drv.c             |   18 +-
+ drivers/net/wireless/iwlwifi/iwl-phy-db.c          |  288 --------------------
+ drivers/net/wireless/iwlwifi/iwl-phy-db.h          |  129 ---------
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h  |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c   |   22 +-
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie.c      |    4 +-
+ drivers/net/wireless/ti/wl1251/sdio.c              |    2 +-
+ drivers/net/wireless/ti/wl1251/spi.c               |    3 +-
+ drivers/net/wireless/ti/wlcore/acx.c               |    2 +
+ drivers/net/wireless/ti/wlcore/acx.h               |    4 +-
+ drivers/net/wireless/ti/wlcore/rx.c                |    2 +
+ drivers/net/xen-netback/netback.c                  |    3 +-
+ drivers/nfc/pn544_hci.c                            |    2 +-
+ include/linux/genetlink.h                          |    3 +
+ include/linux/net.h                                |    3 +
+ include/linux/netdevice.h                          |    8 +-
+ include/linux/skbuff.h                             |    2 -
+ include/net/dst.h                                  |    1 +
+ net/core/drop_monitor.c                            |    1 +
+ net/ipv4/esp4.c                                    |   24 +-
+ net/ipv6/esp6.c                                    |   18 +-
+ net/ipv6/ip6_output.c                              |   68 ++++--
+ net/l2tp/l2tp_ip.c                                 |   24 ++-
+ net/l2tp/l2tp_ip6.c                                |   18 ++-
+ net/l2tp/l2tp_netlink.c                            |    3 +-
+ net/mac80211/mlme.c                                |    3 +-
+ net/mac80211/tx.c                                  |    2 +-
+ net/mac80211/util.c                                |   12 +-
+ net/netlink/genetlink.c                            |    2 +-
+ net/rds/ib.h                                       |    3 +-
+ net/wanrouter/Kconfig                              |    2 +-
+ net/xfrm/xfrm_policy.c                             |    3 +
+ 55 files changed, 343 insertions(+), 645 deletions(-)
+ delete mode 100644 drivers/net/wireless/iwlwifi/iwl-phy-db.c
+ delete mode 100644 drivers/net/wireless/iwlwifi/iwl-phy-db.h
