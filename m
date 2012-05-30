@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2E3GTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 02:19:37 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48396 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756261Ab2E3GTg (ORCPT
+	id S1756917Ab2E3GUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 02:20:36 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:47406 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756891Ab2E3GT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 02:19:36 -0400
-Date: Wed, 30 May 2012 08:19:31 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: John Stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai
- threshold
-Message-ID: <20120530061931.GA3072@netboy.at.omicron.at>
-References: <20120523082916.GA15627@localhost.localdomain>
- <4FBD1545.4070408@linaro.org>
- <20120523191747.GA2348@netboy.at.omicron.at>
- <4FBD4613.7040003@linaro.org>
- <20120524064340.GA2180@netboy.at.omicron.at>
- <20120524065726.GB2180@netboy.at.omicron.at>
- <4FC57BF9.5010608@linaro.org>
- <4FC57CAA.3030809@us.ibm.com>
- <20120530051138.GA3356@netboy.at.omicron.at>
- <4FC5B682.4010509@us.ibm.com>
+	Wed, 30 May 2012 02:19:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC5B682.4010509@us.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120530013118.GA11319@infradead.org>
+References: <1338265382-6872-1-git-send-email-namhyung@gmail.com>
+	<20120530013118.GA11319@infradead.org>
+Date: Wed, 30 May 2012 09:19:56 +0300
+X-Google-Sender-Auth: VwXHDmD1BWG3W1lFngDIN43ju24
+Message-ID: <CAOJsxLHtyX4MAxAAiY_zSXXhXqgkC86Fy-_hYX4yBgVjALzsNg@mail.gmail.com>
+Subject: Re: [PATCH 0/7] perf ui: Add basic error handling for GTK2 front-end (v3)
+From: Pekka Enberg <penberg@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 10:56:18PM -0700, John Stultz wrote:
-> On 05/29/2012 10:11 PM, Richard Cochran wrote:
-> >On Tue, May 29, 2012 at 06:49:30PM -0700, John Stultz wrote:
-> >>diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-> >>index 6e46cac..81c76a9 100644
-> >>--- a/kernel/time/timekeeping.c
-> >>+++ b/kernel/time/timekeeping.c
-> >>@@ -962,6 +962,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
-> >>  		timekeeper.xtime.tv_sec++;
-> >>  		leap = second_overflow(timekeeper.xtime.tv_sec);
-> >>  		timekeeper.xtime.tv_sec += leap;
-> >>+		timekeeper.wall_to_monotonic.tv_sec -= leap;
-> >Don't you need this in update_wall_time() too?
-> Yep. Good point.
+On Wed, May 30, 2012 at 4:31 AM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Tue, May 29, 2012 at 01:22:55PM +0900, Namhyung Kim escreveu:
+>> Hi,
+>>
+>> This patchset implements ui__warning/error() functions for GTK2.
+>> Patch 1 is a resend (which forgot to cc LKML) and independent of
+>> this series. Patch 2 converts invocations of ui__warning followed
+>> by exit (or similar effect) into ui__error.
+>
+> Pekka, all well with you? Acked-by?
 
-Okay, so I can confirm that this fixes the CLOCK_MONOTONIC timer issue
-during a leap second.
+Looks good to me!
 
-Thanks,
-Richard
+Acked-by: Pekka Enberg <penberg@kernel.org>
