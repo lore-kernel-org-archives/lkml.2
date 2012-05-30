@@ -1,28 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab2E3MY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:24:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48113 "EHLO mx1.redhat.com"
+	id S1753387Ab2E3MY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:24:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39387 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753130Ab2E3MYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753125Ab2E3MYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 May 2012 08:24:24 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/3] perf, tool: Fix 32 bit values endianity swap for sample_id_all header
-Date: Wed, 30 May 2012 14:23:44 +0200
-Message-Id: <1338380624-7443-4-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 1/3] perf, tool: Handle different endians properly during symbol load
+Date: Wed, 30 May 2012 14:23:42 +0200
+Message-Id: <1338380624-7443-2-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1338380624-7443-1-git-send-email-jolsa@redhat.com>
 References: <1338380624-7443-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We swap the sample_id_all header by u64 pointers. Some members
-of the header happen to be 32 bit values. We need to handle them
-separatelly.
+Currently we dont care about the file object's endianness. It's possible
+we read buildid file object from different architecture than we are
+currentlly running on. So we need to care about properly reading such
+object's data - handle different endianness properly.
+
+Adding:
+	needs_swap DSO field
+	dso__swap_init function to initialize DSO's needs_swap
+	DSO__SWAP to read the data with proper swaps
 
 Together with other endianity patches, this change fixies perf report
 discrepancies on origin and target systems as described in test 1
@@ -56,7 +62,7 @@ test 1)
     (besides some white space stuff and possibly different
      date/TZ output)
 
-test 2)
+test 1)
   - origin system:
     # perf record -ag -fo /tmp/perf.data -- sleep 1
   - mount origin system root to the target system on /mnt/origin
@@ -66,73 +72,136 @@ test 2)
   - complete perf.data header is displayed
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Tested-by: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/evsel.c |   29 ++++++++++++++++++++++-------
- 1 files changed, 22 insertions(+), 7 deletions(-)
+ tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 57e4ce5..7aa266f 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -404,16 +404,24 @@ int perf_evsel__open_per_thread(struct perf_evsel *evsel,
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e2ba885..9d04dcd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
++		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
+ 	}
+ 
+@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
  }
  
- static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
--				       struct perf_sample *sample)
-+				       struct perf_sample *sample,
-+				       bool swapped)
- {
- 	const u64 *array = event->sample.array;
-+	union u64_swap u;
- 
- 	array += ((event->header.size -
- 		   sizeof(event->header)) / sizeof(u64)) - 1;
- 
- 	if (type & PERF_SAMPLE_CPU) {
--		u32 *p = (u32 *)array;
--		sample->cpu = *p;
-+		u.val64 = *array;
-+		if (swapped) {
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+		}
++static int dso__swap_init(struct dso *dso, unsigned char eidata)
++{
++	static unsigned int const endian = 1;
 +
-+		sample->cpu = u.val32[0];
- 		array--;
- 	}
- 
-@@ -433,9 +441,16 @@ static int perf_event__parse_id_sample(const union perf_event *event, u64 type,
- 	}
- 
- 	if (type & PERF_SAMPLE_TID) {
--		u32 *p = (u32 *)array;
--		sample->pid = p[0];
--		sample->tid = p[1];
-+		u.val64 = *array;
-+		if (swapped) {
-+			/* undo swap of u64, then swap on individual u32s */
-+			u.val64 = bswap_64(u.val64);
-+			u.val32[0] = bswap_32(u.val32[0]);
-+			u.val32[1] = bswap_32(u.val32[1]);
-+		}
++	dso->needs_swap = DSO_SWAP__NO;
 +
-+		sample->pid = u.val32[0];
-+		sample->tid = u.val32[1];
++	switch (eidata) {
++	case ELFDATA2LSB:
++		/* We are big endian, DSO is little endian. */
++		if (*(unsigned char const *)&endian != 1)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	case ELFDATA2MSB:
++		/* We are little endian, DSO is big endian. */
++		if (*(unsigned char const *)&endian != 0)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	default:
++		pr_err("unrecognized DSO data encoding %d\n", eidata);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
+ 			 int want_symtab)
+@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		goto out_elf_end;
  	}
  
- 	return 0;
-@@ -472,7 +487,7 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
- 	if (event->header.type != PERF_RECORD_SAMPLE) {
- 		if (!sample_id_all)
- 			return 0;
--		return perf_event__parse_id_sample(event, type, data);
-+		return perf_event__parse_id_sample(event, type, data, swapped);
- 	}
++	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
++		goto out_elf_end;
++
+ 	/* Always reject images with a mismatched build-id: */
+ 	if (dso->has_build_id) {
+ 		u8 build_id[BUILD_ID_SIZE];
+@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		if (opdsec && sym.st_shndx == opdidx) {
+ 			u32 offset = sym.st_value - opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+-			sym.st_value = *opd;
++			sym.st_value = DSO__SWAP(dso, u64, *opd);
+ 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
+ 		}
  
- 	array = event->sample.array;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 5649d63..af0752b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -9,6 +9,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include <byteswap.h>
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+ extern char *cplus_demangle(const char *, int);
+@@ -160,11 +161,18 @@ enum dso_kernel_type {
+ 	DSO_TYPE_GUEST_KERNEL
+ };
+ 
++enum dso_swap_type {
++	DSO_SWAP__UNSET,
++	DSO_SWAP__NO,
++	DSO_SWAP__YES,
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
++	enum dso_swap_type	needs_swap;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -182,6 +190,28 @@ struct dso {
+ 	char		 name[0];
+ };
+ 
++#define DSO__SWAP(dso, type, val)			\
++({							\
++	type ____r = val;				\
++	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
++	if (dso->needs_swap == DSO_SWAP__YES) {		\
++		switch (sizeof(____r)) {		\
++		case 2:					\
++			____r = bswap_16(val);		\
++			break;				\
++		case 4:					\
++			____r = bswap_32(val);		\
++			break;				\
++		case 8:					\
++			____r = bswap_64(val);		\
++			break;				\
++		default:				\
++			BUG_ON(1);			\
++		}					\
++	}						\
++	____r;						\
++})
++
+ struct dso *dso__new(const char *name);
+ void dso__delete(struct dso *dso);
+ 
 -- 
 1.7.7.6
 
