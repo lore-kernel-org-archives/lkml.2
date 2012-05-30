@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab2E3NgD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:36:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38389 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab2E3NgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:36:00 -0400
-Date: Wed, 30 May 2012 06:35:23 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-lsksc2kfyeveb13avh327p0d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andreas.herrmann3@amd.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-        bp@amd64.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, andreas.herrmann3@amd.com, efault@gmx.de,
-        tglx@linutronix.de, bp@amd64.org
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/x86: Use cpu_llc_shared_mask(cpu)
-  for coregroup_mask
-Git-Commit-ID: 9f646389aa7727a2fd8f9ae6337b92af9cfbc264
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S1754866Ab2E3OPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:15:31 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:59036 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650Ab2E3OPa convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
+	Wed, 30 May 2012 10:15:30 -0400
+Message-Id: <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 30 May 2012 14:33:03 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andre Przywara" <andre.przywara@amd.com>
+Cc: <mingo@elte.hu>, <jeremy@goop.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org#3.4+>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
+ Trinity systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+In-Reply-To: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 06:35:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9f646389aa7727a2fd8f9ae6337b92af9cfbc264
-Gitweb:     http://git.kernel.org/tip/9f646389aa7727a2fd8f9ae6337b92af9cfbc264
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 29 May 2012 16:39:09 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 30 May 2012 11:05:44 +0200
+>>> On 30.05.12 at 15:10, Andre Przywara <andre.przywara@amd.com> wrote:
+> Because we are behind a family check before tweaking the topology
+> bit, we can use the standard rd/wrmsr variants for the CPUID feature
+> register.
+> This fixes a crash when using the kernel as a Xen Dom0 on affected
+> Trinity systems. The wrmsrl_amd_safe is not properly paravirtualized
+> yet (this will be fixed in another patch).
 
-sched/x86: Use cpu_llc_shared_mask(cpu) for coregroup_mask
+I'm not following: If the AMD variants (putting a special value into
+%edi) can be freely replaced by the non-AMD variants, why did
+the AMD special ones get used in the first place?
 
-Commit commit 8e7fbcbc2 ("sched: Remove stale power aware scheduling
-remnants and dysfunctional knobs") made a boo-boo with removing the
-power aware scheduling muck from the x86 topology bits.
+Further, I can't see how checking_wrmsrl() is being paravirtualized
+any better than wrmsrl_amd_safe() - both have nothing but an
+exception handling fixup attached to the wrmsr invocation. Care
+to point out what actual crash it is that was seen?
 
-We should unconditionally use the llc_shared mask for multi-core.
+Finally, I would question whether re-enabling the topology
+extensions under Xen shouldn't be skipped altogether, perhaps
+even on Dom0 (as the hypervisor is controlling this MSR, but in
+any case on DomU - the hypervisor won't allow (read: ignore,
+not fault on) the write anyway (and will log a message for each
+(v)CPU that attempts this).
 
-Reported-and-tested-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
-Link: http://lkml.kernel.org/n/tip-lsksc2kfyeveb13avh327p0d@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/smpboot.c |   10 +---------
- 1 files changed, 1 insertions(+), 9 deletions(-)
+Jan
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index f56f96d..fd019d7 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -410,15 +410,7 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- /* maps the cpu to the sched domain representing multi-core */
- const struct cpumask *cpu_coregroup_mask(int cpu)
- {
--	struct cpuinfo_x86 *c = &cpu_data(cpu);
--	/*
--	 * For perf, we return last level cache shared map.
--	 * And for power savings, we return cpu_core_map
--	 */
--	if (!(cpu_has(c, X86_FEATURE_AMD_DCM)))
--		return cpu_core_mask(cpu);
--	else
--		return cpu_llc_shared_mask(cpu);
-+	return cpu_llc_shared_mask(cpu);
- }
- 
- static void impress_friends(void)
+> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
+> Cc: stable@vger.kernel.org # 3.4+
+> ---
+>  arch/x86/kernel/cpu/amd.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+> index 146bb62..80ccd99 100644
+> --- a/arch/x86/kernel/cpu/amd.c
+> +++ b/arch/x86/kernel/cpu/amd.c
+> @@ -586,9 +586,9 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+>  	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
+>  		u64 val;
+>  
+> -		if (!rdmsrl_amd_safe(0xc0011005, &val)) {
+> +		if (!rdmsrl_safe(0xc0011005, &val)) {
+>  			val |= 1ULL << 54;
+> -			wrmsrl_amd_safe(0xc0011005, val);
+> +			checking_wrmsrl(0xc0011005, val);
+>  			rdmsrl(0xc0011005, val);
+>  			if (val & (1ULL << 54)) {
+>  				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
+
+
