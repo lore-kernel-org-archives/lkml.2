@@ -1,255 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab2E3Ole (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:41:34 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:41828 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870Ab2E3Oj7 (ORCPT
+	id S1755859Ab2E3Ojz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:39:55 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52127 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab2E3Ojt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:39:59 -0400
+	Wed, 30 May 2012 10:39:49 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
         rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
         hannes@cmpxchg.org
 Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V7 11/14] hugetlbfs: add hugetlb cgroup control files
-Date: Wed, 30 May 2012 20:08:56 +0530
-Message-Id: <1338388739-22919-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V7 07/14] mm/page_cgroup: Make page_cgroup point to the cgroup rather than the mem_cgroup
+Date: Wed, 30 May 2012 20:08:52 +0530
+Message-Id: <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12053014-8256-0000-0000-000002BBDF2F
+x-cbid: 12053014-2674-0000-0000-000004BB302E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Add the control files for hugetlb controller
+We will use it later to make page_cgroup track the hugetlb cgroup information.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h        |    5 ++
- include/linux/hugetlb_cgroup.h |    6 ++
- mm/hugetlb.c                   |    2 +
- mm/hugetlb_cgroup.c            |  130 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 143 insertions(+)
+ include/linux/mmzone.h      |    2 +-
+ include/linux/page_cgroup.h |    8 ++++----
+ init/Kconfig                |    4 ++++
+ mm/Makefile                 |    3 ++-
+ mm/memcontrol.c             |   42 +++++++++++++++++++++++++-----------------
+ 5 files changed, 36 insertions(+), 23 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index dcd55c7..92f75a5 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -4,6 +4,7 @@
- #include <linux/mm_types.h>
- #include <linux/fs.h>
- #include <linux/hugetlb_inline.h>
-+#include <linux/cgroup.h>
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 2427706..2483cc5 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -1052,7 +1052,7 @@ struct mem_section {
  
- struct ctl_table;
- struct user_struct;
-@@ -221,6 +222,10 @@ struct hstate {
- 	unsigned int nr_huge_pages_node[MAX_NUMNODES];
- 	unsigned int free_huge_pages_node[MAX_NUMNODES];
- 	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
-+#ifdef CONFIG_CGROUP_HUGETLB_RES_CTLR
-+	/* cgroup control files */
-+	struct cftype cgroup_files[5];
-+#endif
- 	char name[HSTATE_NAME_LEN];
+ 	/* See declaration of similar field in struct zone */
+ 	unsigned long *pageblock_flags;
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++#ifdef CONFIG_PAGE_CGROUP
+ 	/*
+ 	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
+ 	 * section. (see memcontrol.h/page_cgroup.h about this.)
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index a88cdba..7bbfe37 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -12,7 +12,7 @@ enum {
+ #ifndef __GENERATING_BOUNDS_H
+ #include <generated/bounds.h>
+ 
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++#ifdef CONFIG_PAGE_CGROUP
+ #include <linux/bit_spinlock.h>
+ 
+ /*
+@@ -24,7 +24,7 @@ enum {
+  */
+ struct page_cgroup {
+ 	unsigned long flags;
+-	struct mem_cgroup *mem_cgroup;
++	struct cgroup *cgroup;
  };
  
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index 5794be4..fbf8c5f 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -42,6 +42,7 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
- 					 struct page *page);
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
-+extern int hugetlb_cgroup_file_init(int idx) __init;
- #else
- static inline bool hugetlb_cgroup_disabled(void)
+ void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
+@@ -82,7 +82,7 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
+-#else /* CONFIG_CGROUP_MEM_RES_CTLR */
++#else /* CONFIG_PAGE_CGROUP */
+ struct page_cgroup;
+ 
+ static inline void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
+@@ -102,7 +102,7 @@ static inline void __init page_cgroup_init_flatmem(void)
  {
-@@ -75,5 +76,10 @@ hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
+ }
+ 
+-#endif /* CONFIG_CGROUP_MEM_RES_CTLR */
++#endif /* CONFIG_PAGE_CGROUP */
+ 
+ #include <linux/swap.h>
+ 
+diff --git a/init/Kconfig b/init/Kconfig
+index 81816b8..1363203 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -687,10 +687,14 @@ config RESOURCE_COUNTERS
+ 	  This option enables controller independent resource accounting
+ 	  infrastructure that works with cgroups.
+ 
++config PAGE_CGROUP
++       bool
++
+ config CGROUP_MEM_RES_CTLR
+ 	bool "Memory Resource Controller for Control Groups"
+ 	depends on RESOURCE_COUNTERS
+ 	select MM_OWNER
++	select PAGE_CGROUP
+ 	help
+ 	  Provides a memory resource controller that manages both anonymous
+ 	  memory and page cache. (See Documentation/cgroups/memory.txt)
+diff --git a/mm/Makefile b/mm/Makefile
+index a156285..a70f9a9 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -47,7 +47,8 @@ obj-$(CONFIG_FS_XIP) += filemap_xip.o
+ obj-$(CONFIG_MIGRATION) += migrate.o
+ obj-$(CONFIG_QUICKLIST) += quicklist.o
+ obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
+-obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
++obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o
++obj-$(CONFIG_PAGE_CGROUP) += page_cgroup.o
+ obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
+ obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index ac35bcc..6df019b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -864,6 +864,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
+ 
+ struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
  {
- 	return;
- }
-+
-+static inline int __init hugetlb_cgroup_file_init(int idx)
-+{
-+	return 0;
-+}
- #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
- #endif
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 53840dd..6330de2 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -29,6 +29,7 @@
- #include <linux/io.h>
- #include <linux/hugetlb.h>
- #include <linux/node.h>
-+#include <linux/hugetlb_cgroup.h>
- #include "internal.h"
++	if (!cont)
++		return NULL;
+ 	return container_of(cgroup_subsys_state(cont,
+ 				mem_cgroup_subsys_id), struct mem_cgroup,
+ 				css);
+@@ -1097,7 +1099,7 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
+ 		return &zone->lruvec;
  
- const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
-@@ -1912,6 +1913,7 @@ void __init hugetlb_add_hstate(unsigned order)
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
-+	hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
+ 	pc = lookup_page_cgroup(page);
+-	memcg = pc->mem_cgroup;
++	memcg = mem_cgroup_from_cont(pc->cgroup);
  
- 	parsed_hstate = h;
- }
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index 3a288f7..49a3f20 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -19,6 +19,11 @@
- #include <linux/page_cgroup.h>
- #include <linux/hugetlb_cgroup.h>
- 
-+/* lifted from mem control */
-+#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
-+#define MEMFILE_IDX(val)	(((val) >> 16) & 0xffff)
-+#define MEMFILE_ATTR(val)	((val) & 0xffff)
-+
- struct cgroup_subsys hugetlb_subsys __read_mostly;
- struct hugetlb_cgroup *root_h_cgroup __read_mostly;
- 
-@@ -271,6 +276,131 @@ void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 	return;
- }
- 
-+static ssize_t hugetlb_cgroup_read(struct cgroup *cgroup, struct cftype *cft,
-+				   struct file *file, char __user *buf,
-+				   size_t nbytes, loff_t *ppos)
-+{
-+	u64 val;
-+	char str[64];
-+	int idx, name, len;
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
-+
-+	idx = MEMFILE_IDX(cft->private);
-+	name = MEMFILE_ATTR(cft->private);
-+
-+	val = res_counter_read_u64(&h_cg->hugepage[idx], name);
-+	len = scnprintf(str, sizeof(str), "%llu\n", (unsigned long long)val);
-+	return simple_read_from_buffer(buf, nbytes, ppos, str, len);
-+}
-+
-+static int hugetlb_cgroup_write(struct cgroup *cgroup, struct cftype *cft,
-+				const char *buffer)
-+{
-+	int idx, name, ret;
-+	unsigned long long val;
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
-+
-+	idx = MEMFILE_IDX(cft->private);
-+	name = MEMFILE_ATTR(cft->private);
-+
-+	switch (name) {
-+	case RES_LIMIT:
-+		if (hugetlb_cgroup_is_root(h_cg)) {
-+			/* Can't set limit on root */
-+			ret = -EINVAL;
-+			break;
-+		}
-+		/* This function does all necessary parse...reuse it */
-+		ret = res_counter_memparse_write_strategy(buffer, &val);
-+		if (ret)
-+			break;
-+		ret = res_counter_set_limit(&h_cg->hugepage[idx], val);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
+ 	/*
+ 	 * Surreptitiously switch any uncharged offlist page to root:
+@@ -1108,8 +1110,10 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
+ 	 * under page_cgroup lock: between them, they make all uses
+ 	 * of pc->mem_cgroup safe.
+ 	 */
+-	if (!PageLRU(page) && !PageCgroupUsed(pc) && memcg != root_mem_cgroup)
+-		pc->mem_cgroup = memcg = root_mem_cgroup;
++	if (!PageLRU(page) && !PageCgroupUsed(pc) && memcg != root_mem_cgroup) {
++		memcg = root_mem_cgroup;
++		pc->cgroup = memcg->css.cgroup;
 +	}
-+	return ret;
-+}
-+
-+static int hugetlb_cgroup_reset(struct cgroup *cgroup, unsigned int event)
-+{
-+	int idx, name, ret = 0;
-+	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cgroup);
-+
-+	idx = MEMFILE_IDX(event);
-+	name = MEMFILE_ATTR(event);
-+
-+	switch (name) {
-+	case RES_MAX_USAGE:
-+		res_counter_reset_max(&h_cg->hugepage[idx]);
-+		break;
-+	case RES_FAILCNT:
-+		res_counter_reset_failcnt(&h_cg->hugepage[idx]);
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+	return ret;
-+}
-+
-+static char *mem_fmt(char *buf, int size, unsigned long hsize)
-+{
-+	if (hsize >= (1UL << 30))
-+		snprintf(buf, size, "%luGB", hsize >> 30);
-+	else if (hsize >= (1UL << 20))
-+		snprintf(buf, size, "%luMB", hsize >> 20);
-+	else
-+		snprintf(buf, size, "%luKB", hsize >> 10);
-+	return buf;
-+}
-+
-+int __init hugetlb_cgroup_file_init(int idx)
-+{
-+	char buf[32];
-+	struct cftype *cft;
-+	struct hstate *h = &hstates[idx];
-+
-+	/* format the size */
-+	mem_fmt(buf, 32, huge_page_size(h));
-+
-+	/* Add the limit file */
-+	cft = &h->cgroup_files[0];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.limit_in_bytes", buf);
-+	cft->private = MEMFILE_PRIVATE(idx, RES_LIMIT);
-+	cft->read = hugetlb_cgroup_read;
-+	cft->write_string = hugetlb_cgroup_write;
-+
-+	/* Add the usage file */
-+	cft = &h->cgroup_files[1];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.usage_in_bytes", buf);
-+	cft->private = MEMFILE_PRIVATE(idx, RES_USAGE);
-+	cft->read = hugetlb_cgroup_read;
-+
-+	/* Add the MAX usage file */
-+	cft = &h->cgroup_files[2];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.max_usage_in_bytes", buf);
-+	cft->private = MEMFILE_PRIVATE(idx, RES_MAX_USAGE);
-+	cft->trigger = hugetlb_cgroup_reset;
-+	cft->read = hugetlb_cgroup_read;
-+
-+	/* Add the failcntfile */
-+	cft = &h->cgroup_files[3];
-+	snprintf(cft->name, MAX_CFTYPE_NAME, "%s.failcnt", buf);
-+	cft->private  = MEMFILE_PRIVATE(idx, RES_FAILCNT);
-+	cft->trigger  = hugetlb_cgroup_reset;
-+	cft->read = hugetlb_cgroup_read;
-+
-+	/* NULL terminate the last cft */
-+	cft = &h->cgroup_files[4];
-+	memset(cft, 0, sizeof(*cft));
-+
-+	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
-+
-+	return 0;
-+}
-+
- struct cgroup_subsys hugetlb_subsys = {
- 	.name = "hugetlb",
- 	.create     = hugetlb_cgroup_create,
+ 
+ 	mz = page_cgroup_zoneinfo(memcg, page);
+ 	return &mz->lruvec;
+@@ -1889,12 +1893,14 @@ static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
+ void __mem_cgroup_begin_update_page_stat(struct page *page,
+ 				bool *locked, unsigned long *flags)
+ {
++	struct cgroup *cgroup;
+ 	struct mem_cgroup *memcg;
+ 	struct page_cgroup *pc;
+ 
+ 	pc = lookup_page_cgroup(page);
+ again:
+-	memcg = pc->mem_cgroup;
++	cgroup = pc->cgroup;
++	memcg = mem_cgroup_from_cont(cgroup);
+ 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
+ 		return;
+ 	/*
+@@ -1907,7 +1913,7 @@ again:
+ 		return;
+ 
+ 	move_lock_mem_cgroup(memcg, flags);
+-	if (memcg != pc->mem_cgroup || !PageCgroupUsed(pc)) {
++	if (cgroup != pc->cgroup || !PageCgroupUsed(pc)) {
+ 		move_unlock_mem_cgroup(memcg, flags);
+ 		goto again;
+ 	}
+@@ -1923,7 +1929,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
+ 	 * lock is held because a routine modifies pc->mem_cgroup
+ 	 * should take move_lock_page_cgroup().
+ 	 */
+-	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
++	move_unlock_mem_cgroup(mem_cgroup_from_cont(pc->cgroup), flags);
+ }
+ 
+ void mem_cgroup_update_page_stat(struct page *page,
+@@ -1936,7 +1942,7 @@ void mem_cgroup_update_page_stat(struct page *page,
+ 	if (mem_cgroup_disabled())
+ 		return;
+ 
+-	memcg = pc->mem_cgroup;
++	memcg = mem_cgroup_from_cont(pc->cgroup);
+ 	if (unlikely(!memcg || !PageCgroupUsed(pc)))
+ 		return;
+ 
+@@ -2444,7 +2450,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		memcg = pc->mem_cgroup;
++		memcg = mem_cgroup_from_cont(pc->cgroup);
+ 		if (memcg && !css_tryget(&memcg->css))
+ 			memcg = NULL;
+ 	} else if (PageSwapCache(page)) {
+@@ -2491,14 +2497,15 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 		zone = page_zone(page);
+ 		spin_lock_irq(&zone->lru_lock);
+ 		if (PageLRU(page)) {
+-			lruvec = mem_cgroup_zone_lruvec(zone, pc->mem_cgroup);
++			lruvec = mem_cgroup_zone_lruvec(zone,
++					mem_cgroup_from_cont(pc->cgroup));
+ 			ClearPageLRU(page);
+ 			del_page_from_lru_list(page, lruvec, page_lru(page));
+ 			was_on_lru = true;
+ 		}
+ 	}
+ 
+-	pc->mem_cgroup = memcg;
++	pc->cgroup = memcg->css.cgroup;
+ 	/*
+ 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
+ 	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
+@@ -2511,7 +2518,8 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
+ 
+ 	if (lrucare) {
+ 		if (was_on_lru) {
+-			lruvec = mem_cgroup_zone_lruvec(zone, pc->mem_cgroup);
++			lruvec = mem_cgroup_zone_lruvec(zone,
++					mem_cgroup_from_cont(pc->cgroup));
+ 			VM_BUG_ON(PageLRU(page));
+ 			SetPageLRU(page);
+ 			add_page_to_lru_list(page, lruvec, page_lru(page));
+@@ -2601,7 +2609,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 	lock_page_cgroup(pc);
+ 
+ 	ret = -EINVAL;
+-	if (!PageCgroupUsed(pc) || pc->mem_cgroup != from)
++	if (!PageCgroupUsed(pc) || pc->cgroup != from->css.cgroup)
+ 		goto unlock;
+ 
+ 	move_lock_mem_cgroup(from, &flags);
+@@ -2616,7 +2624,7 @@ static int mem_cgroup_move_account(struct page *page,
+ 	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+ 
+ 	/* caller should have done css_get */
+-	pc->mem_cgroup = to;
++	pc->cgroup = to->css.cgroup;
+ 	mem_cgroup_charge_statistics(to, anon, nr_pages);
+ 	/*
+ 	 * We charges against "to" which may not have any tasks. Then, "to"
+@@ -2937,7 +2945,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
+ 
+ 	lock_page_cgroup(pc);
+ 
+-	memcg = pc->mem_cgroup;
++	memcg = mem_cgroup_from_cont(pc->cgroup);
+ 
+ 	if (!PageCgroupUsed(pc))
+ 		goto unlock_out;
+@@ -3183,7 +3191,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+ 	pc = lookup_page_cgroup(page);
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		memcg = pc->mem_cgroup;
++		memcg = mem_cgroup_from_cont(pc->cgroup);
+ 		css_get(&memcg->css);
+ 		/*
+ 		 * At migrating an anonymous page, its mapcount goes down
+@@ -3328,7 +3336,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
+ 	/* fix accounting on old pages */
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc)) {
+-		memcg = pc->mem_cgroup;
++		memcg = mem_cgroup_from_cont(pc->cgroup);
+ 		mem_cgroup_charge_statistics(memcg, false, -1);
+ 		ClearPageCgroupUsed(pc);
+ 	}
+@@ -5135,7 +5143,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
+ 		 * mem_cgroup_move_account() checks the pc is valid or not under
+ 		 * the lock.
+ 		 */
+-		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
++		if (PageCgroupUsed(pc) && pc->cgroup == mc.from->css.cgroup) {
+ 			ret = MC_TARGET_PAGE;
+ 			if (target)
+ 				target->page = page;
 -- 
 1.7.10
 
