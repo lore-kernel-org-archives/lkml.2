@@ -1,112 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab2E3PPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 11:15:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59054 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753476Ab2E3PPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 11:15:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="158734298"
-Message-ID: <1338391121.2536.94.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH v2] UBIFS: compute KSA size and store in superblock
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Joel Reardon <joel@clambassador.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 18:18:41 +0300
-In-Reply-To: <alpine.DEB.2.00.1205301531220.6465@eristoteles.iwoars.net>
-References: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net>
-	 <1337952271.30969.37.camel@sauron.fi.intel.com>
-	 <alpine.DEB.2.00.1205301531220.6465@eristoteles.iwoars.net>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-QFUtqbYJzFhh4au76/V2"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1754632Ab2E3PPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:15:41 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:38459 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab2E3PPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 11:15:39 -0400
+Date: Wed, 30 May 2012 11:08:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
+Message-ID: <20120530150827.GA12109@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
+ <20120524103023.GA27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524184947.GA28338@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
+ <20120525180102.GA27280@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
+ <20120529133858.GD29157@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351FC452@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FC452@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 30, 2012 at 03:09:12PM +0000, Liu, Jinsong wrote:
+> > 
+> > Still no go, this is current linus with your patch applied. I'll look
+> > into it 
+> > later when there's time.
+> 
+> The root cause is,
+> 1). at cpu/mcheck/mce.c, device_initcall_sync(mcheck_init_device) is *after* all device_initcall();
+> 2). at cpu/mcheck/mce_amd.c, device_initcall(threshold_init_device) will
+>     threshold_init_device 
+>     --> threshold_create_device 
+>     --> threshold_create_bank
+>     --> kobject_create_and_add(name, &dev->kobj);
+>         // at this point, struct device *dev = per_cpu(mce_device, cpu), which is a NULL pointer.
+>         // mce_device is initialized at mcheck_init_device --> mce_device_create
+> 3). so kernel panic
+> 
+> So our RFC patch would affect amd mce logic.
+> 
+> ===========================
+> 
+> I have a thought about symlink approach, but seems it would bring more issues, e.g.
+> 1). it need change more native mce code, like remove /dev/mcelog which created at native mce (under xen platform), or
+> 2). it still need to change device_initcall(mcheck_init_device) to device_initcall_sync(mcheck_init_device), if it want to implicitly block native /dev/mcelog --> but that would panic amd mce logic.
+> 
+> IMO currently there are 2 options:
+> 1). use the original approach (implicitly redirect /dev/mcelog to xen_mce_chrdev_device) --> what point of this approach do you think unreasonable? It just remove a 'static' from native mce code!
+> 2). use another /dev/xen-mcelog interface, with another misc minor '226'
 
---=-QFUtqbYJzFhh4au76/V2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The 2) is no good.
 
-Hi,
+3) What about moving the corresponding other users (so threshold_init_device), 
+to be at late_initcall and the mce to be at late_initcall_sync
 
-On Wed, 2012-05-30 at 15:32 +0200, Joel Reardon wrote:
-> @@ -389,6 +408,7 @@ static int validate_sb(struct ubifs_info *c, struct u=
-bifs_sb_node *sup)
->  	 */
->  	min_leb_cnt =3D UBIFS_SB_LEBS + UBIFS_MST_LEBS + c->log_lebs;
->  	min_leb_cnt +=3D c->lpt_lebs + c->orph_lebs + c->jhead_cnt + 6;
-> +	min_leb_cnt +=3D c->ksa_lebs;
-
-You need to validate that:
-
-1. if use_ubifsec is true, then ksa_lebs is not zero.
-2. ksa_lebs is sane - not too small, not too large.
-
-> diff --git a/fs/ubifs/ubifs-media.h b/fs/ubifs/ubifs-media.h
-> index 90f348c..1dda25d 100644
-> --- a/fs/ubifs/ubifs-media.h
-> +++ b/fs/ubifs/ubifs-media.h
-> @@ -618,10 +618,13 @@ struct ubifs_pad_node {
->   * @rp_uid: reserve pool UID
->   * @rp_gid: reserve pool GID
->   * @rp_size: size of the reserved pool in bytes
-> - * @padding2: reserved for future, zeroes
-
-Do not remove this comment.
-
->   * @time_gran: time granularity in nanoseconds
->   * @uuid: UUID generated when the file system image was created
->   * @ro_compat_version: UBIFS R/O compatibility version
-> + * @crypto_lebs: number of LEBS being used to store keys
-> + * @use_ubifsec: the LSB signifies whether the file system should use se=
-cure
-> + *		 deletion
-> + * @padding2: reserved for future, zeroes
->   */
->  struct ubifs_sb_node {
->  	struct ubifs_ch ch;
-> @@ -649,7 +652,9 @@ struct ubifs_sb_node {
->  	__le32 time_gran;
->  	__u8 uuid[16];
->  	__le32 ro_compat_version;
-> -	__u8 padding2[3968];
-> +	__le32 ksa_lebs;
-> +	__u8 use_ubifsec;
-> +	__u8 padding2[3963];
->  } __packed;
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-QFUtqbYJzFhh4au76/V2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPxjpRAAoJECmIfjd9wqK0/UUQAMgxA9zYWz3K6ZuK6VTQ4YkJ
-pNCdK4J7uFxTZeH08lFefgmR3Vfn2yTRQKvB46UC4cRJ5LCmAmWVxSWGfa7P7W/8
-EsRKF1TsH1MV7aZcT4/GnYD3gQQMtRGRsSE0r1qsrmA2cfLLoD8QnNd35ahK94LB
-phWjaHNswTlkmi5fcAcOrbB02tpC57vlz1YsiqpAVR/L/KWh4oyfQoGqLbgLbXAE
-Swy0plGCtiBxFfygb5yrCenriDbpZZjxtZDz1ObsBLz6iWwTAxHpIIhyGmg/+0co
-dTRA583JGEjfDIrsCPaSkHwJCW1H8MCppEoT7l2vlwbpRD0UAyUV6M4xikJSKf98
-249SJ5QbQEny7g8gf9H8Ohz2W6iuPJrIeQEgx7ps/u4tTZ7HTgmWoGOwtbsHVrY9
-Vhh6g9lSaTXW0SJkCzUcl5ZXrr09qlYsbetcLtelMIta58qPqGsBjQsSPdUDzEuE
-vYA84kul4JjlZtolwqjAA0LqBH5MV4sk5MffsftNSfsZ4jvscqsMDf3hD5d6gEXe
-WLXUlXT52lGdsOYYyNx+5ZW8S1otW1PO0jAfeUhVJiRkdNIJw05yBjD8+gG0bo9h
-y38P27bZLZRJdA8RoiIhvxEwhvY7v3Xv1ec6tSiG/nM7eXhySgpBHCd5Beuncm3d
-2Y5zUAWH6IEA2eTke3Kc
-=uQsK
------END PGP SIGNATURE-----
-
---=-QFUtqbYJzFhh4au76/V2--
-
+4) Or make the driver you are making start at fs_initcall ?
