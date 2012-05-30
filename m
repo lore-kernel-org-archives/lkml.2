@@ -1,194 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab2E3OnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:43:04 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42229 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab2E3Ojq (ORCPT
+	id S1756886Ab2E3OnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:43:11 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:59543 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690Ab2E3OnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:39:46 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH -V7 06/14] hugetlb: simplify migrate_huge_page()
-Date: Wed, 30 May 2012 20:08:51 +0530
-Message-Id: <1338388739-22919-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12053014-5564-0000-0000-00000301B93E
+	Wed, 30 May 2012 10:43:07 -0400
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Philippe De Muyter <phdm@macqel.be>, linux-m68k@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(), and strnlen_user()
+References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org>
+	<20120530102226.GA28628@frolo.macqel>
+	<CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
+X-Yow: Is this TERMINAL fun?
+Date: Wed, 30 May 2012 16:42:59 +0200
+In-Reply-To: <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Wed, 30 May 2012 13:20:02 +0200")
+Message-ID: <m262bdbuh8.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.97 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-Since we migrate only one hugepage don't use linked list for passing the
-page around.  Directly pass page that need to be migrated as argument.
-This also remove the usage page->lru in migrate path.
+> On Wed, May 30, 2012 at 12:22 PM, Philippe De Muyter <phdm@macqel.be> wrote:
+>> On Tue, May 29, 2012 at 11:33:36PM +0200, Geert Uytterhoeven wrote:
+>>> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>>> ---
+>>> Do we also want
+>>>
+>>>     select HAVE_EFFICIENT_UNALIGNED_ACCESS if (!COLDFIRE && !M68000)
+>>
+>> Sorry, I did not follow what happened to unaligned accesses, but
+>> CPU32 family (at least 68340) crashes on unaligned accesses.
+>
+> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/migrate.h |    4 +--
- mm/memory-failure.c     |   13 ++--------
- mm/migrate.c            |   65 +++++++++++++++--------------------------------
- 3 files changed, 25 insertions(+), 57 deletions(-)
+But we have CONFIG_MCPU32.
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 855c337..ce7e667 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -15,7 +15,7 @@ extern int migrate_page(struct address_space *,
- extern int migrate_pages(struct list_head *l, new_page_t x,
- 			unsigned long private, bool offlining,
- 			enum migrate_mode mode);
--extern int migrate_huge_pages(struct list_head *l, new_page_t x,
-+extern int migrate_huge_page(struct page *, new_page_t x,
- 			unsigned long private, bool offlining,
- 			enum migrate_mode mode);
- 
-@@ -36,7 +36,7 @@ static inline void putback_lru_pages(struct list_head *l) {}
- static inline int migrate_pages(struct list_head *l, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
--static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
-+static inline int migrate_huge_page(struct page *page, new_page_t x,
- 		unsigned long private, bool offlining,
- 		enum migrate_mode mode) { return -ENOSYS; }
- 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index ab1e714..53a1495 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1414,7 +1414,6 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
- 	struct page *hpage = compound_head(page);
--	LIST_HEAD(pagelist);
- 
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
-@@ -1429,19 +1428,11 @@ static int soft_offline_huge_page(struct page *page, int flags)
- 	}
- 
- 	/* Keep page count to indicate a given hugepage is isolated. */
--
--	list_add(&hpage->lru, &pagelist);
--	ret = migrate_huge_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0,
--				true);
-+	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL, 0, true);
-+	put_page(hpage);
- 	if (ret) {
--		struct page *page1, *page2;
--		list_for_each_entry_safe(page1, page2, &pagelist, lru)
--			put_page(page1);
--
- 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
- 			pfn, ret, page->flags);
--		if (ret > 0)
--			ret = -EIO;
- 		return ret;
- 	}
- done:
-diff --git a/mm/migrate.c b/mm/migrate.c
-index ab81d48..927254c 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -929,15 +929,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 	if (anon_vma)
- 		put_anon_vma(anon_vma);
- 	unlock_page(hpage);
--
- out:
--	if (rc != -EAGAIN) {
--		list_del(&hpage->lru);
--		put_page(hpage);
--	}
--
- 	put_page(new_hpage);
--
- 	if (result) {
- 		if (rc)
- 			*result = rc;
-@@ -1013,48 +1006,32 @@ out:
- 	return nr_failed + retry;
- }
- 
--int migrate_huge_pages(struct list_head *from,
--		new_page_t get_new_page, unsigned long private, bool offlining,
--		enum migrate_mode mode)
-+int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
-+		      unsigned long private, bool offlining,
-+		      enum migrate_mode mode)
- {
--	int retry = 1;
--	int nr_failed = 0;
--	int pass = 0;
--	struct page *page;
--	struct page *page2;
--	int rc;
--
--	for (pass = 0; pass < 10 && retry; pass++) {
--		retry = 0;
--
--		list_for_each_entry_safe(page, page2, from, lru) {
-+	int pass, rc;
-+
-+	for (pass = 0; pass < 10; pass++) {
-+		rc = unmap_and_move_huge_page(get_new_page,
-+					      private, hpage, pass > 2, offlining,
-+					      mode);
-+		switch (rc) {
-+		case -ENOMEM:
-+			goto out;
-+		case -EAGAIN:
-+			/* try again */
- 			cond_resched();
--
--			rc = unmap_and_move_huge_page(get_new_page,
--					private, page, pass > 2, offlining,
--					mode);
--
--			switch(rc) {
--			case -ENOMEM:
--				goto out;
--			case -EAGAIN:
--				retry++;
--				break;
--			case 0:
--				break;
--			default:
--				/* Permanent failure */
--				nr_failed++;
--				break;
--			}
-+			break;
-+		case 0:
-+			goto out;
-+		default:
-+			rc = -EIO;
-+			goto out;
- 		}
- 	}
--	rc = 0;
- out:
--	if (rc)
--		return rc;
--
--	return nr_failed + retry;
-+	return rc;
- }
- 
- #ifdef CONFIG_NUMA
+Andreas.
+
 -- 
-1.7.10
-
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
