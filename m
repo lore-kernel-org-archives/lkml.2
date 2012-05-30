@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab2E3BuY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 21:50:24 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33547 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756164Ab2E3BuX (ORCPT
+	id S1756230Ab2E3BwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 21:52:07 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:59463 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141Ab2E3BwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 21:50:23 -0400
-Message-ID: <4FC57CAA.3030809@us.ibm.com>
-Date: Tue, 29 May 2012 18:49:30 -0700
-From: John Stultz <johnstul@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 29 May 2012 21:52:04 -0400
+Date: Tue, 29 May 2012 18:51:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] uprobes: kill uprobes_srcu/uprobe_srcu_id
+Message-ID: <20120530015157.GB2357@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120529192721.GA8048@redhat.com>
+ <20120529193008.GG8057@redhat.com>
+ <1338332687.26856.189.camel@twins>
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai threshold
-References: <6777ac8ebc321c67d13fdb8d0a3d826332b60f1f.1337348892.git.richardcochran@gmail.com> <4FBA84EF.5040506@linaro.org> <20120521190815.GA19812@netboy.at.omicron.at> <20120522173953.GA4177@netboy.at.omicron.at> <4FBBD591.1000103@linaro.org> <20120523082916.GA15627@localhost.localdomain> <4FBD1545.4070408@linaro.org> <20120523191747.GA2348@netboy.at.omicron.at> <4FBD4613.7040003@linaro.org> <20120524064340.GA2180@netboy.at.omicron.at> <20120524065726.GB2180@netboy.at.omicron.at> <4FC57BF9.5010608@linaro.org>
-In-Reply-To: <4FC57BF9.5010608@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338332687.26856.189.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12053001-1780-0000-0000-000005FD8526
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000277; HX=3.00000188; KW=3.00000007;
- PH=3.00000001; SC=3.00000002; SDB=6.00143545; UDB=6.00033024; UTC=2012-05-30
- 01:50:22
+x-cbid: 12053001-2398-0000-0000-0000070A8996
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2012 06:46 PM, John Stultz wrote:
-> On 05/23/2012 11:57 PM, Richard Cochran wrote:
->> On Thu, May 24, 2012 at 08:43:40AM +0200, Richard Cochran wrote:
->>> BTW you can use the program I have been using to test this at
->>>
->>>     git://github.com/richardcochran/leap.git
->> That program exposes another leap second bug, too, I think. It reads
->> the time via adjtimex in a tight loop, optionally sleeping using
->>
->>     clock_nanosleep(CLOCK_MONOTONIC, 0,&ts, NULL);
->>
->> The program does not wake from this call during a leap second. It is
->> my expectation that CLOCK_MONOTONIC should always work. Why doesn't
->> it?
->
-> Sorry for being slow here, just got a chance to look at this.
->
-> Does the following patch solve this issue for you?
+On Wed, May 30, 2012 at 01:04:47AM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-05-29 at 21:30 +0200, Oleg Nesterov wrote:
+> > Kill the no longer needed uprobes_srcu/uprobe_srcu_id code.
+> > 
+> > It doesn't really work anyway. synchronize_srcu() can only synchronize
+> > with the code "inside" the srcu_read_lock/srcu_read_unlock section,
+> > while uprobe_pre_sstep_notifier() does srcu_read_lock() _after_ we
+> > already hit the breakpoint.
+> > 
+> > I guess this probably works "in practice". synchronize_srcu() is slow
+> > and it implies synchronize_sched(), and the probed task enters the non-
+> > preemptible section at the start of exception handler. Still this is not
+> > right at least in theory, and task->uprobe_srcu_id blows task_struct.
+> 
+> This kills the only user of srcu_read_{,un}lock_raw(), so I guess we
+> could also make:
+> 
+>   9ceae0e2
+>   101db7b4
+>   0c53dd8b
+> 
+> go away.. 
 
-Sorry, attached the wrong patch (that one doesn't build!).
+If it is still unused in a few months, I will get rid of them.
 
-Try this one.
-
-thanks
--john
-
-
-Make sure we update wall_to_monotonic when adding a leapsecond.
-This could otherwise cause discontinuities in CLOCK_MONOTONIC.
-
-Reported-by: Richard Cochran <richardcochran@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 6e46cac..81c76a9 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -962,6 +962,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
-  		timekeeper.xtime.tv_sec++;
-  		leap = second_overflow(timekeeper.xtime.tv_sec);
-  		timekeeper.xtime.tv_sec += leap;
-+		timekeeper.wall_to_monotonic.tv_sec -= leap;
-  	}
-
-  	/* Accumulate raw time */
+							Thanx, Paul
 
