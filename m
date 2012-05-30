@@ -1,110 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab2E3QNX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 12:13:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28120 "EHLO mx1.redhat.com"
+	id S1751880Ab2E3QTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 12:19:22 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:39621 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab2E3QNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 12:13:19 -0400
-Message-ID: <4FC6471A.5090208@redhat.com>
-Date: Wed, 30 May 2012 12:13:14 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1751128Ab2E3QTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 12:19:21 -0400
+Message-ID: <4FC647FB.90202@parallels.com>
+Date: Wed, 30 May 2012 20:16:59 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Xudong Hao <xudong.hao@linux.intel.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
-        alex.williamson@redhat.com, xiantao.zhang@intel.com,
-        xudong.hao@intel.com
-Subject: Re: [PATCH 1/1] Enable LTR/OBFF before device is used by driver
-References: <20120514024816.GA15371@hp-xd.sh.intel.com>
-In-Reply-To: <20120514024816.GA15371@hp-xd.sh.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        "Pekka Enberg" <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge infrastructure
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-17-git-send-email-glommer@parallels.com> <20120530130416.GD25094@somewhere.redhat.com> <4FC61B4E.2060206@parallels.com> <20120530133736.GF25094@somewhere.redhat.com> <4FC622B5.9080600@parallels.com> <20120530135319.GG25094@somewhere.redhat.com> <4FC626DA.3030408@parallels.com> <20120530153256.GA27008@somewhere.redhat.com>
+In-Reply-To: <20120530153256.GA27008@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [188.255.67.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While you are making the other recommended fixes, could
-you add/create a pci_obff_supported() function, like the pci_ltr_supported()
-function, and more importantly, add it to the pci_disable_obff() function?
-The latter does not check that DEVCAP2 is supported, and thus, could be
-writing to non-existent (potentially private) cap space (i.e., a V1 CAP device,
-which do exist in the marketplace).
-
-The [enable,disable]_ltr functions do a good job of doing pci_ltr_supported()
-checks, but the obff enable,disable functions should have similar calls.
-
-
-On 05/13/2012 10:48 PM, Xudong Hao wrote:
-> Enable LTR(Latency tolerance reporting) and OBFF(optimized buffer flush/fill) in
->   pci_enable_device(), so that they are enabled before the device is used by driver.
+On 05/30/2012 07:33 PM, Frederic Weisbecker wrote:
+> On Wed, May 30, 2012 at 05:55:38PM +0400, Glauber Costa wrote:
+>> On 05/30/2012 05:53 PM, Frederic Weisbecker wrote:
+>>> On Wed, May 30, 2012 at 05:37:57PM +0400, Glauber Costa wrote:
+>>>> On 05/30/2012 05:37 PM, Frederic Weisbecker wrote:
+>>>>> Right. __mem_cgroup_get_kmem_cache() fetches the memcg of the owner
+>>>>> and calls memcg_create_cache_enqueue() which does css_tryget(&memcg->css).
+>>>>> After this tryget I think you're fine. And in-between you're safe against
+>>>>> css_set removal due to rcu_read_lock().
+>>>>>
+>>>>> I'm less clear with __mem_cgroup_new_kmem_page() though...
+>>>>
+>>>> That one does not get memcg->css but it does call mem_cgroup_get(),
+>>>> that does prevent against the memcg structure being freed, which I
+>>>> believe to be good enough.
+>>>
+>>> What if the owner calls cgroup_exit() between mem_cgroup_from_task()
+>>> and mem_cgroup_get()? The css_set which contains the memcg gets freed.
+>>> Also the reference on the memcg doesn't even prevent the css_set to
+>>> be removed, does it?
+>> It doesn't, but we don't really care. The css can go away, if the
+>> memcg structure stays.
 >
-> Signed-off-by: Xudong Hao<xudong.hao@intel.com>
+> Ah right, the memcg itself is only freed at destroy time.
 >
-> ---
->   drivers/pci/pci.c |   29 +++++++++++++++++++++++++++++
->   1 files changed, 29 insertions(+), 0 deletions(-)
+>> The caches will outlive the memcg anyway,
+>> since it is possible that you delete it, with some caches still
+>> holding objects that
+>> are not freed (they will be marked as dead).
 >
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 111569c..2369883 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1134,6 +1134,31 @@ int pci_load_and_free_saved_state(struct pci_dev *dev,
->   }
->   EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
->
-> +static void pci_enable_dev_caps(struct pci_dev *dev)
-> +{
-> +       /* set default value */
-> +       unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
-> +
-> +       /* LTR(Latency tolerance reporting) allows devices to send
-> +        * messages to the root complex indicating their latency
-> +        * tolerance for snooped&  unsnooped memory transactions.
-> +        */
-> +       pci_enable_ltr(dev);
-> +
-> +       /* OBFF (optimized buffer flush/fill), where supported,
-> +        * can help improve energy efficiency by giving devices
-> +        * information about when interrupts and other activity
-> +        * will have a reduced power impact.
-> +        */
-> +       pci_enable_obff(dev, type);
-> +}
-> +
-> +static void pci_disable_dev_caps(struct pci_dev *dev)
-> +{
-> +       pci_disable_obff(dev);
-> +       pci_disable_ltr(dev);
-> +}
-> +
->   static int do_pci_enable_device(struct pci_dev *dev, int bars)
->   {
->          int err;
-> @@ -1146,6 +1171,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
->                  return err;
->          pci_fixup_device(pci_fixup_enable, dev);
->
-> +       /* Enable some device capibility before it's used by driver. */
-> +       pci_enable_dev_caps(dev);
-> +
->          return 0;
->   }
->
-> @@ -1361,6 +1389,7 @@ static void do_pci_disable_device(struct pci_dev *dev)
->          }
->
->          pcibios_disable_device(dev);
-> +       pci_disable_dev_caps(dev);
->   }
->
->   /**
-> --
-> 1.6.0.rc1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> I guess I need to look at how the destroy path is handled in your patchset
+> then. Or how you ensure that __mem_cgroup_new_kmem_page() can't race against
+> destroy.
+Appreciate that, thanks.
 
