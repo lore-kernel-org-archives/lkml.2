@@ -1,176 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab2E3OV1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:21:27 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:38942 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab2E3OVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:21:21 -0400
+	id S1754828Ab2E3OOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:14:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754604Ab2E3OOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:14:00 -0400
+Date: Wed, 30 May 2012 15:49:53 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 13/35] autonuma: add page structure fields
+Message-ID: <20120530134953.GD21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-14-git-send-email-aarcange@redhat.com>
+ <1338297385.26856.74.camel@twins>
+ <4FC4D58A.50800@redhat.com>
+ <1338303251.26856.94.camel@twins>
+ <4FC5D973.3080108@gmail.com>
+ <1338368763.26856.207.camel@twins>
 MIME-Version: 1.0
-Date: Wed, 30 May 2012 07:21:17 -0700
-Message-ID: <CALofOnUCv9V4bxHQ=ykn13_=SSyP93pk7bU_FbgX5YAhOC95pQ@mail.gmail.com>
-Subject: fix IPMI I/O error on NEC FC storage array
-From: Naresh Bhat <nbhat@mvista.com>
-To: openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=f46d0447a06b1fd1ca04c141aa97
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338368763.26856.207.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f46d0447a06b1fd1ca04c141aa97
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, May 30, 2012 at 11:06:03AM +0200, Peter Zijlstra wrote:
+> The trouble with making this per pmd is that you then get the false
+> sharing per pmd, so if there's shared data on the 2m page you'll not
+> know where to put it.
 
-Hi,
+The numa hinting page fault is already scanning the pmd only, and it's
+working fine. So reducing the page_autonuma to one per pmd would not
+reduce the granularity of the information with the default settings
+everyone has been using so far, but then it would prevent this runtime
+tweak to work:
 
-The code changes will fix the IPMI I/O error on NEC FC storage array.
+echo 0 >/sys/kernel/mm/autonuma/knuma_scand/pmd
 
-===========================================================================================
-
-Signed-off-by: Naresh Bhat <nbhat@mvista.com>
---- linux-2.6.32.59/drivers/char/ipmi/ipmi_kcs_sm.c.orig	2012-05-31
-06:11:54.753480863 -0700
-+++ linux-2.6.32.59/drivers/char/ipmi/ipmi_kcs_sm.c	2012-05-31
-06:21:26.780977397 -0700
-@@ -344,6 +344,24 @@ static int get_kcs_result(struct si_sm_d
-  */
- static enum si_sm_result kcs_event(struct si_sm_data *kcs, long time)
- {
-+#define READ_STATUS_MAX_LOOP 4
-+#define SI_SM_WAIT_STATE(_state_) \
-+	do { \
-+		int i; \
-+		for (i = 0; (i < READ_STATUS_MAX_LOOP) \
-+				&& (state != _state_); i++) { \
-+				state = GET_STATUS_STATE(read_status(kcs)); \
-+		} \
-+	} while (0);
-+
-+#define SI_SM_WAIT_STATE2(_state_, _state2_) \
-+	do { \
-+		int i; \
-+		for (i = 0; (i < READ_STATUS_MAX_LOOP) && \
-+			(state != _state_) && (state != _state2_); i++) { \
-+				state = GET_STATUS_STATE(read_status(kcs)); \
-+		} \
-+	} while (0);
- 	unsigned char status;
- 	unsigned char state;
-
-@@ -370,6 +388,7 @@ static enum si_sm_result kcs_event(struc
- 			return SI_SM_IDLE;
-
- 	case KCS_START_OP:
-+	SI_SM_WAIT_STATE(KCS_IDLE_STATE);
- 		if (state != KCS_IDLE) {
- 			start_error_recovery(kcs,
- 					     "State machine not idle at start");
-@@ -382,6 +401,7 @@ static enum si_sm_result kcs_event(struc
- 		break;
-
- 	case KCS_WAIT_WRITE_START:
-+	SI_SM_WAIT_STATE(KCS_WRITE_STATE);
- 		if (state != KCS_WRITE_STATE) {
- 			start_error_recovery(
- 				kcs,
-@@ -399,6 +419,7 @@ static enum si_sm_result kcs_event(struc
- 		break;
-
- 	case KCS_WAIT_WRITE:
-+	SI_SM_WAIT_STATE(KCS_WRITE_STATE);
- 		if (state != KCS_WRITE_STATE) {
- 			start_error_recovery(kcs,
- 					     "Not in write state for write");
-@@ -414,6 +435,7 @@ static enum si_sm_result kcs_event(struc
- 		break;
-
- 	case KCS_WAIT_WRITE_END:
-+	SI_SM_WAIT_STATE(KCS_WRITE_STATE);
- 		if (state != KCS_WRITE_STATE) {
- 			start_error_recovery(kcs,
- 					     "Not in write state"
-@@ -426,6 +448,7 @@ static enum si_sm_result kcs_event(struc
- 		break;
-
- 	case KCS_WAIT_READ:
-+	SI_SM_WAIT_STATE2(KCS_READ_STATE, KCS_IDLE_STATE);
- 		if ((state != KCS_READ_STATE) && (state != KCS_IDLE_STATE)) {
- 			start_error_recovery(
- 				kcs,
-@@ -472,6 +495,7 @@ static enum si_sm_result kcs_event(struc
- 		break;
-
- 	case KCS_ERROR2:
-+	SI_SM_WAIT_STATE(KCS_READ_STATE);
- 		if (state != KCS_READ_STATE) {
- 			start_error_recovery(kcs,
- 					     "Not in read state for error2");
-@@ -486,6 +510,7 @@ static enum si_sm_result kcs_event(struc
- 		break;
-
- 	case KCS_ERROR3:
-+	SI_SM_WAIT_STATE(KCS_IDLE_STATE);
- 		if (state != KCS_IDLE_STATE) {
- 			start_error_recovery(kcs,
- 					     "Not in idle state for error3");
-
-===========================================================================================
-
-
-Thanks
--Naresh Bhat
-
---f46d0447a06b1fd1ca04c141aa97
-Content-Type: application/octet-stream; 
-	name="Fix-IPMI-I-O-error-on-NEC-FC-storage-array.patch"
-Content-Disposition: attachment; 
-	filename="Fix-IPMI-I-O-error-on-NEC-FC-storage-array.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h2vwnmgs0
-
-U2lnbmVkLW9mZi1ieTogTmFyZXNoIEJoYXQgPG5iaGF0QG12aXN0YS5jb20+Ci0tLSBsaW51eC0y
-LjYuMzIuNTkvZHJpdmVycy9jaGFyL2lwbWkvaXBtaV9rY3Nfc20uYy5vcmlnCTIwMTItMDUtMzEg
-MDY6MTE6NTQuNzUzNDgwODYzIC0wNzAwCisrKyBsaW51eC0yLjYuMzIuNTkvZHJpdmVycy9jaGFy
-L2lwbWkvaXBtaV9rY3Nfc20uYwkyMDEyLTA1LTMxIDA2OjIxOjI2Ljc4MDk3NzM5NyAtMDcwMApA
-QCAtMzQ0LDYgKzM0NCwyNCBAQCBzdGF0aWMgaW50IGdldF9rY3NfcmVzdWx0KHN0cnVjdCBzaV9z
-bV9kCiAgKi8KIHN0YXRpYyBlbnVtIHNpX3NtX3Jlc3VsdCBrY3NfZXZlbnQoc3RydWN0IHNpX3Nt
-X2RhdGEgKmtjcywgbG9uZyB0aW1lKQogeworI2RlZmluZSBSRUFEX1NUQVRVU19NQVhfTE9PUCA0
-CisjZGVmaW5lIFNJX1NNX1dBSVRfU1RBVEUoX3N0YXRlXykgXAorCWRvIHsgXAorCQlpbnQgaTsg
-XAorCQlmb3IgKGkgPSAwOyAoaSA8IFJFQURfU1RBVFVTX01BWF9MT09QKSBcCisJCQkJJiYgKHN0
-YXRlICE9IF9zdGF0ZV8pOyBpKyspIHsgXAorCQkJCXN0YXRlID0gR0VUX1NUQVRVU19TVEFURShy
-ZWFkX3N0YXR1cyhrY3MpKTsgXAorCQl9IFwKKwl9IHdoaWxlICgwKTsKKworI2RlZmluZSBTSV9T
-TV9XQUlUX1NUQVRFMihfc3RhdGVfLCBfc3RhdGUyXykgXAorCWRvIHsgXAorCQlpbnQgaTsgXAor
-CQlmb3IgKGkgPSAwOyAoaSA8IFJFQURfU1RBVFVTX01BWF9MT09QKSAmJiBcCisJCQkoc3RhdGUg
-IT0gX3N0YXRlXykgJiYgKHN0YXRlICE9IF9zdGF0ZTJfKTsgaSsrKSB7IFwKKwkJCQlzdGF0ZSA9
-IEdFVF9TVEFUVVNfU1RBVEUocmVhZF9zdGF0dXMoa2NzKSk7IFwKKwkJfSBcCisJfSB3aGlsZSAo
-MCk7CiAJdW5zaWduZWQgY2hhciBzdGF0dXM7CiAJdW5zaWduZWQgY2hhciBzdGF0ZTsKIApAQCAt
-MzcwLDYgKzM4OCw3IEBAIHN0YXRpYyBlbnVtIHNpX3NtX3Jlc3VsdCBrY3NfZXZlbnQoc3RydWMK
-IAkJCXJldHVybiBTSV9TTV9JRExFOwogCiAJY2FzZSBLQ1NfU1RBUlRfT1A6CisJU0lfU01fV0FJ
-VF9TVEFURShLQ1NfSURMRV9TVEFURSk7CiAJCWlmIChzdGF0ZSAhPSBLQ1NfSURMRSkgewogCQkJ
-c3RhcnRfZXJyb3JfcmVjb3Zlcnkoa2NzLAogCQkJCQkgICAgICJTdGF0ZSBtYWNoaW5lIG5vdCBp
-ZGxlIGF0IHN0YXJ0Iik7CkBAIC0zODIsNiArNDAxLDcgQEAgc3RhdGljIGVudW0gc2lfc21fcmVz
-dWx0IGtjc19ldmVudChzdHJ1YwogCQlicmVhazsKIAogCWNhc2UgS0NTX1dBSVRfV1JJVEVfU1RB
-UlQ6CisJU0lfU01fV0FJVF9TVEFURShLQ1NfV1JJVEVfU1RBVEUpOwogCQlpZiAoc3RhdGUgIT0g
-S0NTX1dSSVRFX1NUQVRFKSB7CiAJCQlzdGFydF9lcnJvcl9yZWNvdmVyeSgKIAkJCQlrY3MsCkBA
-IC0zOTksNiArNDE5LDcgQEAgc3RhdGljIGVudW0gc2lfc21fcmVzdWx0IGtjc19ldmVudChzdHJ1
-YwogCQlicmVhazsKIAogCWNhc2UgS0NTX1dBSVRfV1JJVEU6CisJU0lfU01fV0FJVF9TVEFURShL
-Q1NfV1JJVEVfU1RBVEUpOwogCQlpZiAoc3RhdGUgIT0gS0NTX1dSSVRFX1NUQVRFKSB7CiAJCQlz
-dGFydF9lcnJvcl9yZWNvdmVyeShrY3MsCiAJCQkJCSAgICAgIk5vdCBpbiB3cml0ZSBzdGF0ZSBm
-b3Igd3JpdGUiKTsKQEAgLTQxNCw2ICs0MzUsNyBAQCBzdGF0aWMgZW51bSBzaV9zbV9yZXN1bHQg
-a2NzX2V2ZW50KHN0cnVjCiAJCWJyZWFrOwogCiAJY2FzZSBLQ1NfV0FJVF9XUklURV9FTkQ6CisJ
-U0lfU01fV0FJVF9TVEFURShLQ1NfV1JJVEVfU1RBVEUpOwogCQlpZiAoc3RhdGUgIT0gS0NTX1dS
-SVRFX1NUQVRFKSB7CiAJCQlzdGFydF9lcnJvcl9yZWNvdmVyeShrY3MsCiAJCQkJCSAgICAgIk5v
-dCBpbiB3cml0ZSBzdGF0ZSIKQEAgLTQyNiw2ICs0NDgsNyBAQCBzdGF0aWMgZW51bSBzaV9zbV9y
-ZXN1bHQga2NzX2V2ZW50KHN0cnVjCiAJCWJyZWFrOwogCiAJY2FzZSBLQ1NfV0FJVF9SRUFEOgor
-CVNJX1NNX1dBSVRfU1RBVEUyKEtDU19SRUFEX1NUQVRFLCBLQ1NfSURMRV9TVEFURSk7CiAJCWlm
-ICgoc3RhdGUgIT0gS0NTX1JFQURfU1RBVEUpICYmIChzdGF0ZSAhPSBLQ1NfSURMRV9TVEFURSkp
-IHsKIAkJCXN0YXJ0X2Vycm9yX3JlY292ZXJ5KAogCQkJCWtjcywKQEAgLTQ3Miw2ICs0OTUsNyBA
-QCBzdGF0aWMgZW51bSBzaV9zbV9yZXN1bHQga2NzX2V2ZW50KHN0cnVjCiAJCWJyZWFrOwogCiAJ
-Y2FzZSBLQ1NfRVJST1IyOgorCVNJX1NNX1dBSVRfU1RBVEUoS0NTX1JFQURfU1RBVEUpOwogCQlp
-ZiAoc3RhdGUgIT0gS0NTX1JFQURfU1RBVEUpIHsKIAkJCXN0YXJ0X2Vycm9yX3JlY292ZXJ5KGtj
-cywKIAkJCQkJICAgICAiTm90IGluIHJlYWQgc3RhdGUgZm9yIGVycm9yMiIpOwpAQCAtNDg2LDYg
-KzUxMCw3IEBAIHN0YXRpYyBlbnVtIHNpX3NtX3Jlc3VsdCBrY3NfZXZlbnQoc3RydWMKIAkJYnJl
-YWs7CiAKIAljYXNlIEtDU19FUlJPUjM6CisJU0lfU01fV0FJVF9TVEFURShLQ1NfSURMRV9TVEFU
-RSk7CiAJCWlmIChzdGF0ZSAhPSBLQ1NfSURMRV9TVEFURSkgewogCQkJc3RhcnRfZXJyb3JfcmVj
-b3Zlcnkoa2NzLAogCQkJCQkgICAgICJOb3QgaW4gaWRsZSBzdGF0ZSBmb3IgZXJyb3IzIik7Cg==
---f46d0447a06b1fd1ca04c141aa97--
+I'm thinking about it but probably reducing the page_autonuma to one
+per pmd is going to be the simplest solution considering by default we
+only track the pmd anyway.
