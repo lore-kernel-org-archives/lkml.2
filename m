@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2E3Bo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 21:44:59 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:31512 "EHLO
+	id S1756226Ab2E3Bpj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 21:45:39 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:46298 "EHLO
 	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab2E3Bo5 (ORCPT
+	with ESMTP id S1756141Ab2E3Bph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 21:44:57 -0400
-Message-ID: <4FC57B96.30500@micron.com>
-Date: Tue, 29 May 2012 18:44:54 -0700
+	Tue, 29 May 2012 21:45:37 -0400
+Message-ID: <4FC57BBF.2090605@micron.com>
+Date: Tue, 29 May 2012 18:45:35 -0700
 From: Asai Thambi S P <asamymuthupa@micron.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Jens Axboe <axboe@kernel.dk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Sam Bradshaw <sbradshaw@micron.com>
-Subject: [PATCH 10/11] mtip32xx: Changes to sysfs entries
+Subject: [PATCH 11/11] mtip32xx: Change disk capacity unit from MB to MiB
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18936.003
-X-TM-AS-Result: No--12.476800-0.000000-31
+X-TM-AS-Result: No--6.379900-0.000000-31
 X-TM-AS-User-Approved-Sender: Yes
 X-TM-AS-User-Blocked-Sender: No
 X-MT-CheckInternalSenderRule: True
@@ -28,169 +28,28 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Formatted the output of 'registers' entry
-* Added "Commands in Q' to output of 'registers' entry
-* Added a new entry 'flags'
+Disk capacity is calculated as power of 2, but displayed as MB. Change the
+unit to MiB.
 
+Reported-by: Robert Elliott <Elliott@hp.com>
 Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 ---
- Documentation/ABI/testing/sysfs-block-rssd |   12 ++++-
- drivers/block/mtip32xx/mtip32xx.c          |   76 +++++++++++++++++++++-------
- 2 files changed, 67 insertions(+), 21 deletions(-)
+ drivers/block/mtip32xx/mtip32xx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-block-rssd b/Documentation/ABI/testing/sysfs-block-rssd
-index d535757..679ce35 100644
---- a/Documentation/ABI/testing/sysfs-block-rssd
-+++ b/Documentation/ABI/testing/sysfs-block-rssd
-@@ -6,13 +6,21 @@ Description:    This is a read-only file. Dumps below driver information and
-                 hardware registers.
-                     - S ACTive
-                     - Command Issue
--                    - Allocated
-                     - Completed
-                     - PORT IRQ STAT
-                     - HOST IRQ STAT
-+                    - Allocated
-+                    - Commands in Q
- 
- What:           /sys/block/rssd*/status
- Date:           April 2012
- KernelVersion:  3.4
- Contact:        Asai Thambi S P <asamymuthupa@micron.com>
--Description:   This is a read-only file. Indicates the status of the device.
-+Description:    This is a read-only file. Indicates the status of the device.
-+
-+What:           /sys/block/rssd*/flags
-+Date:           May 2012
-+KernelVersion:  3.5
-+Contact:        Asai Thambi S P <asamymuthupa@micron.com>
-+Description:    This is a read-only file. Dumps the flags in port and driver
-+                data structure
 diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index d0fa357..18daa04 100644
+index 18daa04..411276d 100644
 --- a/drivers/block/mtip32xx/mtip32xx.c
 +++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -2562,40 +2562,58 @@ static ssize_t mtip_hw_show_registers(struct device *dev,
- 	int size = 0;
- 	int n;
+@@ -1759,7 +1759,7 @@ static void mtip_dump_identify(struct mtip_port *port)
  
--	size += sprintf(&buf[size], "S ACTive:\n");
-+	size += sprintf(&buf[size], "Hardware\n--------\n");
-+	size += sprintf(&buf[size], "S ACTive      : [ 0x");
+ 	if (mtip_hw_get_capacity(port->dd, &sectors))
+ 		dev_info(&port->dd->pdev->dev,
+-			"Capacity: %llu sectors (%llu MB)\n",
++			"Capacity: %llu sectors (%llu MiB)\n",
+ 			 (u64)sectors,
+ 			 ((u64)sectors) * ATA_SECT_SIZE >> 20);
  
--	for (n = 0; n < dd->slot_groups; n++)
--		size += sprintf(&buf[size], "0x%08x\n",
-+	for (n = dd->slot_groups-1; n >= 0; n--)
-+		size += sprintf(&buf[size], "%08X ",
- 					 readl(dd->port->s_active[n]));
- 
--	size += sprintf(&buf[size], "Command Issue:\n");
-+	size += sprintf(&buf[size], "]\n");
-+	size += sprintf(&buf[size], "Command Issue : [ 0x");
- 
--	for (n = 0; n < dd->slot_groups; n++)
--		size += sprintf(&buf[size], "0x%08x\n",
-+	for (n = dd->slot_groups-1; n >= 0; n--)
-+		size += sprintf(&buf[size], "%08X ",
- 					readl(dd->port->cmd_issue[n]));
- 
--	size += sprintf(&buf[size], "Allocated:\n");
-+	size += sprintf(&buf[size], "]\n");
-+	size += sprintf(&buf[size], "Completed     : [ 0x");
- 
--	for (n = 0; n < dd->slot_groups; n++) {
-+	for (n = dd->slot_groups-1; n >= 0; n--)
-+		size += sprintf(&buf[size], "%08X ",
-+				readl(dd->port->completed[n]));
-+
-+	size += sprintf(&buf[size], "]\n");
-+	size += sprintf(&buf[size], "PORT IRQ STAT : [ 0x%08X ]\n",
-+				readl(dd->port->mmio + PORT_IRQ_STAT));
-+	size += sprintf(&buf[size], "HOST IRQ STAT : [ 0x%08X ]\n",
-+				readl(dd->mmio + HOST_IRQ_STAT));
-+	size += sprintf(&buf[size], "\n");
-+
-+	size += sprintf(&buf[size], "Local\n-----\n");
-+	size += sprintf(&buf[size], "Allocated    : [ 0x");
-+
-+	for (n = dd->slot_groups-1; n >= 0; n--) {
- 		if (sizeof(long) > sizeof(u32))
- 			group_allocated =
- 				dd->port->allocated[n/2] >> (32*(n&1));
- 		else
- 			group_allocated = dd->port->allocated[n];
--		size += sprintf(&buf[size], "0x%08x\n",
--				 group_allocated);
-+		size += sprintf(&buf[size], "%08X ", group_allocated);
- 	}
-+	size += sprintf(&buf[size], "]\n");
- 
--	size += sprintf(&buf[size], "Completed:\n");
-+	size += sprintf(&buf[size], "Commands in Q: [ 0x");
- 
--	for (n = 0; n < dd->slot_groups; n++)
--		size += sprintf(&buf[size], "0x%08x\n",
--				readl(dd->port->completed[n]));
--
--	size += sprintf(&buf[size], "PORT IRQ STAT : 0x%08x\n",
--				readl(dd->port->mmio + PORT_IRQ_STAT));
--	size += sprintf(&buf[size], "HOST IRQ STAT : 0x%08x\n",
--				readl(dd->mmio + HOST_IRQ_STAT));
-+	for (n = dd->slot_groups-1; n >= 0; n--) {
-+		if (sizeof(long) > sizeof(u32))
-+			group_allocated =
-+				dd->port->cmds_to_issue[n/2] >> (32*(n&1));
-+		else
-+			group_allocated = dd->port->cmds_to_issue[n];
-+		size += sprintf(&buf[size], "%08X ", group_allocated);
-+	}
-+	size += sprintf(&buf[size], "]\n");
- 
- 	return size;
- }
-@@ -2617,8 +2635,24 @@ static ssize_t mtip_hw_show_status(struct device *dev,
- 	return size;
- }
- 
-+static ssize_t mtip_hw_show_flags(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct driver_data *dd = dev_to_disk(dev)->private_data;
-+	int size = 0;
-+
-+	size += sprintf(&buf[size], "Flag in port struct : [ %08lX ]\n",
-+							dd->port->flags);
-+	size += sprintf(&buf[size], "Flag in dd struct   : [ %08lX ]\n",
-+							dd->dd_flag);
-+
-+	return size;
-+}
-+
- static DEVICE_ATTR(registers, S_IRUGO, mtip_hw_show_registers, NULL);
- static DEVICE_ATTR(status, S_IRUGO, mtip_hw_show_status, NULL);
-+static DEVICE_ATTR(flags, S_IRUGO, mtip_hw_show_flags, NULL);
- 
- /*
-  * Create the sysfs related attributes.
-@@ -2641,6 +2675,9 @@ static int mtip_hw_sysfs_init(struct driver_data *dd, struct kobject *kobj)
- 	if (sysfs_create_file(kobj, &dev_attr_status.attr))
- 		dev_warn(&dd->pdev->dev,
- 			"Error creating 'status' sysfs entry\n");
-+	if (sysfs_create_file(kobj, &dev_attr_flags.attr))
-+		dev_warn(&dd->pdev->dev,
-+			"Error creating 'flags' sysfs entry\n");
- 	return 0;
- }
- 
-@@ -2661,6 +2698,7 @@ static int mtip_hw_sysfs_exit(struct driver_data *dd, struct kobject *kobj)
- 
- 	sysfs_remove_file(kobj, &dev_attr_registers.attr);
- 	sysfs_remove_file(kobj, &dev_attr_status.attr);
-+	sysfs_remove_file(kobj, &dev_attr_flags.attr);
- 
- 	return 0;
- }
 -- 
 1.7.1
 
