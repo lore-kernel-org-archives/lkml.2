@@ -1,145 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab2E3Xkq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 19:40:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50951 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab2E3Xkp (ORCPT
+	id S1754322Ab2E3X73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 19:59:29 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:36647 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab2E3X70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 19:40:45 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-Date: Wed, 30 May 2012 16:40:44 -0700
-Message-ID: <CAOesGMiFNJK528g0qyiswbNijJFBckuNTMG=sz98c9BEpRJwHg@mail.gmail.com>
-Subject: [GIT PULL] arm-soc: late-merged development and first fixes
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 30 May 2012 19:59:26 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [PATCH] target/file: Drop O_SYNC in favor of implict vfs_fsync_range for writes
+Date: Wed, 30 May 2012 23:57:43 +0000
+Message-Id: <1338422263-19874-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Here is one aggregate request for the remaining arm-soc pull. Since
-there is only a handful of patches in total, doing individual topic
-requests seemed silly.
+This patch converts fd_execute_cmd() code to drop O_SYNC usage
+(the original default) in favor of always preforming an implict
+SCSI forced unit access (FUA) operation using vfs_fsync_range()
+based on LBA + SectorCount after each completed FILEIO backend write.
 
+This conversion was inspired by Linus's thoughts on O_SYNC usage in
+the thread: http://www.spinics.net/lists/linux-fsdevel/msg55681.html
 
-Thanks!
+  "O_SYNC is the absolutely anti-thesis of that kind of "multiple levels
+   of overlapping IO". Because it requires that the IO is _done_ by the
+   time you start more, which is against the whole point."
 
--Olof
+This patch also drops the now unnecessary fd_buffered_io= token usage
+at createvirtdev time.  Tested with lio-core code using fio writeverify
+to local tcm_loop + FILEIO <-> scsi_debug backed LUNs.
 
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_file.c |   68 +++++++------------------------------
+ drivers/target/target_core_file.h |    1 -
+ 2 files changed, 13 insertions(+), 56 deletions(-)
 
+diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
+index 686dba1..334b01c 100644
+--- a/drivers/target/target_core_file.c
++++ b/drivers/target/target_core_file.c
+@@ -137,13 +137,6 @@ static struct se_device *fd_create_virtdevice(
+ 	/* O_DIRECT too? */
+ 	flags = O_RDWR | O_CREAT | O_LARGEFILE;
+ 
+-	/*
+-	 * If fd_buffered_io=1 has not been set explicitly (the default),
+-	 * use O_SYNC to force FILEIO writes to disk.
+-	 */
+-	if (!(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO))
+-		flags |= O_SYNC;
+-
+ 	file = filp_open(dev_p, flags, 0600);
+ 	if (IS_ERR(file)) {
+ 		pr_err("filp_open(%s) failed\n", dev_p);
+@@ -380,23 +373,6 @@ static void fd_emulate_sync_cache(struct se_cmd *cmd)
+ 	}
+ }
+ 
+-static void fd_emulate_write_fua(struct se_cmd *cmd)
+-{
+-	struct se_device *dev = cmd->se_dev;
+-	struct fd_dev *fd_dev = dev->dev_ptr;
+-	loff_t start = cmd->t_task_lba *
+-		dev->se_sub_dev->se_dev_attrib.block_size;
+-	loff_t end = start + cmd->data_length;
+-	int ret;
+-
+-	pr_debug("FILEIO: FUA WRITE LBA: %llu, bytes: %u\n",
+-		cmd->t_task_lba, cmd->data_length);
+-
+-	ret = vfs_fsync_range(fd_dev->fd_file, start, end, 1);
+-	if (ret != 0)
+-		pr_err("FILEIO: vfs_fsync_range() failed: %d\n", ret);
+-}
+-
+ static int fd_execute_cmd(struct se_cmd *cmd, struct scatterlist *sgl,
+ 		u32 sgl_nents, enum dma_data_direction data_direction)
+ {
+@@ -410,20 +386,18 @@ static int fd_execute_cmd(struct se_cmd *cmd, struct scatterlist *sgl,
+ 	if (data_direction == DMA_FROM_DEVICE) {
+ 		ret = fd_do_readv(cmd, sgl, sgl_nents);
+ 	} else {
+-		ret = fd_do_writev(cmd, sgl, sgl_nents);
+-
+-		if (ret > 0 &&
+-		    dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0 &&
+-		    dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0 &&
+-		    (cmd->se_cmd_flags & SCF_FUA)) {
+-			/*
+-			 * We might need to be a bit smarter here
+-			 * and return some sense data to let the initiator
+-			 * know the FUA WRITE cache sync failed..?
+-			 */
+-			fd_emulate_write_fua(cmd);
+-		}
++		struct fd_dev *fd_dev = dev->dev_ptr;
++		loff_t start = cmd->t_task_lba *
++			dev->se_sub_dev->se_dev_attrib.block_size;
++		loff_t end = start + cmd->data_length;
+ 
++		ret = fd_do_writev(cmd, sgl, sgl_nents);
++		/*
++		 * Perform implict vfs_fsync_range() for fd_do_writev() ops
++		 * instead of having to use O_SYNC for struct file.
++		 */
++		if (ret > 0)
++			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
+ 	}
+ 
+ 	if (ret < 0) {
+@@ -442,7 +416,6 @@ enum {
+ static match_table_t tokens = {
+ 	{Opt_fd_dev_name, "fd_dev_name=%s"},
+ 	{Opt_fd_dev_size, "fd_dev_size=%s"},
+-	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
+ 	{Opt_err, NULL}
+ };
+ 
+@@ -498,19 +471,6 @@ static ssize_t fd_set_configfs_dev_params(
+ 					" bytes\n", fd_dev->fd_dev_size);
+ 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
+ 			break;
+-		case Opt_fd_buffered_io:
+-			match_int(args, &arg);
+-			if (arg != 1) {
+-				pr_err("bogus fd_buffered_io=%d value\n", arg);
+-				ret = -EINVAL;
+-				goto out;
+-			}
+-
+-			pr_debug("FILEIO: Using buffered I/O"
+-				" operations for struct fd_dev\n");
+-
+-			fd_dev->fbd_flags |= FDBD_USE_BUFFERED_IO;
+-			break;
+ 		default:
+ 			break;
+ 		}
+@@ -542,10 +502,8 @@ static ssize_t fd_show_configfs_dev_params(
+ 	ssize_t bl = 0;
+ 
+ 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
+-	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
+-		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
+-		(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO) ?
+-		"Buffered" : "Synchronous");
++	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: fsync\n",
++		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
+ 	return bl;
+ }
+ 
+diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
+index fbd59ef..70ce7fd 100644
+--- a/drivers/target/target_core_file.h
++++ b/drivers/target/target_core_file.h
+@@ -14,7 +14,6 @@
+ 
+ #define FBDF_HAS_PATH		0x01
+ #define FBDF_HAS_SIZE		0x02
+-#define FDBD_USE_BUFFERED_IO	0x04
+ 
+ struct fd_dev {
+ 	u32		fbd_flags;
+-- 
+1.7.2.5
 
-The following changes since commit af56e0aa35f3ae2a4c1a6d1000702df1dd78cb76:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client
-(2012-05-30 11:17:19 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/devel-late
-
-for you to fetch changes up to 47e1993d32d4e0f9524c2147576468fe11e87b5f:
-
-  Merge branches 'fixes' and 'fixes2' into devel-late (2012-05-30
-16:16:12 -0700)
-
-----------------------------------------------------------------
-
-arm-soc: late-merged development and first fixes
-
-This branch contains a few development patches for Samsung and Versatile
-Express that were submitted to arm-soc near the beginning of the merge
-window. We picked them up with the agreement that they would need to
-sit in linux-next for a while, and now they have.
-
-There are also two fixes:
-- One long-standing build breakage on ixp4xx due to missing gpiolib
-  dependencies.
-- The other is for some gpio device tree changes needed on lpc32xx.
-
-----------------------------------------------------------------
-Daniel Lezcano (2):
-      ARM: S3C64XX: declare the states with the new api on cpuidle
-      ARM: S3C64XX: use timekeeping wrapper on cpuidle
-
-Heiko Stuebner (1):
-      ARM: S3C24XX: add support for second irq set of S3C2416
-
-Jongpill Lee (5):
-      ARM: EXYNOS: Remove GIC save & restore function
-      ARM: EXYNOS: Rename of function for pm.c
-      ARM: EXYNOS: Add PMU table for EXYNOS5250
-      ARM: EXYNOS: Add Clock register list for save and restore
-      ARM: EXYNOS: Support suspend and resume for EXYNOS5250
-
-Kukjin Kim (2):
-      Merge branch 'next/devel-samsung' into next/devel-samsung-2
-      Merge branch 'next/devel-exynos5250-1' into next/devel-samsung-2
-
-Mark Brown (2):
-      ARM: S3C64XX: Initial hookup for Bells module on Cragganmore
-      ARM: S3C64XX: Hook up carrier class modules on Cragganmore
-
-Olof Johansson (8):
-      Merge branch 'next/cleanup-samsung-2' of
-git://git.kernel.org/.../kgene/linux-samsung into late/cleanup
-      Merge branch 'next/devel-samsung-2' of
-git://git.kernel.org/.../kgene/linux-samsung into late/soc
-      Merge branch 'next/board-samsung-2' of
-git://git.kernel.org/.../kgene/linux-samsung into late/board
-      Merge branch 'vexpress-v3.4' of
-git://git.linaro.org/people/pawelmoll/linux into late/soc
-      Merge branch 'late/cleanup' into devel-late
-      Merge branch 'late/soc' into devel-late
-      Merge branch 'late/board' into devel-late
-      Merge branches 'fixes' and 'fixes2' into devel-late
-
-Pawel Moll (1):
-      ARM: vexpress: Device Tree updates
-
-Richard Cochran (1):
-      ixp4xx: fix compilation by adding gpiolib support
-
-Roland Stigge (1):
-      ARM: LPC32xx: Adjust dts files to gpio dt binding
-
-Thomas Abraham (1):
-      ARM: dts: Add node for interrupt combiner controller on EXYNOS5250
-
-Thomas Weber (1):
-      ARM: vexpress: Remove twice included header files
-
- arch/arm/Kconfig                               |   2 +-
- arch/arm/boot/dts/exynos5250.dtsi              |  16 ++
- arch/arm/boot/dts/lpc32xx.dtsi                 |  41 +----
- arch/arm/boot/dts/phy3250.dts                  |   4 +-
- arch/arm/boot/dts/vexpress-v2p-ca15-tc1.dts    |  13 +-
- arch/arm/boot/dts/vexpress-v2p-ca5s.dts        |  13 +-
- arch/arm/boot/dts/vexpress-v2p-ca9.dts         |   9 +-
- arch/arm/mach-exynos/Kconfig                   |   2 +
- arch/arm/mach-exynos/Makefile                  |   2 +-
- arch/arm/mach-exynos/clock-exynos5.c           |  51 +++++-
- arch/arm/mach-exynos/cpuidle.c                 |   2 +-
- arch/arm/mach-exynos/include/mach/pm-core.h    |   2 +-
- arch/arm/mach-exynos/include/mach/pmu.h        |   4 +-
- arch/arm/mach-exynos/include/mach/regs-clock.h |  18 +-
- arch/arm/mach-exynos/include/mach/regs-pmu.h   | 141 +++++++++++++++-
- arch/arm/mach-exynos/pm.c                      | 223 +++++++++----------------
- arch/arm/mach-exynos/pmu.c                     | 200 ++++++++++++++++++++--
- arch/arm/mach-ixp4xx/common.c                  |  48 +++++-
- arch/arm/mach-ixp4xx/include/mach/gpio.h       |  79 +--------
- arch/arm/mach-s3c24xx/include/mach/irqs.h      |  15 +-
- arch/arm/mach-s3c24xx/irq-s3c2416.c            |  98 +++++++++++
- arch/arm/mach-s3c24xx/s3c2416.c                |   1 +
- arch/arm/mach-s3c64xx/cpuidle.c                |  45 ++---
- arch/arm/mach-s3c64xx/mach-crag6410-module.c   |   9 +-
- arch/arm/mach-s3c64xx/mach-crag6410.c          |   1 +
- arch/arm/mach-vexpress/v2m.c                   |   2 -
- arch/arm/plat-samsung/include/plat/s3c2416.h   |   3 +
- 27 files changed, 706 insertions(+), 338 deletions(-)
