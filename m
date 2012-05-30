@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab2E3VtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:49:17 -0400
-Received: from mga06.intel.com ([134.134.136.21]:42763 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754727Ab2E3VtQ convert rfc822-to-8bit (ORCPT
+	id S1757256Ab2E3Vv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:51:29 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42178 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757179Ab2E3Vv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:49:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <201205302341.21821.rjw@sisk.pl>
-References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
-	<20120530182145.23574.5156.stgit@dwillia2-linux.jf.intel.com>
-	<201205302334.12247.rjw@sisk.pl>
-	<201205302341.21821.rjw@sisk.pl>
-Date: Wed, 30 May 2012 14:49:13 -0700
-Message-ID: <CABE8wwuNLEO+jmp_08VGHFbzD94y4ZhOfrFw207d=tLWi0UJ0Q@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] scsi: cleanup usages of scsi_complete_async_scans
-From: Dan Williams <dan.j.williams@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, mroos@linux.ee,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        James Bottomley <JBottomley@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 May 2012 17:51:28 -0400
+Date: Wed, 30 May 2012 17:50:20 -0400 (EDT)
+Message-Id: <20120530.175020.1714406888633137662.davem@davemloft.net>
+To: eldad@fogrefinery.com
+Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 8021q/vlan: process NETDEV_GOING_DOWN
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.02.1205302344200.8234@debianer>
+References: <alpine.DEB.2.02.1205302055140.1587@debianer>
+	<20120530.162751.80640634568619332.davem@davemloft.net>
+	<alpine.DEB.2.02.1205302344200.8234@debianer>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 14:50:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 2:41 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >             }
->> >
->> > -           /*
->> > -            * We can't depend on SCSI devices being available after loading
->> > -            * one of their modules until scsi_complete_async_scans() is
->> > -            * called and the resume device usually is a SCSI one.
->> > -            */
->> > -           scsi_complete_async_scans();
->> > -
->>
->> I believe this is wrong.  You're going to introduce a regression on systems
->> using built-in hibernation and built-in SCSI stack.
->
-> Ah, wait.  Do I understand correctly that wait_for_device_probe()
-> is now going to do an equivalent of scsi_complete_async_scans()?
->
-> If so, that should work, in which case please disregard my previous
-> messages in this thread.
+From: Eldad Zack <eldad@fogrefinery.com>
+Date: Wed, 30 May 2012 23:47:32 +0200 (CEST)
 
-Yeah, no problem.  Patch 3 is what changed the assumptions in this regard.
+> 
+> On Wed, 30 May 2012, David Miller wrote:
+>> From: Eldad Zack <eldad@fogrefinery.com>
+>> Date: Wed, 30 May 2012 21:11:02 +0200 (CEST)
+>> 
+>> > In case a certain protocol needs to send a "dying gasp" packet, when you 
+>> > administrativly shutdown the port (which is also what happens when you 
+>> > restart the machine).
+>> 
+>> No in tree users have this requirement, therefore your patch is
+>> inappropriate.
+> 
+> You are right in that, that no in tree users have this requirement 
+> (yet), but in the same time it doesn't harm any existing code.
+> 
+> Don't you agree that it's the right order to do the notifications?
 
---
-Dan
+It's not an issue that matters upstream, so I simply do not care.
+
+When you, or someone else, submits code that needs this facility
+then we can talk about it.
+
+Otherwise it's just a waste of our time.
