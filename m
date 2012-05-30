@@ -1,48 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2E3PEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 11:04:35 -0400
-Received: from ernst.netinsight.se ([194.16.221.21]:56503 "HELO
-	ernst.netinsight.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751356Ab2E3PEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 11:04:33 -0400
-X-Greylist: delayed 602 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 May 2012 11:04:33 EDT
-Date: Wed, 30 May 2012 16:54:26 +0200 (CEST)
-Message-Id: <20120530.165426.1421117300206344483.anders@netinsight.net>
-To: dsmythies@telus.net
-Cc: jrnieder@gmail.com, linux-kernel@vger.kernel.org,
-        leslaw.kopec@nasza-klasa.pl, aman@tmm1.net, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-Subject: Re: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
-From: Anders =?iso-8859-1?Q?Bostr=F6m?= <anders@netinsight.net>
-In-Reply-To: <000c01cd3e70$b651dd10$22f59730$@net>
-References: <20120523215359.GA19798@burratino>
-	<20120524214516.GB1158@burratino>
-	<000c01cd3e70$b651dd10$22f59730$@net>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754138Ab2E3PFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:05:25 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:37297 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752685Ab2E3PFX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 11:05:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338388466-3565-2-git-send-email-kishon@ti.com>
+References: <1338388466-3565-1-git-send-email-kishon@ti.com> <1338388466-3565-2-git-send-email-kishon@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Wed, 30 May 2012 20:35:00 +0530
+Message-ID: <CAMQu2gz6cFnwBYAut0TNArLCK7zXggqbywjB1VKLyRzhOxAcBA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] drivers: usb: otg: add a new driver for omap usb2 phy
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: tony@atomide.com, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "DS" == Doug Smythies <dsmythies@telus.net> writes:
+On Wed, May 30, 2012 at 8:04 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> All phy related programming like enabling/disabling the clocks, powering
+> on/off the phy is taken care of by this driver. It is also used for OTG
+> related functionality like srp.
+>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  drivers/usb/otg/Kconfig           |   17 ++-
+>  drivers/usb/otg/Makefile          |    1 +
+>  drivers/usb/otg/omap-usb2.c       |  232 +++++++++++++++++++++++++++++++++++++
+>  include/linux/usb/omap_usb.h      |   47 ++++++++
+>  include/linux/usb/phy_companion.h |   34 ++++++
+>  5 files changed, 327 insertions(+), 4 deletions(-)
+>  create mode 100644 drivers/usb/otg/omap-usb2.c
+>  create mode 100644 include/linux/usb/omap_usb.h
+>  create mode 100644 include/linux/usb/phy_companion.h
+>
 
- DS> This statement: "Starting with 3.2.17-1, the CPU load accounting is broken when the computer is idle. The CPU load is reported as >0.50 when idle. 3.2.16-1 don't suffer from this problem."
- DS> In my opinion has the following mistakes:
- DS> . The computer is not actually idle. If it was actually idle the reported load average would be 0.
+[...]
 
-Well, I tested in single user mode, with very few processes running,
-mostly init, getty, bash and top (+ a lot of kernel threads). And
-3.2.17 reported a load of >0.5 . Under the same conditions 3.2.16
-typically reports 0.01 or 0.00 .
+> diff --git a/drivers/usb/otg/omap-usb2.c b/drivers/usb/otg/omap-usb2.c
+> new file mode 100644
+> index 0000000..ccd74b6
+> --- /dev/null
+> +++ b/drivers/usb/otg/omap-usb2.c
+> @@ -0,0 +1,232 @@
+> +/*
+> + * omap-usb2.c - USB PHY, talking to musb controller in OMAP.
+> + *
+> + * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
+s/2011/2012
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/of.h>
+> +#include <linux/usb/omap_usb.h>
+> +#include <linux/usb/phy_companion.h>
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/delay.h>
+Do you need it ?
 
- DS> . Yes, the new kernel reported load average is high, as detailed in the PNG file or the web notes.
- DS> . The older kernel suffers from a different problem, under all other conditions being the same, the reported load average would have been too low.
+> +#include <linux/mfd/omap_control.h>
+> +#include <linux/usb/omap4_usb_phy.h>
+> +
+> +/**
+> + * omap_usb2_set_comparator - links the comparator present in the sytem with
+> + *     this phy
+> + * @comparator - the companion phy(comparator) for this phy
+> + *
+> + * The phy companion driver should call this API passing the phy_companion
+> + * filled with set_vbus and start_srp to be used by usb phy.
+> + *
+> + * For use by phy companion driver
+> + */
+> +void omap_usb2_set_comparator(struct phy_companion *comparator)
+> +{
+> +       struct usb_phy  *x = usb_get_phy(USB_PHY_TYPE_USB2);
+> +       struct omap_usb *phy = phy_to_omapusb(x);
+> +
+> +       phy->comparator = comparator;
+> +}
+> +EXPORT_SYMBOL_GPL(omap_usb2_set_comparator);
+> +
+> +static int omap_usb_set_vbus(struct usb_otg *otg, bool enabled)
+> +{
+> +       struct omap_usb *phy = phy_to_omapusb(otg->phy);
+> +
+> +       if (!phy->comparator)
+> +               return -ENODEV;
+> +
+> +       return phy->comparator->set_vbus(phy->comparator, enabled);
+> +}
+> +
+> +static int omap_usb_start_srp(struct usb_otg *otg)
+> +{
+> +       struct omap_usb *phy = phy_to_omapusb(otg->phy);
+> +
+> +       if (!phy->comparator)
+> +               return -ENODEV;
+> +
+> +       return phy->comparator->start_srp(phy->comparator);
+> +}
+> +
+> +static int omap_usb_set_host(struct usb_otg *otg, struct usb_bus *host)
+> +{
+> +       struct usb_phy  *phy = otg->phy;
+> +
+> +       otg->host = host;
+> +       if (!host)
+> +               phy->state = OTG_STATE_UNDEFINED;
+> +
+> +       return 0;
+> +}
+> +
+> +static int omap_usb_set_peripheral(struct usb_otg *otg,
+> +               struct usb_gadget *gadget)
+> +{
+> +       struct usb_phy  *phy = otg->phy;
+> +
+> +       otg->gadget = gadget;
+> +       if (!gadget)
+> +               phy->state = OTG_STATE_UNDEFINED;
+> +
+> +       return 0;
+> +}
+> +
+> +static int omap_usb2_suspend(struct usb_phy *x, int suspend)
+> +{
+> +       struct omap_usb *phy = phy_to_omapusb(x);
+> +
+> +       if (suspend && !phy->is_suspended) {
+> +               pm_runtime_put_sync(phy->dev);
+> +               phy->is_suspended = 1;
+> +       } else if (!suspend && phy->is_suspended) {
+> +               pm_runtime_get_sync(phy->dev);
+> +               phy->is_suspended = 0;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int __devinit omap_usb2_probe(struct platform_device *pdev)
+> +{
+> +       struct omap_usb                 *phy;
+> +       struct usb_otg                  *otg;
+> +
+> +       phy = devm_kzalloc(&pdev->dev, sizeof(*phy), GFP_KERNEL);
+> +       if (!phy) {
+> +               dev_err(&pdev->dev, "unable to allocate memory for USB2 PHY\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       otg = devm_kzalloc(&pdev->dev, sizeof(*otg), GFP_KERNEL);
+> +       if (!otg) {
+> +               dev_err(&pdev->dev, "unable to allocate memory for USB OTG\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       phy->dev                = &pdev->dev;
+> +
+> +       phy->phy.dev            = phy->dev;
+> +       phy->phy.label          = "omap-usb2";
+> +       phy->phy.set_suspend    = omap_usb2_suspend;
+> +       phy->phy.otg            = otg;
+> +
+> +       phy->control_dev        = omap_control_get();
+> +       if (IS_ERR(phy->control_dev)) {
+> +               dev_err(&pdev->dev, "no control device present in system\n");
+> +               return PTR_ERR(phy->control_dev);
+> +       }
+> +
+> +       phy->is_suspended       = 1;
+> +       omap4_usb_phy_power(phy->control_dev, 0);
+> +
+> +       otg->set_host           = omap_usb_set_host;
+> +       otg->set_peripheral     = omap_usb_set_peripheral;
+> +       otg->set_vbus           = omap_usb_set_vbus;
+> +       otg->start_srp          = omap_usb_start_srp;
+> +       otg->phy                = &phy->phy;
+> +
+> +       phy->wkupclk = clk_get(phy->dev, "usb_phy_cm_clk32k");
+Error check missing here.
 
-I don't know if 0.01 is *too* low, but it should be much closer to the
-truth than >0.5.
+> +
+> +       usb_add_phy(&phy->phy, USB_PHY_TYPE_USB2);
+> +
+unnecessary extra line
+> +       platform_set_drvdata(pdev, phy);
+> +
+this one too
+> +       pm_runtime_enable(phy->dev);
+> +
+> +       return 0;
+> +}
+> +
+> +static int __devexit omap_usb2_remove(struct platform_device *pdev)
+> +{
+> +       struct omap_usb *phy = platform_get_drvdata(pdev);
+> +
+> +       usb_remove_phy(&phy->phy);
+> +       platform_set_drvdata(pdev, NULL);
+> +
+> +       return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM
+s/ CONFIG_PM/CONFIG_SUSPEND
+otherwise you will get build warning with !CONFIG_SUSPEND
 
-/ Anders
+> +
+> +static int omap_usb2_runtime_suspend(struct device *dev)
+> +{
+> +       struct platform_device  *pdev = to_platform_device(dev);
+> +       struct omap_usb *phy = platform_get_drvdata(pdev);
+> +
+> +       clk_disable(phy->wkupclk);
+> +       omap4_usb_phy_power(phy->control_dev, 0);
+> +
+> +       return 0;
+> +}
+> +
+> +static int omap_usb2_runtime_resume(struct device *dev)
+> +{
+> +       struct platform_device  *pdev = to_platform_device(dev);
+> +       struct omap_usb *phy = platform_get_drvdata(pdev);
+> +
+> +       omap4_usb_phy_power(phy->control_dev, 1);
+> +       clk_enable(phy->wkupclk);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct dev_pm_ops omap_usb2_pm_ops = {
+> +       SET_RUNTIME_PM_OPS(omap_usb2_runtime_suspend, omap_usb2_runtime_resume,
+> +               NULL)
+> +};
+> +
+> +#define DEV_PM_OPS     (&omap_usb2_pm_ops)
+> +#else
+> +#define DEV_PM_OPS     NULL
+> +#endif
+> +
+> +static struct platform_driver omap_usb2_driver = {
+> +       .probe          = omap_usb2_probe,
+> +       .remove         = __devexit_p(omap_usb2_remove),
+> +       .driver         = {
+> +               .name   = "omap-usb2",
+> +               .owner  = THIS_MODULE,
+> +               .pm     = DEV_PM_OPS,
+> +       },
+> +};
+> +
+> +static int __init usb2_omap_init(void)
+> +{
+> +       return platform_driver_register(&omap_usb2_driver);
+> +}
+> +arch_initcall(usb2_omap_init);
+> +
+> +static void __exit usb2_omap_exit(void)
+> +{
+> +       platform_driver_unregister(&omap_usb2_driver);
+> +}
+> +module_exit(usb2_omap_exit);
+> +
+> +MODULE_ALIAS("platform: omap_usb2");
+> +MODULE_AUTHOR("Kishon Vijay Abraham I <kishon@ti.com>");
+> +MODULE_DESCRIPTION("OMAP USB2 PHY DRIVER");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/usb/omap_usb.h b/include/linux/usb/omap_usb.h
+> new file mode 100644
+> index 0000000..8d781df
+> --- /dev/null
+> +++ b/include/linux/usb/omap_usb.h
+> @@ -0,0 +1,47 @@
+> +/*
+> + * omap_usb.h -- omap usb2 phy header file
+> + *
+> + * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
+s/2011/2012
+
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * Author: Kishon Vijay Abraham I <kishon@ti.com>
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + *
+> + */
+> +
+> +#ifndef __DRIVERS_OMAP_USB2_H
+> +#define __DRIVERS_OMAP_USB2_H
+> +
+> +#include <linux/usb/otg.h>
+> +
+> +struct omap_usb {
+> +       struct usb_phy          phy;
+> +       struct phy_companion    *comparator;
+> +       struct device           *dev;
+> +       struct device           *control_dev;
+> +       struct clk              *wkupclk;
+> +       u8                      is_suspended:1;
+> +};
+> +
+> +#define        phy_to_omapusb(x)       container_of((x), struct omap_usb, phy)
+> +
+> +#if defined(CONFIG_OMAP_USB2) || defined(CONFIG_OMAP_USB2_MODULE)
+> +void omap_usb2_set_comparator(struct phy_companion *comparator);
+> +#else
+> +static inline void omap_usb2_set_comparator(struct phy_companion *comparator)
+> +{
+> +}
+> +#endif
+> +
+> +#endif /* __DRIVERS_OMAP_USB_H */
+> diff --git a/include/linux/usb/phy_companion.h b/include/linux/usb/phy_companion.h
+> new file mode 100644
+> index 0000000..321290f
+> --- /dev/null
+> +++ b/include/linux/usb/phy_companion.h
+> @@ -0,0 +1,34 @@
+> +/*
+> + * phy-companion.h -- phy companion to indicate the comparator part of PHY
+> + *
+> + * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
+Here too..
+
+Regards
+Santosh
