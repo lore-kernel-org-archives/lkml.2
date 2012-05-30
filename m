@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab2E3TLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 15:11:15 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:58803 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab2E3TLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 15:11:13 -0400
-Date: Wed, 30 May 2012 21:11:02 +0200 (CEST)
-From: Eldad Zack <eldad@fogrefinery.com>
-X-X-Sender: eldad@debianer
-To: David Miller <davem@davemloft.net>
-cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 8021q/vlan: process NETDEV_GOING_DOWN
-In-Reply-To: <20120529.204040.644013889059321702.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.02.1205302055140.1587@debianer>
-References: <1338330635-27259-1-git-send-email-eldad@fogrefinery.com> <20120529.204040.644013889059321702.davem@davemloft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751892Ab2E3TRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:17:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967Ab2E3TRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 15:17:13 -0400
+Date: Wed, 30 May 2012 16:17:20 -0300
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH 1/3] start vm after reseting it
+Message-ID: <20120530161720.7c9b88b9@doriath.home>
+In-Reply-To: <4FB9E57C.5040003@cn.fujitsu.com>
+References: <4FB9E4CE.8060709@cn.fujitsu.com>
+	<4FB9E57C.5040003@cn.fujitsu.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 21 May 2012 14:49:32 +0800
+Wen Congyang <wency@cn.fujitsu.com> wrote:
 
-On Tue, 29 May 2012, David Miller wrote:
-> From: Eldad Zack <eldad@fogrefinery.com>
-> Date: Wed, 30 May 2012 00:30:35 +0200
+> The guest should run after reseting it, but it does not
+> run if its old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
 > 
-> > In the current flow, when you take down a physical device that has
-> > VLANs configured on it, the NETDEV_GOING_DOWN notification will be
-> > sent too late, i.e., no data can be sent to the wire anymore.
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  vl.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> Why do you need to send data?  Any queued up data should be purged not
-> sent.
+> diff --git a/vl.c b/vl.c
+> index 23ab3a3..7f5fed8 100644
+> --- a/vl.c
+> +++ b/vl.c
+> @@ -1539,6 +1539,7 @@ static bool main_loop_should_exit(void)
+>          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
+>              runstate_check(RUN_STATE_SHUTDOWN)) {
+>              runstate_set(RUN_STATE_PAUSED);
+> +            vm_start();
 
-In case a certain protocol needs to send a "dying gasp" packet, when you 
-administrativly shutdown the port (which is also what happens when you 
-restart the machine).
+Please, drop the runstate_set() call. I think you also have to
+to call bdrv_iostatus_reset(), as qmp_cont() does.
 
-I'm working on an implementation of such protocol (LLDP) on my free 
-time. The specification says that it should send a (compact) shutdown 
-message, with the TTL field set to zero, so that other stations are informed
-of the shutdown - and it works fine with the main interface, but not with 
-VLANs, since the notifier is called too late.
-With that small change it works as well.
+>          }
+>      }
+>      if (qemu_powerdown_requested()) {
 
-Another use for it would be the Ethernet CFM, which has a similar 
-requirement.
-
-On the other hand, I might've missed something. Is there a better way to 
-be informed of a shutdown than listening for the GOING_DOWN 
-event, so the frame can be sent to the wire when it's appropriate?
-
-Eldad
