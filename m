@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab2E3S32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:29:28 -0400
-Received: from mga10.intel.com ([192.55.52.92]:19576 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756246Ab2E3S30 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:29:26 -0400
+	id S1757525Ab2E3S3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:29:37 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39255 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756246Ab2E3S3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:29:34 -0400
+Date: Wed, 30 May 2012 20:29:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
+ Trinity systems
+Message-ID: <20120530182930.GH15438@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Jacob Shin <jacob.shin@amd.com>,
+	Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
+	xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+	Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
+References: <20120530145005.GI3207@phenom.dumpdata.com>
+ <20120530150334.GA13349@jshin-Toonie>
+ <20120530171754.GA5115@phenom.dumpdata.com>
+ <20120530173247.GC15635@x1.osrc.amd.com>
+ <4FC65D34.1060803@zytor.com>
+ <20120530175150.GE15438@x1.osrc.amd.com>
+ <4FC66037.6020506@zytor.com>
+ <20120530181722.GF15438@x1.osrc.amd.com>
+ <20120530181950.GG15438@x1.osrc.amd.com>
+ <4FC6650C.5060604@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <20120530182239.GD15635@x1.osrc.amd.com>
-References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
-	<20120530182239.GD15635@x1.osrc.amd.com>
-Date: Wed, 30 May 2012 11:29:23 -0700
-Message-ID: <CABE8wwsw98KZS0W1sJghzrei0mSGLiMoh+7Wn5xOzdM54qiYqA@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] fix / cleanup async scsi scanning
-From: Dan Williams <dan.j.williams@intel.com>
-To: Borislav Petkov <bp@alien8.de>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mroos@linux.ee, JBottomley@parallels.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FC6650C.5060604@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 11:22 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, May 30, 2012 at 11:21:25AM -0700, Dan Williams wrote:
->> Commit a7a20d10 "[SCSI] sd: limit the scope of the async probe domain"
->> introduces a boot regression by moving sd probe work off of the global
->> async queue.  Using a local async domain hides the probe work from being
->> synchronized by wait_for_device_probe()->async_synchronize_full().
->>
->> Fix this by teaching async_synchronize_full() to flush all async work
->> regardless of domain, and take the opportunity to convert scsi scanning
->> to async_schedule().  This enables wait_for_device_probe() to flush scsi
->> scanning work.
->
-> Looks like those fix a similar boot issue I reported earlier:
->
-> http://marc.info/?l=linux-kernel&m=133839683405526&w=2
->
-> Should I give them a run or are they still in review?
->
+On Wed, May 30, 2012 at 11:21:00AM -0700, H. Peter Anvin wrote:
+> This is for PV, not for HVM (VT-x/SVM).  HVM doesn't have this kind of
+> drain bamage.
 
-They're ready for a run, but are likely 3.6 material.  For 3.5 I think
-James is going with the smaller fix posted here:
+Frankly, I wouldn't want to fix this for K8 only - they're going away
+anyway. And besides, this is a BIOS fix for a very small subset of very
+early K8s. It probably shouldnt've been there in the first place but
+at the time I did it I wanted to fix the whole world (I'm much more
+reasonable now :-)).
 
-http://marc.info/?l=linux-scsi&m=133796775807498&w=2
+IOW, I'd like to leave sleeping dogs lie if you don't mind.
 
---
-Dan
+-- 
+Regards/Gruss,
+Boris.
