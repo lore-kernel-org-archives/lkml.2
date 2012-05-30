@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab2E3WhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 18:37:25 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42476 "EHLO
+	id S1757535Ab2E3Wia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 18:38:30 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42485 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab2E3WhX convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754731Ab2E3Wi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 18:37:23 -0400
-Date: Wed, 30 May 2012 18:37:19 -0400 (EDT)
-Message-Id: <20120530.183719.1221974908629116025.davem@davemloft.net>
+	Wed, 30 May 2012 18:38:29 -0400
+Date: Wed, 30 May 2012 18:38:25 -0400 (EDT)
+Message-Id: <20120530.183825.2036705800447162589.davem@davemloft.net>
 To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
+Subject: [GIT] Sparc
 From: David Miller <davem@davemloft.net>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 15:37:22 -0700 (PDT)
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 15:38:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Several bug fixes, of note:
+1) Remove the idiotic situation wherein Leon was a special
+   case in all of the TLB/cache handling code.
 
-1) Fix IPSEC header length calculation for transport mode in ESP.
-   The issue is whether to do the calculation before or after
-   alignment.  Fix from Benjamin Poirier.
+   The worst side effect of this bogosity is that you couldn't build a
+   kernel with Leon support enabled (to get better build coverage),
+   and test boot it on a non-LEON cpu.
 
-2) Fix regression in IPV6 IPSEC fragment length calculations, from Gao
-   Feng.  This is another transport vs. tunnel mode issue.
+   Leon is, in all core respects, programatically identical to the
+   32-bit SRMMU.  Except that they put the TLB registers in a
+   different alternate address space location.
 
-3) Handle AF_UNSPEC connect()s properly in L2TP to avoid OOPSes.
-   Fix from James Chapman.
+   Through code patching (for fast paths) and run time checks, this
+   issue is now a thing of the past.
 
-4) Fix USB ASIX driver's reception of full sized VLAN packets, from
-   Eric Dumazet.
+   From Sam Ravnborg.
 
-5) Allow drop monitor (and, more generically, all generic netlink
-   protocols) to be automatically loaded as a module.  From Neil
-   Horman.
+2) There was a mis-merge of arch/sparc/Kconfig for one of the
+   clockevents changes that went in, causing 32-bit sparc to
+   start failing to build.
+
+   I merged in your tree to get those clockevents changes (and
+   added a note to the merge commit) then added Stephen Rothwell's
+   fix for the merge error.
+
+3) Software quad floating point emulation was not working properly
+   on more recent Niagara chips, because the way the situation is
+   reported by the cpu has changed.
+
+   Nobody noticed because gcc emits calls to software emulation
+   routines in glibc.
 
 Please pull, thanks a lot!
 
@@ -51,154 +63,73 @@ The following changes since commit af56e0aa35f3ae2a4c1a6d1000702df1dd78cb76:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
 
-Benjamin Poirier (1):
-      xfrm: take net hdr len into account for esp payload size calculation
+David S. Miller (3):
+      sparc64: Fix several bugs in quad floating point emulation.
+      Merge git://git.kernel.org/.../torvalds/linux
+      sparc32: Export leon_dma_ops to modules.
 
-Bjørn Mork (1):
-      net: qmi_wwan: Add Sierra Wireless device IDs
+Sam Ravnborg (22):
+      sparc32: string and whitespace cleanup in head_32.S
+      sparc32: implement proper LEON support in head_32 (before highmem)
+      sparc32: implement proper LEON support in head_32 (after highmem)
+      sparc32: introduce sparc32_start_kernel called from head_32.S
+      sparc32: add support for run-time patching of leon/sun single instructions
+      sparc32: handle leon in irq_32.c
+      sparc32: handle leon in cpu.c
+      sparc32,leon: clean up leon.h
+      sparc32,leon: always include leon_kernel in build
+      sparc32,leon: always include leon_smp + leon_mm in build
+      sparc32,leon: fix section mismatch warning
+      sparc32: introduce support for run-time patching for all shared assembler code
+      sparc32: introduce run-time patching of srmmu access functions
+      sparc32: drop LEON hack for ASI_M_MMUREGS
+      sparc32: srmmu_probe now knows about leon too
+      sparc32: refactor cpu_idle()
+      sparc32,leon: always include leon_pmc in build
+      sparc32,leon: always support leon in ioport
+      sparc32: support leon + sun in dma_make_coherent()
+      sparc32,leon: fix leon bootup
+      sparc32: remove unused variable in head_32.S
+      sparc: fix sparc64 build due to leon.h inclusion
 
-Claudio Pisa (1):
-      mac80211: fix flag check for QoS NOACK frames
+Stephen Rothwell (1):
+      sparc: fix bad merge of sparc Kconfig
 
-Dan Carpenter (1):
-      NFC: potential integer overflow problem in check_crc()
-
-David Woodhouse (1):
-      solos-pci: Fix DMA support
-
-Devendra Naga (2):
-      r6040: disable pci device if the subsequent calls (after pci_enable_device) fails
-      r6040: Do a Proper deinit at errorpath and also when driver unloads (calling r6040_remove_one)
-
-Emmanuel Grumbach (1):
-      iwlwifi: fix the Transmit Frame Descriptor rings
-
-Eric Dumazet (1):
-      asix: allow full size 8021Q frames to be received
-
-Eyal Shapira (2):
-      wlcore: fix undefined symbols when CONFIG_PM is not defined
-      mac80211: fix ADDBA declined after suspend with wowlan
-
-Felix Fietkau (6):
-      ath5k: add possible wiphy interface combinations
-      ath9k: stop rx dma before stopping tx
-      ath9k: fix a use-after-free-bug when ath_tx_setup_buffer() fails
-      ath9k_hw: update AR933x initvals to fix issues with high power devices
-      ath9k_hw: apply internal regulator settings on AR933x
-      skb: avoid unnecessary reallocations in __skb_cow
-
-Gao feng (1):
-      ipv6: fix incorrect ipsec fragment
-
-Grazvydas Ignotas (1):
-      wl1251: fix oops on early interrupt
-
-Hauke Mehrtens (1):
-      brcmfmac: use vmalloc to allocate mem for the firmware
-
-James Chapman (1):
-      l2tp: fix oops in L2TP IP sockets for connect() AF_UNSPEC case
-
-Joe Perches (2):
-      net/wanrouter: Deprecate and schedule for removal
-      netdevice: Update netif_dbg for CONFIG_DYNAMIC_DEBUG
-
-Johannes Berg (2):
-      iwlwifi: remove ucode16 option
-      iwlwifi: fix memory leak if opmode fails to init
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Lee Jones (1):
-      net/smsc911x: Repair broken failure paths
-
-Meenakshi Venkataraman (3):
-      iwlwifi: update BT traffic load states correctly
-      iwlwifi: do not use shadow registers by default
-      iwlwifi: do not send lq cmd when station add fails
-
-Michael S. Tsirkin (1):
-      virtio-net: remove useless disable on freeze
-
-Neil Horman (3):
-      net: add MODULE_ALIAS_NET_PF_PROTO_NAME
-      genetlink: Build a generic netlink family module alias
-      drop_monitor: Add module alias to enable automatic module loading
-
-Simon Graham (1):
-      xen/netback: Calculate the number of SKB slots required correctly
-
-Soumik Das (1):
-      mac80211: Fix race in checking AP status by sending null frame
-
-Thadeu Lima de Souza Cascardo (1):
-      rds_rdma: don't assume infiniband device is PCI
-
-Yoshihiro Shimoda (1):
-      net: sh_eth: fix the rxdesc pointer when rx descriptor empty happens
-
-jamal (1):
-      MAINTAINERS
-
- Documentation/feature-removal-schedule.txt         |    6 +
- MAINTAINERS                                        |    2 +-
- drivers/atm/solos-pci.c                            |    4 +-
- drivers/net/ethernet/rdc/r6040.c                   |   15 +-
- drivers/net/ethernet/renesas/sh_eth.c              |    8 +-
- drivers/net/ethernet/smsc/smsc911x.c               |    7 +-
- drivers/net/usb/asix.c                             |    3 +-
- drivers/net/usb/qmi_wwan.c                         |    2 +
- drivers/net/virtio_net.c                           |    5 -
- drivers/net/wireless/ath/ath5k/base.c              |   19 ++
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c     |    2 +-
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.h     |    3 +
- .../net/wireless/ath/ath9k/ar9330_1p1_initvals.h   |  178 ++++++------
- drivers/net/wireless/ath/ath9k/hw.c                |    3 +
- drivers/net/wireless/ath/ath9k/main.c              |    7 +-
- drivers/net/wireless/ath/ath9k/xmit.c              |   16 +-
- drivers/net/wireless/brcm80211/brcmfmac/usb.c      |    5 +-
- drivers/net/wireless/iwlwifi/Kconfig               |    8 -
- drivers/net/wireless/iwlwifi/Makefile              |    1 -
- drivers/net/wireless/iwlwifi/iwl-2000.c            |    4 +-
- drivers/net/wireless/iwlwifi/iwl-6000.c            |    6 +-
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c          |    1 +
- drivers/net/wireless/iwlwifi/iwl-agn-sta.c         |    2 +-
- drivers/net/wireless/iwlwifi/iwl-drv.c             |   18 +-
- drivers/net/wireless/iwlwifi/iwl-phy-db.c          |  288 --------------------
- drivers/net/wireless/iwlwifi/iwl-phy-db.h          |  129 ---------
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h  |    2 +-
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c   |   22 +-
- drivers/net/wireless/iwlwifi/iwl-trans-pcie.c      |    4 +-
- drivers/net/wireless/ti/wl1251/sdio.c              |    2 +-
- drivers/net/wireless/ti/wl1251/spi.c               |    3 +-
- drivers/net/wireless/ti/wlcore/acx.c               |    2 +
- drivers/net/wireless/ti/wlcore/acx.h               |    4 +-
- drivers/net/wireless/ti/wlcore/rx.c                |    2 +
- drivers/net/xen-netback/netback.c                  |    3 +-
- drivers/nfc/pn544_hci.c                            |    2 +-
- include/linux/genetlink.h                          |    3 +
- include/linux/net.h                                |    3 +
- include/linux/netdevice.h                          |    8 +-
- include/linux/skbuff.h                             |    2 -
- include/net/dst.h                                  |    1 +
- net/core/drop_monitor.c                            |    1 +
- net/ipv4/esp4.c                                    |   24 +-
- net/ipv6/esp6.c                                    |   18 +-
- net/ipv6/ip6_output.c                              |   68 ++++--
- net/l2tp/l2tp_ip.c                                 |   24 ++-
- net/l2tp/l2tp_ip6.c                                |   18 ++-
- net/l2tp/l2tp_netlink.c                            |    3 +-
- net/mac80211/mlme.c                                |    3 +-
- net/mac80211/tx.c                                  |    2 +-
- net/mac80211/util.c                                |   12 +-
- net/netlink/genetlink.c                            |    2 +-
- net/rds/ib.h                                       |    3 +-
- net/wanrouter/Kconfig                              |    2 +-
- net/xfrm/xfrm_policy.c                             |    3 +
- 55 files changed, 343 insertions(+), 645 deletions(-)
- delete mode 100644 drivers/net/wireless/iwlwifi/iwl-phy-db.c
- delete mode 100644 drivers/net/wireless/iwlwifi/iwl-phy-db.h
+ arch/sparc/Kconfig                   |    1 -
+ arch/sparc/include/asm/asi.h         |    4 -
+ arch/sparc/include/asm/asmmacro.h    |   22 +++++
+ arch/sparc/include/asm/dma-mapping.h |    9 ++-
+ arch/sparc/include/asm/leon.h        |   82 +----------------
+ arch/sparc/include/asm/leon_amba.h   |    4 -
+ arch/sparc/include/asm/pgtsrmmu.h    |   86 ++----------------
+ arch/sparc/include/asm/psr.h         |    8 ++
+ arch/sparc/include/asm/sections.h    |    3 +
+ arch/sparc/kernel/Makefile           |    4 +-
+ arch/sparc/kernel/cpu.c              |   18 ++--
+ arch/sparc/kernel/entry.S            |   10 +-
+ arch/sparc/kernel/etrap_32.S         |   18 +++-
+ arch/sparc/kernel/head_32.S          |  168 ++++++++++++++++++++-------------
+ arch/sparc/kernel/ioport.c           |   24 ++----
+ arch/sparc/kernel/irq_32.c           |   22 +++--
+ arch/sparc/kernel/kernel.h           |    3 +
+ arch/sparc/kernel/leon_kernel.c      |    1 +
+ arch/sparc/kernel/leon_pmc.c         |   15 ++-
+ arch/sparc/kernel/leon_smp.c         |    8 +-
+ arch/sparc/kernel/process_32.c       |   35 +------
+ arch/sparc/kernel/prom_common.c      |    1 -
+ arch/sparc/kernel/rtrap_32.S         |   18 +++-
+ arch/sparc/kernel/setup_32.c         |   62 ++++++++++---
+ arch/sparc/kernel/trampoline_32.S    |    6 +-
+ arch/sparc/kernel/traps_64.c         |   12 ++-
+ arch/sparc/kernel/vmlinux.lds.S      |    5 +
+ arch/sparc/kernel/wof.S              |   18 +++-
+ arch/sparc/kernel/wuf.S              |   27 ++++--
+ arch/sparc/math-emu/math_64.c        |   20 +++-
+ arch/sparc/mm/Makefile               |    3 +-
+ arch/sparc/mm/leon_mm.c              |    2 +-
+ arch/sparc/mm/srmmu.c                |   25 ++++-
+ arch/sparc/mm/srmmu_access.S         |   82 +++++++++++++++++
+ 34 files changed, 444 insertions(+), 382 deletions(-)
+ create mode 100644 arch/sparc/mm/srmmu_access.S
