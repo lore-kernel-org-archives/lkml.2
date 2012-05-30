@@ -1,82 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab2E3BaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 21:30:10 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36066 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab2E3BaI (ORCPT
+	id S1756158Ab2E3BbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 21:31:25 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41582 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756086Ab2E3BbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 21:30:08 -0400
-Date: Wed, 30 May 2012 10:29:55 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
-Message-ID: <20120530012955.GA4854@google.com>
-References: <alpine.DEB.2.00.1205291101580.6723@router.home>
- <4FC501E9.60607@parallels.com>
- <alpine.DEB.2.00.1205291222360.8495@router.home>
- <4FC506E6.8030108@parallels.com>
- <alpine.DEB.2.00.1205291424130.8495@router.home>
- <4FC52612.5060006@parallels.com>
- <alpine.DEB.2.00.1205291454030.2504@router.home>
- <4FC52CC6.7020109@parallels.com>
- <alpine.DEB.2.00.1205291514090.2504@router.home>
- <4FC530C0.30509@parallels.com>
+	Tue, 29 May 2012 21:31:23 -0400
+Date: Tue, 29 May 2012 22:31:18 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/7] perf ui: Add basic error handling for GTK2 front-end
+ (v3)
+Message-ID: <20120530013118.GA11319@infradead.org>
+References: <1338265382-6872-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FC530C0.30509@parallels.com>
+In-Reply-To: <1338265382-6872-1-git-send-email-namhyung@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph, Glauber.
-
-On Wed, May 30, 2012 at 12:25:36AM +0400, Glauber Costa wrote:
-> >We have never worked container like logic like that in the kernel due to
-> >the complicated logic you would have to put in. The requirement that all
-> >objects in a page come from the same container is not necessary. If you
-> >drop this notion then things become very easy and the patches will become
-> >simple.
+Em Tue, May 29, 2012 at 01:22:55PM +0900, Namhyung Kim escreveu:
+> Hi,
 > 
-> I promise to look at that in more detail and get back to it. In the
-> meantime, I think it would be enlightening to hear from other
-> parties as well, specially the ones also directly interested in
-> using the technology.
+> This patchset implements ui__warning/error() functions for GTK2.
+> Patch 1 is a resend (which forgot to cc LKML) and independent of
+> this series. Patch 2 converts invocations of ui__warning followed
+> by exit (or similar effect) into ui__error.
 
-I don't think I'm too interested in using the technology ;) and
-haven't read the code (just glanced through the descriptions and
-discussions), but, in general, I think the approach of duplicating
-memory allocator per-memcg is a sane approach.  It isn't the most
-efficient one with the possibility of wasting considerable amount of
-caching area per memcg but it is something which can mostly stay out
-of the way if done right and that's how I want cgroup implementations
-to be.
+Pekka, all well with you? Acked-by?
 
-The two goals for cgroup controllers that I think are important are
-proper (no, not crazy perfect but good enough) isolation and an
-implementation which doesn't impact !cg path in an intrusive manner -
-if someone who doesn't care about cgroup but knows and wants to work
-on the subsystem should be able to mostly ignore cgroup support.  If
-that means overhead for cgroup users, so be it.
-
-Without looking at the actual code, my rainbow-farting unicorn here
-would be having a common slXb interface layer which handles
-interfacing with memory allocator users and cgroup and let slXb
-implement the same backend interface which doesn't care / know about
-cgroup at all (other than using the correct allocation context, that
-is).  Glauber, would something like that be possible?
-
-Thanks.
-
--- 
-tejun
+- Arnaldo
