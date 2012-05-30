@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab2E3VXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:23:22 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30026 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab2E3VXU (ORCPT
+	id S1756161Ab2E3VXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:23:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39776 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab2E3VXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:23:20 -0400
-Date: Wed, 30 May 2012 17:16:14 -0400
+	Wed, 30 May 2012 17:23:47 -0400
+Date: Wed, 30 May 2012 17:16:39 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: William Dauchy <wdauchy@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, shli@fusionio.com, stable@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        xen-devel@lists.xensource.com, Shaohua Li <shli@kernel.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [Xen-devel] swap: don't do discard if no discard option added
-Message-ID: <20120530211614.GA31789@phenom.dumpdata.com>
-References: <CAJ75kXbC3gqQAaghKo2i1L650dw9-vrFuEwoy4defagoyR8p4Q@mail.gmail.com>
- <20120521181558.GA7829@phenom.dumpdata.com>
- <alpine.LSU.2.00.1205261113470.2033@eggly.anvils>
- <20120529144743.GG3558@phenom.dumpdata.com>
- <CAJ75kXZSqyyk0j2sNS1gq8fV_Z+Kj12mxKmpOAjKmwhDxs_9vQ@mail.gmail.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbeulich@suse.com" <jbeulich@suse.com>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/blkback: Copy id field when doing
+ BLKIF_DISCARD.
+Message-ID: <20120530211639.GB31789@phenom.dumpdata.com>
+References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com>
+ <1337982603-15692-2-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1205281119080.26786@kaball-desktop>
+ <CAJ75kXZ6gkRF_ZwJ6va860yKT6Vh=mOeUq0YSCKO0ezxjQgqVA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJ75kXZSqyyk0j2sNS1gq8fV_Z+Kj12mxKmpOAjKmwhDxs_9vQ@mail.gmail.com>
+In-Reply-To: <CAJ75kXZ6gkRF_ZwJ6va860yKT6Vh=mOeUq0YSCKO0ezxjQgqVA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 10:29:16PM +0200, William Dauchy wrote:
-> Hello Konrad,
+On Wed, May 30, 2012 at 10:39:10PM +0200, William Dauchy wrote:
+> On Mon, May 28, 2012 at 12:19 PM, Stefano Stabellini
+> <stefano.stabellini@eu.citrix.com> wrote:
+> >> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=824641
+> >> CC: stable@kernel.org
+> >> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >
+> > Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 > 
-> On Tue, May 29, 2012 at 4:47 PM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > I think I know and just narrowed down the issue this Friday.
-> > William, could you please apply the patch outlined in
-> > https://bugzilla.redhat.com/show_bug.cgi?id=824641
-> > to your dom0 and see if that (so do not have 052b198 in your branch)
-> 
-> I applied the patch on dom0 and removed 052b198 from my virtual
-> machine and it worked.
+> Tested-by: William Dauchy <wdauchy@gmail.com>
 
-Great. Is it OK to attach a Tested-by tag to the patch with your name?
-> 
-> Regards,
-> -- 
-> William
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Heh. That is what I get from reading emails in sequence. Thanks!
