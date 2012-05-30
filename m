@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752059Ab2E3Jv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:51:59 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:48314 "EHLO relay.sw.ru"
+	id S1752111Ab2E3Jw2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:52:28 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:17644 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751360Ab2E3Jvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:51:53 -0400
+	id S1751960Ab2E3Jv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 05:51:59 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
@@ -14,9 +14,9 @@ Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
         handai.szj@gmail.com, Andrew.Phillips@lmax.com,
         Serge Hallyn <serge.hallyn@canonical.com>,
         Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v3 2/6] account guest time per-cgroup as well.
-Date: Wed, 30 May 2012 13:48:33 +0400
-Message-Id: <1338371317-5980-3-git-send-email-glommer@parallels.com>
+Subject: [PATCH v3 5/6] Also record sleep start for a task group
+Date: Wed, 30 May 2012 13:48:36 +0400
+Message-Id: <1338371317-5980-6-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
 In-Reply-To: <1338371317-5980-1-git-send-email-glommer@parallels.com>
 References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
@@ -24,45 +24,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already track multiple tick statistics per-cgroup, using
-the task_group_account_field facility. This patch accounts
-guest_time in that manner as well.
+When we're dealing with a task group, instead of a task, also record
+the start of its sleep time. Since the test agains TASK_UNINTERRUPTIBLE
+does not really make sense and lack an obvious analogous, we always
+record it as sleep_start, never block_start.
 
 Signed-off-by: Glauber Costa <glommer@parallels.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Paul Turner <pjt@google.com>
 ---
- kernel/sched/core.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 39eb601..220d416 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2717,8 +2717,6 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
- static void account_guest_time(struct task_struct *p, cputime_t cputime,
- 			       cputime_t cputime_scaled)
- {
--	u64 *cpustat = kcpustat_this_cpu->cpustat;
--
- 	/* Add guest time to process. */
- 	p->utime += cputime;
- 	p->utimescaled += cputime_scaled;
-@@ -2727,11 +2725,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
- 
- 	/* Add guest time to cpustat. */
- 	if (TASK_NICE(p) > 0) {
--		cpustat[CPUTIME_NICE] += (__force u64) cputime;
--		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
-+		task_group_account_field(p, CPUTIME_NICE, (__force u64) cputime);
-+		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
- 	} else {
--		cpustat[CPUTIME_USER] += (__force u64) cputime;
--		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
-+		task_group_account_field(p, CPUTIME_USER, (__force u64) cputime);
-+		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index c26fe38..d932559 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1182,7 +1182,8 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 				se->statistics.sleep_start = rq_of(cfs_rq)->clock;
+ 			if (tsk->state & TASK_UNINTERRUPTIBLE)
+ 				se->statistics.block_start = rq_of(cfs_rq)->clock;
+-		}
++		} else
++			se->statistics.sleep_start = rq_of(cfs_rq)->clock;
+ #endif
  	}
- }
  
 -- 
 1.7.10.2
