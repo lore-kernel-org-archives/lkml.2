@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932301Ab2E3DkQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 23:40:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45439 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab2E3DkO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 23:40:14 -0400
-Date: Wed, 30 May 2012 04:40:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Luk?? Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        mbroz@redhat.com
-Subject: Re: [PATCH 1/2] vfs: Do not allow mnt_longterm to go negative
-Message-ID: <20120530034011.GU11775@ZenIV.linux.org.uk>
-References: <1337959776-16564-1-git-send-email-lczerner@redhat.com>
- <alpine.LFD.2.00.1205290807350.2144@dhcp-1-248.brq.redhat.com>
- <20120530020134.GA20448@ZenIV.linux.org.uk>
+	id S932324Ab2E3DlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 23:41:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32802 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932308Ab2E3Dk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 23:40:29 -0400
+Message-ID: <4FC59644.6060106@zytor.com>
+Date: Tue, 29 May 2012 20:38:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530020134.GA20448@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ingo Molnar <mingo@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Len Brown <len.brown@intel.com>, Len Brown <lenb@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Michal Marek <mmarek@suse.cz>,
+        Paolo Bonzini <pbonzini@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Sam Ravnborg <sam@ravnborg.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] x86 trampoline rework for 3.5
+References: <201205292325.q4TNPBPw007366@terminus.zytor.com> <CA+55aFyjcbaRcK5yfi-xLc2W+AAk0EAY9fhNOc+-_uQdDzck6w@mail.gmail.com> <4FC58EFE.2070705@zytor.com> <CA+55aFyNJLYyC71rpNE+6kax+j_6ybN=GE_4fG1YKH2OevkRTg@mail.gmail.com>
+In-Reply-To: <CA+55aFyNJLYyC71rpNE+6kax+j_6ybN=GE_4fG1YKH2OevkRTg@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 03:01:34AM +0100, Al Viro wrote:
+On 05/29/2012 08:19 PM, Linus Torvalds wrote:
+> 
+> I didn't see any git silent mis-merges, though. The fact that that
+> relocs.c file had come in two different ways did make for a more
+> interesting merge, since it didn't have any common ancestry - just two
+> different original versions. But git seemed to do the right thing, and
+> marked where they differed.
+> 
 
-> Fixed in my tree, will push in a couple of hours.  And that'll need to
-> go into -stable as well.  Thanks for catching that sucker...
+I don't know why, but when I did a test merge of my original branch into
+top of your tree, it silently merged everything (no markings) but
+incorrectly.
 
-OK, pushed into for-next, along with a bunch of other misc stuff; _NOT_
-all that will be there.  If it survives a bit of beating in -next, to
-Linus it goes.
+Perhaps it is a git version-specific thing.
 
-Next pile to go in there is Miklos' stuff.
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
