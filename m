@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757038Ab2E3H4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:56:31 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41403 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab2E3H4a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:56:30 -0400
-X-AuditID: b753bd60-9f483ba000000655-87-4fc5d2ac9c7b
-X-AuditID: b753bd60-9f483ba000000655-87-4fc5d2ac9c7b
-Message-ID: <4FC5D2A9.3000309@hitachi.com>
-Date: Wed, 30 May 2012 16:56:25 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1757119Ab2E3H4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:56:35 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:57980 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757063Ab2E3H4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 03:56:33 -0400
+Message-ID: <4FC5D228.2070100@parallels.com>
+Date: Wed, 30 May 2012 11:54:16 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
 MIME-Version: 1.0
-To: ananth@in.ibm.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH -tip  8/9] kprobes: introduce ftrace based optiomization
-References: <20120529124833.9191.23007.stgit@localhost.localdomain> <20120529124944.9191.81924.stgit@localhost.localdomain> <20120530072202.GA29068@in.ibm.com>
-In-Reply-To: <20120530072202.GA29068@in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Christoph Lameter <cl@linux.com>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 13/28] slub: create duplicate cache
+References: <alpine.DEB.2.00.1205291101580.6723@router.home> <4FC501E9.60607@parallels.com> <alpine.DEB.2.00.1205291222360.8495@router.home> <4FC506E6.8030108@parallels.com> <alpine.DEB.2.00.1205291424130.8495@router.home> <4FC52612.5060006@parallels.com> <alpine.DEB.2.00.1205291454030.2504@router.home> <4FC52CC6.7020109@parallels.com> <alpine.DEB.2.00.1205291514090.2504@router.home> <4FC530C0.30509@parallels.com> <20120530012955.GA4854@google.com>
+In-Reply-To: <20120530012955.GA4854@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Originating-IP: [188.255.67.70]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/30 16:22), Ananth N Mavinakayanahalli wrote:
-> On Tue, May 29, 2012 at 09:49:45PM +0900, Masami Hiramatsu wrote:
->> Introduce function trace based kprobes optimization.
->>
->> With using ftrace optimization, kprobes on the mcount calling
->> address, use ftrace's mcount call instead of breakpoint.
->> Farthermore, this optimization works with preemptive kernel
->> not like as current jump-based optimization. Of cource,
->> this feature is limited only if the probe on mcount call.
-> 
-> The above paragraph doesn't parse correctly for me. Do you mean to say
-> if the probe is on the mcount calling address, use the jump based
-> approach instead of the breakpoint one? Could you please rephrase?
+On 05/30/2012 05:29 AM, Tejun Heo wrote:
+> The two goals for cgroup controllers that I think are important are
+> proper (no, not crazy perfect but good enough) isolation and an
+> implementation which doesn't impact !cg path in an intrusive manner -
+> if someone who doesn't care about cgroup but knows and wants to work
+> on the subsystem should be able to mostly ignore cgroup support.  If
+> that means overhead for cgroup users, so be it.
 
-Right, but not use current jump-base one, but use function
-tracer handler directly.
+Well, my code in the slab is totally wrapped in static branches. They 
+only come active when the first group is *limited* (not even created: 
+you can have a thousand memcg, if none of them are kmem limited, nothing 
+will happen).
 
-So, ftrace-based optimization will be done on the kprobe at
-the mcount calling address, which has been replaced with a
-5 byte NOP at the build-time.
-The ftrace-based optimization uses function-tracer handler
-(kernel/trace/ftrace.c) instead of int3 breakpoint trapping.
+After that, the cost paid is to find out at which cgroup the process is 
+at. I believe that if we had a faster way for this (like for instance: 
+if we had a single hierarchy, the scheduler could put this in a percpu 
+variable after context switch - or any other method), then the cost of 
+it could be really low, even when this is enabled.
 
-The probing behavior is like below
+> Without looking at the actual code, my rainbow-farting unicorn here
+> would be having a common slXb interface layer which handles
+> interfacing with memory allocator users and cgroup and let slXb
+> implement the same backend interface which doesn't care / know about
+> cgroup at all (other than using the correct allocation context, that
+> is).  Glauber, would something like that be possible?
 
-1. hit mcount calling address
-2. call ftrace_caller
-  -> 3. save all registers
-     4. call ftrace's handler (kprobe_ftrace_handler)
-       -> 5. set up current kprobe
-          6. call kprobe handler
-       <- 7. return
-     8. restore registers
-  <- 9. return
-10. continue to run
+It is a matter of degree. There *is* a lot of stuff in common code, and 
+I tried to do it as much as I could. Christoph gave me a nice idea about 
+hinting to the page allocator that this page is a slab page before the 
+allocation, and then we could account from the page allocator directly - 
+without touching the cache code at all. This could be done, but some 
+stuff would still be there, basically because of differences in how the 
+allocator behaves. I think long term Christoph's effort to produce 
+common code among them will help a lot, if they stabilize their behavior 
+in certain areas.
 
->> +static void __kprobes kprobe_ftrace_init(void)
->> +{
->> +	int ret;
->> +
->> +	ret = register_ftrace_function(&kprobe_ftrace_ops);
->> +	WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
->> +
->> +	kprobe_ftrace_enabled = 1;
-> 
-> Hmm.. is this right? kprobe_ftrace_enabled is 1 even if the init failed.
+I will rework this series to try work more towards this goal, but at 
+least for now I'll keep duplicating the caches. I still don't believe 
+that a loose accounting to the extent Christoph proposed will achieve 
+what we need this to achieve.
 
-Oops, that should be a bug! thanks!
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
