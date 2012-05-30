@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab2E3HAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:00:42 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:57788 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055Ab2E3HAk convert rfc822-to-8bit (ORCPT
+	id S1753985Ab2E3HCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:02:13 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35000 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752837Ab2E3HCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:00:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338353260-10097-10-git-send-email-lee.jones@linaro.org>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
-	<1338353260-10097-10-git-send-email-lee.jones@linaro.org>
-Date: Wed, 30 May 2012 15:00:39 +0800
-Message-ID: <CACRpkdbJe_P==QOPiRi0rZ58aCwyOD8zhxjTX8Do5g_8EFHVGg@mail.gmail.com>
-Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to
- reflect Device Tree
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 May 2012 03:02:12 -0400
+Date: Wed, 30 May 2012 03:02:05 -0400 (EDT)
+Message-Id: <20120530.030205.1337682162603770949.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: jasowang@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, mst@redhat.com
+Subject: Re: [PATCH] net: sock: validate data_len before allocating skb in
+ sock_alloc_send_pskb()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1338360383.2760.84.camel@edumazet-glaptop>
+References: <20120530054702.6146.8503.stgit@amd-6168-8-1.englab.nay.redhat.com>
+	<1338360383.2760.84.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 00:02:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 30 May 2012 08:46:23 +0200
 
->  static struct of_regulator_match db8500_regulator_matches[] = {
-> -       { .name = "db8500-vape",          .driver_data = (void *) DB8500_REGULATOR_VAPE, },
-> -       { .name = "db8500-varm",          .driver_data = (void *) DB8500_REGULATOR_VARM, },
-> -       { .name = "db8500-vmodem",        .driver_data = (void *) DB8500_REGULATOR_VMODEM, },
-> -       { .name = "db8500-vpll",          .driver_data = (void *) DB8500_REGULATOR_VPLL, },
-> -       { .name = "db8500-vsmps1",        .driver_data = (void *) DB8500_REGULATOR_VSMPS1, },
-> -       { .name = "db8500-vsmps2",        .driver_data = (void *) DB8500_REGULATOR_VSMPS2, },
-> -       { .name = "db8500-vsmps3",        .driver_data = (void *) DB8500_REGULATOR_VSMPS3, },
-> -       { .name = "db8500-vrf1",          .driver_data = (void *) DB8500_REGULATOR_VRF1, },
-> -       { .name = "db8500-sva-mmdsp",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAMMDSP, },
-> -       { .name = "db8500-sva-mmdsp-ret", .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAMMDSPRET, },
-> -       { .name = "db8500-sva-pipe",      .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAPIPE, },
-> -       { .name = "db8500-sia-mmdsp",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAMMDSP, },
-> -       { .name = "db8500-sia-mmdsp-ret", .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAMMDSPRET, },
-> -       { .name = "db8500-sia-pipe",      .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAPIPE, },
-> -       { .name = "db8500-sga",           .driver_data = (void *) DB8500_REGULATOR_SWITCH_SGA, },
-> -       { .name = "db8500-b2r2-mcde",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_B2R2_MCDE, },
-> -       { .name = "db8500-esram12",       .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM12, },
-> -       { .name = "db8500-esram12-ret",   .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM12RET, },
-> -       { .name = "db8500-esram34",       .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM34, },
-> -       { .name = "db8500-esram34-ret",   .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM34RET, },
-> +       { .name = "db8500_vape",          .driver_data = (void *) DB8500_REGULATOR_VAPE, },
-> +       { .name = "db8500_varm",          .driver_data = (void *) DB8500_REGULATOR_VARM, },
-> +       { .name = "db8500_vmodem",        .driver_data = (void *) DB8500_REGULATOR_VMODEM, },
-> +       { .name = "db8500_vpll",          .driver_data = (void *) DB8500_REGULATOR_VPLL, },
-> +       { .name = "db8500_vsmps1",        .driver_data = (void *) DB8500_REGULATOR_VSMPS1, },
-> +       { .name = "db8500_vsmps2",        .driver_data = (void *) DB8500_REGULATOR_VSMPS2, },
-> +       { .name = "db8500_vsmps3",        .driver_data = (void *) DB8500_REGULATOR_VSMPS3, },
-> +       { .name = "db8500_vrf1",          .driver_data = (void *) DB8500_REGULATOR_VRF1, },
-> +       { .name = "db8500_sva_mmdsp",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAMMDSP, },
-> +       { .name = "db8500_sva_mmdsp_ret", .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAMMDSPRET, },
-> +       { .name = "db8500_sva_pipe",      .driver_data = (void *) DB8500_REGULATOR_SWITCH_SVAPIPE, },
-> +       { .name = "db8500_sia_mmdsp",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAMMDSP, },
-> +       { .name = "db8500_sia_mmdsp_ret", .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAMMDSPRET, },
-> +       { .name = "db8500_sia_pipe",      .driver_data = (void *) DB8500_REGULATOR_SWITCH_SIAPIPE, },
-> +       { .name = "db8500_sga",           .driver_data = (void *) DB8500_REGULATOR_SWITCH_SGA, },
-> +       { .name = "db8500_b2r2_mcde",     .driver_data = (void *) DB8500_REGULATOR_SWITCH_B2R2_MCDE, },
-> +       { .name = "db8500_esram12",       .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM12, },
-> +       { .name = "db8500_esram12_ret",   .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM12RET, },
-> +       { .name = "db8500_esram34",       .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM34, },
-> +       { .name = "db8500_esram34_ret",   .driver_data = (void *) DB8500_REGULATOR_SWITCH_ESRAM34RET, },
+> Why doing this test in the while (1) block, it should be done before the
+> loop...
+> 
+> Or even in the caller, note net/unix/af_unix.c does this right.
+> 
+>         if (len > SKB_MAX_ALLOC)
+>                 data_len = min_t(size_t,
+>                                  len - SKB_MAX_ALLOC,
+>                                  MAX_SKB_FRAGS * PAGE_SIZE);
+> 
+>         skb = sock_alloc_send_pskb(sk, len - data_len, data_len,
+>                                    msg->msg_flags & MSG_DONTWAIT, &err);
 
-So again what is the rationale for changing the names, and
-again the strings are in several places in this file.
+My impression is that the callers should be fixed to.  It makes no sense
+to penalize the call sites that get this right.
 
-Yours,
-Linus Walleij
+And yes, if we do check it in sock_alloc_send_pskb() it should be done
+at function entry, not inside the loop.
