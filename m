@@ -1,125 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab2E3QB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 12:01:29 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:35660 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2E3QB1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 12:01:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=zZHWKRYq1Cx9xIznzfTS0fMNgR3i9ZKRBh7D09NmgcWN/hMG
-	bxk1AtYKNpzq3h6C4ZT75P3JTLszeTzqSCBDFppL/TaTS4yDD2IXs9noqSUmz8vX
-	KavTmb2rk4wDuUC9KtQI/itO9fEccevIEbHZn7gMGIvvDo3BmY9W0d3eo6E=
-Date: Wed, 30 May 2012 09:01:24 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 3.5
-Message-ID: <Pine.LNX.4.64.1205300852320.8052@cobra.newdream.net>
+	id S1754814Ab2E3QJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 12:09:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46486 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876Ab2E3QJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 12:09:04 -0400
+Date: Wed, 30 May 2012 17:21:29 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH repost] virtio-net: remove useless disable on freeze
+Message-ID: <20120530142128.GA31299@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+disable_cb is just an optimization: it
+can not guarantee that there are no callbacks.
+In particular it doesn't have any effect when
+event index is on.
 
-Please pull the following Ceph updates for rc1 from
+Instead, detach, napi disable and reset on freeze ensure we don't run
+concurrently with a callback.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git master
+Remove the useless calls so we get same behaviour
+with and without event index.
 
-There are some updates and cleanups to the CRUSH placement code, a bug fix 
-with incremental maps, several cleanups and fixes from Josh Durgin in the 
-RBD block device code, a series of cleanups and bug fixes from Alex Elder 
-in the messenger code, and some miscellaneous bounds checking and gfp 
-cleanups/fixes.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-There are a couple of simple merge conflict resolutions that Stephen is 
-carrying in linux-next in net/ceph/messenger.c and net/ceph/osdmap.c.
+Reposting a patch that seems to have fallen through cracks.
 
-Thanks!
-sage
+ drivers/net/virtio_net.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-
-----------------------------------------------------------------
-Alex Elder (21):
-      rbd: don't hold spinlock during messenger flush
-      ceph: osd_client: fix endianness bug in osd_req_encode_op()
-      ceph: messenger: use read_partial() in read_partial_message()
-      ceph: messenger: update "to" in read_partial() caller
-      ceph: messenger: change read_partial() to take "end" arg
-      libceph: don't reset kvec in prepare_write_banner()
-      ceph: messenger: reset connection kvec caller
-      ceph: messenger: send banner in process_connect()
-      ceph: drop msgr argument from prepare_write_connect()
-      ceph: don't set WRITE_PENDING too early
-      ceph: messenger: check prepare_write_connect() result
-      ceph: messenger: rework prepare_connect_authorizer()
-      ceph: messenger: check return from get_authorizer
-      ceph: define ceph_auth_handshake type
-      ceph: messenger: reduce args to create_authorizer
-      ceph: ensure auth ops are defined before use
-      ceph: have get_authorizer methods return pointers
-      ceph: use info returned by get_authorizer
-      ceph: return pointer from prepare_connect_authorizer()
-      ceph: rename prepare_connect_authorizer()
-      ceph: add auth buf in prepare_write_connect()
-
-Dan Carpenter (1):
-      rbd: use gfp_flags parameter in rbd_header_from_disk()
-
-Josh Durgin (6):
-      rbd: protect read of snapshot sequence number
-      rbd: store snapshot id instead of index
-      rbd: remove conditional snapid parameters
-      rbd: fix snapshot size type
-      rbd: rename __rbd_update_snaps to __rbd_refresh_header
-      rbd: correct sysfs snap attribute documentation
-
-Sage Weil (15):
-      ceph: drop support for preferred_osd pgs
-      ceph: refactor SETLAYOUT and SETDIRLAYOUT ioctl checks into common helper
-      crush: clean up types, const-ness
-      crush: adjust local retry threshold
-      crush: be more tolerant of nonsensical crush maps
-      crush: use a temporary variable to simplify crush_do_rule
-      crush: remove forcefeed functionality
-      crush: remove parent maps
-      crush: fix tree node weight lookup
-      crush: fix memory leak when destroying tree buckets
-      crush: warn on do_rule failure
-      ceph: fully initialize new layout
-      ceph: ignore preferred_osd field
-      libceph: avoid unregistering osd request when not registered
-      libceph: fix pg_temp updates
-
-Xi Wang (2):
-      ceph: fix bounds check in ceph_decode_need and ceph_encode_need
-      rbd: fix integer overflow in rbd_header_from_disk()
-
- Documentation/ABI/testing/sysfs-bus-rbd |    4 +-
- drivers/block/rbd.c                     |   72 +++++-------
- fs/ceph/file.c                          |    1 -
- fs/ceph/ioctl.c                         |  102 ++++++++---------
- fs/ceph/ioctl.h                         |    2 +
- fs/ceph/mds_client.c                    |   54 ++++-----
- fs/ceph/mds_client.h                    |    5 +-
- fs/ceph/xattr.c                         |    9 --
- include/linux/ceph/auth.h               |   12 ++-
- include/linux/ceph/ceph_fs.h            |    4 +-
- include/linux/ceph/decode.h             |    9 +-
- include/linux/ceph/messenger.h          |    6 +-
- include/linux/ceph/osd_client.h         |   11 +-
- include/linux/ceph/osdmap.h             |    2 -
- include/linux/crush/crush.h             |   18 +--
- include/linux/crush/mapper.h            |    7 +-
- net/ceph/auth_none.c                    |   15 +--
- net/ceph/auth_x.c                       |   15 +--
- net/ceph/crush/crush.c                  |   39 +------
- net/ceph/crush/mapper.c                 |  124 ++++++++-------------
- net/ceph/messenger.c                    |  182 ++++++++++++++++++-------------
- net/ceph/osd_client.c                   |   63 ++++++-----
- net/ceph/osdmap.c                       |   73 ++++--------
- 23 files changed, 376 insertions(+), 453 deletions(-)
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 9ce6995..5214b1e 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1231,11 +1231,6 @@ static int virtnet_freeze(struct virtio_device *vdev)
+ 	vi->config_enable = false;
+ 	mutex_unlock(&vi->config_lock);
+ 
+-	virtqueue_disable_cb(vi->rvq);
+-	virtqueue_disable_cb(vi->svq);
+-	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ))
+-		virtqueue_disable_cb(vi->cvq);
+-
+ 	netif_device_detach(vi->dev);
+ 	cancel_delayed_work_sync(&vi->refill);
+ 
+-- 
+MST
