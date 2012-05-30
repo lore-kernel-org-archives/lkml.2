@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab2E3HQD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:16:03 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:32996 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab2E3HP7 (ORCPT
+	id S1756961Ab2E3HST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:18:19 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:48166 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756921Ab2E3HSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:15:59 -0400
-Date: Wed, 30 May 2012 09:15:53 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv2 4/4] ARM: dma-mapping: remove custom consistent dma region
-In-reply-to: <4FC5659D.6040805@gmail.com>
-To: "'KOSAKI Motohiro'" <kosaki.motohiro@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Krishna Reddy'" <vdumpa@nvidia.com>,
-        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
-        "'Hiroshi Doyu'" <hdoyu@nvidia.com>,
-        "'Subash Patel'" <subashrp@gmail.com>
-Message-id: <019401cd3e34$0c6af4d0$2540de70$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: Ac09+LkV1X9UXSC6RJC9eDuE1GoLUgAOiDQg
-References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
- <1337252085-22039-5-git-send-email-m.szyprowski@samsung.com>
- <4FC5659D.6040805@gmail.com>
-X-TM-AS-MML: No
+	Wed, 30 May 2012 03:18:17 -0400
+Message-ID: <1338362288.4511.7.camel@jlt3.sipsolutions.net>
+Subject: Re: [PATCH] iwlwifi: fix typo 'IWL_WATCHHDOG_DISABLED'
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 May 2012 09:18:08 +0200
+In-Reply-To: <1338361709.1780.3.camel@x61.thuisdomein> (sfid-20120530_091345_630175_CC635231)
+References: <1338361709.1780.3.camel@x61.thuisdomein>
+	 (sfid-20120530_091345_630175_CC635231)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1+b1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2012-05-30 at 09:08 +0200, Paul Bolle wrote:
+> Commit 7c5ba4a830cbb730770129b0004e2a06e47dbac5 ("iwlwifi: move queue
+> watchdog into transport") introduced the named constant
+> 'IWL_WATCHHDOG_DISABLED'. Rename it to 'IWL_WATCHDOG_DISABLED'.
 
-On Wednesday, May 30, 2012 2:11 AM KOSAKI Motohiro wrote:
+Thanks, I've picked this up. Since we're in the merge window John isn't
+taking new patches right now so it'll be a while until it shows up.
 
-> >   static void *
-> >   __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
-> >   	const void *caller)
-> >   {
-> > -	struct arm_vmregion *c;
-> > -	size_t align;
-> > -	int bit;
-> > +	struct vm_struct *area;
-> > +	unsigned long addr;
-> >
-> > -	if (!consistent_pte) {
-> > -		printk(KERN_ERR "%s: not initialised\n", __func__);
-> > +	area = get_vm_area_caller(size, VM_DMA | VM_USERMAP, caller);
-> 
-> In this patch, VM_DMA is only used here. So, is this no effect?
-
-I introduced it mainly to let user know which areas have been allocated by the dma-mapping api.
-
-I also plan to add a check suggested by Minchan Kim in __dma_free_remap() if the vmalloc area
-have been in fact allocated with VM_DMA set. 
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+johannes
 
