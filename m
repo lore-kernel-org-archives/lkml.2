@@ -1,280 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab2E3Chy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 22:37:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23817 "EHLO mx1.redhat.com"
+	id S932189Ab2E3C4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 22:56:08 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38934 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756374Ab2E3Chv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 22:37:51 -0400
-Date: Tue, 29 May 2012 22:37:47 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-ext4@vger.kernel.org
-Subject: 3.3.7 lockdep report from jbd.
-Message-ID: <20120530023747.GA1845@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
+	id S932171Ab2E3C4F convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 22:56:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="146047435"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Toshi Kani <toshi.kani@hp.com>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+CC: "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "liuj97@gmail.com" <liuj97@gmail.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
+Thread-Topic: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
+Thread-Index: AQHNOVTy5fYWD8q0CkqdPFMIhKcSwJbZqa0AgAAlfYD//53vEIAIbuwAgAAQS4D//8BOIA==
+Date: Wed, 30 May 2012 02:56:00 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC6F9@ORSMSX101.amr.corp.intel.com>
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
+	 <1337880880.2718.68.camel@lorien2>
+	 <1337888931.16730.393.camel@misato.fc.hp.com>
+	 <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC639@ORSMSX101.amr.corp.intel.com>
+	 <1338331496.2722.18.camel@lorien2>
+ <1338334995.16730.455.camel@misato.fc.hp.com>
+In-Reply-To: <1338334995.16730.455.camel@misato.fc.hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just saw this on my backup server during an rsync.
-I'll see if I can reproduce it in 3.4 later.
-
-	Dave
+It does not make any difference. Essentially, a get_handle is performed by evaluate_object anyway.
 
 
-=========================================================
-[ INFO: possible irq lock inversion dependency detected ]
-3.3.7-1.fc16.x86_64.debug #1 Not tainted
----------------------------------------------------------
-kswapd0/37 just changed the state of lock:
- (jbd2_handle){+.+.-.}, at: [<ffffffff8128b457>] start_this_handle+0x507/0x700
-but this lock took another, RECLAIM_FS-unsafe lock in the past:
- (&isec->lock){+.+.+.}
 
-and interrupts could create inverse lock ordering between them.
-
-
-other info that might help us debug this:
- Possible interrupt unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&isec->lock);
-                               local_irq_disable();
-                               lock(jbd2_handle);
-                               lock(&isec->lock);
-  <Interrupt>
-    lock(jbd2_handle);
-
- *** DEADLOCK ***
-
-2 locks held by kswapd0/37:
- #0:  (shrinker_rwsem){++++..}, at: [<ffffffff8116304c>] shrink_slab+0x3c/0x4b0
- #1:  (&type->s_umount_key#20){++++..}, at: [<ffffffff811bf654>] grab_super_passive+0x44/0x90
-
-the shortest dependencies between 2nd lock and 1st lock:
- -> (&isec->lock){+.+.+.} ops: 582449 {
-    HARDIRQ-ON-W at:
-                                         [<ffffffff810cbf69>] __lock_acquire+0x619/0x1c20
-                                         [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                         [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
-                                         [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
-                                         [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
-                                         [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
-                                         [<ffffffff811d4081>] d_instantiate+0x61/0x80
-                                         [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
-                                         [<ffffffff81237f62>] sysfs_mount+0x182/0x220
-                                         [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
-                                         [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
-                                         [<ffffffff811dd899>] kern_mount_data+0x19/0x30
-                                         [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
-                                         [<ffffffff81ef1862>] mnt_init+0xa1/0x181
-                                         [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
-                                         [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
-                                         [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
-                                         [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
-    SOFTIRQ-ON-W at:
-                                         [<ffffffff810cbf98>] __lock_acquire+0x648/0x1c20
-                                         [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                         [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
-                                         [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
-                                         [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
-                                         [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
-                                         [<ffffffff811d4081>] d_instantiate+0x61/0x80
-                                         [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
-                                         [<ffffffff81237f62>] sysfs_mount+0x182/0x220
-                                         [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
-                                         [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
-                                         [<ffffffff811dd899>] kern_mount_data+0x19/0x30
-                                         [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
-                                         [<ffffffff81ef1862>] mnt_init+0xa1/0x181
-                                         [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
-                                         [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
-                                         [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
-                                         [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
-    RECLAIM_FS-ON-W at:
-                                            [<ffffffff810ce626>] mark_held_locks+0x86/0x150
-                                            [<ffffffff810cedb1>] lockdep_trace_alloc+0x71/0xd0
-                                            [<ffffffff811591d6>] __alloc_pages_nodemask+0x86/0xa90
-                                            [<ffffffff81194063>] alloc_pages_current+0xa3/0x110
-                                            [<ffffffff81154b94>] __get_free_pages+0x14/0x50
-                                            [<ffffffff812c6b4b>] inode_doinit_with_dentry+0x32b/0x650
-                                            [<ffffffff812c6f56>] sb_finish_set_opts+0xc6/0x260
-                                            [<ffffffff812c753c>] selinux_set_mnt_opts+0x32c/0x540
-                                            [<ffffffff812c77b0>] superblock_doinit+0x60/0xc0
-                                            [<ffffffff812c78f0>] delayed_superblock_init+0x10/0x20
-                                            [<ffffffff811bfa41>] iterate_supers+0xf1/0x100
-                                            [<ffffffff812cae13>] selinux_complete_init+0x33/0x40
-                                            [<ffffffff812da95b>] security_load_policy+0x35b/0x4e0
-                                            [<ffffffff812ccb6f>] sel_write_load+0x9f/0x790
-                                            [<ffffffff811bb506>] vfs_write+0xb6/0x180
-                                            [<ffffffff811bb82d>] sys_write+0x4d/0x90
-                                            [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
-    INITIAL USE at:
-                                        [<ffffffff810cbc70>] __lock_acquire+0x320/0x1c20
-                                        [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                        [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
-                                        [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
-                                        [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
-                                        [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
-                                        [<ffffffff811d4081>] d_instantiate+0x61/0x80
-                                        [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
-                                        [<ffffffff81237f62>] sysfs_mount+0x182/0x220
-                                        [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
-                                        [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
-                                        [<ffffffff811dd899>] kern_mount_data+0x19/0x30
-                                        [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
-                                        [<ffffffff81ef1862>] mnt_init+0xa1/0x181
-                                        [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
-                                        [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
-                                        [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
-                                        [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
-  }
-  ... key      at: [<ffffffff829db510>] __key.51824+0x0/0x8
-  ... acquired at:
-   [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-   [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
-   [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
-   [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
-   [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
-   [<ffffffff811d4081>] d_instantiate+0x61/0x80
-   [<ffffffff812510b6>] ext4_add_nondir+0x76/0x80
-   [<ffffffff812531b6>] ext4_symlink+0x1a6/0x330
-   [<ffffffff811ca2d9>] vfs_symlink+0x99/0x100
-   [<ffffffff811cdb73>] sys_symlinkat+0xb3/0xd0
-   [<ffffffff811cdba6>] sys_symlink+0x16/0x20
-   [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
-
--> (jbd2_handle){+.+.-.} ops: 20071115 {
-   HARDIRQ-ON-W at:
-                                       [<ffffffff810cbf69>] __lock_acquire+0x619/0x1c20
-                                       [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                       [<ffffffff8128b486>] start_this_handle+0x536/0x700
-                                       [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
-                                       [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
-                                       [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
-                                       [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
-                                       [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
-                                       [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
-                                       [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
-                                       [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
-   SOFTIRQ-ON-W at:
-                                       [<ffffffff810cbf98>] __lock_acquire+0x648/0x1c20
-                                       [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                       [<ffffffff8128b486>] start_this_handle+0x536/0x700
-                                       [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
-                                       [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
-                                       [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
-                                       [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
-                                       [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
-                                       [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
-                                       [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
-                                       [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
-   IN-RECLAIM_FS-W at:
-                                          [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
-                                          [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                          [<ffffffff8128b486>] start_this_handle+0x536/0x700
-                                          [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
-                                          [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
-                                          [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
-                                          [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
-                                          [<ffffffff811d91d3>] evict+0xa3/0x1b0
-                                          [<ffffffff811d93e5>] iput+0x105/0x200
-                                          [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
-                                          [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
-                                          [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
-                                          [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
-                                          [<ffffffff81163185>] shrink_slab+0x175/0x4b0
-                                          [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
-                                          [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
-                                          [<ffffffff8108b927>] kthread+0xb7/0xc0
-                                          [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
-   INITIAL USE at:
-                                      [<ffffffff810cbc70>] __lock_acquire+0x320/0x1c20
-                                      [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-                                      [<ffffffff8128b486>] start_this_handle+0x536/0x700
-                                      [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
-                                      [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
-                                      [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
-                                      [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
-                                      [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
-                                      [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
-                                      [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
-                                      [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
- }
- ... key      at: [<ffffffff829cff00>] jbd2_handle_key+0x0/0x8
- ... acquired at:
-   [<ffffffff810cae1b>] check_usage_forwards+0x11b/0x150
-   [<ffffffff810cb7f8>] mark_lock+0x198/0x2f0
-   [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
-   [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
-   [<ffffffff8128b486>] start_this_handle+0x536/0x700
-   [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
-   [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
-   [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
-   [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
-   [<ffffffff811d91d3>] evict+0xa3/0x1b0
-   [<ffffffff811d93e5>] iput+0x105/0x200
-   [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
-   [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
-   [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
-   [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
-   [<ffffffff81163185>] shrink_slab+0x175/0x4b0
-   [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
-   [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
-   [<ffffffff8108b927>] kthread+0xb7/0xc0
-   [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
-
-
-stack backtrace:
-Pid: 37, comm: kswapd0 Not tainted 3.3.7-1.fc16.x86_64.debug #1
-Call Trace:
- [<ffffffff810cacf8>] print_irq_inversion_bug.part.19+0x1e8/0x1f0
- [<ffffffff810cae1b>] check_usage_forwards+0x11b/0x150
- [<ffffffff810cb7f8>] mark_lock+0x198/0x2f0
- [<ffffffff810cad00>] ? print_irq_inversion_bug.part.19+0x1f0/0x1f0
- [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
- [<ffffffff8128b6d9>] ? jbd2__journal_start+0x89/0x1a0
- [<ffffffff81022023>] ? native_sched_clock+0x13/0x80
- [<ffffffff810a3dc5>] ? sched_clock_local+0x25/0x90
- [<ffffffff810a3f58>] ? sched_clock_cpu+0xa8/0x110
- [<ffffffff810c815d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
- [<ffffffff8128b457>] ? start_this_handle+0x507/0x700
- [<ffffffff8128b486>] start_this_handle+0x536/0x700
- [<ffffffff8128b457>] ? start_this_handle+0x507/0x700
- [<ffffffff811a1c2b>] ? kmem_cache_alloc+0x19b/0x280
- [<ffffffff8128b6d9>] ? jbd2__journal_start+0x89/0x1a0
- [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
- [<ffffffff8124bfb9>] ? ext4_evict_inode+0x1a9/0x620
- [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
- [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
- [<ffffffff8121ec90>] ? __dquot_initialize+0x30/0x180
- [<ffffffff811d91c1>] ? evict+0x91/0x1b0
- [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
- [<ffffffff811d91d3>] evict+0xa3/0x1b0
- [<ffffffff811d93e5>] iput+0x105/0x200
- [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
- [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
- [<ffffffff811d53d0>] ? shrink_dentry_list+0x2b0/0x4c0
- [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
- [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
- [<ffffffff81163185>] shrink_slab+0x175/0x4b0
- [<ffffffff811ae776>] ? mem_cgroup_iter+0xf6/0x340
- [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
- [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
- [<ffffffff8108c580>] ? __init_waitqueue_head+0x60/0x60
- [<ffffffff81167820>] ? balance_pgdat+0x720/0x720
- [<ffffffff8108b927>] kthread+0xb7/0xc0
- [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
- [<ffffffff816a3374>] ? retint_restore_args+0x13/0x13
- [<ffffffff8108b870>] ? __init_kthread_worker+0x70/0x70
- [<ffffffff816ad070>] ? gs_change+0x13/0x13
+>-----Original Message-----
+>From: Toshi Kani [mailto:toshi.kani@hp.com]
+>Sent: Tuesday, May 29, 2012 4:43 PM
+>To: shuahkhan@gmail.com
+>Cc: Moore, Robert; lenb@kernel.org; linux-acpi@vger.kernel.org;
+>bhelgaas@google.com; liuj97@gmail.com; andi@firstfloor.org; linux-
+>kernel@vger.kernel.org
+>Subject: RE: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
+>
+>On Tue, 2012-05-29 at 16:44 -0600, Shuah Khan wrote:
+>> On Tue, 2012-05-29 at 22:27 +0000, Moore, Robert wrote:
+>> > > > 2. Calling acpi_get_handle() on _OST prior to executing the method.
+>> > > > This will ensure that this method only gets run if it is present
+>> > > under
+>> > > > the device in question. Coupled with what is already outlined in #1
+>> > > > above, now _OST gets executed only when it is defined under the
+>> > > device object.
+>> > > > Example case in the existing code, please see
+>> > > acpi_processor_ppc_ost()
+>> > > > implementation.
+>> > >
+>> > > Yes, I did look at acpi_processor_ppc_ost() when I implemented the
+>> > > function.  I believe calling acpi_get_handle() is redundant since
+>> > > acpi_ns_get_node() is called within acpi_evaluate_object() as well.
+>> > > acpi_evaluate_object() simply returns with AE_NOT_FOUND when _OST
+>> > > method does not exist.
+>> > >
+>> >
+>> > This is correct. If _OST does not exist, AE_NOT_FOUND will be returned
+>from evaluate_object.
+>>
+>> Yes that is correct from the ACPI Spec and implementation point of view.
+>> My thinking is that a call to acpi_get_handle() might not penalize the
+>> OS as much as acpi_evaluate_object() would on systems that don't
+>> actually implement _OST. In other words, acpi_get_handle() might not go
+>> as deep as acpi_evaluate_object() would go into the ACPI layer, hence
+>> might be a safer measure on platforms that don't actually implement this
+>> optional method under all devices included in this patch set.
+>>
+>
+>I do not think we need to worry about it.  The code difference is not
+>that much, and this _OST path is limited to ACPI hotplug operations,
+>which are infrequent events.  Automatic workload balancing can make
+>frequent use of the operations, but is not frequent enough to make any
+>difference here.  I think simpler code works fine.
+>
+>Thanks,
+>-Toshi
 
