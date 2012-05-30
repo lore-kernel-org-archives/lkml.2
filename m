@@ -1,96 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab2E3JWq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:22:46 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51108 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755975Ab2E3JWd (ORCPT
+	id S932468Ab2E3JYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:24:45 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:48348 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932360Ab2E3JYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:22:33 -0400
-Message-ID: <4FC5F309.9080604@gmail.com>
-Date: Wed, 30 May 2012 18:14:33 +0800
-From: Xiao Jiang <jgq516@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Wed, 30 May 2012 05:24:44 -0400
+Message-ID: <4FC5E754.6000406@ti.com>
+Date: Wed, 30 May 2012 14:54:36 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-To: Jon Hunter <jon-hunter@ti.com>
-CC: linux@arm.linux.org.uk, b-cousson@ti.com, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, rnayak@ti.com, tony@atomide.com,
-        wim@iguana.be, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 0/3] omap3/omap4: add device tree support for wdt
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <4FC50BA2.4070404@ti.com>
-In-Reply-To: <4FC50BA2.4070404@ti.com>
+To: "Turquette, Mike" <mturquette@ti.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] clk: Add support for rate table based dividers
+References: <1337250134-29206-1-git-send-email-rnayak@ti.com> <1337250134-29206-3-git-send-email-rnayak@ti.com> <CAJOA=zOmJdH+zDyyBmSEH_4sSXXpPfEpAMgZ=N-RWCrCo4EWOw@mail.gmail.com>
+In-Reply-To: <CAJOA=zOmJdH+zDyyBmSEH_4sSXXpPfEpAMgZ=N-RWCrCo4EWOw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jon Hunter wrote:
-> Hi Xiao Jiang,
->
-> On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
->   
->> From: Xiao Jiang <jgq516@gmail.com>
+On Wednesday 30 May 2012 02:45 AM, Turquette, Mike wrote:
+> On Thu, May 17, 2012 at 3:22 AM, Rajendra Nayak<rnayak@ti.com>  wrote:
+>> Some divider clks do not have any obvious relationship
+>> between the divider and the value programmed in the
+>> register. For instance, say a value of 1 could signify divide
+>> by 6 and a value of 2 could signify divide by 4 etc.
+>> Also there are dividers where not all values possible
+>> based on the bitfield width are valid. For instance
+>> a 3 bit wide bitfield can be used to program a value
+>> from 0 to 7. However its possible that only 0 to 4
+>> are valid values.
 >>
->> This series can be applied to dt branch of linux-omap tree.
->>     
+>> All these cases need the platform code to pass a simple
+>> table of divider/value tuple, so the framework knows
+>> the exact value to be written based on the divider
+>> calculation and can also do better error checking.
+>>
+>> This patch adds support for such rate table based
+>> dividers.
+>>
+>> Signed-off-by: Rajendra Nayak<rnayak@ti.com>
 >
-> Thanks for sending this!
+> Thanks Rajendra.  I'll take this into my clk-next.
+
+Mike,
+
+Since this adds one additional parameter to clk_register_divider(),
+it means fixing all existing users going in this merge window.
+I can resend this patch fixing all the users once 3.5-rc1 is out and
+you have moved clk-next, which you can then pull in.
+
+regards,
+Rajendra
+
 >
->   
->> Since omap24xx series has different wdt base addr (omap2420: 0x48022000 and
->> omap2430: 0x49016000) per commit 2817142f31bfbf26c216bf4f9192540c81b2d071, so
->> I don't add wdt node in omap2.dtsi just like omap3 and omap4, maybe different
->> dts files are needed for omap2420 and omap2430.
->>     
+> Regards,
+> Mike
 >
-> Good point. I am wondering if we can simple drop the address from the
-> wdt2 node for omap2. It is not really being used. May be Benoit can comment.
->
->   
-Hmm, I think the address doesn't need anymore since the related hw_mod 
-has the right addr as follows.
-
-static struct omap_hwmod_addr_space omap2420_wd_timer2_addrs[] = {
-        {  
-                .pa_start       = 0x48022000,
-                .pa_end         = 0x4802207f,
-                .flags          = ADDR_TYPE_RT
-        }, 
-        { }
-};
-
-static struct omap_hwmod_addr_space omap2430_wd_timer2_addrs[] = {
-        {  
-                .pa_start       = 0x49016000,
-                .pa_end         = 0x4901607f,
-                .flags          = ADDR_TYPE_RT
-        }, 
-        { }
-};
-
-static struct omap_hwmod_addr_space omap3xxx_wd_timer2_addrs[] = {
-        {   
-                .pa_start       = 0x48314000,
-                .pa_end         = 0x4831407f,
-                .flags          = ADDR_TYPE_RT
-        },  
-        { } 
-};
-
-static struct omap_hwmod_addr_space omap44xx_wd_timer2_addrs[] = {
-        {   
-                .pa_start       = 0x4a313000,
-                .pa_end         = 0x4a31407f,
-                .flags          = ADDR_TYPE_RT
-        },  
-        { } 
-};
-
-Regards,
-Xiao
-> Cheers
-> Jon
+>> ---
+>>   drivers/clk/clk-divider.c    |   67 ++++++++++++++++++++++++++++++++++++++++--
+>>   include/linux/clk-private.h  |    3 +-
+>>   include/linux/clk-provider.h |   10 +++++-
+>>   3 files changed, 75 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+>> index e548c43..e4911ee 100644
+>> --- a/drivers/clk/clk-divider.c
+>> +++ b/drivers/clk/clk-divider.c
+>> @@ -32,30 +32,69 @@
+>>   #define div_mask(d)    ((1<<  (d->width)) - 1)
+>>   #define is_power_of_two(i)     !(i&  ~i)
+>>
+>> +static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
+>> +{
+>> +       unsigned int maxdiv;
+>> +       const struct clk_div_table *clkt;
+>> +
+>> +       for (clkt = table; clkt->div; clkt++)
+>> +               if (clkt->div>  maxdiv)
+>> +                       maxdiv = clkt->div;
+>> +       return maxdiv;
+>> +}
+>> +
+>>   static unsigned int _get_maxdiv(struct clk_divider *divider)
+>>   {
+>>         if (divider->flags&  CLK_DIVIDER_ONE_BASED)
+>>                 return div_mask(divider);
+>>         if (divider->flags&  CLK_DIVIDER_POWER_OF_TWO)
+>>                 return 1<<  div_mask(divider);
+>> +       if (divider->table)
+>> +               return _get_table_maxdiv(divider->table);
+>>         return div_mask(divider) + 1;
+>>   }
+>>
+>> +static unsigned int _get_table_div(const struct clk_div_table *table,
+>> +                                                       unsigned int val)
+>> +{
+>> +       const struct clk_div_table *clkt;
+>> +
+>> +       for (clkt = table; clkt->div; clkt++)
+>> +               if (clkt->val == val)
+>> +                       return clkt->div;
+>> +       return 0;
+>> +}
+>> +
+>>   static unsigned int _get_div(struct clk_divider *divider, unsigned int val)
+>>   {
+>>         if (divider->flags&  CLK_DIVIDER_ONE_BASED)
+>>                 return val;
+>>         if (divider->flags&  CLK_DIVIDER_POWER_OF_TWO)
+>>                 return 1<<  val;
+>> +       if (divider->table)
+>> +               return _get_table_div(divider->table, val);
+>>         return val + 1;
+>>   }
+>>
+>> +static unsigned int _get_table_val(const struct clk_div_table *table,
+>> +                                                       unsigned int div)
+>> +{
+>> +       const struct clk_div_table *clkt;
+>> +
+>> +       for (clkt = table; clkt->div; clkt++)
+>> +               if (clkt->div == div)
+>> +                       return clkt->val;
+>> +       return 0;
+>> +}
+>> +
+>>   static unsigned int _get_val(struct clk_divider *divider, u8 div)
+>>   {
+>>         if (divider->flags&  CLK_DIVIDER_ONE_BASED)
+>>                 return div;
+>>         if (divider->flags&  CLK_DIVIDER_POWER_OF_TWO)
+>>                 return __ffs(div);
+>> +       if (divider->table)
+>> +               return  _get_table_val(divider->table, div);
+>>         return div - 1;
+>>   }
+>>
+>> @@ -84,6 +123,26 @@ static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
+>>   */
+>>   #define MULT_ROUND_UP(r, m) ((r) * (m) + (m) - 1)
+>>
+>> +static bool _is_valid_table_div(const struct clk_div_table *table,
+>> +                                                        unsigned int div)
+>> +{
+>> +       const struct clk_div_table *clkt;
+>> +
+>> +       for (clkt = table; clkt->div; clkt++)
+>> +               if (clkt->div == div)
+>> +                       return true;
+>> +       return false;
+>> +}
+>> +
+>> +static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
+>> +{
+>> +       if (divider->flags&  CLK_DIVIDER_POWER_OF_TWO)
+>> +               return is_power_of_two(div);
+>> +       if (divider->table)
+>> +               return _is_valid_table_div(divider->table, div);
+>> +       return true;
+>> +}
+>> +
+>>   static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>>                 unsigned long *best_parent_rate)
+>>   {
+>> @@ -111,8 +170,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>>         maxdiv = min(ULONG_MAX / rate, maxdiv);
+>>
+>>         for (i = 1; i<= maxdiv; i++) {
+>> -               if ((divider->flags&  CLK_DIVIDER_POWER_OF_TWO)
+>> -&&  (!is_power_of_two(i)))
+>> +               if (!_is_valid_div(divider, i))
+>>                         continue;
+>>                 parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
+>>                                 MULT_ROUND_UP(rate, i));
+>> @@ -186,12 +244,14 @@ EXPORT_SYMBOL_GPL(clk_divider_ops);
+>>   * @shift: number of bits to shift the bitfield
+>>   * @width: width of the bitfield
+>>   * @clk_divider_flags: divider-specific flags for this clock
+>> + * @table: array of divider/value pairs ending with a div set to 0
+>>   * @lock: shared register lock for this clock
+>>   */
+>>   struct clk *clk_register_divider(struct device *dev, const char *name,
+>>                 const char *parent_name, unsigned long flags,
+>>                 void __iomem *reg, u8 shift, u8 width,
+>> -               u8 clk_divider_flags, spinlock_t *lock)
+>> +               u8 clk_divider_flags, const struct clk_div_table *table,
+>> +               spinlock_t *lock)
+>>   {
+>>         struct clk_divider *div;
+>>         struct clk *clk;
+>> @@ -217,6 +277,7 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
+>>         div->flags = clk_divider_flags;
+>>         div->lock = lock;
+>>         div->hw.init =&init;
+>> +       div->table = table;
+>>
+>>         /* register the clock */
+>>         clk = clk_register(dev,&div->hw);
+>> diff --git a/include/linux/clk-private.h b/include/linux/clk-private.h
+>> index eb3f84b..2479239 100644
+>> --- a/include/linux/clk-private.h
+>> +++ b/include/linux/clk-private.h
+>> @@ -105,7 +105,7 @@ struct clk {
+>>
+>>   #define DEFINE_CLK_DIVIDER(_name, _parent_name, _parent_ptr,   \
+>>                                 _flags, _reg, _shift, _width,   \
+>> -                               _divider_flags, _lock)          \
+>> +                               _divider_flags, _table, _lock)  \
+>>         static struct clk _name;                                \
+>>         static const char *_name##_parent_names[] = {           \
+>>                 _parent_name,                                   \
+>> @@ -121,6 +121,7 @@ struct clk {
+>>                 .shift = _shift,                                \
+>>                 .width = _width,                                \
+>>                 .flags = _divider_flags,                        \
+>> +               .table = _table,                                \
+>>                 .lock = _lock,                                  \
+>>         };                                                      \
+>>         DEFINE_CLK(_name, clk_divider_ops, _flags,              \
+>> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+>> index 4a0b483..22bc067 100644
+>> --- a/include/linux/clk-provider.h
+>> +++ b/include/linux/clk-provider.h
+>> @@ -203,6 +203,11 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+>>                 void __iomem *reg, u8 bit_idx,
+>>                 u8 clk_gate_flags, spinlock_t *lock);
+>>
+>> +struct clk_div_table {
+>> +       unsigned int    val;
+>> +       unsigned int    div;
+>> +};
+>> +
+>>   /**
+>>   * struct clk_divider - adjustable divider clock
+>>   *
+>> @@ -210,6 +215,7 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+>>   * @reg:       register containing the divider
+>>   * @shift:     shift to the divider bit field
+>>   * @width:     width of the divider bit field
+>> + * @table:     array of value/divider pairs, last entry should have div = 0
+>>   * @lock:      register lock
+>>   *
+>>   * Clock with an adjustable divider affecting its output frequency.  Implements
+>> @@ -229,6 +235,7 @@ struct clk_divider {
+>>         u8              shift;
+>>         u8              width;
+>>         u8              flags;
+>> +       const struct clk_div_table      *table;
+>>         spinlock_t      *lock;
+>>   };
+>>
+>> @@ -239,7 +246,8 @@ extern const struct clk_ops clk_divider_ops;
+>>   struct clk *clk_register_divider(struct device *dev, const char *name,
+>>                 const char *parent_name, unsigned long flags,
+>>                 void __iomem *reg, u8 shift, u8 width,
+>> -               u8 clk_divider_flags, spinlock_t *lock);
+>> +               u8 clk_divider_flags, const struct clk_div_table *table,
+>> +               spinlock_t *lock);
+>>
+>>   /**
+>>   * struct clk_mux - multiplexer clock
+>> --
+>> 1.7.1
+>>
 
