@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab2E3Lj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:39:28 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61098 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2E3Lj0 (ORCPT
+	id S1753199Ab2E3Ljm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:39:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30859 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753160Ab2E3Ljk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:39:26 -0400
-Message-ID: <4FC606E7.4090701@openvz.org>
-Date: Wed, 30 May 2012 15:39:19 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
-MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
- val:-59
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz>
-In-Reply-To: <4FC546B1.8050508@fold.natur.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 30 May 2012 07:39:40 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wwwCnHkgN0EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=muDU9TWqX4S6gBgt5GwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338377978.13348.308.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe
+ optimization
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Wed, 30 May 2012 07:39:38 -0400
+In-Reply-To: <4FC5C55E.9000909@hitachi.com>
+References: <20120529124833.9191.23007.stgit@localhost.localdomain>
+	 <1338331514.13348.298.camel@gandalf.stny.rr.com>
+	 <4FC5C55E.9000909@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Mokrejs wrote:
-> Andrew Morton wrote:
->> On Wed, 30 May 2012 00:18:31 +0400
->> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->>
->>> Oleg Nesterov wrote:
->>>> On 05/22, Andrew Morton wrote:
->>>>>
->>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
->>>>> happiness is important.  Has he cheered up yet?
->>>>
->>>> Well, yes, I do not really like this patch ;) Because I think there is
->>>> a more simple/straightforward fix, see below. In my opinion it also
->>>> makes the original code simpler.
->>>>
->>>> But. Obviously this is subjective, I can't prove my patch is "better",
->>>> and I didn't try to test it.
->>>>
->>>> So I won't argue with Konstantin who dislikes my patch, although I
->>>> would like to know the reason.
->>>
->>> I don't remember why I dislike your patch.
->>> For now I can only say ACK )
->>
->> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
->> that it was tested would be nice ;)
->
-> I will reboot in few hours, finally after few days ... I am running this first
-> patch. I will try to test the second/alternative patch more quickly. Sorry for
-> the delay.
->
+On Wed, 2012-05-30 at 15:59 +0900, Masami Hiramatsu wrote:
 
-easiest way trigger this bug:
+> Hmm, I'm not so sure how the notrace and filter works.
+> What happens if I set a foo function-entry on filter
+> and keep notrace empty?
+>  - only foo's nop is replaced with call?
+>  - or all functions including foo is traced?
 
-#define _GNU_SOURCE
-#include <unistd.h>
-#include <sched.h>
-#include <sys/syscall.h>
-#include <sys/mman.h>
+>From Documentation/trace/ftrace.txt:
 
-static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
-{
-	return syscall(SYS_clone, flags, stack, ptid, ctid);
-}
+"If a function exists in both set_ftrace_filter
+ and set_ftrace_notrace, the function will _not_ be traced."
 
-int main(int argc, char **argv)
-{
-	void *page;
+The filters work exactly the same. If notrace always take precedence
+over filter. If you have foo and bar in filter, and put foo in notrace,
+then only bar is traced.
 
-	page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
-}
+"filter" means "limit tracing only to these functions"
+"notrace" means "do not trace this function"
+
+Think of 'filter' as a way of making the 'available_filter_functions'
+smaller. It filters the list. But 'notrace' is just like adding a
+'notrace' tag. It stops it from being traced regardless.
+
+-- Steve
+
+
+
