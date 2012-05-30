@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab2E3J4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:56:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42606 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab2E3J4F convert rfc822-to-8bit (ORCPT
+	id S1751548Ab2E3KDI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 06:03:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47202 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750955Ab2E3KDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:56:05 -0400
-Message-ID: <1338371727.26856.234.camel@twins>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Date: Wed, 30 May 2012 11:55:27 +0200
-In-Reply-To: <4FC5EB3C.7040505@gmail.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-	    <1337965359-29725-14-git-send-email-aarcange@redhat.com>
-	   <1338297385.26856.74.camel@twins> <4FC4D58A.50800@redhat.com>
-	  <1338303251.26856.94.camel@twins> <4FC5D973.3080108@gmail.com>
-	 <1338368763.26856.207.camel@twins> <4FC5EB3C.7040505@gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 30 May 2012 06:03:06 -0400
+Date: Wed, 30 May 2012 11:03:03 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        arnd@arndb.de, linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
+ Device Tree
+Message-ID: <20120530100302.GD9947@opensource.wolfsonmicro.com>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+ <1338353260-10097-9-git-send-email-lee.jones@linaro.org>
+ <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jL2BoiuKMElzg3CS"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com>
+X-Cookie: Give him an evasive answer.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 05:41 -0400, KOSAKI Motohiro wrote:
-> > Yes, and we all know objects allocated in one thread are never shared
-> > with other threads.. the producer-consumer pattern seems fairly popular
-> > and will destroy your argument.
-> 
-> THP also strike producer-consumer pattern. But, as far as I know, people haven't observed
-> significant performance degression. thus I _guessed_ performance critical producer-consumer
-> pattern is rare. Just guess. 
 
-Not so, as long as the areas span PMDs THP can back them using huge
-pages, regardless of what objects live in that virtual space (or indeed
-if its given out as objects at all or lives on the free-lists).
+--jL2BoiuKMElzg3CS
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-THP doesn't care about what lives in the virtual space, all it cares
-about is ranges spanning PMDs that are populated densely enough.
+On Wed, May 30, 2012 at 02:58:44PM +0800, Linus Walleij wrote:
+> On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
+> > + =A0 =A0 =A0 { .name =3D "ab8500_ldo_ana", =A0 =A0 .driver_data =3D (v=
+oid *) AB8500_LDO_ANA, },
+
+> So why is the device tree going to use these lowercase names etc?
+> I guess there is a rationale...
+
+If we are changing the names then not including the ab8500 bit would
+seem more idiomatic - we've already worked out which chip this is by the
+time we're looking here.
+
+> Anyway: the name is used in more parts of the file, so please change
+> it everywhere if you change it.
+
+It's only used for a few debug prints AFAICT?
+
+--jL2BoiuKMElzg3CS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPxfAXAAoJEBus8iNuMP3dsO0P/RlAbanIMdrsmCRa2hpLKglA
+lrUKoj9bxy/Os89//9SOKHP2RRdYhO/fJZ7s7QeI1nAmmO8phYLuitNVntTd6n85
+Etx4bB92R+03F3u7GaPjjtpOnn00Q0qmynWfjbx+38t0wAW56K3SDxJZFnTHdPbx
+ezG9AOg77BuXluTyPLdONE3uMmNOcrY42nfWRV1Pt2PudWk6GYuytW7irbHK+j5x
+yOBLx9UbOzDBuk0Zi9hciFcwUf8AVaCLTMLODKX3wNlHBshqRrxNBO5Hd4YJUAEq
+XopSSHQWW8IlIPWTYgOVIYZ+LZjTtSx+/iDu/7EY3xJLSu+g/knVbRsSYNF2IKqo
+HCook+Xfi3mOPl2Dc/DN1cLiaOS9hTIu5yMzTm13PZf6txj9NSYcn4tL7RsyCbPR
+BmwJh7CaYP4kGyHTM/t0n87ybEay8y7D1PVgDQdirLrrE8BXLINor3pcAYSo3UUe
+xJ2bPfRIisOnelwoxTbkYTmnxl3ZbT/h16c2rdw9sr2aXcrlaCRXXsH1s4wEFGRA
+E2mrj4nmqstfhzxRGwuxSLQqdSsjAmD0Vu/oIDVy5ywpST9AH6i5cgOui8e3AAuE
+eZeYVXtnQg5BE6IElpNS7t5pZz1HV71QCbUQGSaVnOHwSGDqefPlTLIr7ftuEmE/
+Jvp8B/dpZZ0NeuWCbvW+
+=o5xa
+-----END PGP SIGNATURE-----
+
+--jL2BoiuKMElzg3CS--
