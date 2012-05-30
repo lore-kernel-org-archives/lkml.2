@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab2E3Oz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:55:29 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:34028 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754241Ab2E3Oz1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:55:27 -0400
+	id S1754797Ab2E3Oz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:55:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34439 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754192Ab2E3Oz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:55:26 -0400
+Date: Wed, 30 May 2012 16:55:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andre Przywara <andre.przywara@amd.com>, mingo@elte.hu, tglx@linutronix.de,
+        konrad.wilk@oracle.com, jeremy@goop.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, stable@vger.kernel.org.#.3.4+
+Subject: Re: [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity systems
+Message-ID: <20120530145523.GA15635@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Andre Przywara <andre.przywara@amd.com>, mingo@elte.hu,
+	tglx@linutronix.de, konrad.wilk@oracle.com, jeremy@goop.org,
+	linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+	stable@vger.kernel.org.#.3.4+
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+ <4FC631D3.9080907@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <1338375394-16268-4-git-send-email-kishon@ti.com>
-References: <1338375394-16268-1-git-send-email-kishon@ti.com> <1338375394-16268-4-git-send-email-kishon@ti.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Wed, 30 May 2012 20:25:05 +0530
-Message-ID: <CAMQu2gw8-ZuKqTVaqZtcvD4K5iGVPJKj9u9j4K8SFrUm7qb7fg@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/5] drivers: misc: omap: add a new driver for ocp2scp
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        arnd@arndb.de, gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FC631D3.9080907@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 4:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> Adds a new driver _ocp2scp_. This driver takes the responsibility of creating
-> all the devices that is connected to OCP2SCP. In the case of OMAP4, USB2PHY
-> is connected to ocp2scp.
->
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> ---
-[...]
+On Wed, May 30, 2012 at 07:42:27AM -0700, H. Peter Anvin wrote:
+> On 05/30/2012 06:10 AM, Andre Przywara wrote:
+> > Because we are behind a family check before tweaking the topology
+> > bit, we can use the standard rd/wrmsr variants for the CPUID feature
+> > register.
+> 
+> That is not what the *msr*_amd*() functions do.
+> 
+> NAK.  This is a totally bogus patch.
 
-> +++ b/drivers/misc/omap-ocp2scp.c
-> @@ -0,0 +1,135 @@
-> +/*
-> + * omap-ocp2scp.c - transform ocp interface protocol to scp protocol
-> + *
-> + * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
-s/2011/2012
+The *msr*_amd*() variants were used instead of the normal *msrl_safe
+variants although the AMD variants weren't needed there at all.
 
-[...]
+This has no issue on baremetal but breaks xen and this is how we caught
+this.
 
-> diff --git a/include/linux/platform_data/omap_ocp2scp.h b/include/linux/platform_data/omap_ocp2scp.h
-> new file mode 100644
-> index 0000000..dcbbf2a
-> --- /dev/null
-> +++ b/include/linux/platform_data/omap_ocp2scp.h
-> @@ -0,0 +1,31 @@
-> +/*
-> + * omap_ocp2scp.h -- ocp2scp header file
-> + *
-> + * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com
-Dito.
+So the patch corrects the original patch so that xen is happy too.
+
+-- 
+Regards/Gruss,
+Boris.
