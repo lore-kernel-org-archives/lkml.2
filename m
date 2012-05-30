@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756891Ab2E3G0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 02:26:05 -0400
-Received: from mga03.intel.com ([143.182.124.21]:60620 "EHLO mga03.intel.com"
+	id S1756853Ab2E3G1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 02:27:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29758 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031Ab2E3G0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 02:26:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="149336215"
-From: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-To: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH] x86, realmode: ia64 build fix (drivers/acpi/sleep.c)
-Date: Wed, 30 May 2012 09:26:02 +0300
-Message-Id: <1338359162-5785-1-git-send-email-jarkko.sakkinen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751657Ab2E3G1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 02:27:07 -0400
+Message-ID: <4FC5BDF5.2040000@redhat.com>
+Date: Wed, 30 May 2012 14:28:05 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tim Gardner <rtg.canonical@gmail.com>
+CC: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tim.gardner@canonical.com
+Subject: Re: [PATCH V3] block: Mitigate lock unbalance caused by lock switching
+References: <20120528102214.GB15202@dhcp-172-17-108-109.mtv.corp.google.com> <1338255542-22247-1-git-send-email-asias@redhat.com> <4FC4D2F2.2070309@gmail.com>
+In-Reply-To: <4FC4D2F2.2070309@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jarkko Sakkinen <Jarkko Sakkinen jarkko.sakkinen@intel.com>
+On 05/29/2012 09:45 PM, Tim Gardner wrote:
+> On 05/28/2012 07:39 PM, Asias He wrote:
+>
+> <snip>
+>
+>> @@ -440,6 +435,11 @@ void blk_cleanup_queue(struct request_queue *q)
+>>   	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+>>   	blk_sync_queue(q);
+>>
+>> +	spin_lock_irq(lock);
+>> +	if (q->queue_lock !=&q->__queue_lock)
+>> +		q->queue_lock =&q->__queue_lock;
+>> +	spin_unlock_irq(lock);
+>> +
+>
+> Isn't the 'if' clause superfluous ? You could just do the assignment, e.g.,
+>
+> +	spin_lock_irq(lock);
+> +	q->queue_lock =&q->__queue_lock;
+> +	spin_unlock_irq(lock);
 
-Added CONFIG_ACPI_SLEEP caging for #include <asm/realmode.h>.
+Well, this saves a if clause but adds an unnecessary assignment if the 
+lock is already internal lock.
 
-Signed-off-by: Jarkko Sakkinen <Jarkko Sakkinen jarkko.sakkinen@intel.com>
----
- drivers/acpi/sleep.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index a82fbf6..5b99f64 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -25,7 +25,9 @@
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
- 
-+#ifdef CONFIG_ACPI_SLEEP
- #include <asm/realmode.h>
-+#endif
- 
- #include "internal.h"
- #include "sleep.h"
 -- 
-1.7.9.5
-
+Asias
