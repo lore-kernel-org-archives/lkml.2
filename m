@@ -1,244 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2E3Jx3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:53:29 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41445 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab2E3Jvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:51:53 -0400
-From: Glauber Costa <glommer@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
-        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        handai.szj@gmail.com, Andrew.Phillips@lmax.com,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v3 6/6] expose per-taskgroup schedstats in cgroup
-Date: Wed, 30 May 2012 13:48:37 +0400
-Message-Id: <1338371317-5980-7-git-send-email-glommer@parallels.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1338371317-5980-1-git-send-email-glommer@parallels.com>
-References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
+	id S1751962Ab2E3JyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:54:12 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:60326 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751401Ab2E3JyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 05:54:09 -0400
+Message-ID: <4FC5EE3A.8010805@fold.natur.cuni.cz>
+Date: Wed, 30 May 2012 11:54:02 +0200
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120517 Firefox/12.0 SeaMonkey/2.9.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, khlebnikov@openvz.org,
+        markus@trippelsdorf.de, hughd@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org
+Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
+ val:-59
+References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com>
+In-Reply-To: <20120523172146.GA27598@redhat.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch aims at exposing stat information per-cgroup, such as:
- * idle time,
- * iowait time,
- * steal time,
- * # context switches
-and friends. The ultimate goal is to be able to present a per-container view of
-/proc/stat inside a container. With this patch, everything that is needed to do
-that is in place, except for number of tasks.
 
-For most of the data, I achieve that by hooking into the schedstats framework,
-so although the overhead of that is prone to discussion, I am not adding anything,
-but reusing what's already there instead. The exception being that the data is
-now computed and stored in non-task se's as well, instead of entity_is_task() branches.
-However, I expect this to be minimum comparing to the alternative of adding new
-hierarchy walks. Those are kept intact.
 
-The format of the new file added is the same as the one recently
-introduced for cpuacct:
+Oleg Nesterov wrote:
+> On 05/22, Andrew Morton wrote:
+>>
+>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
+>> happiness is important.  Has he cheered up yet?
+> 
+> Well, yes, I do not really like this patch ;) Because I think there is
+> a more simple/straightforward fix, see below. In my opinion it also
+> makes the original code simpler.
+> 
+> But. Obviously this is subjective, I can't prove my patch is "better",
+> and I didn't try to test it.
+> 
+> So I won't argue with Konstantin who dislikes my patch, although I
+> would like to know the reason.
+> 
+> Oleg.
+> 
+> 
+> --- a/kernel/tsacct.c
+> +++ b/kernel/tsacct.c
+> @@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *sta
+>  	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
+>  	mm = get_task_mm(p);
+>  	if (mm) {
+> +		sync_mm_rss(mm);
+>  		/* adjust to KB unit */
+>  		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
+>  		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -643,6 +643,8 @@ static void exit_mm(struct task_struct *
+>  	mm_release(tsk, mm);
+>  	if (!mm)
+>  		return;
+> +
+> +	sync_mm_rss(mm);
+>  	/*
+>  	 * Serialize with any possible pending coredump.
+>  	 * We must hold mmap_sem around checking core_state
+> @@ -960,9 +962,6 @@ void do_exit(long code)
+>  				preempt_count());
+>  
+>  	acct_update_integrals(tsk);
+> -	/* sync mm's RSS info before statistics gathering */
+> -	if (tsk->mm)
+> -		sync_mm_rss(tsk->mm);
+>  	group_dead = atomic_dec_and_test(&tsk->signal->live);
+>  	if (group_dead) {
+>  		hrtimer_cancel(&tsk->signal->real_timer);
+> --- a/fs/exec.c
+> +++ b/fs/exec.c
+> @@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *m
+>  	/* Notify parent that we're no longer interested in the old VM */
+>  	tsk = current;
+>  	old_mm = current->mm;
+> -	sync_mm_rss(old_mm);
+>  	mm_release(tsk, old_mm);
+>  
+>  	if (old_mm) {
+> +		sync_mm_rss(old_mm);
+>  		/*
+>  		 * Make sure that if there is a core dump in progress
+>  		 * for the old mm, we get out and die instead of going
+> 
+> 
 
-  cpu0.idle X
-  cpu0.steal Y
-  ...
-  cpu1.idle X1
-  cpu1.steal Y1
-  ...
+Tested-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
----
- kernel/sched/core.c  |  114 ++++++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/fair.c  |   24 +++++++++++
- kernel/sched/sched.h |    2 +
- 3 files changed, 140 insertions(+)
+This patch works equally well for me as the other patch proposed earlier by Konstantin
+Khlebnikov.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index db4f2c3..9c344d3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -7969,6 +7969,107 @@ static u64 cpu_rt_period_read_uint(struct cgroup *cgrp, struct cftype *cft)
- }
- #endif /* CONFIG_RT_GROUP_SCHED */
- 
-+#ifdef CONFIG_SCHEDSTATS
-+
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+#define fair_rq(field, tg, i)  tg->cfs_rq[i]->field
-+#else
-+#define fair_rq(field, tg, i)  0
-+#endif
-+
-+#ifdef CONFIG_RT_GROUP_SCHED
-+#define rt_rq(field, tg, i)  tg->rt_rq[i]->field
-+#else
-+#define rt_rq(field, tg, i)  0
-+#endif
-+
-+static u64 tg_nr_switches(struct task_group *tg, int cpu)
-+{
-+	if (tg != &root_task_group)
-+		return rt_rq(rt_nr_switches, tg, cpu) + fair_rq(nr_switches, tg, cpu);
-+
-+	return cpu_rq(cpu)->nr_switches;
-+}
-+
-+static u64 tg_nr_running(struct task_group *tg, int cpu)
-+{
-+	/*
-+	 * because of autogrouped groups in root_task_group, the
-+	 * following does not hold.
-+	 */
-+	if (tg != &root_task_group)
-+		return rt_rq(rt_nr_running, tg, cpu) + fair_rq(nr_running, tg, cpu);
-+
-+	return cpu_rq(cpu)->nr_running;
-+}
-+
-+static u64 tg_idle(struct task_group *tg, int cpu)
-+{
-+	u64 val;
-+
-+	if (tg != &root_task_group) {
-+		val = cfs_read_sleep(tg->se[cpu]);
-+		/* If we have rt tasks running, we're not really idle */
-+		val -= rt_rq(exec_clock, tg, cpu);
-+	} else
-+		/*
-+		 * There are many errors here that we are accumulating.
-+		 * However, we only provide this in the interest of having
-+		 * a consistent interface for all cgroups. Everybody
-+		 * probing the root cgroup should be getting its figures
-+		 * from system-wide files as /proc/stat. That would be faster
-+		 * to begin with...
-+		 *
-+		 * Ditto for steal.
-+		 */
-+		val = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE] * TICK_NSEC;
-+
-+	return val;
-+}
-+
-+static u64 tg_steal(struct task_group *tg, int cpu)
-+{
-+	u64 val;
-+
-+	if (tg != &root_task_group)
-+		val = cfs_read_wait(tg->se[cpu]);
-+	else
-+		val = kcpustat_cpu(cpu).cpustat[CPUTIME_STEAL] * TICK_NSEC;
-+
-+	return val;
-+}
-+
-+static int cpu_stats_percpu_show(struct cgroup *cgrp, struct cftype *cft,
-+				 struct cgroup_map_cb *cb)
-+{
-+	struct task_group *tg = cgroup_tg(cgrp);
-+	int cpu;
-+	/*
-+	 * should be enough to hold:
-+	 * "cpu" (len = 3)
-+	 * "nr_switches" (len = 11, biggest string so far
-+	 * 4 bytes for the cpu number, up to 9999 cpus
-+	 * dot character and NULL termination,
-+	 *
-+	 * and still be small enough for the stack
-+	 */
-+	char name[24];
-+
-+	for_each_online_cpu(cpu) {
-+		snprintf(name, sizeof(name), "cpu%d.idle", cpu);
-+		cb->fill(cb, name, tg_idle(tg, cpu));
-+		snprintf(name, sizeof(name), "cpu%d.steal", cpu);
-+		cb->fill(cb, name, tg_steal(tg, cpu));
-+		snprintf(name, sizeof(name), "cpu%d.nr_switches", cpu);
-+		cb->fill(cb, name, tg_nr_switches(tg, cpu));
-+		snprintf(name, sizeof(name), "cpu%d.nr_running", cpu);
-+		cb->fill(cb, name, tg_nr_running(tg, cpu));
-+	}
-+
-+	return 0;
-+}
-+#endif
-+
- static struct cftype cpu_files[] = {
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	{
-@@ -7976,6 +8077,19 @@ static struct cftype cpu_files[] = {
- 		.read_u64 = cpu_shares_read_u64,
- 		.write_u64 = cpu_shares_write_u64,
- 	},
-+/*
-+ * In theory, those could be done using the rt tasks as a basis
-+ * as well. Since we're interested in figures like idle, iowait, etc
-+ * for the whole cgroup, the results should be the same.
-+ * But that only complicates the code, and I doubt anyone using !FAIR_GROUP_SCHED
-+ * is terribly interested in those.
-+ */
-+#ifdef CONFIG_SCHEDSTATS
-+	{
-+		.name = "stat_percpu",
-+		.read_map = cpu_stats_percpu_show,
-+	},
-+#endif
- #endif
- #ifdef CONFIG_CFS_BANDWIDTH
- 	{
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index d932559..7145c59 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -719,6 +719,30 @@ update_stats_wait_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 	schedstat_set(se->statistics.wait_start, rq_of(cfs_rq)->clock);
- }
- 
-+#ifdef CONFIG_SCHEDSTATS
-+u64 cfs_read_sleep(struct sched_entity *se)
-+{
-+	struct cfs_rq *cfs_rq = se->cfs_rq;
-+	u64 value = se->statistics.sum_sleep_runtime;
-+
-+	if (!se->statistics.sleep_start)
-+		return value;
-+
-+	return value + rq_of(cfs_rq)->clock - se->statistics.sleep_start;
-+}
-+
-+u64 cfs_read_wait(struct sched_entity *se)
-+{
-+	struct cfs_rq *cfs_rq = se->cfs_rq;
-+	u64 value = se->statistics.wait_sum;
-+
-+	if (!se->statistics.wait_start)
-+		return value;
-+
-+	return value + rq_of(cfs_rq)->clock - se->statistics.wait_start;
-+}
-+#endif
-+
- /*
-  * Task is being enqueued - update stats:
-  */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 76f6839..3d8ba03 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1150,6 +1150,8 @@ extern void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq);
- extern void unthrottle_offline_cfs_rqs(struct rq *rq);
- 
- extern void account_cfs_bandwidth_used(int enabled, int was_enabled);
-+extern u64 cfs_read_sleep(struct sched_entity *se);
-+extern u64 cfs_read_wait(struct sched_entity *se);
- 
- #ifdef CONFIG_NO_HZ
- enum rq_nohz_flag_bits {
--- 
-1.7.10.2
+Would both patches have some debug printk() showing the code really did kick
+in I would have been more assured it had a chance to really do their job. But
+in both cases I made the system use up all RAM and start to swap so if that was
+enough to trigger the situation as you said earlier then they are both fine.
+
+Finally, I went to re-test again the patch from Konstantin because the several
+minutes long delay in shutdown puzzled me and I did not get it with this patch
+from Oleg. I conclude it was probably related to my initial attempts to also copy
+/home/blah to /tmp (I thought it is in-memory filesystem so I can easily drain
+memory resources but seems I was wrong). Maybe this was the reason while the
+shutdown took so long. I am still not sure because init.d/ scritps cleanup /tmp
+on startup on Gentoo ... but I was not able to reproduce the long delay on second
+attempt with using purely python to eat my memory to record some huge lists.
+
+For those wondering as well why the long delay on shutdown happened here are my
+mounts:
+
+# mount
+rootfs on / type rootfs (rw)
+/dev/root on / type ext3 (rw,noatime,commit=0)
+devtmpfs on /dev type devtmpfs (rw,relatime,size=8184896k,nr_inodes=2046224,mode=755)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /run type tmpfs (rw,nosuid,nodev,relatime,mode=755)
+rc-svcdir on /lib64/rc/init.d type tmpfs (rw,nosuid,nodev,noexec,relatime,size=1024k,mode=755)
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+securityfs on /sys/kernel/security type securityfs (rw,nosuid,nodev,noexec,relatime)
+debugfs on /sys/kernel/debug type debugfs (rw,nosuid,nodev,noexec,relatime)
+configfs on /sys/kernel/config type configfs (rw,nosuid,nodev,noexec,relatime)
+cgroup_root on /sys/fs/cgroup type tmpfs (rw,nosuid,nodev,noexec,relatime,size=10240k,mode=755)
+openrc on /sys/fs/cgroup/openrc type cgroup (rw,nosuid,nodev,noexec,relatime,release_agent=/lib64/rc/sh/cgroup-release-agent.sh,name=openrc)
+cpu on /sys/fs/cgroup/cpu type cgroup (rw,nosuid,nodev,noexec,relatime,cpu)
+devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000)
+shm on /dev/shm type tmpfs (rw,nosuid,nodev,noexec,relatime)
+binfmt_misc on /proc/sys/fs/binfmt_misc type binfmt_misc (rw,noexec,nosuid,nodev)
+#
 
