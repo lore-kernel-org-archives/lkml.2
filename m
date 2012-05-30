@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab2E3Est (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 00:48:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10017 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751948Ab2E3Esp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 00:48:45 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 0/5] PCI: Prep for VFIO and IOMMU Groups
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, dwmw2@infradead.org, konrad.wilk@oracle.com,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        ddutile@redhat.com, alex.williamson@redhat.com
-Date: Tue, 29 May 2012 22:48:25 -0600
-Message-ID: <20120530043142.1164.63415.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1752193Ab2E3EwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 00:52:02 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33438 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab2E3EwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 00:52:00 -0400
+Message-ID: <4FC5A77F.6060505@oracle.com>
+Date: Wed, 30 May 2012 12:52:15 +0800
+From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Yinghai Lu <yinghai@kernel.org>
+CC: zhenzhong.duan@oracle.com, mingo@redhat.com, x86@kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, Feng Jin <joe.jin@oracle.com>,
+        ethan.zhao@oracle.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] Fix an overflow in range_to_mtrr func
+References: <aabb3c7d-1c1a-4558-805a-b6d8478d1494@default> <CAE9FiQV1ckyhy+cWVZC+=rU9s2nrBO6qV0Yt5xkYuv_gS9ZSWQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQV1ckyhy+cWVZC+=rU9s2nrBO6qV0Yt5xkYuv_gS9ZSWQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the PCI related patches from the previously submitted
-v2 IOMMU Groups + VFIO series.  I've updated them with Don's
-comments and split them off on their own so that we can hopefully
-make some progress getting these in.  Patches are against 20120529
-linux-next tree.
+When boot on sun G5+ with 4T mem, see an overflow in mtrr cleanup as below.
 
-Patches 1 & 2 provide DMA quirking and ACS checking which will be
-used by IOMMU drivers supporting IOMMU groups.  Patch 3 enables the
-set of pci user config access functions to be called from other
-modules, which will be used by VFIO-pci.  Patch 4 enables a common
-translation of pcibios errors into errno for returning to userspace,
-also to be used by VFIO-pci.  Patch 5 adds additional PCI register
-definitions so we can more easily parse config space for devices in
-VFIO-pci.
+*BAD*gran_size: 2G      chunk_size: 2G  num_reg: 10     lose cover RAM:
+-18014398505283592M
 
-These patches, as well as IOMMU group support and VFIO can be
-found in git here:
+This is because 1<<31 sign extended. Use 64bit constant to fix it.
+Useful for mem larger than or equal to 4T.
 
-git://github.com/awilliam/linux-vfio.git (iommu-group-vfio-next-20120529)
+-v2: Use 64bit constant instead of explicit type conversion as suggested
+by Yinghai. Description updated too.
 
-Please consider these for 3.5, but I'll settle for any kind of next
-branch.  Thanks,
-
-Alex
-
+Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 ---
+  arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Alex Williamson (5):
-      pci: Misc pci_reg additions
-      pci: Create common pcibios_err_to_errno
-      pci: export pci_user functions for use by other drivers
-      pci: Add ACS validation utility
-      pci: Add PCI DMA source ID quirk
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c
+b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index ac140c7..853a4c6 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -266,7 +266,7 @@ range_to_mtrr(unsigned int reg, unsigned long
+range_startk,
+  		if (align > max_align)
+  			align = max_align;
 
-
- drivers/pci/access.c                 |    6 +-
- drivers/pci/pci.c                    |   68 ++++++++++++++++++++
- drivers/pci/pci.h                    |    7 --
- drivers/pci/quirks.c                 |   69 +++++++++++++++++++++
- drivers/xen/xen-pciback/conf_space.c |    6 +-
- include/linux/pci.h                  |   49 ++++++++++++++-
- include/linux/pci_regs.h             |  113 ++++++++++++++++++++++++++++++----
- 7 files changed, 293 insertions(+), 25 deletions(-)
+-		sizek = 1 << align;
++		sizek = 1UL << align;
+  		if (debug_print) {
+  			char start_factor = 'K', size_factor = 'K';
+  			unsigned long start_base, size_base;
+-- 1.7.3
