@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365Ab2E3RtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:49:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50112 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab2E3RtH (ORCPT
+	id S1756871Ab2E3RtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:49:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49951 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756273Ab2E3RtN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:49:07 -0400
-Date: Wed, 30 May 2012 19:49:01 +0200
-From: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?Q?M=FCller?= 
-	<Tilo.Mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler
- implementation
-Message-ID: <20120530174901.GR17705@kronos.redsun>
-References: <20120527145112.GF17705@kronos.redsun>
- <m2396il7xc.fsf@firstfloor.org>
- <20120530113651.GP17705@kronos.redsun>
- <20120530162645.GT27374@one.firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530162645.GT27374@one.firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:IRTApgPuZ3jn+9U6kK15i1rm3C6zNaKr4at5q9zbyDn
- dKzSlA1sMVmIu1ZqykXqyiafJFj1R9MiEzhQ6jjAPTMiXdA7f9
- eb/gwV5anwXkKXp2F6SYOG6dqrvSGscVuuEhL5X5ITkxs0iB0g
- UZUGXG8LDK/NYMdhxcWsvZtMf3tbLfj8SwyeeL8VkDGZct+7D8
- 6T4070YULTxzRFpkfddImajryBHEGSijQtR169GGzH2lLTuvwo
- 2kVRuXglqY3YIdwdrge3SRF52PpqHsJcd9MvrC8Xuyr7t5VmCD
- TPE4PxZWbkag1LyupjPPGYOABN/KD1Z3YqAYMu8/Hp5YoU6wgB
- tNLNiq61xjwKdreYXbO0=
+	Wed, 30 May 2012 13:49:13 -0400
+Message-ID: <1338400142.28384.12.camel@twins>
+Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
+ is_swbp_insn() == T
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 May 2012 19:49:02 +0200
+In-Reply-To: <20120530173717.GM15587@linux.vnet.ibm.com>
+References: <20120530165757.GA8077@redhat.com>
+	 <20120530165816.GA8085@redhat.com> <1338398931.28384.7.camel@twins>
+	 <20120530173717.GM15587@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 06:26:45PM +0200, Andi Kleen wrote:
-> > I tried to be consistent with the existing ciphers in arch/x86/crypto.
-> > In serpent_sse2_glue.c and sha1_ssse3_glue.c it is done exactly that way, so if
-> > it will be decided to remove the printk in this patch it probably should also
-> > be removed in the other modules.
+On Wed, 2012-05-30 at 23:07 +0530, Srikar Dronamraju wrote:
+> > > 
+> > > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > > ---
+> > >  kernel/events/uprobes.c |    2 +-
+> > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> > > index 8c5e043..1593b43 100644
+> > > --- a/kernel/events/uprobes.c
+> > > +++ b/kernel/events/uprobes.c
+> > > @@ -704,7 +704,7 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+> > >  			return ret;
+> > >  
+> > >  		if (is_swbp_insn((uprobe_opcode_t *)uprobe->arch.insn))
+> > > -			return -EEXIST;
+> > > +			return -ENOTSUPP;
+> > >  
+> > >  		ret = arch_uprobe_analyze_insn(&uprobe->arch, mm);
+> > >  		if (ret)
+> > 
+> > IIRC this -EEXIST existed because the vma iteration it does is racy and
+> > one can encounter the same vma twice or so. See the special -EEXIST
+> > handling in register_for_each_vma().
+> > 
+> > Changing it like this would break stuff. 
+> > 
 > 
+> Peter, 
 > 
-> They are wrong and need to be fixed.
+> is_swbp_insn() is looking at the copy of the instruction thats read from
+> the file. This path is only taken even before any mm's are inserted with
+> the breakpoint instruction.
 > 
-> Drivers can be loaded for all kinds of reasons, but they are not supposed
-> to spam your kernel log when they do nothing.
+> We still check and return -EEXIST if the memory while inserting the breakpoint
+> instruction  already has a breakpoint.
 > 
-> In fact I fixed all the existing ones with the cpuid changes, unfortunately
-> somehow snuck in wrong code :-(
+> Hence this change is correct. 
 
-Hm, ok, removing the printk stuff is no big deal. I would fix this together
-with the cpuid probing, when I'm sure that this is the preferred "new" way :-)
+Oh, indeed. I overlooked copy_insn() is taking the page from the
+page-cache instead of the page-tables and will thus get the original.
 
-- Johannes
+OK, no worries then.
