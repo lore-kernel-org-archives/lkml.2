@@ -1,105 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab2E3EmD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 00:42:03 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52863 "EHLO
+	id S1751568Ab2E3EsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 00:48:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64887 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2E3EmB (ORCPT
+	with ESMTP id S1751269Ab2E3EsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 00:42:01 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
-        tglx@linutronix.de, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf tool: build fix, remove duplicate declarations
-Date: Tue, 29 May 2012 22:41:53 -0600
-Message-Id: <1338352913-60483-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 30 May 2012 00:48:24 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 08/22] regulator: Change ab8500 match names to reflect Device Tree
+Date: Wed, 30 May 2012 12:47:26 +0800
+Message-Id: <1338353260-10097-9-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm sure I have some gremlins running around today, but I am
-consistently hitting this compile failure on Fedora 14 and 16:
+The 'name' field in 'struct of_regulator_match' expects to match with
+its corresponding regulator device node in the Device Tree. This patch
+renames each of the regulators in the ab8500 regulator driver so this
+is true.
 
-In file included from util/sort.h:12:0,
-                 from builtin-diff.c:15:
-util/string.h:7:5: error: redundant redeclaration of ‘hex2u64’ [-Werror=redundant-decls]
-util/symbol.h:32:5: note: previous declaration of ‘hex2u64’ was here
-util/string.h:8:7: error: redundant redeclaration of ‘strxfrchar’ [-Werror=redundant-decls]
-util/symbol.h:33:7: note: previous declaration of ‘strxfrchar’ was here
-util/string.h:9:5: error: redundant redeclaration of ‘perf_atoll’ [-Werror=redundant-decls]
-util/util.h:238:5: note: previous declaration of ‘perf_atoll’ was here
-util/string.h:10:8: error: redundant redeclaration of ‘argv_split’ [-Werror=redundant-decls]
-util/util.h:239:8: note: previous declaration of ‘argv_split’ was here
-util/string.h:11:6: error: redundant redeclaration of ‘argv_free’ [-Werror=redundant-decls]
-util/util.h:240:6: note: previous declaration of ‘argv_free’ was here
-util/string.h:12:6: error: redundant redeclaration of ‘strglobmatch’ [-Werror=redundant-decls]
-util/util.h:241:6: note: previous declaration of ‘strglobmatch’ was here
-util/string.h:13:6: error: redundant redeclaration of ‘strlazymatch’ [-Werror=redundant-decls]
-util/util.h:242:6: note: previous declaration of ‘strlazymatch’ was here
-cc1: all warnings being treated as errors
-make: *** [/tmp/pbuild/builtin-diff.o] Error 1
-make: *** Waiting for unfinished jobs....
-make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
-
-Fix it by removing duplicates.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- tools/perf/util/symbol.h |    4 +---
- tools/perf/util/util.h   |    6 +-----
- 2 files changed, 2 insertions(+), 8 deletions(-)
+ drivers/regulator/ab8500.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 1f00388..4ba5206 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -9,6 +9,7 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdio.h>
-+#include "string.h"
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index e1b8c54..a739f5c 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -794,17 +794,17 @@ static __devinit int ab8500_regulator_register(struct platform_device *pdev,
+ }
  
- #ifdef HAVE_CPLUS_DEMANGLE
- extern char *cplus_demangle(const char *, int);
-@@ -29,9 +30,6 @@ static inline char *bfd_demangle(void __used *v, const char __used *c,
- #endif
- #endif
+ static struct of_regulator_match ab8500_regulator_matches[] = {
+-	{ .name	= "LDO-AUX1",    .driver_data = (void *) AB8500_LDO_AUX1, },
+-	{ .name	= "LDO-AUX2",    .driver_data = (void *) AB8500_LDO_AUX2, },
+-	{ .name	= "LDO-AUX3",    .driver_data = (void *) AB8500_LDO_AUX3, },
+-	{ .name	= "LDO-INTCORE", .driver_data = (void *) AB8500_LDO_INTCORE, },
+-	{ .name	= "LDO-TVOUT",   .driver_data = (void *) AB8500_LDO_TVOUT, },
+-	{ .name = "LDO-USB",     .driver_data = (void *) AB8500_LDO_USB, },
+-	{ .name = "LDO-AUDIO",   .driver_data = (void *) AB8500_LDO_AUDIO, },
+-	{ .name	= "LDO-ANAMIC1", .driver_data = (void *) AB8500_LDO_ANAMIC1, },
+-	{ .name	= "LDO-ANAMIC2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
+-	{ .name	= "LDO-DMIC",    .driver_data = (void *) AB8500_LDO_DMIC, },
+-	{ .name	= "LDO-ANA",     .driver_data = (void *) AB8500_LDO_ANA, },
++	{ .name	= "ab8500_ldo_aux1",    .driver_data = (void *) AB8500_LDO_AUX1, },
++	{ .name	= "ab8500_ldo_aux2",    .driver_data = (void *) AB8500_LDO_AUX2, },
++	{ .name	= "ab8500_ldo_aux3",    .driver_data = (void *) AB8500_LDO_AUX3, },
++	{ .name	= "ab8500_ldo_intcore", .driver_data = (void *) AB8500_LDO_INTCORE, },
++	{ .name	= "ab8500_ldo_tvout",   .driver_data = (void *) AB8500_LDO_TVOUT, },
++	{ .name = "ab8500_ldo_usb",     .driver_data = (void *) AB8500_LDO_USB, },
++	{ .name = "ab8500_ldo_audio",   .driver_data = (void *) AB8500_LDO_AUDIO, },
++	{ .name	= "ab8500_ldo_anamic1", .driver_data = (void *) AB8500_LDO_ANAMIC1, },
++	{ .name	= "ab8500_ldo_amamic2", .driver_data = (void *) AB8500_LDO_ANAMIC2, },
++	{ .name	= "ab8500_ldo_dmic",    .driver_data = (void *) AB8500_LDO_DMIC, },
++	{ .name	= "ab8500_ldo_ana",     .driver_data = (void *) AB8500_LDO_ANA, },
+ };
  
--int hex2u64(const char *ptr, u64 *val);
--char *strxfrchar(char *s, char from, char to);
--
- /*
-  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
-  * for newer versions we can use mmap to reduce memory usage:
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 2daaedb..5152592 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -78,6 +78,7 @@
- #include "../../../include/linux/magic.h"
- #include "types.h"
- #include <sys/ttydefaults.h>
-+#include "string.h"
- 
- extern const char *graph_line;
- extern const char *graph_dotted_line;
-@@ -235,11 +236,6 @@ static inline int sane_case(int x, int high)
- int mkdir_p(char *path, mode_t mode);
- int copyfile(const char *from, const char *to);
- 
--s64 perf_atoll(const char *str);
--char **argv_split(const char *str, int *argcp);
--void argv_free(char **argv);
--bool strglobmatch(const char *str, const char *pat);
--bool strlazymatch(const char *str, const char *pat);
- int strtailcmp(const char *s1, const char *s2);
- unsigned long convert_unit(unsigned long value, char *unit);
- int readn(int fd, void *buf, size_t size);
+ static __devinit int
 -- 
-1.7.10.1
+1.7.9.5
 
