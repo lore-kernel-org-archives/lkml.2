@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab2E3PLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 11:11:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49200 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752258Ab2E3PLX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 11:11:23 -0400
-Date: Wed, 30 May 2012 16:11:19 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
- Device Tree
-Message-ID: <20120530151119.GN9947@opensource.wolfsonmicro.com>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
- <1338353260-10097-9-git-send-email-lee.jones@linaro.org>
- <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com>
- <20120530100302.GD9947@opensource.wolfsonmicro.com>
- <CAF2Aj3gZMF9ev9B46rBM+aY-srwthef09ad2CWfuXXFHmqqAjA@mail.gmail.com>
- <20120530121547.GJ9947@opensource.wolfsonmicro.com>
- <4FC63632.4030504@linaro.org>
+	id S1753925Ab2E3PMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:12:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41122 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961Ab2E3PMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 11:12:38 -0400
+Date: Wed, 30 May 2012 17:12:36 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
+        Andre Przywara <andre.przywara@amd.com>,
+        Jacob Shin <Jacob.Shin@amd.com>, mingo@elte.hu, jeremy@goop.org,
+        tglx@linutronix.de, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
+ Trinity systems
+Message-ID: <20120530151235.GB15635@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
+	Andre Przywara <andre.przywara@amd.com>,
+	Jacob Shin <Jacob.Shin@amd.com>, mingo@elte.hu, jeremy@goop.org,
+	tglx@linutronix.de, xen-devel@lists.xensource.com,
+	linux-kernel@vger.kernel.org
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+ <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
+ <4FC62888.9010407@amd.com>
+ <4FC649790200007800086E51@nat28.tlf.novell.com>
+ <4FC631F0.9080109@zytor.com>
+ <20120530144929.GH3207@phenom.dumpdata.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nrXiCraHbXeog9mY"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4FC63632.4030504@linaro.org>
-X-Cookie: Give him an evasive answer.
+In-Reply-To: <20120530144929.GH3207@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 30, 2012 at 10:49:29AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Wed, May 30, 2012 at 07:42:56AM -0700, H. Peter Anvin wrote:
+> > On 05/30/2012 07:23 AM, Jan Beulich wrote:
+> > > 
+> > > I see - the Xen code blindly overwrites pv_cpu_ops, despite not
+> > > having initialized all members. That's an obvious oversight of the
+> > > patch that introduced the _regs variants.
+> > > 
+> > > Plus having secondary instances of things like rdmsrl_amd_safe()
+> > > in asm/paravirt.h seems pretty strange an approach (which was
+> > > why initially I didn't spot how a crash could happen there) - only
+> > > the lowest level functions should get re-implemented here.
+> > > 
+> > 
+> > This kinds of things are part of why Xen makes me want to cry regularly.
+> 
+> It looks like an oversight by Borislav (177fed1ee8d727c39601ce9fc2299b4cb25a718e
+> and 132ec92f) and Yinghai (b05f78f5c713eda2c34e495d92495ee4f1c3b5e1) where
+> they added these wrappers way back in 2009!
 
---nrXiCraHbXeog9mY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is exactly why xen has nothing to do in arch/x86/. It is not an
+oversight - I simply didn't test it on xen because I don't care about
+it.
 
-On Wed, May 30, 2012 at 11:01:06PM +0800, Lee Jones wrote:
-> On 30/05/12 20:15, Mark Brown wrote:
+Remember our last discussion about mcelog?
 
-> I personally think:
+This current case should be a perfect example for why xen shouldn't be
+sprinkling code all over the place.
 
-> 	vin-supply = <&db8500_vape_reg>;
-> 	vmmc-supply = <&ab8500_ldo_aux2_reg>;
-
-Oh, oops.  This is going to be fun when someone puts down two of the
-same PMIC on a system...
-
---nrXiCraHbXeog9mY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPxjhlAAoJEBus8iNuMP3drU4P/REeuuslpOT00wWO2wWWnbNG
-JXJD4U3Ch3WcoKtotfIrLWBm8czIaCUlgr7dkL4Hik84oZUCZR4E8lms4hRW8Lkz
-6tdU+TZs4ExYQShPEENr03XlbSSlf9tnu7URUrXYNrCzD5z8PwXq/XjZygsFADLZ
-qFifGdOIWhfsVLfOXZkldrHCZUyua5q1mhgyBtHxnhWolxuhxHJ5rZnvSUizCwtF
-hNAqoZ+y+XS4VdUlAxX1Rzl8+gRFFeSpOrlfaTv9dK6RyPkwibyEMtwxu327xf3Q
-W9awCWvN+RQpZVozR6uuNGKfuCp3IcqTwCcnAbg0fDBNhLBeDbtBrSoMunDMFxoN
-ofHPMYFb6170Q6ZhXIus8TVMJc+LpwGYXWxsLMjAJKT4kURI3q/p6E6PSUAD2mq8
-sFUTar6sg9w3KHnMIRAXcrMhj57CI70t4C/Um/sl1rg5sHkPazkFx/pVaG2AIeQw
-wM2AQtoBsgfn7w0UqAEthBi+nW6+0GsGpmo8wxe9Zv340l+W6NrQ12WXclhJivYX
-ivyDwCcxvZWx7ImADaKbzJF25wAIuO7YG1/K/Ts/T7U8E6Pa4W3zenDgfIiLNw5s
-1VmsRaI11Tteql16zkB2xJLe7K2lZUoAko2XhxQKFNmYixxNOwhmrVxwS7UevZ93
-EGctcz5szS/SUO3JkuOU
-=1mem
------END PGP SIGNATURE-----
-
---nrXiCraHbXeog9mY--
+-- 
+Regards/Gruss,
+Boris.
