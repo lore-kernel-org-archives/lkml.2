@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab2E3Qup (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 12:50:45 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:37094 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753375Ab2E3Qul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 12:50:41 -0400
-Date: Wed, 30 May 2012 18:51:09 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        James Bottomley <JBottomley@Parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-Subject: "[SCSI] sd: limit the scope of the async probe domain" breaks
- booting here
-Message-ID: <20120530165109.GF4771@aftab.osrc.amd.com>
+	id S1755907Ab2E3QyG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 12:54:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32037 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab2E3QyD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 12:54:03 -0400
+Date: Wed, 30 May 2012 12:53:58 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: linux-mm@kvack.org
+Subject: mm list corruption/hard lockup.
+Message-ID: <20120530165358.GA15856@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,188 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dudes,
-
-so I've been testing latest linus
-(731a7378b81c2f5fa88ca1ae20b83d548d5613dc) here and my box fails booting
-because it can't find the root partition, see message below.
-
-I did a bisect run (also below) and pointed me to the first bad commit
-(see below too).
-
-Reverting the commit in question fixes booting.
-
-Let me know what other info you'd need.
-
-Thanks.
+Just hit this with Linus current tree (4523e1458566a0e8ecfaff90f380dd23acc44d27)
 
 
-* bisect
-========
+[ 1820.876977] WARNING: at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+[ 1820.878686] list_del corruption. prev->next should be ffffea0004b32de0, but was ffffea0004b35660
+[ 1820.879605] Modules linked in: fuse nfnetlink dccp_ipv6 dccp_ipv4 dccp tun ipt_ULOG binfmt_misc usb_debug sctp libcrc32c caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode serio_raw i2c_i801 pcspkr lpc_ich mfd_core e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+[ 1820.883166] Pid: 8742, comm: trinity-child5 Not tainted 3.4.0+ #37
+[ 1820.884072] Call Trace:
+[ 1820.884980]  [<ffffffff81048fdf>] warn_slowpath_common+0x7f/0xc0
+[ 1820.885897]  [<ffffffff810490d6>] warn_slowpath_fmt+0x46/0x50
+[ 1820.886824]  [<ffffffff813253a1>] __list_del_entry+0xa1/0xd0
+[ 1820.887724]  [<ffffffff811457b9>] move_freepages_block+0x159/0x190
+[ 1820.888626]  [<ffffffff811658b3>] suitable_migration_target.isra.15+0x1b3/0x1d0
+[ 1820.889537]  [<ffffffff81165afe>] compaction_alloc+0x22e/0x2f0
+[ 1820.890452]  [<ffffffff81198227>] migrate_pages+0xc7/0x540
+[ 1820.891445]  [<ffffffff811658d0>] ? suitable_migration_target.isra.15+0x1d0/0x1d0
+[ 1820.892376]  [<ffffffff81166856>] compact_zone+0x216/0x480
+[ 1820.893303]  [<ffffffff810b1208>] ? trace_hardirqs_off_caller+0x28/0xc0
+[ 1820.894317]  [<ffffffff81166d9d>] compact_zone_order+0x8d/0xd0
+[ 1820.895316]  [<ffffffff81149415>] ? get_page_from_freelist+0x565/0x970
+[ 1820.896346]  [<ffffffff81166ea9>] try_to_compact_pages+0xc9/0x140
+[ 1820.897369]  [<ffffffff8164ea81>] __alloc_pages_direct_compact+0xaa/0x1d0
+[ 1820.898385]  [<ffffffff81149e2b>] __alloc_pages_nodemask+0x60b/0xab0
+[ 1820.899400]  [<ffffffff810b1208>] ? trace_hardirqs_off_caller+0x28/0xc0
+[ 1820.900424]  [<ffffffff810b4b00>] ? __lock_acquire+0x2c0/0x1aa0
+[ 1820.901443]  [<ffffffff81189bb6>] alloc_pages_vma+0xb6/0x190
+[ 1820.902466]  [<ffffffff8119cca3>] do_huge_pmd_anonymous_page+0x133/0x310
+[ 1820.903482]  [<ffffffff8116bfb2>] handle_mm_fault+0x242/0x2e0
+[ 1820.904502]  [<ffffffff8116c262>] __get_user_pages+0x142/0x560
+[ 1820.905498]  [<ffffffff81171928>] ? mmap_region+0x3f8/0x630
+[ 1820.906495]  [<ffffffff81317b3d>] ? rb_insert_color+0xad/0x150
+[ 1820.907473]  [<ffffffff8116c732>] get_user_pages+0x52/0x60
+[ 1820.908473]  [<ffffffff8116d622>] make_pages_present+0x92/0xc0
+[ 1820.909447]  [<ffffffff811718d6>] mmap_region+0x3a6/0x630
+[ 1820.910513]  [<ffffffff81050a6c>] ? do_setitimer+0x1cc/0x310
+[ 1820.910515]  [<ffffffff81171ebd>] do_mmap_pgoff+0x35d/0x3b0
+[ 1820.910517]  [<ffffffff81171f76>] ? sys_mmap_pgoff+0x66/0x240
+[ 1820.910520]  [<ffffffff81171f94>] sys_mmap_pgoff+0x84/0x240
+[ 1820.910522]  [<ffffffff8131eeee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[ 1820.910524]  [<ffffffff81006ca2>] sys_mmap+0x22/0x30
+[ 1820.910527]  [<ffffffff816613d2>] system_call_fastpath+0x16/0x1b
+[ 1820.910528] ---[ end trace f74f2364aa4221df ]---
 
-git bisect start
-# bad: [731a7378b81c2f5fa88ca1ae20b83d548d5613dc] Merge branch 'x86-trampoline-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-git bisect bad 731a7378b81c2f5fa88ca1ae20b83d548d5613dc
-# good: [76e10d158efb6d4516018846f60c2ab5501900bc] Linux 3.4
-git bisect good 76e10d158efb6d4516018846f60c2ab5501900bc
-# bad: [fb09bafda67041b74a668dc9d77735e36bd33d3b] Merge tag 'staging-3.5-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging
-git bisect bad fb09bafda67041b74a668dc9d77735e36bd33d3b
-# bad: [da4f58ffa08a7b7012fab9c205fa0f6ba40fec42] Merge tag 'scsi-misc' of git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-git bisect bad da4f58ffa08a7b7012fab9c205fa0f6ba40fec42
-# good: [9a00be04e66cc025ab4558d34620615d5c4de5b6] iwlwifi: add BT reduced tx power flag
-git bisect good 9a00be04e66cc025ab4558d34620615d5c4de5b6
-# good: [ff8ce5f67ddca709fe59e6173f89260f0fdc2b22] Merge branch 'for-linus' of git://git.linaro.org/people/rmk/linux-arm
-git bisect good ff8ce5f67ddca709fe59e6173f89260f0fdc2b22
-# good: [ac1806572df55b6125ad9d117906820dacfa3145] Merge tag 'regulator-3.5' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator
-git bisect good ac1806572df55b6125ad9d117906820dacfa3145
-# bad: [76b311fdbdd2e16e5d39cd496a67aa1a1b948914] [SCSI] lpfc 8.3.31: Update lpfc to version 8.3.31
-git bisect bad 76b311fdbdd2e16e5d39cd496a67aa1a1b948914
-# good: [949e71f17d9a5c59fa7b02cce3b548384bff1c92] [SCSI] fcoe: Don't hold rtnl_mutex in fcoe_update_src_mac
-git bisect good 949e71f17d9a5c59fa7b02cce3b548384bff1c92
-# bad: [794c10fa0fa4d1781c5651c31e3d4d0b71629128] [SCSI] sg: remove while (1) non-loop
-git bisect bad 794c10fa0fa4d1781c5651c31e3d4d0b71629128
-# good: [852af20aa64ef34ab07de978c676e1e8860dca2e] [SCSI] hpsa: retry driver initiated commands on busy status
-git bisect good 852af20aa64ef34ab07de978c676e1e8860dca2e
-# good: [e16a33adc0e59aa96a483fd2923d77e674f013c1] [SCSI] hpsa: refine interrupt handler locking for greater concurrency
-git bisect good e16a33adc0e59aa96a483fd2923d77e674f013c1
-# good: [21334ea9086c31db38e76152a1e31001a0ed288a] [SCSI] hpsa: removed unused member maxQsinceinit
-git bisect good 21334ea9086c31db38e76152a1e31001a0ed288a
-# bad: [a7a20d103994fd760766e6c9d494daa569cbfe06] [SCSI] sd: limit the scope of the async probe domain
-git bisect bad a7a20d103994fd760766e6c9d494daa569cbfe06
-# good: [e85c59746957fd6e3595d02cf614370056b5816e] [SCSI] hpsa: dial down lockup detection during firmware flash
-git bisect good e85c59746957fd6e3595d02cf614370056b5816e
-
-
-
-* first bad commit
-==================
-
-commit a7a20d103994fd760766e6c9d494daa569cbfe06
-Author: Dan Williams <dan.j.williams@intel.com>
-Date:   Thu Mar 22 17:05:11 2012 -0700
-
-    [SCSI] sd: limit the scope of the async probe domain
-    
-    sd injects and synchronizes probe work on the global kernel-wide domain.
-    This runs into conflict with PM that wants to perform resume actions in
-    async context:
-    
-    [  494.237079] INFO: task kworker/u:3:554 blocked for more than 120 seconds.
-    [  494.294396] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-    [  494.360809] kworker/u:3     D 0000000000000000     0   554      2 0x00000000
-    [  494.420739]  ffff88012e4d3af0 0000000000000046 ffff88013200c160 ffff88012e4d3fd8
-    [  494.484392]  ffff88012e4d3fd8 0000000000012500 ffff8801394ea0b0 ffff88013200c160
-    [  494.548038]  ffff88012e4d3ae0 00000000000001e3 ffffffff81a249e0 ffff8801321c5398
-    [  494.611685] Call Trace:
-    [  494.632649]  [<ffffffff8149dd25>] schedule+0x5a/0x5c
-    [  494.674687]  [<ffffffff8104b968>] async_synchronize_cookie_domain+0xb6/0x112
-    [  494.734177]  [<ffffffff810461ff>] ? __init_waitqueue_head+0x50/0x50
-    [  494.787134]  [<ffffffff8131a224>] ? scsi_remove_target+0x48/0x48
-    [  494.837900]  [<ffffffff8104b9d9>] async_synchronize_cookie+0x15/0x17
-    [  494.891567]  [<ffffffff8104ba49>] async_synchronize_full+0x54/0x70  <-- here we wait for async contexts to complete
-    [  494.943783]  [<ffffffff8104b9f5>] ? async_synchronize_full_domain+0x1a/0x1a
-    [  495.002547]  [<ffffffffa00114b1>] sd_remove+0x2c/0xa2 [sd_mod]
-    [  495.051861]  [<ffffffff812fe94f>] __device_release_driver+0x86/0xcf
-    [  495.104807]  [<ffffffff812fe9bd>] device_release_driver+0x25/0x32  <-- here we take device_lock()
-    
-    [  853.511341] INFO: task kworker/u:4:549 blocked for more than 120 seconds.
-    [  853.568693] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-    [  853.635119] kworker/u:4     D ffff88013097b5d0     0   549      2 0x00000000
-    [  853.695129]  ffff880132773c40 0000000000000046 ffff880130790000 ffff880132773fd8
-    [  853.758990]  ffff880132773fd8 0000000000012500 ffff88013288a0b0 ffff880130790000
-    [  853.822796]  0000000000000246 0000000000000040 ffff88013097b5c8 ffff880130790000
-    [  853.886633] Call Trace:
-    [  853.907631]  [<ffffffff8149dd25>] schedule+0x5a/0x5c
-    [  853.949670]  [<ffffffff8149cc44>] __mutex_lock_common+0x220/0x351
-    [  854.001225]  [<ffffffff81304bd7>] ? device_resume+0x58/0x1c4
-    [  854.049082]  [<ffffffff81304bd7>] ? device_resume+0x58/0x1c4
-    [  854.097011]  [<ffffffff8149ce48>] mutex_lock_nested+0x2f/0x36   <-- here we wait for device_lock()
-    [  854.145591]  [<ffffffff81304bd7>] device_resume+0x58/0x1c4
-    [  854.192066]  [<ffffffff81304d61>] async_resume+0x1e/0x45
-    [  854.237019]  [<ffffffff8104bc93>] async_run_entry_fn+0xc6/0x173  <-- ...while running in async context
-    
-    Provide a 'scsi_sd_probe_domain' so that async probe actions actions can
-    be flushed without regard for the state of PM, and allow for the resume
-    path to handle devices that have transitioned from SDEV_QUIESCE to
-    SDEV_DEL prior to resume.
-    
-    Acked-by: Alan Stern <stern@rowland.harvard.edu>
-    [alan: uplevel scsi_sd_probe_domain, clarify scsi_device_resume]
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-    [jejb: remove unneeded config guards in include file]
-    Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-
-* Error msg:
-============
-
-[    4.582698] ata4.00: configured for UDMA/133
-[    4.587609] scsi 3:0:0:0: Direct-Access     ATA      WDC WD5001AALS-0 01.0 PQ: 0 ANSI: 5
-[    4.597471] sd 3:0:0:0: [sda] 976773168 512-byte logical blocks: (500 GB/465 GiB)
-[    4.597750] sd 3:0:0:0: Attached scsi generic sg0 type 0
-[    4.599666] scsi 4:0:1:0: CD-ROM            Optiarc  DVD RW AD-7240S  1.01 PQ: 0 ANSI: 5
-[    4.602711] sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw xa/form2 cdda tray
-[    4.602714] cdrom: Uniform CD-ROM driver Revision: 3.20
-[    4.603366] sr 4:0:1:0: Attached scsi CD-ROM sr0
-[    4.603922] sr 4:0:1:0: Attached scsi generic sg1 type 5
-[    4.604481] VFS: Cannot open root device "sda2" or unknown-block(0,0): error -6
-[    4.604484] Please append a correct "root=" boot option; here are the available partitions:
-[    4.604501] 0b00         1048575 sr0  driver: sr
-[    4.604506] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-[    4.604511] Pid: 1, comm: swapper/0 Tainted: G        W    3.4.0+ #2
-[    4.604512] Call Trace:
-[    4.604526]  [<ffffffff814223e4>] panic+0xbd/0x1c4
-[    4.604533]  [<ffffffff81422538>] ? printk+0x4d/0x4f
-[    4.604540]  [<ffffffff81ac5f72>] mount_block_root+0x251/0x26f
-[    4.604545]  [<ffffffff81ac60f5>] mount_root+0x56/0x5a
-[    4.604550]  [<ffffffff81ac6259>] prepare_namespace+0x160/0x18d
-[    4.604554]  [<ffffffff81ac5c50>] kernel_init+0x1eb/0x1fd
-[    4.604560]  [<ffffffff81ac5495>] ? loglevel+0x31/0x31
-[    4.604567]  [<ffffffff8142ced4>] kernel_thread_helper+0x4/0x10
-[    4.604573]  [<ffffffff81425386>] ? retint_restore_args+0xe/0xe
-[    4.604577]  [<ffffffff81ac5a65>] ? start_kernel+0x2ee/0x2ee
-[    4.604582]  [<ffffffff8142ced0>] ? gs_change+0xb/0xb
-[    4.605421] ------------[ cut here ]------------
-[    4.605428] WARNING: at arch/x86/kernel/smp.c:123 native_smp_send_reschedule+0x2a/0x56()
-[    4.605430] Hardware name: Dinar
-[    4.605432] Modules linked in:
-[    4.605436] Pid: 1, comm: swapper/0 Tainted: G        W    3.4.0+ #2
-[    4.605437] Call Trace:
-[    4.605446]  <IRQ>  [<ffffffff8102f1fc>] warn_slowpath_common+0x85/0x9d
-[    4.605451]  [<ffffffff8102f22e>] warn_slowpath_null+0x1a/0x1c
-[    4.605456]  [<ffffffff81019cad>] native_smp_send_reschedule+0x2a/0x56
-[    4.605463]  [<ffffffff8105e531>] trigger_load_balance+0x1ed/0x21a
-[    4.605467]  [<ffffffff810581b8>] scheduler_tick+0xe9/0xf2
-[    4.605472]  [<ffffffff8103cbe9>] update_process_times+0x67/0x77
-[    4.605477]  [<ffffffff8107122f>] tick_sched_timer+0x72/0x91
-[    4.605481]  [<ffffffff8104e4c1>] __run_hrtimer+0xc3/0x17f
-[    4.605486]  [<ffffffff810711bd>] ? tick_nohz_handler+0xd1/0xd1
-[    4.605490]  [<ffffffff8104edbd>] hrtimer_interrupt+0xd4/0x197
-[    4.605497]  [<ffffffff8142d5ea>] smp_apic_timer_interrupt+0x86/0x99
-[    4.605501]  [<ffffffff8142c5dc>] apic_timer_interrupt+0x6c/0x80
-[    4.605510]  <EOI>  [<ffffffff811d523a>] ? delay_tsc+0x23/0x50
-[    4.605515]  [<ffffffff811d5199>] __delay+0xf/0x11
-[    4.605520]  [<ffffffff811d51c4>] __const_udelay+0x29/0x2b
-[    4.605525]  [<ffffffff81019d7a>] native_stop_other_cpus+0x78/0x13d
-[    4.605530]  [<ffffffff814223f3>] panic+0xcc/0x1c4
-[    4.605535]  [<ffffffff81422538>] ? printk+0x4d/0x4f
-[    4.605540]  [<ffffffff81ac5f72>] mount_block_root+0x251/0x26f
-[    4.605544]  [<ffffffff81ac60f5>] mount_root+0x56/0x5a
-[    4.605548]  [<ffffffff81ac6259>] prepare_namespace+0x160/0x18d
-[    4.605552]  [<ffffffff81ac5c50>] kernel_init+0x1eb/0x1fd
-[    4.605557]  [<ffffffff81ac5495>] ? loglevel+0x31/0x31
-[    4.605562]  [<ffffffff8142ced4>] kernel_thread_helper+0x4/0x10
-[    4.605566]  [<ffffffff81425386>] ? retint_restore_args+0xe/0xe
-[    4.605570]  [<ffffffff81ac5a65>] ? start_kernel+0x2ee/0x2ee
-[    4.605574]  [<ffffffff8142ced0>] ? gs_change+0xb/0xb
-[    4.605577] ---[ end trace 4eaa2a86a8e2da24 ]---
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
