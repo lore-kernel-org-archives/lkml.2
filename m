@@ -1,149 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2E3QNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 12:13:06 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36543 "EHLO bear.ext.ti.com"
+	id S1755298Ab2E3QNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 12:13:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28120 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab2E3QNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 12:13:04 -0400
-Message-ID: <4FC646FF.1000209@ti.com>
-Date: Wed, 30 May 2012 11:12:47 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755170Ab2E3QNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 12:13:19 -0400
+Message-ID: <4FC6471A.5090208@redhat.com>
+Date: Wed, 30 May 2012 12:13:14 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: Xiao Jiang <jgq516@gmail.com>, <linux@arm.linux.org.uk>,
-        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
-        <rnayak@ti.com>, <tony@atomide.com>, <wim@iguana.be>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 3/3] watchdog: omap_wdt: add device tree support
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-4-git-send-email-jgq516@gmail.com> <4FC51008.1050004@ti.com> <4FC59171.8040009@gmail.com> <4FC5D21F.2030702@ti.com> <4FC636C9.2050902@ti.com> <4FC63D03.8080501@ti.com>
-In-Reply-To: <4FC63D03.8080501@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Xudong Hao <xudong.hao@linux.intel.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
+        alex.williamson@redhat.com, xiantao.zhang@intel.com,
+        xudong.hao@intel.com
+Subject: Re: [PATCH 1/1] Enable LTR/OBFF before device is used by driver
+References: <20120514024816.GA15371@hp-xd.sh.intel.com>
+In-Reply-To: <20120514024816.GA15371@hp-xd.sh.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benoit,
+While you are making the other recommended fixes, could
+you add/create a pci_obff_supported() function, like the pci_ltr_supported()
+function, and more importantly, add it to the pci_disable_obff() function?
+The latter does not check that DEVCAP2 is supported, and thus, could be
+writing to non-existent (potentially private) cap space (i.e., a V1 CAP device,
+which do exist in the marketplace).
 
-On 05/30/2012 10:30 AM, Cousson, Benoit wrote:
-> Hi Jon,
-> 
-> On 5/30/2012 5:03 PM, Jon Hunter wrote:
->> Hi Benoit,
->>
->> On 05/30/2012 02:54 AM, Cousson, Benoit wrote:
->>> On 5/30/2012 5:18 AM, Xiao Jiang wrote:
->>>> Jon Hunter wrote:
->>>>> On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
->>>>>> From: Xiao Jiang<jgq516@gmail.com>
->>>>>>
->>>>>> Add device table for omap_wdt to support dt.
->>>>>>
->>>>>> Signed-off-by: Xiao Jiang<jgq516@gmail.com>
->>>>>> ---
->>>>>> drivers/watchdog/omap_wdt.c | 8 ++++++++
->>>>>> 1 files changed, 8 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/watchdog/omap_wdt.c
->>>>>> b/drivers/watchdog/omap_wdt.c
->>>>>> index 8285d65..d98c615 100644
->>>>>> --- a/drivers/watchdog/omap_wdt.c
->>>>>> +++ b/drivers/watchdog/omap_wdt.c
->>>>>> @@ -430,6 +430,13 @@ static int omap_wdt_resume(struct
->>>>>> platform_device *pdev)
->>>>>> #define omap_wdt_resume NULL
->>>>>> #endif
->>>>>>
->>>>>> +static const struct of_device_id omap_wdt_of_match[] = {
->>>>>> + { .compatible = "ti,omap3-wdt", },
->>>>>> + { .compatible = "ti,omap4-wdt", },
->>>
->>> If there is no difference between the OMAP3 and the OMAP4 WDT IP, just
->>> add one entry "ti,omap3-wdt". And then in the OMAP4 DTS you will just
->>> put : compatible = "ti,omap3-wdt"; or compatible =  "ti,omap4-wdt",
->>> "ti,omap3-wdt";
->>
->> Hmmm ... comparing the omap3 and omap4 wdt registers there are some
->> differences. omap4 seems to have more registers than omap3. May be we
->> are not using these right now, but from a register perspective the wdt
->> in omap2, omap3 and omap4 appear to be slightly different. The revision
->> ID register on omap3 and omap4 have different values too.
->>
->> I guess from a driver perspective there is no difference, but it seemed
->> to me that the IP is not completely the same.
-> 
-> Well, in that case, and assuming that there is no proper HW_REVISION
-> information to detect the IP difference, the proper compatible entries
-> will indeed have to be used.
+The [enable,disable]_ltr functions do a good job of doing pci_ltr_supported()
+checks, but the obff enable,disable functions should have similar calls.
 
-So looking at a 4460 and 3430, the WIDR register (IP revision) can be
-used to distinguish between IP revisions. So it appears that we do have
-proper HW REV info.
 
-So may be I am not completely up to speed of the intent of the
-compatible field. In other words, should this be used to indicate if the
-IP is same/compatible or the driver is compatible or both. Technically
-right now we could just have "ti-omap2-wdt" for all omap2+ devices as
-the driver is compatible for all devices. However, technically, the IP
-is not completely the same but it is compatible :-)
+On 05/13/2012 10:48 PM, Xudong Hao wrote:
+> Enable LTR(Latency tolerance reporting) and OBFF(optimized buffer flush/fill) in
+>   pci_enable_device(), so that they are enabled before the device is used by driver.
+>
+> Signed-off-by: Xudong Hao<xudong.hao@intel.com>
+>
+> ---
+>   drivers/pci/pci.c |   29 +++++++++++++++++++++++++++++
+>   1 files changed, 29 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index 111569c..2369883 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1134,6 +1134,31 @@ int pci_load_and_free_saved_state(struct pci_dev *dev,
+>   }
+>   EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
+>
+> +static void pci_enable_dev_caps(struct pci_dev *dev)
+> +{
+> +       /* set default value */
+> +       unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
+> +
+> +       /* LTR(Latency tolerance reporting) allows devices to send
+> +        * messages to the root complex indicating their latency
+> +        * tolerance for snooped&  unsnooped memory transactions.
+> +        */
+> +       pci_enable_ltr(dev);
+> +
+> +       /* OBFF (optimized buffer flush/fill), where supported,
+> +        * can help improve energy efficiency by giving devices
+> +        * information about when interrupts and other activity
+> +        * will have a reduced power impact.
+> +        */
+> +       pci_enable_obff(dev, type);
+> +}
+> +
+> +static void pci_disable_dev_caps(struct pci_dev *dev)
+> +{
+> +       pci_disable_obff(dev);
+> +       pci_disable_ltr(dev);
+> +}
+> +
+>   static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>   {
+>          int err;
+> @@ -1146,6 +1171,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>                  return err;
+>          pci_fixup_device(pci_fixup_enable, dev);
+>
+> +       /* Enable some device capibility before it's used by driver. */
+> +       pci_enable_dev_caps(dev);
+> +
+>          return 0;
+>   }
+>
+> @@ -1361,6 +1389,7 @@ static void do_pci_disable_device(struct pci_dev *dev)
+>          }
+>
+>          pcibios_disable_device(dev);
+> +       pci_disable_dev_caps(dev);
+>   }
+>
+>   /**
+> --
+> 1.6.0.rc1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
->>> I'm still a little bit confused about the real need for the
->>> "ti,omap4-wdt: entry, but it seems to be the way to do it in PPC.
->>>
->>>>>> + {},
->>>>>> +};
->>>>>> +MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
->>>>>> +
->>>>>> static struct platform_driver omap_wdt_driver = {
->>>>>> .probe = omap_wdt_probe,
->>>>>> .remove = __devexit_p(omap_wdt_remove),
->>>>>> @@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
->>>>>> .driver = {
->>>>>> .owner = THIS_MODULE,
->>>>>> .name = "omap_wdt",
->>>>>> + .of_match_table = omap_wdt_of_match,
->>>>>> },
->>>>>> };
->>>>>>
->>>>>
->>>>> I think we need to add some code to the probe function that calls
->>>>> of_match_device() and ensures we find a match. For example ...
->>>>>
->>>>> if (of_have_populated_dt())
->>>>> if (!of_match_device(omap_wdt_of_match,&pdev->dev))
->>>>> return -EINVAL;
->>>>>
->>>> Will add it in v2, thanks for suggestion.
->>>
->>> No, in fact this is not needed. We need that mainly when several
->>> instances can match the same driver and thus we select the proper one
->>> using the of_match_device. Otherwise, just check is the device_node is
->>> there.
->>>
->>> In that case, the driver does not even care about any DT node so there
->>> is no need to add extra code for that. Keep it simple.
->>
->> Ok. So are you saying get rid of the match table altogether? In other
->> words, drop this patch?
-> 
-> No, the match table is used by the LDM to find the proper driver to be
-> bound to a device. So we do need it. But we do not have to use the
-> of_match_device if we do not want to get the entry in the device table.
-
-Ok, thanks.
-
->> I agree that it does not really do anything today, but I did not know if
->> in the future you were planning to pass things like, register addresses,
->> via DT.
-> 
-> Well, yes we will have to, otherwise people will keep complaining that
-> our DTS sucks and are not compliant with the DTS standards :-)
-
-Ok.
-
-Jon
