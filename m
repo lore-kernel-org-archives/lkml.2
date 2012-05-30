@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab2EaGKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 02:10:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab2EaGKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 02:10:20 -0400
-Message-ID: <4FC70BA8.5060200@redhat.com>
-Date: Thu, 31 May 2012 14:11:52 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+	id S1753711Ab2EaGRR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 02:17:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55236 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752066Ab2EaGRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 02:17:15 -0400
+Date: Thu, 31 May 2012 06:17:07 +0800
+From: baozich <baozich@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+Message-ID: <20120530221707.GA25095@centos-guest>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils>
+ <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] net: sock: validate data_len before allocating skb in
- sock_alloc_send_pskb()
-References: <20120530054702.6146.8503.stgit@amd-6168-8-1.englab.nay.redhat.com> <1338360383.2760.84.camel@edumazet-glaptop> <20120530.030205.1337682162603770949.davem@davemloft.net> <4FC708EE.2020908@redhat.com> <20120531060201.GA13158@redhat.com>
-In-Reply-To: <20120531060201.GA13158@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2012 02:02 PM, Michael S. Tsirkin wrote:
-> On Thu, May 31, 2012 at 02:00:14PM +0800, Jason Wang wrote:
->> On 05/30/2012 03:02 PM, David Miller wrote:
->>> From: Eric Dumazet<eric.dumazet@gmail.com>
->>> Date: Wed, 30 May 2012 08:46:23 +0200
->>>
->>>> Why doing this test in the while (1) block, it should be done before the
->>>> loop...
->>>>
->>>> Or even in the caller, note net/unix/af_unix.c does this right.
->>>>
->>>>          if (len>   SKB_MAX_ALLOC)
->>>>                  data_len = min_t(size_t,
->>>>                                   len - SKB_MAX_ALLOC,
->>>>                                   MAX_SKB_FRAGS * PAGE_SIZE);
->>>>
->>>>          skb = sock_alloc_send_pskb(sk, len - data_len, data_len,
->>>>                                     msg->msg_flags&   MSG_DONTWAIT,&err);
->>> My impression is that the callers should be fixed to.  It makes no sense
->>> to penalize the call sites that get this right.
->>>
->>> And yes, if we do check it in sock_alloc_send_pskb() it should be done
->>> at function entry, not inside the loop.
->> Sure, so is it ok for me to send a V2 that just do the fixing in
->> sock_alloc_sned_pskb() as it's simple and easy to be accepted by
->> stable version?
->>
->> For the fix of callers, I want to post fixes on top as I find
->> there's some code duplication of {tun|macvtap|packet}_alloc_skb()
->> and I want to unify them to a common helper in sock.c. Then I can
->> fix this issue in the new helper.
-> Are packet sockets really affected?
-> If yes the only call site that gets this right is unix sockets?
+Hi Hugh,
+On Sun, May 13, 2012 at 10:02:28PM -0700, Hugh Dickins wrote:
+> Take lruvec further: pass it instead of zone to add_page_to_lru_list()
+> and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
+> down to its target functions.
+> 
+> This cleanup eliminates a swathe of cruft in memcontrol.c,
+> including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
+> mem_cgroup_lru_move_lists() - which never actually touched the lists.
+> 
+> In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> previously a side-effect of add, and mem_cgroup_update_lru_size()
+> to maintain the lru_size stats.
+I have a stupid question. I'm not sure whether there is reduplication
+to put both "page" and "zone" parameter in mem_cgroup_page_lruvec(),
+for I noticed that the "struct zone *zone" parameter are usually from 
+page_zone(page) in most cases. I think that the semantics of this function
+is to grab the lruvec the page belongs to. So will it be ok if we pass
+only "page" as the parameter, which I think would be cleaner? Please
+fix me if I missed something.
 
-Not affected, only code duplication. It's no harm the check the data_len 
-again for packet sockets, so better to unify the code and fix the issue 
-in one place?
->
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks
 
+Baozi
+> 
+> Whilst these are simplifications in their own right, the goal is to
+> bring the evaluation of lruvec next to the spin_locking of the lrus,
+> in preparation for a future patch.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
