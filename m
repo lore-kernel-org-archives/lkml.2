@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab2E3Ljm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:39:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30859 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753160Ab2E3Ljk (ORCPT
+	id S1753173Ab2E3LlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:41:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58178 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085Ab2E3LlF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:39:40 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=wwwCnHkgN0EA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=muDU9TWqX4S6gBgt5GwA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338377978.13348.308.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe
- optimization
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Wed, 30 May 2012 07:39:38 -0400
-In-Reply-To: <4FC5C55E.9000909@hitachi.com>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-	 <1338331514.13348.298.camel@gandalf.stny.rr.com>
-	 <4FC5C55E.9000909@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 30 May 2012 07:41:05 -0400
+Message-ID: <1338378051.26856.267.camel@twins>
+Subject: Re: [PATCH v3 4/6] add a new scheduler hook for context switch
+From: Peter Zijlstra <peterz@infradead.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Paul Turner <pjt@google.com>, Tejun Heo <tj@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, handai.szj@gmail.com,
+        Andrew.Phillips@lmax.com, Serge Hallyn <serge.hallyn@canonical.com>
+Date: Wed, 30 May 2012 13:40:51 +0200
+In-Reply-To: <1338376851.26856.260.camel@twins>
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
+	 <1338371317-5980-5-git-send-email-glommer@parallels.com>
+	 <1338376851.26856.260.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 15:59 +0900, Masami Hiramatsu wrote:
+On Wed, 2012-05-30 at 13:20 +0200, Peter Zijlstra wrote:
+> 
+> $ perf stat -e cycles --repeat 100 perf bench sched messaging -p -g 100
+> 
+>     48,826,146,710 cycles  #    2.470 GHz  ( +-  0.17% )
+>        2.149005270 seconds time elapsed    ( +-  0.12% ) 
 
-> Hmm, I'm not so sure how the notrace and filter works.
-> What happens if I set a foo function-entry on filter
-> and keep notrace empty?
->  - only foo's nop is replaced with call?
->  - or all functions including foo is traced?
+A repeat count of 250 dropped it down to:
 
->From Documentation/trace/ftrace.txt:
+        2.144582157 seconds time elapsed    ( +-  0.08% )
 
-"If a function exists in both set_ftrace_filter
- and set_ftrace_notrace, the function will _not_ be traced."
+Also, if you're poking at the context switch path, something like:
 
-The filters work exactly the same. If notrace always take precedence
-over filter. If you have foo and bar in filter, and put foo in notrace,
-then only bar is traced.
+$ taskset 1 perf stat -e cycles --repeat 10 perf bench sched pipe -l 100000
 
-"filter" means "limit tracing only to these functions"
-"notrace" means "do not trace this function"
-
-Think of 'filter' as a way of making the 'available_filter_functions'
-smaller. It filters the list. But 'notrace' is just like adding a
-'notrace' tag. It stops it from being traced regardless.
-
--- Steve
-
-
-
+gives a good number and is usually more stable than hackbench.
