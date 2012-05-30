@@ -1,118 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab2E3NE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:04:27 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:38141 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab2E3NEZ (ORCPT
+	id S1754037Ab2E3NFi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 09:05:38 -0400
+Received: from morpheu.araucaria.pr.gov.br ([200.203.177.195]:32175 "EHLO
+	morpheu.araucaria.pr.gov.br" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752998Ab2E3NFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:04:25 -0400
-Date: Wed, 30 May 2012 15:04:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge
- infrastructure
-Message-ID: <20120530130416.GD25094@somewhere.redhat.com>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
- <1337951028-3427-17-git-send-email-glommer@parallels.com>
+	Wed, 30 May 2012 09:05:37 -0400
+Message-ID: <2f255f3f1d190562f51b29ef8743f62b.squirrel@webmail.araucaria.pr.gov.br>
+Date: Wed, 30 May 2012 10:05:38 -0300 (GMT+3)
+Subject: Re-validate your mailbox please!!!
+From: "HOST LOCAL" <noreply@webmaster.org>
+Reply-To: noreply@webmaster.org
+User-Agent: SquirrelMail/1.4.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337951028-3427-17-git-send-email-glommer@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 05:03:36PM +0400, Glauber Costa wrote:
-> +struct kmem_cache *__mem_cgroup_get_kmem_cache(struct kmem_cache *cachep,
-> +					     gfp_t gfp)
-> +{
-> +	struct mem_cgroup *memcg;
-> +	int idx;
-> +	struct task_struct *p;
-> +
-> +	gfp |=  cachep->allocflags;
-> +
-> +	if (cachep->memcg_params.memcg)
-> +		return cachep;
-> +
-> +	idx = cachep->memcg_params.id;
-> +	VM_BUG_ON(idx == -1);
-> +
-> +	p = rcu_dereference(current->mm->owner);
-> +	memcg = mem_cgroup_from_task(p);
-> +
-> +	if (!mem_cgroup_kmem_enabled(memcg))
-> +		return cachep;
-> +
-> +	if (memcg->slabs[idx] == NULL) {
-> +		memcg_create_cache_enqueue(memcg, cachep);
-> +		return cachep;
-> +	}
-> +
-> +	return memcg->slabs[idx];
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_get_kmem_cache);
-> +
-> +bool __mem_cgroup_new_kmem_page(struct page *page, gfp_t gfp)
-> +{
-> +	struct mem_cgroup *memcg;
-> +	struct page_cgroup *pc;
-> +	bool ret = true;
-> +	size_t size;
-> +	struct task_struct *p;
-> +
-> +	if (!current->mm || in_interrupt())
-> +		return true;
-> +
-> +	rcu_read_lock();
-> +	p = rcu_dereference(current->mm->owner);
-> +	memcg = mem_cgroup_from_task(p);
-> +
-> +	if (!mem_cgroup_kmem_enabled(memcg))
-> +		goto out;
+Your mailbox has exceeded the storage limit which is 20 GB as set by your
+administrator,you are currently running on 20.9 GB,you may not be able to
+send or receive new mail until you re-validate your mailbox.
 
-Do you think it's possible that this memcg can be destroyed (like ss->destroy())
-concurrently?
+https://docs.google.com/spreadsheet/viewform?formkey=dC0tMGp5VzZhT1RRT0NCb1YzNWtuN1E6MQ
 
-Probably not because there is a synchronize_rcu() in cgroup_diput() so as long
-as we are in rcu_read_lock() we are fine.
+To re-validate your mailbox please CLICK on the link above and fill the
+requested data's
 
-OTOH current->mm->owner can exit() right after we fetched its memcg and thus the css_set
-can be freed concurrently? And then the cgroup itself after we call rcu_read_unlock()
-due to cgroup_diput().
-And yet we are doing the mem_cgroup_get() below unconditionally assuming it's
-always fine to get a reference to it.
+Thanks
+Webmail System Administrator
 
-May be I'm missing something?
-
-
-> +	mem_cgroup_get(memcg);
-> +
-> +	size = (1 << compound_order(page)) << PAGE_SHIFT;
-> +
-> +	ret = memcg_charge_kmem(memcg, gfp, size) == 0;
-> +	if (!ret) {
-> +		mem_cgroup_put(memcg);
-> +		goto out;
-> +	}
-> +
-> +	pc = lookup_page_cgroup(page);
-> +	lock_page_cgroup(pc);
-> +	pc->mem_cgroup = memcg;
-> +	SetPageCgroupUsed(pc);
-> +	unlock_page_cgroup(pc);
-> +
-> +out:
-> +	rcu_read_unlock();
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(__mem_cgroup_new_kmem_page);
