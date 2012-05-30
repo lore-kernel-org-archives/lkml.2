@@ -1,181 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab2E3X73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 19:59:29 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:36647 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab2E3X70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 19:59:26 -0400
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: target-devel <target-devel@vger.kernel.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] target/file: Drop O_SYNC in favor of implict vfs_fsync_range for writes
-Date: Wed, 30 May 2012 23:57:43 +0000
-Message-Id: <1338422263-19874-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1754886Ab2EaAAE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 20:00:04 -0400
+Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:55451 "EHLO
+	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751568Ab2EaAAB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 20:00:01 -0400
+X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 May 2012 20:00:01 EDT
+From: "Lubashev, Igor" <ilubashe@akamai.com>
+To: David Miller <davem@davemloft.net>, Arun Sharma <asharma@fb.com>
+CC: "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 30 May 2012 19:50:15 -0400
+Subject: Re: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+Thread-Topic: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+Thread-Index: AQHNPr7ayBxPIzOG4ka/ptMv4ZRi6w==
+Message-ID: <83CE6FF8F6C9B2468A618FC2C51267260F303CD88B@USMBX1.msg.corp.akamai.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+>It's possible that there is a bug somewhere - we didn't get a chance to 
+>dig deeper. What we observed is that as we got close to the 4096 limit, 
+>some hosts were becoming unreachable. A modest increase in the routing 
+>table size made things better.
 
-This patch converts fd_execute_cmd() code to drop O_SYNC usage
-(the original default) in favor of always preforming an implict
-SCSI forced unit access (FUA) operation using vfs_fsync_range()
-based on LBA + SectorCount after each completed FILEIO backend write.
+First of all, we have observed the same thing.
 
-This conversion was inspired by Linus's thoughts on O_SYNC usage in
-the thread: http://www.spinics.net/lists/linux-fsdevel/msg55681.html
+While I am not an expert in this area of the routing code, the function fib6_age in net/ipv6/ip6_fib.c puzzles me.
 
-  "O_SYNC is the absolutely anti-thesis of that kind of "multiple levels
-   of overlapping IO". Because it requires that the IO is _done_ by the
-   time you start more, which is against the whole point."
 
-This patch also drops the now unnecessary fd_buffered_io= token usage
-at createvirtdev time.  Tested with lio-core code using fio writeverify
-to local tcm_loop + FILEIO <-> scsi_debug backed LUNs.
+In kernel version 2.7.2.0.3, we have net/ipv6/ip6_fib.c:
+static int fib6_age(struct rt6_info *rt, void *arg)
+{
+	unsigned long now = jiffies;
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_file.c |   68 +++++++------------------------------
- drivers/target/target_core_file.h |    1 -
- 2 files changed, 13 insertions(+), 56 deletions(-)
+	if (rt->rt6i_flags&RTF_EXPIRES && rt->rt6i_expires) {
+		if (time_after(now, rt->rt6i_expires)) {
+			RT6_TRACE("expiring %p\n", rt);
+			return -1;
+		}
+		gc_args.more++;
+	} else if (rt->rt6i_flags & RTF_CACHE) {
+		if (atomic_read(&rt->dst.__refcnt) == 0 &&
+		    time_after_eq(now, rt->dst.lastuse + gc_args.timeout)) {
+			RT6_TRACE("aging clone %p\n", rt);
+			return -1;
+		} else if ((rt->rt6i_flags & RTF_GATEWAY) &&
+			   (!(rt->rt6i_nexthop->flags & NTF_ROUTER))) {
+			RT6_TRACE("purging route %p via non-router but gateway\n",
+				  rt);
+			return -1;
+		}
+		gc_args.more++;
+	}
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 686dba1..334b01c 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -137,13 +137,6 @@ static struct se_device *fd_create_virtdevice(
- 	/* O_DIRECT too? */
- 	flags = O_RDWR | O_CREAT | O_LARGEFILE;
- 
--	/*
--	 * If fd_buffered_io=1 has not been set explicitly (the default),
--	 * use O_SYNC to force FILEIO writes to disk.
--	 */
--	if (!(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO))
--		flags |= O_SYNC;
--
- 	file = filp_open(dev_p, flags, 0600);
- 	if (IS_ERR(file)) {
- 		pr_err("filp_open(%s) failed\n", dev_p);
-@@ -380,23 +373,6 @@ static void fd_emulate_sync_cache(struct se_cmd *cmd)
- 	}
- }
- 
--static void fd_emulate_write_fua(struct se_cmd *cmd)
--{
--	struct se_device *dev = cmd->se_dev;
--	struct fd_dev *fd_dev = dev->dev_ptr;
--	loff_t start = cmd->t_task_lba *
--		dev->se_sub_dev->se_dev_attrib.block_size;
--	loff_t end = start + cmd->data_length;
--	int ret;
--
--	pr_debug("FILEIO: FUA WRITE LBA: %llu, bytes: %u\n",
--		cmd->t_task_lba, cmd->data_length);
--
--	ret = vfs_fsync_range(fd_dev->fd_file, start, end, 1);
--	if (ret != 0)
--		pr_err("FILEIO: vfs_fsync_range() failed: %d\n", ret);
--}
--
- static int fd_execute_cmd(struct se_cmd *cmd, struct scatterlist *sgl,
- 		u32 sgl_nents, enum dma_data_direction data_direction)
- {
-@@ -410,20 +386,18 @@ static int fd_execute_cmd(struct se_cmd *cmd, struct scatterlist *sgl,
- 	if (data_direction == DMA_FROM_DEVICE) {
- 		ret = fd_do_readv(cmd, sgl, sgl_nents);
- 	} else {
--		ret = fd_do_writev(cmd, sgl, sgl_nents);
--
--		if (ret > 0 &&
--		    dev->se_sub_dev->se_dev_attrib.emulate_write_cache > 0 &&
--		    dev->se_sub_dev->se_dev_attrib.emulate_fua_write > 0 &&
--		    (cmd->se_cmd_flags & SCF_FUA)) {
--			/*
--			 * We might need to be a bit smarter here
--			 * and return some sense data to let the initiator
--			 * know the FUA WRITE cache sync failed..?
--			 */
--			fd_emulate_write_fua(cmd);
--		}
-+		struct fd_dev *fd_dev = dev->dev_ptr;
-+		loff_t start = cmd->t_task_lba *
-+			dev->se_sub_dev->se_dev_attrib.block_size;
-+		loff_t end = start + cmd->data_length;
- 
-+		ret = fd_do_writev(cmd, sgl, sgl_nents);
-+		/*
-+		 * Perform implict vfs_fsync_range() for fd_do_writev() ops
-+		 * instead of having to use O_SYNC for struct file.
-+		 */
-+		if (ret > 0)
-+			vfs_fsync_range(fd_dev->fd_file, start, end, 1);
- 	}
- 
- 	if (ret < 0) {
-@@ -442,7 +416,6 @@ enum {
- static match_table_t tokens = {
- 	{Opt_fd_dev_name, "fd_dev_name=%s"},
- 	{Opt_fd_dev_size, "fd_dev_size=%s"},
--	{Opt_fd_buffered_io, "fd_buffered_io=%d"},
- 	{Opt_err, NULL}
- };
- 
-@@ -498,19 +471,6 @@ static ssize_t fd_set_configfs_dev_params(
- 					" bytes\n", fd_dev->fd_dev_size);
- 			fd_dev->fbd_flags |= FBDF_HAS_SIZE;
- 			break;
--		case Opt_fd_buffered_io:
--			match_int(args, &arg);
--			if (arg != 1) {
--				pr_err("bogus fd_buffered_io=%d value\n", arg);
--				ret = -EINVAL;
--				goto out;
--			}
--
--			pr_debug("FILEIO: Using buffered I/O"
--				" operations for struct fd_dev\n");
--
--			fd_dev->fbd_flags |= FDBD_USE_BUFFERED_IO;
--			break;
- 		default:
- 			break;
- 		}
-@@ -542,10 +502,8 @@ static ssize_t fd_show_configfs_dev_params(
- 	ssize_t bl = 0;
- 
- 	bl = sprintf(b + bl, "TCM FILEIO ID: %u", fd_dev->fd_dev_id);
--	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: %s\n",
--		fd_dev->fd_dev_name, fd_dev->fd_dev_size,
--		(fd_dev->fbd_flags & FDBD_USE_BUFFERED_IO) ?
--		"Buffered" : "Synchronous");
-+	bl += sprintf(b + bl, "        File: %s  Size: %llu  Mode: fsync\n",
-+		fd_dev->fd_dev_name, fd_dev->fd_dev_size);
- 	return bl;
- }
- 
-diff --git a/drivers/target/target_core_file.h b/drivers/target/target_core_file.h
-index fbd59ef..70ce7fd 100644
---- a/drivers/target/target_core_file.h
-+++ b/drivers/target/target_core_file.h
-@@ -14,7 +14,6 @@
- 
- #define FBDF_HAS_PATH		0x01
- #define FBDF_HAS_SIZE		0x02
--#define FDBD_USE_BUFFERED_IO	0x04
- 
- struct fd_dev {
- 	u32		fbd_flags;
--- 
-1.7.2.5
+	return 0;
+}
 
+
+In kernel 3.0.32, we have net/ipv6/ip6_fib.c:
+static int fib6_age(struct rt6_info *rt, void *arg)
+{
+	unsigned long now = jiffies;
+
+	if (rt->rt6i_flags&RTF_EXPIRES && rt->rt6i_expires) {
+		if (time_after(now, rt->rt6i_expires)) {
+			RT6_TRACE("expiring %p\n", rt);
+			return -1;
+		}
+		gc_args.more++;
+	} else if (rt->rt6i_flags & RTF_CACHE) {
+		if (atomic_read(&rt->dst.__refcnt) == 0 &&
+		    time_after_eq(now, rt->dst.lastuse + gc_args.timeout)) {
+			RT6_TRACE("aging clone %p\n", rt);
+			return -1;
+		} else if ((rt->rt6i_flags & RTF_GATEWAY) &&
+			   (!(dst_get_neighbour_raw(&rt->dst)->flags & NTF_ROUTER))) {
+			RT6_TRACE("purging route %p via non-router but gateway\n",
+				  rt);
+			return -1;
+		}
+		gc_args.more++;
+	}
+
+	return 0;
+}
+
+
+In kernel 3.4, we have net/ipv6/ip6_fib.c:
+static int fib6_age(struct rt6_info *rt, void *arg)
+{
+	unsigned long now = jiffies;
+
+	if (rt->rt6i_flags & RTF_EXPIRES && rt->dst.expires) {
+		if (time_after(now, rt->dst.expires)) {
+			RT6_TRACE("expiring %p\n", rt);
+			return -1;
+		}
+		gc_args.more++;
+	} else if (rt->rt6i_flags & RTF_CACHE) {
+		if (atomic_read(&rt->dst.__refcnt) == 0 &&
+		    time_after_eq(now, rt->dst.lastuse + gc_args.timeout)) {
+			RT6_TRACE("aging clone %p\n", rt);
+			return -1;
+		} else if (rt->rt6i_flags & RTF_GATEWAY) {
+			struct neighbour *neigh;
+			__u8 neigh_flags = 0;
+
+			neigh = dst_neigh_lookup(&rt->dst, &rt->rt6i_gateway);
+			if (neigh) {
+				neigh_flags = neigh->flags;
+				neigh_release(neigh);
+			}
+			if (neigh_flags & NTF_ROUTER) {
+				RT6_TRACE("purging route %p via non-router but gateway\n",
+					  rt);
+				return -1;
+			}
+		}
+		gc_args.more++;
+	}
+
+	return 0;
+}
+
+
+Do we have the meaning of the NTF_ROUTER flag reversed in kernel 3.4?  Or is the opposite use of that flag a fix for the bug in the previous releases? Or is this a bug in kernel 3.4?
+
+Also, could this remove a Gateway entry, if there is no neighbor entry for it (in any of the version of the code)?  Could this try to deference a null pointer in 3.0.32 version of the code (and any version prior to 3.4)?  In general, is this the right place to remove a gateway route that has __refcnt > 0?
+
+I wish I had more expertise in this area of the code to answer questions and not only to pose them.
+
+Thank you,
+
+- Igor
