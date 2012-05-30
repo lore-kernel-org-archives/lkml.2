@@ -1,72 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab2E3Oqz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:46:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:35990 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667Ab2E3Oqy (ORCPT
+	id S1754933Ab2E3Or0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:47:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45630 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753946Ab2E3OrY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:46:54 -0400
-Date: Wed, 30 May 2012 10:39:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andre Przywara <andre.przywara@amd.com>
-Cc: mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, jeremy@goop.org,
-        xen-devel@lists.xensource.com, stable@vger.kernel.org#3.4+,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-Message-ID: <20120530143937.GF3207@phenom.dumpdata.com>
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 30 May 2012 10:47:24 -0400
+Message-ID: <1338389200.26856.273.camel@twins>
+Subject: Re: [PATCH 00/35] AutoNUMA alpha14
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Date: Wed, 30 May 2012 16:46:40 +0200
+In-Reply-To: <CA+55aFxpD+LsE+aNvDJtz9sGsGMvdusisgOY3Csbzyx1mEqW-w@mail.gmail.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+	 <4FC112AB.1040605@redhat.com>
+	 <CA+55aFxpD+LsE+aNvDJtz9sGsGMvdusisgOY3Csbzyx1mEqW-w@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 03:10:02PM +0200, Andre Przywara wrote:
-> Because we are behind a family check before tweaking the topology
-> bit, we can use the standard rd/wrmsr variants for the CPUID feature
-> register.
-> This fixes a crash when using the kernel as a Xen Dom0 on affected
-> Trinity systems. The wrmsrl_amd_safe is not properly paravirtualized
-> yet (this will be fixed in another patch).
+On Sat, 2012-05-26 at 13:42 -0700, Linus Torvalds wrote:
 
-So with a rdmsrl_amd_safe and wrmsrl_amd_safe being implemented in
-the pv_cpu_ops - would this patch even be neccessary?
+> I'm a *firm* believer that if it cannot be done automatically "well
+> enough", the absolute last thing we should ever do is worry about the
+> crazy people who think they can tweak it to perfection with complex
+> interfaces.
+> 
+> You can't do it, except for trivial loads (often benchmarks), and for
+> very specific machines.
+> 
+> So I think very strongly that we should entirely dismiss all the
+> people who want to do manual placement and claim that they know what
+> their loads do. They're either full of sh*t (most likely), or they
+> have a very specific benchmark and platform that they are tuning for
+> that is totally irrelevant to everybody else.
+> 
+> What we *should* try to aim for is a system that doesn't do horribly
+> badly right out of the box. IOW, no tuning what-so-ever (at most a
+> kind of "yes, I want you to try to do the NUMA thing" flag to just
+> enable it at all), and try to not suck.
+> 
+> Seriously. "Try to avoid sucking" is *way* superior to "We can let the
+> user tweak things to their hearts content". Because users won't get it
+> right.
+> 
+> Give the anal people a knob they can tweak, and tell them it does
+> something fancy. And never actually wire the damn thing up. They'll be
+> really happy with their OCD tweaking, and do lots of nice graphs that
+> just show how the error bars are so big that you can find any damn
+> pattern you want in random noise.
 
-> 
-> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> Cc: stable@vger.kernel.org # 3.4+
-> ---
->  arch/x86/kernel/cpu/amd.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index 146bb62..80ccd99 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -586,9 +586,9 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
->  	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
->  		u64 val;
->  
-> -		if (!rdmsrl_amd_safe(0xc0011005, &val)) {
-> +		if (!rdmsrl_safe(0xc0011005, &val)) {
->  			val |= 1ULL << 54;
-> -			wrmsrl_amd_safe(0xc0011005, val);
-> +			checking_wrmsrl(0xc0011005, val);
->  			rdmsrl(0xc0011005, val);
->  			if (val & (1ULL << 54)) {
->  				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
-> -- 
-> 1.7.4.4
-> 
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+So the thing is, my homenode-per-process approach should work for
+everything except the case where a single process out-strips a single
+node in either cpu utilization or memory consumption.
+
+Now I claim such processes are rare since nodes are big, typically 6-8
+cores. Writing anything that can sustain parallel execution larger than
+that is very specialist (and typically already employs strong data
+separation).
+
+Yes there are such things out there, some use JVMs some are virtual
+machines some regular applications, but by and large processes are small
+compared to nodes.
+
+So my approach is focus on the normal case, and provide 2 system calls
+to replace sched_setaffinity() and mbind() for the people who use those.
+
+Now, maybe I shouldn't have bothered with the system calls.. but I
+thought providing something better than hard-affinity would be nice.
+
+
+Andrea went the other way and focused on these big processes. His
+approach relies on a pte scanner and faults. His code builds a
+page<->thread map using this data either moves memory around or
+processes (I'm a little vague on the details simply because I haven't
+seen it explained anywhere yet -- and the code is non-obvious).
+
+I have a number of problems with both the approach as well as the
+implementation. 
+
+On the approach my biggest complaints are:
+
+ - the complexity, it focuses on the rarest sort of processes and thus
+   results in a rather complex setup.
+
+ - load-balance state explosion, the page-tables become part of the
+   load-balance state -- this is a lot of extra state making
+   reproduction more 'interesting'.
+
+ - the overhead, since its per page, it needs per-page state.
+
+ - I don't see how it can reliably work for virtual machines, because
+   the host page<->thread (vcpu) relation doesn't reflect a
+   data<->compute relation in this case. The guest scheduler can move
+   the guest thread (the compute) part around between the vcpus at a
+   much higher rate than the host will update its page<->vcpu map.
+
+On the implementation:
+
+ - he works around the scheduler instead of with it.
+
+ - its x86 only (although he claims adding archs is trivial
+   I've yet to see the first !x86 support).
+
+ - complete lack of useful comments describing the balancing goal and
+   approach.
+
+The worst part is that I've asked for this stuff several times, but
+nothing seems forth-coming.
+
+Anyway, I prefer doing the simple thing first and then seeing if there's
+need for more complexity, esp. given the overheads involved. But if you
+prefer we can dive off the deep end :-)
