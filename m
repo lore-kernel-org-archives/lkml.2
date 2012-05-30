@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2E3Wia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 18:38:30 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42485 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab2E3Wi3 (ORCPT
+	id S1757548Ab2E3Wvw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 18:51:52 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:43878 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab2E3Wvv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 18:38:29 -0400
-Date: Wed, 30 May 2012 18:38:25 -0400 (EDT)
-Message-Id: <20120530.183825.2036705800447162589.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+	Wed, 30 May 2012 18:51:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120530213638.GZ11775@ZenIV.linux.org.uk>
+References: <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+ <20120516021828.GP22082@ZenIV.linux.org.uk> <1337807899.15138.31.camel@falcor>
+ <20120530043443.GA3200@ZenIV.linux.org.uk> <20120530163605.GV11775@ZenIV.linux.org.uk>
+ <1338406967.2257.24.camel@localhost> <20120530202427.GW11775@ZenIV.linux.org.uk>
+ <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+ <20120530205612.GY11775@ZenIV.linux.org.uk> <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
+ <20120530213638.GZ11775@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 May 2012 15:51:27 -0700
+X-Google-Sender-Auth: DWXdlroZ6LySHaEK9tUq1TLK8C0
+Message-ID: <CA+55aFzP8Eo1AX7MS-RRG_Atq3NF0bS1ReZydRtgxxy7TDn57Q@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 15:38:27 -0700 (PDT)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 30, 2012 at 2:36 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> The only difference is that for file-backed ones !MMU wants
+> VM_MAYEXEC in that file's bdi flags (BDI_CAP_EXEC_MAP).  And
+> that actually sounds reasonable in !MMU case.
 
-1) Remove the idiotic situation wherein Leon was a special
-   case in all of the TLB/cache handling code.
+Ok, I don't think it should be strictly necessary, but I guess I don't
+mind either.
 
-   The worst side effect of this bogosity is that you couldn't build a
-   kernel with Leon support enabled (to get better build coverage),
-   and test boot it on a non-LEON cpu.
+> Anyway, I've dumped the variant I've got into vfs.git@security_file_mmap;
+> it should be at commit f12a0fd062b1d259a0b6bc6442019e6d4c45e9f5.
+>
+> Comments?
 
-   Leon is, in all core respects, programatically identical to the
-   32-bit SRMMU.  Except that they put the TLB registers in a
-   different alternate address space location.
+Two small ones:
 
-   Through code patching (for fast paths) and run time checks, this
-   issue is now a thing of the past.
+ - I really don't think you should use "goto out" in
+security_mmap_file(). That implies that you're exiting the function,
+but in fact you're jumping to the very *meat* of the function.
 
-   From Sam Ravnborg.
+   So I think you should rename "out" as "no_added_exec" or something.
 
-2) There was a mis-merge of arch/sparc/Kconfig for one of the
-   clockevents changes that went in, causing 32-bit sparc to
-   start failing to build.
+And a small question:  This code:
 
-   I merged in your tree to get those clockevents changes (and
-   added a note to the merge commit) then added Stephen Rothwell's
-   fix for the merge error.
++       ret = security_mmap_file(file, prot, flags);
++       if (!ret) {
++               down_write(&current->mm->mmap_sem);
++               retval = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
++               up_write(&current->mm->mmap_sem);
++       }
 
-3) Software quad floating point emulation was not working properly
-   on more recent Niagara chips, because the way the situation is
-   reported by the cpu has changed.
+now seems to exist in four places. And in fact, that pretty much seems
+to *be* what vm_mmap() is, at this point. Why isn't there just one
+single vm_mmap() implementation, and then the callers of that?
 
-   Nobody noticed because gcc emits calls to software emulation
-   routines in glibc.
-
-Please pull, thanks a lot!
-
-The following changes since commit af56e0aa35f3ae2a4c1a6d1000702df1dd78cb76:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2012-05-30 11:17:19 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
-
-David S. Miller (3):
-      sparc64: Fix several bugs in quad floating point emulation.
-      Merge git://git.kernel.org/.../torvalds/linux
-      sparc32: Export leon_dma_ops to modules.
-
-Sam Ravnborg (22):
-      sparc32: string and whitespace cleanup in head_32.S
-      sparc32: implement proper LEON support in head_32 (before highmem)
-      sparc32: implement proper LEON support in head_32 (after highmem)
-      sparc32: introduce sparc32_start_kernel called from head_32.S
-      sparc32: add support for run-time patching of leon/sun single instructions
-      sparc32: handle leon in irq_32.c
-      sparc32: handle leon in cpu.c
-      sparc32,leon: clean up leon.h
-      sparc32,leon: always include leon_kernel in build
-      sparc32,leon: always include leon_smp + leon_mm in build
-      sparc32,leon: fix section mismatch warning
-      sparc32: introduce support for run-time patching for all shared assembler code
-      sparc32: introduce run-time patching of srmmu access functions
-      sparc32: drop LEON hack for ASI_M_MMUREGS
-      sparc32: srmmu_probe now knows about leon too
-      sparc32: refactor cpu_idle()
-      sparc32,leon: always include leon_pmc in build
-      sparc32,leon: always support leon in ioport
-      sparc32: support leon + sun in dma_make_coherent()
-      sparc32,leon: fix leon bootup
-      sparc32: remove unused variable in head_32.S
-      sparc: fix sparc64 build due to leon.h inclusion
-
-Stephen Rothwell (1):
-      sparc: fix bad merge of sparc Kconfig
-
- arch/sparc/Kconfig                   |    1 -
- arch/sparc/include/asm/asi.h         |    4 -
- arch/sparc/include/asm/asmmacro.h    |   22 +++++
- arch/sparc/include/asm/dma-mapping.h |    9 ++-
- arch/sparc/include/asm/leon.h        |   82 +----------------
- arch/sparc/include/asm/leon_amba.h   |    4 -
- arch/sparc/include/asm/pgtsrmmu.h    |   86 ++----------------
- arch/sparc/include/asm/psr.h         |    8 ++
- arch/sparc/include/asm/sections.h    |    3 +
- arch/sparc/kernel/Makefile           |    4 +-
- arch/sparc/kernel/cpu.c              |   18 ++--
- arch/sparc/kernel/entry.S            |   10 +-
- arch/sparc/kernel/etrap_32.S         |   18 +++-
- arch/sparc/kernel/head_32.S          |  168 ++++++++++++++++++++-------------
- arch/sparc/kernel/ioport.c           |   24 ++----
- arch/sparc/kernel/irq_32.c           |   22 +++--
- arch/sparc/kernel/kernel.h           |    3 +
- arch/sparc/kernel/leon_kernel.c      |    1 +
- arch/sparc/kernel/leon_pmc.c         |   15 ++-
- arch/sparc/kernel/leon_smp.c         |    8 +-
- arch/sparc/kernel/process_32.c       |   35 +------
- arch/sparc/kernel/prom_common.c      |    1 -
- arch/sparc/kernel/rtrap_32.S         |   18 +++-
- arch/sparc/kernel/setup_32.c         |   62 ++++++++++---
- arch/sparc/kernel/trampoline_32.S    |    6 +-
- arch/sparc/kernel/traps_64.c         |   12 ++-
- arch/sparc/kernel/vmlinux.lds.S      |    5 +
- arch/sparc/kernel/wof.S              |   18 +++-
- arch/sparc/kernel/wuf.S              |   27 ++++--
- arch/sparc/math-emu/math_64.c        |   20 +++-
- arch/sparc/mm/Makefile               |    3 +-
- arch/sparc/mm/leon_mm.c              |    2 +-
- arch/sparc/mm/srmmu.c                |   25 ++++-
- arch/sparc/mm/srmmu_access.S         |   82 +++++++++++++++++
- 34 files changed, 444 insertions(+), 382 deletions(-)
- create mode 100644 arch/sparc/mm/srmmu_access.S
+                    Linus
