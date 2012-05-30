@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab2E3Nna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:43:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38493 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532Ab2E3Nn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:43:29 -0400
-Date: Wed, 30 May 2012 06:43:12 -0700
-From: tip-bot for Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Message-ID: <tip-6a4c96eef42f835734a82c6b512abf9881b7c55d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        kamalesh@linux.vnet.ibm.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kamalesh@linux.vnet.ibm.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de
-In-Reply-To: <20120523091411.GG5005@linux.vnet.ibm.com>
-References: <20120523091411.GG5005@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Remove NULL assignment of dattr_cur
-Git-Commit-ID: 6a4c96eef42f835734a82c6b512abf9881b7c55d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1754744Ab2E3N6q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 09:58:46 -0400
+Received: from [64.131.90.16] ([64.131.90.16]:37541 "EHLO mx2.parallels.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753807Ab2E3N6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 09:58:45 -0400
+Message-ID: <4FC626DA.3030408@parallels.com>
+Date: Wed, 30 May 2012 17:55:38 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 06:43:17 -0700 (PDT)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Greg Thelen <gthelen@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
+        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge infrastructure
+References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-17-git-send-email-glommer@parallels.com> <20120530130416.GD25094@somewhere.redhat.com> <4FC61B4E.2060206@parallels.com> <20120530133736.GF25094@somewhere.redhat.com> <4FC622B5.9080600@parallels.com> <20120530135319.GG25094@somewhere.redhat.com>
+In-Reply-To: <20120530135319.GG25094@somewhere.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6a4c96eef42f835734a82c6b512abf9881b7c55d
-Gitweb:     http://git.kernel.org/tip/6a4c96eef42f835734a82c6b512abf9881b7c55d
-Author:     Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-AuthorDate: Wed, 23 May 2012 14:44:11 +0530
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 30 May 2012 14:02:27 +0200
+On 05/30/2012 05:53 PM, Frederic Weisbecker wrote:
+> On Wed, May 30, 2012 at 05:37:57PM +0400, Glauber Costa wrote:
+>> On 05/30/2012 05:37 PM, Frederic Weisbecker wrote:
+>>> Right. __mem_cgroup_get_kmem_cache() fetches the memcg of the owner
+>>> and calls memcg_create_cache_enqueue() which does css_tryget(&memcg->css).
+>>> After this tryget I think you're fine. And in-between you're safe against
+>>> css_set removal due to rcu_read_lock().
+>>>
+>>> I'm less clear with __mem_cgroup_new_kmem_page() though...
+>>
+>> That one does not get memcg->css but it does call mem_cgroup_get(),
+>> that does prevent against the memcg structure being freed, which I
+>> believe to be good enough.
+>
+> What if the owner calls cgroup_exit() between mem_cgroup_from_task()
+> and mem_cgroup_get()? The css_set which contains the memcg gets freed.
+> Also the reference on the memcg doesn't even prevent the css_set to
+> be removed, does it?
+It doesn't, but we don't really care. The css can go away, if the memcg 
+structure stays. The caches will outlive the memcg anyway, since it is 
+possible that you delete it, with some caches still holding objects that
+are not freed (they will be marked as dead).
 
-sched: Remove NULL assignment of dattr_cur
 
-Remove explicit NULL assignment of static pointer
-dattr_cur from init_sched_domains().
-
-Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120523091411.GG5005@linux.vnet.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 94d598a..c46958e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6726,7 +6726,6 @@ static int init_sched_domains(const struct cpumask *cpu_map)
- 	if (!doms_cur)
- 		doms_cur = &fallback_doms;
- 	cpumask_andnot(doms_cur[0], cpu_map, cpu_isolated_map);
--	dattr_cur = NULL;
- 	err = build_sched_domains(doms_cur[0], NULL);
- 	register_sched_domain_sysctl();
- 
