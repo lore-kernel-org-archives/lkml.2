@@ -1,180 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2E3HTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:19:19 -0400
-Received: from relay.parallels.com ([195.214.232.42]:39430 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859Ab2E3HTS (ORCPT
+	id S1757006Ab2E3HTo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:19:44 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60205 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab2E3HTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:19:18 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: Vladimir Davydov <vdavydov@parallels.com>, <linux-fsdevel@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC] fs: make reading /proc/mounts consistent
-Date: Wed, 30 May 2012 11:19:14 +0400
-Message-ID: <1338362354-19519-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 30 May 2012 03:19:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1338353260-10097-23-git-send-email-lee.jones@linaro.org>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+	<1338353260-10097-23-git-send-email-lee.jones@linaro.org>
+Date: Wed, 30 May 2012 15:19:42 +0800
+Message-ID: <CACRpkdYieu5BOR4c=nnGm4MLu26oYb0pLU2=UtgvEMH+=RdfaA@mail.gmail.com>
+Subject: Re: [PATCH 22/22] mfd: Enable DT probing of the DB8500 PRCMU
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reading /proc/mounts from userspace is atomic, but only within a single system
-call. That means that if there are ongoing unmounts while a userspace process
-is reading /proc/mounts, the process can omit some mount points.
+On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-The patch makes /proc/mounts more-or-less consistent: a userspace process is
-guaranteed to read all mount points that will exist when the process closes the
-file. This is achieved by keeping the position where a process stopped as a
-pointer to mount entry and resuming reading from the position. If a mount entry
-is removed, all processes that stopped on the entry are advanced i.e.  their
-position is moved to the next entry. To achieve this, all processes reading
-/proc/mounts are organized in a linked list.
+> This patch adds the correct compatible string for use during Device Tree
+> population. Without it the DB8500 PRCMU will not be probed.
+>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-An example of /proc/mounts inconsistency is here:
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=593516
----
- fs/mount.h          |    7 ++++++
- fs/namespace.c      |   61 +++++++++++++++++++++++++++++++++++++++++++++++++-
- fs/proc_namespace.c |    5 ++++
- 3 files changed, 71 insertions(+), 2 deletions(-)
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-diff --git a/fs/mount.h b/fs/mount.h
-index 4ef36d9..d02574a 100644
---- a/fs/mount.h
-+++ b/fs/mount.h
-@@ -70,7 +70,14 @@ struct proc_mounts {
- 	struct seq_file m; /* must be the first element */
- 	struct mnt_namespace *ns;
- 	struct path root;
-+	struct list_head *iter;
-+	loff_t iter_pos;
-+	int iter_advanced;
-+	struct list_head reader;
- 	int (*show)(struct seq_file *, struct vfsmount *);
- };
- 
-+extern void register_mounts_reader(struct proc_mounts *p);
-+extern void unregister_mounts_reader(struct proc_mounts *p);
-+
- extern const struct seq_operations mounts_op;
-diff --git a/fs/namespace.c b/fs/namespace.c
-index e608199..504940a 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -51,6 +51,37 @@ EXPORT_SYMBOL_GPL(fs_kobj);
-  */
- DEFINE_BRLOCK(vfsmount_lock);
- 
-+static LIST_HEAD(mounts_readers);
-+static DEFINE_SPINLOCK(mounts_lock);
-+
-+void register_mounts_reader(struct proc_mounts *p)
-+{
-+	spin_lock(&mounts_lock);
-+	list_add(&p->reader, &mounts_readers);
-+	spin_unlock(&mounts_lock);
-+}
-+
-+void unregister_mounts_reader(struct proc_mounts *p)
-+{
-+	spin_lock(&mounts_lock);
-+	list_del(&p->reader);
-+	spin_unlock(&mounts_lock);
-+}
-+
-+static void advance_mounts_readers(struct list_head *iter)
-+{
-+	struct proc_mounts *p;
-+
-+	spin_lock(&mounts_lock);
-+	list_for_each_entry(p, &mounts_readers, reader) {
-+		if (p->iter == iter) {
-+			p->iter = p->iter->next;
-+			p->iter_advanced = 1;
-+		}
-+	}
-+	spin_unlock(&mounts_lock);
-+}
-+
- static inline unsigned long hash(struct vfsmount *mnt, struct dentry *dentry)
- {
- 	unsigned long tmp = ((unsigned long)mnt / L1_CACHE_BYTES);
-@@ -941,14 +972,39 @@ static void *m_start(struct seq_file *m, loff_t *pos)
- 	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
- 
- 	down_read(&namespace_sem);
--	return seq_list_start(&p->ns->list, *pos);
-+	if (p->iter_advanced) {
-+		p->iter_advanced = 0;
-+		if (p->iter_pos < *pos)
-+			p->iter_pos++;
-+	}
-+
-+	if (!p->iter || (p->iter_pos > *pos && p->iter == &p->ns->list)) {
-+		p->iter = p->ns->list.next;
-+		p->iter_pos = 0;
-+	}
-+
-+	while (p->iter_pos < *pos && p->iter != &p->ns->list) {
-+		p->iter = p->iter->next;
-+		p->iter_pos++;
-+	}
-+
-+	while (p->iter_pos > *pos && p->iter != p->ns->list.next) {
-+		p->iter = p->iter->prev;
-+		p->iter_pos--;
-+	}
-+
-+	p->iter_pos = *pos;
-+	return p->iter != &p->ns->list ? p->iter : NULL;
- }
- 
- static void *m_next(struct seq_file *m, void *v, loff_t *pos)
- {
- 	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
- 
--	return seq_list_next(v, &p->ns->list, pos);
-+	p->iter = p->iter->next;
-+	p->iter_pos++;
-+	*pos = p->iter_pos;
-+	return p->iter != &p->ns->list ? p->iter : NULL;
- }
- 
- static void m_stop(struct seq_file *m, void *v)
-@@ -1071,6 +1127,7 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
- 
- 	list_for_each_entry(p, &tmp_list, mnt_hash) {
- 		list_del_init(&p->mnt_expire);
-+		advance_mounts_readers(&p->mnt_list);
- 		list_del_init(&p->mnt_list);
- 		__touch_mnt_namespace(p->mnt_ns);
- 		p->mnt_ns = NULL;
-diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
-index 1241285..4f4524d 100644
---- a/fs/proc_namespace.c
-+++ b/fs/proc_namespace.c
-@@ -273,6 +273,10 @@ static int mounts_open_common(struct inode *inode, struct file *file,
- 	p->root = root;
- 	p->m.poll_event = ns->event;
- 	p->show = show;
-+	p->iter = NULL;
-+	p->iter_pos = 0;
-+	p->iter_advanced = 0;
-+	register_mounts_reader(p);
- 
- 	return 0;
- 
-@@ -289,6 +293,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
- static int mounts_release(struct inode *inode, struct file *file)
- {
- 	struct proc_mounts *p = file->private_data;
-+	unregister_mounts_reader(p);
- 	path_put(&p->root);
- 	put_mnt_ns(p->ns);
- 	return seq_release(inode, file);
--- 
-1.7.1
-
+Yours,
+Linus Walleij
