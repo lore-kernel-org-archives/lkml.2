@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab2E3RSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:18:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49500 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab2E3RSx (ORCPT
+	id S1756117Ab2E3RVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:21:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48333 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756071Ab2E3RVu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:18:53 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/3] perf report: Use the right symbol for annotation
-Date: Wed, 30 May 2012 14:18:39 -0300
-Message-Id: <1338398321-28327-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1338398321-28327-1-git-send-email-acme@infradead.org>
-References: <1338398321-28327-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 30 May 2012 13:21:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="149580951"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
+Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
+Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
+Thread-Index: AQHNPoiwGrw1RQ/LHECPexwcwXKY3Q==
+Date: Wed, 30 May 2012 17:21:47 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FCA4F@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524184947.GA28338@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
+ <20120525180102.GA27280@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
+ <20120529133858.GD29157@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351FC452@SHSMSX101.ccr.corp.intel.com>
+ <20120530150827.GA12109@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351FC523@SHSMSX101.ccr.corp.intel.com>
+ <20120530152948.GD4771@aftab.osrc.amd.com>
+In-Reply-To: <20120530152948.GD4771@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Borislav Petkov wrote:
+> On Wed, May 30, 2012 at 03:20:03PM +0000, Liu, Jinsong wrote:
+>>>> IMO currently there are 2 options:
+>>>> 1). use the original approach (implicitly redirect /dev/mcelog to
+>>>> xen_mce_chrdev_device) --> what point of this approach do you think
+>>>> unreasonable? It just remove a 'static' from native mce code! 2).
+>>>> use another /dev/xen-mcelog interface, with another misc minor
+>>>> '226' 
+>>> 
+>>> The 2) is no good.
+>>> 
+>>> 3) What about moving the corresponding other users (so
+>>> threshold_init_device), to be at late_initcall and the mce to be at
+>>> late_initcall_sync
+>> 
+>> I can try, but only if Boris would not jump out.
+>> and it can only be tested by Boris at AMD platform :(
+> 
+> Sure, I'll test it.
+> 
+> However, it should be a separate patch, not merged with this one.
+> 
+> So, I don't see anything speaking against making
+> threshold_init_device a late_initcall leading to the following order:
+> 
+> device_initcall <- xen
+> device_initcall_sync <- arch/x86
+> fs_initcall <- threshold_init_device
 
-In non symbolic views, i.e. --sort without "symbol", as in:
+do you mean 'late_initcall <- threshold_init_device'?
 
- perf report --sort comm
+> 
+> and the "xen" line not happening on baremetal; which shouldn't change
+> anything noticeably in the init-order mce-wise.
+> 
+> Also, add a comment at the end of mce_amd.c saying why
+> threshold_init_device should be last.
+> 
 
-We're segfaulting in the --tui because we're testing the symbol resolved
-and then trying to use the symbol on the histogram entry where we're
-coalescing all hits for a COMM, and the first hist_entry for a comm may
-have a NULL symbol, i.e. the RIP didn't resolve to any symbol.
-
-In this case we're segfaulting, fix it by testing against the symbol in
-the histogram entry.
-
-Reported-by: William Cohen <wcohen@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8ylwubbcmu27ucc9ffrku3yv@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 8c767c6..2400e00 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -162,7 +162,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 	 * so we don't allocated the extra space needed because the stdio
- 	 * code will not use it.
- 	 */
--	if (al->sym != NULL && use_browser > 0) {
-+	if (he->ms.sym != NULL && use_browser > 0) {
- 		struct annotation *notes = symbol__annotation(he->ms.sym);
- 
- 		assert(evsel != NULL);
--- 
-1.7.9.2.358.g22243
+OK, good, we will use this approach, I will do it tomorrow morning.
+Thanks Konrad and Boris's suggestion!
 
