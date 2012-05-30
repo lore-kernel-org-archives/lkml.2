@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab2E3Kn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 06:43:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43317 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab2E3Knz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 06:43:55 -0400
-Message-ID: <1338374628.26856.244.camel@twins>
-Subject: Re: [PATCH v3 3/6] expose fine-grained per-cpu data for cpuacct
- stats
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
-        Paul Turner <pjt@google.com>, Tejun Heo <tj@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, handai.szj@gmail.com,
-        Andrew.Phillips@lmax.com, Serge Hallyn <serge.hallyn@canonical.com>
-Date: Wed, 30 May 2012 12:43:48 +0200
-In-Reply-To: <4FC5F7A0.2000201@parallels.com>
-References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
-	  <1338371317-5980-4-git-send-email-glommer@parallels.com>
-	 <1338374041.26856.241.camel@twins> <4FC5F7A0.2000201@parallels.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1752590Ab2E3Kox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 06:44:53 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:43145 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752416Ab2E3Kow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 06:44:52 -0400
+Message-ID: <4FC5F99B.2060109@parallels.com>
+Date: Wed, 30 May 2012 14:42:35 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, Paul Turner <pjt@google.com>,
+        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        <handai.szj@gmail.com>, <Andrew.Phillips@lmax.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v3 1/6] measure exec_clock for rt sched entities
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com>   <1338371317-5980-2-git-send-email-glommer@parallels.com>  <1338373759.26856.238.camel@twins> <4FC5F727.2040804@parallels.com> <1338374555.26856.243.camel@twins>
+In-Reply-To: <1338374555.26856.243.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 14:34 +0400, Glauber Costa wrote:
-> On 05/30/2012 02:34 PM, Peter Zijlstra wrote:
-> > On Wed, 2012-05-30 at 13:48 +0400, Glauber Costa wrote:
-> >
-> >> +static int cpuacct_stats_percpu_show(struct cgroup *cgrp, struct cftype *cft,
-> >> +				     struct cgroup_map_cb *cb)
-> >> +{
-> >> +	struct cpuacct *ca = cgroup_ca(cgrp);
-> >> +	int cpu;
-> >> +
-> >> +	for_each_online_cpu(cpu) {
-> >> +		do_fill_cb(cb, ca, "user", cpu, CPUTIME_USER);
-> >> +		do_fill_cb(cb, ca, "nice", cpu, CPUTIME_NICE);
-> >> +		do_fill_cb(cb, ca, "system", cpu, CPUTIME_SYSTEM);
-> >> +		do_fill_cb(cb, ca, "irq", cpu, CPUTIME_IRQ);
-> >> +		do_fill_cb(cb, ca, "softirq", cpu, CPUTIME_SOFTIRQ);
-> >> +		do_fill_cb(cb, ca, "guest", cpu, CPUTIME_GUEST);
-> >> +		do_fill_cb(cb, ca, "guest_nice", cpu, CPUTIME_GUEST_NICE);
-> >> +	}
-> >> +
-> >> +	return 0;
-> >> +}
-> >
-> > Uhm, hotplug anyone?
-> What's with hotplug ?
-
-
-Who's to say all cpus are online at this point? If you don't want to
-make the files come and go with hotplug, one should use
-for_each_possible_cpu().
-
+On 05/30/2012 02:42 PM, Peter Zijlstra wrote:
+> On Wed, 2012-05-30 at 14:32 +0400, Glauber Costa wrote:
+>>>> +    for_each_sched_rt_entity(rt_se) {
+>>>> +            rt_rq = rt_rq_of_se(rt_se);
+>>>> +            schedstat_add(rt_rq, exec_clock, delta_exec);
+>>>> +    }
+>>>> +
+>>>>       if (!rt_bandwidth_enabled())
+>>>>               return;
+>>>
+>>> See, this just makes me sad.. you now have a double
+>>> for_each_sched_rt_entity() loop.
+>>
+>> The way I read the rt.c code, it it is called from enqueue_task_rt only
+>> once.
+>
+> Ah, what I meant was, right after that !rt_bandwidth_enabled() muck we
+> do another for_each_sched_rt_entity() walk.
+I guess I can fold it there...
 
