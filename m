@@ -1,136 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab2E3N3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:29:49 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:34886 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab2E3N3r (ORCPT
+	id S1754808Ab2E3OHX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:07:23 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:50180
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1754455Ab2E3OHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:29:47 -0400
-Message-ID: <4FC6204C.5000209@gmail.com>
-Date: Wed, 30 May 2012 21:27:40 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Wed, 30 May 2012 10:07:21 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -12
+X-BigFish: VPS-12(zzbb2dI9371I148cI1432N98dKzz1202hzz8275bh8275dhz2dh668h839hd25he5bhf0ah)
+X-WSS-ID: 0M4U9QQ-02-2BY-02
+X-M-MSG: 
+Message-ID: <4FC62888.9010407@amd.com>
+Date: Wed, 30 May 2012 16:02:48 +0200
+From: Andre Przywara <andre.przywara@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120404 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org, benh@kernel.crashing.org,
-        aik@ozlabs.ru, david@gibson.dropbear.id.au, joerg.roedel@amd.com,
-        dwmw2@infradead.org, konrad.wilk@oracle.com,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        ddutile@redhat.com
-Subject: Re: [PATCH 1/5] pci: Add PCI DMA source ID quirk
-References: <20120530043142.1164.63415.stgit@bling.home> <20120530044834.1164.9081.stgit@bling.home>
-In-Reply-To: <20120530044834.1164.9081.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8
+To: Jan Beulich <JBeulich@suse.com>
+CC: <mingo@elte.hu>, <jeremy@goop.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>,
+        "Shin, Jacob" <Jacob.Shin@amd.com>
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
+ systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
+In-Reply-To: <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-	pci_get_slot() will hold a reference count on the returned
-pci device, so need to release the reference count for balance.
-According to patches "[PATCH 5/7] amd_iommu: Make use of DMA quirks
-and ACS checks in IOMMU groups" and "[PATCH 6/7] intel-iommu: Make 
-use of DMA quirks and ACS checks in IOMMU groups", current patches 
-failed to release the reference count gained by pci_get_slot().
+On 05/30/2012 03:33 PM, Jan Beulich wrote:
+>>>> On 30.05.12 at 15:10, Andre Przywara<andre.przywara@amd.com>  wrote:
+>> Because we are behind a family check before tweaking the topology
+>> bit, we can use the standard rd/wrmsr variants for the CPUID feature
+>> register.
+>> This fixes a crash when using the kernel as a Xen Dom0 on affected
+>> Trinity systems. The wrmsrl_amd_safe is not properly paravirtualized
+>> yet (this will be fixed in another patch).
+>
+> I'm not following: If the AMD variants (putting a special value into
+> %edi) can be freely replaced by the non-AMD variants, why did
+> the AMD special ones get used in the first place?
 
-Thanks
-Gerry
- 
-On 05/30/2012 12:48 PM, Alex Williamson wrote:
-> DMA transactions are tagged with the source ID of the device making
-> the request.  Occasionally hardware screws this up and uses the
-> source ID of a different device (often the wrong function number of
-> a multifunction device).  A specific Ricoh multifunction device is
-> a prime example of this problem and included in this patch.  The
-> purpose of this function is that given a pci_dev, return the pci_dev
-> to use as the source ID for DMA.  When hardware works correctly,
-> this returns the input device.  For the components of the Ricoh
-> multifunction device, return the pci_dev for function 0.
-> 
-> This will be used by IOMMU drivers for determining the boundaries
-> of IOMMU groups as multiple devices using the same source ID must
-> be contained within the same group.  This can also be used by
-> existing streaming DMA paths for the same purpose.
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
->  drivers/pci/quirks.c |   40 ++++++++++++++++++++++++++++++++++++++++
->  include/linux/pci.h  |    5 +++++
->  2 files changed, 45 insertions(+)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 2a75216..004e167 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -3179,3 +3179,43 @@ int pci_dev_specific_reset(struct pci_dev *dev, int probe)
->  
->  	return -ENOTTY;
->  }
-> +
-> +static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
-> +{
-> +	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
-> +}
-> +
-> +static const struct pci_dev_dma_source {
-> +	u16 vendor;
-> +	u16 device;
-> +	struct pci_dev *(*dma_source)(struct pci_dev *dev);
-> +} pci_dev_dma_source[] = {
-> +	/*
-> +	 * https://bugzilla.redhat.com/show_bug.cgi?id=605888
-> +	 *
-> +	 * Some Ricoh devices use the function 0 source ID for DMA on
-> +	 * other functions of a multifunction device.  The DMA devices
-> +	 * is therefore function 0, which will have implications of the
-> +	 * iommu grouping of these devices.
-> +	 */
-> +	{ PCI_VENDOR_ID_RICOH, 0xe822, pci_func_0_dma_source },
-> +	{ PCI_VENDOR_ID_RICOH, 0xe230, pci_func_0_dma_source },
-> +	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
-> +	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
-> +	{ 0 }
-> +};
-> +
-> +struct pci_dev *pci_dma_source(struct pci_dev *dev)
-> +{
-> +	const struct pci_dev_dma_source *i;
-> +
-> +	for (i = pci_dev_dma_source; i->dma_source; i++) {
-> +		if ((i->vendor == dev->vendor ||
-> +		     i->vendor == (u16)PCI_ANY_ID) &&
-> +		    (i->device == dev->device ||
-> +		     i->device == (u16)PCI_ANY_ID))
-> +			return i->dma_source(dev);
-> +	}
-> +
-> +	return dev;
-> +}
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index d8c379d..5bc7502 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -1486,9 +1486,14 @@ enum pci_fixup_pass {
->  
->  #ifdef CONFIG_PCI_QUIRKS
->  void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
-> +struct pci_dev *pci_dma_source(struct pci_dev *dev);
->  #else
->  static inline void pci_fixup_device(enum pci_fixup_pass pass,
->  				    struct pci_dev *dev) {}
-> +static inline struct pci_dev *pci_dma_source(struct pci_dev *dev)
-> +{
-> +	return dev;
-> +}
->  #endif
->  
->  void __iomem *pcim_iomap(struct pci_dev *pdev, int bar, unsigned long maxlen);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Older CPUs (K8) needed the AMD variants, starting with family 10h we can 
+use the normal versions.
+
+> Further, I can't see how checking_wrmsrl() is being paravirtualized
+> any better than wrmsrl_amd_safe() - both have nothing but an
+> exception handling fixup attached to the wrmsr invocation. Care
+> to point out what actual crash it is that was seen?
+
+AFAIK, the difference is between the "l" and the regs version for 
+rd/wrmsr. We have a patch already here to fix this. Will send it out 
+soon. Jacob, can you comment on this?
+
+The crash dump:
+
+[    1.601021] ------------[ cut here ]------------
+[    1.601025] kernel BUG at 
+/buildrepos/linux-2.6-stable/arch/x86/include/asm/paravirt.h:133!
+[    1.601031] invalid opcode: 0000 [#1] SMP
+[    1.601038] CPU 0
+[    1.601041] Modules linked in:
+[    1.601047]
+[    1.601050] Pid: 0, comm: swapper/0 Not tainted 3.4.0 #1 AMD Virgo 
+Platform/Annapurna
+[    1.601061] RIP: e030:[<ffffffff8169b4fe>]  [<ffffffff8169b4fe>] 
+init_amd+0x21d/0x603
+[    1.601072] RSP: e02b:ffffffff81c01df8  EFLAGS: 00010246
+[    1.601076] RAX: 0000000000000000 RBX: ffffffff81ca7500 RCX: 
+0000000000000000
+[    1.601081] RDX: 0000000000000020 RSI: 000000000000c000 RDI: 
+ffffffff81c01e78
+[    1.601086] RBP: ffffffff81c01ea8 R08: 0000000000004003 R09: 
+00000000ffffffff
+[    1.601090] R10: 0000000000000000 R11: 00000000ffffffff R12: 
+ffffffff81ca7574
+[    1.601095] R13: ffffffff81ca7514 R14: ffffffff81ca754c R15: 
+ffffffff81ca756c
+[    1.601103] FS:  0000000000000000(0000) GS:ffff8801ce600000(0000) 
+knlGS:0000000000000000
+[    1.601108] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+[    1.601112] CR2: 0000000000000000 CR3: 0000000001c0c000 CR4: 
+0000000000040660
+[    1.601117] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[    1.601122] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
+0000000000000400
+[    1.601127] Process swapper/0 (pid: 0, threadinfo ffffffff81c00000, 
+task ffffffff81c14020)
+[    1.601131] Stack:
+[    1.601134]  ffffffff81c01ea8 ffffffff8169a7d8 0000001600000017 
+0000000000000000
+[    1.601146]  ffff8801c1c3ac00 ffff8801c1c002d0 ffffffff81c01e48 
+ffffffff81140118
+[    1.601157]  ffffffff811415cc ffff8801c1c04220 ffff8801c1c02480 
+00000000000000d0
+[    1.601169] Call Trace:
+[    1.601175]  [<ffffffff8169a7d8>] ? get_cpu_cap+0x1f2/0x201
+[    1.601183]  [<ffffffff81140118>] ? init_kmem_cache_cpus+0x3e/0x4d
+[    1.601189]  [<ffffffff811415cc>] ? sysfs_slab_alias+0x60/0x8d
+[    1.601195]  [<ffffffff8169aa3d>] identify_cpu+0x256/0x34d
+[    1.601201]  [<ffffffff81141649>] ? kmem_cache_alloc+0x50/0xe4
+[    1.601209]  [<ffffffff81cd1c51>] identify_boot_cpu+0x10/0x3c
+[    1.601216]  [<ffffffff81cd2052>] check_bugs+0x9/0x2d
+[    1.601222]  [<ffffffff81cc7e08>] start_kernel+0x445/0x461
+[    1.601227]  [<ffffffff81cc77d6>] ? kernel_init+0x1d8/0x1d8
+[    1.601233]  [<ffffffff81cc72cf>] x86_64_start_reservations+0xba/0xc1
+[    1.601240]  [<ffffffff81041797>] ? xen_setup_runstate_info+0x2c/0x36
+[    1.601247]  [<ffffffff81ccbdc4>] xen_start_kernel+0x58b/0x592
+[    1.601251] Code: 0f 85 d3 00 00 00 31 c0 48 83 3d cd 5c 58 00 00 48 
+8d 7d b0 b9 08 00 00 00 f3
+ab c7 45 b4 05 10 01 c0 c7 45 cc 3a 20 5a 9c 75 04 <0f> 0b eb fe 4c 8d 
+75 b0 4c 89 f7 ff 14 25 b0 11
+c2 81 85 c0 8b
+[    1.601374] RIP  [<ffffffff8169b4fe>] init_amd+0x21d/0x603
+[    1.601381]  RSP <ffffffff81c01df8>
+[    1.601391] ---[ end trace a7919e7f17c0a725 ]---
+[    1.601397] Kernel panic - not syncing: Attempted to kill the idle task!
+
+> Finally, I would question whether re-enabling the topology
+> extensions under Xen shouldn't be skipped altogether, perhaps
+> even on Dom0 (as the hypervisor is controlling this MSR, but in
+> any case on DomU - the hypervisor won't allow (read: ignore,
+> not fault on) the write anyway (and will log a message for each
+> (v)CPU that attempts this).
+
+This is probably right. Let me think about this.
+
+Thanks for picking this up.
+
+Regards,
+Andre.
+
+>
+>> Signed-off-by: Andre Przywara<andre.przywara@amd.com>
+>> Cc: stable@vger.kernel.org # 3.4+
+>> ---
+>>   arch/x86/kernel/cpu/amd.c |    4 ++--
+>>   1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+>> index 146bb62..80ccd99 100644
+>> --- a/arch/x86/kernel/cpu/amd.c
+>> +++ b/arch/x86/kernel/cpu/amd.c
+>> @@ -586,9 +586,9 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+>>   	    !cpu_has(c, X86_FEATURE_TOPOEXT)) {
+>>   		u64 val;
+>>
+>> -		if (!rdmsrl_amd_safe(0xc0011005,&val)) {
+>> +		if (!rdmsrl_safe(0xc0011005,&val)) {
+>>   			val |= 1ULL<<  54;
+>> -			wrmsrl_amd_safe(0xc0011005, val);
+>> +			checking_wrmsrl(0xc0011005, val);
+>>   			rdmsrl(0xc0011005, val);
+>>   			if (val&  (1ULL<<  54)) {
+>>   				set_cpu_cap(c, X86_FEATURE_TOPOEXT);
+>
+>
+>
+
+
+-- 
+Andre Przywara
+AMD-Operating System Research Center (OSRC), Dresden, Germany
 
