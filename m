@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004Ab2E3Lck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:32:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50118 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2E3Lcj (ORCPT
+	id S1753029Ab2E3Le6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:34:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6059 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab2E3Le4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:32:39 -0400
-Date: Wed, 30 May 2012 13:32:35 +0200
-From: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-To: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?Q?M=FCller?= 
-	<Tilo.Mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler
- implementation
-Message-ID: <20120530113235.GO17705@kronos.redsun>
-References: <20120527145112.GF17705@kronos.redsun>
- <m2396il7xc.fsf@firstfloor.org>
- <20120530103025.19252e1urui8sfb4@www.81.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530103025.19252e1urui8sfb4@www.81.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:bzbtC8Yo2z+oyGieb17kcJudHIpyHDdTJcr5hZsJwYb
- kPihyKa2h9b04LHf78wg5e9cU1wBzp4sN1TOs1qFVx275+8PTn
- iuuSNf2dbM8GyRfw3xjd5ktkISJ5pmAkrpgqJEGObmKq23rnVX
- I7g6Dk3XDi4kdh5Xjd4y63JaREBLn9MId6DsNTEcINGEiLL3p5
- nY+ZVEtR1IOsvMCjxvU5tsn8LaW/Wqd7zKAyTo9y6SUJMtk9j3
- 5PMNAF/kpsvWHqQcMzysf4qL80NUwR34J1WUqkFystIgpQiWhk
- //pmeOx9ZclRTozH8GBpouCFGawSXpaIsp+M8+HV+YXjlqwK8X
- i2tmpBf2kcFfByclzI4w=
+	Wed, 30 May 2012 07:34:56 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=75BMjhiLndgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lcdBw6rLHvJ_5wa56_AA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338377694.13348.304.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC PATCH -tip 2/9] ftrace/x86-64: support SAVE_REGS feature
+ on x86-64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Wed, 30 May 2012 07:34:54 -0400
+In-Reply-To: <4FC5C09C.6030703@hitachi.com>
+References: <20120529124833.9191.23007.stgit@localhost.localdomain>
+	  <20120529124905.9191.91563.stgit@localhost.localdomain>
+	 <1338332727.13348.301.camel@gandalf.stny.rr.com>
+	 <4FC5C09C.6030703@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 10:30:25AM +0300, Jussi Kivilinna wrote:
-> Quoting Andi Kleen <andi@firstfloor.org>:
-> 
-> >
-> >The driver needs CPUID annotations now (since 3.3), so that it can be
-> >autoloaded.  Something like:
-> >
-> 
-> Is it really good idea to autoload crypto modules? Currently loading
-> different cipher implementations is handled via module-aliases and
-> cipher priorities. With autoloading by CPUID, crypto-modules would
-> be loaded and be mostly unused. For example, serpent-sse2 would be
-> autoloaded on all x86-64 kernels (well, on those that have it
-> compiled as module => probably most of distros).
-> 
-> IMHO these should be loaded only when needed, as is done with
-> generic i586/x86-64 assembler cipher implementations.
+On Wed, 2012-05-30 at 15:39 +0900, Masami Hiramatsu wrote:
 
-I agree with that. Currently when I boot my PC with a new 3.4 kernel all the
-ciphers from the intel-aesni module get loaded whether I need them or not. As
-Jussi stated most people using distros probably won't need the
-serpent-avx-x86_64 module get loaded automatically, so it's probably better to
-leave it that way.
+> BTW, that code which dynamically selects trace_caller on your
+> ftrace-v2 tree, seems to be an uncompleted work. Would you
+> already have done it?
+
+I'll have to see where I left off. I'm a bit ADHD when it comes to some
+of my projects. I work on them for a bit, then the next day I'll go work
+on something else. Eventually all my projects get done (well, I like to
+think they do ;-)
+
+I'm currently working on a nasty bug that's in mainline when you enable
+both LOCKDEP and FUNCTION_TRACING. I've been at it since Thursday (even
+worked a bit over the US holiday here). I'm hoping I have a working
+solution for it today. But I can't work on anything else till this is
+complete.
+
+After I get this bug fixed, I can take a look at the multi select code I
+have.
+
+Thanks,
+
+-- Steve
+
+
