@@ -1,147 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab2E3OVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:21:22 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:48333 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1754883Ab2E3OVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:21:20 -0400
-Message-ID: <4FC62CAD.4080307@fold.natur.cuni.cz>
-Date: Wed, 30 May 2012 16:20:29 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120517 Firefox/12.0 SeaMonkey/2.9.1
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
- val:-59
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz> <4FC606E7.4090701@openvz.org> <4FC60BBC.203@fold.natur.cuni.cz> <4FC61107.8050002@openvz.org> <4FC6188A.2030003@openvz.org>
-In-Reply-To: <4FC6188A.2030003@openvz.org>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755037Ab2E3OXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:23:42 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:58476 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab2E3OXl convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
+	Wed, 30 May 2012 10:23:41 -0400
+Message-Id: <4FC649790200007800086E51@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 30 May 2012 15:23:21 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andre Przywara" <andre.przywara@amd.com>
+Cc: "Jacob Shin" <Jacob.Shin@amd.com>, <mingo@elte.hu>, <jeremy@goop.org>,
+        <tglx@linutronix.de>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
+ Trinity systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
+ <4FC63DAF0200007800086DC5@nat28.tlf.novell.com> <4FC62888.9010407@amd.com>
+In-Reply-To: <4FC62888.9010407@amd.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 30.05.12 at 16:02, Andre Przywara <andre.przywara@amd.com> wrote:
+> On 05/30/2012 03:33 PM, Jan Beulich wrote:
+>> Further, I can't see how checking_wrmsrl() is being paravirtualized
+>> any better than wrmsrl_amd_safe() - both have nothing but an
+>> exception handling fixup attached to the wrmsr invocation. Care
+>> to point out what actual crash it is that was seen?
+> 
+> AFAIK, the difference is between the "l" and the regs version for 
+> rd/wrmsr. We have a patch already here to fix this. Will send it out 
+> soon. Jacob, can you comment on this?
 
+I see - the Xen code blindly overwrites pv_cpu_ops, despite not
+having initialized all members. That's an obvious oversight of the
+patch that introduced the _regs variants.
 
-Konstantin Khlebnikov wrote:
-> Konstantin Khlebnikov wrote:
->> Martin Mokrejs wrote:
->>>
->>>
->>> Konstantin Khlebnikov wrote:
->>>> Martin Mokrejs wrote:
->>>>> Andrew Morton wrote:
->>>>>> On Wed, 30 May 2012 00:18:31 +0400
->>>>>> Konstantin Khlebnikov<khlebnikov@openvz.org>    wrote:
->>>>>>
->>>>>>> Oleg Nesterov wrote:
->>>>>>>> On 05/22, Andrew Morton wrote:
->>>>>>>>>
->>>>>>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
->>>>>>>>> happiness is important.  Has he cheered up yet?
->>>>>>>>
->>>>>>>> Well, yes, I do not really like this patch ;) Because I think there is
->>>>>>>> a more simple/straightforward fix, see below. In my opinion it also
->>>>>>>> makes the original code simpler.
->>>>>>>>
->>>>>>>> But. Obviously this is subjective, I can't prove my patch is "better",
->>>>>>>> and I didn't try to test it.
->>>>>>>>
->>>>>>>> So I won't argue with Konstantin who dislikes my patch, although I
->>>>>>>> would like to know the reason.
->>>>>>>
->>>>>>> I don't remember why I dislike your patch.
->>>>>>> For now I can only say ACK )
->>>>>>
->>>>>> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
->>>>>> that it was tested would be nice ;)
->>>>>
->>>>> I will reboot in few hours, finally after few days ... I am running this first
->>>>> patch. I will try to test the second/alternative patch more quickly. Sorry for
->>>>> the delay.
->>>>>
->>>>
->>>> easiest way trigger this bug:
->>>>
->>>> #define _GNU_SOURCE
->>>> #include<unistd.h>
->>>> #include<sched.h>
->>>> #include<sys/syscall.h>
->>>> #include<sys/mman.h>
->>>>
->>>> static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
->>>> {
->>>>       return syscall(SYS_clone, flags, stack, ptid, ctid);
->>>> }
->>>>
->>>> int main(int argc, char **argv)
->>>> {
->>>>       void *page;
->>>>
->>>>       page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
->>>>       sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
->>>> }
->>>>
->>>
->>> I am getting segfaults with this.
->>>
->>> (gdb) where
->>> #0  0x0000000000000000 in ?? ()
->>> #1  0x00007f430f70a7e0 in __elf_set___libc_subfreeres_element_free_mem__ () from /lib64/libc.so.6
->>> #2  0x00007f430f70a7e8 in __elf_set___libc_atexit_element__IO_cleanup__ () from /lib64/libc.so.6
->>> #3  0x0000000000000001 in ?? ()
->>> #4  0x0000000000000000 in ?? ()
->>> (gdb)
->>>
->>> What number should I give it as an argument? ;-)
->>
->> there is no arguments.
->>
->> yeah it corrupts stack. I'm too lazy to write it properly =)
->> but on non-patched kernel it also triggers this bug:
->> [206732.025131] BUG: Bad rss-counter state mm:ffff88000d8a6c80 idx:1 val:-1
->>
->> -- 
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
->> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-> 
-> this version works without segfaults =)
-> 
-> #define _GNU_SOURCE
-> #include <stdlib.h>
-> #include <sched.h>
-> #include <sys/mman.h>
-> 
-> int child(void *arg)
-> {
->     return 0;
-> }
-> 
-> char stack[4096];
-> 
-> int main(int argc, char **argv)
-> {
->     void *page;
-> 
->     page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
->     clone(child, stack + sizeof(stack), CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, NULL, page);
->     return 0;
-> }
-> 
+Plus having secondary instances of things like rdmsrl_amd_safe()
+in asm/paravirt.h seems pretty strange an approach (which was
+why initially I didn't spot how a crash could happen there) - only
+the lowest level functions should get re-implemented here.
 
-Thanks, this app does not crash anymore. Re-confirming that both patches fix the issue on my system.
+>> Finally, I would question whether re-enabling the topology
+>> extensions under Xen shouldn't be skipped altogether, perhaps
+>> even on Dom0 (as the hypervisor is controlling this MSR, but in
+>> any case on DomU - the hypervisor won't allow (read: ignore,
+>> not fault on) the write anyway (and will log a message for each
+>> (v)CPU that attempts this).
+> 
+> This is probably right. Let me think about this.
 
-Martin
+I'll submit a respective hypervisor side patch soonish.
+
+Jan
+
