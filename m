@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab2E3Tgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 15:36:44 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:2558 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752482Ab2E3Tgn (ORCPT
+	id S1752800Ab2E3TkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:40:09 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35297 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab2E3TkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 15:36:43 -0400
-Message-ID: <1338406601.7051.1.camel@x61.thuisdomein>
-Subject: Re: [PATCH] bluetooth: btusb: Add vendor ID 0489:e031 for BCM20702A0
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ayan George <ayan.george@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 21:36:41 +0200
-In-Reply-To: <4fc6745d.+wSbKD2qBTl+TgNj%ayan.george@canonical.com>
-References: <4fc6745d.+wSbKD2qBTl+TgNj%ayan.george@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-OriginalArrivalTime: 30 May 2012 19:36:41.0248 (UTC) FILETIME=[89918200:01CD3E9B]
-X-RcptDomain: vger.kernel.org
+	Wed, 30 May 2012 15:40:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1205301414020.31768@router.home>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
+ <1338368529-21784-2-git-send-email-kosaki.motohiro@gmail.com> <alpine.DEB.2.00.1205301414020.31768@router.home>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 30 May 2012 15:39:44 -0400
+Message-ID: <CAHGf_=oLsK2bk_ym6EZfFD=uRpr33CL+1=nWmf4hrnCxUOFisQ@mail.gmail.com>
+Subject: Re: [PATCH 1/6] Revert "mm: mempolicy: Let vma_merge and vma_split
+ handle vma->vm_policy linkages"
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
+        hughd@google.com, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 19:26 +0000, Ayan George wrote:
-> Bus=02 Lev=02 Prnt=02 Port=03 Cnt=02 Dev#= 4 Spd=12 MxCh= 0
-> D: Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-> P: Vendor=0489 ProdID=e031 Rev=01.12
-> S: Manufacturer=Broadcom Corp
-> S: Product=BCM20702A0
-> S: SerialNumber=C0F8DAB42725
-> C: #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-> I: If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-> I: If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
-> I: If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-> I: If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
-> 
-> BugLink: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/863051
-> Signed-off-by: Ayan George <ayan.george@canonical.com>
-> ---
->  drivers/bluetooth/btusb.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-> index c9463af..e847aa0 100644
-> --- a/drivers/bluetooth/btusb.c
-> +++ b/drivers/bluetooth/btusb.c
-> @@ -102,6 +102,7 @@ static struct usb_device_id btusb_table[] = {
->  
->  	/* Broadcom BCM20702A0 */
->  	{ USB_DEVICE(0x0489, 0xe042) },
-> +	{ USB_DEVICE(0x0489, 0xe031) },
+On Wed, May 30, 2012 at 3:17 PM, Christoph Lameter <cl@linux.com> wrote:
+> On Wed, 30 May 2012, kosaki.motohiro@gmail.com wrote:
+>
+>> From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+>>
+>> commit 05f144a0d5 removed vma->vm_policy updates code and it is a purpose of
+>> mbind_range(). Now, mbind_range() is virtually no-op. no-op function don't
+>> makes any bugs, I agree. but maybe it is not right fix.
+>
+> I dont really understand the changelog. But to restore the policy_vma() is
+> the right thing to do since there are potential multiple use cases where
+> we want to apply a policy to a vma.
+>
+> Proposed new changelog:
+>
+> Commit 05f144a0d5 folded policy_vma() into mbind_range(). There are
+> other use cases of policy_vma(*) though and so revert a piece of
+> that commit in order to have a policy_vma() function again.
+>
+>> @@ -655,23 +676,9 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+>>                       if (err)
+>>                               goto out;
+>>               }
+>> -
+>> -             /*
+>> -              * Apply policy to a single VMA. The reference counting of
+>> -              * policy for vma_policy linkages has already been handled by
+>> -              * vma_merge and split_vma as necessary. If this is a shared
+>> -              * policy then ->set_policy will increment the reference count
+>> -              * for an sp node.
+>> -              */
+>
+> You are dropping the nice comments by Mel that explain the refcounting.
 
-Can't this be moved one line up?
-
->  	{ USB_DEVICE(0x0a5c, 0x21e3) },
->  	{ USB_DEVICE(0x0a5c, 0x21e6) },
->  	{ USB_DEVICE(0x0a5c, 0x21e8) },
-
-
-Paul Bolle
-
+Because this is not strictly correct. 1) vma_merge() and split_vma() don't
+care mempolicy refcount. They only dup and drop it. 2) This mpol_get() is
+for vma attaching. This function don't need to care sp_node internal.
