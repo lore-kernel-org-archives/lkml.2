@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab2E3Uje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:39:34 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:37606 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab2E3Ujd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:39:33 -0400
+	id S1754479Ab2E3UvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:51:01 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:4171 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab2E3Uu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 16:50:59 -0400
+X-Server-Uuid: 72204117-5C29-4314-8910-60DB108979CB
+Message-ID: <4FC68821.4010507@broadcom.com>
+Date: Wed, 30 May 2012 22:50:41 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205281119080.26786@kaball-desktop>
-References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com>
- <1337982603-15692-2-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.00.1205281119080.26786@kaball-desktop>
-From: William Dauchy <wdauchy@gmail.com>
-Date: Wed, 30 May 2012 22:39:10 +0200
-Message-ID: <CAJ75kXZ6gkRF_ZwJ6va860yKT6Vh=mOeUq0YSCKO0ezxjQgqVA@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/blkback: Copy id field when doing BLKIF_DISCARD.
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "jbeulich@suse.com" <jbeulich@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "stable@kernel.org" <stable@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Joe Perches" <joe@perches.com>
+cc: linux-kernel@vger.kernel.org, "Brett Rudley" <brudley@broadcom.com>,
+        "Roland Vossen" <rvossen@broadcom.com>,
+        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
+        "Kan Yan" <kanyan@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 3/4] brcmfmac: Fix likely misuse of | for &
+References: <cover.1338408931.git.joe@perches.com>
+ <af79247f427979584f3e07753ec3ad4766844ec9.1338408931.git.joe@perches.com>
+In-Reply-To: <af79247f427979584f3e07753ec3ad4766844ec9.1338408931.git.joe@perches.com>
+X-Enigmail-Version: 1.5pre
+X-WSS-ID: 63D857D255G3565557-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 12:19 PM, Stefano Stabellini
-<stefano.stabellini@eu.citrix.com> wrote:
->> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=824641
->> CC: stable@kernel.org
->> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->
-> Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On 05/30/2012 10:25 PM, Joe Perches wrote:
+> Using | with a constant is always true.
+> Likely this should have be &.
 
-Tested-by: William Dauchy <wdauchy@gmail.com>
+Acked-by: Arend van Spriel <arend@broadcom.com>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
--- 
-William
+
+
