@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757235Ab2E3R6q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:58:46 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51407 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753245Ab2E3R6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:58:45 -0400
+	id S1757258Ab2E3SA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:00:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41086 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756327Ab2E3SAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:00:55 -0400
+Message-ID: <4FC66037.6020506@zytor.com>
+Date: Wed, 30 May 2012 11:00:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1338038429-21945-4-git-send-email-anton.vorontsov@linaro.org>
-References: <20120526131747.GA15054@lizard>
-	<1338038429-21945-4-git-send-email-anton.vorontsov@linaro.org>
-Date: Wed, 30 May 2012 10:58:43 -0700
-X-Google-Sender-Auth: 1g0OmvuEY_fyra33PViHWVtSfWw
-Message-ID: <CAGXu5jL_dn3czPW0wdvz9AZGgssGqS5tGbBOoSgUciEthTrP9A@mail.gmail.com>
-Subject: Re: [PATCH 04/11] pstore/ram: Factor ramoops_get_next_prz() out of ramoops_pstore_read()
-From: Kees Cook <keescook@chromium.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, Tony Luck <tony.luck@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Shuah Khan <shuahkhan@gmail.com>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Borislav Petkov <bp@alien8.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
+ systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC63DAF0200007800086DC5@nat28.tlf.novell.com> <4FC62888.9010407@amd.com> <20120530144851.GA12184@jshin-Toonie> <20120530145005.GI3207@phenom.dumpdata.com> <20120530150334.GA13349@jshin-Toonie> <20120530171754.GA5115@phenom.dumpdata.com> <20120530173247.GC15635@x1.osrc.amd.com> <4FC65D34.1060803@zytor.com> <20120530175150.GE15438@x1.osrc.amd.com>
+In-Reply-To: <20120530175150.GE15438@x1.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 6:20 AM, Anton Vorontsov
-<anton.vorontsov@linaro.org> wrote:
-> This will help make code clearer when we'll add support for other
-> message types.
->
-> The patch also changes return value from -EINVAL to 0 in case of
-> end-of-records. The exact value doesn't matter for pstore (it should
-> be just <= 0), but 0 feels more correct.
+On 05/30/2012 10:51 AM, Borislav Petkov wrote:
+> On Wed, May 30, 2012 at 10:47:32AM -0700, H. Peter Anvin wrote:
+>>> I wouldn't do that. Andre's patch switches to the
+>>> rdmsrl_safe/checking_wrmsrl functions so you don't need to implement the
+>>> _regs functions for pvops.
+>>>
+>> But we just stated - it is wrong for K8?
+> 
+> Not executed on K8 - only on F15h, models 0x10 - 0x1f.
+> 
 
-Acked-by: Kees Cook <keescook@chromium.org>
+OK.  But there is still the general problem, no?
 
--- 
-Kees Cook
-Chrome OS Security
+	-hpa
+
