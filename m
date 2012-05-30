@@ -1,89 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab2E3RVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:21:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48333 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756071Ab2E3RVu convert rfc822-to-8bit (ORCPT
+	id S1756160Ab2E3RWs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:22:48 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:4002 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083Ab2E3RWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:21:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="149580951"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
-Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
-Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
-Thread-Index: AQHNPoiwGrw1RQ/LHECPexwcwXKY3Q==
-Date: Wed, 30 May 2012 17:21:47 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FCA4F@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
- <20120524184947.GA28338@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
- <20120525180102.GA27280@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
- <20120529133858.GD29157@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351FC452@SHSMSX101.ccr.corp.intel.com>
- <20120530150827.GA12109@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351FC523@SHSMSX101.ccr.corp.intel.com>
- <20120530152948.GD4771@aftab.osrc.amd.com>
-In-Reply-To: <20120530152948.GD4771@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 30 May 2012 13:22:46 -0400
+Message-ID: <1338398390.16730.483.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
+From: Toshi Kani <toshi.kani@hp.com>
+To: shuahkhan@gmail.com
+Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
+        liuj97@gmail.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
+Date: Wed, 30 May 2012 11:19:50 -0600
+In-Reply-To: <1338391495.2566.18.camel@lorien2>
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
+	 <1337880880.2718.68.camel@lorien2>
+	 <1337888931.16730.393.camel@misato.fc.hp.com>
+	 <1338391495.2566.18.camel@lorien2>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> On Wed, May 30, 2012 at 03:20:03PM +0000, Liu, Jinsong wrote:
->>>> IMO currently there are 2 options:
->>>> 1). use the original approach (implicitly redirect /dev/mcelog to
->>>> xen_mce_chrdev_device) --> what point of this approach do you think
->>>> unreasonable? It just remove a 'static' from native mce code! 2).
->>>> use another /dev/xen-mcelog interface, with another misc minor
->>>> '226' 
->>> 
->>> The 2) is no good.
->>> 
->>> 3) What about moving the corresponding other users (so
->>> threshold_init_device), to be at late_initcall and the mce to be at
->>> late_initcall_sync
->> 
->> I can try, but only if Boris would not jump out.
->> and it can only be tested by Boris at AMD platform :(
+On Wed, 2012-05-30 at 09:24 -0600, Shuah Khan wrote:
+> On Thu, 2012-05-24 at 13:48 -0600, Toshi Kani wrote:
+> > On Thu, 2012-05-24 at 11:34 -0600, Shuah Khan wrote:
+> > > On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
+> > > > This patchset supports ACPI OSPM Status Indication (_OST) method for
+> > > > ACPI CPU/memory/container hotplug operations and sysfs eject. After
+> > > > an ACPI hotplug operation has completed, OSPM calls _OST to indicate
+> > > > the result of the operation to the platform. If a platform does not
+> > > > support _OST, this patchset has no effect on the platform.
+> > > > 
+> > > > This _OST support is enabled when all relevant ACPI hotplug operations,
+> > > > such as CPU, memory and container hotplug, are enabled. This assures
+> > > > consistent behavior among the hotplug operations with regarding the
+> > > > _OST support.
+> > > > 
+> > > > Some platforms may require the OS to support _OST in order to support
+> > > > ACPI hotplug operations. For example, if a platform has the management
+> > > > console where user can request a hotplug operation from, this _OST
+> > > > support would be required for the management console to show the result
+> > > > of the hotplug request to user.
+> > > > 
+> > > > The _OST definition can be found in section 6.3.5 of ACPI 5.0 spec.
+> > > > The HPPF spec below also describes hotplug flows with _OST.
+> > > > 
+> > > >   DIG64 Hot-Plug & Partitioning Flow (HPPF) Specification R1.0
+> > > >   http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
+> > > > 
+> > > > The changes have been tested with simulated _OST methods.
+> > > 
+> > > Toshi,
+> > > 
+> > > First of all thanks for asking for my feedback. :) Having benefited from
+> > > reviewing the previous versions of this patch set, my thoughts on the
+> > > implementation have evolved.
+> > 
+> > Thanks for reviewing! :)
+> > 
+> > > I have some general comments first in the response, and please find code
+> > > specific comments on individual patches.
+> > > 
+> > > This patch set enables Insertion/Ejection _OST processing support which
+> > > will be a good addition since OS already supports it for Processor
+> > > Aggregator Device Support and _PPC.
+> > 
+> > Right.
+> > 
+> > > However, in this case it is enabled as a compile time option and would
+> > > require a kernel build when firmware starts supporting _OST method in
+> > > some cases. Reference: PATCH v4 1/6. 
+> > 
+> > Yes, it requires ACPI CPU, Memory and Container hotplug be enabled in the kernel.
+> > 
+> > > It also restricts the support to be all or nothing. i.e _OST is
+> > > supported only when all relevant hotplug operations are supported and
+> > > these need to be specifically enabled using the config options that
+> > > control it. For example, if a platform supports CPU_HOTPLUG and not
+> > > MEMORY_HOTPLUG, _OST support will be disabled even when firmware
+> > > supports it for cpus. Also the set of hotplug operations is limited as
+> > > _OST could be present in other hotplug cases such as PCI and PCIe.
+> > >
+> > > I understand the spirit of this restriction that you are trying to limit
+> > > the exposure and it is a good goal. However, it probably could be
+> > > achieved in a way that doesn't shoehorn the implementation.
+> > 
+> > This restriction is to assure that the OS is compliant with the ACPI
+> > spec. When the OS calls _OSC with the hotplug _OST bit set, the OS needs
+> > to support _OST for all relevant ACPI hotplug operations. Unfortunately,
+> > this requires all relevant hotplug modules be enabled in the OS under
+> > the current implementation.
+> > 
+> > For example, when the platform supports ACPI memory hotplug, but
+> > ACPI_HOTPLUG_MEMORY is undefined in the OS, the OS needs to call _OSC
+> > with the hotplug _OST bit unset. This is because the OS cannot receive
+> > an ACPI notification to a memory object when ACPI_HOTPLUG_MEMORY is
+> > undefined. Without the notify handler, we cannot call _OST.
+> > 
+> > A long term solution to address this issue is to have the system global
+> > notify handler to receive all hotplug notifications, and call _OST
+> > accordingly. However, it will require restructuring efforts which well
+> > beyond the scope of this patchset. The email below describes this issue
+> > and my thoughts on this.
+> > http://marc.info/?l=linux-acpi&m=133546048929384&w=2
+> > 
+> > > I think here are the goals, 
+> > > 
+> > > 1. limit exposure so platforms that don't implement _OST are not
+> > > penalized evaluation _OST unnecessarily.
+> > 
+> > This goal is met since the OS cannot evaluate _OST unless it is
+> > implemented.
+> > 
+> > > 2. enable it when needed without requiring special compile time steps
+> > > and not worrying about sorting through various config options.
+> > 
+> > I agree, but as I explained above, this is required to be compliant with
+> > ACPI spec at this point. We can remove this restriction by improving the
+> > notify handler design, but it will take more steps to do so.
+> > 
+> > > 3. don't require all hotplug variants to be enabled in config, before OS
+> > > enables _OST support.
+> > 
+> > I agree, but the same reason above.
+> > 
+> > > I see that you are enabling _OST evaluation and set the cap bit
+> > > OSC_SB_PPC_OST_SUPPORT only when ACPI_HOTPLUG_OST is defined. What
+> > > happens on when a kernel is configured with the config options that
+> > > enable ACPI_HOTPLUG_OST at compile time, and other hotplug options for
+> > > example CONFIG_HOTPLUG_PCI_PCIE, and CONFIG_HOTPLUG_PCI.
+> > 
+> > Non-ACPI hotplug operations like PCIe native hotplug are irrelevant to _OST.
 > 
-> Sure, I'll test it.
-> 
-> However, it should be a separate patch, not merged with this one.
-> 
-> So, I don't see anything speaking against making
-> threshold_init_device a late_initcall leading to the following order:
-> 
-> device_initcall <- xen
-> device_initcall_sync <- arch/x86
-> fs_initcall <- threshold_init_device
+> Yes I agree with your statement about PCIe native hot-plug operations.
+> However, as Jiang Liu pointed out in one of the reviews of an earlier
+> version of this patch set, _OST method has been defined in ACPI4.0 spec
+> and there are some platforms that already implement the _OST method. For
+> example,
+> Quanta QSSC-S4R server implements _OST for hot-pluggable PCI slots.
 
-do you mean 'late_initcall <- threshold_init_device'?
+This means this server is already working fine without Linux's _OST
+support or with some private patch.
 
+> So, we do have one example of a server that implements it for
+> hot-pluggable PCI slots. Even if APCI PCI hotplug becomes legacy only,
+> it still needs to be supported.
+
+This can be incremental effort if we indeed need _OST support for legacy
+ACPI hotplug.  Jiang and I had also agreed on this.
+
+> Based on my reading of the ACPI 5.0 Spec, _OST method as it is defined
+> under the scope of Device Ejection/Insertion is applicable to not just
+> memory, cpu, container, and PCI slots, it could also be applicable
+> depending how a platform chooses implement it, "even in the cases of
+> docking and undocking mobile platforms to and from a peripheral
+> expansion dock." Reference: 6.3 of ACPI 5.0 Spec.
+
+The OS-FW interface of docking / undocking operations is fairly
+well-established with unique _DCK method.  It is not clear to me if
+there is any need to modify the current interface with _OST.  There
+might be such need in future, but I do not want to mess up with this
+procedure with my speculation.  
+
+> So I think it is wrong and narrow scoped to assume _OST will be and is
+> implemented only in the device ejection/insertion cases this patch set
+> addresses.
+
+I agree with your concerns.  However, this patchset is the first step,
+not the final step.  This first step is targeted to support the _OST
+use-cases defined in the DIG64 HPPF spec.  We can continue to enhance it
+as we find more needs.  I am willing to help anyone who has plan to
+implement _OST for other use-cases.
+
+Thanks,
+-Toshi 
+
+
+> -- Shuah
 > 
-> and the "xen" line not happening on baremetal; which shouldn't change
-> anything noticeably in the init-order mce-wise.
-> 
-> Also, add a comment at the end of mce_amd.c saying why
-> threshold_init_device should be last.
 > 
 
-OK, good, we will use this approach, I will do it tomorrow morning.
-Thanks Konrad and Boris's suggestion!
 
