@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2E3Hou (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:44:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35255 "EHLO
+	id S1754452Ab2E3Hps (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:45:48 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35281 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580Ab2E3Hot (ORCPT
+	with ESMTP id S1751838Ab2E3Hpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:44:49 -0400
-Date: Wed, 30 May 2012 00:44:37 -0700
-From: tip-bot for Franck Bui-Huu <fbuihuu@gmail.com>
-Message-ID: <tip-e8cdd947776300f962d5b699c34087af45a8aea7@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dsahern@gmail.com, fbuihuu@gmail.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, fbuihuu@gmail.com, dsahern@gmail.com,
-        tglx@linutronix.de
-In-Reply-To: <1337952109-31995-1-git-send-email-fbuihuu@gmail.com>
-References: <1337952109-31995-1-git-send-email-fbuihuu@gmail.com>
+	Wed, 30 May 2012 03:45:46 -0400
+Date: Wed, 30 May 2012 00:45:29 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Message-ID: <tip-w1neie2dqli89we1bzwkf4id@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: fix thread_map__new_by_pid_str()
-  memory leak in error path
-Git-Commit-ID: e8cdd947776300f962d5b699c34087af45a8aea7
+Subject: [tip:perf/urgent] perf top:
+  Fix counter name fixup when fallbacking to cpu-clock
+Git-Commit-ID: 895d97663c83f8ed7a3386e912009155524fe7dd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,71 +30,65 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:44:43 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:45:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e8cdd947776300f962d5b699c34087af45a8aea7
-Gitweb:     http://git.kernel.org/tip/e8cdd947776300f962d5b699c34087af45a8aea7
-Author:     Franck Bui-Huu <fbuihuu@gmail.com>
-AuthorDate: Fri, 25 May 2012 15:21:49 +0200
+Commit-ID:  895d97663c83f8ed7a3386e912009155524fe7dd
+Gitweb:     http://git.kernel.org/tip/895d97663c83f8ed7a3386e912009155524fe7dd
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 25 May 2012 14:49:51 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 25 May 2012 11:40:59 -0300
+CommitDate: Fri, 25 May 2012 14:59:37 -0300
 
-perf tools: fix thread_map__new_by_pid_str() memory leak in error path
+perf top: Fix counter name fixup when fallbacking to cpu-clock
 
-The namelist array (including its content) was not freed if we fail to
-realloc a new 'threads' structure.
+In 40491eaa "perf top: Update event name when falling back to cpu-clock"
+we freed counter->name but didn't reset it to NULL, then when setting it
+to the result of event_name(), event_name() would use the cached value,
+which by now was overwritten and thus we got garbage or a zero lenght
+string.
 
-Signed-off-by: Franck Bui-Huu <fbuihuu@gmail.com>
+Fix it by just freeing and setting counter->name to NULL, this way
+event_name() when called afterwards, will find the right counter name
+and cache it again.
+
+Found while trying 'cycles:pp' on a machine were :pp couldn't be
+honoured. Probably the best fallback here is to tell the user that that
+level of precision is not available on the PMU and then go removing 'p',
+levels of precision till we get to play 'cycles' and if even that fails,
+_then_ get to 'cpu-clock'.
+
+But that is the matter for another patch, this one just needs to fix the
+caching issue, which in the end will show 'cpu-clock' when tools ask for
+the event name being used, which clarifies things for the user, that
+will see that 'cycles:pp' or whatever not support event is not being
+used, some sort of fallback happened.
+
 Cc: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1337952109-31995-1-git-send-email-fbuihuu@gmail.com
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-w1neie2dqli89we1bzwkf4id@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/thread_map.c |   21 ++++++++++-----------
- 1 files changed, 10 insertions(+), 11 deletions(-)
+ tools/perf/builtin-top.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/thread_map.c b/tools/perf/util/thread_map.c
-index 84d9bd78..9b5f856 100644
---- a/tools/perf/util/thread_map.c
-+++ b/tools/perf/util/thread_map.c
-@@ -188,28 +188,27 @@ static struct thread_map *thread_map__new_by_pid_str(const char *pid_str)
- 		nt = realloc(threads, (sizeof(*threads) +
- 				       sizeof(pid_t) * total_tasks));
- 		if (nt == NULL)
--			goto out_free_threads;
-+			goto out_free_namelist;
- 
- 		threads = nt;
- 
--		if (threads) {
--			for (i = 0; i < items; i++)
--				threads->map[j++] = atoi(namelist[i]->d_name);
--			threads->nr = total_tasks;
--		}
--
--		for (i = 0; i < items; i++)
-+		for (i = 0; i < items; i++) {
-+			threads->map[j++] = atoi(namelist[i]->d_name);
- 			free(namelist[i]);
-+		}
-+		threads->nr = total_tasks;
- 		free(namelist);
--
--		if (!threads)
--			break;
- 	}
- 
- out:
- 	strlist__delete(slist);
- 	return threads;
- 
-+out_free_namelist:
-+	for (i = 0; i < items; i++)
-+		free(namelist[i]);
-+	free(namelist);
-+
- out_free_threads:
- 	free(threads);
- 	threads = NULL;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 6031dce..d4a5f9b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -953,7 +953,7 @@ try_again:
+ 				attr->config = PERF_COUNT_SW_CPU_CLOCK;
+ 				if (counter->name) {
+ 					free(counter->name);
+-					counter->name = strdup(event_name(counter));
++					counter->name = NULL;
+ 				}
+ 				goto try_again;
+ 			}
