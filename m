@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2E3PMk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 11:12:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41122 "EHLO mail.skyhub.de"
+	id S1753996Ab2E3PON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:14:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961Ab2E3PMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 11:12:38 -0400
-Date: Wed, 30 May 2012 17:12:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
-        Andre Przywara <andre.przywara@amd.com>,
-        Jacob Shin <Jacob.Shin@amd.com>, mingo@elte.hu, jeremy@goop.org,
-        tglx@linutronix.de, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-Message-ID: <20120530151235.GB15635@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@suse.com>,
-	Andre Przywara <andre.przywara@amd.com>,
-	Jacob Shin <Jacob.Shin@amd.com>, mingo@elte.hu, jeremy@goop.org,
-	tglx@linutronix.de, xen-devel@lists.xensource.com,
-	linux-kernel@vger.kernel.org
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
- <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
- <4FC62888.9010407@amd.com>
- <4FC649790200007800086E51@nat28.tlf.novell.com>
- <4FC631F0.9080109@zytor.com>
- <20120530144929.GH3207@phenom.dumpdata.com>
+	id S1753476Ab2E3POL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 11:14:11 -0400
+Message-ID: <4FC6393B.7090105@draigBrady.com>
+Date: Wed, 30 May 2012 16:14:03 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110816 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20120530144929.GH3207@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Cong Wang <amwang@redhat.com>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [RFC Patch] fs: implement per-file drop caches
+References: <1338385120-14519-1-git-send-email-amwang@redhat.com>
+In-Reply-To: <1338385120-14519-1-git-send-email-amwang@redhat.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 10:49:29AM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, May 30, 2012 at 07:42:56AM -0700, H. Peter Anvin wrote:
-> > On 05/30/2012 07:23 AM, Jan Beulich wrote:
-> > > 
-> > > I see - the Xen code blindly overwrites pv_cpu_ops, despite not
-> > > having initialized all members. That's an obvious oversight of the
-> > > patch that introduced the _regs variants.
-> > > 
-> > > Plus having secondary instances of things like rdmsrl_amd_safe()
-> > > in asm/paravirt.h seems pretty strange an approach (which was
-> > > why initially I didn't spot how a crash could happen there) - only
-> > > the lowest level functions should get re-implemented here.
-> > > 
-> > 
-> > This kinds of things are part of why Xen makes me want to cry regularly.
+On 05/30/2012 02:38 PM, Cong Wang wrote:
+> This is a draft patch of implementing per-file drop caches.
 > 
-> It looks like an oversight by Borislav (177fed1ee8d727c39601ce9fc2299b4cb25a718e
-> and 132ec92f) and Yinghai (b05f78f5c713eda2c34e495d92495ee4f1c3b5e1) where
-> they added these wrappers way back in 2009!
+> It introduces a new fcntl command  F_DROP_CACHES to drop
+> file caches of a specific file. The reason is that currently
+> we only have a system-wide drop caches interface, it could
+> cause system-wide performance down if we drop all page caches
+> when we actually want to drop the caches of some huge file.
 
-This is exactly why xen has nothing to do in arch/x86/. It is not an
-oversight - I simply didn't test it on xen because I don't care about
-it.
+This is useful functionality.
+Though isn't it already provided with POSIX_FADV_DONTNEED?
 
-Remember our last discussion about mcelog?
+This functionality was added to GNU dd (8.11) a year ago:
+http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5f31155
 
-This current case should be a perfect example for why xen shouldn't be
-sprinkling code all over the place.
+Here are the examples from that patch:
 
--- 
-Regards/Gruss,
-Boris.
+# Advise to drop cache for whole file
+dd if=ifile iflag=nocache count=0
+
+# Ensure drop cache for the whole file
+dd of=ofile oflag=nocache conv=notrunc,fdatasync count=0
+
+# Drop cache for part of file
+dd if=ifile iflag=nocache skip=10 count=10 of=/dev/null
+
+# Stream data using just the read-ahead cache
+dd if=ifile of=ofile iflag=nocache oflag=nocache
+
+cheers,
+Pádraig.
