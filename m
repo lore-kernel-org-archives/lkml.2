@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2E3HKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:10:30 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37582 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab2E3HK3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:10:29 -0400
+	id S1755811Ab2E3HLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:11:46 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:48267 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752728Ab2E3HLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 03:11:45 -0400
+Message-ID: <4FC5C82E.4020806@msgid.tls.msk.ru>
+Date: Wed, 30 May 2012 11:11:42 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <1338353260-10097-17-git-send-email-lee.jones@linaro.org>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
-	<1338353260-10097-17-git-send-email-lee.jones@linaro.org>
-Date: Wed, 30 May 2012 15:10:28 +0800
-Message-ID: <CACRpkdYZaxW52dWwGzEo-7yV31dW_U37xUP2TM4G+Dz=dJ8EKw@mail.gmail.com>
-Subject: Re: [PATCH 16/22] mfd: ab8500-gpadc: Enable IRQF_ONESHOT when
- requesting a threaded IRQ
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Arun MURTHY <arun.murthy@stericsson.com>,
-        Kalle Komierowski <karl.komierowski@stericsson.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-nfs@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0+ NFS issues
+References: <4FBF2C57.3070203@msgid.tls.msk.ru> <20120529152416.GC3441@fieldses.org>
+In-Reply-To: <20120529152416.GC3441@fieldses.org>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On 29.05.2012 19:24, J. Bruce Fields wrote:
+> On Fri, May 25, 2012 at 10:53:11AM +0400, Michael Tokarev wrote:
+>> I updated my nfs server machine to kernel 3.0, and
+>> noticed that its main usage become, well, problematic.
+>>
+>> While trying to dig deeper, I also found a few other
+>> interesting issues, which are mentioned below.
+>>
+>> But first thing first: nfs.
+>>
+>> i686pae kernel, lots of RAM, Atom-based (cedar trail)
+>> machine with usual rtl8169 NIC.  3.0 or 3.2 kernel
+>> (I will try current 3.4 but I don't have much hopes
+>> there).  NFSv4.
+>>
+>> When a client machine (also 3.0 kernel) does some reading,
+>> the process often stalls somewhere in the read syscall,
+>> or, rarer, during close, for up to two MINUTES.  During
+>> this time, the client (kernel) reports "NFS server <foo>
+>> does not respond" several times, and finally "NFS server
+>> <foo> ok", client process "unstucks" from the read(2),
+>> and is able to perform a few more reads till the whole
+>> thing repeats.
+> 
+> You say 2.6.32 was OK; have you tried anything else between?
 
-> The kernel now forces IRQs to be ONESHOT if no IRQ handler is passed.
->
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/ab8500-gpadc.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mfd/ab8500-gpadc.c b/drivers/mfd/ab8500-gpadc.c
-> index c39fc71..358d502 100644
-> --- a/drivers/mfd/ab8500-gpadc.c
-> +++ b/drivers/mfd/ab8500-gpadc.c
-> @@ -599,7 +599,8 @@ static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
->        /* Register interrupt  - SwAdcComplete */
->        ret = request_threaded_irq(gpadc->irq, NULL,
->                ab8500_bm_gpswadcconvend_handler,
-> -               IRQF_NO_SUSPEND | IRQF_SHARED, "ab8500-gpadc", gpadc);
-> +               IRQF_ONESHOT | IRQF_NO_SUSPEND | IRQF_SHARED,
-> +                               "ab8500-gpadc", gpadc);
+Well, I thought bisecting between 2.6.32 and 3.0 will be quite
+painful...  But I'll try if nothing else helps.  And no, I haven't
+tried anything in-between.
 
-Looks correct to me I think this one should be ONESHOT anyway.
+> And you're holding the client constant while varying only the server
+> version, right?
 
-Yours,
-Linus Walleij
+Yes.
+
+> Is your network otherwise working?  (E.g. does transferring a bunch of
+> data from server to client using some other protocol work reliably?)
+
+Yes, it works flawlessly, all other protocols works so far.
+
+To the date, I resorted to using a small webserver plus wget as an ugly
+workaround for the problem - http works for reads from the server, while
+nfs works for writes.
+
+> Is there anything happening on the network during these stalls?  (You
+> can watch the network with wireshark, for example.)
+
+The network load is irrelevant - it behaves the same way with
+100% idle network or with network busy doing other stuff.
+
+> Does NFSv3 behave the same way?
+
+Yes it does.  With all NFSDs on server eating all available CPUs for
+quite some time, and with being "ghosts" for perf top.
+
+And with the client being unkillable again.
+
+Can at least the client be made interruptible?  Mounting with
+-o intr,soft makes no visible difference...
+
+Thanks,
+
+/mjt
