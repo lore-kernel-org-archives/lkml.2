@@ -1,82 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754164Ab2E3HDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:03:49 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:33088 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab2E3HDs (ORCPT
+	id S1754623Ab2E3HId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:08:33 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:2283 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753671Ab2E3HIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:03:48 -0400
-Date: Wed, 30 May 2012 09:03:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL 0/4] Annotation improvements for perf/core
-Message-ID: <20120530070341.GB2587@gmail.com>
-References: <1338343002-5271-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338343002-5271-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 May 2012 03:08:32 -0400
+Message-ID: <1338361709.1780.3.camel@x61.thuisdomein>
+Subject: [PATCH] iwlwifi: fix typo 'IWL_WATCHHDOG_DISABLED'
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 30 May 2012 09:08:29 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-OriginalArrivalTime: 30 May 2012 07:08:30.0263 (UTC) FILETIME=[0474CC70:01CD3E33]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit 7c5ba4a830cbb730770129b0004e2a06e47dbac5 ("iwlwifi: move queue
+watchdog into transport") introduced the named constant
+'IWL_WATCHHDOG_DISABLED'. Rename it to 'IWL_WATCHDOG_DISABLED'.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Just something I noticed while researching another issue. Compile tested
+(by compiling iwl-1000.0, iwl-5000.o and iwl-agn.o).
 
-> Hi Ingo,
-> 
-> 	Please consider pulling, contains what is in my perf/urgent branch.
-> 
-> - Arnaldo
-> 
-> The following changes since commit a44b45f236dd1c1a8caccf9a078adf2941a20267:
-> 
->   perf annotate browser: The idx_asm field should be used in asm only view (2012-05-29 20:52:38 -0300)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to 05e8b0804ec423a440882e7adecb36e7ac43e56f:
-> 
->   perf ui browser: Stop using 'self' (2012-05-29 22:42:18 -0300)
-> 
-> ----------------------------------------------------------------
-> Annotation improvements for perf/core
-> 
-> . Make the annotatation toggles (hide_src_code, jump_arrows, use_offset, etc)
->   global so that navigation doesn't resets them on new annotations.
-> 
-> . Introduce an '[annotate]' config file section to allow permanent changes
->   to the annotate browser defaults.
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (4):
->       perf annotate browser: Make feature toggles global
->       perf config: Allow '_' in config file variable names
->       perf annotate browser: Read perf config file for settings
->       perf ui browser: Stop using 'self'
-> 
->  tools/perf/Documentation/perfconfig.example |    8 +
->  tools/perf/ui/browser.c                     |  182 ++++++++-------
->  tools/perf/ui/browser.h                     |    1 +
->  tools/perf/ui/browsers/annotate.c           |  258 +++++++++++++-------
->  tools/perf/ui/browsers/hists.c              |  338 +++++++++++++--------------
->  tools/perf/util/config.c                    |    2 +-
->  6 files changed, 440 insertions(+), 349 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-1000.c   |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-5000.c   |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c    |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-config.h |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-Pulled, thanks!
+diff --git a/drivers/net/wireless/iwlwifi/iwl-1000.c b/drivers/net/wireless/iwlwifi/iwl-1000.c
+index 2629a66..2b7f615 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-1000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-1000.c
+@@ -64,7 +64,7 @@ static const struct iwl_base_params iwl1000_base_params = {
+ 	.support_ct_kill_exit = true,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_EXT_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
+-	.wd_timeout = IWL_WATCHHDOG_DISABLED,
++	.wd_timeout = IWL_WATCHDOG_DISABLED,
+ 	.max_event_log_size = 128,
+ };
+ 
+diff --git a/drivers/net/wireless/iwlwifi/iwl-5000.c b/drivers/net/wireless/iwlwifi/iwl-5000.c
+index 8e26bc8..a355ade 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -62,7 +62,7 @@ static const struct iwl_base_params iwl5000_base_params = {
+ 	.led_compensation = 51,
+ 	.plcp_delta_threshold = IWL_MAX_PLCP_ERR_LONG_THRESHOLD_DEF,
+ 	.chain_noise_scale = 1000,
+-	.wd_timeout = IWL_WATCHHDOG_DISABLED,
++	.wd_timeout = IWL_WATCHDOG_DISABLED,
+ 	.max_event_log_size = 512,
+ 	.no_idle_support = true,
+ };
+diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c b/drivers/net/wireless/iwlwifi/iwl-agn.c
+index ec36e2b..7eaa979 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -1539,7 +1539,7 @@ static struct iwl_op_mode *iwl_op_mode_dvm_start(struct iwl_trans *trans,
+ 		trans_cfg.queue_watchdog_timeout =
+ 			priv->cfg->base_params->wd_timeout;
+ 	else
+-		trans_cfg.queue_watchdog_timeout = IWL_WATCHHDOG_DISABLED;
++		trans_cfg.queue_watchdog_timeout = IWL_WATCHDOG_DISABLED;
+ 	trans_cfg.command_names = iwl_dvm_cmd_strings;
+ 
+ 	ucode_flags = fw->ucode_capa.flags;
+diff --git a/drivers/net/wireless/iwlwifi/iwl-config.h b/drivers/net/wireless/iwlwifi/iwl-config.h
+index 67b28aa..5f54742 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-config.h
++++ b/drivers/net/wireless/iwlwifi/iwl-config.h
+@@ -113,7 +113,7 @@ enum iwl_led_mode {
+ #define IWL_MAX_PLCP_ERR_THRESHOLD_DISABLE	0
+ 
+ /* TX queue watchdog timeouts in mSecs */
+-#define IWL_WATCHHDOG_DISABLED	0
++#define IWL_WATCHDOG_DISABLED	0
+ #define IWL_DEF_WD_TIMEOUT	2000
+ #define IWL_LONG_WD_TIMEOUT	10000
+ #define IWL_MAX_WD_TIMEOUT	120000
+-- 
+1.7.7.6
 
-	Ingo
+
+
