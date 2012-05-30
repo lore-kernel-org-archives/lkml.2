@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2E3Hru (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:47:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35317 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab2E3Hrs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:47:48 -0400
-Date: Wed, 30 May 2012 00:47:13 -0700
-From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-a00dc319e98161949aa87f71a17db32e925c3257@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
-        hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        khandual@linux.vnet.ibm.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        khandual@linux.vnet.ibm.com, peterz@infradead.org, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <20120525211344.GA7729@quad>
-References: <20120525211344.GA7729@quad>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf record:
-  Fix branch_stack type in perf_record_opts
-Git-Commit-ID: a00dc319e98161949aa87f71a17db32e925c3257
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756167Ab2E3HsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:48:07 -0400
+Received: from mga14.intel.com ([143.182.124.37]:23692 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756090Ab2E3HsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 03:48:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105748783"
+Message-ID: <4FC5D04E.5040907@intel.com>
+Date: Wed, 30 May 2012 15:46:22 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:47:19 -0700 (PDT)
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: gregkh <gregkh@linuxfoundation.org>,
+        "Sharp, Sarah A" <sarah.a.sharp@intel.com>,
+        Alan stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb/xhci: unify parameter of xhci_msi_irq
+References: <1331787186.2979.71.camel@debian> <20120315145743.GA7928@kroah.com> <4F6204B7.5010908@intel.com> <20120315175608.GA6077@xanatos>
+In-Reply-To: <20120315175608.GA6077@xanatos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a00dc319e98161949aa87f71a17db32e925c3257
-Gitweb:     http://git.kernel.org/tip/a00dc319e98161949aa87f71a17db32e925c3257
-Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Fri, 25 May 2012 23:13:44 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 25 May 2012 18:32:44 -0300
 
-perf record: Fix branch_stack type in perf_record_opts
+>>> Is this needed in my -next tree now?  Or is it something for later?
+>>
+>>
+>> Appreciate if it can be in -next tree. :)
+>>
+>>>
+>>> Any reason you did not put Sarah on the To: line here?  She's the one
+>>> that needs to ack it before I can accept it.
+>>
+>>
+>> Sarah, would you like to give some comments here?
+> 
+> Looks fine.  I'll send a pull request to Greg with this patch after I
+> verify it doesn't generate new warnings.
+> 
 
-The attr.branch_sample_type field is defined as u64 by the API.  As
-such, we need to ensure the variable holding the value of the branch
-stack filters is also u64 otherwise we may lose bits in the future.
 
-Note also that the bogus definition of the field in perf_record_opts
-caused problems on big-endian PPC systems.  Thanks to Anshuman Khandual
-for tracking the problem on PPC.
-
-Reported-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Cc: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20120525211344.GA7729@quad
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/perf.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 14f1034..f960ccb 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -227,7 +227,7 @@ struct perf_record_opts {
- 	unsigned int freq;
- 	unsigned int mmap_pages;
- 	unsigned int user_freq;
--	int	     branch_stack;
-+	u64          branch_stack;
- 	u64	     default_interval;
- 	u64	     user_interval;
- };
+Sarah, any further comments for this patch? :)
