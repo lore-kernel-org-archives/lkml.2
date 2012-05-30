@@ -1,114 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab2E3Nu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:50:29 -0400
-Received: from [192.48.179.30] ([192.48.179.30]:38899 "EHLO relay.sgi.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754500Ab2E3Nu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:50:28 -0400
-Date: Wed, 30 May 2012 08:46:03 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        gregkh@suse.de, stable@vger.kernel.org
-Subject: Re: [PATCH] x86: check for valid irq_cfg pointer in
- smp_irq_move_cleanup_interrupt
-Message-ID: <20120530134603.GA32097@sgi.com>
-References: <20120523181636.GA2032@sgi.com>
- <20120523190414.GA5263@sgi.com>
- <1337801086.1997.197.camel@sbsiddha-desk.sc.intel.com>
- <20120523200226.GA6936@sgi.com>
- <1337816970.1997.207.camel@sbsiddha-desk.sc.intel.com>
- <20120524143711.GA24711@sgi.com>
- <1337883560.7938.9.camel@sbsiddha-desk.sc.intel.com>
- <alpine.LFD.2.02.1205242113400.3231@ionos>
- <1337991809.7938.36.camel@sbsiddha-desk.sc.intel.com>
- <alpine.LFD.2.02.1205261216160.3231@ionos>
+	id S1754313Ab2E3Ngc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 09:36:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38398 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754143Ab2E3Nga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 09:36:30 -0400
+Date: Wed, 30 May 2012 06:36:15 -0700
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Message-ID: <tip-kt0trz0apodbf84ucjfdbr1a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/nohz: Fix rq->
+ cpu_load calculations some more
+Git-Commit-ID: 5aaa0b7a2ed5b12692c9ffb5222182bd558d3146
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1205261216160.3231@ionos>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 06:36:20 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 12:18:21PM +0200, Thomas Gleixner wrote:
-> On Fri, 25 May 2012, Suresh Siddha wrote:
-> > On Thu, 2012-05-24 at 21:16 +0200, Thomas Gleixner wrote:
-> > There are other (not-so common) irq desc references, like in the
-> > show_interrupts() (cat /proc/interrupts path) etc, that does things like
-> > this in the process context:
-> > 
-> >         desc = irq_to_desc(i);
-> >         if (!desc)
-> >                 return 0;
-> > 
-> >         raw_spin_lock_irqsave(&desc->lock, flags);
-> > 
-> > May be we should introduce something like
-> > get_irq_desc_locked()/put_irq_desc_locked() that can safely access the
-> > irq desc with pre-emption/irq's disabled and lock it etc. And the
-> > synchronize_sched() will enable the destroy_irq()/free_desc() to free it
-> > safely etc.
-> 
-> I want to avoid that and instead use proper refcounting. The reason is
-> that we want to move the irq descriptor when the affinity changes
-> nodes, and for that we need refcounting anyway.
->
+Commit-ID:  5aaa0b7a2ed5b12692c9ffb5222182bd558d3146
+Gitweb:     http://git.kernel.org/tip/5aaa0b7a2ed5b12692c9ffb5222182bd558d3146
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 17 May 2012 17:15:29 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 30 May 2012 14:02:16 +0200
 
-While this proposal sounds good, in the meantime would there be any harm in
-putting the NULL cfg check into smp_irq_move_cleanup_interrupt()?
+sched/nohz: Fix rq->cpu_load calculations some more
 
-It's a minimal change, and eliminates the panics that I've encountered thus far.
+Follow up on commit 556061b00 ("sched/nohz: Fix rq->cpu_load[]
+calculations") since while that fixed the busy case it regressed the
+mostly idle case.
 
-Reposting the patch.
+Add a callback from the nohz exit to also age the rq->cpu_load[]
+array. This closes the hole where either there was no nohz load
+balance pass during the nohz, or there was a 'significant' amount of
+idle time between the last nohz balance and the nohz exit.
 
+So we'll update unconditionally from the tick to not insert any
+accidental 0 load periods while busy, and we try and catch up from
+nohz idle balance and nohz exit. Both these are still prone to missing
+a jiffy, but that has always been the case.
 
-
-A NULL pointer dereference can occur in smp_irq_move_cleanup_interrupt() if
-we haven't yet setup the irq_cfg pointer in the irq_desc.irq_data.chip_data.
-
-In create_irq_nr() there is a window where we have set vector_irq in
-__assign_irq_vector(), but not yet called irq_set_chip_data() to set the
-irq_cfg pointer.
-
-Should an IRQ_MOVE_CLEANUP_VECTOR hit the cpu in question during this time,
-smp_irq_move_cleanup_interrupt() will attempt to process the aforementioned
-irq, but panic when accessing irq_cfg.
-
-There is also a window in destroy_irq() where we've cleared the irq_cfg
-pointer in free_irq_cfg(), but have not yet called irq_free_desc().  Note
-that we have cleared vector_irq in __clear_irq_vector() prior to free_irq_cfg(),
-but smp_irq_move_cleanup_interrupt() might've already referenced the irq_desc.
-
-Only continue processing the irq if irq_cfg is non-NULL.
-
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: pjt@google.com
+Cc: Venkatesh Pallipadi <venki@google.com>
+Link: http://lkml.kernel.org/n/tip-kt0trz0apodbf84ucjfdbr1a@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/apic/io_apic.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/sched.h    |    1 +
+ kernel/sched/core.c      |   53 +++++++++++++++++++++++++++++++++++++--------
+ kernel/time/tick-sched.c |    1 +
+ 3 files changed, 45 insertions(+), 10 deletions(-)
 
-Index: linux/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux/arch/x86/kernel/apic/io_apic.c
-@@ -2478,9 +2478,12 @@ asmlinkage void smp_irq_move_cleanup_int
- 		if (!desc)
- 			continue;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f45c0b2..d61e597 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -145,6 +145,7 @@ extern unsigned long this_cpu_load(void);
  
--		cfg = irq_cfg(irq);
- 		raw_spin_lock(&desc->lock);
  
-+		cfg = irq_cfg(irq);
-+		if (!cfg)
-+			goto unlock;
+ extern void calc_global_load(unsigned long ticks);
++extern void update_cpu_load_nohz(void);
+ 
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 39eb601..75844a8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2517,25 +2517,32 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
+ 	sched_avg_update(this_rq);
+ }
+ 
++#ifdef CONFIG_NO_HZ
++/*
++ * There is no sane way to deal with nohz on smp when using jiffies because the
++ * cpu doing the jiffies update might drift wrt the cpu doing the jiffy reading
++ * causing off-by-one errors in observed deltas; {0,2} instead of {1,1}.
++ *
++ * Therefore we cannot use the delta approach from the regular tick since that
++ * would seriously skew the load calculation. However we'll make do for those
++ * updates happening while idle (nohz_idle_balance) or coming out of idle
++ * (tick_nohz_idle_exit).
++ *
++ * This means we might still be one tick off for nohz periods.
++ */
 +
- 		/*
- 		 * Check if the irq migration is in progress. If so, we
- 		 * haven't received the cleanup request yet for this irq.
+ /*
+  * Called from nohz_idle_balance() to update the load ratings before doing the
+  * idle balance.
+  */
+ void update_idle_cpu_load(struct rq *this_rq)
+ {
+-	unsigned long curr_jiffies = jiffies;
++	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
+ 	unsigned long load = this_rq->load.weight;
+ 	unsigned long pending_updates;
+ 
+ 	/*
+-	 * Bloody broken means of dealing with nohz, but better than nothing..
+-	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
+-	 * update and see 0 difference the one time and 2 the next, even though
+-	 * we ticked at roughtly the same rate.
+-	 *
+-	 * Hence we only use this from nohz_idle_balance() and skip this
+-	 * nonsense when called from the scheduler_tick() since that's
+-	 * guaranteed a stable rate.
++	 * bail if there's load or we're actually up-to-date.
+ 	 */
+ 	if (load || curr_jiffies == this_rq->last_load_update_tick)
+ 		return;
+@@ -2547,12 +2554,38 @@ void update_idle_cpu_load(struct rq *this_rq)
+ }
+ 
+ /*
++ * Called from tick_nohz_idle_exit() -- try and fix up the ticks we missed.
++ */
++void update_cpu_load_nohz(void)
++{
++	struct rq *this_rq = this_rq();
++	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
++	unsigned long pending_updates;
++
++	if (curr_jiffies == this_rq->last_load_update_tick)
++		return;
++
++	raw_spin_lock(&this_rq->lock);
++	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
++	if (pending_updates) {
++		this_rq->last_load_update_tick = curr_jiffies;
++		/*
++		 * We were idle, this means load 0, the current load might be
++		 * !0 due to remote wakeups and the sort.
++		 */
++		__update_cpu_load(this_rq, 0, pending_updates);
++	}
++	raw_spin_unlock(&this_rq->lock);
++}
++#endif /* CONFIG_NO_HZ */
++
++/*
+  * Called from scheduler_tick()
+  */
+ static void update_cpu_load_active(struct rq *this_rq)
+ {
+ 	/*
+-	 * See the mess in update_idle_cpu_load().
++	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
+ 	 */
+ 	this_rq->last_load_update_tick = jiffies;
+ 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6a3a5b9..0c927cd 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -576,6 +576,7 @@ void tick_nohz_idle_exit(void)
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+ 	tick_do_update_jiffies64(now);
++	update_cpu_load_nohz();
+ 
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	/*
