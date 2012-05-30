@@ -1,98 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab2E3NZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:25:23 -0400
-Received: from fieldses.org ([174.143.236.118]:45734 "EHLO fieldses.org"
+	id S1754119Ab2E3N2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 09:28:35 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:59801 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab2E3NZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:25:22 -0400
-Date: Wed, 30 May 2012 09:25:18 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: linux-nfs@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0+ NFS issues
-Message-ID: <20120530132518.GA13794@fieldses.org>
-References: <4FBF2C57.3070203@msgid.tls.msk.ru>
- <20120529152416.GC3441@fieldses.org>
- <4FC5C82E.4020806@msgid.tls.msk.ru>
+	id S1753677Ab2E3N2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 09:28:34 -0400
+Message-ID: <4FC61FF4.4050304@parallels.com>
+Date: Wed, 30 May 2012 17:26:12 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC5C82E.4020806@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Paul Turner <pjt@google.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        <handai.szj@gmail.com>, <Andrew.Phillips@lmax.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v3 3/6] expose fine-grained per-cpu data for cpuacct stats
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com> <1338371317-5980-4-git-send-email-glommer@parallels.com> <CAPM31RJanAvDB+pZ+h5J3W6KXvAwPgbbeXgw6C_56tx_Mc+cgA@mail.gmail.com> <4FC6107F.9020802@parallels.com> <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
+In-Reply-To: <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 11:11:42AM +0400, Michael Tokarev wrote:
-> On 29.05.2012 19:24, J. Bruce Fields wrote:
-> > On Fri, May 25, 2012 at 10:53:11AM +0400, Michael Tokarev wrote:
-> >> I updated my nfs server machine to kernel 3.0, and
-> >> noticed that its main usage become, well, problematic.
-> >>
-> >> While trying to dig deeper, I also found a few other
-> >> interesting issues, which are mentioned below.
-> >>
-> >> But first thing first: nfs.
-> >>
-> >> i686pae kernel, lots of RAM, Atom-based (cedar trail)
-> >> machine with usual rtl8169 NIC.  3.0 or 3.2 kernel
-> >> (I will try current 3.4 but I don't have much hopes
-> >> there).  NFSv4.
-> >>
-> >> When a client machine (also 3.0 kernel) does some reading,
-> >> the process often stalls somewhere in the read syscall,
-> >> or, rarer, during close, for up to two MINUTES.  During
-> >> this time, the client (kernel) reports "NFS server <foo>
-> >> does not respond" several times, and finally "NFS server
-> >> <foo> ok", client process "unstucks" from the read(2),
-> >> and is able to perform a few more reads till the whole
-> >> thing repeats.
-> > 
-> > You say 2.6.32 was OK; have you tried anything else between?
-> 
-> Well, I thought bisecting between 2.6.32 and 3.0 will be quite
-> painful...  But I'll try if nothing else helps.  And no, I haven't
-> tried anything in-between.
-> 
-> > And you're holding the client constant while varying only the server
-> > version, right?
-> 
-> Yes.
-> 
-> > Is your network otherwise working?  (E.g. does transferring a bunch of
-> > data from server to client using some other protocol work reliably?)
-> 
-> Yes, it works flawlessly, all other protocols works so far.
-> 
-> To the date, I resorted to using a small webserver plus wget as an ugly
-> workaround for the problem - http works for reads from the server, while
-> nfs works for writes.
-> 
-> > Is there anything happening on the network during these stalls?  (You
-> > can watch the network with wireshark, for example.)
-> 
-> The network load is irrelevant - it behaves the same way with
-> 100% idle network or with network busy doing other stuff.
+On 05/30/2012 04:48 PM, Paul Turner wrote:
+>> >  Now, if you guys are okay with a file per-cpu, I can do it as well.
+>> >  It pollutes the filesystem, but at least protects against the fact that this
+>> >  is kmalloc-backed.
+>> >
+> As I prefaced, I'm not sure there's much that can be trivially done
+> about it.  This is really a fundamental limitation of how read_map()
+> works.
+>
+> What we really need is a proper seq_file exposed through cftypes.
 
-That's not what I meant.  During one of these read stalls, if you watch
-the network with wireshark, do you see any NFS traffic between the
-client and server?
+Tejun, would you be okay with an interface that exports somehow the raw 
+seq_file in cgroups ?
 
-Also: do you have a reliable way of reproducing this quickly?
-
---b.
-
-> > Does NFSv3 behave the same way?
-> 
-> Yes it does.  With all NFSDs on server eating all available CPUs for
-> quite some time, and with being "ghosts" for perf top.
-> 
-> And with the client being unkillable again.
-> 
-> Can at least the client be made interruptible?  Mounting with
-> -o intr,soft makes no visible difference...
-> 
-> Thanks,
-> 
-> /mjt
+This way we could call s_show for each cpu and get away with the memory 
+usage problem, I presume
