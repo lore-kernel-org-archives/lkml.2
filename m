@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab2E3Jv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:51:57 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3000 "EHLO relay.sw.ru"
+	id S1751699Ab2E3Jvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:51:55 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:9802 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751179Ab2E3Jvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751307Ab2E3Jvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 May 2012 05:51:53 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
@@ -12,47 +12,98 @@ Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
         Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
         handai.szj@gmail.com, Andrew.Phillips@lmax.com,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v3 0/6] per cgroup /proc/stat statistics
-Date: Wed, 30 May 2012 13:48:31 +0400
-Message-Id: <1338371317-5980-1-git-send-email-glommer@parallels.com>
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v3 3/6] expose fine-grained per-cpu data for cpuacct stats
+Date: Wed, 30 May 2012 13:48:34 +0400
+Message-Id: <1338371317-5980-4-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1338371317-5980-1-git-send-email-glommer@parallels.com>
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The cpuacct cgroup already exposes user and system numbers in a per-cgroup
+fashion. But they are a summation along the whole group, not a per-cpu figure.
+Also, they are coarse-grained version of the stats usually shown at places
+like /proc/stat.
 
-This is a rework of my v2 series taking into account Paul
-Turner's comments. All the series is the same except for
-the patch that collets nr_switches that is now completely reworked.
+I want to have enough cgroup data to emulate the /proc/stat interface. To
+achieve that, I am creating a new file "stat_percpu" that displays the
+fine-grained per-cpu data. The original data is left alone.
 
-It is out of schedule(), relegated to a scheduler hook. Only difference
-from Paul's suggestion is that I added a new one, instead of messing with
-put_prev_task + pick_next_task pairs. In the patchset that adds it,
-I'll try to argue for my solution.
+The format of this file resembles the one found in the usual cgroup's stat
+files. But of course, the fields will be repeated, one per cpu, and prefixed
+with the cpu number.
 
-Hope this is acceptable, and please let me know of any other concerns.
+Therefore, we'll have something like:
 
-v2:
-* completely reworked nr_switches gathering
-* separated per-se sleep_start to be more clear about it
+  cpu0.user X
+  cpu0.system Y
+  ...
+  cpu1.user X1
+  cpu1.system Y1
+  ...
 
-Glauber Costa (6):
-  measure exec_clock for rt sched entities
-  account guest time per-cgroup as well.
-  expose fine-grained per-cpu data for cpuacct stats
-  add a new scheduler hook for context switch
-  Also record sleep start for a task group
-  expose per-taskgroup schedstats in cgroup
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
+---
+ kernel/sched/core.c |   33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |  166 +++++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/fair.c   |   42 ++++++++++++-
- kernel/sched/rt.c     |   20 ++++++
- kernel/sched/sched.h  |    6 ++
- 5 files changed, 228 insertions(+), 7 deletions(-)
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 220d416..4c1d7e9 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -8178,6 +8178,35 @@ static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+ 	return 0;
+ }
+ 
++static inline void do_fill_cb(struct cgroup_map_cb *cb, struct cpuacct *ca,
++			      char *str, int cpu, int index)
++{
++	char name[24];
++	struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
++
++	snprintf(name, sizeof(name), "cpu%d.%s", cpu, str);
++	cb->fill(cb, name, cputime64_to_clock_t(kcpustat->cpustat[index]));
++}
++
++static int cpuacct_stats_percpu_show(struct cgroup *cgrp, struct cftype *cft,
++				     struct cgroup_map_cb *cb)
++{
++	struct cpuacct *ca = cgroup_ca(cgrp);
++	int cpu;
++
++	for_each_online_cpu(cpu) {
++		do_fill_cb(cb, ca, "user", cpu, CPUTIME_USER);
++		do_fill_cb(cb, ca, "nice", cpu, CPUTIME_NICE);
++		do_fill_cb(cb, ca, "system", cpu, CPUTIME_SYSTEM);
++		do_fill_cb(cb, ca, "irq", cpu, CPUTIME_IRQ);
++		do_fill_cb(cb, ca, "softirq", cpu, CPUTIME_SOFTIRQ);
++		do_fill_cb(cb, ca, "guest", cpu, CPUTIME_GUEST);
++		do_fill_cb(cb, ca, "guest_nice", cpu, CPUTIME_GUEST_NICE);
++	}
++
++	return 0;
++}
++
+ static struct cftype files[] = {
+ 	{
+ 		.name = "usage",
+@@ -8192,6 +8221,10 @@ static struct cftype files[] = {
+ 		.name = "stat",
+ 		.read_map = cpuacct_stats_show,
+ 	},
++	{
++		.name = "stat_percpu",
++		.read_map = cpuacct_stats_percpu_show,
++	},
+ 	{ }	/* terminate */
+ };
+ 
 -- 
 1.7.10.2
 
