@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab2E3JwB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:52:01 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56920 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab2E3Jv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:51:57 -0400
-From: Sasikantha babu <sasikanth.v19@gmail.com>
-To: Serge Hallyn <serge.hallyn@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>
-Cc: linux-kernel@vger.kernel.org, Sasikantha babu <sasikanth.v19@gmail.com>
-Subject: [PATCH] prctl: Removed redunant assignment of "error" to zero
-Date: Wed, 30 May 2012 15:25:03 +0530
-Message-Id: <1338371703-28858-1-git-send-email-sasikanth.v19@gmail.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1752059Ab2E3Jv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:51:59 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:48314 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751360Ab2E3Jvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 05:51:53 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        handai.szj@gmail.com, Andrew.Phillips@lmax.com,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v3 2/6] account guest time per-cgroup as well.
+Date: Wed, 30 May 2012 13:48:33 +0400
+Message-Id: <1338371317-5980-3-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1338371317-5980-1-git-send-email-glommer@parallels.com>
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just setting the "error" to error number is enough on failure and
-It doesn't require to set "error" variable to zero in each switch case, since
-it was already initialized with zero
+We already track multiple tick statistics per-cgroup, using
+the task_group_account_field facility. This patch accounts
+guest_time in that manner as well.
 
-Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
 ---
- kernel/sys.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ kernel/sched/core.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 6df4262..d8e9016 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1920,7 +1920,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 				break;
- 			}
- 			me->pdeath_signal = arg2;
--			error = 0;
- 			break;
- 		case PR_GET_PDEATHSIG:
- 			error = put_user(me->pdeath_signal, (int __user *)arg2);
-@@ -1934,7 +1933,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 				break;
- 			}
- 			set_dumpable(me->mm, arg2);
--			error = 0;
- 			break;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 39eb601..220d416 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2717,8 +2717,6 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 			       cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+ 	/* Add guest time to process. */
+ 	p->utime += cputime;
+ 	p->utimescaled += cputime_scaled;
+@@ -2727,11 +2725,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
  
- 		case PR_SET_UNALIGN:
-@@ -1961,8 +1959,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 		case PR_SET_TIMING:
- 			if (arg2 != PR_TIMING_STATISTICAL)
- 				error = -EINVAL;
--			else
--				error = 0;
- 			break;
+ 	/* Add guest time to cpustat. */
+ 	if (TASK_NICE(p) > 0) {
+-		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
++		task_group_account_field(p, CPUTIME_NICE, (__force u64) cputime);
++		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+ 	} else {
+-		cpustat[CPUTIME_USER] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
++		task_group_account_field(p, CPUTIME_USER, (__force u64) cputime);
++		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+ 	}
+ }
  
- 		case PR_SET_NAME:
-@@ -2013,7 +2009,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 					current->default_timer_slack_ns;
- 			else
- 				current->timer_slack_ns = arg2;
--			error = 0;
- 			break;
- 		case PR_MCE_KILL:
- 			if (arg4 | arg5)
-@@ -2039,7 +2034,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 			default:
- 				return -EINVAL;
- 			}
--			error = 0;
- 			break;
- 		case PR_MCE_KILL_GET:
- 			if (arg2 | arg3 | arg4 | arg5)
-@@ -2055,7 +2049,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
- 			break;
- 		case PR_SET_CHILD_SUBREAPER:
- 			me->signal->is_child_subreaper = !!arg2;
--			error = 0;
- 			break;
- 		case PR_GET_CHILD_SUBREAPER:
- 			error = put_user(me->signal->is_child_subreaper,
 -- 
-1.7.3.4
+1.7.10.2
 
