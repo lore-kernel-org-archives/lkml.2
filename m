@@ -1,158 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752145Ab2E3L1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:27:20 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:52049 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238Ab2E3L1S (ORCPT
+	id S1752888Ab2E3L2r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:28:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:32453 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751411Ab2E3L2p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:27:18 -0400
-Message-ID: <4FC603D4.20107@linux.vnet.ibm.com>
-Date: Wed, 30 May 2012 16:56:12 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+	Wed, 30 May 2012 07:28:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="149436448"
+From: "Hao, Xudong" <xudong.hao@intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "Zhang, Xiantao" <xiantao.zhang@intel.com>
+Subject: RE: [PATCH 1/1] Enable LTR/OBFF before device is used by driver
+Thread-Topic: [PATCH 1/1] Enable LTR/OBFF before device is used by driver
+Thread-Index: AQHNMXuKirBV1mWKHkas/cdRQgQrOpbP0fMAgBI4e6A=
+Date: Wed, 30 May 2012 11:28:33 +0000
+Message-ID: <403610A45A2B5242BD291EDAE8B37D300FDCB508@SHSMSX102.ccr.corp.intel.com>
+References: <20120514024816.GA15371@hp-xd.sh.intel.com>
+ <CAErSpo6jE+3uzjrx9v+f=memXP6TpmHnOBcqW5bH1HJO_EQVuw@mail.gmail.com>
+In-Reply-To: <CAErSpo6jE+3uzjrx9v+f=memXP6TpmHnOBcqW5bH1HJO_EQVuw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, X86 <x86@kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Attilio Rao <attilio.rao@citrix.com>,
-        Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen Devel <xen-devel@lists.xensource.com>, linux-doc@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Stephan Diestelhorst <stephan.diestelhorst@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC V8 0/17] Paravirtualized ticket spinlocks
-References: <20120502100610.13206.40.sendpatchset@codeblue.in.ibm.com> <20120507082928.GI16608@gmail.com> <4FA7888F.80505@redhat.com> <4FA7AAD8.6050003@linux.vnet.ibm.com> <4FA7BABA.4040700@redhat.com> <4FA7CC05.50808@linux.vnet.ibm.com> <4FA7CCA2.4030408@redhat.com> <4FA7D06B.60005@linux.vnet.ibm.com> <20120507134611.GB5533@linux.vnet.ibm.com> <4FA7D2E5.1020607@redhat.com> <4FA7D3F7.9080005@linux.vnet.ibm.com> <4FA7D50D.1020209@redhat.com> <4FA7E06E.20304@linux.vnet.ibm.com> <4FA7E1C8.7010509@redhat.com> <4FB0014A.90604@linux.vnet.ibm.com> <4FB31CA4.5070908@linux.vnet.ibm.com>
-In-Reply-To: <4FB31CA4.5070908@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12053001-1618-0000-0000-000001B8B372
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2012 08:49 AM, Raghavendra K T wrote:
-> On 05/14/2012 12:15 AM, Raghavendra K T wrote:
->> On 05/07/2012 08:22 PM, Avi Kivity wrote:
->>
->> I could not come with pv-flush results (also Nikunj had clarified that
->> the result was on NOn PLE
->>
->>> I'd like to see those numbers, then.
->>>
->>> Ingo, please hold on the kvm-specific patches, meanwhile.
-[...]
-> To summarise,
-> with 32 vcpu guest with nr thread=32 we get around 27% improvement. In
-> very low/undercommitted systems we may see very small improvement or
-> small acceptable degradation ( which it deserves).
->
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Saturday, May 19, 2012 9:20 AM
+> To: Xudong Hao
+> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org;
+> kvm@vger.kernel.org; avi@redhat.com; alex.williamson@redhat.com; Zhang,
+> Xiantao; Hao, Xudong
+> Subject: Re: [PATCH 1/1] Enable LTR/OBFF before device is used by driver
+> 
+> On Sun, May 13, 2012 at 8:48 PM, Xudong Hao <xudong.hao@linux.intel.com>
+> wrote:
+> > Enable LTR(Latency tolerance reporting) and OBFF(optimized buffer flush/fill)
+> in
+> >  pci_enable_device(), so that they are enabled before the device is used by
+> driver.
+> 
+> Please split this into two patches (one for LTR and another for OBFF)
+> so they can be reverted individually if they cause trouble.  
 
-For large guests, current value SPIN_THRESHOLD, along with ple_window 
-needed some of research/experiment.
+OK.
 
-[Thanks to Jeremy/Nikunj for inputs and help in result analysis ]
+> It would
+> be nice if you bundled these together with your other "save/restore
+> max Latency Value" patch so they were all together on the mailing
+> list.
+> 
+Sure, I'll modify the save/restore patch and bundle them together.
 
-I started with debugfs spinlock/histograms, and ran experiments with 32, 
-64 vcpu guests for spin threshold of 2k, 4k, 8k, 16k, and 32k with
-1vm/2vm/4vm  for kernbench, sysbench, ebizzy, hackbench.
-[ spinlock/histogram  gives logarithmic view of lockwait times ]
+> I read the LTR sections of the PCIe spec, but I can't figure out how
+> it's supposed to work.  It says "power management policies ... can be
+> implemented to consider Endpoint service requirements."  Does that
+> mean there's some OS software that might be involved, or is this just
+> a matter of software flipping the LTR-enable bit and the hardware
+> doing everything else?  How confident can we be that enabling this is
+> safe?
+> 
 
-machine: PLE machine  with 32 cores.
+Software only set the LTR-enable bit, then hardware/chipset/device do everything else. There are one thing that software can be involved: software can configure maximum latency tolerance.
 
-Here is the result summary.
-The summary includes 2 part,
-(1) %improvement w.r.t 2K spin threshold,
-(2) improvement w.r.t sum of histogram numbers in debugfs (that gives 
-rough indication of contention/cpu time wasted)
+> For OBFF, is there some OS piece not included here that tells a Root
+> Complex that "now is a good time for Endpoints to do something," e.g.,
+> the spec mentions an "operating system timer tick."  Is there some
+> benefit to this patch without that piece?  I don't understand the big
+> picture yet.
+> 
 
-  For e.g 98% for 4k threshold kbench 1 vm would imply, there is a 98% 
-reduction in sigma(histogram values) compared to 2k case
+As like LTR, OBFF do not need OS do additional changes, just set obff-enable bit.
 
-Result for 32 vcpu guest
-==========================
-+----------------+-----------+-----------+-----------+-----------+
-|    Base-2k     |     4k    |    8k     |   16k     |    32k    |
-+----------------+-----------+-----------+-----------+-----------+
-|     kbench-1vm |       44  |       50  |       46  |       41  |
-|  SPINHisto-1vm |       98  |       99  |       99  |       99  |
-|     kbench-2vm |       25  |       45  |       49  |       45  |
-|  SPINHisto-2vm |       31  |       91  |       99  |       99  |
-|     kbench-4vm |      -13  |      -27  |       -2  |       -4  |
-|  SPINHisto-4vm |       29  |       66  |       95  |       99  |
-+----------------+-----------+-----------+-----------+-----------+
-|     ebizzy-1vm |      954  |      942  |      913  |      915  |
-|  SPINHisto-1vm |       96  |       99  |       99  |       99  |
-|     ebizzy-2vm |      158  |      135  |      123  |      106  |
-|  SPINHisto-2vm |       90  |       98  |       99  |       99  |
-|     ebizzy-4vm |      -13  |      -28  |      -33  |      -37  |
-|  SPINHisto-4vm |       83  |       98  |       99  |       99  |
-+----------------+-----------+-----------+-----------+-----------+
-|     hbench-1vm |       48  |       56  |       52  |       64  |
-|  SPINHisto-1vm |       92  |       95  |       99  |       99  |
-|     hbench-2vm |       32  |       40  |       39  |       21  |
-|  SPINHisto-2vm |       74  |       96  |       99  |       99  |
-|     hbench-4vm |       27  |       15  |        3  |      -57  |
-|  SPINHisto-4vm |       68  |       88  |       94  |       97  |
-+----------------+-----------+-----------+-----------+-----------+
-|    sysbnch-1vm |        0  |        0  |        1  |        0  |
-|  SPINHisto-1vm |       76  |       98  |       99  |       99  |
-|    sysbnch-2vm |       -1  |        3  |       -1  |       -4  |
-|  SPINHisto-2vm |       82  |       94  |       96  |       99  |
-|    sysbnch-4vm |        0  |       -2  |       -8  |      -14  |
-|  SPINHisto-4vm |       57  |       79  |       88  |       95  |
-+----------------+-----------+-----------+-----------+-----------+
+> > Signed-off-by: Xudong Hao <xudong.hao@intel.com>
+> >
+> > ---
+> >  drivers/pci/pci.c |   29 +++++++++++++++++++++++++++++
+> >  1 files changed, 29 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> > index 111569c..2369883 100644
+> > --- a/drivers/pci/pci.c
+> > +++ b/drivers/pci/pci.c
+> > @@ -1134,6 +1134,31 @@ int pci_load_and_free_saved_state(struct
+> pci_dev *dev,
+> >  }
+> >  EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
+> >
+> > +static void pci_enable_dev_caps(struct pci_dev *dev)
+> > +{
+> > +       /* set default value */
+> > +       unsigned long type = PCI_EXP_OBFF_SIGNAL_ALWAYS;
+> 
+> There's only one use of this value, so skip the variable and just use
+> PCI_EXP_OBFF_SIGNAL_ALWAYS in the call.
+> 
 
-result for 64  vcpu guest
-=========================
-+----------------+-----------+-----------+-----------+-----------+
-|    Base-2k     |     4k    |    8k     |   16k     |    32k    |
-+----------------+-----------+-----------+-----------+-----------+
-|     kbench-1vm |        1  |      -11  |      -25  |       31  |
-|  SPINHisto-1vm |        3  |       10  |       47  |       99  |
-|     kbench-2vm |       15  |       -9  |      -66  |      -15  |
-|  SPINHisto-2vm |        2  |       11  |       19  |       90  |
-+----------------+-----------+-----------+-----------+-----------+
-|     ebizzy-1vm |      784  |     1097  |      978  |      930  |
-|  SPINHisto-1vm |       74  |       97  |       98  |       99  |
-|     ebizzy-2vm |       43  |       48  |       56  |       32  |
-|  SPINHisto-2vm |       58  |       93  |       97  |       98  |
-+----------------+-----------+-----------+-----------+-----------+
-|     hbench-1vm |        8  |       55  |       56  |       62  |
-|  SPINHisto-1vm |       18  |       69  |       96  |       99  |
-|     hbench-2vm |       13  |      -14  |      -75  |      -29  |
-|  SPINHisto-2vm |       57  |       74  |       80  |       97  |
-+----------------+-----------+-----------+-----------+-----------+
-|    sysbnch-1vm |        9  |       11  |       15  |       10  |
-|  SPINHisto-1vm |       80  |       93  |       98  |       99  |
-|    sysbnch-2vm |        3  |        3  |        4  |        2  |
-|  SPINHisto-2vm |       72  |       89  |       94  |       97  |
-+----------------+-----------+-----------+-----------+-----------+
+Ok.
 
- From this, value around 4k-8k threshold seem to be optimal one. [ This 
-is amost inline with ple_window default ]
-(lower the spin threshold, we would cover lesser % of spinlocks, that 
-would result in more halt_exit/wakeups.
+> The comment at pci_enable_obff() says PCI_OBFF_SIGNAL_L0 is the
+> preferred type, so please explain why you're not using that.
+> 
 
-[ www.xen.org/files/xensummitboston08/LHP.pdf also has good graphical 
-detail on covering spinlock waits ]
+Yes, here it's better to set PCI_OBFF_SIGNAL_L0 by default.
 
-After 8k threshold, we see no more contention but that would mean we 
-have wasted lot of cpu time in busy waits.
+> > +
+> > +       /* LTR(Latency tolerance reporting) allows devices to send
+> > +        * messages to the root complex indicating their latency
+> > +        * tolerance for snooped & unsnooped memory transactions.
+> > +        */
+> 
+> Follow Linux comment style, i.e.,
+> 
+>     /*
+>      * LTR ...
+>      */
+> 
 
-Will get a PLE machine again, and 'll continue experimenting with 
-further tuning of SPIN_THRESHOLD.
+Will modify, Thanks.
 
+> > +       pci_enable_ltr(dev);
+> > +
+> > +       /* OBFF (optimized buffer flush/fill), where supported,
+> > +        * can help improve energy efficiency by giving devices
+> > +        * information about when interrupts and other activity
+> > +        * will have a reduced power impact.
+> > +        */
+> > +       pci_enable_obff(dev, type);
+> > +}
+> > +
+> > +static void pci_disable_dev_caps(struct pci_dev *dev)
+> > +{
+> > +       pci_disable_obff(dev);
+> > +       pci_disable_ltr(dev);
+> > +}
+> > +
+> >  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+> >  {
+> >        int err;
+> > @@ -1146,6 +1171,9 @@ static int do_pci_enable_device(struct pci_dev
+> *dev, int bars)
+> >                return err;
+> >        pci_fixup_device(pci_fixup_enable, dev);
+> >
+> > +       /* Enable some device capibility before it's used by driver. */
+> > +       pci_enable_dev_caps(dev);
+> 
+> Why is this here?  It seems similar to what's already in
+> pci_init_capabilities().  Is there a reason to do this in the
+> pci_enable_device() path rather than in the pci_device_add() path?
+> 
+
+pci_enable_device is called by any pci driver including kvm driver, Considering such a case in kvm, when device is assigned to guest(the device will be reset), we want not host lose those advanced PM feature, so add it in pci_enable_device so that kvm driver call it.
+ 
+> > +
+> >        return 0;
+> >  }
+> >
+> > @@ -1361,6 +1389,7 @@ static void do_pci_disable_device(struct pci_dev
+> *dev)
+> >        }
+> >
+> >        pcibios_disable_device(dev);
+> > +       pci_disable_dev_caps(dev);
+> >  }
+> >
+> >  /**
+> > --
+> > 1.6.0.rc1
+> >
