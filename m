@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892Ab2E3TRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 15:17:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab2E3TRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 15:17:13 -0400
-Date: Wed, 30 May 2012 16:17:20 -0300
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Wen Congyang <wency@cn.fujitsu.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH 1/3] start vm after reseting it
-Message-ID: <20120530161720.7c9b88b9@doriath.home>
-In-Reply-To: <4FB9E57C.5040003@cn.fujitsu.com>
-References: <4FB9E4CE.8060709@cn.fujitsu.com>
-	<4FB9E57C.5040003@cn.fujitsu.com>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752098Ab2E3TRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:17:37 -0400
+Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:43253 "HELO
+	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750931Ab2E3TRf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 15:17:35 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: FTlnMfYVM1mjRfxKFUlkVeowLTOyzUJ3KC1rSRH9OLHNAYC
+ WtlOdIlJybsrAeeqnrrymdQGtDPk8FnRgiRrBKIm2VHmSp6pqTOMe0pKEJHx
+ QnE6SGVKB5.dzVisHjjAzYEgUsK8EiZj4e.GbjLIx_Te9dQzO1SlgFzzEQdq
+ 2DTQD0mjcjlNZDJwmb5BN4SO1KjXGclDtRZpCc_sCtdCcM.cpb9siKV.kOzQ
+ lYsNiaNOYzHBtgpJi3vMydwyLpA1yY5wXahPZt5311RistO0I8MEtfy9STUX
+ GEe1F09MUEzA6.Jq_5Lv9UfLYeiPKT_rydA3kCPrAE4q1RlNnRBoWn1UQnEG
+ CkXUxmkR46xWePlsriZh7qCvFxWMl1icg6ALeeCs9rCbe9pVUMe6oBy4lr3u
+ B
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 30 May 2012 14:17:29 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
+        hughd@google.com, Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 1/6] Revert "mm: mempolicy: Let vma_merge and vma_split
+ handle vma->vm_policy linkages"
+In-Reply-To: <1338368529-21784-2-git-send-email-kosaki.motohiro@gmail.com>
+Message-ID: <alpine.DEB.2.00.1205301414020.31768@router.home>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <1338368529-21784-2-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 May 2012 14:49:32 +0800
-Wen Congyang <wency@cn.fujitsu.com> wrote:
+On Wed, 30 May 2012, kosaki.motohiro@gmail.com wrote:
 
-> The guest should run after reseting it, but it does not
-> run if its old state is RUN_STATE_INTERNAL_ERROR or RUN_STATE_PAUSED.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> ---
->  vl.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/vl.c b/vl.c
-> index 23ab3a3..7f5fed8 100644
-> --- a/vl.c
-> +++ b/vl.c
-> @@ -1539,6 +1539,7 @@ static bool main_loop_should_exit(void)
->          if (runstate_check(RUN_STATE_INTERNAL_ERROR) ||
->              runstate_check(RUN_STATE_SHUTDOWN)) {
->              runstate_set(RUN_STATE_PAUSED);
-> +            vm_start();
+> From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+>
+> commit 05f144a0d5 removed vma->vm_policy updates code and it is a purpose of
+> mbind_range(). Now, mbind_range() is virtually no-op. no-op function don't
+> makes any bugs, I agree. but maybe it is not right fix.
 
-Please, drop the runstate_set() call. I think you also have to
-to call bdrv_iostatus_reset(), as qmp_cont() does.
+I dont really understand the changelog. But to restore the policy_vma() is
+the right thing to do since there are potential multiple use cases where
+we want to apply a policy to a vma.
 
->          }
->      }
->      if (qemu_powerdown_requested()) {
+Proposed new changelog:
 
+Commit 05f144a0d5 folded policy_vma() into mbind_range(). There are
+other use cases of policy_vma(*) though and so revert a piece of
+that commit in order to have a policy_vma() function again.
+
+> @@ -655,23 +676,9 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+>  			if (err)
+>  				goto out;
+>  		}
+> -
+> -		/*
+> -		 * Apply policy to a single VMA. The reference counting of
+> -		 * policy for vma_policy linkages has already been handled by
+> -		 * vma_merge and split_vma as necessary. If this is a shared
+> -		 * policy then ->set_policy will increment the reference count
+> -		 * for an sp node.
+> -		 */
+
+You are dropping the nice comments by Mel that explain the refcounting.
