@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab2E3Hps (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:45:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35281 "EHLO
+	id S1755961Ab2E3Hqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:46:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35296 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab2E3Hpq (ORCPT
+	with ESMTP id S1751859Ab2E3Hqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:45:46 -0400
-Date: Wed, 30 May 2012 00:45:29 -0700
+	Wed, 30 May 2012 03:46:40 -0400
+Date: Wed, 30 May 2012 00:46:21 -0700
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-w1neie2dqli89we1bzwkf4id@git.kernel.org>
+Message-ID: <tip-4hl5glle0hxlklw4usva1mkt@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
         acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
         efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
@@ -19,9 +19,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
         peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
         dsahern@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf top:
-  Fix counter name fixup when fallbacking to cpu-clock
-Git-Commit-ID: 895d97663c83f8ed7a3386e912009155524fe7dd
+Subject: [tip:perf/urgent] perf tools:
+  Reconstruct event with modifiers from perf_event_attr
+Git-Commit-ID: c410431cefefd766266139ed56bca21668e4f9a7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,41 +30,58 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:45:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:46:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  895d97663c83f8ed7a3386e912009155524fe7dd
-Gitweb:     http://git.kernel.org/tip/895d97663c83f8ed7a3386e912009155524fe7dd
+Commit-ID:  c410431cefefd766266139ed56bca21668e4f9a7
+Gitweb:     http://git.kernel.org/tip/c410431cefefd766266139ed56bca21668e4f9a7
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 25 May 2012 14:49:51 -0300
+AuthorDate: Fri, 25 May 2012 16:38:11 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 25 May 2012 14:59:37 -0300
+CommitDate: Fri, 25 May 2012 16:38:11 -0300
 
-perf top: Fix counter name fixup when fallbacking to cpu-clock
+perf tools: Reconstruct event with modifiers from perf_event_attr
 
-In 40491eaa "perf top: Update event name when falling back to cpu-clock"
-we freed counter->name but didn't reset it to NULL, then when setting it
-to the result of event_name(), event_name() would use the cached value,
-which by now was overwritten and thus we got garbage or a zero lenght
-string.
+The modifiers:
 
-Fix it by just freeing and setting counter->name to NULL, this way
-event_name() when called afterwards, will find the right counter name
-and cache it again.
+  k		kernel space
+  u		user space
+  h		hypervisor
+  G		guest
+  H		host
+  p, pp, ppp    precision level (PEBS)
 
-Found while trying 'cycles:pp' on a machine were :pp couldn't be
-honoured. Probably the best fallback here is to tell the user that that
-level of precision is not available on the PMU and then go removing 'p',
-levels of precision till we get to play 'cycles' and if even that fails,
-_then_ get to 'cpu-clock'.
+that can be suffixed to an event were lost when tools used event_name()
+to reconstruct them from the perf_event_attr entries in a perf.data
+file.
 
-But that is the matter for another patch, this one just needs to fix the
-caching issue, which in the end will show 'cpu-clock' when tools ask for
-the event name being used, which clarifies things for the user, that
-will see that 'cycles:pp' or whatever not support event is not being
-used, some sort of fallback happened.
+Fix it by following the defaults used for these modifiers in the current
+codebase, so:
+
+ $ perf record -e instructions:u usleep 1 2> /dev/null
+ $ perf evlist
+ instructions:u
+ $ perf record -e cycles:k usleep 1 2> /dev/null
+ $ perf evlist
+ cycles:k
+ $ perf record -e cycles:kh usleep 1 2> /dev/null
+ $ perf evlist
+ cycles:kh
+ $ perf record -e cache-misses:G usleep 1 2> /dev/null
+ $ perf evlist
+ cache-misses:G
+ $ perf record -e cycles:ppk usleep 1 2> /dev/null
+ $ perf evlist
+ cycles:kpp
+ $
+
+Also works with 'top', 'report', etc.
+
+More work needed to cover tracepoints and software events while not
+dragging lots of baggage to the python binding, this is a minimal fix
+for v3.5.
 
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
@@ -73,22 +90,185 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-w1neie2dqli89we1bzwkf4id@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-4hl5glle0hxlklw4usva1mkt@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-top.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/evsel.c        |   90 ++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/evsel.h        |    3 +
+ tools/perf/util/parse-events.c |   27 +++++-------
+ 3 files changed, 104 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 6031dce..d4a5f9b 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -953,7 +953,7 @@ try_again:
- 				attr->config = PERF_COUNT_SW_CPU_CLOCK;
- 				if (counter->name) {
- 					free(counter->name);
--					counter->name = strdup(event_name(counter));
-+					counter->name = NULL;
- 				}
- 				goto try_again;
- 			}
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 57e4ce5..91d1913 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -15,6 +15,7 @@
+ #include "cpumap.h"
+ #include "thread_map.h"
+ #include "target.h"
++#include "../../include/linux/perf_event.h"
+ 
+ #define FD(e, x, y) (*(int *)xyarray__entry(e->fd, x, y))
+ #define GROUP_FD(group_fd, cpu) (*(int *)xyarray__entry(group_fd, cpu, 0))
+@@ -64,6 +65,95 @@ struct perf_evsel *perf_evsel__new(struct perf_event_attr *attr, int idx)
+ 	return evsel;
+ }
+ 
++static const char *perf_evsel__hw_names[PERF_COUNT_HW_MAX] = {
++	"cycles",
++	"instructions",
++	"cache-references",
++	"cache-misses",
++	"branches",
++	"branch-misses",
++	"bus-cycles",
++	"stalled-cycles-frontend",
++	"stalled-cycles-backend",
++	"ref-cycles",
++};
++
++const char *__perf_evsel__hw_name(u64 config)
++{
++	if (config < PERF_COUNT_HW_MAX && perf_evsel__hw_names[config])
++		return perf_evsel__hw_names[config];
++
++	return "unknown-hardware";
++}
++
++static int perf_evsel__hw_name(struct perf_evsel *evsel, char *bf, size_t size)
++{
++	int colon = 0;
++	struct perf_event_attr *attr = &evsel->attr;
++	int r = scnprintf(bf, size, "%s", __perf_evsel__hw_name(attr->config));
++	bool exclude_guest_default = false;
++
++#define MOD_PRINT(context, mod)	do {					\
++		if (!attr->exclude_##context) {				\
++			if (!colon) colon = r++;			\
++			r += scnprintf(bf + r, size - r, "%c", mod);	\
++		} } while(0)
++
++	if (attr->exclude_kernel || attr->exclude_user || attr->exclude_hv) {
++		MOD_PRINT(kernel, 'k');
++		MOD_PRINT(user, 'u');
++		MOD_PRINT(hv, 'h');
++		exclude_guest_default = true;
++	}
++
++	if (attr->precise_ip) {
++		if (!colon)
++			colon = r++;
++		r += scnprintf(bf + r, size - r, "%.*s", attr->precise_ip, "ppp");
++		exclude_guest_default = true;
++	}
++
++	if (attr->exclude_host || attr->exclude_guest == exclude_guest_default) {
++		MOD_PRINT(host, 'H');
++		MOD_PRINT(guest, 'G');
++	}
++#undef MOD_PRINT
++	if (colon)
++		bf[colon] = ':';
++	return r;
++}
++
++int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size)
++{
++	int ret;
++
++	switch (evsel->attr.type) {
++	case PERF_TYPE_RAW:
++		ret = scnprintf(bf, size, "raw 0x%" PRIx64, evsel->attr.config);
++		break;
++
++	case PERF_TYPE_HARDWARE:
++		ret = perf_evsel__hw_name(evsel, bf, size);
++		break;
++	default:
++		/*
++		 * FIXME
++ 		 *
++		 * This is the minimal perf_evsel__name so that we can
++		 * reconstruct event names taking into account event modifiers.
++		 *
++		 * The old event_name uses it now for raw anr hw events, so that
++		 * we don't drag all the parsing stuff into the python binding.
++		 *
++		 * On the next devel cycle the rest of the event naming will be
++		 * brought here.
++ 		 */
++		return 0;
++	}
++
++	return ret;
++}
++
+ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts,
+ 			struct perf_evsel *first)
+ {
+diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+index 3d6b3e4..4ba8b56 100644
+--- a/tools/perf/util/evsel.h
++++ b/tools/perf/util/evsel.h
+@@ -83,6 +83,9 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 			struct perf_record_opts *opts,
+ 			struct perf_evsel *first);
+ 
++const char* __perf_evsel__hw_name(u64 config);
++int perf_evsel__name(struct perf_evsel *evsel, char *bf, size_t size);
++
+ int perf_evsel__alloc_fd(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_id(struct perf_evsel *evsel, int ncpus, int nthreads);
+ int perf_evsel__alloc_counts(struct perf_evsel *evsel, int ncpus);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index fac7d59..05dbc8b 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -62,19 +62,6 @@ static struct event_symbol event_symbols[] = {
+ #define PERF_EVENT_TYPE(config)		__PERF_EVENT_FIELD(config, TYPE)
+ #define PERF_EVENT_ID(config)		__PERF_EVENT_FIELD(config, EVENT)
+ 
+-static const char *hw_event_names[PERF_COUNT_HW_MAX] = {
+-	"cycles",
+-	"instructions",
+-	"cache-references",
+-	"cache-misses",
+-	"branches",
+-	"branch-misses",
+-	"bus-cycles",
+-	"stalled-cycles-frontend",
+-	"stalled-cycles-backend",
+-	"ref-cycles",
+-};
+-
+ static const char *sw_event_names[PERF_COUNT_SW_MAX] = {
+ 	"cpu-clock",
+ 	"task-clock",
+@@ -300,6 +287,16 @@ const char *event_name(struct perf_evsel *evsel)
+ 	u64 config = evsel->attr.config;
+ 	int type = evsel->attr.type;
+ 
++	if (type == PERF_TYPE_RAW || type == PERF_TYPE_HARDWARE) {
++		/*
++ 		 * XXX minimal fix, see comment on perf_evsen__name, this static buffer
++ 		 * will go away together with event_name in the next devel cycle.
++ 		 */
++		static char bf[128];
++		perf_evsel__name(evsel, bf, sizeof(bf));
++		return bf;
++	}
++
+ 	if (evsel->name)
+ 		return evsel->name;
+ 
+@@ -317,9 +314,7 @@ const char *__event_name(int type, u64 config)
+ 
+ 	switch (type) {
+ 	case PERF_TYPE_HARDWARE:
+-		if (config < PERF_COUNT_HW_MAX && hw_event_names[config])
+-			return hw_event_names[config];
+-		return "unknown-hardware";
++		return __perf_evsel__hw_name(config);
+ 
+ 	case PERF_TYPE_HW_CACHE: {
+ 		u8 cache_type, cache_op, cache_result;
