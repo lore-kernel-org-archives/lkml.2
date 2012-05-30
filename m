@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753573Ab2E3SiN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:38:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39965 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751652Ab2E3SiM (ORCPT
+	id S1754736Ab2E3Snz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:43:55 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60652 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753159Ab2E3Sny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:38:12 -0400
-Date: Wed, 30 May 2012 14:38:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Use of high-res timers
-Message-ID: <Pine.LNX.4.44L0.1205301419090.1543-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 30 May 2012 14:43:54 -0400
+From: Koen Beel <koen.beel@gmail.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, mina86@mina86.com
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Koen Beel <koen.beel.barco@gmail.com>, Koen Beel <koen.beel@barco.com>
+Subject: [PATCH] FunctionFS: add HID descriptor support.
+Date: Wed, 30 May 2012 20:43:37 +0200
+Message-Id: <1338403417-28156-1-git-send-email-koen.beel.barco@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas, Ingo, or anyone else:
+When writing the descriptors to the ep0 file of functionfs, the HID descriptors where not recognized which caused the initialization from user space to fail.
 
-My driver needs to time a bunch of events, with roughly millisecond
-precision.  Up to now it has used old-fashioned timer_lists and the
-jiffies counter, but I'm switching over to high-resolution timers and
-ktime_get.
+Signed-off-by: Koen Beel <koen.beel@barco.com>
+---
+ drivers/usb/gadget/f_fs.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-This leads to a few questions (these issues don't seem to be addressed 
-anywhere in Documentation/timers):
-
-	Should I be concerned about efficiency?  I may well end up
-	calling ktime_get several times per millisecond; is it fast
-	enough for this to be okay?
-
-	I need timed intervals with reliable lower bounds.  Let's say
-	I call ktime_get twice, maybe once in an interrupt handler and
-	once in an hrtimer callback (not necessarily on the same CPU).
-	Some action has to be taken no earlier than 1 ms after the 
-	first call.  If the second call returns a value that is at 
-	least 1 ms larger than the first call, is that enough of a 
-	guarantee?  If not, how much larger does it have to be?
-
-	Which has more overhead: adding and cancelling an hrtimer
-	several times, or simply letting it expire and returning
-	immediately from the callback?  (I wouldn't be surprised if
-	there was no good answer.)
-
-Thanks,
-
-Alan Stern
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index dcd1c7f..8adc79d 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -21,6 +21,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/pagemap.h>
+ #include <linux/export.h>
++#include <linux/hid.h>
+ #include <asm/unaligned.h>
+ 
+ #include <linux/usb/composite.h>
+@@ -1671,6 +1672,12 @@ static int __must_check ffs_do_desc(char *data, unsigned len,
+ 	}
+ 		break;
+ 
++	case HID_DT_HID:
++		pr_vdebug("hid descriptor\n");
++		if (length != sizeof(struct hid_descriptor))
++			goto inv_length;
++		break;
++
+ 	case USB_DT_OTG:
+ 		if (length != sizeof(struct usb_otg_descriptor))
+ 			goto inv_length;
+-- 
+1.7.9.5
 
