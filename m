@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2E3U0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:26:43 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41823 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755964Ab2E3U0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:26:40 -0400
-From: Joe Perches <joe@perches.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+	id S1755921Ab2E3U2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:28:32 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54941 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab2E3U2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 16:28:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120530202427.GW11775@ZenIV.linux.org.uk>
+References: <1337112446.20904.50.camel@falcor> <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
+ <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+ <20120516004251.GO22082@ZenIV.linux.org.uk> <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+ <20120516021828.GP22082@ZenIV.linux.org.uk> <1337807899.15138.31.camel@falcor>
+ <20120530043443.GA3200@ZenIV.linux.org.uk> <20120530163605.GV11775@ZenIV.linux.org.uk>
+ <1338406967.2257.24.camel@localhost> <20120530202427.GW11775@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 May 2012 13:28:09 -0700
+X-Google-Sender-Auth: -67fgSssUJ7LZIe6PnUV7ZAkW2E
+Message-ID: <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] usb: gadget: pch_udc: Fix likely misuse of | for &
-Date: Wed, 30 May 2012 13:25:57 -0700
-Message-Id: <2530fb0cbede64dad718d41012156043d1ca424e.1338408931.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <cover.1338408931.git.joe@perches.com>
-References: <cover.1338408931.git.joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using | with a constant is always true.
-Likely this should have be &.
+On Wed, May 30, 2012 at 1:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, May 30, 2012 at 03:42:47PM -0400, Eric Paris wrote:
+>> security_file_mmap() would pretty much only be used in do_mmap_pgoff()
+>> (or validate_mmap_request)
+>
+> Callers, actually - the whole point is to lift it out of under ->mmap_sem.
+> The tricky part is reqprot vs. prot mess.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/usb/gadget/pch_udc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+See how I solved reqprot vs prot in my suggested original patch. You
+have it somewhere in your inbox, I know, because you called me out on
+the fact that my original email forgot to attach it ;)
 
-diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
-index 1cfcc9e..f4fb71c 100644
---- a/drivers/usb/gadget/pch_udc.c
-+++ b/drivers/usb/gadget/pch_udc.c
-@@ -2208,7 +2208,7 @@ static void pch_udc_complete_receiver(struct pch_udc_ep *ep)
- 			return;
- 		}
- 		if ((td->status & PCH_UDC_BUFF_STS) == PCH_UDC_BS_DMA_DONE)
--			if (td->status | PCH_UDC_DMA_LAST) {
-+			if (td->status & PCH_UDC_DMA_LAST) {
- 				count = td->status & PCH_UDC_RXTX_BYTES;
- 				break;
- 			}
--- 
-1.7.8.111.gad25c.dirty
+It actually cleaned things up, and made the calling conventions
+simpler. Just always pass in "reqprot", and have the security layer do
+the trivial "calculate final prot".
 
+Anyway, my original patch worked, but it (incorrectly) optimized away
+the call to the security layer if file was NULL. But that's just a
+matter of removing that check.
+
+                  Linus
