@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab2E3Fev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 01:34:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50808 "EHLO mx1.redhat.com"
+	id S1756899Ab2E3Fe7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 01:34:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59803 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753492Ab2E3Fer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 01:34:47 -0400
+	id S1753492Ab2E3Fey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 01:34:54 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 1/4] vfio: VFIO core
+Subject: [PATCH 3/4] vfio: Type1 IOMMU implementation
 To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         gregkh@linuxfoundation.org
 Cc: joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
@@ -17,8 +17,8 @@ Cc: joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, bhelgaas@google.com, ddutile@redhat.com,
         alex.williamson@redhat.com
-Date: Tue, 29 May 2012 23:34:14 -0600
-Message-ID: <20120530053413.1934.74059.stgit@bling.home>
+Date: Tue, 29 May 2012 23:34:28 -0600
+Message-ID: <20120530053428.1934.7088.stgit@bling.home>
 In-Reply-To: <20120530051317.1934.28218.stgit@bling.home>
 References: <20120530051317.1934.28218.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -29,129 +29,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO is a secure user level driver for use with both virtual machines
-and user level drivers.  VFIO makes use of IOMMU groups to ensure the
-isolation of devices in use, allowing unprivileged user access.  It's
-intended that VFIO will replace KVM device assignment and UIO drivers
-(in cases where the target platform includes a sufficiently capable
-IOMMU).
-
-New in this version of VFIO is support for IOMMU groups managed
-through the IOMMU core as well as a rework of the API, removing the
-group merge interface.  We now go back to a model more similar to
-original VFIO with UIOMMU support where the file descriptor obtained
-from /dev/vfio/vfio allows access to the IOMMU, but only after a
-group is added, avoiding the previous privilege issues with this type
-of model.  IOMMU support is also now fully modular as IOMMUs have
-vastly different interface requirements on different platforms.  VFIO
-users are able to query and initialize the IOMMU model of their
-choice.
-
-Please see the follow-on Documentation commit for further description
-and usage example.
+This VFIO IOMMU backend is designed primarily for AMD-Vi and Intel
+VT-d hardware, but is potentially usable by anything supporting
+similar mapping functionality.  We arbitrarily call this a Type1
+backend for lack of a better name.  This backend has no IOVA
+or host memory mapping restrictions for the user and is optimized
+for relatively static mappings.  Mapped areas are pinned into system
+memory.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- Documentation/ioctl/ioctl-number.txt |    1 
- MAINTAINERS                          |    8 
- drivers/Kconfig                      |    2 
- drivers/Makefile                     |    1 
- drivers/vfio/Kconfig                 |    8 
- drivers/vfio/Makefile                |    1 
- drivers/vfio/vfio.c                  | 1415 ++++++++++++++++++++++++++++++++++
- include/linux/vfio.h                 |  367 +++++++++
- 8 files changed, 1803 insertions(+)
- create mode 100644 drivers/vfio/Kconfig
- create mode 100644 drivers/vfio/Makefile
- create mode 100644 drivers/vfio/vfio.c
- create mode 100644 include/linux/vfio.h
+ Documentation/ioctl/ioctl-number.txt |    2 
+ drivers/vfio/Kconfig                 |    6 
+ drivers/vfio/Makefile                |    2 
+ drivers/vfio/vfio.c                  |    7 
+ drivers/vfio/vfio_iommu_type1.c      |  754 ++++++++++++++++++++++++++++++++++
+ include/linux/vfio.h                 |   54 ++
+ 6 files changed, 823 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/vfio/vfio_iommu_type1.c
 
 diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-index 915f28c..89bd3c4 100644
+index 89bd3c4..170d838 100644
 --- a/Documentation/ioctl/ioctl-number.txt
 +++ b/Documentation/ioctl/ioctl-number.txt
-@@ -88,6 +88,7 @@ Code  Seq#(hex)	Include File		Comments
+@@ -88,7 +88,7 @@ Code  Seq#(hex)	Include File		Comments
  		and kernel/power/user.c
  '8'	all				SNP8023 advanced NIC card
  					<mailto:mcr@solidum.com>
-+';'	64-6F	linux/vfio.h
+-';'	64-6F	linux/vfio.h
++';'	64-72	linux/vfio.h
  '@'	00-0F	linux/radeonfb.h	conflict!
  '@'	00-0F	drivers/video/aty/aty128fb.c	conflict!
  'A'	00-1F	linux/apm_bios.h	conflict!
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3c94d73..64abfba 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7327,6 +7327,14 @@ S:	Maintained
- F:	Documentation/filesystems/vfat.txt
- F:	fs/fat/
- 
-+VFIO DRIVER
-+M:	Alex Williamson <alex.williamson@redhat.com>
-+L:	kvm@vger.kernel.org
-+S:	Maintained
-+F:	Documentation/vfio.txt
-+F:	drivers/vfio/
-+F:	include/linux/vfio.h
-+
- VIDEOBUF2 FRAMEWORK
- M:	Pawel Osciak <pawel@osciak.com>
- M:	Marek Szyprowski <m.szyprowski@samsung.com>
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index c2b0cd2..70a32bd 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -112,6 +112,8 @@ source "drivers/auxdisplay/Kconfig"
- 
- source "drivers/uio/Kconfig"
- 
-+source "drivers/vfio/Kconfig"
-+
- source "drivers/vlynq/Kconfig"
- 
- source "drivers/virtio/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 7b294fc..c35819b 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -59,6 +59,7 @@ obj-$(CONFIG_ATM)		+= atm/
- obj-$(CONFIG_FUSION)		+= message/
- obj-y				+= firewire/
- obj-$(CONFIG_UIO)		+= uio/
-+obj-$(CONFIG_VFIO)		+= vfio/
- obj-y				+= cdrom/
- obj-y				+= auxdisplay/
- obj-$(CONFIG_PCCARD)		+= pcmcia/
 diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-new file mode 100644
-index 0000000..9acb1e7
---- /dev/null
+index 9acb1e7..128b979 100644
+--- a/drivers/vfio/Kconfig
 +++ b/drivers/vfio/Kconfig
-@@ -0,0 +1,8 @@
-+menuconfig VFIO
-+	tristate "VFIO Non-Privileged userspace driver framework"
-+	depends on IOMMU_API
-+	help
-+	  VFIO provides a framework for secure userspace device drivers.
-+	  See Documentation/vfio.txt for more details.
+@@ -1,6 +1,12 @@
++config VFIO_IOMMU_TYPE1
++	tristate
++	depends on VFIO
++	default n
 +
-+	  If you don't know what to do here, say N.
+ menuconfig VFIO
+ 	tristate "VFIO Non-Privileged userspace driver framework"
+ 	depends on IOMMU_API
++	select VFIO_IOMMU_TYPE1 if X86
+ 	help
+ 	  VFIO provides a framework for secure userspace device drivers.
+ 	  See Documentation/vfio.txt for more details.
 diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-new file mode 100644
-index 0000000..7500a67
---- /dev/null
+index 7500a67..2398d4a 100644
+--- a/drivers/vfio/Makefile
 +++ b/drivers/vfio/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_VFIO) += vfio.o
+@@ -1 +1,3 @@
+ obj-$(CONFIG_VFIO) += vfio.o
++obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
++obj-$(CONFIG_VFIO_PCI) += pci/
 diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-new file mode 100644
-index 0000000..cbdd525
---- /dev/null
+index cbdd525..0c25819 100644
+--- a/drivers/vfio/vfio.c
 +++ b/drivers/vfio/vfio.c
-@@ -0,0 +1,1415 @@
+@@ -1378,6 +1378,13 @@ static int __init vfio_init(void)
+ 
+ 	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
+ 
++	/*
++	 * Attempt to load known iommu-drivers.  This gives us a working
++	 * environment without the user needing to explicitly load iommu
++	 * drivers.
++	 */
++	request_module_nowait("vfio_iommu_type1");
++
+ 	return 0;
+ 
+ err_groups_cdev:
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+new file mode 100644
+index 0000000..5bb6fad
+--- /dev/null
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -0,0 +1,754 @@
 +/*
-+ * VFIO core
++ * VFIO: IOMMU DMA mapping support for Type1 IOMMU
 + *
 + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
 + *     Author: Alex Williamson <alex.williamson@redhat.com>
@@ -163,1779 +124,815 @@ index 0000000..cbdd525
 + * Derived from original vfio:
 + * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
 + * Author: Tom Lyon, pugs@cisco.com
++ *
++ * We arbitrarily define a Type1 IOMMU as one matching the below code.
++ * It could be called the x86 IOMMU as it's designed for AMD-Vi & Intel
++ * VT-d, but that makes it harder to re-use as theoretically anyone
++ * implementing a similar IOMMU could make use of this.  We expect the
++ * IOMMU to support the IOMMU API and have few to no restrictions around
++ * the IOVA range that can be mapped.  The Type1 IOMMU is currently
++ * optimized for relatively static mappings of a userspace process with
++ * userpsace pages pinned into memory.  We also assume devices and IOMMU
++ * domains are PCI based as the IOMMU API is still centered around a
++ * device/bus interface rather than a group interface.
 + */
 +
-+#include <linux/cdev.h>
 +#include <linux/compat.h>
 +#include <linux/device.h>
-+#include <linux/file.h>
-+#include <linux/anon_inodes.h>
 +#include <linux/fs.h>
-+#include <linux/idr.h>
 +#include <linux/iommu.h>
-+#include <linux/list.h>
 +#include <linux/module.h>
-+#include <linux/mutex.h>
++#include <linux/mm.h>
++#include <linux/pci.h>		/* pci_bus_type */
++#include <linux/sched.h>
 +#include <linux/slab.h>
-+#include <linux/string.h>
 +#include <linux/uaccess.h>
 +#include <linux/vfio.h>
-+#include <linux/wait.h>
++#include <linux/workqueue.h>
 +
-+#define DRIVER_VERSION	"0.3"
-+#define DRIVER_AUTHOR	"Alex Williamson <alex.williamson@redhat.com>"
-+#define DRIVER_DESC	"VFIO - User Level meta-driver"
++#define DRIVER_VERSION  "0.2"
++#define DRIVER_AUTHOR   "Alex Williamson <alex.williamson@redhat.com>"
++#define DRIVER_DESC     "Type1 IOMMU driver for VFIO"
 +
-+static struct vfio {
-+	struct class			*class;
-+	struct list_head		iommu_drivers_list;
-+	struct mutex			iommu_drivers_lock;
-+	struct list_head		group_list;
-+	struct idr			group_idr;
-+	struct mutex			group_lock;
-+	struct cdev			group_cdev;
-+	struct device			*dev;
-+	dev_t				devt;
-+	struct cdev			cdev;
-+	wait_queue_head_t		release_q;
-+} vfio;
++static bool allow_unsafe_interrupts;
++module_param_named(allow_unsafe_interrupts,
++		   allow_unsafe_interrupts, bool, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(allow_unsafe_interrupts,
++		 "Enable VFIO IOMMU support for on platforms without interrupt remapping support.");
 +
-+struct vfio_iommu_driver {
-+	const struct vfio_iommu_driver_ops	*ops;
-+	struct list_head			vfio_next;
++struct vfio_iommu {
++	struct iommu_domain	*domain;
++	struct mutex		lock;
++	struct list_head	dma_list;
++	struct list_head	group_list;
++	bool			cache;
 +};
 +
-+struct vfio_container {
-+	struct kref			kref;
-+	struct list_head		group_list;
-+	struct mutex			group_lock;
-+	struct vfio_iommu_driver	*iommu_driver;
-+	void				*iommu_data;
++struct vfio_dma {
++	struct list_head	next;
++	dma_addr_t		iova;		/* Device address */
++	unsigned long		vaddr;		/* Process virtual addr */
++	long			npage;		/* Number of pages */
++	int			prot;		/* IOMMU_READ/WRITE */
 +};
 +
 +struct vfio_group {
-+	struct kref			kref;
-+	int				minor;
-+	atomic_t			container_users;
-+	struct iommu_group		*iommu_group;
-+	struct vfio_container		*container;
-+	struct list_head		device_list;
-+	struct mutex			device_lock;
-+	struct device			*dev;
-+	struct notifier_block		nb;
-+	struct list_head		vfio_next;
-+	struct list_head		container_next;
++	struct iommu_group	*iommu_group;
++	struct list_head	next;
 +};
 +
-+struct vfio_device {
-+	struct kref			kref;
-+	struct device			*dev;
-+	const struct vfio_device_ops	*ops;
-+	struct vfio_group		*group;
-+	struct list_head		group_next;
-+	void				*device_data;
++/*
++ * This code handles mapping and unmapping of user data buffers
++ * into DMA'ble space using the IOMMU
++ */
++
++#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
++
++struct vwork {
++	struct mm_struct	*mm;
++	long			npage;
++	struct work_struct	work;
 +};
 +
-+/**
-+ * IOMMU driver registration
-+ */
-+int vfio_register_iommu_driver(const struct vfio_iommu_driver_ops *ops)
++/* delayed decrement/increment for locked_vm */
++static void vfio_lock_acct_bg(struct work_struct *work)
 +{
-+	struct vfio_iommu_driver *driver, *tmp;
++	struct vwork *vwork = container_of(work, struct vwork, work);
++	struct mm_struct *mm;
 +
-+	driver = kzalloc(sizeof(*driver), GFP_KERNEL);
-+	if (!driver)
-+		return -ENOMEM;
++	mm = vwork->mm;
++	down_write(&mm->mmap_sem);
++	mm->locked_vm += vwork->npage;
++	up_write(&mm->mmap_sem);
++	mmput(mm);
++	kfree(vwork);
++}
 +
-+	driver->ops = ops;
++static void vfio_lock_acct(long npage)
++{
++	struct vwork *vwork;
++	struct mm_struct *mm;
 +
-+	mutex_lock(&vfio.iommu_drivers_lock);
++	if (!current->mm)
++		return; /* process exited */
 +
-+	/* Check for duplicates */
-+	list_for_each_entry(tmp, &vfio.iommu_drivers_list, vfio_next) {
-+		if (tmp->ops == ops) {
-+			mutex_unlock(&vfio.iommu_drivers_lock);
-+			kfree(driver);
-+			return -EINVAL;
-+		}
++	if (down_write_trylock(&current->mm->mmap_sem)) {
++		current->mm->locked_vm += npage;
++		up_write(&current->mm->mmap_sem);
++		return;
 +	}
-+
-+	list_add(&driver->vfio_next, &vfio.iommu_drivers_list);
-+
-+	mutex_unlock(&vfio.iommu_drivers_lock);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(vfio_register_iommu_driver);
-+
-+void vfio_unregister_iommu_driver(const struct vfio_iommu_driver_ops *ops)
-+{
-+	struct vfio_iommu_driver *driver;
-+
-+	mutex_lock(&vfio.iommu_drivers_lock);
-+	list_for_each_entry(driver, &vfio.iommu_drivers_list, vfio_next) {
-+		if (driver->ops == ops) {
-+			list_del(&driver->vfio_next);
-+			mutex_unlock(&vfio.iommu_drivers_lock);
-+			kfree(driver);
-+			return;
-+		}
-+	}
-+	mutex_unlock(&vfio.iommu_drivers_lock);
-+}
-+EXPORT_SYMBOL_GPL(vfio_unregister_iommu_driver);
-+
-+/**
-+ * Group minor allocation/free - both called with vfio.group_lock held
-+ */
-+static int vfio_alloc_group_minor(struct vfio_group *group)
-+{
-+	int ret, minor;
-+
-+again:
-+	if (unlikely(idr_pre_get(&vfio.group_idr, GFP_KERNEL) == 0))
-+		return -ENOMEM;
-+
-+	/* index 0 is used by /dev/vfio/vfio */
-+	ret = idr_get_new_above(&vfio.group_idr, group, 1, &minor);
-+	if (ret == -EAGAIN)
-+		goto again;
-+	if (ret || minor > MINORMASK) {
-+		if (minor > MINORMASK)
-+			idr_remove(&vfio.group_idr, minor);
-+		return -ENOSPC;
-+	}
-+
-+	return minor;
-+}
-+
-+static void vfio_free_group_minor(int minor)
-+{
-+	idr_remove(&vfio.group_idr, minor);
-+}
-+
-+static int vfio_iommu_group_notifier(struct notifier_block *nb,
-+				     unsigned long action, void *data);
-+static void vfio_group_get(struct vfio_group *group);
-+
-+/**
-+ * Container objects - containers are created when /dev/vfio/vfio is
-+ * opened, but their lifecycle extends until the last user is done, so
-+ * it's freed via kref.  Must support container/group/device being
-+ * closed in any order.
-+ */
-+static void vfio_container_get(struct vfio_container *container)
-+{
-+	kref_get(&container->kref);
-+}
-+
-+static void vfio_container_release(struct kref *kref)
-+{
-+	struct vfio_container *container;
-+	container = container_of(kref, struct vfio_container, kref);
-+
-+	kfree(container);
-+}
-+
-+static void vfio_container_put(struct vfio_container *container)
-+{
-+	kref_put(&container->kref, vfio_container_release);
-+}
-+
-+/**
-+ * Group objects - create, release, get, put, search
-+ */
-+static struct vfio_group *vfio_create_group(struct iommu_group *iommu_group)
-+{
-+	struct vfio_group *group, *tmp;
-+	struct device *dev;
-+	int ret, minor;
-+
-+	group = kzalloc(sizeof(*group), GFP_KERNEL);
-+	if (!group)
-+		return ERR_PTR(-ENOMEM);
-+
-+	kref_init(&group->kref);
-+	INIT_LIST_HEAD(&group->device_list);
-+	mutex_init(&group->device_lock);
-+	atomic_set(&group->container_users, 0);
-+	group->iommu_group = iommu_group;
-+
-+	group->nb.notifier_call = vfio_iommu_group_notifier;
 +
 +	/*
-+	 * blocking notifiers acquire a rwsem around registering and hold
-+	 * it around callback.  Therefore, need to register outside of
-+	 * vfio.group_lock to avoid A-B/B-A contention.  Our callback won't
-+	 * do anything unless it can find the group in vfio.group_list, so
-+	 * no harm in registering early.
++	 * Couldn't get mmap_sem lock, so must setup to update
++	 * mm->locked_vm later. If locked_vm were atomic, we
++	 * wouldn't need this silliness
 +	 */
-+	ret = iommu_group_register_notifier(iommu_group, &group->nb);
-+	if (ret) {
-+		kfree(group);
-+		return ERR_PTR(ret);
++	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
++	if (!vwork)
++		return;
++	mm = get_task_mm(current);
++	if (!mm) {
++		kfree(vwork);
++		return;
 +	}
-+
-+	mutex_lock(&vfio.group_lock);
-+
-+	minor = vfio_alloc_group_minor(group);
-+	if (minor < 0) {
-+		mutex_unlock(&vfio.group_lock);
-+		kfree(group);
-+		return ERR_PTR(minor);
-+	}
-+
-+	/* Did we race creating this group? */
-+	list_for_each_entry(tmp, &vfio.group_list, vfio_next) {
-+		if (tmp->iommu_group == iommu_group) {
-+			vfio_group_get(tmp);
-+			vfio_free_group_minor(minor);
-+			mutex_unlock(&vfio.group_lock);
-+			kfree(group);
-+			return tmp;
-+		}
-+	}
-+
-+	dev = device_create(vfio.class, NULL, MKDEV(MAJOR(vfio.devt), minor),
-+			    group, "%d", iommu_group_id(iommu_group));
-+	if (IS_ERR(dev)) {
-+		vfio_free_group_minor(minor);
-+		mutex_unlock(&vfio.group_lock);
-+		kfree(group);
-+		return (struct vfio_group *)dev; /* ERR_PTR */
-+	}
-+
-+	group->minor = minor;
-+	group->dev = dev;
-+
-+	list_add(&group->vfio_next, &vfio.group_list);
-+
-+	mutex_unlock(&vfio.group_lock);
-+
-+	return group;
-+}
-+
-+static void vfio_group_release(struct kref *kref)
-+{
-+	struct vfio_group *group = container_of(kref, struct vfio_group, kref);
-+
-+	WARN_ON(!list_empty(&group->device_list));
-+
-+	device_destroy(vfio.class, MKDEV(MAJOR(vfio.devt), group->minor));
-+	list_del(&group->vfio_next);
-+	vfio_free_group_minor(group->minor);
-+
-+	mutex_unlock(&vfio.group_lock);
-+
-+	/*
-+	 * Unregister outside of lock.  A spurious callback is harmless now
-+	 * that the group is no longer in vfio.group_list.
-+	 */
-+	iommu_group_unregister_notifier(group->iommu_group, &group->nb);
-+
-+	kfree(group);
-+}
-+
-+static void vfio_group_put(struct vfio_group *group)
-+{
-+	mutex_lock(&vfio.group_lock);
-+	/*
-+	 * Release needs to unlock to unregister the notifier, so only
-+	 * unlock if not released.
-+	 */
-+	if (!kref_put(&group->kref, vfio_group_release))
-+		mutex_unlock(&vfio.group_lock);
-+}
-+
-+/* Assume group_lock or group reference is held */
-+static void vfio_group_get(struct vfio_group *group)
-+{
-+	kref_get(&group->kref);
++	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
++	vwork->mm = mm;
++	vwork->npage = npage;
++	schedule_work(&vwork->work);
 +}
 +
 +/*
-+ * Not really a try as we will sleep for mutex, but we need to make
-+ * sure the group pointer is valid under lock and get a reference.
++ * Some mappings aren't backed by a struct page, for example an mmap'd
++ * MMIO range for our own or another device.  These use a different
++ * pfn conversion and shouldn't be tracked as locked pages.
 + */
-+static struct vfio_group *vfio_group_try_get(struct vfio_group *group)
++static bool is_invalid_reserved_pfn(unsigned long pfn)
 +{
-+	struct vfio_group *target = group;
-+
-+	mutex_lock(&vfio.group_lock);
-+	list_for_each_entry(group, &vfio.group_list, vfio_next) {
-+		if (group == target) {
-+			vfio_group_get(group);
-+			mutex_unlock(&vfio.group_lock);
-+			return group;
++	if (pfn_valid(pfn)) {
++		bool reserved;
++		struct page *tail = pfn_to_page(pfn);
++		struct page *head = compound_trans_head(tail);
++		reserved = !!(PageReserved(head));
++		if (head != tail) {
++			/*
++			 * "head" is not a dangling pointer
++			 * (compound_trans_head takes care of that)
++			 * but the hugepage may have been split
++			 * from under us (and we may not hold a
++			 * reference count on the head page so it can
++			 * be reused before we run PageReferenced), so
++			 * we've to check PageTail before returning
++			 * what we just read.
++			 */
++			smp_rmb();
++			if (PageTail(tail))
++				return reserved;
 +		}
-+	}
-+	mutex_unlock(&vfio.group_lock);
-+
-+	return NULL;
-+}
-+
-+static
-+struct vfio_group *vfio_group_get_from_iommu(struct iommu_group *iommu_group)
-+{
-+	struct vfio_group *group;
-+
-+	mutex_lock(&vfio.group_lock);
-+	list_for_each_entry(group, &vfio.group_list, vfio_next) {
-+		if (group->iommu_group == iommu_group) {
-+			vfio_group_get(group);
-+			mutex_unlock(&vfio.group_lock);
-+			return group;
-+		}
-+	}
-+	mutex_unlock(&vfio.group_lock);
-+
-+	return NULL;
-+}
-+
-+static struct vfio_group *vfio_group_get_from_minor(int minor)
-+{
-+	struct vfio_group *group;
-+
-+	mutex_lock(&vfio.group_lock);
-+	group = idr_find(&vfio.group_idr, minor);
-+	if (!group) {
-+		mutex_unlock(&vfio.group_lock);
-+		return NULL;
-+	}
-+	vfio_group_get(group);
-+	mutex_unlock(&vfio.group_lock);
-+
-+	return group;
-+}
-+
-+/**
-+ * Device objects - create, release, get, put, search
-+ */
-+static
-+struct vfio_device *vfio_group_create_device(struct vfio_group *group,
-+					     struct device *dev,
-+					     const struct vfio_device_ops *ops,
-+					     void *device_data)
-+{
-+	struct vfio_device *device;
-+	int ret;
-+
-+	device = kzalloc(sizeof(*device), GFP_KERNEL);
-+	if (!device)
-+		return ERR_PTR(-ENOMEM);
-+
-+	kref_init(&device->kref);
-+	device->dev = dev;
-+	device->group = group;
-+	device->ops = ops;
-+	device->device_data = device_data;
-+
-+	ret = dev_set_drvdata(dev, device);
-+	if (ret) {
-+		kfree(device);
-+		return ERR_PTR(ret);
++		return PageReserved(tail);
 +	}
 +
-+	/* No need to get group_lock, caller has group reference */
-+	vfio_group_get(group);
-+
-+	mutex_lock(&group->device_lock);
-+	list_add(&device->group_next, &group->device_list);
-+	mutex_unlock(&group->device_lock);
-+
-+	return device;
-+}
-+
-+static void vfio_device_release(struct kref *kref)
-+{
-+	struct vfio_device *device = container_of(kref,
-+						  struct vfio_device, kref);
-+	struct vfio_group *group = device->group;
-+
-+	mutex_lock(&group->device_lock);
-+	list_del(&device->group_next);
-+	mutex_unlock(&group->device_lock);
-+
-+	dev_set_drvdata(device->dev, NULL);
-+
-+	kfree(device);
-+
-+	/* vfio_del_group_dev may be waiting for this device */
-+	wake_up(&vfio.release_q);
-+}
-+
-+/* Device reference always implies a group reference */
-+static void vfio_device_put(struct vfio_device *device)
-+{
-+	kref_put(&device->kref, vfio_device_release);
-+	vfio_group_put(device->group);
-+}
-+
-+static void vfio_device_get(struct vfio_device *device)
-+{
-+	vfio_group_get(device->group);
-+	kref_get(&device->kref);
-+}
-+
-+static struct vfio_device *vfio_group_get_device(struct vfio_group *group,
-+						 struct device *dev)
-+{
-+	struct vfio_device *device;
-+
-+	mutex_lock(&group->device_lock);
-+	list_for_each_entry(device, &group->device_list, group_next) {
-+		if (device->dev == dev) {
-+			vfio_device_get(device);
-+			mutex_unlock(&group->device_lock);
-+			return device;
-+		}
-+	}
-+	mutex_unlock(&group->device_lock);
-+	return NULL;
-+}
-+
-+/*
-+ * Whitelist some drivers that we know are safe (no dma) or just sit on
-+ * a device.  It's not always practical to leave a device within a group
-+ * driverless as it could get re-bound to something unsafe.
-+ */
-+static const char *vfio_driver_whitelist[] = { "pci-stub" };
-+
-+static bool vfio_whitelisted_driver(struct device_driver* drv)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(vfio_driver_whitelist); i++) {
-+		if (!strcmp(drv->name, vfio_driver_whitelist[i]))
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
-+/*
-+ * A vfio group is viable for use by userspace if all devices are either
-+ * driver-less or bound to a vfio or whitelisted driver.  We test the
-+ * latter by the existence of a struct vfio_device matching the dev.
-+ */
-+static int vfio_dev_viable(struct device *dev, void *data)
-+{
-+	struct vfio_group *group = data;
-+	struct vfio_device *device;
-+
-+	if (!dev->driver || vfio_whitelisted_driver(dev->driver))
-+		return 0;
-+
-+	device = vfio_group_get_device(group, dev);
-+	if (device) {
-+		vfio_device_put(device);
-+		return 0;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+/**
-+ * Async device support
-+ */
-+static int vfio_group_nb_add_dev(struct vfio_group *group, struct device *dev)
-+{
-+	struct vfio_device *device;
-+
-+	/* Do we already know about it?  We shouldn't */
-+	device = vfio_group_get_device(group, dev);
-+	if (WARN_ON_ONCE(device)) {
-+		vfio_device_put(device);
-+		return 0;
-+	}
-+
-+	/* Nothing to do for idle groups */
-+	if (!atomic_read(&group->container_users))
-+		return 0;
-+
-+	/* TODO Prevent device auto probing */
-+	WARN("Device %s added to live group %d!\n", dev_name(dev),
-+	     iommu_group_id(group->iommu_group));
-+
-+	return 0;
-+}
-+
-+static int vfio_group_nb_del_dev(struct vfio_group *group, struct device *dev)
-+{
-+	struct vfio_device *device;
-+
-+	/*
-+	 * Expect to fall out here.  If a device was in use, it would
-+	 * have been bound to a vfio sub-driver, which would have blocked
-+	 * in .remove at vfio_del_group_dev.  Sanity check that we no
-+	 * longer track the device, so it's safe to remove.
-+	 */
-+	device = vfio_group_get_device(group, dev);
-+	if (likely(!device))
-+		return 0;
-+
-+	WARN("Device %s removed from live group %d!\n", dev_name(dev),
-+	     iommu_group_id(group->iommu_group));
-+
-+	vfio_device_put(device);
-+	return 0;
-+}
-+
-+static int vfio_group_nb_verify(struct vfio_group *group, struct device *dev)
-+{
-+	/* We don't care what happens when the group isn't in use */
-+	if (!atomic_read(&group->container_users))
-+		return 0;
-+
-+	return vfio_dev_viable(dev, group);
-+}
-+
-+static int vfio_iommu_group_notifier(struct notifier_block *nb,
-+				     unsigned long action, void *data)
-+{
-+	struct vfio_group *group = container_of(nb, struct vfio_group, nb);
-+	struct device *dev = data;
-+
-+	/*
-+	 * Need to go through a group_lock lookup to get a reference or
-+	 * we risk racing a group being removed.  Leave a WARN_ON for
-+	 * debuging, but if the group no longer exists, a spurious notify
-+	 * is harmless.
-+	 */
-+	group = vfio_group_try_get(group);
-+	if (WARN_ON(!group))
-+		return NOTIFY_OK;
-+
-+	switch (action) {
-+	case IOMMU_GROUP_NOTIFY_ADD_DEVICE:
-+		vfio_group_nb_add_dev(group, dev);
-+		break;
-+	case IOMMU_GROUP_NOTIFY_DEL_DEVICE:
-+		vfio_group_nb_del_dev(group, dev);
-+		break;
-+	case IOMMU_GROUP_NOTIFY_BIND_DRIVER:
-+		printk(KERN_DEBUG
-+		       "%s: Device %s, group %d binding to driver\n", __func__,
-+		      dev_name(dev), iommu_group_id(group->iommu_group));
-+		break;
-+	case IOMMU_GROUP_NOTIFY_BOUND_DRIVER:
-+		printk(KERN_DEBUG
-+		       "%s: Device %s, group %d bound to driver %s\n", __func__,
-+		       dev_name(dev), iommu_group_id(group->iommu_group),
-+		       dev->driver->name);
-+		BUG_ON(vfio_group_nb_verify(group, dev));
-+		break;
-+	case IOMMU_GROUP_NOTIFY_UNBIND_DRIVER:
-+		printk(KERN_DEBUG
-+		       "%s: Device %s, group %d unbinding from driver %s\n",
-+		       __func__, dev_name(dev),
-+		       iommu_group_id(group->iommu_group), dev->driver->name);
-+		break;
-+	case IOMMU_GROUP_NOTIFY_UNBOUND_DRIVER:
-+		printk(KERN_DEBUG
-+		       "%s: Device %s, group %d unbound from driver\n",
-+		       __func__, dev_name(dev),
-+		       iommu_group_id(group->iommu_group));
-+		/*
-+		 * XXX An unbound device in a live group is ok, but we'd
-+		 * really like to avoid the above BUG_ON by preventing other
-+		 * drivers from binding to it.  Once that occurs, we have to
-+		 * stop the system to maintain isolation.  At a minimum, we'd
-+		 * want a toggle to disable driver auto probe for this device.
-+		 */
-+		break;
-+	}
-+
-+	vfio_group_put(group);
-+	return NOTIFY_OK;
-+}
-+
-+/**
-+ * VFIO driver API
-+ */
-+int vfio_add_group_dev(struct device *dev,
-+		       const struct vfio_device_ops *ops, void *device_data)
-+{
-+	struct iommu_group *iommu_group;
-+	struct vfio_group *group;
-+	struct vfio_device *device;
-+
-+	iommu_group = iommu_group_get(dev);
-+	if (!iommu_group)
-+		return -EINVAL;
-+
-+	group = vfio_group_get_from_iommu(iommu_group);
-+	if (!group) {
-+		group = vfio_create_group(iommu_group);
-+		if (IS_ERR(group)) {
-+			iommu_group_put(iommu_group);
-+			return PTR_ERR(group);
-+		}
-+	}
-+
-+	device = vfio_group_get_device(group, dev);
-+	if (device) {
-+		WARN(1, "Device %s already exists on group %d\n",
-+		     dev_name(dev), iommu_group_id(iommu_group));
-+		vfio_device_put(device);
-+		vfio_group_put(group);
-+		iommu_group_put(iommu_group);
-+		return -EBUSY;
-+	}
-+
-+	device = vfio_group_create_device(group, dev, ops, device_data);
-+	if (IS_ERR(device)) {
-+		vfio_group_put(group);
-+		iommu_group_put(iommu_group);
-+		return PTR_ERR(device);
-+	}
-+
-+	/*
-+	 * Added device holds reference to iommu_group and vfio_device
-+	 * (which in turn holds reference to vfio_group).  Drop extra
-+	 * group reference used while acquiring device.
-+	 */
-+	vfio_group_put(group);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(vfio_add_group_dev);
-+
-+/* Test whether a struct device is present in our tracking */
-+static bool vfio_dev_present(struct device *dev)
-+{
-+	struct iommu_group *iommu_group;
-+	struct vfio_group *group;
-+	struct vfio_device *device;
-+
-+	iommu_group = iommu_group_get(dev);
-+	if (!iommu_group)
-+		return false;
-+
-+	group = vfio_group_get_from_iommu(iommu_group);
-+	if (!group) {
-+		iommu_group_put(iommu_group);
-+		return false;
-+	}
-+
-+	device = vfio_group_get_device(group, dev);
-+	if (!device) {
-+		vfio_group_put(group);
-+		iommu_group_put(iommu_group);
-+		return false;
-+	}
-+
-+	vfio_device_put(device);
-+	vfio_group_put(group);
-+	iommu_group_put(iommu_group);
 +	return true;
 +}
 +
-+/*
-+ * Decrement the device reference count and wait for the device to be
-+ * removed.  Open file descriptors for the device... */
-+void *vfio_del_group_dev(struct device *dev)
++static int put_pfn(unsigned long pfn, int prot)
 +{
-+	struct vfio_device *device = dev_get_drvdata(dev);
-+	struct vfio_group *group = device->group;
-+	struct iommu_group *iommu_group = group->iommu_group;
-+	void *device_data = device->device_data;
-+
-+	vfio_device_put(device);
-+
-+	/* TODO send a signal to encourage this to be released */
-+	wait_event(vfio.release_q, !vfio_dev_present(dev));
-+
-+	iommu_group_put(iommu_group);
-+
-+	return device_data;
-+}
-+EXPORT_SYMBOL_GPL(vfio_del_group_dev);
-+
-+/**
-+ * VFIO base fd, /dev/vfio/vfio
-+ */
-+static long vfio_ioctl_check_extension(struct vfio_container *container,
-+				       unsigned long arg)
-+{
-+	struct vfio_iommu_driver *driver = container->iommu_driver;
-+	long ret = 0;
-+
-+	switch (arg) {
-+		/* No base extensions yet */
-+	default:
-+		/*
-+		 * If no driver is set, poll all registered drivers for
-+		 * extensions and return the first positive result.  If
-+		 * a driver is already set, further queries will be passed
-+		 * only to that driver.
-+		 */
-+		if (!driver) {
-+			mutex_lock(&vfio.iommu_drivers_lock);
-+			list_for_each_entry(driver, &vfio.iommu_drivers_list,
-+					    vfio_next) {
-+				if (!try_module_get(driver->ops->owner))
-+					continue;
-+
-+				ret = driver->ops->ioctl(NULL,
-+							 VFIO_CHECK_EXTENSION,
-+							 arg);
-+				module_put(driver->ops->owner);
-+				if (ret > 0)
-+					break;
-+			}
-+			mutex_unlock(&vfio.iommu_drivers_lock);
-+		} else
-+			ret = driver->ops->ioctl(container->iommu_data,
-+						 VFIO_CHECK_EXTENSION, arg);
++	if (!is_invalid_reserved_pfn(pfn)) {
++		struct page *page = pfn_to_page(pfn);
++		if (prot & IOMMU_WRITE)
++			SetPageDirty(page);
++		put_page(page);
++		return 1;
 +	}
-+
-+	return ret;
++	return 0;
 +}
 +
-+/* hold container->group_lock */
-+static int __vfio_container_attach_groups(struct vfio_container *container,
-+					  struct vfio_iommu_driver *driver,
-+					  void *data)
++/* Unmap DMA region */
++static long __vfio_dma_do_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
++			     long npage, int prot)
 +{
-+	struct vfio_group *group;
-+	int ret = -ENODEV;
++	long i, unlocked = 0;
 +
-+	list_for_each_entry(group, &container->group_list, container_next) {
-+		ret = driver->ops->attach_group(data, group->iommu_group);
-+		if (ret)
-+			goto unwind;
-+	}
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE) {
++		unsigned long pfn;
 +
-+	return ret;
-+
-+unwind:
-+	list_for_each_entry_continue_reverse(group, &container->group_list,
-+					     container_next) {
-+		driver->ops->detach_group(data, group->iommu_group);
-+	}
-+
-+	return ret;
-+}
-+
-+static long vfio_ioctl_set_iommu(struct vfio_container *container,
-+				 unsigned long arg)
-+{
-+	struct vfio_iommu_driver *driver;
-+	long ret = -ENODEV;
-+
-+	mutex_lock(&container->group_lock);
-+
-+	/*
-+	 * The container is designed to be an unprivileged interface while
-+	 * the group can be assigned to specific users.  Therefore, only by
-+	 * adding a group to a container does the user get the privilege of
-+	 * enabling the iommu, which may allocate finite resources.  There
-+	 * is no unset_iommu, but by removing all the groups from a container,
-+	 * the container is deprivileged and returns to an unset state.
-+	 */
-+	if (list_empty(&container->group_list) || container->iommu_driver) {
-+		mutex_unlock(&container->group_lock);
-+		return -EINVAL;
-+	}
-+
-+	mutex_lock(&vfio.iommu_drivers_lock);
-+	list_for_each_entry(driver, &vfio.iommu_drivers_list, vfio_next) {
-+		void *data;
-+
-+		if (!try_module_get(driver->ops->owner))
-+			continue;
-+
-+		/*
-+		 * The arg magic for SET_IOMMU is the same as CHECK_EXTENSION,
-+		 * so test which iommu driver reported support for this
-+		 * extension and call open on them.  We also pass them the
-+		 * magic, allowing a single driver to support multiple
-+		 * interfaces if they'd like.
-+		 */
-+		if (driver->ops->ioctl(NULL, VFIO_CHECK_EXTENSION, arg) <= 0) {
-+			module_put(driver->ops->owner);
-+			continue;
++		pfn = iommu_iova_to_phys(iommu->domain, iova) >> PAGE_SHIFT;
++		if (pfn) {
++			iommu_unmap(iommu->domain, iova, PAGE_SIZE);
++			unlocked += put_pfn(pfn, prot);
 +		}
++	}
++	return unlocked;
++}
 +
-+		/* module reference holds the driver we're working on */
-+		mutex_unlock(&vfio.iommu_drivers_lock);
++static void vfio_dma_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
++			   long npage, int prot)
++{
++	long unlocked;
 +
-+		data = driver->ops->open(arg);
-+		if (IS_ERR(data)) {
-+			ret = PTR_ERR(data);
-+			module_put(driver->ops->owner);
-+			goto skip_drivers_unlock;
-+		}
++	unlocked = __vfio_dma_do_unmap(iommu, iova, npage, prot);
++	vfio_lock_acct(-unlocked);
++}
 +
-+		ret = __vfio_container_attach_groups(container, driver, data);
-+		if (!ret) {
-+			container->iommu_driver = driver;
-+			container->iommu_data = data;
-+		} else {
-+			driver->ops->release(data);
-+			module_put(driver->ops->owner);
-+		}
++static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long *pfn)
++{
++	struct page *page[1];
++	struct vm_area_struct *vma;
++	int ret = -EFAULT;
 +
-+		goto skip_drivers_unlock;
++	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
++		*pfn = page_to_pfn(page[0]);
++		return 0;
 +	}
 +
-+	mutex_unlock(&vfio.iommu_drivers_lock);
-+skip_drivers_unlock:
-+	mutex_unlock(&container->group_lock);
++	down_read(&current->mm->mmap_sem);
++
++	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
++
++	if (vma && vma->vm_flags & VM_PFNMAP) {
++		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
++		if (is_invalid_reserved_pfn(*pfn))
++			ret = 0;
++	}
++
++	up_read(&current->mm->mmap_sem);
 +
 +	return ret;
 +}
 +
-+static long vfio_fops_unl_ioctl(struct file *filep,
-+				unsigned int cmd, unsigned long arg)
++/* Map DMA region */
++static int __vfio_dma_map(struct vfio_iommu *iommu, dma_addr_t iova,
++			  unsigned long vaddr, long npage, int prot)
 +{
-+	struct vfio_container *container = filep->private_data;
-+	struct vfio_iommu_driver *driver;
-+	void *data;
-+	long ret = -EINVAL;
-+
-+	if (!container)
-+		return ret;
-+
-+	driver = container->iommu_driver;
-+	data = container->iommu_data;
-+
-+	switch (cmd) {
-+	case VFIO_GET_API_VERSION:
-+		ret = VFIO_API_VERSION;
-+		break;
-+	case VFIO_CHECK_EXTENSION:
-+		ret = vfio_ioctl_check_extension(container, arg);
-+		break;
-+	case VFIO_SET_IOMMU:
-+		ret = vfio_ioctl_set_iommu(container, arg);
-+		break;
-+	default:
-+		if (driver) /* passthrough all unrecognized ioctls */
-+			ret = driver->ops->ioctl(data, cmd, arg);
-+	}
-+
-+	return ret;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long vfio_fops_compat_ioctl(struct file *filep,
-+				   unsigned int cmd, unsigned long arg)
-+{
-+	arg = (unsigned long)compat_ptr(arg);
-+	return vfio_fops_unl_ioctl(filep, cmd, arg);
-+}
-+#endif	/* CONFIG_COMPAT */
-+
-+static int vfio_fops_open(struct inode *inode, struct file *filep)
-+{
-+	struct vfio_container *container;
-+
-+	container = kzalloc(sizeof(*container), GFP_KERNEL);
-+	if (!container)
-+		return -ENOMEM;
-+
-+	INIT_LIST_HEAD(&container->group_list);
-+	mutex_init(&container->group_lock);
-+	kref_init(&container->kref);
-+
-+	filep->private_data = container;
-+
-+	return 0;
-+}
-+
-+static int vfio_fops_release(struct inode *inode, struct file *filep)
-+{
-+	struct vfio_container *container = filep->private_data;
-+
-+	filep->private_data = NULL;
-+
-+	vfio_container_put(container);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Once an iommu driver is set, we optionally pass read/write/mmap
-+ * on to the driver, allowing management interfaces beyond ioctl.
-+ */
-+static ssize_t vfio_fops_read(struct file *filep, char __user *buf,
-+			      size_t count, loff_t *ppos)
-+{
-+	struct vfio_container *container = filep->private_data;
-+	struct vfio_iommu_driver *driver = container->iommu_driver;
-+
-+	if (unlikely(!driver || !driver->ops->read))
-+		return -EINVAL;
-+
-+	return driver->ops->read(container->iommu_data, buf, count, ppos);
-+}
-+
-+static ssize_t vfio_fops_write(struct file *filep, const char __user *buf,
-+			       size_t count, loff_t *ppos)
-+{
-+	struct vfio_container *container = filep->private_data;
-+	struct vfio_iommu_driver *driver = container->iommu_driver;
-+
-+	if (unlikely(!driver || !driver->ops->write))
-+		return -EINVAL;
-+
-+	return driver->ops->write(container->iommu_data, buf, count, ppos);
-+}
-+
-+static int vfio_fops_mmap(struct file *filep, struct vm_area_struct *vma)
-+{
-+	struct vfio_container *container = filep->private_data;
-+	struct vfio_iommu_driver *driver = container->iommu_driver;
-+
-+	if (unlikely(!driver || !driver->ops->mmap))
-+		return -EINVAL;
-+
-+	return driver->ops->mmap(container->iommu_data, vma);
-+}
-+
-+static const struct file_operations vfio_fops = {
-+	.owner		= THIS_MODULE,
-+	.open		= vfio_fops_open,
-+	.release	= vfio_fops_release,
-+	.read		= vfio_fops_read,
-+	.write		= vfio_fops_write,
-+	.unlocked_ioctl	= vfio_fops_unl_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= vfio_fops_compat_ioctl,
-+#endif
-+	.mmap		= vfio_fops_mmap,
-+};
-+
-+/**
-+ * VFIO Group fd, /dev/vfio/$GROUP
-+ */
-+static void __vfio_group_unset_container(struct vfio_group *group)
-+{
-+	struct vfio_container *container = group->container;
-+	struct vfio_iommu_driver *driver;
-+
-+	mutex_lock(&container->group_lock);
-+
-+	driver = container->iommu_driver;
-+	if (driver)
-+		driver->ops->detach_group(container->iommu_data,
-+					  group->iommu_group);
-+
-+	group->container = NULL;
-+	list_del(&group->container_next);
-+
-+	/* Detaching the last group deprivileges a container, remove iommu */
-+	if (driver && list_empty(&container->group_list)) {
-+		driver->ops->release(container->iommu_data);
-+		module_put(driver->ops->owner);
-+		container->iommu_driver = NULL;
-+		container->iommu_data = NULL;
-+	}
-+
-+	mutex_unlock(&container->group_lock);
-+
-+	vfio_container_put(container);
-+}
-+
-+/*
-+ * VFIO_GROUP_UNSET_CONTAINER should fail if there are other users or
-+ * if there was no container to unset.  Since the ioctl is called on
-+ * the group, we know that still exists, therefore the only valid
-+ * transition here is 1->0.
-+ */
-+static int vfio_group_unset_container(struct vfio_group *group)
-+{
-+	int users = atomic_cmpxchg(&group->container_users, 1, 0);
-+
-+	if (!users)
-+		return -EINVAL;
-+	if (users != 1)
-+		return -EBUSY;
-+
-+	__vfio_group_unset_container(group);
-+
-+	return 0;
-+}
-+
-+/*
-+ * When removing container users, anything that removes the last user
-+ * implicitly removes the group from the container.  That is, if the
-+ * group file descriptor is closed, as well as any device file descriptors,
-+ * the group is free.
-+ */
-+static void vfio_group_try_dissolve_container(struct vfio_group *group)
-+{
-+	if (0 == atomic_dec_if_positive(&group->container_users))
-+		__vfio_group_unset_container(group);
-+}
-+
-+static int vfio_group_set_container(struct vfio_group *group, int container_fd)
-+{
-+	struct file *filep;
-+	struct vfio_container *container;
-+	struct vfio_iommu_driver *driver;
-+	int ret = 0;
-+
-+	if (atomic_read(&group->container_users))
-+		return -EINVAL;
-+
-+	filep = fget(container_fd);
-+	if (!filep)
-+		return -EBADF;
-+
-+	/* Sanity check, is this really our fd? */
-+	if (filep->f_op != &vfio_fops) {
-+		fput(filep);
-+		return -EINVAL;
-+	}
-+
-+	container = filep->private_data;
-+	WARN_ON(!container); /* fget ensures we don't race vfio_release */
-+
-+	mutex_lock(&container->group_lock);
-+
-+	driver = container->iommu_driver;
-+	if (driver) {
-+		ret = driver->ops->attach_group(container->iommu_data,
-+						group->iommu_group);
-+		if (ret)
-+			goto unlock_out;
-+	}
-+
-+	group->container = container;
-+	list_add(&group->container_next, &container->group_list);
-+
-+	/* Get a reference on the container and mark a user within the group */
-+	vfio_container_get(container);
-+	atomic_inc(&group->container_users);
-+
-+unlock_out:
-+	mutex_unlock(&container->group_lock);
-+	fput(filep);
-+	if (ret)
-+		vfio_container_put(container);
-+
-+	return ret;
-+}
-+
-+static bool vfio_group_viable(struct vfio_group *group)
-+{
-+	return (iommu_group_for_each_dev(group->iommu_group,
-+					 group, vfio_dev_viable) == 0);
-+}
-+
-+static const struct file_operations vfio_device_fops;
-+
-+static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
-+{
-+	struct vfio_device *device;
-+	struct file *filep;
-+	int ret = -ENODEV;
-+
-+	if (0 == atomic_read(&group->container_users) ||
-+	    !group->container->iommu_driver || !vfio_group_viable(group))
-+		return -EINVAL;
-+
-+	mutex_lock(&group->device_lock);
-+	list_for_each_entry(device, &group->device_list, group_next) {
-+		if (strcmp(dev_name(device->dev), buf))
-+			continue;
-+
-+		ret = device->ops->open(device->device_data);
-+		if (ret)
-+			break;
-+		/*
-+		 * We can't use anon_inode_getfd() because we need to modify
-+		 * the f_mode flags directly to allow more than just ioctls
-+		 */
-+		ret = get_unused_fd();
-+		if (ret < 0) {
-+			device->ops->release(device->device_data);
-+			break;
-+		}
-+
-+		filep = anon_inode_getfile("[vfio-device]", &vfio_device_fops,
-+					   device, O_RDWR);
-+		if (IS_ERR(filep)) {
-+			put_unused_fd(ret);
-+			ret = PTR_ERR(filep);
-+			device->ops->release(device->device_data);
-+			break;
-+		}
-+
-+		/*
-+		 * TODO: add an anon_inode interface to do this.
-+		 * Appears to be missing by lack of need rather than
-+		 * explicitly prevented.  Now there's need.
-+		 */
-+		filep->f_mode |= (FMODE_LSEEK | FMODE_PREAD | FMODE_PWRITE);
-+
-+		fd_install(ret, filep);
-+
-+		vfio_device_get(device);
-+		atomic_inc(&group->container_users);
-+		break;
-+	}
-+	mutex_unlock(&group->device_lock);
-+
-+	return ret;
-+}
-+
-+static long vfio_group_fops_unl_ioctl(struct file *filep,
-+				      unsigned int cmd, unsigned long arg)
-+{
-+	struct vfio_group *group = filep->private_data;
-+	long ret = -ENOTTY;
-+
-+	switch (cmd) {
-+	case VFIO_GROUP_GET_STATUS:
-+	{
-+		struct vfio_group_status status;
-+		unsigned long minsz;
-+
-+		minsz = offsetofend(struct vfio_group_status, flags);
-+
-+		if (copy_from_user(&status, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (status.argsz < minsz)
-+			return -EINVAL;
-+
-+		status.flags = 0;
-+
-+		if (vfio_group_viable(group))
-+			status.flags |= VFIO_GROUP_FLAGS_VIABLE;
-+
-+		if (group->container)
-+			status.flags |= VFIO_GROUP_FLAGS_CONTAINER_SET;
-+
-+		ret = copy_to_user((void __user *)arg, &status, minsz);
-+
-+		break;
-+	}
-+	case VFIO_GROUP_SET_CONTAINER:
-+	{
-+		int fd;
-+
-+		if (get_user(fd, (int __user *)arg))
-+			return -EFAULT;
-+
-+		if (fd < 0)
-+			return -EINVAL;
-+
-+		ret = vfio_group_set_container(group, fd);
-+		break;
-+	}
-+	case VFIO_GROUP_UNSET_CONTAINER:
-+		ret = vfio_group_unset_container(group);
-+		break;
-+	case VFIO_GROUP_GET_DEVICE_FD:
-+	{
-+		char *buf;
-+
-+		buf = strndup_user((const char __user *)arg, PAGE_SIZE);
-+		if (IS_ERR(buf))
-+			return PTR_ERR(buf);
-+
-+		ret = vfio_group_get_device_fd(group, buf);
-+		kfree(buf);
-+		break;
-+	}
-+	}
-+
-+	return ret;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long vfio_group_fops_compat_ioctl(struct file *filep,
-+					 unsigned int cmd, unsigned long arg)
-+{
-+	arg = (unsigned long)compat_ptr(arg);
-+	return vfio_group_fops_unl_ioctl(filep, cmd, arg);
-+}
-+#endif	/* CONFIG_COMPAT */
-+
-+static int vfio_group_fops_open(struct inode *inode, struct file *filep)
-+{
-+	struct vfio_group *group;
-+
-+	group = vfio_group_get_from_minor(iminor(inode));
-+	if (!group)
-+		return -ENODEV;
-+
-+	if (group->container) {
-+		vfio_group_put(group);
-+		return -EBUSY;
-+	}
-+
-+	filep->private_data = group;
-+
-+	return 0;
-+}
-+
-+static int vfio_group_fops_release(struct inode *inode, struct file *filep)
-+{
-+	struct vfio_group *group = filep->private_data;
-+
-+	filep->private_data = NULL;
-+
-+	vfio_group_try_dissolve_container(group);
-+
-+	vfio_group_put(group);
-+
-+	return 0;
-+}
-+
-+static const struct file_operations vfio_group_fops = {
-+	.owner		= THIS_MODULE,
-+	.unlocked_ioctl	= vfio_group_fops_unl_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= vfio_group_fops_compat_ioctl,
-+#endif
-+	.open		= vfio_group_fops_open,
-+	.release	= vfio_group_fops_release,
-+};
-+
-+/**
-+ * VFIO Device fd
-+ */
-+static int vfio_device_fops_release(struct inode *inode, struct file *filep)
-+{
-+	struct vfio_device *device = filep->private_data;
-+
-+	device->ops->release(device->device_data);
-+
-+	vfio_group_try_dissolve_container(device->group);
-+
-+	vfio_device_put(device);
-+
-+	return 0;
-+}
-+
-+static long vfio_device_fops_unl_ioctl(struct file *filep,
-+				       unsigned int cmd, unsigned long arg)
-+{
-+	struct vfio_device *device = filep->private_data;
-+
-+	if (unlikely(!device->ops->ioctl))
-+		return -EINVAL;
-+
-+	return device->ops->ioctl(device->device_data, cmd, arg);
-+}
-+
-+static ssize_t vfio_device_fops_read(struct file *filep, char __user *buf,
-+				     size_t count, loff_t *ppos)
-+{
-+	struct vfio_device *device = filep->private_data;
-+
-+	if (unlikely(!device->ops->read))
-+		return -EINVAL;
-+
-+	return device->ops->read(device->device_data, buf, count, ppos);
-+}
-+
-+static ssize_t vfio_device_fops_write(struct file *filep,
-+				      const char __user *buf,
-+				      size_t count, loff_t *ppos)
-+{
-+	struct vfio_device *device = filep->private_data;
-+
-+	if (unlikely(!device->ops->write))
-+		return -EINVAL;
-+
-+	return device->ops->write(device->device_data, buf, count, ppos);
-+}
-+
-+static int vfio_device_fops_mmap(struct file *filep, struct vm_area_struct *vma)
-+{
-+	struct vfio_device *device = filep->private_data;
-+
-+	if (unlikely(!device->ops->mmap))
-+		return -EINVAL;
-+
-+	return device->ops->mmap(device->device_data, vma);
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long vfio_device_fops_compat_ioctl(struct file *filep,
-+					  unsigned int cmd, unsigned long arg)
-+{
-+	arg = (unsigned long)compat_ptr(arg);
-+	return vfio_device_fops_unl_ioctl(filep, cmd, arg);
-+}
-+#endif	/* CONFIG_COMPAT */
-+
-+static const struct file_operations vfio_device_fops = {
-+	.owner		= THIS_MODULE,
-+	.release	= vfio_device_fops_release,
-+	.read		= vfio_device_fops_read,
-+	.write		= vfio_device_fops_write,
-+	.unlocked_ioctl	= vfio_device_fops_unl_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl	= vfio_device_fops_compat_ioctl,
-+#endif
-+	.mmap		= vfio_device_fops_mmap,
-+};
-+
-+/**
-+ * Module/class support
-+ */
-+static char *vfio_devnode(struct device *dev, umode_t *mode)
-+{
-+	return kasprintf(GFP_KERNEL, "vfio/%s", dev_name(dev));
-+}
-+
-+static int __init vfio_init(void)
-+{
++	dma_addr_t start = iova;
++	long i, locked = 0;
 +	int ret;
 +
-+	idr_init(&vfio.group_idr);
-+	mutex_init(&vfio.group_lock);
-+	mutex_init(&vfio.iommu_drivers_lock);
-+	INIT_LIST_HEAD(&vfio.group_list);
-+	INIT_LIST_HEAD(&vfio.iommu_drivers_list);
-+	init_waitqueue_head(&vfio.release_q);
++	/* Verify that pages are not already mapped */
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE)
++		if (iommu_iova_to_phys(iommu->domain, iova))
++			return -EBUSY;
 +
-+	vfio.class = class_create(THIS_MODULE, "vfio");
-+	if (IS_ERR(vfio.class)) {
-+		ret = PTR_ERR(vfio.class);
-+		goto err_class;
++	iova = start;
++
++	if (iommu->cache)
++		prot |= IOMMU_CACHE;
++
++	/*
++	 * XXX We break mappings into pages and use get_user_pages_fast to
++	 * pin the pages in memory.  It's been suggested that mlock might
++	 * provide a more efficient mechanism, but nothing prevents the
++	 * user from munlocking the pages, which could then allow the user
++	 * access to random host memory.  We also have no guarantee from the
++	 * IOMMU API that the iommu driver can unmap sub-pages of previous
++	 * mappings.  This means we might lose an entire range if a single
++	 * page within it is unmapped.  Single page mappings are inefficient,
++	 * but provide the most flexibility for now.
++	 */
++	for (i = 0; i < npage; i++, iova += PAGE_SIZE, vaddr += PAGE_SIZE) {
++		unsigned long pfn = 0;
++
++		ret = vaddr_get_pfn(vaddr, prot, &pfn);
++		if (ret) {
++			__vfio_dma_do_unmap(iommu, start, i, prot);
++			return ret;
++		}
++
++		/*
++		 * Only add actual locked pages to accounting
++		 * XXX We're effectively marking a page locked for every
++		 * IOVA page even though it's possible the user could be
++		 * backing multiple IOVAs with the same vaddr.  This over-
++		 * penalizes the user process, but we currently have no
++		 * easy way to do this properly.
++		 */
++		if (!is_invalid_reserved_pfn(pfn))
++			locked++;
++
++		ret = iommu_map(iommu->domain, iova,
++				(phys_addr_t)pfn << PAGE_SHIFT,
++				PAGE_SIZE, prot);
++		if (ret) {
++			/* Back out mappings on error */
++			put_pfn(pfn, prot);
++			__vfio_dma_do_unmap(iommu, start, i, prot);
++			return ret;
++		}
 +	}
-+
-+	vfio.class->devnode = vfio_devnode;
-+
-+	ret = alloc_chrdev_region(&vfio.devt, 0, MINORMASK, "vfio");
-+	if (ret)
-+		goto err_base_chrdev;
-+
-+	cdev_init(&vfio.cdev, &vfio_fops);
-+	ret = cdev_add(&vfio.cdev, vfio.devt, 1);
-+	if (ret)
-+		goto err_base_cdev;
-+
-+	vfio.dev = device_create(vfio.class, NULL, vfio.devt, NULL, "vfio");
-+	if (IS_ERR(vfio.dev)) {
-+		ret = PTR_ERR(vfio.dev);
-+		goto err_base_dev;
-+	}
-+
-+	/* /dev/vfio/$GROUP */
-+	cdev_init(&vfio.group_cdev, &vfio_group_fops);
-+	ret = cdev_add(&vfio.group_cdev,
-+		       MKDEV(MAJOR(vfio.devt), 1), MINORMASK - 1);
-+	if (ret)
-+		goto err_groups_cdev;
-+
-+	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
-+
++	vfio_lock_acct(locked);
 +	return 0;
++}
 +
-+err_groups_cdev:
-+	device_destroy(vfio.class, vfio.devt);
-+err_base_dev:
-+	cdev_del(&vfio.cdev);
-+err_base_cdev:
-+	unregister_chrdev_region(vfio.devt, MINORMASK);
-+err_base_chrdev:
-+	class_destroy(vfio.class);
-+	vfio.class = NULL;
-+err_class:
++static inline bool ranges_overlap(dma_addr_t start1, size_t size1,
++				  dma_addr_t start2, size_t size2)
++{
++	if (start1 < start2)
++		return (start2 - start1 < size1);
++	else if (start2 < start1)
++		return (start1 - start2 < size2);
++	return (size1 > 0 && size2 > 0);
++}
++
++static struct vfio_dma *vfio_find_dma(struct vfio_iommu *iommu,
++						dma_addr_t start, size_t size)
++{
++	struct vfio_dma *dma;
++
++	list_for_each_entry(dma, &iommu->dma_list, next) {
++		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
++				   start, size))
++			return dma;
++	}
++	return NULL;
++}
++
++static long vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
++				    size_t size, struct vfio_dma *dma)
++{
++	struct vfio_dma *split;
++	long npage_lo, npage_hi;
++
++	/* Existing dma region is completely covered, unmap all */
++	if (start <= dma->iova &&
++	    start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
++		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
++		list_del(&dma->next);
++		npage_lo = dma->npage;
++		kfree(dma);
++		return npage_lo;
++	}
++
++	/* Overlap low address of existing range */
++	if (start <= dma->iova) {
++		size_t overlap;
++
++		overlap = start + size - dma->iova;
++		npage_lo = overlap >> PAGE_SHIFT;
++
++		vfio_dma_unmap(iommu, dma->iova, npage_lo, dma->prot);
++		dma->iova += overlap;
++		dma->vaddr += overlap;
++		dma->npage -= npage_lo;
++		return npage_lo;
++	}
++
++	/* Overlap high address of existing range */
++	if (start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
++		size_t overlap;
++
++		overlap = dma->iova + NPAGE_TO_SIZE(dma->npage) - start;
++		npage_hi = overlap >> PAGE_SHIFT;
++
++		vfio_dma_unmap(iommu, start, npage_hi, dma->prot);
++		dma->npage -= npage_hi;
++		return npage_hi;
++	}
++
++	/* Split existing */
++	npage_lo = (start - dma->iova) >> PAGE_SHIFT;
++	npage_hi = dma->npage - (size >> PAGE_SHIFT) - npage_lo;
++
++	split = kzalloc(sizeof *split, GFP_KERNEL);
++	if (!split)
++		return -ENOMEM;
++
++	vfio_dma_unmap(iommu, start, size >> PAGE_SHIFT, dma->prot);
++
++	dma->npage = npage_lo;
++
++	split->npage = npage_hi;
++	split->iova = start + size;
++	split->vaddr = dma->vaddr + NPAGE_TO_SIZE(npage_lo) + size;
++	split->prot = dma->prot;
++	list_add(&split->next, &iommu->dma_list);
++	return size >> PAGE_SHIFT;
++}
++
++static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
++			     struct vfio_iommu_type1_dma_unmap *unmap)
++{
++	long ret = 0, npage = unmap->size >> PAGE_SHIFT;
++	struct vfio_dma *dma, *tmp;
++	uint64_t mask;
++
++	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
++
++	if (unmap->iova & mask)
++		return -EINVAL;
++	if (unmap->size & mask)
++		return -EINVAL;
++
++	/* XXX We still break these down into PAGE_SIZE */
++	WARN_ON(mask & PAGE_MASK);
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_entry_safe(dma, tmp, &iommu->dma_list, next) {
++		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
++				   unmap->iova, unmap->size)) {
++			ret = vfio_remove_dma_overlap(iommu, unmap->iova,
++						      unmap->size, dma);
++			if (ret > 0)
++				npage -= ret;
++			if (ret < 0 || npage == 0)
++				break;
++		}
++	}
++	mutex_unlock(&iommu->lock);
++	return ret > 0 ? 0 : (int)ret;
++}
++
++static int vfio_dma_do_map(struct vfio_iommu *iommu,
++			   struct vfio_iommu_type1_dma_map *map)
++{
++	struct vfio_dma *dma, *pdma = NULL;
++	dma_addr_t iova = map->iova;
++	unsigned long locked, lock_limit, vaddr = map->vaddr;
++	size_t size = map->size;
++	int ret = 0, prot = 0;
++	uint64_t mask;
++	long npage;
++
++	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
++
++	/* READ/WRITE from device perspective */
++	if (map->flags & VFIO_DMA_MAP_FLAG_WRITE)
++		prot |= IOMMU_WRITE;
++	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
++		prot |= IOMMU_READ;
++
++	if (!prot)
++		return -EINVAL; /* No READ/WRITE? */
++
++	if (vaddr & mask)
++		return -EINVAL;
++	if (iova & mask)
++		return -EINVAL;
++	if (size & mask)
++		return -EINVAL;
++
++	/* XXX We still break these down into PAGE_SIZE */
++	WARN_ON(mask & PAGE_MASK);
++
++	/* Don't allow IOVA wrap */
++	if (iova + size && iova + size < iova)
++		return -EINVAL;
++
++	/* Don't allow virtual address wrap */
++	if (vaddr + size && vaddr + size < vaddr)
++		return -EINVAL;
++
++	npage = size >> PAGE_SHIFT;
++	if (!npage)
++		return -EINVAL;
++
++	mutex_lock(&iommu->lock);
++
++	if (vfio_find_dma(iommu, iova, size)) {
++		ret = -EBUSY;
++		goto out_lock;
++	}
++
++	/* account for locked pages */
++	locked = current->mm->locked_vm + npage;
++	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
++	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
++		printk(KERN_WARNING "%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
++			__func__, rlimit(RLIMIT_MEMLOCK));
++		ret = -ENOMEM;
++		goto out_lock;
++	}
++
++	ret = __vfio_dma_map(iommu, iova, vaddr, npage, prot);
++	if (ret)
++		goto out_lock;
++
++	/* Check if we abut a region below - nothing below 0 */
++	if (iova) {
++		dma = vfio_find_dma(iommu, iova - 1, 1);
++		if (dma && dma->prot == prot &&
++		    dma->vaddr + NPAGE_TO_SIZE(dma->npage) == vaddr) {
++
++			dma->npage += npage;
++			iova = dma->iova;
++			vaddr = dma->vaddr;
++			npage = dma->npage;
++			size = NPAGE_TO_SIZE(npage);
++
++			pdma = dma;
++		}
++	}
++
++	/* Check if we abut a region above - nothing above ~0 + 1 */
++	if (iova + size) {
++		dma = vfio_find_dma(iommu, iova + size, 1);
++		if (dma && dma->prot == prot &&
++		    dma->vaddr == vaddr + size) {
++
++			dma->npage += npage;
++			dma->iova = iova;
++			dma->vaddr = vaddr;
++
++			/*
++			 * If merged above and below, remove previously
++			 * merged entry.  New entry covers it.
++			 */
++			if (pdma) {
++				list_del(&pdma->next);
++				kfree(pdma);
++			}
++			pdma = dma;
++		}
++	}
++
++	/* Isolated, new region */
++	if (!pdma) {
++		dma = kzalloc(sizeof *dma, GFP_KERNEL);
++		if (!dma) {
++			ret = -ENOMEM;
++			vfio_dma_unmap(iommu, iova, npage, prot);
++			goto out_lock;
++		}
++
++		dma->npage = npage;
++		dma->iova = iova;
++		dma->vaddr = vaddr;
++		dma->prot = prot;
++		list_add(&dma->next, &iommu->dma_list);
++	}
++
++out_lock:
++	mutex_unlock(&iommu->lock);
 +	return ret;
 +}
 +
-+static void __exit vfio_cleanup(void)
++static int vfio_iommu_type1_attach_group(void *iommu_data,
++					 struct iommu_group *iommu_group)
 +{
-+	WARN_ON(!list_empty(&vfio.group_list));
++	struct vfio_iommu *iommu = iommu_data;
++	struct vfio_group *group, *tmp;
++	int ret;
 +
-+	idr_destroy(&vfio.group_idr);
-+	cdev_del(&vfio.group_cdev);
-+	device_destroy(vfio.class, vfio.devt);
-+	cdev_del(&vfio.cdev);
-+	unregister_chrdev_region(vfio.devt, MINORMASK);
-+	class_destroy(vfio.class);
-+	vfio.class = NULL;
++	group = kzalloc(sizeof(*group), GFP_KERNEL);
++	if (!group)
++		return -ENOMEM;
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_entry(tmp, &iommu->group_list, next) {
++		if (tmp->iommu_group == iommu_group) {
++			mutex_unlock(&iommu->lock);
++			kfree(group);
++			return -EINVAL;
++		}
++	}
++
++	/*
++	 * TODO: Domain have capabilities that might change as we add
++	 * groups (see iommu->cache, currently never set).  Check for
++	 * them and potentially disallow groups to be attached when it
++	 * would change capabilities (ugh).
++	 */
++	ret = iommu_attach_group(iommu->domain, iommu_group);
++	if (ret) {
++		mutex_unlock(&iommu->lock);
++		kfree(group);
++		return ret;
++	}
++
++	group->iommu_group = iommu_group;
++	list_add(&group->next, &iommu->group_list);
++
++	mutex_unlock(&iommu->lock);
++
++	return 0;
 +}
 +
-+module_init(vfio_init);
-+module_exit(vfio_cleanup);
++static void vfio_iommu_type1_detach_group(void *iommu_data,
++					  struct iommu_group *iommu_group)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	struct vfio_group *group;
++
++	mutex_lock(&iommu->lock);
++
++	list_for_each_entry(group, &iommu->group_list, next) {
++		if (group->iommu_group == iommu_group) {
++			iommu_detach_group(iommu->domain, iommu_group);
++			list_del(&group->next);
++			kfree(group);
++			break;
++		}
++	}
++
++	mutex_unlock(&iommu->lock);
++}
++
++static void *vfio_iommu_type1_open(unsigned long arg)
++{
++	struct vfio_iommu *iommu;
++
++	if (arg != VFIO_TYPE1_IOMMU)
++		return ERR_PTR(-EINVAL);
++
++	iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
++	if (!iommu)
++		return ERR_PTR(-ENOMEM);
++
++	INIT_LIST_HEAD(&iommu->group_list);
++	INIT_LIST_HEAD(&iommu->dma_list);
++	mutex_init(&iommu->lock);
++
++	/*
++	 * Wish we didn't have to know about bus_type here.
++	 */
++	iommu->domain = iommu_domain_alloc(&pci_bus_type);
++	if (!iommu->domain) {
++		kfree(iommu);
++		return ERR_PTR(-EIO);
++	}
++
++	/*
++	 * Wish we could specify required capabilities rather than create
++	 * a domain, see what comes out and hope it doesn't change along
++	 * the way.  Fortunately we know interrupt remapping is global for
++	 * our iommus.
++	 */
++	if (!allow_unsafe_interrupts &&
++	    !iommu_domain_has_cap(iommu->domain, IOMMU_CAP_INTR_REMAP)) {
++		printk(KERN_WARNING
++		       "%s: No interrupt remapping support.  Use the module param \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
++		       __func__);
++		iommu_domain_free(iommu->domain);
++		kfree(iommu);
++		return ERR_PTR(-EPERM);
++	}
++
++	return iommu;
++}
++
++static void vfio_iommu_type1_release(void *iommu_data)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	struct vfio_group *group, *group_tmp;
++	struct vfio_dma *dma, *dma_tmp;
++
++	list_for_each_entry_safe(group, group_tmp, &iommu->group_list, next) {
++		iommu_detach_group(iommu->domain, group->iommu_group);
++		list_del(&group->next);
++		kfree(group);
++	}
++
++	list_for_each_entry_safe(dma, dma_tmp, &iommu->dma_list, next) {
++		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
++		list_del(&dma->next);
++		kfree(dma);
++	}
++
++	iommu_domain_free(iommu->domain);
++	iommu->domain = NULL;
++	kfree(iommu);
++}
++
++static long vfio_iommu_type1_ioctl(void *iommu_data,
++				   unsigned int cmd, unsigned long arg)
++{
++	struct vfio_iommu *iommu = iommu_data;
++	unsigned long minsz;
++
++	if (cmd == VFIO_CHECK_EXTENSION) {
++		switch (arg) {
++		case VFIO_TYPE1_IOMMU:
++			return 1;
++		default:
++			return 0;
++		}
++	} else if (cmd == VFIO_IOMMU_GET_INFO) {
++		struct vfio_iommu_type1_info info;
++
++		minsz = offsetofend(struct vfio_iommu_type1_info, iova_pgsizes);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz)
++			return -EINVAL;
++
++		info.flags = 0;
++
++		info.iova_pgsizes = iommu->domain->ops->pgsize_bitmap;
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++
++	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
++		struct vfio_iommu_type1_dma_map map;
++		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
++				VFIO_DMA_MAP_FLAG_WRITE;
++
++		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
++
++		if (copy_from_user(&map, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (map.argsz < minsz || map.flags & ~mask)
++			return -EINVAL;
++
++		return vfio_dma_do_map(iommu, &map);
++
++	} else if (cmd == VFIO_IOMMU_UNMAP_DMA) {
++		struct vfio_iommu_type1_dma_unmap unmap;
++
++		minsz = offsetofend(struct vfio_iommu_type1_dma_unmap, size);
++
++		if (copy_from_user(&unmap, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (unmap.argsz < minsz || unmap.flags)
++			return -EINVAL;
++
++		return vfio_dma_do_unmap(iommu, &unmap);
++	}
++
++	return -ENOTTY;
++}
++
++const struct vfio_iommu_driver_ops vfio_iommu_driver_ops_type1 = {
++	.name		= "vfio-iommu-type1",
++	.owner		= THIS_MODULE,
++	.open		= vfio_iommu_type1_open,
++	.release	= vfio_iommu_type1_release,
++	.ioctl		= vfio_iommu_type1_ioctl,
++	.attach_group	= vfio_iommu_type1_attach_group,
++	.detach_group	= vfio_iommu_type1_detach_group,
++};
++
++static int __init vfio_iommu_type1_init(void)
++{
++	if (!iommu_present(&pci_bus_type))
++		return -ENODEV;
++
++	return vfio_register_iommu_driver(&vfio_iommu_driver_ops_type1);
++}
++
++static void __exit vfio_iommu_type1_cleanup(void)
++{
++	vfio_unregister_iommu_driver(&vfio_iommu_driver_ops_type1);
++}
++
++module_init(vfio_iommu_type1_init);
++module_exit(vfio_iommu_type1_cleanup);
 +
 +MODULE_VERSION(DRIVER_VERSION);
 +MODULE_LICENSE("GPL v2");
 +MODULE_AUTHOR(DRIVER_AUTHOR);
 +MODULE_DESCRIPTION(DRIVER_DESC);
 diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-new file mode 100644
-index 0000000..a586f6b
---- /dev/null
+index a586f6b..43c58b2 100644
+--- a/include/linux/vfio.h
 +++ b/include/linux/vfio.h
-@@ -0,0 +1,367 @@
-+/*
-+ * VFIO API definition
-+ *
-+ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
-+ *     Author: Alex Williamson <alex.williamson@redhat.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef VFIO_H
-+#define VFIO_H
-+
-+#include <linux/types.h>
-+#include <linux/ioctl.h>
-+
-+#define VFIO_API_VERSION	0
-+
-+#ifdef __KERNEL__	/* Internal VFIO-core/bus driver API */
-+
-+#include <linux/iommu.h>
-+#include <linux/mm.h>
+@@ -98,7 +98,7 @@ extern void vfio_unregister_iommu_driver(
+ 
+ /* Extensions */
+ 
+-/* None yet */
++#define VFIO_TYPE1_IOMMU		1
+ 
+ /*
+  * The IOCTL interface is designed for extensibility by embedding the
+@@ -364,4 +364,56 @@ struct vfio_irq_set {
+  */
+ #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
+ 
++/* -------- API for Type1 VFIO IOMMU -------- */
 +
 +/**
-+ * struct vfio_device_ops - VFIO bus driver device callbacks
++ * VFIO_IOMMU_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 12, struct vfio_iommu_info)
 + *
-+ * @open: Called when userspace creates new file descriptor for device
-+ * @release: Called when userspace releases file descriptor for device
-+ * @read: Perform read(2) on device file descriptor
-+ * @write: Perform write(2) on device file descriptor
-+ * @ioctl: Perform ioctl(2) on device file descriptor, supporting VFIO_DEVICE_*
-+ *         operations documented below
-+ * @mmap: Perform mmap(2) on a region of the device file descriptor
-+ */
-+struct vfio_device_ops {
-+	char	*name;
-+	int	(*open)(void *device_data);
-+	void	(*release)(void *device_data);
-+	ssize_t	(*read)(void *device_data, char __user *buf,
-+			size_t count, loff_t *ppos);
-+	ssize_t	(*write)(void *device_data, const char __user *buf,
-+			 size_t count, loff_t *size);
-+	long	(*ioctl)(void *device_data, unsigned int cmd,
-+			 unsigned long arg);
-+	int	(*mmap)(void *device_data, struct vm_area_struct *vma);
-+};
-+
-+extern int vfio_add_group_dev(struct device *dev,
-+			      const struct vfio_device_ops *ops,
-+			      void *device_data);
-+
-+extern void *vfio_del_group_dev(struct device *dev);
-+
-+/**
-+ * struct vfio_iommu_driver_ops - VFIO IOMMU driver callbacks
-+ */
-+struct vfio_iommu_driver_ops {
-+	char		*name;
-+	struct module	*owner;
-+	void		*(*open)(unsigned long arg);
-+	void		(*release)(void *iommu_data);
-+	ssize_t		(*read)(void *iommu_data, char __user *buf,
-+				size_t count, loff_t *ppos);
-+	ssize_t		(*write)(void *iommu_data, const char __user *buf,
-+				 size_t count, loff_t *size);
-+	long		(*ioctl)(void *iommu_data, unsigned int cmd,
-+				 unsigned long arg);
-+	int		(*mmap)(void *iommu_data, struct vm_area_struct *vma);
-+	int		(*attach_group)(void *iommu_data,
-+					struct iommu_group *group);
-+	void		(*detach_group)(void *iommu_data,
-+					struct iommu_group *group);
-+
-+};
-+
-+extern int vfio_register_iommu_driver(const struct vfio_iommu_driver_ops *ops);
-+
-+extern void vfio_unregister_iommu_driver(
-+				const struct vfio_iommu_driver_ops *ops);
-+
-+/**
-+ * offsetofend(TYPE, MEMBER)
++ * Retrieve information about the IOMMU object. Fills in provided
++ * struct vfio_iommu_info. Caller sets argsz.
 + *
-+ * @TYPE: The type of the structure
-+ * @MEMBER: The member within the structure to get the end offset of
-+ *
-+ * Simple helper macro for dealing with variable sized structures passed
-+ * from user space.  This allows us to easily determine if the provided
-+ * structure is sized to include various fields.
++ * XXX Should we do these by CHECK_EXTENSION too?
 + */
-+#define offsetofend(TYPE, MEMBER) ({				\
-+	TYPE tmp;						\
-+	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
-+
-+#endif /* __KERNEL__ */
-+
-+/* Kernel & User level defines for VFIO IOCTLs. */
-+
-+/* Extensions */
-+
-+/* None yet */
-+
-+/*
-+ * The IOCTL interface is designed for extensibility by embedding the
-+ * structure length (argsz) and flags into structures passed between
-+ * kernel and userspace.  We therefore use the _IO() macro for these
-+ * defines to avoid implicitly embedding a size into the ioctl request.
-+ * As structure fields are added, argsz will increase to match and flag
-+ * bits will be defined to indicate additional fields with valid data.
-+ * It's *always* the caller's responsibility to indicate the size of
-+ * the structure passed by setting argsz appropriately.
-+ */
-+
-+#define VFIO_TYPE	(';')
-+#define VFIO_BASE	100
-+
-+/* -------- IOCTLs for VFIO file descriptor (/dev/vfio/vfio) -------- */
-+
-+/**
-+ * VFIO_GET_API_VERSION - _IO(VFIO_TYPE, VFIO_BASE + 0)
-+ *
-+ * Report the version of the VFIO API.  This allows us to bump the entire
-+ * API version should we later need to add or change features in incompatible
-+ * ways.
-+ * Return: VFIO_API_VERSION
-+ * Availability: Always
-+ */
-+#define VFIO_GET_API_VERSION		_IO(VFIO_TYPE, VFIO_BASE + 0)
-+
-+/**
-+ * VFIO_CHECK_EXTENSION - _IOW(VFIO_TYPE, VFIO_BASE + 1, __s32)
-+ *
-+ * Check whether an extension is supported.
-+ * Return: 0 if not supported, 1 (or some other positive integer) if supported.
-+ * Availability: Always
-+ */
-+#define VFIO_CHECK_EXTENSION		_IO(VFIO_TYPE, VFIO_BASE + 1)
-+
-+/**
-+ * VFIO_SET_IOMMU - _IOW(VFIO_TYPE, VFIO_BASE + 2, __s32)
-+ *
-+ * Set the iommu to the given type.  The type must be supported by an
-+ * iommu driver as verified by calling CHECK_EXTENSION using the same
-+ * type.  A group must be set to this file descriptor before this
-+ * ioctl is available.  The IOMMU interfaces enabled by this call are
-+ * specific to the value set.
-+ * Return: 0 on success, -errno on failure
-+ * Availability: When VFIO group attached
-+ */
-+#define VFIO_SET_IOMMU			_IO(VFIO_TYPE, VFIO_BASE + 2)
-+
-+/* -------- IOCTLs for GROUP file descriptors (/dev/vfio/$GROUP) -------- */
-+
-+/**
-+ * VFIO_GROUP_GET_STATUS - _IOR(VFIO_TYPE, VFIO_BASE + 3,
-+ *						struct vfio_group_status)
-+ *
-+ * Retrieve information about the group.  Fills in provided
-+ * struct vfio_group_info.  Caller sets argsz.
-+ * Return: 0 on succes, -errno on failure.
-+ * Availability: Always
-+ */
-+struct vfio_group_status {
++struct vfio_iommu_type1_info {
 +	__u32	argsz;
 +	__u32	flags;
-+#define VFIO_GROUP_FLAGS_VIABLE		(1 << 0)
-+#define VFIO_GROUP_FLAGS_CONTAINER_SET	(1 << 1)
++#define VFIO_IOMMU_INFO_PGSIZES (1 << 0)	/* supported page sizes info */
++	__u64	iova_pgsizes;		/* Bitmap of supported page sizes */
 +};
-+#define VFIO_GROUP_GET_STATUS		_IO(VFIO_TYPE, VFIO_BASE + 3)
++
++#define VFIO_IOMMU_GET_INFO _IO(VFIO_TYPE, VFIO_BASE + 12)
 +
 +/**
-+ * VFIO_GROUP_SET_CONTAINER - _IOW(VFIO_TYPE, VFIO_BASE + 4, __s32)
++ * VFIO_IOMMU_MAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 13, struct vfio_dma_map)
 + *
-+ * Set the container for the VFIO group to the open VFIO file
-+ * descriptor provided.  Groups may only belong to a single
-+ * container.  Containers may, at their discretion, support multiple
-+ * groups.  Only when a container is set are all of the interfaces
-+ * of the VFIO file descriptor and the VFIO group file descriptor
-+ * available to the user.
-+ * Return: 0 on success, -errno on failure.
-+ * Availability: Always
++ * Map process virtual addresses to IO virtual addresses using the
++ * provided struct vfio_dma_map. Caller sets argsz. READ &/ WRITE required.
 + */
-+#define VFIO_GROUP_SET_CONTAINER	_IO(VFIO_TYPE, VFIO_BASE + 4)
-+
-+/**
-+ * VFIO_GROUP_UNSET_CONTAINER - _IO(VFIO_TYPE, VFIO_BASE + 5)
-+ *
-+ * Remove the group from the attached container.  This is the
-+ * opposite of the SET_CONTAINER call and returns the group to
-+ * an initial state.  All device file descriptors must be released
-+ * prior to calling this interface.  When removing the last group
-+ * from a container, the IOMMU will be disabled and all state lost,
-+ * effectively also returning the VFIO file descriptor to an initial
-+ * state.
-+ * Return: 0 on success, -errno on failure.
-+ * Availability: When attached to container
-+ */
-+#define VFIO_GROUP_UNSET_CONTAINER	_IO(VFIO_TYPE, VFIO_BASE + 5)
-+
-+/**
-+ * VFIO_GROUP_GET_DEVICE_FD - _IOW(VFIO_TYPE, VFIO_BASE + 6, char)
-+ *
-+ * Return a new file descriptor for the device object described by
-+ * the provided string.  The string should match a device listed in
-+ * the devices subdirectory of the IOMMU group sysfs entry.  The
-+ * group containing the device must already be added to this context.
-+ * Return: new file descriptor on success, -errno on failure.
-+ * Availability: When attached to container
-+ */
-+#define VFIO_GROUP_GET_DEVICE_FD	_IO(VFIO_TYPE, VFIO_BASE + 6)
-+
-+/* --------------- IOCTLs for DEVICE file descriptors --------------- */
-+
-+/**
-+ * VFIO_DEVICE_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 7,
-+ *						struct vfio_device_info)
-+ *
-+ * Retrieve information about the device.  Fills in provided
-+ * struct vfio_device_info.  Caller sets argsz.
-+ * Return: 0 on success, -errno on failure.
-+ */
-+struct vfio_device_info {
++struct vfio_iommu_type1_dma_map {
 +	__u32	argsz;
 +	__u32	flags;
-+#define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
-+	__u32	num_regions;	/* Max region index + 1 */
-+	__u32	num_irqs;	/* Max IRQ index + 1 */
++#define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
++#define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
++	__u64	vaddr;				/* Process virtual address */
++	__u64	iova;				/* IO virtual address */
++	__u64	size;				/* Size of mapping (bytes) */
 +};
-+#define VFIO_DEVICE_GET_INFO		_IO(VFIO_TYPE, VFIO_BASE + 7)
++
++#define VFIO_IOMMU_MAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 13)
 +
 +/**
-+ * VFIO_DEVICE_GET_REGION_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 8,
-+ *				       struct vfio_region_info)
++ * VFIO_IOMMU_UNMAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 14, struct vfio_dma_unmap)
 + *
-+ * Retrieve information about a device region.  Caller provides
-+ * struct vfio_region_info with index value set.  Caller sets argsz.
-+ * Implementation of region mapping is bus driver specific.  This is
-+ * intended to describe MMIO, I/O port, as well as bus specific
-+ * regions (ex. PCI config space).  Zero sized regions may be used
-+ * to describe unimplemented regions (ex. unimplemented PCI BARs).
-+ * Return: 0 on success, -errno on failure.
++ * Unmap IO virtual addresses using the provided struct vfio_dma_unmap.
++ * Caller sets argsz.
 + */
-+struct vfio_region_info {
++struct vfio_iommu_type1_dma_unmap {
 +	__u32	argsz;
 +	__u32	flags;
-+#define VFIO_REGION_INFO_FLAG_READ	(1 << 0) /* Region supports read */
-+#define VFIO_REGION_INFO_FLAG_WRITE	(1 << 1) /* Region supports write */
-+#define VFIO_REGION_INFO_FLAG_MMAP	(1 << 2) /* Region supports mmap */
-+	__u32	index;		/* Region index */
-+	__u32	resv;		/* Reserved for alignment */
-+	__u64	size;		/* Region size (bytes) */
-+	__u64	offset;		/* Region offset from start of device fd */
++	__u64	iova;				/* IO virtual address */
++	__u64	size;				/* Size of mapping (bytes) */
 +};
-+#define VFIO_DEVICE_GET_REGION_INFO	_IO(VFIO_TYPE, VFIO_BASE + 8)
 +
-+/**
-+ * VFIO_DEVICE_GET_IRQ_INFO - _IOWR(VFIO_TYPE, VFIO_BASE + 9,
-+ *				    struct vfio_irq_info)
-+ *
-+ * Retrieve information about a device IRQ.  Caller provides
-+ * struct vfio_irq_info with index value set.  Caller sets argsz.
-+ * Implementation of IRQ mapping is bus driver specific.  Indexes
-+ * using multiple IRQs are primarily intended to support MSI-like
-+ * interrupt blocks.  Zero count irq blocks may be used to describe
-+ * unimplemented interrupt types.
-+ *
-+ * The EVENTFD flag indicates the interrupt index supports eventfd based
-+ * signaling.
-+ *
-+ * The MASKABLE flags indicates the index supports MASK and UNMASK
-+ * actions described below.
-+ *
-+ * AUTOMASKED indicates that after signaling, the interrupt line is
-+ * automatically masked by VFIO and the user needs to unmask the line
-+ * to receive new interrupts.  This is primarily intended to distinguish
-+ * level triggered interrupts.
-+ *
-+ * The NORESIZE flag indicates that the interrupt lines within the index
-+ * are setup as a set and new subindexes cannot be enabled without first
-+ * disabling the entire index.  This is used for interrupts like PCI MSI
-+ * and MSI-X where the driver may only use a subset of the available
-+ * indexes, but VFIO needs to enable a specific number of vectors
-+ * upfront.  In the case of MSI-X, where the user can enable MSI-X and
-+ * then add and unmask vectors, it's up to userspace to make the decision
-+ * whether to allocate the maximum supported number of vectors or tear
-+ * down setup and incrementally increase the vectors as each is enabled.
-+ */
-+struct vfio_irq_info {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_IRQ_INFO_EVENTFD		(1 << 0)
-+#define VFIO_IRQ_INFO_MASKABLE		(1 << 1)
-+#define VFIO_IRQ_INFO_AUTOMASKED	(1 << 2)
-+#define VFIO_IRQ_INFO_NORESIZE		(1 << 3)
-+	__u32	index;		/* IRQ index */
-+	__s32	count;		/* Number of IRQs within this index */
-+};
-+#define VFIO_DEVICE_GET_IRQ_INFO	_IO(VFIO_TYPE, VFIO_BASE + 9)
++#define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
 +
-+/**
-+ * VFIO_DEVICE_SET_IRQS - _IOW(VFIO_TYPE, VFIO_BASE + 10, struct vfio_irq_set)
-+ *
-+ * Set signaling, masking, and unmasking of interrupts.  Caller provides
-+ * struct vfio_irq_set with all fields set.  'start' and 'count' indicate
-+ * the range of subindexes being specified.
-+ *
-+ * The DATA flags specify the type of data provided.  If DATA_NONE, the
-+ * operation performs the specified action immediately on the specified
-+ * interrupt(s).  For example, to unmask AUTOMASKED interrupt [0,0]:
-+ * flags = (DATA_NONE|ACTION_UNMASK), index = 0, start = 0, count = 1.
-+ *
-+ * DATA_BOOL allows sparse support for the same on arrays of interrupts.
-+ * For example, to mask interrupts [0,1] and [0,3] (but not [0,2]):
-+ * flags = (DATA_BOOL|ACTION_MASK), index = 0, start = 1, count = 3,
-+ * data = {1,0,1}
-+ *
-+ * DATA_EVENTFD binds the specified ACTION to the provided __s32 eventfd.
-+ * A value of -1 can be used to either de-assign interrupts if already
-+ * assigned or skip un-assigned interrupts.  For example, to set an eventfd
-+ * to be trigger for interrupts [0,0] and [0,2]:
-+ * flags = (DATA_EVENTFD|ACTION_TRIGGER), index = 0, start = 0, count = 3,
-+ * data = {fd1, -1, fd2}
-+ * If index [0,1] is previously set, two count = 1 ioctls calls would be
-+ * required to set [0,0] and [0,2] without changing [0,1].
-+ *
-+ * Once a signaling mechanism is set, DATA_BOOL or DATA_NONE can be used
-+ * with ACTION_TRIGGER to perform kernel level interrupt loopback testing
-+ * from userspace (ie. simulate hardware triggering).
-+ *
-+ * Setting of an event triggering mechanism to userspace for ACTION_TRIGGER
-+ * enables the interrupt index for the device.  Individual subindex interrupts
-+ * can be disabled using the -1 value for DATA_EVENTFD or the index can be
-+ * disabled as a whole with: flags = (DATA_NONE|ACTION_TRIGGER), count = 0.
-+ *
-+ * Note that ACTION_[UN]MASK specify user->kernel signaling (irqfds) while
-+ * ACTION_TRIGGER specifies kernel->user signaling.
-+ */
-+struct vfio_irq_set {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_IRQ_SET_DATA_NONE		(1 << 0) /* Data not present */
-+#define VFIO_IRQ_SET_DATA_BOOL		(1 << 1) /* Data is bool (u8) */
-+#define VFIO_IRQ_SET_DATA_EVENTFD	(1 << 2) /* Data is eventfd (s32) */
-+#define VFIO_IRQ_SET_ACTION_MASK	(1 << 3) /* Mask interrupt */
-+#define VFIO_IRQ_SET_ACTION_UNMASK	(1 << 4) /* Unmask interrupt */
-+#define VFIO_IRQ_SET_ACTION_TRIGGER	(1 << 5) /* Trigger interrupt */
-+	__u32	index;
-+	__s32	start;
-+	__s32	count;
-+	__u8	data[];
-+};
-+#define VFIO_DEVICE_SET_IRQS		_IO(VFIO_TYPE, VFIO_BASE + 10)
-+
-+#define VFIO_IRQ_SET_DATA_TYPE_MASK	(VFIO_IRQ_SET_DATA_NONE | \
-+					 VFIO_IRQ_SET_DATA_BOOL | \
-+					 VFIO_IRQ_SET_DATA_EVENTFD)
-+#define VFIO_IRQ_SET_ACTION_TYPE_MASK	(VFIO_IRQ_SET_ACTION_MASK | \
-+					 VFIO_IRQ_SET_ACTION_UNMASK | \
-+					 VFIO_IRQ_SET_ACTION_TRIGGER)
-+/**
-+ * VFIO_DEVICE_RESET - _IO(VFIO_TYPE, VFIO_BASE + 11)
-+ *
-+ * Reset a device.
-+ */
-+#define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
-+
-+#endif /* VFIO_H */
+ #endif /* VFIO_H */
 
