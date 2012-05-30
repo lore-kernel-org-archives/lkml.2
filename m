@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab2E3MAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:00:00 -0400
-Received: from fold.natur.cuni.cz ([195.113.57.32]:37240 "HELO
-	fold.natur.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752573Ab2E3L77 (ORCPT
+	id S1753265Ab2E3MJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:09:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61791 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab2E3MJA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:59:59 -0400
-Message-ID: <4FC60BBC.203@fold.natur.cuni.cz>
-Date: Wed, 30 May 2012 13:59:56 +0200
-From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120517 Firefox/12.0 SeaMonkey/2.9.1
+	Wed, 30 May 2012 08:09:00 -0400
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
- val:-59
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz> <4FC606E7.4090701@openvz.org>
-In-Reply-To: <4FC606E7.4090701@openvz.org>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FC5F866.6030708@samsung.com>
+References: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
+	<CAKew6eXsf5UKe4t5m3MAuU1OUSZcUPBoSRUCjyR-gKRmDC8MOw@mail.gmail.com>
+	<4FC43018.9040702@samsung.com>
+	<CAKew6eXq-5vCDgncYYPKUdKE2CNyqDErKUUdPbWeYe0uurpQ-w@mail.gmail.com>
+	<4FC5F866.6030708@samsung.com>
+Date: Wed, 30 May 2012 17:38:59 +0530
+Message-ID: <CAKew6eVjUCSkX=JRtYV2mRQ8hy4J1SSsvNn+p=MQcTD51J__sQ@mail.gmail.com>
+Subject: Re: [PATCH v4] regulator: MAX77686: Add Maxim 77686 regulator driver
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: jonghwa3.lee@samsung.com
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jonghwa,
 
+On Wed, May 30, 2012 at 4:07 PM,  <jonghwa3.lee@samsung.com> wrote:
+> Hi Yadwinder,
+>
+> I'm sorry for late reply. I understand the problem you pointed out, but
+> i don't agree with you all.
 
-Konstantin Khlebnikov wrote:
-> Martin Mokrejs wrote:
->> Andrew Morton wrote:
->>> On Wed, 30 May 2012 00:18:31 +0400
->>> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->>>
->>>> Oleg Nesterov wrote:
->>>>> On 05/22, Andrew Morton wrote:
->>>>>>
->>>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
->>>>>> happiness is important.  Has he cheered up yet?
->>>>>
->>>>> Well, yes, I do not really like this patch ;) Because I think there is
->>>>> a more simple/straightforward fix, see below. In my opinion it also
->>>>> makes the original code simpler.
->>>>>
->>>>> But. Obviously this is subjective, I can't prove my patch is "better",
->>>>> and I didn't try to test it.
->>>>>
->>>>> So I won't argue with Konstantin who dislikes my patch, although I
->>>>> would like to know the reason.
+Sorry,I think you didn't get my points. Lets forget my code and talk
+about this code now.
+
+>>>>> +
+>>>>> +       for (i = 0; i < MAX77686_REGULATORS; i++) {
+>>>>> +               if (pdata)
+>>>>> +                       init_data[pdata->regulators[i].id] =
+>>>>> +                                                pdata->regulators[i].initdata;
+
+In case we have a list of 5 regulators only in pdata, than what will
+happen here when i > 5 ???
+
 >>>>
->>>> I don't remember why I dislike your patch.
->>>> For now I can only say ACK )
+>>>> I  think we can directly use  pdata->regulators[i].initdata instead of
+>>>> init_data[i].
+>>>> In case if pdata is not their we can use same instance of
+>>>> init_data(default)  for all regulators.
+>>>>
 >>>
->>> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
->>> that it was tested would be nice ;)
+>>>
+>>> This if for some situation that pdata's initdata doensn't line up. When
+
+>>>>> +               config.init_data = init_data[i];
+>>>>> +               rdev[i] = regulator_register(&regulators[i], &config);
+
+In case pdata->regulators[0] is not the first regulator(i.e id > 0), then
+will it get proper initdata for regulators[0] before registering ????
+
 >>
->> I will reboot in few hours, finally after few days ... I am running this first
->> patch. I will try to test the second/alternative patch more quickly. Sorry for
->> the delay.
+>> Ok, but I think this not right place for sorting (sorting is not taking
+>> place.) You have to sort it before entering in loop for registering
+>> regulators.
 >>
-> 
-> easiest way trigger this bug:
-> 
-> #define _GNU_SOURCE
-> #include <unistd.h>
-> #include <sched.h>
-> #include <sys/syscall.h>
-> #include <sys/mman.h>
-> 
-> static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
-> {
->     return syscall(SYS_clone, flags, stack, ptid, ctid);
-> }
-> 
-> int main(int argc, char **argv)
-> {
->     void *page;
-> 
->     page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
->     sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
-> }
-> 
+>>> user sets only initdata considered it being used, there may be
+>>> regulators not having initdata, also its order is not clear. So for
+>>
+>> Ok, I think this is a bug in present driver also, because
+>> without checking pdata->num_regulators, you are running in
+>> loop  for (i = 0; i < MAX77686_REGULATORS; i++)
+>> where MAX77686_REGULATORS should be equal to
+>> pdata->num_regulators for this driver to work fine.
+>>
+>
+>
+> I think we have same variable num_regulators but use differently. In my
+> code, it represents number of regulators to be used actually, but in
+> your code it equals to total number of regulators. Since it has
 
-I am getting segfaults with this.
+not exactly.
 
-(gdb) where
-#0  0x0000000000000000 in ?? ()
-#1  0x00007f430f70a7e0 in __elf_set___libc_subfreeres_element_free_mem__ () from /lib64/libc.so.6
-#2  0x00007f430f70a7e8 in __elf_set___libc_atexit_element__IO_cleanup__ () from /lib64/libc.so.6
-#3  0x0000000000000001 in ?? ()
-#4  0x0000000000000000 in ?? ()
-(gdb)
+> different meaning, it doesn't have to same with MAX77686_REGULATORS.
+> MAX77686_REGULATORS is macro which indicates total number of regulators
+> in max77686, and it equals to ARRAY_SIZE(regulators). Even if they are
+> not same, it's not a bug because we want to register all regulators
+> whether it will be used or not.
+>
+>
+>> If we consider a case pdata->num_regulators is
+>> equal to MAX77686_REGULATORS and initdata is
+>> not their(i.e. NULL) than I think it will initialise
+>> init_data[pdata->regulators[i].id to NULL, which again will be a bug.
+>>
+>>> those state, i think just using temporary array which satisfies
+>>> regulator's id order is fine while it can't use pdata's initdata directly.
+>>>
+>>
+>> If I am not wrong, I think we can also sort pdata's initdata also using
+>> kernel's sort api and use one instance of (default)initdata for
+>> all unused or uninitialized regulators in platform file.
+>>
+>
+>
+> If init_data references to NULL, it will be ignored while
+> register_regulators() does initialize. Thus it doesn't make any problem.
+>
+> I'm afraid of using Kernel's sort API because of its overhead. Do you
 
-What number should I give it as an argument? ;-)
+I don't think it's overhead will matter more than that of allocating a
+new array and than
+sorting it here.
 
-Martin
+> think it will be better to use them? If you mind that init_data has been
+> dynamic allocated, it can be modified to a static pointer array.
+>
+
+No, their is no problem with dynamic.
+Anyways, I had just suggested you to use pdata->regulators[i].initdata.
+
+ Regards,
+ Yadwinder.
