@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab2E3Als (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 20:41:48 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:32940 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab2E3Alr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 20:41:47 -0400
-Date: Tue, 29 May 2012 20:40:40 -0400 (EDT)
-Message-Id: <20120529.204040.644013889059321702.davem@davemloft.net>
-To: eldad@fogrefinery.com
-Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 8021q/vlan: process NETDEV_GOING_DOWN
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1338330635-27259-1-git-send-email-eldad@fogrefinery.com>
-References: <1338330635-27259-1-git-send-email-eldad@fogrefinery.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	id S1756100Ab2E3AxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 20:53:25 -0400
+Received: from plane.gmane.org ([80.91.229.3]:37029 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754287Ab2E3AxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 20:53:24 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: walt <w41ter@gmail.com>
+Subject: Re: [PATCH v2] scsi: fix async probe regression
+Date: Tue, 29 May 2012 17:53:02 -0700
+Message-ID: <jq3r1h$p37$1@dough.gmane.org>
+References: <20120525175140.22423.21697.stgit@dwillia2-linux.jf.intel.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 May 2012 17:40:42 -0700 (PDT)
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: adsl-69-234-185-244.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120420 Thunderbird/12.0
+In-Reply-To: <20120525175140.22423.21697.stgit@dwillia2-linux.jf.intel.com>
+Cc: linux-scsi@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eldad Zack <eldad@fogrefinery.com>
-Date: Wed, 30 May 2012 00:30:35 +0200
+On 05/25/2012 10:55 AM, Dan Williams wrote:
+> Commit a7a20d1 "[SCSI] sd: limit the scope of the async probe domain"
+> moved sd probe work out of reach of wait_for_device_probe().  Allow it
+> to be synced via scsi_complete_async_scans().
 
-> In the current flow, when you take down a physical device that has
-> VLANs configured on it, the NETDEV_GOING_DOWN notification will be
-> sent too late, i.e., no data can be sent to the wire anymore.
+Hi Dan.  After applying version 2 of a7a20d1 I can boot again, but there's
+a catch :)
 
-Why do you need to send data?  Any queued up data should be purged not
-sent.
+My grub.cfg boot menu entry uses the root=PARTUUID=<guid> syntax, but that
+has stopped working.  After a7a20d1(v2) I have to use root=/dev/sda5 or I
+get the familiar "can't find block device (foo,bar)" kernel panic.
+
+Any idea what would cause that particular kind of breakage?
+
+Thanks!
+
