@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757212Ab2E3SuJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:50:09 -0400
-Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:42381 "HELO
-	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753221Ab2E3SuI (ORCPT
+	id S1756068Ab2E3Sxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:53:39 -0400
+Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:48761 "EHLO
+	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab2E3Sxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:50:08 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: cp4WlZQVM1kWzb5.ImH3s1p9.yfFbeYWfFpUIDm5t9AlhA_
- UQ.pbWjuQNE94zDPMmmyYXMJ1cnMDlO0bYsFLaz7M1DEcWZoZKpgaSmdfujk
- ICeHYz_3wLSTDdX5AP4kTtmUH6A8nxaZq1CYU5k_Rrigqtku_R2GdUvJFwaG
- H7tgWeQNV7c_8leeFY60TCsXWHsDgRhSNVVYCz6xjz7.JMaao1jdOtYMRh1R
- Jj8CzcHPLa7.E9oqExbwmE4ZFPkA7XSI_MLIhsn_maBNdMtcpCcTgykJ_Xfp
- b7nIruuVo.q9BnKmW2L_KHc0lrfzBkdh_r5a_8tWHhaTLQLHHBdU5A.6wCD4
- TR1nbL3cwfB.eH6YDRjJdWxsFUQQNOCs1Pkee3jO4q_vSL2hVXC.KtyQiKSh
- e
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 30 May 2012 13:50:02 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
+	Wed, 30 May 2012 14:53:37 -0400
+Message-ID: <20120530215333.32995tjzj9dr4jwo@www.81.fi>
+Date: Wed, 30 May 2012 21:53:33 +0300
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 To: Andi Kleen <andi@firstfloor.org>
-cc: Linus Torvalds <torvalds@linux-foundation.org>, kosaki.motohiro@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
-        sivanich@sgi.com, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
-In-Reply-To: <20120530184638.GU27374@one.firstfloor.org>
-Message-ID: <alpine.DEB.2.00.1205301349230.31768@router.home>
-References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com> <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Cc: Johannes Goetzfried 
+	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Tilo =?iso-8859-1?b?TfxsbGVy?= 
+	<Tilo.Mueller@informatik.uni-erlangen.de>
+Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler
+ implementation
+References: <20120527145112.GF17705@kronos.redsun>
+ <m2396il7xc.fsf@firstfloor.org> <20120530103025.19252e1urui8sfb4@www.81.fi>
+ <20120530113235.GO17705@kronos.redsun>
+ <20120530153949.GS27374@one.firstfloor.org>
+In-Reply-To: <20120530153949.GS27374@one.firstfloor.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 May 2012, Andi Kleen wrote:
+Quoting Andi Kleen <andi@firstfloor.org>:
 
-> I always regretted that cpusets were no done with custom node lists.
-> That would have been much cleaner and also likely faster than what we have.
+>> I agree with that. Currently when I boot my PC with a new 3.4 kernel all the
+>> ciphers from the intel-aesni module get loaded whether I need them  
+>> or not. As
+>> Jussi stated most people using distros probably won't need the
+>> serpent-avx-x86_64 module get loaded automatically, so it's  
+>> probably better to
+>> leave it that way.
+>
+> That means you got a 50% chance to use the wrong serpent.
+>
+> This was a continuous problem with AESNI and the accelerated CRC,
+> that is why the cpuid probing was implemented.
+>
+> Without some form of auto probing you may as well not bother with
+> the optimization.
+>
+> -Andi
 
-Could shared memory policies ignore cpuset constraints?
+Hm.. should not the i586/x86_64 assembler implementations of AES etc  
+be autoloaded then too?
+
+-Jussi
+
+>
+> --
+> ak@linux.intel.com -- Speaking for myself only.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-crypto" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+
+
+
