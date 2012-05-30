@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab2E3Le6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:34:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6059 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2E3Le4 (ORCPT
+	id S1753100Ab2E3Lfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:35:46 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:62086 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab2E3Lfp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:34:56 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=75BMjhiLndgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lcdBw6rLHvJ_5wa56_AA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338377694.13348.304.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH -tip 2/9] ftrace/x86-64: support SAVE_REGS feature
- on x86-64
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Wed, 30 May 2012 07:34:54 -0400
-In-Reply-To: <4FC5C09C.6030703@hitachi.com>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-	  <20120529124905.9191.91563.stgit@localhost.localdomain>
-	 <1338332727.13348.301.camel@gandalf.stny.rr.com>
-	 <4FC5C09C.6030703@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 30 May 2012 07:35:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338371317-5980-6-git-send-email-glommer@parallels.com>
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com> <1338371317-5980-6-git-send-email-glommer@parallels.com>
+From: Paul Turner <pjt@google.com>
+Date: Wed, 30 May 2012 04:35:13 -0700
+Message-ID: <CAPM31R+VXsffUOSOtMPG=g+G9OdzWMKQvx9usTFa3KBbrqPe6A@mail.gmail.com>
+Subject: Re: [PATCH v3 5/6] Also record sleep start for a task group
+To: Glauber Costa <glommer@parallels.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, handai.szj@gmail.com,
+        Andrew.Phillips@lmax.com, Serge Hallyn <serge.hallyn@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 15:39 +0900, Masami Hiramatsu wrote:
+On Wed, May 30, 2012 at 2:48 AM, Glauber Costa <glommer@parallels.com> wrote:
+> When we're dealing with a task group, instead of a task, also record
+> the start of its sleep time. Since the test agains TASK_UNINTERRUPTIBLE
+> does not really make sense and lack an obvious analogous, we always
+> record it as sleep_start, never block_start.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Paul Turner <pjt@google.com>
+> ---
+>  kernel/sched/fair.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c26fe38..d932559 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1182,7 +1182,8 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>                                se->statistics.sleep_start = rq_of(cfs_rq)->clock;
+>                        if (tsk->state & TASK_UNINTERRUPTIBLE)
+>                                se->statistics.block_start = rq_of(cfs_rq)->clock;
+> -               }
+> +               } else
+> +                       se->statistics.sleep_start = rq_of(cfs_rq)->clock;
 
-> BTW, that code which dynamically selects trace_caller on your
-> ftrace-v2 tree, seems to be an uncompleted work. Would you
-> already have done it?
+You can't sanely account sleep on a group entity.
 
-I'll have to see where I left off. I'm a bit ADHD when it comes to some
-of my projects. I work on them for a bit, then the next day I'll go work
-on something else. Eventually all my projects get done (well, I like to
-think they do ;-)
+Suppose you have 2 sleepers on 1 cpu: you account 1s/s of idle
+Suppose you have 2 sleepers now on 2 cpus: you account 2s/s of idle
 
-I'm currently working on a nasty bug that's in mainline when you enable
-both LOCKDEP and FUNCTION_TRACING. I've been at it since Thursday (even
-worked a bit over the US holiday here). I'm hoping I have a working
-solution for it today. But I can't work on anything else till this is
-complete.
+Furthermore, in the latter case when one wakes up you still continue
+to accrue sleep time whereas in the former you don't.
 
-After I get this bug fixed, I can take a look at the multi select code I
-have.
+Just don't report/collect this.
 
-Thanks,
-
--- Steve
-
-
+>  #endif
+>        }
+>
+> --
+> 1.7.10.2
+>
