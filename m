@@ -1,139 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab2E3OkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:40:17 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:41707 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756873Ab2E3OkH (ORCPT
+	id S1756995Ab2E3OlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:41:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:16804 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752531Ab2E3OlE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:40:07 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH -V7 13/14] hugetlb: migrate hugetlb cgroup info from oldpage to new page during migration
-Date: Wed, 30 May 2012 20:08:58 +0530
-Message-Id: <1338388739-22919-14-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-x-cbid: 12053014-4790-0000-0000-000003025D4F
+	Wed, 30 May 2012 10:41:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105870046"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
+Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
+Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
+Thread-Index: AQHNPnI5hfGWqZHickegym0+xqgRxQ==
+Date: Wed, 30 May 2012 14:40:56 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FC0C8@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351EC9B0@SHSMSX101.ccr.corp.intel.com>
+ <20120524103023.GA27063@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
+ <20120524184947.GA28338@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
+ <20120525180102.GA27280@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
+ <20120529133858.GD29157@aftab.osrc.amd.com>
+ <DE8DF0795D48FD4CA783C40EC82923351F94AA@SHSMSX101.ccr.corp.intel.com>
+ <20120529170604.GJ29157@aftab.osrc.amd.com>
+In-Reply-To: <20120529170604.GJ29157@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Borislav Petkov wrote:
+> On Tue, May 29, 2012 at 04:40:19PM +0000, Liu, Jinsong wrote:
+>> From calltrace seems it's related to device_initcall. Borislav, would
+>> you please send me your .config? I can try to reproduce it and debug
+>> it.
+> 
+> Attached. It is xen-less :).
+> 
+>> (BTW, your kernel pull from
+>> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git? I
+>> want to keep same baseline with you)
+> 
+> Actually, it is
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+> 
+> but it should be the same thing (symlinked or so).
+> 
+> Head is v3.4-8261-ga01ee165a132.
+> 
+>> Attached is the .config at my environment which boot linux3.4.0-rc1+
+>> as dom0 at Xen platform. Under this environment & config it's OK.
+> 
+> Why does it say "linux3.4.0-rc1+"? This is old. Or do you mean 3.4 +
+> patches? See head commit id above.
+> 
+> And you need to test baremetal too with your patch, not only as a dom0
+> kernel.
+> 
+> Thanks.
 
-With HugeTLB pages, hugetlb cgroup is uncharged in compound page destructor.  Since
-we are holding a hugepage reference, we can be sure that old page won't
-get uncharged till the last put_page().  On successful migrate, we can
-move the memcg information to new page's page_cgroup and mark the old
-page's page_cgroup unused.
+I pulled latest kernel and patched my patch, but cannot reproduce the bug (it works OK under both baremetal and xen platform).
+Anyway, it's not important now, I have found root cause, the patch will only affect amd mce logic, I will explain in next email.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
----
- include/linux/hugetlb_cgroup.h |    8 ++++++++
- mm/hugetlb_cgroup.c            |   30 ++++++++++++++++++++++++++++++
- mm/migrate.c                   |    5 +++++
- 3 files changed, 43 insertions(+)
-
-diff --git a/include/linux/hugetlb_cgroup.h b/include/linux/hugetlb_cgroup.h
-index fbf8c5f..387cbd6 100644
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -43,6 +43,8 @@ extern void hugetlb_cgroup_uncharge_page(int idx, unsigned long nr_pages,
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
- extern int hugetlb_cgroup_file_init(int idx) __init;
-+extern void hugetlb_cgroup_migrate(struct page *oldhpage,
-+				   struct page *newhpage);
- #else
- static inline bool hugetlb_cgroup_disabled(void)
- {
-@@ -81,5 +83,11 @@ static inline int __init hugetlb_cgroup_file_init(int idx)
- {
- 	return 0;
- }
-+
-+static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
-+					  struct page *newhpage)
-+{
-+	return;
-+}
- #endif  /* CONFIG_MEM_RES_CTLR_HUGETLB */
- #endif
-diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-index 49a3f20..f99007b 100644
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -401,6 +401,36 @@ int __init hugetlb_cgroup_file_init(int idx)
- 	return 0;
- }
- 
-+void hugetlb_cgroup_migrate(struct page *oldhpage, struct page *newhpage)
-+{
-+	struct cgroup *cg;
-+	struct page_cgroup *pc;
-+	struct hugetlb_cgroup *h_cg;
-+
-+	VM_BUG_ON(!PageHuge(oldhpage));
-+
-+	if (hugetlb_cgroup_disabled())
-+		return;
-+
-+	pc = lookup_page_cgroup(oldhpage);
-+	lock_page_cgroup(pc);
-+	cg = pc->cgroup;
-+	h_cg = hugetlb_cgroup_from_cgroup(cg);
-+	pc->cgroup = root_h_cgroup->css.cgroup;
-+	ClearPageCgroupUsed(pc);
-+	cgroup_exclude_rmdir(&h_cg->css);
-+	unlock_page_cgroup(pc);
-+
-+	/* move the h_cg details to new cgroup */
-+	pc = lookup_page_cgroup(newhpage);
-+	lock_page_cgroup(pc);
-+	pc->cgroup = cg;
-+	SetPageCgroupUsed(pc);
-+	unlock_page_cgroup(pc);
-+	cgroup_release_and_wakeup_rmdir(&h_cg->css);
-+	return;
-+}
-+
- struct cgroup_subsys hugetlb_subsys = {
- 	.name = "hugetlb",
- 	.create     = hugetlb_cgroup_create,
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 927254c..22f414f 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -33,6 +33,7 @@
- #include <linux/memcontrol.h>
- #include <linux/syscalls.h>
- #include <linux/hugetlb.h>
-+#include <linux/hugetlb_cgroup.h>
- #include <linux/gfp.h>
- 
- #include <asm/tlbflush.h>
-@@ -928,6 +929,10 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
- 
- 	if (anon_vma)
- 		put_anon_vma(anon_vma);
-+
-+	if (!rc)
-+		hugetlb_cgroup_migrate(hpage, new_hpage);
-+
- 	unlock_page(hpage);
- out:
- 	put_page(new_hpage);
--- 
-1.7.10
-
+Thanks,
+Jinsong
