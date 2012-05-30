@@ -1,324 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2E3Uvm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:51:42 -0400
-Received: from mail-gh0-f180.google.com ([209.85.160.180]:59806 "EHLO
-	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab2E3Uvk (ORCPT
+	id S1755128Ab2E3Ux0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:53:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48589 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab2E3UxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:51:40 -0400
-Message-ID: <1338411097.23168.81.camel@shawn-ssd>
-Subject: Re: include/linux/dynamic_debug.h:111:2: error: implicit
- declaration of function =?UTF-8?Q?=E2=80=98strstr=E2=80=99?=
-From: shawn <shawnlandden@gmail.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Jim Cromie <jim.cromie@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 30 May 2012 13:51:37 -0700
-In-Reply-To: <20120530203428.GB16686@redhat.com>
-References: <1338334286.2658.536.camel@shawn-ssd>
-	 <CAJfuBxweY7sG2KZDPHsrOP6iu8sQxw8EvCKA1QtGnDFKA92zag@mail.gmail.com>
-	 <1338342203.2658.544.camel@shawn-ssd>
-	 <CAJfuBxwP_p4Y4pp50qfEts4zoOkJ16Hj_Yu68q3qd7=5UMLeiw@mail.gmail.com>
-	 <1338387021.23168.18.camel@shawn-ssd>
-	 <CAJfuBxxkMJbmvQMCZx=6GUqJ8c6VnT8jaRTKA-OWZLa0gG7kUw@mail.gmail.com>
-	 <1338406801.23168.74.camel@shawn-ssd> <20120530203428.GB16686@redhat.com>
-Content-Type: multipart/mixed; boundary="=-UF/rFVtwW+Ic3UVnmzLs"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+	Wed, 30 May 2012 16:53:25 -0400
+Date: Wed, 30 May 2012 21:53:20 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+Message-ID: <20120530205320.GX11775@ZenIV.linux.org.uk>
+References: <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
+ <20120516004251.GO22082@ZenIV.linux.org.uk>
+ <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+ <20120516021828.GP22082@ZenIV.linux.org.uk>
+ <1337807899.15138.31.camel@falcor>
+ <20120530043443.GA3200@ZenIV.linux.org.uk>
+ <20120530163605.GV11775@ZenIV.linux.org.uk>
+ <1338406967.2257.24.camel@localhost>
+ <20120530202427.GW11775@ZenIV.linux.org.uk>
+ <1338410016.2659.6.camel@falcor.watson.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338410016.2659.6.camel@falcor.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-UF/rFVtwW+Ic3UVnmzLs
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-
-On Wed, 2012-05-30 at 16:34 -0400, Jason Baron wrote: 
-> On Wed, May 30, 2012 at 12:40:01PM -0700, shawn wrote:
-> > summary:
+On Wed, May 30, 2012 at 04:33:36PM -0400, Mimi Zohar wrote:
+> On Wed, 2012-05-30 at 21:24 +0100, Al Viro wrote:
+> > On Wed, May 30, 2012 at 03:42:47PM -0400, Eric Paris wrote:
+> > > security_file_mmap() would pretty much only be used in do_mmap_pgoff()
+> > > (or validate_mmap_request)
 > > 
-> > the recently added to arm, CONFIG_KERNEL_XZ is broken because
-> > arch/arm/boot/compressed/decompress.c defines _LINUX_STRING_H
-> > overriding <linux/string.h> used in include/linux/dynamic_debug.h:111
-> > 
+> > Callers, actually - the whole point is to lift it out of under ->mmap_sem.
+> > The tricky part is reqprot vs. prot mess.
 > 
-> If arch/arm/boot/compressed/decompress.c is going to define
-> '_LINUX_STRING_H', I think it needs to provide any string functions that
-> might be missing. Thus in this case, if you add a:
-> 
-> extern char * strstr(const char *, const char *);
-> 
-> right before:
-> 
-> #include "../../../../lib/decompress_unxz.c",
-> 
-> does that fix things?
+> Linus already addressed it in the original patch, which I split into two
+> as you suggested:
+> 733559f - "security: move security_file_mmap() and rename to security_mmap_file()" 
+> b3649e9 security: define and use the new security_mmap_addr() hook
 
-Yes that worked, and I've included a patch that does that. However I am
-not sure that is the best way to fix this problem. 
-> 
-> Thanks,
-> 
-> -Jason
-> 
-> 
-> > 
-> > On Wed, 2012-05-30 at 11:53 -0600, Jim Cromie wrote: 
-> > > On Wed, May 30, 2012 at 8:10 AM, shawn <shawnlandden@gmail.com> wrote:
-> > > > On Wed, 2012-05-30 at 02:35 -0600, Jim Cromie wrote:
-> > > >> On Tue, May 29, 2012 at 7:43 PM, shawn <shawnlandden@gmail.com> wrote:
-> > > >> > jim,
-> > > >> > On Tue, 2012-05-29 at 19:11 -0600, Jim Cromie wrote:
-> > > >> >> On Tue, May 29, 2012 at 5:31 PM, shawn <shawnlandden@gmail.com> wrote:
-> > > >> >> >  SHIPPED arch/arm/boot/compressed/lib1funcs.S
-> > > >> >> > In file included from include/linux/kernel.h:23:0,
-> > > >> >> >                 from
-> > > >> >> > arch/arm/boot/compressed/../../../../lib/xz/xz_private.h:15,
-> > > >> >> >                 from
-> > > >> >> > arch/arm/boot/compressed/../../../../lib/decompress_unxz.c:145,
-> > > >> >> >                 from arch/arm/boot/compressed/decompress.c:50:
-> > > >> >> > include/linux/dynamic_debug.h: In function
-> > > >> >> > ‘ddebug_dyndbg_module_param_cb’:
-> > > >> >> > include/linux/dynamic_debug.h:111:2: error: implicit declaration of
-> > > >> >> > function ‘strstr’ [-Werror=implicit-function-declaration]
-> > > >> >> >
-> > > >> >> > git blame shows b48420c1d3019ce8d84fb8e58f4ca86b8e3655b8 as introducing
-> > > >> >> > this call
-> > > >> >>
-> > > >> >> that symbol should have been provided by line 100
-> > > >> >>
-> > > >> >>      98 #else
-> > > >> >>      99
-> > > >> >>     100 #include <linux/string.h>
-> > > >> >>     101 #include <linux/errno.h>
-> > > >> >> ...
-> > > >> >>     108 static inline int ddebug_dyndbg_module_param_cb(char *param, char *val,
-> > > >> >>     109                                                 const char *modname)
-> > > >> >>     110 {
-> > > >> >>     111         if (strstr(param, "dyndbg")) {
-> > > >> >
-> > > >> >> which has:
-> > > >> >>
-> > > >> >>      74 #ifndef __HAVE_ARCH_STRSTR
-> > > >> >>      75 extern char * strstr(const char *, const char *);
-> > > >> >>      76 #endif
-> > > >> >> does your arch have __HAVE_ARCH_STRSTR ?
-> > > >> >> if so, is strstr exported under different conditions ??
-> > > >> > a git grep __HAVE_ARCH_STRSTR did not show and such defines in the arm
-> > > >> > tree
-> > > >>
-> > > >> thats odd - you should have gotten the generic one then.
-> > > >>
-> > > >> >> Can you send me
-> > > >> >> arch/arm/boot/compressed/decompress.i  ?
-> > > >> > I didn't have that file after the failure, but
-> > > >>
-> > > >> nor would you with success, but you did the right thing below..
-> > > >>
-> > > >> > make arch/arm/boot/compressed/decompress.i
-> > > >> >
-> > > >> > summoned it, also including string.o from that folder (which was present
-> > > >> > after the failure)
-> > > >> >
-> > > >> > I am compiling on amd64, using
-> > > >> > export ARCH=arm
-> > > >> > and
-> > > >> > CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
-> > > >> >
-> > > >> >
-> > > >> > I have had issues with the cross compiler not always being called since
-> > > >> > the 3.5 merge window opened up, (ld reporting corrupted binary files and
-> > > >> > gcc saying it doesn't understand arm-specific flags) and have not yet
-> > > >> > compiled a post-v3.4 successful kernel. This could be a symptom of that.
-> > > >> > (esp as the host arch, x86 DOES have __HAVE_ARCH_STRSTR)
-> > > >> >
-> > > >>
-> > > >> hmm
-> > > >> CONFIG_CROSS_COMPILE is new in 3.5-rc isnt it ?
-> > > >> what happens if you do it the old (3.4) way ?
-> > > > No, CONFIG_CROSS_COMPILE is not new, I've been doing it this way for a
-> > > > few versions, before with the emdebian cross toolchain. in meuconfig it
-> > > > shows up under: General Config --> Cross-compiler tool prefix
-> > > 
-> > > Ah yes - I see its not new (far from it)
-> > > 
-> > > commit 84336466011c589b6af554f2f2f1fcfa1a5c1437
-> > > Author: Roland McGrath <roland@redhat.com>
-> > > Date:   Mon Dec 21 16:24:06 2009 -0800
-> > > 
-> > >     kconfig CROSS_COMPILE option
-> > > 
-> > > 
-> > > > This is the arm toolchain that is in the Ubuntu repos.
-> > > >
-> > > > http://packages.ubuntu.com/precise/gcc-4.6-arm-linux-gnueabi
-> > > 
-> > > I went ahead and installed the arm toolchain from kernel.org,
-> > > and got what look to be errors like you mentioned:
-> > > 
-> > > [jimc@groucho linux-2.6-dep]$ make
-> > > make[1]: Nothing to be done for `all'.
-> > > make[1]: Nothing to be done for `relocs'.
-> > >   CHK     include/linux/version.h
-> > >   CHK     include/generated/utsrelease.h
-> > >   CC      kernel/bounds.s
-> > > cc1: error: unrecognized command line option '-m64'
-> > > cc1: error: unrecognized command line option '-mno-red-zone'
-> > > cc1: error: unrecognized command line option '-mcmodel=kernel'
-> > > cc1: error: unrecognized command line option '-maccumulate-outgoing-args'
-> > > make[1]: *** [kernel/bounds.s] Error 1
-> > > make: *** [prepare0] Error 2
-> > > 
-> > > this is with toolchain dir in the front of the path, after doing
-> > > make ARCH=arm defconfig
-> > > make xconfig # and adding the cross-compile value
-> > > 
-> > > I got much further when I kept ARCH=arm as make arg;
-> > > it completed the build.  Youre getting it from the environment,
-> > > which should be the same, but its worth a try...
-> > > 
-> > > [jimc@groucho linux-2.6-dep]$ file vmlinux*
-> > > vmlinux:   ELF 32-bit LSB executable, ARM, version 1, statically
-> > > linked, not stripped
-> > > vmlinux.o: ELF 32-bit LSB relocatable, ARM, version 1, not stripped
-> > > 
-> > > FWIW, this was an in-src build, my attempt at O=../build-arm spat at me.
-> > > 
-> > > 
-> > > > And I have successfully built kernels with this toolchain, and the
-> > > > debian native arm 4.6 compiler, at the same time, using distcc. (however
-> > > > I turned both distcc and ccache off for the error I sent)
-> > > >
-> > > > After having the issues with 3.5, I reinstalled, well parts of the tools
-> > > > chain with apt-get install --reinstall.
-> > > >
-> > > > What is the old way to cross-compile?
-> > > 
-> > > from the config help text:
-> > > 
-> > > Same as running 'make CROSS_COMPILE=prefix-' but stored for
-> > > default make runs in this kernel build directory. You don't
-> > > need to set this unless you want the configured kernel build
-> > > directory to select the cross-compiler automatically.
-> > > 
-> > > FWIW, it sounds more fiddly than using the now-quite-mature
-> > > CROSS_COMPILE config-item
-> > > 
-> > > 
-> > > 
-> > > >> What toolchain are you using ?
-> > > >> can you replicate it using something here ?
-> > > >>
-> > > >> http://kernel.org/pub/tools/crosstool/
-> > > 
-> > > Since I got a build using this, you should give it a go.
-> > > If it works, file a bug report with ubuntu.
-> > 
-> > arch/arm/boot/compressed/decompress.c
-> > 
-> > has
-> > 
-> > #define _LINUX_STRING_H_
-> > 
-> > which prevents <linux/string.h> from loading
-> > 
-> > 
-> > therefore: xz_private.h cannot include <linux/kernel.h>, or
-> > arch/arm/boot/compressed/decompress.c must define strstr
-> > 
-> > I tried to remove the #include <linux/kernel.h> 
-> > from xz_private.h, and replace it with more specific includes but cannot
-> > because lib/xz/xz_dec_lzma2.c uses min() which is defined in the
-> > <linux/kernel.h> header
-> > 
-> >   CC      arch/arm/boot/compressed/decompress.o
-> > In file included from include/linux/kernel.h:23:0,
-> >                  from
-> > arch/arm/boot/compressed/../../../../lib/xz/xz_private.h:15,
-> >                  from
-> > arch/arm/boot/compressed/../../../../lib/decompress_unxz.c:145,
-> >                  from arch/arm/boot/compressed/decompress.c:50:
-> > include/linux/dynamic_debug.h: In function
-> > ‘ddebug_dyndbg_module_param_cb’:
-> > include/linux/dynamic_debug.h:111:2: error: implicit declaration of
-> > function ‘strstr’ [-Werror=implicit-function-declaration]
-> > 
-> > > 
-> > > >
-> > > > --
-> > > > -Shawn Landden
-> > > >
-> > > 
-> > > let me know how you get on,
-> > > ( learning from others' pain is one of the values of empathy! )
-> > > 
-> > > Jim
-> > 
-> > 
-> > -- 
-> > -Shawn Landden
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Ehh...
 
-
--- 
--Shawn Landden
-
---=-UF/rFVtwW+Ic3UVnmzLs
-Content-Disposition: attachment;
-	filename="0001-arm-add-definition-of-strstr-to-decompress.c.patch"
-Content-Type: text/x-patch;
-	name="0001-arm-add-definition-of-strstr-to-decompress.c.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-
->From 819c4dfc986278b3905bd43a9a4185f6aba90dab Mon Sep 17 00:00:00 2001
-From: Shawn Landden <shawnlandden@gmail.com>
-Date: Wed, 30 May 2012 13:45:08 -0700
-Subject: [PATCH] arm: add definition of strstr() to decompress.c
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-include/linux/dynamic_debug.h uses strstr from <linux/string.h>
-and is included via <linux/kernel.h> from lib/xz/xz_private.h
-when CONFIG_KERNEL_XZ=y.
-
-However arch/arm/boot/compressed/decompress.c defines _LINUX_STRING_H
-preventing the load of <linux/string.h> resulting in:
-
-include/linux/dynamic_debug.h:111:2: error: implicit declaration of function ‘strstr’
-
-Define strstr in arch/arm/boot/compressed/decompress.c, providing the needed
-subset of <linux/string.h>.
-
-Signed-off-by: Shawn Landden <shawnlandden@gmail.com>
----
- arch/arm/boot/compressed/decompress.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/boot/compressed/decompress.c b/arch/arm/boot/compressed/decompress.c
-index f41b38c..cdc3cd4 100644
---- a/arch/arm/boot/compressed/decompress.c
-+++ b/arch/arm/boot/compressed/decompress.c
-@@ -47,6 +47,7 @@ extern void error(char *);
- #ifdef CONFIG_KERNEL_XZ
- #define memmove memmove
- #define memcpy memcpy
-+extern char * strstr(const char *, const char *);
- #include "../../../../lib/decompress_unxz.c"
- #endif
- 
--- 
-1.7.9.5
-
-
---=-UF/rFVtwW+Ic3UVnmzLs--
-
+* elf_map() should just be using vm_map/vm_unmap (see vfs.git#for-next)
+* that goto out; in sys_mmap_pgooff() is an instant leak - you miss
+fput() that way
+* again, prot handling for !MMU case differs from MMU one.  Sure, we
+can duplicate both, but it's getting seriously ugly ;-/
+* while we are at it, checking address in validate_mmap_request() is
+really odd, seeing that we have the only call to validate_mmap_request()
+followed by
+        /* we ignore the address hint */
+        addr = 0;
+        len = PAGE_ALIGN(len);
