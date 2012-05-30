@@ -1,139 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753890Ab2E3Myl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:54:41 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49551 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753699Ab2E3Myj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:54:39 -0400
-Message-ID: <4FC6188A.2030003@openvz.org>
-Date: Wed, 30 May 2012 16:54:34 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
+	id S1753981Ab2E3Myu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:54:50 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:54114 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751784Ab2E3Myr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 08:54:47 -0400
+Message-ID: <4FC6180F.9020009@parallels.com>
+Date: Wed, 30 May 2012 16:52:31 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
- val:-59
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz> <4FC606E7.4090701@openvz.org> <4FC60BBC.203@fold.natur.cuni.cz> <4FC61107.8050002@openvz.org>
-In-Reply-To: <4FC61107.8050002@openvz.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Paul Turner <pjt@google.com>
+CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        <handai.szj@gmail.com>, <Andrew.Phillips@lmax.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: Re: [PATCH v3 3/6] expose fine-grained per-cpu data for cpuacct stats
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com> <1338371317-5980-4-git-send-email-glommer@parallels.com> <CAPM31RJanAvDB+pZ+h5J3W6KXvAwPgbbeXgw6C_56tx_Mc+cgA@mail.gmail.com> <4FC6107F.9020802@parallels.com> <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
+In-Reply-To: <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Khlebnikov wrote:
-> Martin Mokrejs wrote:
->>
->>
->> Konstantin Khlebnikov wrote:
->>> Martin Mokrejs wrote:
->>>> Andrew Morton wrote:
->>>>> On Wed, 30 May 2012 00:18:31 +0400
->>>>> Konstantin Khlebnikov<khlebnikov@openvz.org>    wrote:
->>>>>
->>>>>> Oleg Nesterov wrote:
->>>>>>> On 05/22, Andrew Morton wrote:
->>>>>>>>
->>>>>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
->>>>>>>> happiness is important.  Has he cheered up yet?
->>>>>>>
->>>>>>> Well, yes, I do not really like this patch ;) Because I think there is
->>>>>>> a more simple/straightforward fix, see below. In my opinion it also
->>>>>>> makes the original code simpler.
->>>>>>>
->>>>>>> But. Obviously this is subjective, I can't prove my patch is "better",
->>>>>>> and I didn't try to test it.
->>>>>>>
->>>>>>> So I won't argue with Konstantin who dislikes my patch, although I
->>>>>>> would like to know the reason.
->>>>>>
->>>>>> I don't remember why I dislike your patch.
->>>>>> For now I can only say ACK )
->>>>>
->>>>> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
->>>>> that it was tested would be nice ;)
->>>>
->>>> I will reboot in few hours, finally after few days ... I am running this first
->>>> patch. I will try to test the second/alternative patch more quickly. Sorry for
->>>> the delay.
->>>>
->>>
->>> easiest way trigger this bug:
->>>
->>> #define _GNU_SOURCE
->>> #include<unistd.h>
->>> #include<sched.h>
->>> #include<sys/syscall.h>
->>> #include<sys/mman.h>
->>>
->>> static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
->>> {
->>>       return syscall(SYS_clone, flags, stack, ptid, ctid);
->>> }
->>>
->>> int main(int argc, char **argv)
->>> {
->>>       void *page;
->>>
->>>       page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
->>>       sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
->>> }
->>>
->>
->> I am getting segfaults with this.
->>
->> (gdb) where
->> #0  0x0000000000000000 in ?? ()
->> #1  0x00007f430f70a7e0 in __elf_set___libc_subfreeres_element_free_mem__ () from /lib64/libc.so.6
->> #2  0x00007f430f70a7e8 in __elf_set___libc_atexit_element__IO_cleanup__ () from /lib64/libc.so.6
->> #3  0x0000000000000001 in ?? ()
->> #4  0x0000000000000000 in ?? ()
->> (gdb)
->>
->> What number should I give it as an argument? ;-)
+On 05/30/2012 04:48 PM, Paul Turner wrote:
+> a) the information in /proc/stat is actually much denser since it's
+> "cpu VAL VAL VAL VAL" as opposed to "cpuX.FIELD VAL"
+
+easily fixable here. Less descriptive, but we can use a header line
+with the description much like how /proc/slabinfo does, and we still
+have an extensible interface that is dense, at the same time.
+
+> b) If it became a problem the /proc/stat case is actually fairly
+> trivially fixable by defining each cpu as a record and "everything
+> else" as a magic im-out-of-cpus value.
 >
-> there is no arguments.
+>> >
+>> >  Now, if you guys are okay with a file per-cpu, I can do it as well.
+>> >  It pollutes the filesystem, but at least protects against the fact that this
+>> >  is kmalloc-backed.
+>> >
+> As I prefaced, I'm not sure there's much that can be trivially done
+> about it.  This is really a fundamental limitation of how read_map()
+> works.
 >
-> yeah it corrupts stack. I'm too lazy to write it properly =)
-> but on non-patched kernel it also triggers this bug:
-> [206732.025131] BUG: Bad rss-counter state mm:ffff88000d8a6c80 idx:1 val:-1
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
-
-this version works without segfaults =)
-
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <sched.h>
-#include <sys/mman.h>
-
-int child(void *arg)
-{
-	return 0;
-}
-
-char stack[4096];
-
-int main(int argc, char **argv)
-{
-	void *page;
-
-	page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-	clone(child, stack + sizeof(stack), CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, NULL, page);
-	return 0;
-}
+> What we really need is a proper seq_file exposed through cftypes.
+That can be done.
 
