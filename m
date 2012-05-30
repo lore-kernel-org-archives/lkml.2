@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751548Ab2E3KDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 06:03:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47202 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750955Ab2E3KDG (ORCPT
+	id S1751821Ab2E3KFT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 06:05:19 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46660 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab2E3KFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 06:03:06 -0400
-Date: Wed, 30 May 2012 11:03:03 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
- Device Tree
-Message-ID: <20120530100302.GD9947@opensource.wolfsonmicro.com>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
- <1338353260-10097-9-git-send-email-lee.jones@linaro.org>
- <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com>
+	Wed, 30 May 2012 06:05:16 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Eric Biederman <ebiederm@xmission.com>
+CC: Vladimir Davydov <vdavydov@parallels.com>, <kexec@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kexec: consolidate crash late initialization
+Date: Wed, 30 May 2012 14:05:09 +0400
+Message-ID: <1338372309-24983-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jL2BoiuKMElzg3CS"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com>
-X-Cookie: Give him an evasive answer.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use one module_init() instead of two.
+---
+ kernel/kexec.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
 
---jL2BoiuKMElzg3CS
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 4e2e472..c3341cb 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1240,7 +1240,6 @@ static int __init crash_notes_memory_init(void)
+ 	}
+ 	return 0;
+ }
+-module_init(crash_notes_memory_init)
+ 
+ 
+ /*
+@@ -1520,7 +1519,13 @@ static int __init crash_save_vmcoreinfo_init(void)
+ 	return 0;
+ }
+ 
+-module_init(crash_save_vmcoreinfo_init)
++static int __init crash_init(void)
++{
++	crash_notes_memory_init();
++	crash_save_vmcoreinfo_init();
++	return 0;
++}
++module_init(crash_init)
+ 
+ /*
+  * Move into place and start executing a preloaded standalone
+-- 
+1.7.1
 
-On Wed, May 30, 2012 at 02:58:44PM +0800, Linus Walleij wrote:
-> On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> > + =A0 =A0 =A0 { .name =3D "ab8500_ldo_ana", =A0 =A0 .driver_data =3D (v=
-oid *) AB8500_LDO_ANA, },
-
-> So why is the device tree going to use these lowercase names etc?
-> I guess there is a rationale...
-
-If we are changing the names then not including the ab8500 bit would
-seem more idiomatic - we've already worked out which chip this is by the
-time we're looking here.
-
-> Anyway: the name is used in more parts of the file, so please change
-> it everywhere if you change it.
-
-It's only used for a few debug prints AFAICT?
-
---jL2BoiuKMElzg3CS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPxfAXAAoJEBus8iNuMP3dsO0P/RlAbanIMdrsmCRa2hpLKglA
-lrUKoj9bxy/Os89//9SOKHP2RRdYhO/fJZ7s7QeI1nAmmO8phYLuitNVntTd6n85
-Etx4bB92R+03F3u7GaPjjtpOnn00Q0qmynWfjbx+38t0wAW56K3SDxJZFnTHdPbx
-ezG9AOg77BuXluTyPLdONE3uMmNOcrY42nfWRV1Pt2PudWk6GYuytW7irbHK+j5x
-yOBLx9UbOzDBuk0Zi9hciFcwUf8AVaCLTMLODKX3wNlHBshqRrxNBO5Hd4YJUAEq
-XopSSHQWW8IlIPWTYgOVIYZ+LZjTtSx+/iDu/7EY3xJLSu+g/knVbRsSYNF2IKqo
-HCook+Xfi3mOPl2Dc/DN1cLiaOS9hTIu5yMzTm13PZf6txj9NSYcn4tL7RsyCbPR
-BmwJh7CaYP4kGyHTM/t0n87ybEay8y7D1PVgDQdirLrrE8BXLINor3pcAYSo3UUe
-xJ2bPfRIisOnelwoxTbkYTmnxl3ZbT/h16c2rdw9sr2aXcrlaCRXXsH1s4wEFGRA
-E2mrj4nmqstfhzxRGwuxSLQqdSsjAmD0Vu/oIDVy5ywpST9AH6i5cgOui8e3AAuE
-eZeYVXtnQg5BE6IElpNS7t5pZz1HV71QCbUQGSaVnOHwSGDqefPlTLIr7ftuEmE/
-Jvp8B/dpZZ0NeuWCbvW+
-=o5xa
------END PGP SIGNATURE-----
-
---jL2BoiuKMElzg3CS--
