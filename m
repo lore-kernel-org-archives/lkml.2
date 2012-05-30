@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab2E3TRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 15:17:37 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:43253 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750931Ab2E3TRf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 15:17:35 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: FTlnMfYVM1mjRfxKFUlkVeowLTOyzUJ3KC1rSRH9OLHNAYC
- WtlOdIlJybsrAeeqnrrymdQGtDPk8FnRgiRrBKIm2VHmSp6pqTOMe0pKEJHx
- QnE6SGVKB5.dzVisHjjAzYEgUsK8EiZj4e.GbjLIx_Te9dQzO1SlgFzzEQdq
- 2DTQD0mjcjlNZDJwmb5BN4SO1KjXGclDtRZpCc_sCtdCcM.cpb9siKV.kOzQ
- lYsNiaNOYzHBtgpJi3vMydwyLpA1yY5wXahPZt5311RistO0I8MEtfy9STUX
- GEe1F09MUEzA6.Jq_5Lv9UfLYeiPKT_rydA3kCPrAE4q1RlNnRBoWn1UQnEG
- CkXUxmkR46xWePlsriZh7qCvFxWMl1icg6ALeeCs9rCbe9pVUMe6oBy4lr3u
- B
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Wed, 30 May 2012 14:17:29 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, stable@vger.kernel.org,
-        hughd@google.com, Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 1/6] Revert "mm: mempolicy: Let vma_merge and vma_split
- handle vma->vm_policy linkages"
-In-Reply-To: <1338368529-21784-2-git-send-email-kosaki.motohiro@gmail.com>
-Message-ID: <alpine.DEB.2.00.1205301414020.31768@router.home>
-References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <1338368529-21784-2-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751918Ab2E3TSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:18:33 -0400
+Received: from mx2.fusionio.com ([66.114.96.31]:36611 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750903Ab2E3TSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 15:18:31 -0400
+X-ASG-Debug-ID: 1338405511-0421b516ea361e0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4FC67253.1080700@fusionio.com>
+Date: Wed, 30 May 2012 21:17:39 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [GIT PULL] Block driver bits for 3.5
+References: <4FC6189B.9080909@fusionio.com>  <1338402812.2760.413.camel@edumazet-glaptop>  <4FC66D3D.6080509@fusionio.com> <1338404902.2760.451.camel@edumazet-glaptop>
+X-ASG-Orig-Subj: Re: [GIT PULL] Block driver bits for 3.5
+In-Reply-To: <1338404902.2760.451.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1338405511
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.98464
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 May 2012, kosaki.motohiro@gmail.com wrote:
+On 05/30/2012 09:08 PM, Eric Dumazet wrote:
+> On Wed, 2012-05-30 at 20:55 +0200, Jens Axboe wrote:
+>> On 05/30/2012 08:33 PM, Eric Dumazet wrote:
+>>> On Wed, 2012-05-30 at 14:54 +0200, Jens Axboe wrote:
+>>>> Hi Linus,
+>>>>
+>>>> On top of the for-3.5/core pull request, here are the driver related
+>>>> changes for 3.5. It contains:
+>>>
+>>> Hi Jens
+>>>
+>>> Not sure if this is related, but latest Linus tree cannot boot anymore
+>>> here...
+>>>
+>>> BUG: soft lockup - CPU#3 stuck for 22s ! [mountall.1603]
+>>
+>> Hrmpf, can you attach your .config?
+>>
+> 
+> I can do a bisection pretty fast I think
 
-> From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
->
-> commit 05f144a0d5 removed vma->vm_policy updates code and it is a purpose of
-> mbind_range(). Now, mbind_range() is virtually no-op. no-op function don't
-> makes any bugs, I agree. but maybe it is not right fix.
+Thanks, that'd help a lot.
 
-I dont really understand the changelog. But to restore the policy_vma() is
-the right thing to do since there are potential multiple use cases where
-we want to apply a policy to a vma.
+-- 
+Jens Axboe
 
-Proposed new changelog:
-
-Commit 05f144a0d5 folded policy_vma() into mbind_range(). There are
-other use cases of policy_vma(*) though and so revert a piece of
-that commit in order to have a policy_vma() function again.
-
-> @@ -655,23 +676,9 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
->  			if (err)
->  				goto out;
->  		}
-> -
-> -		/*
-> -		 * Apply policy to a single VMA. The reference counting of
-> -		 * policy for vma_policy linkages has already been handled by
-> -		 * vma_merge and split_vma as necessary. If this is a shared
-> -		 * policy then ->set_policy will increment the reference count
-> -		 * for an sp node.
-> -		 */
-
-You are dropping the nice comments by Mel that explain the refcounting.
