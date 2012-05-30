@@ -1,165 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab2E3Hxt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:53:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35443 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab2E3Hxr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:53:47 -0400
-Date: Wed, 30 May 2012 00:53:18 -0700
-From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
-Message-ID: <tip-q4egci70rjgxh7bogbbfpcyf@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
-        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
-        efault@gmx.de, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        peterz@infradead.org, namhyung@gmail.com, fweisbec@gmail.com,
-        dsahern@gmail.com, tglx@linutronix.de
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf annotate browser:
-  Read perf config file for settings
-Git-Commit-ID: c323cf0400c1fed853738e6d81e83c6ac7ff5105
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1756888Ab2E3Hyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:54:31 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48830 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755964Ab2E3Hy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 03:54:29 -0400
+Message-ID: <4FC5D21F.2030702@ti.com>
+Date: Wed, 30 May 2012 09:54:07 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 00:53:24 -0700 (PDT)
+To: Xiao Jiang <jgq516@gmail.com>
+CC: Jon Hunter <jon-hunter@ti.com>, <linux@arm.linux.org.uk>,
+        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
+        <rnayak@ti.com>, <tony@atomide.com>, <wim@iguana.be>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 3/3] watchdog: omap_wdt: add device tree support
+References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-4-git-send-email-jgq516@gmail.com> <4FC51008.1050004@ti.com> <4FC59171.8040009@gmail.com>
+In-Reply-To: <4FC59171.8040009@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c323cf0400c1fed853738e6d81e83c6ac7ff5105
-Gitweb:     http://git.kernel.org/tip/c323cf0400c1fed853738e6d81e83c6ac7ff5105
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 29 May 2012 22:06:30 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 29 May 2012 22:06:30 -0300
+On 5/30/2012 5:18 AM, Xiao Jiang wrote:
+> Jon Hunter wrote:
+>> On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
+>>> From: Xiao Jiang <jgq516@gmail.com>
+>>>
+>>> Add device table for omap_wdt to support dt.
+>>>
+>>> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
+>>> ---
+>>> drivers/watchdog/omap_wdt.c | 8 ++++++++
+>>> 1 files changed, 8 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+>>> index 8285d65..d98c615 100644
+>>> --- a/drivers/watchdog/omap_wdt.c
+>>> +++ b/drivers/watchdog/omap_wdt.c
+>>> @@ -430,6 +430,13 @@ static int omap_wdt_resume(struct
+>>> platform_device *pdev)
+>>> #define omap_wdt_resume NULL
+>>> #endif
+>>>
+>>> +static const struct of_device_id omap_wdt_of_match[] = {
+>>> + { .compatible = "ti,omap3-wdt", },
+>>> + { .compatible = "ti,omap4-wdt", },
 
-perf annotate browser: Read perf config file for settings
+If there is no difference between the OMAP3 and the OMAP4 WDT IP, just 
+add one entry "ti,omap3-wdt". And then in the OMAP4 DTS you will just 
+put : compatible = "ti,omap3-wdt"; or compatible =  "ti,omap4-wdt", 
+"ti,omap3-wdt";
+I'm still a little bit confused about the real need for the 
+"ti,omap4-wdt: entry, but it seems to be the way to do it in PPC.
 
-The defaults are:
+>>> + {},
+>>> +};
+>>> +MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
+>>> +
+>>> static struct platform_driver omap_wdt_driver = {
+>>> .probe = omap_wdt_probe,
+>>> .remove = __devexit_p(omap_wdt_remove),
+>>> @@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
+>>> .driver = {
+>>> .owner = THIS_MODULE,
+>>> .name = "omap_wdt",
+>>> + .of_match_table = omap_wdt_of_match,
+>>> },
+>>> };
+>>>
+>>
+>> I think we need to add some code to the probe function that calls
+>> of_match_device() and ensures we find a match. For example ...
+>>
+>> if (of_have_populated_dt())
+>> if (!of_match_device(omap_wdt_of_match, &pdev->dev))
+>> return -EINVAL;
+>>
+> Will add it in v2, thanks for suggestion.
 
-[annotate]
+No, in fact this is not needed. We need that mainly when several 
+instances can match the same driver and thus we select the proper one 
+using the of_match_device. Otherwise, just check is the device_node is 
+there.
 
-	hide_src_code = false
-	use_offset = true
-	jump_arrows = true
-	show_nr_jumps = false
+In that case, the driver does not even care about any DT node so there 
+is no need to add extra code for that. Keep it simple.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-q4egci70rjgxh7bogbbfpcyf@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Documentation/perfconfig.example |    8 ++++
- tools/perf/ui/browser.c                     |    2 +
- tools/perf/ui/browser.h                     |    1 +
- tools/perf/ui/browsers/annotate.c           |   49 +++++++++++++++++++++++++++
- 4 files changed, 60 insertions(+), 0 deletions(-)
-
-diff --git a/tools/perf/Documentation/perfconfig.example b/tools/perf/Documentation/perfconfig.example
-index 42c6fd2..767ea24 100644
---- a/tools/perf/Documentation/perfconfig.example
-+++ b/tools/perf/Documentation/perfconfig.example
-@@ -19,3 +19,11 @@
- 
- 	# Default, disable using /dev/null
- 	dir = /root/.debug
-+
-+[annotate]
-+
-+	# Defaults
-+	hide_src_code = false
-+	use_offset = true
-+	jump_arrows = true
-+	show_nr_jumps = false
-diff --git a/tools/perf/ui/browser.c b/tools/perf/ui/browser.c
-index cde4d0f..c3a769ad 100644
---- a/tools/perf/ui/browser.c
-+++ b/tools/perf/ui/browser.c
-@@ -708,4 +708,6 @@ void ui_browser__init(void)
- 		struct ui_browser__colorset *c = &ui_browser__colorsets[i++];
- 		sltt_set_color(c->colorset, c->name, c->fg, c->bg);
- 	}
-+
-+	annotate_browser__init();
- }
-diff --git a/tools/perf/ui/browser.h b/tools/perf/ui/browser.h
-index dd96d82..af70314 100644
---- a/tools/perf/ui/browser.h
-+++ b/tools/perf/ui/browser.h
-@@ -69,4 +69,5 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
- unsigned int ui_browser__list_head_refresh(struct ui_browser *self);
- 
- void ui_browser__init(void);
-+void annotate_browser__init(void);
- #endif /* _PERF_UI_BROWSER_H_ */
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 02afa03..77b5b12 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -900,3 +900,52 @@ out_free_offsets:
- 	free(browser.offsets);
- 	return ret;
- }
-+
-+#define ANNOTATE_CFG(n) \
-+	{ .name = #n, .value = &annotate_browser__opts.n, }
-+	
-+/*
-+ * Keep the entries sorted, they are bsearch'ed
-+ */
-+static struct annotate__config {
-+	const char *name;
-+	bool *value;
-+} annotate__configs[] = {
-+	ANNOTATE_CFG(hide_src_code),
-+	ANNOTATE_CFG(jump_arrows),
-+	ANNOTATE_CFG(show_nr_jumps),
-+	ANNOTATE_CFG(use_offset),
-+};
-+
-+#undef ANNOTATE_CFG
-+
-+static int annotate_config__cmp(const void *name, const void *cfgp)
-+{
-+	const struct annotate__config *cfg = cfgp;
-+
-+	return strcmp(name, cfg->name);
-+}
-+
-+static int annotate__config(const char *var, const char *value, void *data __used)
-+{
-+	struct annotate__config *cfg;
-+	const char *name;
-+
-+	if (prefixcmp(var, "annotate.") != 0)
-+		return 0;
-+
-+	name = var + 9;
-+	cfg = bsearch(name, annotate__configs, ARRAY_SIZE(annotate__configs),
-+		      sizeof(struct annotate__config), annotate_config__cmp);
-+
-+	if (cfg == NULL)
-+		return -1;
-+
-+	*cfg->value = perf_config_bool(name, value);
-+	return 0;
-+}
-+
-+void annotate_browser__init(void)
-+{
-+	perf_config(annotate__config, NULL);
-+}
+Regards,
+Benoit
