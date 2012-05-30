@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab2E3SVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:21:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41368 "EHLO mail.zytor.com"
+	id S1757492Ab2E3SWn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:22:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49821 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757401Ab2E3SVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:21:32 -0400
-Message-ID: <4FC6650C.5060604@zytor.com>
-Date: Wed, 30 May 2012 11:21:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757391Ab2E3SWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:22:41 -0400
+Date: Wed, 30 May 2012 20:22:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, mroos@linux.ee,
+        JBottomley@parallels.com
+Subject: Re: [PATCH v2 0/4] fix / cleanup async scsi scanning
+Message-ID: <20120530182239.GD15635@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dan Williams <dan.j.williams@intel.com>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+	mroos@linux.ee, JBottomley@parallels.com
+References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
- systems
-References: <4FC62888.9010407@amd.com> <20120530144851.GA12184@jshin-Toonie> <20120530145005.GI3207@phenom.dumpdata.com> <20120530150334.GA13349@jshin-Toonie> <20120530171754.GA5115@phenom.dumpdata.com> <20120530173247.GC15635@x1.osrc.amd.com> <4FC65D34.1060803@zytor.com> <20120530175150.GE15438@x1.osrc.amd.com> <4FC66037.6020506@zytor.com> <20120530181722.GF15438@x1.osrc.amd.com> <20120530181950.GG15438@x1.osrc.amd.com>
-In-Reply-To: <20120530181950.GG15438@x1.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 11:19 AM, Borislav Petkov wrote:
-> On Wed, May 30, 2012 at 08:17:23PM +0200, Borislav Petkov wrote:
->> The other place where we use the amd_safe variants is an obscure K8,
->> revC and earlier fix for _some_ BIOSen and this hasn't bitten us yet
->> so I'm assuming people haven't run xen on such boxes yet. Does it need
->> fixing? Probably, if we really really have to.
+On Wed, May 30, 2012 at 11:21:25AM -0700, Dan Williams wrote:
+> Commit a7a20d10 "[SCSI] sd: limit the scope of the async probe domain"
+> introduces a boot regression by moving sd probe work off of the global
+> async queue.  Using a local async domain hides the probe work from being
+> synchronized by wait_for_device_probe()->async_synchronize_full().
 > 
-> I'm being told we're safe here. Those boxes didn't have virtualization
-> support yet (SVM) so this one doesn't need fixing.
-> 
+> Fix this by teaching async_synchronize_full() to flush all async work
+> regardless of domain, and take the opportunity to convert scsi scanning
+> to async_schedule().  This enables wait_for_device_probe() to flush scsi
+> scanning work.
 
-This is for PV, not for HVM (VT-x/SVM).  HVM doesn't have this kind of
-drain bamage.
+Looks like those fix a similar boot issue I reported earlier:
 
-	-hpa
+http://marc.info/?l=linux-kernel&m=133839683405526&w=2
+
+Should I give them a run or are they still in review?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
