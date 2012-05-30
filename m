@@ -1,315 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab2E3OhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:37:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab2E3OhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:37:02 -0400
-From: Cong Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [RFC Patch] fs: implement per-file drop caches
-Date: Wed, 30 May 2012 21:38:40 +0800
-Message-Id: <1338385120-14519-1-git-send-email-amwang@redhat.com>
+	id S1755285Ab2E3Ojs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:39:48 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:42218 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab2E3Ojo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:39:44 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH -V7 05/14] hugetlb: avoid taking i_mmap_mutex in unmap_single_vma() for hugetlb
+Date: Wed, 30 May 2012 20:08:50 +0530
+Message-Id: <1338388739-22919-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+x-cbid: 12053014-5564-0000-0000-00000301B935
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a draft patch of implementing per-file drop caches.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-It introduces a new fcntl command  F_DROP_CACHES to drop
-file caches of a specific file. The reason is that currently
-we only have a system-wide drop caches interface, it could
-cause system-wide performance down if we drop all page caches
-when we actually want to drop the caches of some huge file.
+i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
+fix linked list corruption in unmap_hugepage_range()") but we don't use
+page->lru in unmap_hugepage_range any more.  Also the lock was taken
+higher up in the stack in some code path.  That would result in deadlock.
 
-Below is small test case for this patch:
+unmap_mapping_range (i_mmap_mutex)
+ -> unmap_mapping_range_tree
+    -> unmap_mapping_range_vma
+       -> zap_page_range_single
+         -> unmap_single_vma
+	      -> unmap_hugepage_range (i_mmap_mutex)
 
-	#include <unistd.h>
-	#include <stdlib.h>
-	#include <stdio.h>
-	#define __USE_GNU
-	#include <fcntl.h>
+For shared pagetable support for huge pages, since pagetable pages are ref
+counted we don't need any lock during huge_pmd_unshare.  We do take
+i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
+(39dde65c9940c97f ("shared page table for hugetlb page")).
 
-	int
-	main(int argc, char *argv[])
-	{
-		int fd;
-		fd = open(argv[1], O_RDONLY);
-		if (fd == -1) {
-			perror("open");
-			return 1;
-		}
-		printf("Before readahead:\n");
-		system("grep ^Cache /proc/meminfo");
-		if (readahead(fd, 0, 1024*1024*100)) {
-			perror("open");
-			return 1;
-		}
-		printf("Before drop cache:\n");
-		system("grep ^Cache /proc/meminfo");
-		fcntl(fd, 1024+9, 3);
-		printf("After drop cache:\n");
-		system("grep ^Cache /proc/meminfo");
-		close(fd);
-		return 0;
-	}
-
-I used a file of 100M size for testing, and I can see
-the cache size of the whole system drops 70000K after
-dropping the caches of this big file.
-
-Any comments?
-
-Signed-off-by: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Matthew Wilcox <matthew@wil.cx>
-Cc: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
-
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Hillf Danton <dhillf@gmail.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 ---
- fs/dcache.c           |   56 ++++++++++++++++++++++++++++++------------------
- fs/drop_caches.c      |   30 ++++++++++++++++++++++++++
- fs/fcntl.c            |    4 +++
- fs/inode.c            |   37 ++++++++++++++++++++++++++++++++
- include/linux/fcntl.h |    1 +
- include/linux/fs.h    |    2 +
- include/linux/mm.h    |    1 +
- 7 files changed, 110 insertions(+), 21 deletions(-)
+ mm/memory.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 4435d8b..5262851 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -585,28 +585,14 @@ kill_it:
- }
- EXPORT_SYMBOL(dput);
- 
--/**
-- * d_invalidate - invalidate a dentry
-- * @dentry: dentry to invalidate
-- *
-- * Try to invalidate the dentry if it turns out to be
-- * possible. If there are other dentries that can be
-- * reached through this one we can't delete it and we
-- * return -EBUSY. On success we return 0.
-- *
-- * no dcache lock.
-- */
-- 
--int d_invalidate(struct dentry * dentry)
-+int __d_invalidate(struct dentry * dentry)
- {
- 	/*
- 	 * If it's already been dropped, return OK.
- 	 */
--	spin_lock(&dentry->d_lock);
--	if (d_unhashed(dentry)) {
--		spin_unlock(&dentry->d_lock);
-+	if (d_unhashed(dentry))
- 		return 0;
--	}
-+
- 	/*
- 	 * Check whether to do a partial shrink_dcache
- 	 * to get rid of unused child entries.
-@@ -630,16 +616,33 @@ int d_invalidate(struct dentry * dentry)
- 	 * directory or not.
- 	 */
- 	if (dentry->d_count > 1 && dentry->d_inode) {
--		if (S_ISDIR(dentry->d_inode->i_mode) || d_mountpoint(dentry)) {
--			spin_unlock(&dentry->d_lock);
-+		if (S_ISDIR(dentry->d_inode->i_mode) || d_mountpoint(dentry))
- 			return -EBUSY;
--		}
+diff --git a/mm/memory.c b/mm/memory.c
+index 545e18a..f6bc04f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1326,11 +1326,8 @@ static void unmap_single_vma(struct mmu_gather *tlb,
+ 			 * Since no pte has actually been setup, it is
+ 			 * safe to do nothing in this case.
+ 			 */
+-			if (vma->vm_file) {
+-				mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
++			if (vma->vm_file)
+ 				__unmap_hugepage_range(tlb, vma, start, end, NULL);
+-				mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+-			}
+ 		} else
+ 			unmap_page_range(tlb, vma, start, end, details);
  	}
- 
- 	__d_drop(dentry);
--	spin_unlock(&dentry->d_lock);
- 	return 0;
- }
-+
-+/**
-+ * d_invalidate - invalidate a dentry
-+ * @dentry: dentry to invalidate
-+ *
-+ * Try to invalidate the dentry if it turns out to be
-+ * possible. If there are other dentries that can be
-+ * reached through this one we can't delete it and we
-+ * return -EBUSY. On success we return 0.
-+ *
-+ * no dcache lock.
-+ */
-+int d_invalidate(struct dentry * dentry)
-+{
-+	int ret;
-+	spin_lock(&dentry->d_lock);
-+	ret = __d_invalidate(dentry);
-+	spin_unlock(&dentry->d_lock);
-+	return ret;
-+}
- EXPORT_SYMBOL(d_invalidate);
- 
- /* This must be called with d_lock held */
-@@ -898,6 +901,17 @@ relock:
- 	shrink_dentry_list(&tmp);
- }
- 
-+void prune_dcache_one(struct dentry *dentry)
-+{
-+	spin_lock(&dentry->d_lock);
-+	if (dentry->d_flags & DCACHE_REFERENCED)
-+		dentry->d_flags &= ~DCACHE_REFERENCED;
-+	dentry_lru_del(dentry);
-+	dentry->d_flags |= DCACHE_SHRINK_LIST;
-+	__d_invalidate(dentry);
-+	spin_unlock(&dentry->d_lock);
-+}
-+
- /**
-  * shrink_dcache_sb - shrink dcache for a superblock
-  * @sb: superblock
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index c00e055..805f150 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -65,3 +65,33 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
- 	}
- 	return 0;
- }
-+
-+static void drop_pagecache_file(struct file *filp)
-+{
-+	struct inode *inode = filp->f_path.dentry->d_inode;
-+
-+	spin_lock(&inode->i_lock);
-+	if ((inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) ||
-+	    (inode->i_mapping->nrpages == 0)) {
-+		spin_unlock(&inode->i_lock);
-+		return;
-+	}
-+	__iget(inode);
-+	spin_unlock(&inode->i_lock);
-+	invalidate_mapping_pages(inode->i_mapping, 0, -1);
-+	iput(inode);
-+}
-+
-+
-+void file_drop_caches(struct file *filp, unsigned long which)
-+{
-+	if (which & 1)
-+		drop_pagecache_file(filp);
-+
-+	if (which & 2) {
-+		struct dentry *dentry = filp->f_path.dentry;
-+
-+		prune_dcache_one(dentry);
-+		prune_icache_one(dentry->d_inode);
-+	}
-+}
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index d078b75..a97f10a 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -420,6 +420,10 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
- 	case F_GETPIPE_SZ:
- 		err = pipe_fcntl(filp, cmd, arg);
- 		break;
-+	case F_DROP_CACHES:
-+		err = 0;
-+		file_drop_caches(filp, arg);
-+		break;
- 	default:
- 		break;
- 	}
-diff --git a/fs/inode.c b/fs/inode.c
-index 6bc8761..a9e92bb 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -776,6 +776,43 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
- 	dispose_list(&freeable);
- }
- 
-+void prune_icache_one(struct inode *inode)
-+{
-+	unsigned long reap = 0;
-+
-+	/* We are still holding this inode, and we are
-+	 * expecting the last iput() will finally
-+	 * evict it.
-+	 */
-+	spin_lock(&inode->i_lock);
-+
-+	if (inode->i_state & (I_NEW | I_FREEING | I_WILL_FREE)) {
-+		spin_unlock(&inode->i_lock);
-+		return;
-+	}
-+
-+	if (inode->i_state & I_REFERENCED)
-+		inode->i_state &= ~I_REFERENCED;
-+
-+	inode_lru_list_del(inode);
-+
-+	if (inode_has_buffers(inode) || inode->i_data.nrpages) {
-+		__iget(inode);
-+		spin_unlock(&inode->i_lock);
-+		if (remove_inode_buffers(inode))
-+			reap += invalidate_mapping_pages(&inode->i_data,
-+							0, -1);
-+		iput(inode);
-+	} else
-+		spin_unlock(&inode->i_lock);
-+
-+	if (reap) {
-+		__count_vm_events(PGINODESTEAL, reap);
-+		if (current->reclaim_state)
-+			current->reclaim_state->reclaimed_slab += reap;
-+	}
-+}
-+
- static void __wait_on_freeing_inode(struct inode *inode);
- /*
-  * Called with the inode lock held.
-diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-index f550f89..6f2b24b 100644
---- a/include/linux/fcntl.h
-+++ b/include/linux/fcntl.h
-@@ -27,6 +27,7 @@
- #define F_SETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 7)
- #define F_GETPIPE_SZ	(F_LINUX_SPECIFIC_BASE + 8)
- 
-+#define F_DROP_CACHES	(F_LINUX_SPECIFIC_BASE + 9)
- /*
-  * Types of directory notifications that may be requested.
-  */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 038076b..d39e4b9 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1538,6 +1538,8 @@ struct super_block {
- /* superblock cache pruning functions */
- extern void prune_icache_sb(struct super_block *sb, int nr_to_scan);
- extern void prune_dcache_sb(struct super_block *sb, int nr_to_scan);
-+extern void prune_icache_one(struct inode *inode);
-+extern void prune_dcache_one(struct dentry *dentry);
- 
- extern struct timespec current_fs_time(struct super_block *sb);
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index ce26716..1ad3fc1 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1555,6 +1555,7 @@ int in_gate_area_no_mm(unsigned long addr);
- 
- int drop_caches_sysctl_handler(struct ctl_table *, int,
- 					void __user *, size_t *, loff_t *);
-+void file_drop_caches(struct file *filp, unsigned long which);
- unsigned long shrink_slab(struct shrink_control *shrink,
- 			  unsigned long nr_pages_scanned,
- 			  unsigned long lru_pages);
+-- 
+1.7.10
+
