@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758Ab2E3VEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:04:51 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:42449 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab2E3VEt convert rfc822-to-8bit (ORCPT
+	id S1756053Ab2E3VWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:22:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51979 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753526Ab2E3VWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:04:49 -0400
+	Wed, 30 May 2012 17:22:52 -0400
+Date: Wed, 30 May 2012 22:22:36 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
+        sivanich@sgi.com
+Message-ID: <20120530212235.GB20051@decadent.org.uk>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
+ <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com>
+ <alpine.DEB.2.00.1205301328550.31768@router.home>
+ <20120530184638.GU27374@one.firstfloor.org>
+ <alpine.DEB.2.00.1205301349230.31768@router.home>
+ <20120530193234.GV27374@one.firstfloor.org>
+ <alpine.DEB.2.00.1205301441350.31768@router.home>
+ <20120530195244.GX27374@one.firstfloor.org>
+ <CAHGf_=rS6cGjcJ7tKH05cMMdJKEO9f60mNBa0VaCkzs=kVjCQQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120530205612.GY11775@ZenIV.linux.org.uk>
-References: <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
- <20120516004251.GO22082@ZenIV.linux.org.uk> <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
- <20120516021828.GP22082@ZenIV.linux.org.uk> <1337807899.15138.31.camel@falcor>
- <20120530043443.GA3200@ZenIV.linux.org.uk> <20120530163605.GV11775@ZenIV.linux.org.uk>
- <1338406967.2257.24.camel@localhost> <20120530202427.GW11775@ZenIV.linux.org.uk>
- <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com> <20120530205612.GY11775@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 May 2012 14:04:23 -0700
-X-Google-Sender-Auth: frfOnQzAFpjmOFvsihDlo0vgWGg
-Message-ID: <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHGf_=rS6cGjcJ7tKH05cMMdJKEO9f60mNBa0VaCkzs=kVjCQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 1:56 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> It actually cleaned things up, and made the calling conventions
->> simpler. Just always pass in "reqprot", and have the security layer do
->> the trivial "calculate final prot".
->
-> If only it would be trivial ;-/  Take a look at !MMU case (or at the
-> description in the posting upthread if you want to avoid seeing your
-> breakfast one more time - the code in validate_mmap_request() is
-> really ugly).
+On Wed, May 30, 2012 at 04:00:55PM -0400, KOSAKI Motohiro wrote:
+> On Wed, May 30, 2012 at 3:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> > On Wed, May 30, 2012 at 02:42:42PM -0500, Christoph Lameter wrote:
+> >> On Wed, 30 May 2012, Andi Kleen wrote:
+> >>
+> >> > On Wed, May 30, 2012 at 01:50:02PM -0500, Christoph Lameter wrote:
+> >> > > On Wed, 30 May 2012, Andi Kleen wrote:
+> >> > >
+> >> > > > I always regretted that cpusets were no done with custom node lists.
+> >> > > > That would have been much cleaner and also likely faster than what we have.
+> >> > >
+> >> > > Could shared memory policies ignore cpuset constraints?
+> >> >
+> >> > Only if noone uses cpusets as a "security" mechanism, just for a "soft policy"
+> >> > Even with soft policy you could well break someone's setup.
+> >>
+> >> Well at least lets exempt shared memory from memory migration and memory
+> >> policy updates. That seems to be causing many of these issues.
+> >
+> > Migration on the page level is needed for the memory error handling.
+> >
+> > Updates: you mean not allowing to set the policy when there are already
+> > multiple mappers? I could see that causing some unexpected behaviour. Presumably
+> > a standard database will only set it at the beginning, but I don't know
+> > if that would work for all users.
+> 
+> We don't need to kill migration core. We only need to kill that mbind(2) updates
+> vma->policy of shmem.
+[...]
 
-Don't bother with validate_mmap_request() for nommu. It's ugly, but it
-does the same thing, and if it does something else, it's buggy anyway.
+So should I (and Greg) drop 'mm: mempolicy: Let vma_merge and
+vma_split handle vma->vm_policy linkages' from the pending stable
+releases?  Or is that OK as an interim fix until these changes go
+into mainline?
+ 
+Ben.
 
-Generating 'prot' from 'reqprot' really *should* be as simple as what
-I did in my patch. The fact that some places f*ck it up is their
-problem - see for example mprotect (I think) that didn't take
-MNT_NOEXEC into account.
-
-Don't try to emulate those broken semantics. Just fix them.
-
-                Linus
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
