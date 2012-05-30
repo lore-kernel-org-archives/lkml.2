@@ -1,99 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab2E3SDv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:03:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50166 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756327Ab2E3SDu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:03:50 -0400
-Message-ID: <1338401016.28384.17.camel@twins>
-Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
- is_swbp_insn() == T
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 20:03:36 +0200
-In-Reply-To: <1338400450.28384.16.camel@twins>
-References: <20120530165757.GA8077@redhat.com>
-	 <20120530165816.GA8085@redhat.com> <1338398931.28384.7.camel@twins>
-	 <20120530173717.GM15587@linux.vnet.ibm.com>
-	 <1338400142.28384.12.camel@twins> <1338400450.28384.16.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1757277Ab2E3SFF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:05:05 -0400
+Received: from mga09.intel.com ([134.134.136.24]:24185 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757180Ab2E3SFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:05:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="146316382"
+Subject: [PATCH v2 0/4] fix / cleanup async scsi scanning
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: mroos@linux.ee, JBottomley@parallels.com
+Date: Wed, 30 May 2012 11:21:25 -0700
+Message-ID: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: StGit/0.16-1-g7004
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 19:54 +0200, Peter Zijlstra wrote:
-> Something like so?
+Commit a7a20d10 "[SCSI] sd: limit the scope of the async probe domain"
+introduces a boot regression by moving sd probe work off of the global
+async queue.  Using a local async domain hides the probe work from being
+synchronized by wait_for_device_probe()->async_synchronize_full().
+
+Fix this by teaching async_synchronize_full() to flush all async work
+regardless of domain, and take the opportunity to convert scsi scanning
+to async_schedule().  This enables wait_for_device_probe() to flush scsi
+scanning work.
+
+Changes since v1: http://marc.info/?l=linux-scsi&m=133793153025832&w=2
+
+1/ Tested to fix the boot hang that Meelis reported with v1.  Reworked
+   async_synchronize_full() to walk through all the active domains,
+   otherwise we spin on !list_empty(async_domains) and prevent the async
+   context from running.
+
+2/ Added the ability for domains to opt-out of global syncing as
+   requested by Arjan, but also needed for domains that don't want to worry
+   about list corruption when the domain goes out of scope (stack-allocated
+   domains).
 
 ---
- kernel/events/uprobes.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 985be4d..16f986d 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -45,6 +45,19 @@ static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
- 
- #define UPROBES_HASH_SZ	13
- 
-+/*
-+ * We need separate register/unregister and mmap/munmap lock hashes because of
-+ * mmap_sem nesting.
-+ *
-+ * {,un}egister_uprobe() need to install probes on (potentially) all processes
-+ * and thus need to acquire multiple mmap_sems (consequtively, not
-+ * concurrently), whereas uprobe_m{,un}map() are called while holding mmap_sem
-+ * for the particular process doing the mmap.
-+ *
-+ * This all means that register_uprobe() can race with uprobe_mmap() and we
-+ * can try and install a probe where one is already installed.
-+ */
-+
- /* serialize (un)register */
- static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
- 
-@@ -356,6 +369,9 @@ int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned
- {
- 	int result;
- 
-+	/*
-+	 * See the comment near uprobes_hash().
-+	 */
- 	result = is_swbp_at_addr(mm, vaddr);
- 	if (result == 1)
- 		return -EEXIST;
-@@ -870,6 +886,10 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
- 		if (is_register) {
-+			/*
-+			 * We can race against uprobe_mmap() see the comment
-+			 * near uprobe_hash().
-+			 */
- 			if (ret && ret == -EEXIST)
- 				ret = 0;
- 			if (ret)
-@@ -1080,7 +1100,10 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 
- 			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
- 
--			/* Ignore double add: */
-+			/* 
-+			 * We can race against register_uprobe(), see the
-+			 * comment near uprobe_hash().
-+			 */
- 			if (ret == -EEXIST) {
- 				ret = 0;
- 
+Dan Williams (4):
+      async: introduce 'async_domain' type
+      async: make async_synchronize_full() flush all work regardless of domain
+      scsi: queue async scan work to an async_schedule domain
+      scsi: cleanup usages of scsi_complete_async_scans
 
+
+ drivers/regulator/core.c      |    2 +
+ drivers/scsi/libsas/sas_ata.c |    2 +
+ drivers/scsi/scsi.c           |    4 ++
+ drivers/scsi/scsi_priv.h      |    3 +-
+ drivers/scsi/scsi_scan.c      |   24 +++----------
+ drivers/scsi/scsi_wait_scan.c |   15 +++-----
+ include/linux/async.h         |   36 +++++++++++++++++--
+ include/scsi/scsi_scan.h      |   11 ------
+ kernel/async.c                |   76 +++++++++++++++++++++++++++++++----------
+ kernel/power/hibernate.c      |    8 ----
+ kernel/power/user.c           |    2 -
+ 11 files changed, 107 insertions(+), 76 deletions(-)
+ delete mode 100644 include/scsi/scsi_scan.h
