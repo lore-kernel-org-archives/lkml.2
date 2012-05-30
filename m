@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab2E3Fxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 01:53:31 -0400
-Received: from matrix.voodoobox.net ([75.127.97.206]:54965 "EHLO
-	matrix.voodoobox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756875Ab2E3Fwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 01:52:47 -0400
-X-Greylist: delayed 2580 seconds by postgrey-1.27 at vger.kernel.org; Wed, 30 May 2012 01:52:47 EDT
-Message-ID: <1338354377.2361.13.camel@obelisk.thedillows.org>
-Subject: Re: [PATCH 1/1] ib_srp: Infiniband srp fast failover patch.
-From: David Dillow <dillowda@ornl.gov>
-To: Karandeep Chahal <kchahal@ddn.com>
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        roland@kernel.org, sean.hefty@intel.com
-Date: Wed, 30 May 2012 01:06:17 -0400
-In-Reply-To: <4FC53AAA.3060203@ddn.com>
-References: <4FC53AAA.3060203@ddn.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+	id S1756870Ab2E3Fwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 01:52:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51682 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754718Ab2E3Fwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 01:52:42 -0400
+Subject: [PATCH] net: sock: validate data_len before allocating skb in
+ sock_alloc_send_pskb()
+To: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
+From: Jason Wang <jasowang@redhat.com>
+Cc: stable@vger.kernel.org, mst@redhat.com
+Date: Wed, 30 May 2012 13:47:02 +0800
+Message-ID: <20120530054702.6146.8503.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/0.16-1-g60c4
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 17:07 -0400, Karandeep Chahal wrote:
-> Subject: [PATCH] Infiniband srp fast failover patch.
+We need to validate the number of pages consumed by data_len, otherwise frags
+array could be overflowed by userspace. So this patch validate data_len and
+return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
 
-This conflicts with Bart's patches to improve failover; it will be much
-better to use his approach to block the target rather than remove it
-wholesale -- we could have lost connectivity as a transient and may get
-it back quickly if someone grabbed the wrong cable, etc.
+Cc: stable@vger.kernel.org [2.6.27+]
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ net/core/sock.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-Also, we should only kill the one target on DREQ, and we already have a
-pointer to it from the CM context -- no need to search.
-
-It is a good idea to hook into the event mechanism; this is something
-I've long wanted to incorporate (as Vu did in OFED). I'm looking at
-getting Bart's series to a point I can merge it, and I'll pull in your
-ideas -- with credit -- there.
-
-Thanks,
--- 
-Dave Dillow
-National Center for Computational Science
-Oak Ridge National Laboratory
-(865) 241-6602 office
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 653f8c0..4ad5fa5 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1599,6 +1599,7 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 
+ 	timeo = sock_sndtimeo(sk, noblock);
+ 	while (1) {
++		int npages;
+ 		err = sock_error(sk);
+ 		if (err != 0)
+ 			goto failure;
+@@ -1607,17 +1608,20 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
+ 		if (sk->sk_shutdown & SEND_SHUTDOWN)
+ 			goto failure;
+ 
++		err = -EMSGSIZE;
++		npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
++		if (npages > MAX_SKB_FRAGS)
++			goto failure;
++
+ 		if (atomic_read(&sk->sk_wmem_alloc) < sk->sk_sndbuf) {
+ 			skb = alloc_skb(header_len, gfp_mask);
+ 			if (skb) {
+-				int npages;
+ 				int i;
+ 
+ 				/* No pages, we're done... */
+ 				if (!data_len)
+ 					break;
+ 
+-				npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
+ 				skb->truesize += data_len;
+ 				skb_shinfo(skb)->nr_frags = npages;
+ 				for (i = 0; i < npages; i++) {
 
