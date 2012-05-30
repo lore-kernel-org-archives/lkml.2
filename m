@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab2E3EwC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 00:52:02 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33438 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab2E3EwA (ORCPT
+	id S1752331Ab2E3E6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 00:58:35 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45154 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab2E3E6e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 00:52:00 -0400
-Message-ID: <4FC5A77F.6060505@oracle.com>
-Date: Wed, 30 May 2012 12:52:15 +0800
-From: "zhenzhong.duan" <zhenzhong.duan@oracle.com>
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: zhenzhong.duan@oracle.com, mingo@redhat.com, x86@kernel.org,
-        tglx@linutronix.de, hpa@zytor.com, Feng Jin <joe.jin@oracle.com>,
-        ethan.zhao@oracle.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] Fix an overflow in range_to_mtrr func
-References: <aabb3c7d-1c1a-4558-805a-b6d8478d1494@default> <CAE9FiQV1ckyhy+cWVZC+=rU9s2nrBO6qV0Yt5xkYuv_gS9ZSWQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQV1ckyhy+cWVZC+=rU9s2nrBO6qV0Yt5xkYuv_gS9ZSWQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 30 May 2012 00:58:34 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
+        tglx@linutronix.de, David Ahern <dsahern@gmail.com>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Subject: [PATCH] perf script: fix regression in dso name
+Date: Tue, 29 May 2012 22:58:26 -0600
+Message-Id: <1338353906-60706-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When boot on sun G5+ with 4T mem, see an overflow in mtrr cleanup as below.
+$ perf script -i /tmp/perf.data
+...
+gcc 13623 544315.062858: context-switches:
+    ffffffff815f65c9 __schedule ([kernel.kallsyms])
+    ffffffff81087cea __cond_resched ([kernel.kallsyms])
+    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
+    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
+    ffffffff815f8465 page_fault ([kernel.kallsyms])
+        2b7a71ea0303 _dl_lookup_symbol_x ([kernel.kallsyms])
+        2b7a71ea1eb5 _dl_relocate_object ([kernel.kallsyms])
+        2b7a71e99b2e dl_main ([kernel.kallsyms])
+        2b7a71eab7f4 _dl_sysdep_start ([kernel.kallsyms])
 
-*BAD*gran_size: 2G      chunk_size: 2G  num_reg: 10     lose cover RAM:
--18014398505283592M
+All DSO's in a callchain are printed as [kernel.kallsyms].
 
-This is because 1<<31 sign extended. Use 64bit constant to fix it.
-Useful for mem larger than or equal to 4T.
+git bisect chased it to:
 
--v2: Use 64bit constant instead of explicit type conversion as suggested
-by Yinghai. Description updated too.
+547a92e0aedb88129e7fbd804697a11949de2e5a is the first bad commit
+commit 547a92e0aedb88129e7fbd804697a11949de2e5a
+Author: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Date:   Mon Jan 30 13:42:57 2012 +0900
 
-Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+    perf script: Unify the expressions indicating "unknown"
+
+    The perf script command uses various expressions to indicate "unknown".
+
+    It is unfriendly for user scripts to parse it. So, this patch unifies
+    the expressions to "[unknown]".
+
+Looks like a copy-paste in that the other references use al.map but this one
+should be node->map.
+
+With this patch you get:
+
+$ perf script -i /tmp/perf.data
+...
+gcc 13623 544315.062858: context-switches:
+    ffffffff815f65c9 __schedule ([kernel.kallsyms])
+    ffffffff81087cea __cond_resched ([kernel.kallsyms])
+    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
+    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
+    ffffffff815f8465 page_fault ([kernel.kallsyms])
+        2b7a71ea0303 _dl_lookup_symbol_x (/lib64/ld-2.14.90.so)
+        2b7a71ea1eb5 _dl_relocate_object (/lib64/ld-2.14.90.so)
+        2b7a71e99b2e dl_main (/lib64/ld-2.14.90.so)
+        2b7a71eab7f4 _dl_sysdep_start (/lib64/ld-2.14.90.so)
+
+CC: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
 ---
-  arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/session.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c
-b/arch/x86/kernel/cpu/mtrr/cleanup.c
-index ac140c7..853a4c6 100644
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -266,7 +266,7 @@ range_to_mtrr(unsigned int reg, unsigned long
-range_startk,
-  		if (align > max_align)
-  			align = max_align;
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 93d355d..4820614 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1460,7 +1460,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 			}
+ 			if (print_dso) {
+ 				printf(" (");
+-				map__fprintf_dsoname(al.map, stdout);
++				map__fprintf_dsoname(node->map, stdout);
+ 				printf(")");
+ 			}
+ 			printf("\n");
+-- 
+1.7.10.1
 
--		sizek = 1 << align;
-+		sizek = 1UL << align;
-  		if (debug_print) {
-  			char start_factor = 'K', size_factor = 'K';
-  			unsigned long start_base, size_base;
--- 1.7.3
