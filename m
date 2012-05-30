@@ -1,73 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab2E3Gda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 02:33:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46524 "EHLO
+	id S1756913Ab2E3Gfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 02:35:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65084 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab2E3Gd3 (ORCPT
+	with ESMTP id S1752132Ab2E3Gfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 02:33:29 -0400
+	Wed, 30 May 2012 02:35:50 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v4 4/6] gpio: introduce lock mechanism for gpiochip_find
-To: Dong Aisheng <dongas86@gmail.com>
-Cc: Dong Aisheng <b29396@freescale.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com,
-        swarren@wwwdotorg.org, devicetree-discuss@lists.ozlabs.org,
+Subject: Re: [PATCH v4 6/6] pinctrl: add pinctrl gpio binding support
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Dong Aisheng <b29396@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com, devicetree-discuss@lists.ozlabs.org,
         rob.herring@calxeda.com
-In-Reply-To: <20120530041058.GB2235@b29396-Latitude-E6410>
-References: <1337952980-14621-1-git-send-email-b29396@freescale.com> <1337952980-14621-4-git-send-email-b29396@freescale.com> <20120526002500.CA3123E14E9@localhost> <20120530041058.GB2235@b29396-Latitude-E6410>
-Date: Wed, 30 May 2012 14:33:25 +0800
-Message-Id: <20120530063325.0F6AA3E065C@localhost>
+In-Reply-To: <4FBFBB74.901@wwwdotorg.org>
+References: <1337952980-14621-1-git-send-email-b29396@freescale.com> <1337952980-14621-6-git-send-email-b29396@freescale.com> <4FBFBB74.901@wwwdotorg.org>
+Date: Wed, 30 May 2012 14:35:46 +0800
+Message-Id: <20120530063547.01BD83E065C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 May 2012 12:10:58 +0800, Dong Aisheng <dongas86@gmail.com> wrote:
-> Hi Grant,
-> 
-> On Fri, May 25, 2012 at 06:25:00PM -0600, Grant Likely wrote:
-> > On Fri, 25 May 2012 21:36:18 +0800, Dong Aisheng <b29396@freescale.com> wrote:
-> > > From: Dong Aisheng <dong.aisheng@linaro.org>
-> > > 
-> > > The module lock will be automatically claimed for gpiochip_find function
-> > > in case the gpio module is removed during the using of gpiochip instance.
-> > > Users are responsible to call gpiochip_put to release the lock after
-> > > the using.
-> > > 
-> > > Signed-off-by: Dong Aisheng <dong.aisheng@linaro.org>
-> > 
-> ...
-> > Also, it doesn't do anything to protect against the gpio_chip being
-> > removed after the gpio number is resolved, which means the gpio number
-> > may no longer be valid, or may no longer point to the same gpio chip.
-> > It looks like the locking protection needs to be wider to be useful.
-> > 
-> I understand the issue now.
-> It's correct that we did not lock gpio_chip before calling gpio_request
-> after the gpio number is resolved.
-> 
-> I thought about adding a new API called of_gpio_request to hide the lock
-> to users like:
-> int of_gpio_request(..)
-> {
-> 	spin_lock_irqsave(&gpio_lock, flags);
-> 	ret = of_get_named_gpio(..);
-> 	if (ret < 0)
-> 		do_err..
-> 	ret = gpio_request(..)
-> 
-> 	spin_unlock_irqrestore(&gpio_lock, flags);
-> 	return ret;
-> }
-> But it seems it does not work since the gpio_request may sleep and we may
-> need a new sleepable lock rather using the exist gpio_lock.
-> 
-> In the same time, i'm also thinking about a question that do we really
-> need to do this to protect gpio_chip being removed afer gpio number is
-> resolved?
+On Fri, 25 May 2012 11:03:48 -0600, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> I believe Grant wants to change the of_xlate prototype in order to be
+> able to return a different gc value, so this will probably need slight
+> rework work with that change, once they're both approved. Still, I think
+> this is fine for now.
 
-Probably not (for this series) because it shouldn't cause an oops if
-it happens.  Ultimately however it would be good to have proper
-reference counting on gpio chips to prevent any problems.
+I took a different approach.  Now multiple gpio_chips can use the same
+of node, and of_xlate needs to match on the entire gpio specifier, not
+just the node.  This code is now in mainline.
 
 g.
+
