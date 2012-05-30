@@ -1,73 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab2E3HSW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:18:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42172 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756963Ab2E3HSU (ORCPT
+	id S1756971Ab2E3HTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:19:19 -0400
+Received: from relay.parallels.com ([195.214.232.42]:39430 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755859Ab2E3HTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:18:20 -0400
+	Wed, 30 May 2012 03:19:18 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Vladimir Davydov <vdavydov@parallels.com>, <linux-fsdevel@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC] fs: make reading /proc/mounts consistent
+Date: Wed, 30 May 2012 11:19:14 +0400
+Message-ID: <1338362354-19519-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Date: Wed, 30 May 2012 15:18:19 +0800
-Message-ID: <CALDO+SZwRt_pp-n5wx9uwhkqD1-JHpgUahxbwEVm-QWBx5cu7A@mail.gmail.com>
-Subject: Low shared memory throughput at VM when using PCI mapping
-From: William Tu <u9012063@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Folks,
+Reading /proc/mounts from userspace is atomic, but only within a single system
+call. That means that if there are ongoing unmounts while a userspace process
+is reading /proc/mounts, the process can omit some mount points.
 
-I'm using PCI device pass-through to pass a network device to a VM.
-Since one of my additional requirements is to share a memory between
-VM and host, I pre-allocate a memory at host (say physaddr: 0x100) and
-put this address into the BAR2 of the network device's pci
-configuration space.
+The patch makes /proc/mounts more-or-less consistent: a userspace process is
+guaranteed to read all mount points that will exist when the process closes the
+file. This is achieved by keeping the position where a process stopped as a
+pointer to mount entry and resuming reading from the position. If a mount entry
+is removed, all processes that stopped on the entry are advanced i.e.  their
+position is moved to the next entry. To achieve this, all processes reading
+/proc/mounts are organized in a linked list.
 
-The KVM boots up and the device inside VM shows me a new BAR2 address
-as its guest physical address (say: addr: 0x200). I assume KVM
-automatically setups the guest physical to host physical mappings in
-its EPT for me. So that I can use ioremap(0x200, size) at VM to access
-memory at the host.
+An example of /proc/mounts inconsistency is here:
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=593516
+---
+ fs/mount.h          |    7 ++++++
+ fs/namespace.c      |   61 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/proc_namespace.c |    5 ++++
+ 3 files changed, 71 insertions(+), 2 deletions(-)
 
-However I found that this memory seems to be uncacheable as its
-read/write speed is quite slow. Frank and Cam suggest that using
-ioremap_wc can speed up things quite a bit.
-http://comments.gmane.org/gmane.comp.emulators.qemu/69172
+diff --git a/fs/mount.h b/fs/mount.h
+index 4ef36d9..d02574a 100644
+--- a/fs/mount.h
++++ b/fs/mount.h
+@@ -70,7 +70,14 @@ struct proc_mounts {
+ 	struct seq_file m; /* must be the first element */
+ 	struct mnt_namespace *ns;
+ 	struct path root;
++	struct list_head *iter;
++	loff_t iter_pos;
++	int iter_advanced;
++	struct list_head reader;
+ 	int (*show)(struct seq_file *, struct vfsmount *);
+ };
+ 
++extern void register_mounts_reader(struct proc_mounts *p);
++extern void unregister_mounts_reader(struct proc_mounts *p);
++
+ extern const struct seq_operations mounts_op;
+diff --git a/fs/namespace.c b/fs/namespace.c
+index e608199..504940a 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -51,6 +51,37 @@ EXPORT_SYMBOL_GPL(fs_kobj);
+  */
+ DEFINE_BRLOCK(vfsmount_lock);
+ 
++static LIST_HEAD(mounts_readers);
++static DEFINE_SPINLOCK(mounts_lock);
++
++void register_mounts_reader(struct proc_mounts *p)
++{
++	spin_lock(&mounts_lock);
++	list_add(&p->reader, &mounts_readers);
++	spin_unlock(&mounts_lock);
++}
++
++void unregister_mounts_reader(struct proc_mounts *p)
++{
++	spin_lock(&mounts_lock);
++	list_del(&p->reader);
++	spin_unlock(&mounts_lock);
++}
++
++static void advance_mounts_readers(struct list_head *iter)
++{
++	struct proc_mounts *p;
++
++	spin_lock(&mounts_lock);
++	list_for_each_entry(p, &mounts_readers, reader) {
++		if (p->iter == iter) {
++			p->iter = p->iter->next;
++			p->iter_advanced = 1;
++		}
++	}
++	spin_unlock(&mounts_lock);
++}
++
+ static inline unsigned long hash(struct vfsmount *mnt, struct dentry *dentry)
+ {
+ 	unsigned long tmp = ((unsigned long)mnt / L1_CACHE_BYTES);
+@@ -941,14 +972,39 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
+ 
+ 	down_read(&namespace_sem);
+-	return seq_list_start(&p->ns->list, *pos);
++	if (p->iter_advanced) {
++		p->iter_advanced = 0;
++		if (p->iter_pos < *pos)
++			p->iter_pos++;
++	}
++
++	if (!p->iter || (p->iter_pos > *pos && p->iter == &p->ns->list)) {
++		p->iter = p->ns->list.next;
++		p->iter_pos = 0;
++	}
++
++	while (p->iter_pos < *pos && p->iter != &p->ns->list) {
++		p->iter = p->iter->next;
++		p->iter_pos++;
++	}
++
++	while (p->iter_pos > *pos && p->iter != p->ns->list.next) {
++		p->iter = p->iter->prev;
++		p->iter_pos--;
++	}
++
++	p->iter_pos = *pos;
++	return p->iter != &p->ns->list ? p->iter : NULL;
+ }
+ 
+ static void *m_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+ 	struct proc_mounts *p = container_of(m, struct proc_mounts, m);
+ 
+-	return seq_list_next(v, &p->ns->list, pos);
++	p->iter = p->iter->next;
++	p->iter_pos++;
++	*pos = p->iter_pos;
++	return p->iter != &p->ns->list ? p->iter : NULL;
+ }
+ 
+ static void m_stop(struct seq_file *m, void *v)
+@@ -1071,6 +1127,7 @@ void umount_tree(struct mount *mnt, int propagate, struct list_head *kill)
+ 
+ 	list_for_each_entry(p, &tmp_list, mnt_hash) {
+ 		list_del_init(&p->mnt_expire);
++		advance_mounts_readers(&p->mnt_list);
+ 		list_del_init(&p->mnt_list);
+ 		__touch_mnt_namespace(p->mnt_ns);
+ 		p->mnt_ns = NULL;
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 1241285..4f4524d 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -273,6 +273,10 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ 	p->root = root;
+ 	p->m.poll_event = ns->event;
+ 	p->show = show;
++	p->iter = NULL;
++	p->iter_pos = 0;
++	p->iter_advanced = 0;
++	register_mounts_reader(p);
+ 
+ 	return 0;
+ 
+@@ -289,6 +293,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
+ static int mounts_release(struct inode *inode, struct file *file)
+ {
+ 	struct proc_mounts *p = file->private_data;
++	unregister_mounts_reader(p);
+ 	path_put(&p->root);
+ 	put_mnt_ns(p->ns);
+ 	return seq_release(inode, file);
+-- 
+1.7.1
 
-In my case, ioremap_wc indeed is fast, but write combining only
-applies to write throughput. To increase both read/write speed, I use
-ioremap_cache and ioremap_nocache, but both show the same speed.
-
-Here is my experiment of write 400MB and read 4MB:
-------------------------------------------
-op   ,  ioremap type  ,  jiffies
-------------------------------------------
-read, ioremap_nocache, 304
-write, ioremap_nocache, 3336
-read, ioremap_wc,           309
-write, ioremap_wc,           23
-read, ioremap_cache,      302
-write, ioremap_cache,      3284
-------------------------------------------
-
-Since all memory read have the same speed, I guess the range of shared
-memory is marked as uncacheable in VM. Then I configure the MTRR in VM
-to set this region as write-back.
-
-> cat /proc/mtrr
-reg00: base=0x0e0000000 ( 3584MB), size=  512MB, count=1: uncachable
-reg01: base=0x0f2400000 ( 3876MB), size=    4MB, count=1: write-back
---> my shared memory addr at BAR2
-
-Sadly this does not improve my read/write performance and using
-ioremap_cache and nocache still show the same numbers. I'm now
-checking why the MTRR does not take any effect and also making sure
-the shared memory is cacheable in host and VM. Any comments or
-suggestions are appreciated!
-
-
-Regards,
-William (Cheng-Chun Tu)
