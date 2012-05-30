@@ -1,189 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab2E3RWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:22:48 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:4002 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756083Ab2E3RWq (ORCPT
+	id S1756187Ab2E3RXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:23:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40521 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756060Ab2E3RXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:22:46 -0400
-Message-ID: <1338398390.16730.483.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: shuahkhan@gmail.com
-Cc: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
-        liuj97@gmail.com, andi@firstfloor.org, linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 11:19:50 -0600
-In-Reply-To: <1338391495.2566.18.camel@lorien2>
-References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
-	 <1337880880.2718.68.camel@lorien2>
-	 <1337888931.16730.393.camel@misato.fc.hp.com>
-	 <1338391495.2566.18.camel@lorien2>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 30 May 2012 13:23:18 -0400
+Date: Wed, 30 May 2012 10:23:01 -0700
+From: "tip-bot for H. Peter Anvin" <hpa@kernel.org>
+Message-ID: <tip-319b6ffc6df892e4ccffff823cc5521a4a5d2dca@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tony.luck@intel.com, jarkko.sakkinen@intel.com, lenb@kernel.org,
+        hpa@kernel.org, tglx@linutronix.de, paul.gortmaker@windriver.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jarkko.sakkinen@intel.com, tony.luck@intel.com, lenb@kernel.org,
+        hpa@kernel.org, tglx@linutronix.de, paul.gortmaker@windriver.com
+In-Reply-To: <1338370421-27735-1-git-send-email-jarkko.sakkinen@intel.com>
+References: <1338370421-27735-1-git-send-email-jarkko.sakkinen@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/trampoline] x86, realmode:
+  Unbreak the ia64 build of drivers/acpi/sleep.c
+Git-Commit-ID: 319b6ffc6df892e4ccffff823cc5521a4a5d2dca
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 10:23:07 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 09:24 -0600, Shuah Khan wrote:
-> On Thu, 2012-05-24 at 13:48 -0600, Toshi Kani wrote:
-> > On Thu, 2012-05-24 at 11:34 -0600, Shuah Khan wrote:
-> > > On Wed, 2012-05-23 at 20:25 -0600, Toshi Kani wrote:
-> > > > This patchset supports ACPI OSPM Status Indication (_OST) method for
-> > > > ACPI CPU/memory/container hotplug operations and sysfs eject. After
-> > > > an ACPI hotplug operation has completed, OSPM calls _OST to indicate
-> > > > the result of the operation to the platform. If a platform does not
-> > > > support _OST, this patchset has no effect on the platform.
-> > > > 
-> > > > This _OST support is enabled when all relevant ACPI hotplug operations,
-> > > > such as CPU, memory and container hotplug, are enabled. This assures
-> > > > consistent behavior among the hotplug operations with regarding the
-> > > > _OST support.
-> > > > 
-> > > > Some platforms may require the OS to support _OST in order to support
-> > > > ACPI hotplug operations. For example, if a platform has the management
-> > > > console where user can request a hotplug operation from, this _OST
-> > > > support would be required for the management console to show the result
-> > > > of the hotplug request to user.
-> > > > 
-> > > > The _OST definition can be found in section 6.3.5 of ACPI 5.0 spec.
-> > > > The HPPF spec below also describes hotplug flows with _OST.
-> > > > 
-> > > >   DIG64 Hot-Plug & Partitioning Flow (HPPF) Specification R1.0
-> > > >   http://www.dig64.org/home/DIG64_HPPF_R1_0.pdf
-> > > > 
-> > > > The changes have been tested with simulated _OST methods.
-> > > 
-> > > Toshi,
-> > > 
-> > > First of all thanks for asking for my feedback. :) Having benefited from
-> > > reviewing the previous versions of this patch set, my thoughts on the
-> > > implementation have evolved.
-> > 
-> > Thanks for reviewing! :)
-> > 
-> > > I have some general comments first in the response, and please find code
-> > > specific comments on individual patches.
-> > > 
-> > > This patch set enables Insertion/Ejection _OST processing support which
-> > > will be a good addition since OS already supports it for Processor
-> > > Aggregator Device Support and _PPC.
-> > 
-> > Right.
-> > 
-> > > However, in this case it is enabled as a compile time option and would
-> > > require a kernel build when firmware starts supporting _OST method in
-> > > some cases. Reference: PATCH v4 1/6. 
-> > 
-> > Yes, it requires ACPI CPU, Memory and Container hotplug be enabled in the kernel.
-> > 
-> > > It also restricts the support to be all or nothing. i.e _OST is
-> > > supported only when all relevant hotplug operations are supported and
-> > > these need to be specifically enabled using the config options that
-> > > control it. For example, if a platform supports CPU_HOTPLUG and not
-> > > MEMORY_HOTPLUG, _OST support will be disabled even when firmware
-> > > supports it for cpus. Also the set of hotplug operations is limited as
-> > > _OST could be present in other hotplug cases such as PCI and PCIe.
-> > >
-> > > I understand the spirit of this restriction that you are trying to limit
-> > > the exposure and it is a good goal. However, it probably could be
-> > > achieved in a way that doesn't shoehorn the implementation.
-> > 
-> > This restriction is to assure that the OS is compliant with the ACPI
-> > spec. When the OS calls _OSC with the hotplug _OST bit set, the OS needs
-> > to support _OST for all relevant ACPI hotplug operations. Unfortunately,
-> > this requires all relevant hotplug modules be enabled in the OS under
-> > the current implementation.
-> > 
-> > For example, when the platform supports ACPI memory hotplug, but
-> > ACPI_HOTPLUG_MEMORY is undefined in the OS, the OS needs to call _OSC
-> > with the hotplug _OST bit unset. This is because the OS cannot receive
-> > an ACPI notification to a memory object when ACPI_HOTPLUG_MEMORY is
-> > undefined. Without the notify handler, we cannot call _OST.
-> > 
-> > A long term solution to address this issue is to have the system global
-> > notify handler to receive all hotplug notifications, and call _OST
-> > accordingly. However, it will require restructuring efforts which well
-> > beyond the scope of this patchset. The email below describes this issue
-> > and my thoughts on this.
-> > http://marc.info/?l=linux-acpi&m=133546048929384&w=2
-> > 
-> > > I think here are the goals, 
-> > > 
-> > > 1. limit exposure so platforms that don't implement _OST are not
-> > > penalized evaluation _OST unnecessarily.
-> > 
-> > This goal is met since the OS cannot evaluate _OST unless it is
-> > implemented.
-> > 
-> > > 2. enable it when needed without requiring special compile time steps
-> > > and not worrying about sorting through various config options.
-> > 
-> > I agree, but as I explained above, this is required to be compliant with
-> > ACPI spec at this point. We can remove this restriction by improving the
-> > notify handler design, but it will take more steps to do so.
-> > 
-> > > 3. don't require all hotplug variants to be enabled in config, before OS
-> > > enables _OST support.
-> > 
-> > I agree, but the same reason above.
-> > 
-> > > I see that you are enabling _OST evaluation and set the cap bit
-> > > OSC_SB_PPC_OST_SUPPORT only when ACPI_HOTPLUG_OST is defined. What
-> > > happens on when a kernel is configured with the config options that
-> > > enable ACPI_HOTPLUG_OST at compile time, and other hotplug options for
-> > > example CONFIG_HOTPLUG_PCI_PCIE, and CONFIG_HOTPLUG_PCI.
-> > 
-> > Non-ACPI hotplug operations like PCIe native hotplug are irrelevant to _OST.
-> 
-> Yes I agree with your statement about PCIe native hot-plug operations.
-> However, as Jiang Liu pointed out in one of the reviews of an earlier
-> version of this patch set, _OST method has been defined in ACPI4.0 spec
-> and there are some platforms that already implement the _OST method. For
-> example,
-> Quanta QSSC-S4R server implements _OST for hot-pluggable PCI slots.
+Commit-ID:  319b6ffc6df892e4ccffff823cc5521a4a5d2dca
+Gitweb:     http://git.kernel.org/tip/319b6ffc6df892e4ccffff823cc5521a4a5d2dca
+Author:     H. Peter Anvin <hpa@kernel.org>
+AuthorDate: Wed, 30 May 2012 12:33:41 +0300
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 30 May 2012 10:12:48 -0700
 
-This means this server is already working fine without Linux's _OST
-support or with some private patch.
+x86, realmode: Unbreak the ia64 build of drivers/acpi/sleep.c
 
-> So, we do have one example of a server that implements it for
-> hot-pluggable PCI slots. Even if APCI PCI hotplug becomes legacy only,
-> it still needs to be supported.
+Revert usage of acpi_wakeup_address and move definition
+to x86 architecture code in order to make compilation work
+in ia64.
 
-This can be incremental effort if we indeed need _OST support for legacy
-ACPI hotplug.  Jiang and I had also agreed on this.
+[jsakkine: tested compilation in ia64/x86-64 and added
+proper commit message]
 
-> Based on my reading of the ACPI 5.0 Spec, _OST method as it is defined
-> under the scope of Device Ejection/Insertion is applicable to not just
-> memory, cpu, container, and PCI slots, it could also be applicable
-> depending how a platform chooses implement it, "even in the cases of
-> docking and undocking mobile platforms to and from a peripheral
-> expansion dock." Reference: 6.3 of ACPI 5.0 Spec.
+Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Originally-by: H. Peter Anvin <hpa@kernel.org>
+Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Link: http://lkml.kernel.org/r/1338370421-27735-1-git-send-email-jarkko.sakkinen@intel.com
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Len Brown <lenb@kernel.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/acpi.h |    7 +++----
+ drivers/acpi/sleep.c        |    8 ++------
+ 2 files changed, 5 insertions(+), 10 deletions(-)
 
-The OS-FW interface of docking / undocking operations is fairly
-well-established with unique _DCK method.  It is not clear to me if
-there is any need to modify the current interface with _OST.  There
-might be such need in future, but I do not want to mess up with this
-procedure with my speculation.  
-
-> So I think it is wrong and narrow scoped to assume _OST will be and is
-> implemented only in the device ejection/insertion cases this patch set
-> addresses.
-
-I agree with your concerns.  However, this patchset is the first step,
-not the final step.  This first step is targeted to support the _OST
-use-cases defined in the DIG64 HPPF spec.  We can continue to enhance it
-as we find more needs.  I am willing to help anyone who has plan to
-implement _OST for other use-cases.
-
-Thanks,
--Toshi 
-
-
-> -- Shuah
-> 
-> 
-
-
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index 724aa44..0c44630 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -29,6 +29,7 @@
+ #include <asm/processor.h>
+ #include <asm/mmu.h>
+ #include <asm/mpspec.h>
++#include <asm/realmode.h>
+ 
+ #define COMPILER_DEPENDENT_INT64   long long
+ #define COMPILER_DEPENDENT_UINT64  unsigned long long
+@@ -116,10 +117,8 @@ static inline void acpi_disable_pci(void)
+ /* Low-level suspend routine. */
+ extern int acpi_suspend_lowlevel(void);
+ 
+-extern const unsigned char acpi_wakeup_code[];
+-
+-/* early initialization routine */
+-extern void acpi_reserve_wakeup_memory(void);
++/* Physical address to resume after wakeup */
++#define acpi_wakeup_address ((unsigned long)(real_mode_header->wakeup_start))
+ 
+ /*
+  * Check if the CPU can handle C2 and deeper
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index ebaa045..74ee4ab 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -25,8 +25,6 @@
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
+ 
+-#include <asm/realmode.h>
+-
+ #include "internal.h"
+ #include "sleep.h"
+ 
+@@ -93,13 +91,11 @@ static struct notifier_block tts_notifier = {
+ static int acpi_sleep_prepare(u32 acpi_state)
+ {
+ #ifdef CONFIG_ACPI_SLEEP
+-	unsigned long wakeup_pa = real_mode_header->wakeup_start;
+ 	/* do we have a wakeup address for S2 and S3? */
+ 	if (acpi_state == ACPI_STATE_S3) {
+-		if (!wakeup_pa)
++		if (!acpi_wakeup_address)
+ 			return -EFAULT;
+-		acpi_set_firmware_waking_vector(
+-				(acpi_physical_address)wakeup_pa);
++		acpi_set_firmware_waking_vector(acpi_wakeup_address);
+ 
+ 	}
+ 	ACPI_FLUSH_CPU_CACHE();
