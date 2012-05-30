@@ -1,161 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab2E3VgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:36:18 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:45209 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754199Ab2E3VgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:36:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v2 4/4] scsi: cleanup usages of scsi_complete_async_scans
-Date: Wed, 30 May 2012 23:41:21 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, mroos@linux.ee,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        James Bottomley <JBottomley@parallels.com>
-References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com> <20120530182145.23574.5156.stgit@dwillia2-linux.jf.intel.com> <201205302334.12247.rjw@sisk.pl>
-In-Reply-To: <201205302334.12247.rjw@sisk.pl>
+	id S1756891Ab2E3Vgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:36:49 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46572 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754812Ab2E3Vgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 17:36:47 -0400
+Date: Wed, 30 May 2012 22:36:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+Message-ID: <20120530213638.GZ11775@ZenIV.linux.org.uk>
+References: <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
+ <20120516021828.GP22082@ZenIV.linux.org.uk>
+ <1337807899.15138.31.camel@falcor>
+ <20120530043443.GA3200@ZenIV.linux.org.uk>
+ <20120530163605.GV11775@ZenIV.linux.org.uk>
+ <1338406967.2257.24.camel@localhost>
+ <20120530202427.GW11775@ZenIV.linux.org.uk>
+ <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+ <20120530205612.GY11775@ZenIV.linux.org.uk>
+ <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205302341.21821.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, May 30, 2012, Rafael J. Wysocki wrote:
-> On Wednesday, May 30, 2012, Dan Williams wrote:
-> > Now that scsi registers its async scan work with the async subsystem,
-> > wait_for_device_probe() is sufficient for ensuring all scanning is
-> > complete.
-> > 
-> > Cc: Arjan van de Ven <arjan@linux.intel.com>
-> > Cc: Len Brown <len.brown@intel.com>
-> > Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> > Cc: James Bottomley <JBottomley@parallels.com>
-> > Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-> > ---
-> >  drivers/scsi/scsi_scan.c      |   12 ------------
-> >  drivers/scsi/scsi_wait_scan.c |   15 +++++----------
-> >  include/scsi/scsi_scan.h      |   11 -----------
-> >  kernel/power/hibernate.c      |    8 --------
-> >  kernel/power/user.c           |    2 --
-> >  5 files changed, 5 insertions(+), 43 deletions(-)
-> >  delete mode 100644 include/scsi/scsi_scan.h
-> > 
-> > diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> > index fb42aa0..20c7108 100644
-> > --- a/drivers/scsi/scsi_scan.c
-> > +++ b/drivers/scsi/scsi_scan.c
-> > @@ -184,18 +184,6 @@ int scsi_complete_async_scans(void)
-> >  	return 0;
-> >  }
-> >  
-> > -/* Only exported for the benefit of scsi_wait_scan */
-> > -EXPORT_SYMBOL_GPL(scsi_complete_async_scans);
-> > -
-> > -#ifndef MODULE
-> > -/*
-> > - * For async scanning we need to wait for all the scans to complete before
-> > - * trying to mount the root fs.  Otherwise non-modular drivers may not be ready
-> > - * yet.
-> > - */
-> > -late_initcall(scsi_complete_async_scans);
-> > -#endif
-> > -
-> >  /**
-> >   * scsi_unlock_floptical - unlock device via a special MODE SENSE command
-> >   * @sdev:	scsi device to send command to
-> > diff --git a/drivers/scsi/scsi_wait_scan.c b/drivers/scsi/scsi_wait_scan.c
-> > index 74708fc..57de24a 100644
-> > --- a/drivers/scsi/scsi_wait_scan.c
-> > +++ b/drivers/scsi/scsi_wait_scan.c
-> > @@ -12,21 +12,16 @@
-> >  
-> >  #include <linux/module.h>
-> >  #include <linux/device.h>
-> > -#include <scsi/scsi_scan.h>
-> >  
-> >  static int __init wait_scan_init(void)
-> >  {
-> >  	/*
-> > -	 * First we need to wait for device probing to finish;
-> > -	 * the drivers we just loaded might just still be probing
-> > -	 * and might not yet have reached the scsi async scanning
-> > +	 * This will not return until all async work (system wide) is
-> > +	 * quiesced.  Probing queues host-scanning work to the async
-> > +	 * queue which is why we don't need a separate call to
-> > +	 * scsi_complete_async_scans()
-> >  	 */
-> >  	wait_for_device_probe();
-> > -	/*
-> > -	 * and then we wait for the actual asynchronous scsi scan
-> > -	 * to finish.
-> > -	 */
-> > -	scsi_complete_async_scans();
-> >  	return 0;
-> >  }
-> >  
-> > @@ -38,5 +33,5 @@ MODULE_DESCRIPTION("SCSI wait for scans");
-> >  MODULE_AUTHOR("James Bottomley");
-> >  MODULE_LICENSE("GPL");
-> >  
-> > -late_initcall(wait_scan_init);
-> > +module_init(wait_scan_init);
-> >  module_exit(wait_scan_exit);
-> > diff --git a/include/scsi/scsi_scan.h b/include/scsi/scsi_scan.h
-> > deleted file mode 100644
-> > index 7889888..0000000
-> > --- a/include/scsi/scsi_scan.h
-> > +++ /dev/null
-> > @@ -1,11 +0,0 @@
-> > -#ifndef _SCSI_SCSI_SCAN_H
-> > -#define _SCSI_SCSI_SCAN_H
-> > -
-> > -#ifdef CONFIG_SCSI
-> > -/* drivers/scsi/scsi_scan.c */
-> > -extern int scsi_complete_async_scans(void);
-> > -#else
-> > -static inline int scsi_complete_async_scans(void) { return 0; }
-> > -#endif
-> > -
-> > -#endif /* _SCSI_SCSI_SCAN_H */
-> > diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-> > index e09dfbf..821114a 100644
-> > --- a/kernel/power/hibernate.c
-> > +++ b/kernel/power/hibernate.c
-> > @@ -25,7 +25,6 @@
-> >  #include <linux/freezer.h>
-> >  #include <linux/gfp.h>
-> >  #include <linux/syscore_ops.h>
-> > -#include <scsi/scsi_scan.h>
-> >  
-> >  #include "power.h"
-> >  
-> > @@ -735,13 +734,6 @@ static int software_resume(void)
-> >  			async_synchronize_full();
-> >  		}
-> >  
-> > -		/*
-> > -		 * We can't depend on SCSI devices being available after loading
-> > -		 * one of their modules until scsi_complete_async_scans() is
-> > -		 * called and the resume device usually is a SCSI one.
-> > -		 */
-> > -		scsi_complete_async_scans();
-> > -
+On Wed, May 30, 2012 at 02:04:23PM -0700, Linus Torvalds wrote:
+> Generating 'prot' from 'reqprot' really *should* be as simple as what
+> I did in my patch. The fact that some places f*ck it up is their
+> problem - see for example mprotect (I think) that didn't take
+> MNT_NOEXEC into account.
 > 
-> I believe this is wrong.  You're going to introduce a regression on systems
-> using built-in hibernation and built-in SCSI stack.
+> Don't try to emulate those broken semantics. Just fix them.
 
-Ah, wait.  Do I understand correctly that wait_for_device_probe()
-is now going to do an equivalent of scsi_complete_async_scans()?
+Actually, it's better than I thought, but not as simple as you say.
+I've misread what's going on in !file case; mea culpa, they are
+actually acting the same way there.
 
-If so, that should work, in which case please disregard my previous
-messages in this thread.
+The only difference is that for file-backed ones !MMU wants
+VM_MAYEXEC in that file's bdi flags (BDI_CAP_EXEC_MAP).  And
+that actually sounds reasonable in !MMU case.
 
-Thanks,
-Rafael
+Anyway, I've dumped the variant I've got into vfs.git@security_file_mmap;
+it should be at commit f12a0fd062b1d259a0b6bc6442019e6d4c45e9f5.
 
+Comments?
