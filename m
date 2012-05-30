@@ -1,144 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757352Ab2E3SFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:05:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8228 "EHLO mx1.redhat.com"
+	id S1757364Ab2E3SGS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:06:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47691 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757337Ab2E3SFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:05:46 -0400
-Message-ID: <1338401124.23475.8.camel@bling.home>
-Subject: Re: [PATCH 1/5] pci: Add PCI DMA source ID quirk
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org, benh@kernel.crashing.org,
-        aik@ozlabs.ru, david@gibson.dropbear.id.au, joerg.roedel@amd.com,
-        dwmw2@infradead.org, konrad.wilk@oracle.com,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        ddutile@redhat.com
-Date: Wed, 30 May 2012 12:05:24 -0600
-In-Reply-To: <4FC6204C.5000209@gmail.com>
-References: <20120530043142.1164.63415.stgit@bling.home>
-	 <20120530044834.1164.9081.stgit@bling.home> <4FC6204C.5000209@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1757279Ab2E3SFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:05:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="172880603"
+Subject: [PATCH v2 2/4] async: make async_synchronize_full() flush all work
+ regardless of domain
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: Len Brown <len.brown@intel.com>, Meelis Roos <mroos@linux.ee>,
+        James Bottomley <JBottomley@parallels.com>,
+        Eldad Zack <eldadzack@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Date: Wed, 30 May 2012 11:21:35 -0700
+Message-ID: <20120530182135.23574.9220.stgit@dwillia2-linux.jf.intel.com>
+In-Reply-To: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: StGit/0.16-1-g7004
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 21:27 +0800, Jiang Liu wrote:
-> Hi Alex,
-> 	pci_get_slot() will hold a reference count on the returned
-> pci device, so need to release the reference count for balance.
-> According to patches "[PATCH 5/7] amd_iommu: Make use of DMA quirks
-> and ACS checks in IOMMU groups" and "[PATCH 6/7] intel-iommu: Make 
-> use of DMA quirks and ACS checks in IOMMU groups", current patches 
-> failed to release the reference count gained by pci_get_slot().
+In response to an async related regression James noted:
 
-Thanks for pointing this out Gerry.  I think I'll rename
-pci_dma_source() to pci_get_dma_source() which will then increment the
-reference of the device it returns, whether it's a quirk or the original
-device.  The caller will then be responsible for doing a pci_dev_put().
-Thanks,
+  "My theory is that this is an init problem: The assumption in a lot of
+   our code is that async_synchronize_full() waits for everything ... even
+   the domain specific async schedules, which isn't true."
 
-Alex
+...so make this assumption true.
 
-> On 05/30/2012 12:48 PM, Alex Williamson wrote:
-> > DMA transactions are tagged with the source ID of the device making
-> > the request.  Occasionally hardware screws this up and uses the
-> > source ID of a different device (often the wrong function number of
-> > a multifunction device).  A specific Ricoh multifunction device is
-> > a prime example of this problem and included in this patch.  The
-> > purpose of this function is that given a pci_dev, return the pci_dev
-> > to use as the source ID for DMA.  When hardware works correctly,
-> > this returns the input device.  For the components of the Ricoh
-> > multifunction device, return the pci_dev for function 0.
-> > 
-> > This will be used by IOMMU drivers for determining the boundaries
-> > of IOMMU groups as multiple devices using the same source ID must
-> > be contained within the same group.  This can also be used by
-> > existing streaming DMA paths for the same purpose.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> > 
-> >  drivers/pci/quirks.c |   40 ++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/pci.h  |    5 +++++
-> >  2 files changed, 45 insertions(+)
-> > 
-> > diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> > index 2a75216..004e167 100644
-> > --- a/drivers/pci/quirks.c
-> > +++ b/drivers/pci/quirks.c
-> > @@ -3179,3 +3179,43 @@ int pci_dev_specific_reset(struct pci_dev *dev, int probe)
-> >  
-> >  	return -ENOTTY;
-> >  }
-> > +
-> > +static struct pci_dev *pci_func_0_dma_source(struct pci_dev *dev)
-> > +{
-> > +	return pci_get_slot(dev->bus, PCI_DEVFN(PCI_SLOT(dev->devfn), 0));
-> > +}
-> > +
-> > +static const struct pci_dev_dma_source {
-> > +	u16 vendor;
-> > +	u16 device;
-> > +	struct pci_dev *(*dma_source)(struct pci_dev *dev);
-> > +} pci_dev_dma_source[] = {
-> > +	/*
-> > +	 * https://bugzilla.redhat.com/show_bug.cgi?id=605888
-> > +	 *
-> > +	 * Some Ricoh devices use the function 0 source ID for DMA on
-> > +	 * other functions of a multifunction device.  The DMA devices
-> > +	 * is therefore function 0, which will have implications of the
-> > +	 * iommu grouping of these devices.
-> > +	 */
-> > +	{ PCI_VENDOR_ID_RICOH, 0xe822, pci_func_0_dma_source },
-> > +	{ PCI_VENDOR_ID_RICOH, 0xe230, pci_func_0_dma_source },
-> > +	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
-> > +	{ PCI_VENDOR_ID_RICOH, 0xe832, pci_func_0_dma_source },
-> > +	{ 0 }
-> > +};
-> > +
-> > +struct pci_dev *pci_dma_source(struct pci_dev *dev)
-> > +{
-> > +	const struct pci_dev_dma_source *i;
-> > +
-> > +	for (i = pci_dev_dma_source; i->dma_source; i++) {
-> > +		if ((i->vendor == dev->vendor ||
-> > +		     i->vendor == (u16)PCI_ANY_ID) &&
-> > +		    (i->device == dev->device ||
-> > +		     i->device == (u16)PCI_ANY_ID))
-> > +			return i->dma_source(dev);
-> > +	}
-> > +
-> > +	return dev;
-> > +}
-> > diff --git a/include/linux/pci.h b/include/linux/pci.h
-> > index d8c379d..5bc7502 100644
-> > --- a/include/linux/pci.h
-> > +++ b/include/linux/pci.h
-> > @@ -1486,9 +1486,14 @@ enum pci_fixup_pass {
-> >  
-> >  #ifdef CONFIG_PCI_QUIRKS
-> >  void pci_fixup_device(enum pci_fixup_pass pass, struct pci_dev *dev);
-> > +struct pci_dev *pci_dma_source(struct pci_dev *dev);
-> >  #else
-> >  static inline void pci_fixup_device(enum pci_fixup_pass pass,
-> >  				    struct pci_dev *dev) {}
-> > +static inline struct pci_dev *pci_dma_source(struct pci_dev *dev)
-> > +{
-> > +	return dev;
-> > +}
-> >  #endif
-> >  
-> >  void __iomem *pcim_iomap(struct pci_dev *pdev, int bar, unsigned long maxlen);
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Each domain, including the default one, registers itself on a global domain
+list when work is scheduled.  Once all entries complete it exits that
+list.  Waiting for the list to be empty syncs all in-flight work across
+all domains.
 
+Domains can opt-out of global syncing if they are declared as exclusive
+ASYNC_DOMAIN_EXCLUSIVE().  All stack-based domains have been declared
+exclusive since the domain may go out of scope as soon as the last work
+item completes.
 
+Statically declared domains are mostly ok, but async_unregister_domain()
+is there to close any theoretical races with pending
+async_synchronize_full waiters at module removal time.
+
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: James Bottomley <JBottomley@parallels.com>
+Reported-by: Meelis Roos <mroos@linux.ee>
+Reported-by: Eldad Zack <eldadzack@gmail.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+---
+ drivers/scsi/scsi.c   |    1 +
+ include/linux/async.h |    1 +
+ kernel/async.c        |   43 +++++++++++++++++++++++++++++++++++++++++--
+ 3 files changed, 43 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index 2f92007..2dd3c93 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -1355,6 +1355,7 @@ static void __exit exit_scsi(void)
+ 	scsi_exit_devinfo();
+ 	scsi_exit_procfs();
+ 	scsi_exit_queue();
++	async_unregister_domain(&scsi_sd_probe_domain);
+ }
+ 
+ subsys_initcall(init_scsi);
+diff --git a/include/linux/async.h b/include/linux/async.h
+index 364e7ff..7a24fe9 100644
+--- a/include/linux/async.h
++++ b/include/linux/async.h
+@@ -46,6 +46,7 @@ struct async_domain {
+ extern async_cookie_t async_schedule(async_func_ptr *ptr, void *data);
+ extern async_cookie_t async_schedule_domain(async_func_ptr *ptr, void *data,
+ 					    struct async_domain *domain);
++void async_unregister_domain(struct async_domain *domain);
+ extern void async_synchronize_full(void);
+ extern void async_synchronize_full_domain(struct async_domain *domain);
+ extern void async_synchronize_cookie(async_cookie_t cookie);
+diff --git a/kernel/async.c b/kernel/async.c
+index ba5491d..9d31183 100644
+--- a/kernel/async.c
++++ b/kernel/async.c
+@@ -63,7 +63,9 @@ static async_cookie_t next_cookie = 1;
+ 
+ static LIST_HEAD(async_pending);
+ static ASYNC_DOMAIN(async_running);
++static LIST_HEAD(async_domains);
+ static DEFINE_SPINLOCK(async_lock);
++static DEFINE_MUTEX(async_register_mutex);
+ 
+ struct async_entry {
+ 	struct list_head	list;
+@@ -145,6 +147,8 @@ static void async_run_entry_fn(struct work_struct *work)
+ 	/* 3) remove self from the running queue */
+ 	spin_lock_irqsave(&async_lock, flags);
+ 	list_del(&entry->list);
++	if (running->registered && --running->count == 0)
++		list_del_init(&running->node);
+ 
+ 	/* 4) free the entry */
+ 	kfree(entry);
+@@ -187,6 +191,8 @@ static async_cookie_t __async_schedule(async_func_ptr *ptr, void *data, struct a
+ 	spin_lock_irqsave(&async_lock, flags);
+ 	newcookie = entry->cookie = next_cookie++;
+ 	list_add_tail(&entry->list, &async_pending);
++	if (running->registered && running->count++ == 0)
++		list_add_tail(&running->node, &async_domains);
+ 	atomic_inc(&entry_count);
+ 	spin_unlock_irqrestore(&async_lock, flags);
+ 
+@@ -236,13 +242,43 @@ EXPORT_SYMBOL_GPL(async_schedule_domain);
+  */
+ void async_synchronize_full(void)
+ {
++	mutex_lock(&async_register_mutex);
+ 	do {
+-		async_synchronize_cookie(next_cookie);
+-	} while (!list_empty(&async_running.domain) || !list_empty(&async_pending));
++		struct async_domain *domain = NULL;
++
++		spin_lock_irq(&async_lock);
++		if (!list_empty(&async_domains))
++			domain = list_first_entry(&async_domains, typeof(*domain), node);
++		spin_unlock_irq(&async_lock);
++
++		async_synchronize_cookie_domain(next_cookie, domain);
++	} while (!list_empty(&async_domains));
++	mutex_unlock(&async_register_mutex);
+ }
+ EXPORT_SYMBOL_GPL(async_synchronize_full);
+ 
+ /**
++ * async_unregister_domain - ensure no more anonymous waiters on this domain
++ * @domain: idle domain to flush out of any async_synchronize_full instances
++ *
++ * async_synchronize_{cookie|full}_domain() are not flushed since callers
++ * of these routines should know the lifetime of @domain
++ *
++ * Prefer ASYNC_DOMAIN_EXCLUSIVE() declarations over flushing
++ */
++void async_unregister_domain(struct async_domain *domain)
++{
++	mutex_lock(&async_register_mutex);
++	spin_lock_irq(&async_lock);
++	WARN_ON(!domain->registered || !list_empty(&domain->node) ||
++		!list_empty(&domain->domain));
++	domain->registered = 0;
++	spin_unlock_irq(&async_lock);
++	mutex_unlock(&async_register_mutex);
++}
++EXPORT_SYMBOL_GPL(async_unregister_domain);
++
++/**
+  * async_synchronize_full_domain - synchronize all asynchronous function within a certain domain
+  * @domain: running list to synchronize on
+  *
+@@ -268,6 +304,9 @@ void async_synchronize_cookie_domain(async_cookie_t cookie, struct async_domain
+ {
+ 	ktime_t uninitialized_var(starttime), delta, endtime;
+ 
++	if (!running)
++		return;
++
+ 	if (initcall_debug && system_state == SYSTEM_BOOTING) {
+ 		printk(KERN_DEBUG "async_waiting @ %i\n", task_pid_nr(current));
+ 		starttime = ktime_get();
 
