@@ -1,91 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab2E3TnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 15:43:00 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:60785 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab2E3Tm5 (ORCPT
+	id S1753200Ab2E3Tno (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:43:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18305 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab2E3Tnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 15:42:57 -0400
-Message-ID: <1338406967.2257.24.camel@localhost>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-From: Eric Paris <eparis@parisplace.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 15:42:47 -0400
-In-Reply-To: <20120530163605.GV11775@ZenIV.linux.org.uk>
-References: <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
-	 <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
-	 <1337112446.20904.50.camel@falcor>
-	 <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
-	 <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
-	 <20120516004251.GO22082@ZenIV.linux.org.uk>
-	 <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
-	 <20120516021828.GP22082@ZenIV.linux.org.uk>
-	 <1337807899.15138.31.camel@falcor>
-	 <20120530043443.GA3200@ZenIV.linux.org.uk>
-	 <20120530163605.GV11775@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.2 (3.4.2-1.fc17)
-Mime-Version: 1.0
+	Wed, 30 May 2012 15:43:42 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=QqmzYZ8R8N4A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=n8i27M1mAAAA:8 a=JfrnYn6hAAAA:8 a=fKI9wT_O-dN3BeuwhacA:9 a=PUjeQqilurYA:10 a=rXZLD9m7qZoA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338407017.13348.311.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 0/5] Function tracing support for pstore
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kees Cook <keescook@chromium.org>, Colin Cross <ccross@android.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        John Stultz <john.stultz@linaro.org>, Shuah Khan <shuahkhan@gmail.com>,
+        arve@android.com, Rebecca Schultz Zavin <rebecca@android.com>,
+        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Date: Wed, 30 May 2012 15:43:37 -0400
+In-Reply-To: <20120526133412.GA18001@lizard>
+References: <20120526133412.GA18001@lizard>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 17:36 +0100, Al Viro wrote:
+On Sat, 2012-05-26 at 06:34 -0700, Anton Vorontsov wrote:
+> Hi all,
+> 
 
-> The only question is what do we want passed to resulting two hooks.  LSM
-> folks?
+Sorry for the late reply, Monday was US holiday, and I've been working
+days on finding (and fixing) a very nasty bug.
 
-Current hook:
- int security_file_mmap(struct file *file, unsigned long reqprot,
-                        unsigned long prot, unsigned long flags,
-                        unsigned long addr, unsigned long addr_only)
+> With this support kernel can save functions call chain log into a
+> persistent ram buffer that can be decoded and dumped after reboot
+> through pstore filesystem. It can be used to determine what function
+> was last called before a hang or an unexpected reset (caused by, for
+> example, a buggy driver that abuses HW).
+> 
 
-Obvious easy split:
- int security_file_mmap(struct file *file, unsigned long reqprot,
-                        unsigned long prot, unsigned long flags)
+Nice!
 
- int security_addr_mmap(unsigned long addr)
+> Here's a "nano howto", to get the idea:
+> 
+>  # mount -t debugfs debugfs /sys/kernel/debug/
+>  # cd /sys/kernel/debug/tracing
+>  # echo persistent > current_tracer
+>  # reboot -f
+>  [...]
+>  # mount -t pstore pstore /mnt/
+>  # tail /mnt/ftrace-ramoops
+>  0 ffffffff8101ea64  ffffffff8101bcda  native_apic_mem_read <- disconnect_bsp_APIC+0x6a/0xc0
+>  0 ffffffff8101ea44  ffffffff8101bcf6  native_apic_mem_write <- disconnect_bsp_APIC+0x86/0xc0
+>  0 ffffffff81020084  ffffffff8101a4b5  hpet_disable <- native_machine_shutdown+0x75/0x90
+>  0 ffffffff81005f94  ffffffff8101a4bb  iommu_shutdown_noop <- native_machine_shutdown+0x7b/0x90
+>  0 ffffffff8101a6a1  ffffffff8101a437  native_machine_emergency_restart <- native_machine_restart+0x37/0x40
+>  0 ffffffff811f9876  ffffffff8101a73a  acpi_reboot <- native_machine_emergency_restart+0xaa/0x1e0
+>  0 ffffffff8101a514  ffffffff8101a772  mach_reboot_fixups <- native_machine_emergency_restart+0xe2/0x1e0
+>  0 ffffffff811d9c54  ffffffff8101a7a0  __const_udelay <- native_machine_emergency_restart+0x110/0x1e0
+>  0 ffffffff811d9c34  ffffffff811d9c80  __delay <- __const_udelay+0x30/0x40
+>  0 ffffffff811d9d14  ffffffff811d9c3f  delay_tsc <- __delay+0xf/0x20
+> 
+> Mostly the code comes from trace_persistent.c driver found in the
+> Android git tree, written by Colin Cross <ccross@android.com>
+> (according to sign-off history). I reworked the driver a little bit,
+> and ported it to pstore subsystem.
+> 
+> The patches depend on a pile of other pstore-related work, so
+> if anyone is willing to try the patches, they would rather grab
+> the whole git tree:
+> 	git://git.infradead.org/users/cbou/linux-pstore.git
+> or gitweb:
+> 	http://git.infradead.org/users/cbou/linux-pstore.git
+> 
+> 
+> Note that so far I've tried to not change the original idea, but if
+> we consider inclusion, there are some open questions:
+> 
+> 1. Should we merge persistent tracer with normal function tracer,
+>    i.e. add some flag that makes function tracer to duplicate the
+>    events into pstore (via a callback to pstore)?
+> 
 
-security_addr_mmap would be used as you described.  Which means
-security_file_mmap() would pretty much only be used in do_mmap_pgoff()
-(or validate_mmap_request)
+What about making it a trace option? That is,
+in .../debug/tracing/options, have 'persistent' and when that's
+selected, we change to using the persistent buffer. This could be for
+both function tracing and event tracing.
 
-file:
-capabilities: does not use
-apparmor/smack/selinux: used to get security blobs from
-file/dentry/inode
+I'm currently working on getting 'multi' buffers working. I plan on
+presenting it at Linux Plumbers for more feedback. But it will be adding
+a lot of hooks that would probably make this rather trivial to
+implement.
 
-reqprot: the PROT_* requested by userspace.
-prot: the actual PROT_* which will be applied (read-implies-exec is the
-difference)
+-- Steve
 
-capabilities: does not use *prot
-SMACK: does not use *prot
-apparmor: only uses prot (not reqprot)
-SELinux: uses prot or reqprot based on a kernel build/selinuxfs/cmdline
-value.  Fedora/RHEL uses reqprot, not prot.  This seems dumb, but it's
-what we are doing.
+> 2. If we keep the two separate, should the code live in fs/pstore
+>    or kernel/trace?.. I can see valid points for both approaches.
+> 
+> Thanks,
 
-These are basically used to check permission to read/write/execute the
-file based on PROT_READ/PROT_WRITE/PROT_EXECUTE etc.  If you move this
-up we won't have reqprot and prot, we'll only have reqprot.  So we would
-need a helper in the mm code which allow us to easily calculate the
-read-implies-exec behavior.  for apparmor (and less common selinux)
-
-***flags
-capabilities: does not use
-SMACK: does not use
-apparmor: if (!(flags & MAP_PRIVATE))
-SELinux: if ((flags & MAP_TYPE) == MAP_SHARED)
-
-So both apparmor and SELinux only use flags to know if PROT_WRITE will
-actually change the backing file.  PROT_WRITE is ignored if MAP_PRIVATE.
-So this could be a bool called "shared" or the LSMs can just parse the
-flags.  Doesn't matter to me.
 
