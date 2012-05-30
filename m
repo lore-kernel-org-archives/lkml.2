@@ -1,88 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab2E2XyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 19:54:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21250 "EHLO mx1.redhat.com"
+	id S1756061Ab2E3AE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 20:04:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1951 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755910Ab2E2XyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 19:54:22 -0400
-Date: Tue, 29 May 2012 19:54:07 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Russ Anderson <rja@sgi.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1753237Ab2E3AEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 20:04:25 -0400
+Date: Wed, 30 May 2012 02:03:15 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rja@americas.sgi.com
-Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on
- multi-processor systems
-Message-ID: <20120529235407.GH32472@redhat.com>
-References: <20120524144229.GA27713@sgi.com>
- <20120529175352.GA31524@redhat.com>
- <20120529191935.GB29726@sgi.com>
- <20120529223923.GF32472@redhat.com>
- <20120529231135.GD4592@sgi.com>
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 23/35] autonuma: core
+Message-ID: <20120530000315.GW21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-24-git-send-email-aarcange@redhat.com>
+ <20120529114554.GA7017@shutemov.name>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120529231135.GD4592@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120529114554.GA7017@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 06:11:35PM -0500, Russ Anderson wrote:
-> > > In this case, I am just using the hardware NMI, which sends the NMI
-> > > signal to each logical cpu.  Since each cpu receives the NMI at nearly
-> > > the exact same time, they end up in dump_stack() at the same time.
-> > > Without some form of locking, trace lines from different cpus end
-> > > up intermixed, making it impossible to tell what any individual 
-> > > cpu was doing.
-> > 
-> > I forgot the original reasons for having the NMI go to each CPU instead of
-> > just the boot CPU (commit 78c06176), but it seems like if you revert that
-> > patch and have the nmi handler just call trigger_all_cpu_backtrace()
-> > instead (which does stack trace locking for pretty output), that would
-> > solve your problem, no?  That locking is safe because it is only called in
-> > the NMI context.
+On Tue, May 29, 2012 at 02:45:54PM +0300, Kirill A. Shutemov wrote:
+> On Fri, May 25, 2012 at 07:02:27PM +0200, Andrea Arcangeli wrote:
 > 
-> We want NMI to hit all the cpus at the same time to get a coherent
-> snapshot of what is happening in the system at one point in time.
-> Sending an IPI one cpu at a time skews the results, and doesn't 
-
-Oh, I thought it was broadcasting, but I see the apic_uv code serializes
-it.  Though getting all those hardware locks in the nmi handler has to be
-time consuming?  But I know you guys did some tricks to speed that up.
-
-> really solve the problem of multiple cpus going into dump_stack()
-> at the same time.  NMI isn't the only possible caller of dump_stack().
-
-I am curious, your NMI handler has locking wrapped around dump_stack,
-shouldn't that serialize the output the way you want it?  Why isn't that
-working?
-
+> > +static int knumad_do_scan(void)
+> > +{
 > 
-> FWIW, "Wait for up to 10 seconds for all CPUs to do the backtrace" on
-> a 4096 cpu system isn't long enough.  :-)
-
-Good point. :-)
-
+> ...
 > 
-> > Whereas the lock you are proposing can be called in a mixture of NMI and
-> > IRQ which could cause deadlocks I believe.
+> > +	if (knumad_test_exit(mm) || !vma) {
+> > +		mm_autonuma = mm->mm_autonuma;
+> > +		if (mm_autonuma->mm_node.next != &knumad_scan.mm_head) {
+> > +			mm_autonuma = list_entry(mm_autonuma->mm_node.next,
+> > +						 struct mm_autonuma, mm_node);
+> > +			knumad_scan.mm = mm_autonuma->mm;
+> > +			atomic_inc(&knumad_scan.mm->mm_count);
+> > +			knumad_scan.address = 0;
+> > +			knumad_scan.mm->mm_autonuma->numa_fault_pass++;
+> > +		} else
+> > +			knumad_scan.mm = NULL;
 > 
-> Since this is a lock just around the dump_stack printk, would 
-> checking for forward progress and a timeout to catch any possible
-> deadlock be sufficient?  In the unlikely case of a deadlock the
-> lock gets broken and some of the cpu backtraces get intermixed.
-> That is still a huge improvement over the current case where 
-> all of the backtraces get intermixed.
+> knumad_scan.mm should be nulled only after list_del otherwise you will
+> have race with autonuma_exit():
 
-I saw your new patch based on Frederick's input.  It seems to take care of
-deadlock situations though you run into the starving lock problem that
-ticketed spinlocks solved.  Which is why I am curious why moving the
-locking one layer up to the NMI handler (which is where it is currently),
-didn't fix your problem.
+Thanks for noticing I managed to reproduce it by setting
+knuma_scand/scan_sleep_millisecs and
+knuma_scand/scan_sleep_pass_millisecs both to 0 and running a loop of
+"while :; do memhog -r10 10m &>/dev/null; done".
 
-Cheers,
-Don
+So the problem was that if knuma_scand would change the knumad_scan.mm
+after the mm->mm_users was 0 but before autonuma_exit run,
+autonuma_exit wouldn't notice that the mm->mm_auotnuma was already
+unlinked and it would unlink again.
+
+autonuma_exit itself doesn't need to tell anything to knuma_scand,
+because if it notices knuma_scand.mm == mm, it will do nothing and it
+_always_ relies on knumad_scan to unlink it.
+
+And if instead knuma_scand.mm is != mm, then autonuma_exit knows the
+knuma_scand daemon will never have a chance to see the "mm" in the
+list again if it arrived first (setting mm_autonuma->mm = NULL there
+is just a debug tweak according to the comment).
+
+The "serialize" event is there only to wait the knuma_scand main loop
+before taking down the mm (it's not related to the list management).
+
+The mm_autonuma->mm is useless after the "mm_autonuma" has been
+unlinked so it's ok to use that to track if knuma_scand arrives first.
+
+The exit path of the kernel daemon also forgot to check for
+knumad_test_exit(mm) before unlinking, but that only runs if
+kthread_should_stop() is true, and nobody calls kthread_stop so it's
+only a theoretical improvement.
+
+So this seems to fix it.
+
+diff --git a/mm/autonuma.c b/mm/autonuma.c
+index c2a5a82..768250a 100644
+--- a/mm/autonuma.c
++++ b/mm/autonuma.c
+@@ -679,9 +679,12 @@ static int knumad_do_scan(void)
+ 		} else
+ 			knumad_scan.mm = NULL;
+ 
+-		if (knumad_test_exit(mm))
++		if (knumad_test_exit(mm)) {
+ 			list_del(&mm->mm_autonuma->mm_node);
+-		else
++			/* tell autonuma_exit not to list_del */
++			VM_BUG_ON(mm->mm_autonuma->mm != mm);
++			mm->mm_autonuma->mm = NULL;
++		} else
+ 			mm_numa_fault_flush(mm);
+ 
+ 		mmdrop(mm);
+@@ -770,8 +773,12 @@ static int knuma_scand(void *none)
+ 
+ 	mm = knumad_scan.mm;
+ 	knumad_scan.mm = NULL;
+-	if (mm)
++	if (mm && knumad_test_exit(mm)) {
+ 		list_del(&mm->mm_autonuma->mm_node);
++		/* tell autonuma_exit not to list_del */
++		VM_BUG_ON(mm->mm_autonuma->mm != mm);
++		mm->mm_autonuma->mm = NULL;
++	}
+ 	mutex_unlock(&knumad_mm_mutex);
+ 
+ 	if (mm)
+@@ -996,11 +1003,15 @@ void autonuma_exit(struct mm_struct *mm)
+ 	mutex_lock(&knumad_mm_mutex);
+ 	if (knumad_scan.mm == mm)
+ 		serialize = true;
+-	else
++	else if (mm->mm_autonuma->mm) {
++		VM_BUG_ON(mm->mm_autonuma->mm != mm);
++		mm->mm_autonuma->mm = NULL; /* debug */
+ 		list_del(&mm->mm_autonuma->mm_node);
++	}
+ 	mutex_unlock(&knumad_mm_mutex);
+ 
+ 	if (serialize) {
++		/* prevent the mm to go away under knumad_do_scan main loop */
+ 		down_write(&mm->mmap_sem);
+ 		up_write(&mm->mmap_sem);
+ 	}
