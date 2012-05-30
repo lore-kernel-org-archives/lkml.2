@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab2E3EtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 00:49:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2850 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab2E3EtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 00:49:02 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3/5] pci: export pci_user functions for use by other drivers
-To: bhelgaas@google.com, linux-pci@vger.kernel.org
-Cc: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        joerg.roedel@amd.com, dwmw2@infradead.org, konrad.wilk@oracle.com,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        ddutile@redhat.com, alex.williamson@redhat.com
-Date: Tue, 29 May 2012 22:48:47 -0600
-Message-ID: <20120530044847.1164.58282.stgit@bling.home>
-In-Reply-To: <20120530043142.1164.63415.stgit@bling.home>
-References: <20120530043142.1164.63415.stgit@bling.home>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755750Ab2E3EtU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 00:49:20 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61499 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab2E3EtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 00:49:05 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 22/22] mfd: Enable DT probing of the DB8500 PRCMU
+Date: Wed, 30 May 2012 12:47:40 +0800
+Message-Id: <1338353260-10097-23-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO PCI support will make use of these for user initiated
-PCI config accesses.
+This patch adds the correct compatible string for use during Device Tree
+population. Without it the DB8500 PRCMU will not be probed.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
+ drivers/mfd/db8500-prcmu.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
- drivers/pci/access.c |    6 ++++--
- drivers/pci/pci.h    |    7 -------
- include/linux/pci.h  |    8 ++++++++
- 3 files changed, 12 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 2a58164..ba91a7e 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -162,7 +162,8 @@ int pci_user_read_config_##size						\
- 	if (ret > 0)							\
- 		ret = -EINVAL;						\
- 	return ret;							\
--}
-+}									\
-+EXPORT_SYMBOL_GPL(pci_user_read_config_##size);
- 
- /* Returns 0 on success, negative values indicate error. */
- #define PCI_USER_WRITE_CONFIG(size,type)				\
-@@ -181,7 +182,8 @@ int pci_user_write_config_##size					\
- 	if (ret > 0)							\
- 		ret = -EINVAL;						\
- 	return ret;							\
--}
-+}									\
-+EXPORT_SYMBOL_GPL(pci_user_write_config_##size);
- 
- PCI_USER_READ_CONFIG(byte, u8)
- PCI_USER_READ_CONFIG(word, u16)
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index e494347..f2dcc46 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -86,13 +86,6 @@ static inline bool pci_is_bridge(struct pci_dev *pci_dev)
- 	return !!(pci_dev->subordinate);
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 74595e1..01f01f3 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -2994,11 +2994,16 @@ static int __init db8500_prcmu_probe(struct platform_device *pdev)
+ no_irq_return:
+ 	return err;
  }
++static const struct of_device_id db8500_prcmu_match[] = {
++	{ .compatible = "stericsson,db8500-prcmu"},
++	{ },
++};
  
--extern int pci_user_read_config_byte(struct pci_dev *dev, int where, u8 *val);
--extern int pci_user_read_config_word(struct pci_dev *dev, int where, u16 *val);
--extern int pci_user_read_config_dword(struct pci_dev *dev, int where, u32 *val);
--extern int pci_user_write_config_byte(struct pci_dev *dev, int where, u8 val);
--extern int pci_user_write_config_word(struct pci_dev *dev, int where, u16 val);
--extern int pci_user_write_config_dword(struct pci_dev *dev, int where, u32 val);
--
- struct pci_vpd_ops {
- 	ssize_t (*read)(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
- 	ssize_t (*write)(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 8ceef38..1b6d1c5 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -777,6 +777,14 @@ static inline int pci_write_config_dword(const struct pci_dev *dev, int where,
- 	return pci_bus_write_config_dword(dev->bus, dev->devfn, where, val);
- }
+ static struct platform_driver db8500_prcmu_driver = {
+ 	.driver = {
+ 		.name = "db8500-prcmu",
+ 		.owner = THIS_MODULE,
++		.of_match_table = db8500_prcmu_match,
+ 	},
+ };
  
-+/* user-space driven config access */
-+int pci_user_read_config_byte(struct pci_dev *dev, int where, u8 *val);
-+int pci_user_read_config_word(struct pci_dev *dev, int where, u16 *val);
-+int pci_user_read_config_dword(struct pci_dev *dev, int where, u32 *val);
-+int pci_user_write_config_byte(struct pci_dev *dev, int where, u8 val);
-+int pci_user_write_config_word(struct pci_dev *dev, int where, u16 val);
-+int pci_user_write_config_dword(struct pci_dev *dev, int where, u32 val);
-+
- int __must_check pci_enable_device(struct pci_dev *dev);
- int __must_check pci_enable_device_io(struct pci_dev *dev);
- int __must_check pci_enable_device_mem(struct pci_dev *dev);
+-- 
+1.7.9.5
 
