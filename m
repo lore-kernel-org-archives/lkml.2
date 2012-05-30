@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756796Ab2E3So2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:44:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62814 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab2E3SoZ (ORCPT
+	id S1757154Ab2E3Sqq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:46:46 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:48346 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab2E3Sqo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:44:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Subject: Re: [RFC PATCH 0/5] omap: add ocp2scp as a misc driver
-Date: Wed, 30 May 2012 18:43:51 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com
-References: <1338375394-16268-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1338375394-16268-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201205301843.51568.arnd@arndb.de>
-X-Provags-ID: V02:K0:YeK3hbW4M7uxH+0T7Sv58BOwivIUOoYs88rsBngW5YG
- MFj9gKY2sKo2+DVg4XabwOo+TO1coWvpF1qku3l/ThZlyiAUDl
- v1yIxOh8H6zfmUujN4ofRFhykYsbatGeJw6y3EQcPvJkc9fJKq
- +bqCCYpkLsN/mRDyix8loDWpD/UqPDmvBDpyf7ffAUckZeksB0
- ZAvcS8rdHa2m9KzqOlFCIQ/BFLxa6vTYcZdWHatW+hZ/NgikFb
- EBE54znXNNKYx4bEJox2FYajUKm6fYLIZFBvF1WTxynSKjkXhd
- Qma7xjXgnhRjJJjp1uncleyHIzVJo46A9MxNRmyE8gWxdQ1qXh
- D3lnRzMLSYo3Ulda6AqE=
+	Wed, 30 May 2012 14:46:44 -0400
+Date: Wed, 30 May 2012 20:46:38 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, kosaki.motohiro@gmail.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
+        sivanich@sgi.com, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        andi@firstfloor.org
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+Message-ID: <20120530184638.GU27374@one.firstfloor.org>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com> <alpine.DEB.2.00.1205301328550.31768@router.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205301328550.31768@router.home>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 30 May 2012, Kishon Vijay Abraham I wrote:
+On Wed, May 30, 2012 at 01:34:21PM -0500, Christoph Lameter wrote:
+> On Wed, 30 May 2012, Linus Torvalds wrote:
 > 
-> This patch series is done as a preparatory step for adding phy drivers
-> for dwc3 and musb.
+> > On Wed, May 30, 2012 at 2:02 AM,  <kosaki.motohiro@gmail.com> wrote:
+> > >
+> > > So, I think we should reconsider about shared mempolicy completely.
+> >
+> > Quite frankly, I'd prefer that approach. The code is subtle and
+> > horribly bug-fraught, and I absolutely detest the way it looks too.
+> > Reading your patches was actually somewhat painful.
 > 
-> This series adds a new driver for ocp2scp to which phy drivers are connected.
-> 
-> I'm planning to send phy drivers asap. Meanwhile I'd like to get some
-> review comments for this series. I have also plans to send device tree
-> adaptation of the ocp2scp driver.
-> 
-> Developed on
-> http://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next
-> 
-> If it has to be based on some other tree, please let me know.
+> It is so bad mostly because the integration of shared memory policies with
+> cpusets is not really working. Using either in isolation is ok especially
+> shared mempolicies do not play well with cpusets.
 
-This must be the most pointless driver I've seen in a long time. It doesn't
-actually do anything at all, it just creates child devices from a static
-lookup table.
+Yes the cpusets did some horrible things.
 
-Just put the devices you actually want into the device tree instead and
-have them automatically created.
+I always regretted that cpusets were no done with custom node lists.
+That would have been much cleaner and also likely faster than what we have.
 
-	Arnd
+> > If we could just remove the support for it entirely, that would be
+> > *much* preferable to continue working with this code.
+> 
+> Well shm support needs memory policies to spread data across nodes etc.
+> AFAICT support was put in due to requirements to support large database
+> vendors (oracle). Andi?
+
+Yes we need shared policy for the big databases.
+
+Maybe we could stop supporting cpusets with that though. Not sure they
+really use that.
+
+> Its not going to be easy to remove.
+
+Shared policies? I don't think you can remove them.
+cpusets+shared policy? maybe, but still will be hard. 
+
+-Andi
+
+> 
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
