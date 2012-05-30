@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab2E3Jo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:44:26 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42415 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430Ab2E3JoY convert rfc822-to-8bit (ORCPT
+	id S1752149Ab2E3JwB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:52:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56920 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab2E3Jv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:44:24 -0400
-Message-ID: <1338371057.26856.226.camel@twins>
-Subject: Re: [PATCH] sched: Don't try allocating memory from offline nodes
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: David Rientjes <rientjes@google.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 11:44:17 +0200
-In-Reply-To: <alpine.DEB.2.00.1205292019560.14373@chino.kir.corp.google.com>
-References: <4fc507a211523c4a14@agluck-desktop.sc.intel.com>
-	 <alpine.DEB.2.00.1205292019560.14373@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 30 May 2012 05:51:57 -0400
+From: Sasikantha babu <sasikanth.v19@gmail.com>
+To: Serge Hallyn <serge.hallyn@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Sasikantha babu <sasikanth.v19@gmail.com>
+Subject: [PATCH] prctl: Removed redunant assignment of "error" to zero
+Date: Wed, 30 May 2012 15:25:03 +0530
+Message-Id: <1338371703-28858-1-git-send-email-sasikanth.v19@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 20:21 -0700, David Rientjes wrote:
-> On Tue, 29 May 2012, Luck, Tony wrote:
-> 
-> > Index: linux-2.6/kernel/sched/core.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/sched/core.c
-> > +++ linux-2.6/kernel/sched/core.c
-> > @@ -6449,7 +6449,7 @@ static void sched_init_numa(void)
-> >  			return;
-> >  
-> >  		for (j = 0; j < nr_node_ids; j++) {
-> > -			struct cpumask *mask = kzalloc_node(cpumask_size(), GFP_KERNEL, j);
-> > +			struct cpumask *mask = kzalloc(cpumask_size(), GFP_KERNEL);
-> >  			if (!mask)
-> >  				return;
-> >  
-> 
-> It's definitely better if we can allocate on the node, though, so perhaps 
-> do the same thing that I did in 
-> http://marc.info/?l=linux-kernel&m=133778739503111 by doing
-> kzalloc_node(..., node_online(j) ? j : NUMA_NO_NODE)?
+Just setting the "error" to error number is enough on failure and
+It doesn't require to set "error" variable to zero in each switch case, since
+it was already initialized with zero
 
-This data isn't used overly much, only when rebuilding the sched
-domains, so its not performance critical. I only used per-node
-allocations because it seemed the right thing to do. If it doesn't work,
-I wouldn't bother with making it more complex.
+Signed-off-by: Sasikantha babu <sasikanth.v19@gmail.com>
+---
+ kernel/sys.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 6df4262..d8e9016 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1920,7 +1920,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 				break;
+ 			}
+ 			me->pdeath_signal = arg2;
+-			error = 0;
+ 			break;
+ 		case PR_GET_PDEATHSIG:
+ 			error = put_user(me->pdeath_signal, (int __user *)arg2);
+@@ -1934,7 +1933,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 				break;
+ 			}
+ 			set_dumpable(me->mm, arg2);
+-			error = 0;
+ 			break;
+ 
+ 		case PR_SET_UNALIGN:
+@@ -1961,8 +1959,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		case PR_SET_TIMING:
+ 			if (arg2 != PR_TIMING_STATISTICAL)
+ 				error = -EINVAL;
+-			else
+-				error = 0;
+ 			break;
+ 
+ 		case PR_SET_NAME:
+@@ -2013,7 +2009,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 					current->default_timer_slack_ns;
+ 			else
+ 				current->timer_slack_ns = arg2;
+-			error = 0;
+ 			break;
+ 		case PR_MCE_KILL:
+ 			if (arg4 | arg5)
+@@ -2039,7 +2034,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			default:
+ 				return -EINVAL;
+ 			}
+-			error = 0;
+ 			break;
+ 		case PR_MCE_KILL_GET:
+ 			if (arg2 | arg3 | arg4 | arg5)
+@@ -2055,7 +2049,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 			break;
+ 		case PR_SET_CHILD_SUBREAPER:
+ 			me->signal->is_child_subreaper = !!arg2;
+-			error = 0;
+ 			break;
+ 		case PR_GET_CHILD_SUBREAPER:
+ 			error = put_user(me->signal->is_child_subreaper,
+-- 
+1.7.3.4
+
