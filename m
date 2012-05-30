@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab2E3RSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:18:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49501 "EHLO
+	id S1756015Ab2E3RSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:18:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49500 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab2E3RSx (ORCPT
+	with ESMTP id S1753969Ab2E3RSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 May 2012 13:18:53 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 2/3] perf annotate browser: Fix help window entry for navigating to hottest line
-Date: Wed, 30 May 2012 14:18:40 -0300
-Message-Id: <1338398321-28327-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 1/3] perf report: Use the right symbol for annotation
+Date: Wed, 30 May 2012 14:18:39 -0300
+Message-Id: <1338398321-28327-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1338398321-28327-1-git-send-email-acme@infradead.org>
 References: <1338398321-28327-1-git-send-email-acme@infradead.org>
@@ -31,9 +31,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Its 'H', not 'h'. The later is for getting to the help window.
+In non symbolic views, i.e. --sort without "symbol", as in:
 
-Reported-by: Ingo Molnar <mingo@kernel.org>
+ perf report --sort comm
+
+We're segfaulting in the --tui because we're testing the symbol resolved
+and then trying to use the symbol on the histogram entry where we're
+coalescing all hits for a COMM, and the first hist_entry for a comm may
+have a NULL symbol, i.e. the RIP didn't resolve to any symbol.
+
+In this case we're segfaulting, fix it by testing against the symbol in
+the histogram entry.
+
+Reported-by: William Cohen <wcohen@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
@@ -42,25 +52,25 @@ Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-7zvwphhm815y2zczoxgstzuf@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-8ylwubbcmu27ucc9ffrku3yv@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/annotate.c |    2 +-
+ tools/perf/builtin-report.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/browsers/annotate.c b/tools/perf/ui/browsers/annotate.c
-index 4deea6a..34b1c46 100644
---- a/tools/perf/ui/browsers/annotate.c
-+++ b/tools/perf/ui/browsers/annotate.c
-@@ -668,7 +668,7 @@ static int annotate_browser__run(struct annotate_browser *browser, int evidx,
- 		"q/ESC/CTRL+C  Exit\n\n"
- 		"->            Go to target\n"
- 		"<-            Exit\n"
--		"h             Cycle thru hottest instructions\n"
-+		"H             Cycle thru hottest instructions\n"
- 		"j             Toggle showing jump to target arrows\n"
- 		"J             Toggle showing number of jump sources on targets\n"
- 		"n             Search next string\n"
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 8c767c6..2400e00 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -162,7 +162,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 	 * so we don't allocated the extra space needed because the stdio
+ 	 * code will not use it.
+ 	 */
+-	if (al->sym != NULL && use_browser > 0) {
++	if (he->ms.sym != NULL && use_browser > 0) {
+ 		struct annotation *notes = symbol__annotation(he->ms.sym);
+ 
+ 		assert(evsel != NULL);
 -- 
 1.7.9.2.358.g22243
 
