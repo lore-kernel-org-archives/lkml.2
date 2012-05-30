@@ -1,115 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab2E3SVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:21:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50442 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757181Ab2E3SVO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:21:14 -0400
-Message-ID: <1338402061.28384.22.camel@twins>
-Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
- is_swbp_insn() == T
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
+	id S1757399Ab2E3SVa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:21:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757181Ab2E3SV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:21:29 -0400
+Date: Wed, 30 May 2012 20:19:49 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 20:21:01 +0200
-In-Reply-To: <20120530180409.GO15587@linux.vnet.ibm.com>
-References: <20120530165757.GA8077@redhat.com>
-	 <20120530165816.GA8085@redhat.com> <1338398931.28384.7.camel@twins>
-	 <20120530173717.GM15587@linux.vnet.ibm.com>
-	 <1338400142.28384.12.camel@twins> <1338400450.28384.16.camel@twins>
-	 <20120530180409.GO15587@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 14/35] autonuma: knuma_migrated per NUMA node queues
+Message-ID: <20120530181949.GG21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-15-git-send-email-aarcange@redhat.com>
+ <1338299468.26856.80.camel@twins>
+ <20120530001438.GX21339@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120530001438.GX21339@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 23:34 +0530, Srikar Dronamraju wrote:
-> Nit: {,un}egister_uprobe should have been uprobe_{,un}register  at
-> couple of places. 
+On Wed, May 30, 2012 at 02:14:38AM +0200, Andrea Arcangeli wrote:
+> I fully agree, I prefer to fix it and I was fully aware about
 
-Ah indeed.. very silly.. hopefully last version.
+I did this yesterday, this is saving a couple of pages on my numa
+system with node shift = 9. However I'm not sure anymore if it's
+really worth it... but since I did it I may as well keep it.
 
+==
+From: Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH] autonuma: autonuma_migrate_head[0] dynamic size
 
+Reduce the autonuma_migrate_head array entries from MAX_NUMNODES to
+num_possible_nodes() or zero if autonuma_impossible() is true.
+
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
-Subject: uprobe: Document uprobe_register() vs uprobe_mmap() race
+ arch/x86/mm/numa.c             |    6 ++++--
+ arch/x86/mm/numa_32.c          |    3 ++-
+ include/linux/memory_hotplug.h |    3 ++-
+ include/linux/mmzone.h         |    8 +++++++-
+ include/linux/page_autonuma.h  |   10 ++++++++--
+ mm/memory_hotplug.c            |    2 +-
+ mm/page_autonuma.c             |    5 +++--
+ 7 files changed, 27 insertions(+), 10 deletions(-)
 
-Because the mind is treacherous and makes us forget we need to write
-stuff down.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/events/uprobes.c |   29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 985be4d..fd6fb30 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -45,6 +45,23 @@ static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 2d125be..a4a9e92 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -11,6 +11,7 @@
+ #include <linux/nodemask.h>
+ #include <linux/sched.h>
+ #include <linux/topology.h>
++#include <linux/page_autonuma.h>
  
- #define UPROBES_HASH_SZ	13
- 
-+/*
-+ * We need separate register/unregister and mmap/munmap lock hashes because of
-+ * mmap_sem nesting.
-+ *
-+ * uprobe_register() needs to install probes on (potentially) all processes
-+ * and thus needs to acquire multiple mmap_sems (consequtively, not
-+ * concurrently), whereas uprobe_mmap() is called while holding mmap_sem
-+ * for the particular process doing the mmap.
-+ *
-+ * uprobe_register()->register_for_each_vma() needs to drop/acquire mmap_sem
-+ * because of lock order against i_mmap_mutex. This means there's a hole in the
-+ * register vma iteration where a mmap() can happen.
-+ *
-+ * Thus uprobe_register() can race with uprobe_mmap() and we can try and
-+ * install a probe where one is already installed.
-+ */
-+
- /* serialize (un)register */
- static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
- 
-@@ -356,6 +373,9 @@ int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+@@ -192,7 +193,8 @@ int __init numa_add_memblk(int nid, u64 start, u64 end)
+ /* Initialize NODE_DATA for a node on the local memory */
+ static void __init setup_node_data(int nid, u64 start, u64 end)
  {
- 	int result;
+-	const size_t nd_size = roundup(sizeof(pg_data_t), PAGE_SIZE);
++	const size_t nd_size = roundup(autonuma_pglist_data_size(),
++				       PAGE_SIZE);
+ 	bool remapped = false;
+ 	u64 nd_pa;
+ 	void *nd;
+@@ -239,7 +241,7 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+ 		printk(KERN_INFO "    NODE_DATA(%d) on node %d\n", nid, tnid);
  
+ 	node_data[nid] = nd;
+-	memset(NODE_DATA(nid), 0, sizeof(pg_data_t));
++	memset(NODE_DATA(nid), 0, autonuma_pglist_data_size());
+ 	NODE_DATA(nid)->node_id = nid;
+ 	NODE_DATA(nid)->node_start_pfn = start >> PAGE_SHIFT;
+ 	NODE_DATA(nid)->node_spanned_pages = (end - start) >> PAGE_SHIFT;
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 534255a..d32d6cc 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -25,6 +25,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/memblock.h>
+ #include <linux/module.h>
++#include <linux/page_autonuma.h>
+ 
+ #include "numa_internal.h"
+ 
+@@ -194,7 +195,7 @@ void __init init_alloc_remap(int nid, u64 start, u64 end)
+ 
+ 	/* calculate the necessary space aligned to large page size */
+ 	size = node_memmap_size_bytes(nid, start_pfn, end_pfn);
+-	size += ALIGN(sizeof(pg_data_t), PAGE_SIZE);
++	size += ALIGN(autonuma_pglist_data_size(), PAGE_SIZE);
+ 	size = ALIGN(size, LARGE_PAGE_BYTES);
+ 
+ 	/* allocate node memory and the lowmem remap area */
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 910550f..76b1840 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -5,6 +5,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/notifier.h>
+ #include <linux/bug.h>
++#include <linux/page_autonuma.h>
+ 
+ struct page;
+ struct zone;
+@@ -130,7 +131,7 @@ extern void arch_refresh_nodedata(int nid, pg_data_t *pgdat);
+  */
+ #define generic_alloc_nodedata(nid)				\
+ ({								\
+-	kzalloc(sizeof(pg_data_t), GFP_KERNEL);			\
++	kzalloc(autonuma_pglist_data_size(), GFP_KERNEL);	\
+ })
+ /*
+  * This definition is just for error path in node hotadd.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index e66da74..ed5b0c0 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -701,10 +701,16 @@ typedef struct pglist_data {
+ #if !defined(CONFIG_SPARSEMEM)
+ 	struct page_autonuma *node_page_autonuma;
+ #endif
+-	struct list_head autonuma_migrate_head[MAX_NUMNODES];
+ 	unsigned long autonuma_nr_migrate_pages;
+ 	wait_queue_head_t autonuma_knuma_migrated_wait;
+ 	spinlock_t autonuma_lock;
 +	/*
-+	 * See the comment near uprobes_hash().
++	 * Archs supporting AutoNUMA should allocate the pgdat with
++	 * size autonuma_pglist_data_size() after including
++	 * <linux/page_autonuma.h> and the below field must remain the
++	 * last one of this structure.
 +	 */
- 	result = is_swbp_at_addr(mm, vaddr);
- 	if (result == 1)
- 		return -EEXIST;
-@@ -870,6 +890,10 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		up_read(&mm->mmap_sem);
- 		mmput(mm);
- 		if (is_register) {
-+			/*
-+			 * We can race against uprobe_mmap() see the comment
-+			 * near uprobe_hash().
-+			 */
- 			if (ret && ret == -EEXIST)
- 				ret = 0;
- 			if (ret)
-@@ -1080,7 +1104,10 @@ int uprobe_mmap(struct vm_area_struct *vma)
++	struct list_head autonuma_migrate_head[0];
+ #endif
+ } pg_data_t;
  
- 			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+diff --git a/include/linux/page_autonuma.h b/include/linux/page_autonuma.h
+index 05d2862..1d02643 100644
+--- a/include/linux/page_autonuma.h
++++ b/include/linux/page_autonuma.h
+@@ -10,6 +10,7 @@ static inline void __init page_autonuma_init_flatmem(void) {}
+ #ifdef CONFIG_AUTONUMA
  
--			/* Ignore double add: */
-+			/* 
-+			 * We can race against uprobe_register(), see the
-+			 * comment near uprobe_hash().
-+			 */
- 			if (ret == -EEXIST) {
- 				ret = 0;
+ #include <linux/autonuma_flags.h>
++#include <linux/autonuma_types.h>
  
-
+ extern void __meminit page_autonuma_map_init(struct page *page,
+ 					     struct page_autonuma *page_autonuma,
+@@ -29,11 +30,10 @@ extern void __meminit pgdat_autonuma_init(struct pglist_data *);
+ struct page_autonuma;
+ #define PAGE_AUTONUMA_SIZE 0
+ #define SECTION_PAGE_AUTONUMA_SIZE 0
++#endif
+ 
+ #define autonuma_impossible() true
+ 
+-#endif
+-
+ static inline void pgdat_autonuma_init(struct pglist_data *pgdat) {}
+ 
+ #endif /* CONFIG_AUTONUMA */
+@@ -50,4 +50,10 @@ extern void __init sparse_early_page_autonuma_alloc_node(struct page_autonuma **
+ 							 int nodeid);
+ #endif
+ 
++/* inline won't work here */
++#define autonuma_pglist_data_size() (sizeof(struct pglist_data) +	\
++				     (autonuma_impossible() ? 0 :	\
++				      sizeof(struct list_head) * \
++				      num_possible_nodes()))
++
+ #endif /* _LINUX_PAGE_AUTONUMA_H */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 0d7e3ec..604995b 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -164,7 +164,7 @@ void register_page_bootmem_info_node(struct pglist_data *pgdat)
+ 	struct page *page;
+ 	struct zone *zone;
+ 
+-	nr_pages = PAGE_ALIGN(sizeof(struct pglist_data)) >> PAGE_SHIFT;
++	nr_pages = PAGE_ALIGN(autonuma_pglist_data_size()) >> PAGE_SHIFT;
+ 	page = virt_to_page(pgdat);
+ 
+ 	for (i = 0; i < nr_pages; i++, page++)
+diff --git a/mm/page_autonuma.c b/mm/page_autonuma.c
+index 131b5c9..c5c340b 100644
+--- a/mm/page_autonuma.c
++++ b/mm/page_autonuma.c
+@@ -23,8 +23,9 @@ static void __meminit __pgdat_autonuma_init(struct pglist_data *pgdat)
+ 	spin_lock_init(&pgdat->autonuma_lock);
+ 	init_waitqueue_head(&pgdat->autonuma_knuma_migrated_wait);
+ 	pgdat->autonuma_nr_migrate_pages = 0;
+-	for_each_node(node_iter)
+-		INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
++	if (!autonuma_impossible())
++		for_each_node(node_iter)
++			INIT_LIST_HEAD(&pgdat->autonuma_migrate_head[node_iter]);
+ }
+ 
+ #if !defined(CONFIG_SPARSEMEM)
