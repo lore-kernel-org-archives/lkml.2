@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab2E3Vrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:47:53 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48009 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab2E3Vrv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:47:51 -0400
-Date: Wed, 30 May 2012 23:47:32 +0200 (CEST)
-From: Eldad Zack <eldad@fogrefinery.com>
-X-X-Sender: eldad@debianer
-To: David Miller <davem@davemloft.net>
-cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 8021q/vlan: process NETDEV_GOING_DOWN
-In-Reply-To: <20120530.162751.80640634568619332.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.02.1205302344200.8234@debianer>
-References: <1338330635-27259-1-git-send-email-eldad@fogrefinery.com> <20120529.204040.644013889059321702.davem@davemloft.net> <alpine.DEB.2.02.1205302055140.1587@debianer> <20120530.162751.80640634568619332.davem@davemloft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757113Ab2E3VsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:48:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53512 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754181Ab2E3VsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 17:48:20 -0400
+Date: Wed, 30 May 2012 17:48:09 -0400
+From: Dave Jones <davej@redhat.com>
+To: tglx@linutronix.de
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: NOHZ: local_softirq_pending 08
+Message-ID: <20120530214809.GA19223@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, tglx@linutronix.de,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thomas,
+I've been seeing these messages more and more lately.
+When I start a kernel build for eg, it seems to spew regularly..
 
-On Wed, 30 May 2012, David Miller wrote:
-> From: Eldad Zack <eldad@fogrefinery.com>
-> Date: Wed, 30 May 2012 21:11:02 +0200 (CEST)
-> 
-> > In case a certain protocol needs to send a "dying gasp" packet, when you 
-> > administrativly shutdown the port (which is also what happens when you 
-> > restart the machine).
-> 
-> No in tree users have this requirement, therefore your patch is
-> inappropriate.
+May 30 17:42:00 [ 1030.651976] NOHZ: local_softirq_pending 08
+May 30 17:42:16 [ 1046.579491] NOHZ: local_softirq_pending 08
+May 30 17:42:16 [ 1047.230344] NOHZ: local_softirq_pending 08
+May 30 17:42:33 [ 1063.751879] NOHZ: local_softirq_pending 08
+May 30 17:42:33 [ 1063.796340] NOHZ: local_softirq_pending 08
+May 30 17:43:00 [ 1090.776493] NOHZ: local_softirq_pending 08
+May 30 17:43:00 [ 1090.836544] NOHZ: local_softirq_pending 08
+May 30 17:43:00 [ 1090.880271] NOHZ: local_softirq_pending 08
+May 30 17:43:04 [ 1095.291939] NOHZ: local_softirq_pending 08
+May 30 17:43:04 [ 1095.335659] NOHZ: local_softirq_pending 08
 
-You are right in that, that no in tree users have this requirement 
-(yet), but in the same time it doesn't harm any existing code.
 
-Don't you agree that it's the right order to do the notifications?
-And if so, isn't that enough, considering that there are no side 
-effects and it's a tiny change?
 
-Eldad
+According to git, you ratelimited this back in 2007 with the message
+"until we found the root cause of that problem."
+
+Is this an old problem that has returned ?
+
+Maybe interesting note: Both machines I see this on regularly are Atom cpus,
+and it's always '08'.
+
+
+	Dave
