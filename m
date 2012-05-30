@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab2E3U3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:29:00 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41548 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755346Ab2E3U25 (ORCPT
+	id S1755994Ab2E3U3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:29:38 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39411 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab2E3U3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:28:57 -0400
-Date: Wed, 30 May 2012 16:27:51 -0400 (EDT)
-Message-Id: <20120530.162751.80640634568619332.davem@davemloft.net>
-To: eldad@fogrefinery.com
-Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 8021q/vlan: process NETDEV_GOING_DOWN
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.DEB.2.02.1205302055140.1587@debianer>
-References: <1338330635-27259-1-git-send-email-eldad@fogrefinery.com>
-	<20120529.204040.644013889059321702.davem@davemloft.net>
-	<alpine.DEB.2.02.1205302055140.1587@debianer>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 30 May 2012 13:27:54 -0700 (PDT)
+	Wed, 30 May 2012 16:29:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120529144743.GG3558@phenom.dumpdata.com>
+References: <CAJ75kXbC3gqQAaghKo2i1L650dw9-vrFuEwoy4defagoyR8p4Q@mail.gmail.com>
+ <20120521181558.GA7829@phenom.dumpdata.com> <alpine.LSU.2.00.1205261113470.2033@eggly.anvils>
+ <20120529144743.GG3558@phenom.dumpdata.com>
+From: William Dauchy <wdauchy@gmail.com>
+Date: Wed, 30 May 2012 22:29:16 +0200
+Message-ID: <CAJ75kXZSqyyk0j2sNS1gq8fV_Z+Kj12mxKmpOAjKmwhDxs_9vQ@mail.gmail.com>
+Subject: Re: [Xen-devel] swap: don't do discard if no discard option added
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, shli@fusionio.com, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        xen-devel@lists.xensource.com, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eldad Zack <eldad@fogrefinery.com>
-Date: Wed, 30 May 2012 21:11:02 +0200 (CEST)
+Hello Konrad,
 
-> In case a certain protocol needs to send a "dying gasp" packet, when you 
-> administrativly shutdown the port (which is also what happens when you 
-> restart the machine).
+On Tue, May 29, 2012 at 4:47 PM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> I think I know and just narrowed down the issue this Friday.
+> William, could you please apply the patch outlined in
+> https://bugzilla.redhat.com/show_bug.cgi?id=824641
+> to your dom0 and see if that (so do not have 052b198 in your branch)
 
-No in tree users have this requirement, therefore your patch is
-inappropriate.
+I applied the patch on dom0 and removed 052b198 from my virtual
+machine and it worked.
 
+Regards,
+-- 
+William
