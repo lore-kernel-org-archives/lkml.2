@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab2E3QbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 12:31:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40006 "EHLO mail.zytor.com"
+	id S1752615Ab2E3Qct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 12:32:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47080 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab2E3QbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 12:31:10 -0400
-Message-ID: <4FC64B3E.2020002@zytor.com>
-Date: Wed, 30 May 2012 09:30:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751955Ab2E3Qcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 12:32:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105920614"
+Date: Wed, 30 May 2012 09:32:46 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
+ context v3
+Message-ID: <20120530163246.GF9850@tassilo.jf.intel.com>
+References: <1336431315-29736-1-git-send-email-andi@firstfloor.org>
+ <CAHGf_=p7JbWW8jgzWGHX+xwU8JWzpSMZS0kn-rmP=eg_Uqrgow@mail.gmail.com>
+ <alpine.DEB.2.00.1205082158570.10766@chino.kir.corp.google.com>
+ <alpine.LFD.2.02.1205300947180.2681@tux.localdomain>
+ <alpine.DEB.2.00.1205301040170.29257@router.home>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Steven Newbury <steve@snewbury.org.uk>, Yinghai Lu <yinghai@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org> <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com> <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com> <20120525193716.GA8817@google.com> <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com> <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com> <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com> <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com> <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com> <4FC50E09.4000204@zytor.com> <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com> <CAErSpo4ywho4UmPVAjT7yZNROc9e1zCx+UoaS5un+v4aN=akJA@mail.gmail.com> <CAE9FiQWORRjxEQwr+933ReNAAKAEoJ5B6AWte4gr33_BO+4heQ@mail.gmail.com> <CAErSpo44TViNFcZivjr5hAu8w8kpEpUjxNAWtazhAqwwsorZbw@mail.gmail.com> <4FC5CEF1.6000509@snewbury.org.uk> <CAErSpo6zU898KBv+vFFkymMjpDrPokj0dJq9MMX0z6WZOALbmQ@mail.gmail.!
- com>
-In-Reply-To: <CAErSpo6zU898KBv+vFFkymMjpDrPokj0dJq9MMX0z6WZOALbmQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205301040170.29257@router.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 09:27 AM, Bjorn Helgaas wrote:
+On Wed, May 30, 2012 at 10:40:39AM -0500, Christoph Lameter wrote:
+> On Wed, 30 May 2012, Pekka Enberg wrote:
 > 
-> You're right, the spec does allow the upper 16 bits of I/O BARs to be
-> hardwired to zero (PCI spec rev 3.0, p. 226), so this part does make
-> some sense.  I don't think it applies to x86, since I don't think
-> there's a way to generate an I/O access to anything above 64K, but it
-> could help other arches.
+> > On Tue, 8 May 2012, David Rientjes wrote:
+> > > > But this doesn't mean NAK anyway.
+> > > >
+> > > >  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > >
+> > > Sigh, this was acked by Christoph and KOSAKI when the logic is reversed
+> > > and does the exact opposite of what's intended?
+> >
+> > Ping? Anyone going to send a fixed up patch?
 > 
-> I'm inclined to be conservative and wait until we find a problem where
-> a patch like this would help.
-> 
+> I thought this was done and fixed in another email thread?
 
-The really conservative thing is to just use 16-bit addresses for I/O on
-all platforms.  I think a lot of non-x86 platforms does that.
+Yes the latest patch was final. But I can resend.
 
-	-hpa
+-Andi
+> 
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+ak@linux.intel.com -- Speaking for myself only
