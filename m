@@ -1,96 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab2E3OSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:18:49 -0400
-Received: from [15.201.24.17] ([15.201.24.17]:14808 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754883Ab2E3OSr (ORCPT
+	id S1754974Ab2E3OVW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:21:22 -0400
+Received: from fold.natur.cuni.cz ([195.113.57.32]:48333 "HELO
+	fold.natur.cuni.cz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with SMTP id S1754883Ab2E3OVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:18:47 -0400
-Message-ID: <1338387106.16730.456.camel@misato.fc.hp.com>
-Subject: RE: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "liuj97@gmail.com" <liuj97@gmail.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 30 May 2012 08:11:46 -0600
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC6F9@ORSMSX101.amr.corp.intel.com>
-References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com>
-	 <1337880880.2718.68.camel@lorien2>
-	 <1337888931.16730.393.camel@misato.fc.hp.com>
-	 <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC639@ORSMSX101.amr.corp.intel.com>
-	 <1338331496.2722.18.camel@lorien2>
-	 <1338334995.16730.455.camel@misato.fc.hp.com>
-	 <94F2FBAB4432B54E8AACC7DFDE6C92E346ACC6F9@ORSMSX101.amr.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-1.fc16) 
+	Wed, 30 May 2012 10:21:20 -0400
+Message-ID: <4FC62CAD.4080307@fold.natur.cuni.cz>
+Date: Wed, 30 May 2012 16:20:29 +0200
+From: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120517 Firefox/12.0 SeaMonkey/2.9.1
+MIME-Version: 1.0
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "hughd@google.com" <hughd@google.com>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
+ val:-59
+References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz> <4FC606E7.4090701@openvz.org> <4FC60BBC.203@fold.natur.cuni.cz> <4FC61107.8050002@openvz.org> <4FC6188A.2030003@openvz.org>
+In-Reply-To: <4FC6188A.2030003@openvz.org>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 02:56 +0000, Moore, Robert wrote:
-> It does not make any difference. Essentially, a get_handle is performed by evaluate_object anyway.
+
+
+Konstantin Khlebnikov wrote:
+> Konstantin Khlebnikov wrote:
+>> Martin Mokrejs wrote:
+>>>
+>>>
+>>> Konstantin Khlebnikov wrote:
+>>>> Martin Mokrejs wrote:
+>>>>> Andrew Morton wrote:
+>>>>>> On Wed, 30 May 2012 00:18:31 +0400
+>>>>>> Konstantin Khlebnikov<khlebnikov@openvz.org>    wrote:
+>>>>>>
+>>>>>>> Oleg Nesterov wrote:
+>>>>>>>> On 05/22, Andrew Morton wrote:
+>>>>>>>>>
+>>>>>>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
+>>>>>>>>> happiness is important.  Has he cheered up yet?
+>>>>>>>>
+>>>>>>>> Well, yes, I do not really like this patch ;) Because I think there is
+>>>>>>>> a more simple/straightforward fix, see below. In my opinion it also
+>>>>>>>> makes the original code simpler.
+>>>>>>>>
+>>>>>>>> But. Obviously this is subjective, I can't prove my patch is "better",
+>>>>>>>> and I didn't try to test it.
+>>>>>>>>
+>>>>>>>> So I won't argue with Konstantin who dislikes my patch, although I
+>>>>>>>> would like to know the reason.
+>>>>>>>
+>>>>>>> I don't remember why I dislike your patch.
+>>>>>>> For now I can only say ACK )
+>>>>>>
+>>>>>> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
+>>>>>> that it was tested would be nice ;)
+>>>>>
+>>>>> I will reboot in few hours, finally after few days ... I am running this first
+>>>>> patch. I will try to test the second/alternative patch more quickly. Sorry for
+>>>>> the delay.
+>>>>>
+>>>>
+>>>> easiest way trigger this bug:
+>>>>
+>>>> #define _GNU_SOURCE
+>>>> #include<unistd.h>
+>>>> #include<sched.h>
+>>>> #include<sys/syscall.h>
+>>>> #include<sys/mman.h>
+>>>>
+>>>> static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
+>>>> {
+>>>>       return syscall(SYS_clone, flags, stack, ptid, ctid);
+>>>> }
+>>>>
+>>>> int main(int argc, char **argv)
+>>>> {
+>>>>       void *page;
+>>>>
+>>>>       page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+>>>>       sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
+>>>> }
+>>>>
+>>>
+>>> I am getting segfaults with this.
+>>>
+>>> (gdb) where
+>>> #0  0x0000000000000000 in ?? ()
+>>> #1  0x00007f430f70a7e0 in __elf_set___libc_subfreeres_element_free_mem__ () from /lib64/libc.so.6
+>>> #2  0x00007f430f70a7e8 in __elf_set___libc_atexit_element__IO_cleanup__ () from /lib64/libc.so.6
+>>> #3  0x0000000000000001 in ?? ()
+>>> #4  0x0000000000000000 in ?? ()
+>>> (gdb)
+>>>
+>>> What number should I give it as an argument? ;-)
+>>
+>> there is no arguments.
+>>
+>> yeah it corrupts stack. I'm too lazy to write it properly =)
+>> but on non-patched kernel it also triggers this bug:
+>> [206732.025131] BUG: Bad rss-counter state mm:ffff88000d8a6c80 idx:1 val:-1
+>>
+>> -- 
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+>> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+> 
+> this version works without segfaults =)
+> 
+> #define _GNU_SOURCE
+> #include <stdlib.h>
+> #include <sched.h>
+> #include <sys/mman.h>
+> 
+> int child(void *arg)
+> {
+>     return 0;
+> }
+> 
+> char stack[4096];
+> 
+> int main(int argc, char **argv)
+> {
+>     void *page;
+> 
+>     page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+>     clone(child, stack + sizeof(stack), CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, NULL, page);
+>     return 0;
+> }
 > 
 
-Thanks Robert for the confirmation!
--Toshi
+Thanks, this app does not crash anymore. Re-confirming that both patches fix the issue on my system.
 
-
-> >-----Original Message-----
-> >From: Toshi Kani [mailto:toshi.kani@hp.com]
-> >Sent: Tuesday, May 29, 2012 4:43 PM
-> >To: shuahkhan@gmail.com
-> >Cc: Moore, Robert; lenb@kernel.org; linux-acpi@vger.kernel.org;
-> >bhelgaas@google.com; liuj97@gmail.com; andi@firstfloor.org; linux-
-> >kernel@vger.kernel.org
-> >Subject: RE: [PATCH v4 0/6] ACPI: Add _OST support for ACPI hotplug
-> >
-> >On Tue, 2012-05-29 at 16:44 -0600, Shuah Khan wrote:
-> >> On Tue, 2012-05-29 at 22:27 +0000, Moore, Robert wrote:
-> >> > > > 2. Calling acpi_get_handle() on _OST prior to executing the method.
-> >> > > > This will ensure that this method only gets run if it is present
-> >> > > under
-> >> > > > the device in question. Coupled with what is already outlined in #1
-> >> > > > above, now _OST gets executed only when it is defined under the
-> >> > > device object.
-> >> > > > Example case in the existing code, please see
-> >> > > acpi_processor_ppc_ost()
-> >> > > > implementation.
-> >> > >
-> >> > > Yes, I did look at acpi_processor_ppc_ost() when I implemented the
-> >> > > function.  I believe calling acpi_get_handle() is redundant since
-> >> > > acpi_ns_get_node() is called within acpi_evaluate_object() as well.
-> >> > > acpi_evaluate_object() simply returns with AE_NOT_FOUND when _OST
-> >> > > method does not exist.
-> >> > >
-> >> >
-> >> > This is correct. If _OST does not exist, AE_NOT_FOUND will be returned
-> >from evaluate_object.
-> >>
-> >> Yes that is correct from the ACPI Spec and implementation point of view.
-> >> My thinking is that a call to acpi_get_handle() might not penalize the
-> >> OS as much as acpi_evaluate_object() would on systems that don't
-> >> actually implement _OST. In other words, acpi_get_handle() might not go
-> >> as deep as acpi_evaluate_object() would go into the ACPI layer, hence
-> >> might be a safer measure on platforms that don't actually implement this
-> >> optional method under all devices included in this patch set.
-> >>
-> >
-> >I do not think we need to worry about it.  The code difference is not
-> >that much, and this _OST path is limited to ACPI hotplug operations,
-> >which are infrequent events.  Automatic workload balancing can make
-> >frequent use of the operations, but is not frequent enough to make any
-> >difference here.  I think simpler code works fine.
-> >
-> >Thanks,
-> >-Toshi
-> 
-
-
+Martin
