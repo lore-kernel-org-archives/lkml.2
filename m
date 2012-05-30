@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab2E3MY0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:24:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39387 "EHLO mx1.redhat.com"
+	id S1753521Ab2E3MY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:24:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9042 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab2E3MYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:24:24 -0400
+	id S1753268Ab2E3MYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 08:24:25 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
         cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
 Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/3] perf, tool: Handle different endians properly during symbol load
-Date: Wed, 30 May 2012 14:23:42 +0200
-Message-Id: <1338380624-7443-2-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 2/3] perf, tool: Handle endianity swap on sample_id_all header data
+Date: Wed, 30 May 2012 14:23:43 +0200
+Message-Id: <1338380624-7443-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1338380624-7443-1-git-send-email-jolsa@redhat.com>
 References: <1338380624-7443-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we dont care about the file object's endianness. It's possible
-we read buildid file object from different architecture than we are
-currentlly running on. So we need to care about properly reading such
-object's data - handle different endianness properly.
+Adding endianity swapping for event header attached via sample_id_all.
 
-Adding:
-	needs_swap DSO field
-	dso__swap_init function to initialize DSO's needs_swap
-	DSO__SWAP to read the data with proper swaps
+Currently we dont do that and it's causing wrong data to be read when
+running report on architecture with different endianity than the record.
+
+The perf is currently able to process 32-bit PPC samples on 32-bit
+and 64-bit x86.
 
 Together with other endianity patches, this change fixies perf report
 discrepancies on origin and target systems as described in test 1
@@ -62,7 +60,7 @@ test 1)
     (besides some white space stuff and possibly different
      date/TZ output)
 
-test 1)
+test 2)
   - origin system:
     # perf record -ag -fo /tmp/perf.data -- sleep 1
   - mount origin system root to the target system on /mnt/origin
@@ -72,136 +70,160 @@ test 1)
   - complete perf.data header is displayed
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Tested-by: David Ahern <dsahern@gmail.com>
 ---
- tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
- tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+), 1 deletions(-)
+ tools/perf/util/session.c |   67 +++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 55 insertions(+), 12 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e2ba885..9d04dcd 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
- 		dso->kernel = DSO_TYPE_USER;
-+		dso->needs_swap = DSO_SWAP__UNSET;
- 		INIT_LIST_HEAD(&dso->node);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 93d355d..d352d32 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -441,37 +441,65 @@ void mem_bswap_64(void *src, int byte_size)
  	}
- 
-@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
  }
  
-+static int dso__swap_init(struct dso *dso, unsigned char eidata)
+-static void perf_event__all64_swap(union perf_event *event)
++static void swap_sample_id_all(union perf_event *event, void *data)
 +{
-+	static unsigned int const endian = 1;
++	void *end = (void *) event + event->header.size;
++	int size = end - data;
 +
-+	dso->needs_swap = DSO_SWAP__NO;
-+
-+	switch (eidata) {
-+	case ELFDATA2LSB:
-+		/* We are big endian, DSO is little endian. */
-+		if (*(unsigned char const *)&endian != 1)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	case ELFDATA2MSB:
-+		/* We are little endian, DSO is big endian. */
-+		if (*(unsigned char const *)&endian != 0)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	default:
-+		pr_err("unrecognized DSO data encoding %d\n", eidata);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
++	BUG_ON(size % sizeof(u64));
++	mem_bswap_64(data, size);
 +}
 +
- static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule,
- 			 int want_symtab)
-@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		goto out_elf_end;
++static void perf_event__all64_swap(union perf_event *event,
++				   bool sample_id_all __used)
+ {
+ 	struct perf_event_header *hdr = &event->header;
+ 	mem_bswap_64(hdr + 1, event->header.size - sizeof(*hdr));
+ }
+ 
+-static void perf_event__comm_swap(union perf_event *event)
++static void perf_event__comm_swap(union perf_event *event, bool sample_id_all)
+ {
+ 	event->comm.pid = bswap_32(event->comm.pid);
+ 	event->comm.tid = bswap_32(event->comm.tid);
++
++	if (sample_id_all) {
++		void *data = &event->comm.comm;
++
++		data += ALIGN(strlen(data) + 1, sizeof(u64));
++		swap_sample_id_all(event, data);
++	}
+ }
+ 
+-static void perf_event__mmap_swap(union perf_event *event)
++static void perf_event__mmap_swap(union perf_event *event,
++				  bool sample_id_all)
+ {
+ 	event->mmap.pid	  = bswap_32(event->mmap.pid);
+ 	event->mmap.tid	  = bswap_32(event->mmap.tid);
+ 	event->mmap.start = bswap_64(event->mmap.start);
+ 	event->mmap.len	  = bswap_64(event->mmap.len);
+ 	event->mmap.pgoff = bswap_64(event->mmap.pgoff);
++
++	if (sample_id_all) {
++		void *data = &event->mmap.filename;
++
++		data += ALIGN(strlen(data) + 1, sizeof(u64));
++		swap_sample_id_all(event, data);
++	}
+ }
+ 
+-static void perf_event__task_swap(union perf_event *event)
++static void perf_event__task_swap(union perf_event *event, bool sample_id_all)
+ {
+ 	event->fork.pid	 = bswap_32(event->fork.pid);
+ 	event->fork.tid	 = bswap_32(event->fork.tid);
+ 	event->fork.ppid = bswap_32(event->fork.ppid);
+ 	event->fork.ptid = bswap_32(event->fork.ptid);
+ 	event->fork.time = bswap_64(event->fork.time);
++
++	if (sample_id_all)
++		swap_sample_id_all(event, &event->fork + 1);
+ }
+ 
+-static void perf_event__read_swap(union perf_event *event)
++static void perf_event__read_swap(union perf_event *event, bool sample_id_all)
+ {
+ 	event->read.pid		 = bswap_32(event->read.pid);
+ 	event->read.tid		 = bswap_32(event->read.tid);
+@@ -479,6 +507,9 @@ static void perf_event__read_swap(union perf_event *event)
+ 	event->read.time_enabled = bswap_64(event->read.time_enabled);
+ 	event->read.time_running = bswap_64(event->read.time_running);
+ 	event->read.id		 = bswap_64(event->read.id);
++
++	if (sample_id_all)
++		swap_sample_id_all(event, &event->read + 1);
+ }
+ 
+ static u8 revbyte(u8 b)
+@@ -530,7 +561,8 @@ void perf_event__attr_swap(struct perf_event_attr *attr)
+ 	swap_bitfield((u8 *) (&attr->read_format + 1), sizeof(u64));
+ }
+ 
+-static void perf_event__hdr_attr_swap(union perf_event *event)
++static void perf_event__hdr_attr_swap(union perf_event *event,
++				      bool sample_id_all __used)
+ {
+ 	size_t size;
+ 
+@@ -541,18 +573,21 @@ static void perf_event__hdr_attr_swap(union perf_event *event)
+ 	mem_bswap_64(event->attr.id, size);
+ }
+ 
+-static void perf_event__event_type_swap(union perf_event *event)
++static void perf_event__event_type_swap(union perf_event *event,
++					bool sample_id_all __used)
+ {
+ 	event->event_type.event_type.event_id =
+ 		bswap_64(event->event_type.event_type.event_id);
+ }
+ 
+-static void perf_event__tracing_data_swap(union perf_event *event)
++static void perf_event__tracing_data_swap(union perf_event *event,
++					  bool sample_id_all __used)
+ {
+ 	event->tracing_data.size = bswap_32(event->tracing_data.size);
+ }
+ 
+-typedef void (*perf_event__swap_op)(union perf_event *event);
++typedef void (*perf_event__swap_op)(union perf_event *event,
++				    bool sample_id_all);
+ 
+ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_MMAP]		  = perf_event__mmap_swap,
+@@ -986,6 +1021,15 @@ static int perf_session__process_user_event(struct perf_session *session, union
  	}
+ }
  
-+	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
-+		goto out_elf_end;
++static void event_swap(union perf_event *event, bool sample_id_all)
++{
++	perf_event__swap_op swap;
 +
- 	/* Always reject images with a mismatched build-id: */
- 	if (dso->has_build_id) {
- 		u8 build_id[BUILD_ID_SIZE];
-@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		if (opdsec && sym.st_shndx == opdidx) {
- 			u32 offset = sym.st_value - opdshdr.sh_addr;
- 			u64 *opd = opddata->d_buf + offset;
--			sym.st_value = *opd;
-+			sym.st_value = DSO__SWAP(dso, u64, *opd);
- 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
- 		}
- 
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 5649d63..af0752b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -9,6 +9,7 @@
- #include <linux/list.h>
- #include <linux/rbtree.h>
- #include <stdio.h>
-+#include <byteswap.h>
- 
- #ifdef HAVE_CPLUS_DEMANGLE
- extern char *cplus_demangle(const char *, int);
-@@ -160,11 +161,18 @@ enum dso_kernel_type {
- 	DSO_TYPE_GUEST_KERNEL
- };
- 
-+enum dso_swap_type {
-+	DSO_SWAP__UNSET,
-+	DSO_SWAP__NO,
-+	DSO_SWAP__YES,
-+};
++	swap = perf_event__swap_ops[event->header.type];
++	if (swap)
++		swap(event, sample_id_all);
++}
 +
- struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
-+	enum dso_swap_type	needs_swap;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
-@@ -182,6 +190,28 @@ struct dso {
- 	char		 name[0];
- };
+ static int perf_session__process_event(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_tool *tool,
+@@ -994,9 +1038,8 @@ static int perf_session__process_event(struct perf_session *session,
+ 	struct perf_sample sample;
+ 	int ret;
  
-+#define DSO__SWAP(dso, type, val)			\
-+({							\
-+	type ____r = val;				\
-+	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
-+	if (dso->needs_swap == DSO_SWAP__YES) {		\
-+		switch (sizeof(____r)) {		\
-+		case 2:					\
-+			____r = bswap_16(val);		\
-+			break;				\
-+		case 4:					\
-+			____r = bswap_32(val);		\
-+			break;				\
-+		case 8:					\
-+			____r = bswap_64(val);		\
-+			break;				\
-+		default:				\
-+			BUG_ON(1);			\
-+		}					\
-+	}						\
-+	____r;						\
-+})
-+
- struct dso *dso__new(const char *name);
- void dso__delete(struct dso *dso);
+-	if (session->header.needs_swap &&
+-	    perf_event__swap_ops[event->header.type])
+-		perf_event__swap_ops[event->header.type](event);
++	if (session->header.needs_swap)
++		event_swap(event, session->sample_id_all);
  
+ 	if (event->header.type >= PERF_RECORD_HEADER_MAX)
+ 		return -EINVAL;
 -- 
 1.7.7.6
 
