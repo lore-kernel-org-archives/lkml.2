@@ -1,132 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2E3Pa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 11:30:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54209 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab2E3Pa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 11:30:27 -0400
-Message-ID: <4FC63D03.8080501@ti.com>
-Date: Wed, 30 May 2012 17:30:11 +0200
-From: "Cousson, Benoit" <b-cousson@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	id S1754768Ab2E3Pan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:30:43 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36902 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199Ab2E3Pal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 11:30:41 -0400
+Date: Wed, 30 May 2012 17:30:34 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 00/35] AutoNUMA alpha14
+Message-ID: <20120530153034.GB4341@gmail.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <4FC112AB.1040605@redhat.com>
+ <CA+55aFxpD+LsE+aNvDJtz9sGsGMvdusisgOY3Csbzyx1mEqW-w@mail.gmail.com>
+ <1338389200.26856.273.camel@twins>
 MIME-Version: 1.0
-To: Jon Hunter <jon-hunter@ti.com>
-CC: Xiao Jiang <jgq516@gmail.com>, <linux@arm.linux.org.uk>,
-        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
-        <rnayak@ti.com>, <tony@atomide.com>, <wim@iguana.be>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 3/3] watchdog: omap_wdt: add device tree support
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-4-git-send-email-jgq516@gmail.com> <4FC51008.1050004@ti.com> <4FC59171.8040009@gmail.com> <4FC5D21F.2030702@ti.com> <4FC636C9.2050902@ti.com>
-In-Reply-To: <4FC636C9.2050902@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338389200.26856.273.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jon,
 
-On 5/30/2012 5:03 PM, Jon Hunter wrote:
-> Hi Benoit,
->
-> On 05/30/2012 02:54 AM, Cousson, Benoit wrote:
->> On 5/30/2012 5:18 AM, Xiao Jiang wrote:
->>> Jon Hunter wrote:
->>>> On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
->>>>> From: Xiao Jiang<jgq516@gmail.com>
->>>>>
->>>>> Add device table for omap_wdt to support dt.
->>>>>
->>>>> Signed-off-by: Xiao Jiang<jgq516@gmail.com>
->>>>> ---
->>>>> drivers/watchdog/omap_wdt.c | 8 ++++++++
->>>>> 1 files changed, 8 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
->>>>> index 8285d65..d98c615 100644
->>>>> --- a/drivers/watchdog/omap_wdt.c
->>>>> +++ b/drivers/watchdog/omap_wdt.c
->>>>> @@ -430,6 +430,13 @@ static int omap_wdt_resume(struct
->>>>> platform_device *pdev)
->>>>> #define omap_wdt_resume NULL
->>>>> #endif
->>>>>
->>>>> +static const struct of_device_id omap_wdt_of_match[] = {
->>>>> + { .compatible = "ti,omap3-wdt", },
->>>>> + { .compatible = "ti,omap4-wdt", },
->>
->> If there is no difference between the OMAP3 and the OMAP4 WDT IP, just
->> add one entry "ti,omap3-wdt". And then in the OMAP4 DTS you will just
->> put : compatible = "ti,omap3-wdt"; or compatible =  "ti,omap4-wdt",
->> "ti,omap3-wdt";
->
-> Hmmm ... comparing the omap3 and omap4 wdt registers there are some
-> differences. omap4 seems to have more registers than omap3. May be we
-> are not using these right now, but from a register perspective the wdt
-> in omap2, omap3 and omap4 appear to be slightly different. The revision
-> ID register on omap3 and omap4 have different values too.
->
-> I guess from a driver perspective there is no difference, but it seemed
-> to me that the IP is not completely the same.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Well, in that case, and assuming that there is no proper HW_REVISION 
-information to detect the IP difference, the proper compatible entries 
-will indeed have to be used.
+> So the thing is, my homenode-per-process approach should work 
+> for everything except the case where a single process 
+> out-strips a single node in either cpu utilization or memory 
+> consumption.
+> 
+> Now I claim such processes are rare since nodes are big, 
+> typically 6-8 cores. Writing anything that can sustain 
+> parallel execution larger than that is very specialist (and 
+> typically already employs strong data separation).
+> 
+> Yes there are such things out there, some use JVMs some are 
+> virtual machines some regular applications, but by and large 
+> processes are small compared to nodes.
+> 
+> So my approach is focus on the normal case, and provide 2 
+> system calls to replace sched_setaffinity() and mbind() for 
+> the people who use those.
 
->
->> I'm still a little bit confused about the real need for the
->> "ti,omap4-wdt: entry, but it seems to be the way to do it in PPC.
->>
->>>>> + {},
->>>>> +};
->>>>> +MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
->>>>> +
->>>>> static struct platform_driver omap_wdt_driver = {
->>>>> .probe = omap_wdt_probe,
->>>>> .remove = __devexit_p(omap_wdt_remove),
->>>>> @@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
->>>>> .driver = {
->>>>> .owner = THIS_MODULE,
->>>>> .name = "omap_wdt",
->>>>> + .of_match_table = omap_wdt_of_match,
->>>>> },
->>>>> };
->>>>>
->>>>
->>>> I think we need to add some code to the probe function that calls
->>>> of_match_device() and ensures we find a match. For example ...
->>>>
->>>> if (of_have_populated_dt())
->>>> if (!of_match_device(omap_wdt_of_match,&pdev->dev))
->>>> return -EINVAL;
->>>>
->>> Will add it in v2, thanks for suggestion.
->>
->> No, in fact this is not needed. We need that mainly when several
->> instances can match the same driver and thus we select the proper one
->> using the of_match_device. Otherwise, just check is the device_node is
->> there.
->>
->> In that case, the driver does not even care about any DT node so there
->> is no need to add extra code for that. Keep it simple.
->
-> Ok. So are you saying get rid of the match table altogether? In other
-> words, drop this patch?
+We could certainly strike those from the first version, if Linus 
+agrees with the general approach.
 
-No, the match table is used by the LDM to find the proper driver to be 
-bound to a device. So we do need it. But we do not have to use the 
-of_match_device if we do not want to get the entry in the device table.
+This gives us degrees freedom as it's an obvious on/off kernel 
+feature which we fix or remove if it does not work.
 
-> I agree that it does not really do anything today, but I did not know if
-> in the future you were planning to pass things like, register addresses,
-> via DT.
+I'd even venture that it should be on by default, it's an 
+obvious placement strategy for everything sane that does not try 
+to nest some other execution environment within Linux (i.e. 
+specialist runtimes).
 
-Well, yes we will have to, otherwise people will keep complaining that 
-our DTS sucks and are not compliant with the DTS standards :-)
+Thanks,
 
-Regards,
-Benoit
+	Ingo
