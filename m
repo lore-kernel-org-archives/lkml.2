@@ -1,44 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab2E3N2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:28:35 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:59801 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab2E3N2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:28:34 -0400
-Message-ID: <4FC61FF4.4050304@parallels.com>
-Date: Wed, 30 May 2012 17:26:12 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754156Ab2E3Ndp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 09:33:45 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:42772
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1753656Ab2E3Ndo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 09:33:44 -0400
+Date: Wed, 30 May 2012 15:32:45 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] UBIFS: compute KSA size and store in superblock
+In-Reply-To: <1337952271.30969.37.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1205301531220.6465@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net> <1337952271.30969.37.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Paul Turner <pjt@google.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        <handai.szj@gmail.com>, <Andrew.Phillips@lmax.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: Re: [PATCH v3 3/6] expose fine-grained per-cpu data for cpuacct stats
-References: <1338371317-5980-1-git-send-email-glommer@parallels.com> <1338371317-5980-4-git-send-email-glommer@parallels.com> <CAPM31RJanAvDB+pZ+h5J3W6KXvAwPgbbeXgw6C_56tx_Mc+cgA@mail.gmail.com> <4FC6107F.9020802@parallels.com> <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
-In-Reply-To: <CAPM31RJ7s+pNciOEnsfXRU9xCwnUano1k8CTEUuCjsSN5n0-1Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 04:48 PM, Paul Turner wrote:
->> >  Now, if you guys are okay with a file per-cpu, I can do it as well.
->> >  It pollutes the filesystem, but at least protects against the fact that this
->> >  is kmalloc-backed.
->> >
-> As I prefaced, I'm not sure there's much that can be trivially done
-> about it.  This is really a fundamental limitation of how read_map()
-> works.
->
-> What we really need is a proper seq_file exposed through cftypes.
+This patch makes the super block reserve space for the KSA. It computes the
+number of KSA LEBs and adds the ksa_lebs to on-medium superblock. The value is
+read off the media. The decision to use a KSA is controlled by use_ubifsec
+switch, also added to the superblock, ubifs_info, and is controlled as a mount
+option. In create_default_filesystem, the value of leb_cnt is used; later
+in the function max_leb_cnt is set to leb_cnt. Later, mkfs.ubifs, will use
+the value max_leb_cnt when computing the KSA size.
 
-Tejun, would you be okay with an interface that exports somehow the raw 
-seq_file in cgroups ?
+This is tested by creating a drive and checking the mount debug output. The
+number of LEBS assigned during create_default_filesystem was changed to ensure
+that remounting does infact read the old value. When the use_ubifsec option
+was not enabled, no LEBs were assigned. Integck was run and the drive was
+filled to capacity. The LEBs in the KSA were not used when filled.
 
-This way we could call s_show for each cpu and get away with the memory 
-usage problem, I presume
+Signed-off-by: Joel Reardon <reardonj@inf.ethz.ch>
+---
+ fs/ubifs/sb.c          |   31 ++++++++++++++++++++++++++++---
+ fs/ubifs/super.c       |   15 +++++++++++++++
+ fs/ubifs/ubifs-media.h |    9 +++++++--
+ fs/ubifs/ubifs.h       |   23 ++++++++++++++++++++++-
+ 4 files changed, 72 insertions(+), 6 deletions(-)
+
+diff --git a/fs/ubifs/sb.c b/fs/ubifs/sb.c
+index f98d284..f2c9235 100644
+--- a/fs/ubifs/sb.c
++++ b/fs/ubifs/sb.c
+@@ -82,6 +82,7 @@ static int create_default_filesystem(struct ubifs_info *c)
+ 	int err, tmp, jnl_lebs, log_lebs, max_buds, main_lebs, main_first;
+ 	int lpt_lebs, lpt_first, orph_lebs, big_lpt, ino_waste, sup_flags = 0;
+ 	int min_leb_cnt = UBIFS_MIN_LEB_CNT;
++	int ksa_lebs = 0, ksa_first;
+ 	long long tmp64, main_bytes;
+ 	__le64 tmp_le64;
+
+@@ -103,6 +104,20 @@ static int create_default_filesystem(struct ubifs_info *c)
+ 	if (jnl_lebs * c->leb_size > DEFAULT_MAX_JNL)
+ 		jnl_lebs = DEFAULT_MAX_JNL / c->leb_size;
+
++	if (c->use_ubifsec) {
++		/*
++		 * Compute the size of the key space area based on partition
++		 * geometry. The following calculation is equivalant to:
++		 * LEBS * LEB_SIZE / DATANODE_SIZE / KEYS_PER_KSA_LEB, because
++		 * KEYS_PER_KSA_LEB = LEB_SIZE / KEY_SIZE.
++		 */
++		ksa_lebs = (c->leb_cnt * UBIFS_CRYPTO_KEYSIZE)
++			>> UBIFS_BLOCK_SHIFT;
++		ksa_lebs += ksa_lebs >> UBIFS_KSA_LEBS_SCALE_SHIFT;
++		ksa_lebs += UBIFS_KSA_ADD_LEBS;
++		min_leb_cnt += ksa_lebs;
++	}
++
+ 	/*
+ 	 * The log should be large enough to fit reference nodes for all bud
+ 	 * LEBs. Because buds do not have to start from the beginning of LEBs
+@@ -138,7 +153,8 @@ static int create_default_filesystem(struct ubifs_info *c)
+ 		 */
+ 		orph_lebs += 1;
+
+-	main_lebs = c->leb_cnt - UBIFS_SB_LEBS - UBIFS_MST_LEBS - log_lebs;
++	main_lebs = c->leb_cnt - UBIFS_SB_LEBS - UBIFS_MST_LEBS
++		    - log_lebs - ksa_lebs;
+ 	main_lebs -= orph_lebs;
+
+ 	lpt_first = UBIFS_LOG_LNUM + log_lebs;
+@@ -153,6 +169,7 @@ static int create_default_filesystem(struct ubifs_info *c)
+ 		lpt_first + lpt_lebs - 1);
+
+ 	main_first = c->leb_cnt - main_lebs;
++	ksa_first = c->leb_cnt - main_lebs - ksa_lebs;
+
+ 	/* Create default superblock */
+ 	tmp = ALIGN(UBIFS_SB_NODE_SZ, c->min_io_size);
+@@ -173,6 +190,7 @@ static int create_default_filesystem(struct ubifs_info *c)
+ 	sup->max_leb_cnt   = cpu_to_le32(c->max_leb_cnt);
+ 	sup->max_bud_bytes = cpu_to_le64(tmp64);
+ 	sup->log_lebs      = cpu_to_le32(log_lebs);
++	sup->ksa_lebs	   = cpu_to_le32(ksa_lebs);
+ 	sup->lpt_lebs      = cpu_to_le32(lpt_lebs);
+ 	sup->orph_lebs     = cpu_to_le32(orph_lebs);
+ 	sup->jhead_cnt     = cpu_to_le32(DEFAULT_JHEADS_CNT);
+@@ -180,6 +198,7 @@ static int create_default_filesystem(struct ubifs_info *c)
+ 	sup->lsave_cnt     = cpu_to_le32(c->lsave_cnt);
+ 	sup->fmt_version   = cpu_to_le32(UBIFS_FORMAT_VERSION);
+ 	sup->time_gran     = cpu_to_le32(DEFAULT_TIME_GRAN);
++	sup->use_ubifsec   = cpu_to_le32(c->use_ubifsec);
+ 	if (c->mount_opts.override_compr)
+ 		sup->default_compr = cpu_to_le16(c->mount_opts.compr_type);
+ 	else
+@@ -389,6 +408,7 @@ static int validate_sb(struct ubifs_info *c, struct ubifs_sb_node *sup)
+ 	 */
+ 	min_leb_cnt = UBIFS_SB_LEBS + UBIFS_MST_LEBS + c->log_lebs;
+ 	min_leb_cnt += c->lpt_lebs + c->orph_lebs + c->jhead_cnt + 6;
++	min_leb_cnt += c->ksa_lebs;
+
+ 	if (c->leb_cnt < min_leb_cnt || c->leb_cnt > c->vi.size) {
+ 		ubifs_err("bad LEB count: %d in superblock, %d on UBI volume, "
+@@ -444,7 +464,7 @@ static int validate_sb(struct ubifs_info *c, struct ubifs_sb_node *sup)
+ 	}
+
+ 	if (UBIFS_SB_LEBS + UBIFS_MST_LEBS + c->log_lebs + c->lpt_lebs +
+-	    c->orph_lebs + c->main_lebs != c->leb_cnt) {
++	    c->orph_lebs + c->main_lebs + c->ksa_lebs != c->leb_cnt) {
+ 		err = 12;
+ 		goto failed;
+ 	}
+@@ -605,6 +625,7 @@ int ubifs_read_superblock(struct ubifs_info *c)
+ 	c->max_leb_cnt   = le32_to_cpu(sup->max_leb_cnt);
+ 	c->max_bud_bytes = le64_to_cpu(sup->max_bud_bytes);
+ 	c->log_lebs      = le32_to_cpu(sup->log_lebs);
++	c->ksa_lebs	 = le32_to_cpu(sup->ksa_lebs);
+ 	c->lpt_lebs      = le32_to_cpu(sup->lpt_lebs);
+ 	c->orph_lebs     = le32_to_cpu(sup->orph_lebs);
+ 	c->jhead_cnt     = le32_to_cpu(sup->jhead_cnt) + NONDATA_JHEADS_CNT;
+@@ -613,6 +634,7 @@ int ubifs_read_superblock(struct ubifs_info *c)
+ 	c->rp_size       = le64_to_cpu(sup->rp_size);
+ 	c->rp_uid        = le32_to_cpu(sup->rp_uid);
+ 	c->rp_gid        = le32_to_cpu(sup->rp_gid);
++	c->use_ubifsec   = le32_to_cpu(sup->use_ubifsec);
+ 	sup_flags        = le32_to_cpu(sup->flags);
+ 	if (!c->mount_opts.override_compr)
+ 		c->default_compr = le16_to_cpu(sup->default_compr);
+@@ -646,8 +668,11 @@ int ubifs_read_superblock(struct ubifs_info *c)
+ 	c->lpt_last = c->lpt_first + c->lpt_lebs - 1;
+ 	c->orph_first = c->lpt_last + 1;
+ 	c->orph_last = c->orph_first + c->orph_lebs - 1;
+-	c->main_lebs = c->leb_cnt - UBIFS_SB_LEBS - UBIFS_MST_LEBS;
++	c->main_lebs = c->leb_cnt - UBIFS_SB_LEBS - UBIFS_MST_LEBS
++		       - c->ksa_lebs;
+ 	c->main_lebs -= c->log_lebs + c->lpt_lebs + c->orph_lebs;
++	c->ksa_first = c->leb_cnt - c->main_lebs - c->ksa_lebs;
++	c->ksa_last = c->ksa_first + c->ksa_lebs - 1;
+ 	c->main_first = c->leb_cnt - c->main_lebs;
+
+ 	err = validate_sb(c, sup);
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index d2fd76f..879ecf5 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -438,6 +438,8 @@ static int ubifs_show_options(struct seq_file *s, struct dentry *root)
+ 	else if (c->mount_opts.chk_data_crc == 1)
+ 		seq_printf(s, ",no_chk_data_crc");
+
++	if (c->mount_opts.use_ubifsec)
++		seq_printf(s, ",use_ubifsec");
+ 	if (c->mount_opts.override_compr) {
+ 		seq_printf(s, ",compr=%s",
+ 			   ubifs_compr_name(c->mount_opts.compr_type));
+@@ -934,6 +936,7 @@ static int check_volume_empty(struct ubifs_info *c)
+  * Opt_chk_data_crc: check CRCs when reading data nodes
+  * Opt_no_chk_data_crc: do not check CRCs when reading data nodes
+  * Opt_override_compr: override default compressor
++ * Opt_use_ubifsec: use ubifsec secure deletion feature
+  * Opt_err: just end of array marker
+  */
+ enum {
+@@ -944,6 +947,7 @@ enum {
+ 	Opt_chk_data_crc,
+ 	Opt_no_chk_data_crc,
+ 	Opt_override_compr,
++	Opt_use_ubifsec,
+ 	Opt_err,
+ };
+
+@@ -955,6 +959,7 @@ static const match_table_t tokens = {
+ 	{Opt_chk_data_crc, "chk_data_crc"},
+ 	{Opt_no_chk_data_crc, "no_chk_data_crc"},
+ 	{Opt_override_compr, "compr=%s"},
++	{Opt_use_ubifsec, "use_ubifsec"},
+ 	{Opt_err, NULL},
+ };
+
+@@ -1054,6 +1059,12 @@ static int ubifs_parse_options(struct ubifs_info *c, char *options,
+ 			c->default_compr = c->mount_opts.compr_type;
+ 			break;
+ 		}
++		case Opt_use_ubifsec:
++		{
++			c->mount_opts.use_ubifsec = 1;
++			c->use_ubifsec = 1;
++			break;
++		}
+ 		default:
+ 		{
+ 			unsigned long flag;
+@@ -1446,6 +1457,9 @@ static int mount_ubifs(struct ubifs_info *c)
+ 		c->lpt_lebs, c->lpt_first, c->lpt_last);
+ 	dbg_msg("orphan area LEBs:    %d (%d - %d)",
+ 		c->orph_lebs, c->orph_first, c->orph_last);
++	if (c->ksa_lebs)
++		dbg_msg("KSA LEBs:            %d (%d - %d)",
++			c->ksa_lebs, c->ksa_first, c->ksa_last);
+ 	dbg_msg("main area LEBs:      %d (%d - %d)",
+ 		c->main_lebs, c->main_first, c->leb_cnt - 1);
+ 	dbg_msg("index LEBs:          %d", c->lst.idx_lebs);
+@@ -1483,6 +1497,7 @@ static int mount_ubifs(struct ubifs_info *c)
+ 		c->bud_bytes, c->bud_bytes >> 10, c->bud_bytes >> 20);
+ 	dbg_msg("max. seq. number:    %llu", c->max_sqnum);
+ 	dbg_msg("commit number:       %llu", c->cmt_no);
++	dbg_msg("use ubifsec:         %d", c->use_ubifsec);
+
+ 	return 0;
+
+diff --git a/fs/ubifs/ubifs-media.h b/fs/ubifs/ubifs-media.h
+index 90f348c..1dda25d 100644
+--- a/fs/ubifs/ubifs-media.h
++++ b/fs/ubifs/ubifs-media.h
+@@ -618,10 +618,13 @@ struct ubifs_pad_node {
+  * @rp_uid: reserve pool UID
+  * @rp_gid: reserve pool GID
+  * @rp_size: size of the reserved pool in bytes
+- * @padding2: reserved for future, zeroes
+  * @time_gran: time granularity in nanoseconds
+  * @uuid: UUID generated when the file system image was created
+  * @ro_compat_version: UBIFS R/O compatibility version
++ * @crypto_lebs: number of LEBS being used to store keys
++ * @use_ubifsec: the LSB signifies whether the file system should use secure
++ *		 deletion
++ * @padding2: reserved for future, zeroes
+  */
+ struct ubifs_sb_node {
+ 	struct ubifs_ch ch;
+@@ -649,7 +652,9 @@ struct ubifs_sb_node {
+ 	__le32 time_gran;
+ 	__u8 uuid[16];
+ 	__le32 ro_compat_version;
+-	__u8 padding2[3968];
++	__le32 ksa_lebs;
++	__u8 use_ubifsec;
++	__u8 padding2[3963];
+ } __packed;
+
+ /**
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index d7f639a..f34ab84 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -164,6 +164,16 @@
+ #define UBIFS_CRYPTO_KEYSIZE 16
+ /* AES in counter mode is the encryption algorithm */
+ #define UBIFS_CRYPTO_ALGORITHM "ctr(aes)"
++/*
++ * Constant number of KSA LEBS to add to computed value, ensuring two plus a
++ * checkpoint LEB.
++ */
++#define UBIFS_KSA_ADD_LEBS 3
++/*
++ * KSA LEBS is 1.125 * the computed min to allow unused keys when the drive is
++ * full. This shift is used to compute 0.125 * LEBS.
++ */
++#define UBIFS_KSA_LEBS_SCALE_SHIFT 3
+
+ /*
+  * Lockdep classes for UBIFS inode @ui_mutex.
+@@ -934,6 +944,7 @@ struct ubifs_orphan {
+  *                  specified in @compr_type)
+  * @compr_type: compressor type to override the superblock compressor with
+  *              (%UBIFS_COMPR_NONE, etc)
++ * @use_ubifsec: use ubifsec secure deletion feature
+  */
+ struct ubifs_mount_opts {
+ 	unsigned int unmount_mode:2;
+@@ -941,6 +952,7 @@ struct ubifs_mount_opts {
+ 	unsigned int chk_data_crc:2;
+ 	unsigned int override_compr:1;
+ 	unsigned int compr_type:2;
++	unsigned int use_ubifsec:1;
+ };
+
+ /**
+@@ -1224,7 +1236,11 @@ struct ubifs_debug_info;
+  * @size_tree: inode size information for recovery
+  * @mount_opts: UBIFS-specific mount options
+  *
+- * @keymap: cryptographic key store for secure deletion
++ * @km: cryptographic key store for secure deletion
++ * @ksa_lebs: number of LEBS assigned to the KSA
++ * @ksa_first: number of the first LEB assigned to the KSA
++ * @ksa_last: number of the last LEB assigned to the KSA
++ * @use_ubifsec: switch to enable/disable secure deletion for UBIFS
+  * @dbg: debugging-related information
+  */
+ struct ubifs_info {
+@@ -1454,6 +1470,11 @@ struct ubifs_info {
+ 	struct ubifs_mount_opts mount_opts;
+
+ 	struct ubifs_keymap *km;
++	int ksa_lebs;
++	int ksa_first;
++	int ksa_last;
++	int use_ubifsec;
++
+ 	struct ubifs_debug_info *dbg;
+ };
+
+-- 
+1.7.5.4
+
+
