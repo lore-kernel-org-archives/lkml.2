@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788Ab2E3LBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:01:44 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:51719 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab2E3LBm (ORCPT
+	id S1752856Ab2E3LNZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:13:25 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61919 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab2E3LNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:01:42 -0400
-Date: Wed, 30 May 2012 13:01:37 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, devel@openvz.org,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 12/28] slab: pass memcg parameter to kmem_cache_create
-Message-ID: <20120530110134.GA25094@somewhere.redhat.com>
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com>
- <1337951028-3427-13-git-send-email-glommer@parallels.com>
- <alpine.DEB.2.00.1205290922340.4666@router.home>
- <4FC4F04F.1070401@parallels.com>
- <alpine.DEB.2.00.1205291131590.6723@router.home>
- <4FC4FAF6.8060900@parallels.com>
- <alpine.DEB.2.00.1205291149280.8406@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205291149280.8406@router.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 May 2012 07:13:24 -0400
+From: Javier Martin <javier.martin@vista-silicon.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: kernel@pengutronix.de, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org,
+        Javier Martin <javier.martin@vista-silicon.com>
+Subject: [PATCH] Visstrim M10: fix gpio handling.
+Date: Wed, 30 May 2012 13:13:09 +0200
+Message-Id: <1338376389-32256-1-git-send-email-javier.martin@vista-silicon.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 11:52:55AM -0500, Christoph Lameter wrote:
-> On Tue, 29 May 2012, Glauber Costa wrote:
-> 
-> > > How do you detect that someone is touching it?
-> >
-> > kmem_alloc_cache will create mem_cgroup_get_kmem_cache.
-> > (protected by static_branches, so won't happen if you don't have at least
-> > non-root memcg using it)
-> >
-> > * Then it detects which memcg the calling process belongs to,
-> > * if it is the root memcg, go back to the allocation as quickly as we
-> >   can
-> > * otherwise, in the creation process, you will notice that each cache
-> >   has an index. memcg will store pointers to the copies and find them by
-> >   the index.
-> >
-> > From this point on, all the code of the caches is reused (except for
-> > accounting the page)
-> 
-> Well kmem_cache_alloc cache is the performance critical hotpath.
-> 
-> If you are already there and doing all of that then would it not be better
-> to simply count the objects allocated and freed per cgroup? Directly
-> increment and decrement counters in a cgroup? You do not really need to
-> duplicate the kmem_cache structure and do not need to modify allocators if
-> you are willing to take that kind of a performance hit. Put a wrapper
-> around kmem_cache_alloc/free and count things.
+Some GPIOs in Visstrim M10 are used without being registered.
+This leads to USB and video malfunctions. This patch registers
+those GPIOs to solve the issue.
 
-I believe one of the issues is also that a task can migrate to another cgroup
-anytime. But an object that has been charged to a cgroup must be later uncharged
-to the same, unless you move the charge as you move the task. But then it means
-you need to keep track of the allocations per task, and you also need to be able
-to do that reverse mapping (object -> allocating task) because your object can
-be allocated by task A but later freed by task B. Then when you do the uncharge
-it must happen to the cgroup of A, not the one of B.
+Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+---
+ arch/arm/mach-imx/mach-imx27_visstrim_m10.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-That all would be much more complicated and performance sensitive than what this
-patchset does. Dealing with duplicate caches for accounting seem to me a good tradeoff
-between allocation performance hot path and maintaining cgroups semantics.
+diff --git a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+index e8741f9..db4aa6f 100644
+--- a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
++++ b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+@@ -116,6 +116,8 @@ static const int visstrim_m10_pins[] __initconst = {
+ 	PB23_PF_USB_PWR,
+ 	PB24_PF_USB_OC,
+ 	/* CSI */
++	TVP5150_RSTN | GPIO_GPIO | GPIO_OUT,
++	TVP5150_PWDN | GPIO_GPIO | GPIO_OUT,
+ 	PB10_PF_CSI_D0,
+ 	PB11_PF_CSI_D1,
+ 	PB12_PF_CSI_D2,
+@@ -182,10 +184,10 @@ static void __init visstrim_camera_init(void)
+ 	int dma;
+ 
+ 	/* Initialize tvp5150 gpios */
+-	mxc_gpio_mode(TVP5150_RSTN | GPIO_GPIO | GPIO_OUT);
+-	mxc_gpio_mode(TVP5150_PWDN | GPIO_GPIO | GPIO_OUT);
+-	gpio_set_value(TVP5150_RSTN, 1);
+-	gpio_set_value(TVP5150_PWDN, 0);
++	gpio_request_one(TVP5150_RSTN, GPIOF_DIR_OUT | GPIOF_INIT_HIGH,
++			 "tvp5150_rstn");
++	gpio_request_one(TVP5150_PWDN, GPIOF_DIR_OUT | GPIOF_INIT_LOW,
++			 "tvp5150_pwdn");
+ 	ndelay(1);
+ 
+ 	gpio_set_value(TVP5150_PWDN, 1);
+@@ -414,7 +416,8 @@ static struct i2c_board_info visstrim_m10_i2c_devices[] = {
+ /* USB OTG */
+ static int otg_phy_init(struct platform_device *pdev)
+ {
+-	gpio_set_value(OTG_PHY_CS_GPIO, 0);
++	gpio_request_one(OTG_PHY_CS_GPIO, GPIOF_DIR_OUT | GPIOF_INIT_LOW,
++			 "usbotg_cs");
+ 
+ 	mdelay(10);
+ 
+-- 
+1.7.0.4
+
