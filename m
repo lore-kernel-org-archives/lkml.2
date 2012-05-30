@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab2E3Oue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:50:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39021 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754841Ab2E3Oud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:50:33 -0400
-Message-ID: <4FC633A7.1050406@zytor.com>
-Date: Wed, 30 May 2012 07:50:15 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1757215Ab2E3OwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:52:19 -0400
+Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:37899 "EHLO
+	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754192Ab2E3OwS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:52:18 -0400
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Andre Przywara <andre.przywara@amd.com>, mingo@elte.hu, tglx@linutronix.de,
-        jeremy@goop.org, xen-devel@lists.xensource.com,
-        stable@vger.kernel.org#3.4+, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
- systems
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <20120530143937.GF3207@phenom.dumpdata.com>
-In-Reply-To: <20120530143937.GF3207@phenom.dumpdata.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1338375394-16268-3-git-send-email-kishon@ti.com>
+References: <1338375394-16268-1-git-send-email-kishon@ti.com> <1338375394-16268-3-git-send-email-kishon@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Wed, 30 May 2012 20:21:56 +0530
+Message-ID: <CAMQu2gxcP8At5j4UOK3bgX+Q+OunXeTxyXEr6hAhGiwjLs-gJg@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/5] arm: omap: remove ocp2scp_usb_phy_ick clock node
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        arnd@arndb.de, gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 07:39 AM, Konrad Rzeszutek Wilk wrote:
-> On Wed, May 30, 2012 at 03:10:02PM +0200, Andre Przywara wrote:
->> Because we are behind a family check before tweaking the topology
->> bit, we can use the standard rd/wrmsr variants for the CPUID feature
->> register.
->> This fixes a crash when using the kernel as a Xen Dom0 on affected
->> Trinity systems. The wrmsrl_amd_safe is not properly paravirtualized
->> yet (this will be fixed in another patch).
-> 
-> So with a rdmsrl_amd_safe and wrmsrl_amd_safe being implemented in
-> the pv_cpu_ops - would this patch even be neccessary?
-> 
+On Wed, May 30, 2012 at 4:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> "ocp2scp_usb_phy_ick" clock node was a fake clock node created
+> to control MODULEMODE of ocp2scp. Since the hwmod for ocp2scp is now added
+> (which can be used to control MODULEMODE) this clock node is removed.
+>
+> Cc: Benoit Cousson <b-cousson@ti.com>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
+>  arch/arm/mach-omap2/clock44xx_data.c |   11 -----------
 
-That is still bogus;  a better thing would be to implement the _regs
-interface.  Even better would be to trap and emulate rdmsr/wrmsr!
+Have you patched clock44xx_data.c manually or you have a patch for
+the clock_data autogen script to generate it ?
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Regards
+Santosh
