@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932505Ab2E3JIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:08:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41374 "EHLO mail.skyhub.de"
+	id S932493Ab2E3JKC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:10:02 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51508 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932272Ab2E3JIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:08:48 -0400
-Date: Wed, 30 May 2012 11:08:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: ShuoX Liu <shuox.liu@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
-        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/2] x86 mce: use new printk recursion disabling interface
-Message-ID: <20120530090844.GA23663@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	ShuoX Liu <shuox.liu@intel.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-	Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
-	Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
-References: <4FBC444A.6060500@intel.com>
- <20120523100138.GA13506@x1.osrc.amd.com>
- <4FBDCE4A.7050900@intel.com>
- <20120524061145.GA18284@liondog.tnic>
- <20120524155611.b7aeff4d.akpm@linux-foundation.org>
- <1337905811.14538.206.camel@ymzhang.sh.intel.com>
- <4FBF3295.7090608@intel.com>
- <4FBF32E8.90101@intel.com>
- <20120525074114.GA5417@liondog.tnic>
- <4FC2DDFF.3020600@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FC2DDFF.3020600@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932381Ab2E3JKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 05:10:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="149397859"
+From: Sundar Iyer <sundar.iyer@intel.com>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, lethal@linux-sh.org, arjan@linux.intel.com,
+        sundar.iyer@intel.com, german.monroy@intel.com
+Subject: [PATCH v2] x86/irq: handle chained interrupts during IRQ migration
+Date: Wed, 30 May 2012 14:58:57 +0530
+Message-Id: <1338370137-18929-1-git-send-email-sundar.iyer@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 10:07:59AM +0800, ShuoX Liu wrote:
-> Boris,
-> I checked code and found some other functions in do_machine_check() also
-> would printk something. Such as add_taint(). So i think we'd better
-> place the recursion check at the beginning and the end of
-> do_machine_check(). Also more printks later(maybe) added will benefit
-> from this. Do you agree?
+Chained interrupt handlers dont have an irqaction and hence are not
+handled during migrating interrupts when some cores go offline.
 
-I'm not sure we want to disable printk recursion for add_taint() - it
-doesn't spit out any useful information wrt MCE so we could ignore it.
+Handle this by introducing a irq_is_chained() check which is based
+on the the very least NOREQUEST, NOPROBE, and NOTHREAD flags being
+set for such interrupts. fixup_irq() can then handle such interrupts
+and not skip them over.
 
-Btw, I forgot to ask: this printk recursion disabling, do you have a
-real usecase where you don't get the MCE info in dmesg and with your
-patch it works or is this purely hypothetical?
+Change-Id: I011de8bee98c1702a362deb06106845ca7bcad61
+Signed-off-by: Sundar Iyer <sundar.iyer@intel.com>
+---
+v1: use accessors instead of new variables to identify chained irqs
+v2: use a mask of NOREQUEST, NOPROBE, and NOTHREAD accessor flags as per Paul M
 
-Thanks.
+ arch/x86/kernel/irq.c   |    6 ++++--
+ include/linux/irqdesc.h |   11 +++++++++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 6c0802e..acd7949 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -249,8 +249,10 @@ void fixup_irqs(void)
+ 
+ 		data = irq_desc_get_irq_data(desc);
+ 		affinity = data->affinity;
+-		if (!irq_has_action(irq) || irqd_is_per_cpu(data) ||
+-		    cpumask_subset(affinity, cpu_online_mask)) {
++		/* include IRQs who have no action, but are chained */
++		if ((!irq_has_action(irq) && irq_is_chained(irq)) ||
++			irqd_is_per_cpu(data) ||
++			cpumask_subset(affinity, cpu_online_mask)) {
+ 			raw_spin_unlock(&desc->lock);
+ 			continue;
+ 		}
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 2d921b3..8d5eb42 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -120,6 +120,17 @@ static inline int irq_has_action(unsigned int irq)
+ 	return desc->action != NULL;
+ }
+ 
++/*
++ * Test to see if the IRQ is chained; it would not be requested and hence
++ * very miinimum _IRQ_NOREQUEST, _IRQ_NOPROBE, _IRQ_NOTHREAD  would be set
++ */
++static inline int irq_is_chained(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	return !(desc->status_use_accessors &
++			(IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOTHREAD));
++}
++
+ /* caller has locked the irq_desc and both params are valid */
+ static inline void __irq_set_handler_locked(unsigned int irq,
+ 					    irq_flow_handler_t handler)
 -- 
-Regards/Gruss,
-    Boris.
+1.7.1
+
