@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab2E3SgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 14:36:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab2E3SgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 14:36:09 -0400
-Date: Wed, 30 May 2012 20:34:06 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 04/35] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
-Message-ID: <20120530183406.GH21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-5-git-send-email-aarcange@redhat.com>
- <20120530182247.GA28341@localhost.localdomain>
+	id S1753573Ab2E3SiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 14:38:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39965 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751652Ab2E3SiM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 14:38:12 -0400
+Date: Wed, 30 May 2012 14:38:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+cc: Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Use of high-res timers
+Message-ID: <Pine.LNX.4.44L0.1205301419090.1543-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530182247.GA28341@localhost.localdomain>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Konrad,
+Thomas, Ingo, or anyone else:
 
-On Wed, May 30, 2012 at 02:22:49PM -0400, Konrad Rzeszutek Wilk wrote:
-> Thank you for loking at this from the xen side. The interesting thing
-> is that I believe the _PAGE_PAT (or _PAGE_PSE) is actually used on
-> Xen on PTEs. It is used to mark the pages WC. <sigh>
+My driver needs to time a bunch of events, with roughly millisecond
+precision.  Up to now it has used old-fashioned timer_lists and the
+jiffies counter, but I'm switching over to high-resolution timers and
+ktime_get.
 
-Oops, I'm using _PAGE_PSE too on the pte, but only when it's unmapped.
+This leads to a few questions (these issues don't seem to be addressed 
+anywhere in Documentation/timers):
 
-static inline int pte_numa(pte_t pte)
-{
-	return (pte_flags(pte) &
-		(_PAGE_NUMA_PTE|_PAGE_PRESENT)) == _PAGE_NUMA_PTE;
-}
+	Should I be concerned about efficiency?  I may well end up
+	calling ktime_get several times per millisecond; is it fast
+	enough for this to be okay?
 
-And _PAGE_UNUSED2 (_PAGE_IOMAP) is used for the pmd but _PAGE_IOMAP by
-Xen should only be set on ptes.
+	I need timed intervals with reliable lower bounds.  Let's say
+	I call ktime_get twice, maybe once in an interrupt handler and
+	once in an hrtimer callback (not necessarily on the same CPU).
+	Some action has to be taken no earlier than 1 ms after the 
+	first call.  If the second call returns a value that is at 
+	least 1 ms larger than the first call, is that enough of a 
+	guarantee?  If not, how much larger does it have to be?
 
-The only way to use _PAGE_PSE safe on the pte is if the pte is
-non-present, is this what Xen is also doing? (in turn colliding with
-pte_numa)
+	Which has more overhead: adding and cancelling an hrtimer
+	several times, or simply letting it expire and returning
+	immediately from the callback?  (I wouldn't be surprised if
+	there was no good answer.)
 
-Now if I shrink the size of the page_autonuma to one entry per pmd
-(instead of per pte) I may as well drop pte_numa entirely and only
-leave pmd_numa. At the moment it's possible to switch between the two
-models at runtime with sysctl (if one wants to do a more expensive
-granular tracking). I'm still uncertain on the best way to shrink
-the page_autonuma size we'll see.
+Thanks,
+
+Alan Stern
+
