@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab2E3PBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 11:01:42 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39102 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab2E3PBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 11:01:41 -0400
+	id S1753317Ab2E3PDC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:03:02 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39209 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751356Ab2E3PDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 11:03:00 -0400
+Message-ID: <4FC6363F.3040208@zytor.com>
+Date: Wed, 30 May 2012 08:01:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Date: Wed, 30 May 2012 17:01:39 +0200
-Message-ID: <CABPqkBRSRZR4KwbauNTDfH19w+1sDZ3yfnihMHzQg312mWPzSQ@mail.gmail.com>
-Subject: [BUG] perf tools: does not load global variables syms from main program
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        mingo@elte.hu
+To: Borislav Petkov <bp@alien8.de>, Andre Przywara <andre.przywara@amd.com>,
+        mingo@elte.hu, tglx@linutronix.de, konrad.wilk@oracle.com,
+        jeremy@goop.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, stable@vger.kernel.org.#.3.4+
+Subject: Re: [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC631D3.9080907@zytor.com> <20120530145523.GA15635@x1.osrc.amd.com> <4FC6358F.2010405@zytor.com> <20120530150007.GB15438@x1.osrc.amd.com>
+In-Reply-To: <20120530150007.GB15438@x1.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On 05/30/2012 08:00 AM, Borislav Petkov wrote:
+> On Wed, May 30, 2012 at 07:58:23AM -0700, H. Peter Anvin wrote:
+>> If so, then fix the description to match reality and we can take the patch.
+> 
+> Andre, would you please do that?
+> 
 
-I am working on the PEBS Load Latency support for perf_events.
-This HW feature can capture load/store accesses. I have extended
-perf record/report to collect and process the data. However, I ran into
-a serious issue with symbols and maps. I want to be able to symbolize
-data and not just code. For global variables declared inside shared objects
-or the main program, we should be able to get to the variable names. At least
-that seems to be the intent of the code.
+Ah, but now we get:
 
-But in practice, I ran into an issue with global variables of the main program.
-My test program has a simple int tab[] array declared global. The program
-is statically linked. The /proc/maps output is as follows:
+>> I'm not following: If the AMD variants (putting a special value into
+>> %edi) can be freely replaced by the non-AMD variants, why did
+>> the AMD special ones get used in the first place?
 
-00400000-004b3000 r-xp 00000000 08:11 1748297                            foo
-006b3000-006b5000 rw-p 000b3000 08:11 1748297                            foo
-006b5000-006dc000 rw-p 00000000 00:00 0                                  [heap]
-7f05a0e8f000-7f05a0e90000 rw-p 00000000 00:00 0
-7fffc0bdb000-7fffc0bfc000 rw-p 00000000 00:00 0                          [stack]
-7fffc0bff000-7fffc0c00000 r-xp 00000000 00:00 0                          [vdso]
-ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0
-  [vsyscall]
+> Older CPUs (K8) needed the AMD variants, starting with family 10h we
+> can use the normal versions.
 
-$ nm -v foo
-...
-00000000006b7c90 b unseen_objects
-00000000006b7c98 b marker.8271
-00000000006b7ca0 b frame_hdr_cache_head
-00000000006b7cc0 b frame_hdr_cache
-00000000006b7e40 b subs.8531
-00000000006b7e60 B the_tab      <==== my table
-00000000006b7e80 B loop
-00000000006b7e88 B fast
-00000000006b7e90 B tab
-00000000006b7e98 B zero
-00000000006b7e9c B pin
-...
+So no, not correct.
 
-$ readelf -e foo
-...
-LOAD           0x00000000000b3ef0 0x00000000006b3ef0 0x00000000006b3ef0
-                 0x0000000000000f20 0x0000000000004428  RW     200000
-...
+	-hpa
 
-The global variables are mapped into the heap segment. But the logic in
-perf assumes that heap has no file backing and therefore there is no
-point in calling dso__load_syms() for DATA (MAP__VARIABLE). Hence,
-I cannot symbolize global variables.
 
-To prove the problem for my little test case, I  added a gross hacks into
-dso__load_syms().
-
-Seems to me like we would need to keep track of the elf image of the
-main program
-and associate it with the [heap] segment. Furthermore, we would need to skip the
-addr adjustment based on .gnu.prelink_undo.
-
-I am not too much of an expert is that area, so I am seeking advice on
-how to best
-fix this ASAP.
-
-Thanks.
