@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870Ab2E3Fwo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 01:52:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51682 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754718Ab2E3Fwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 01:52:42 -0400
-Subject: [PATCH] net: sock: validate data_len before allocating skb in
- sock_alloc_send_pskb()
-To: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
-From: Jason Wang <jasowang@redhat.com>
-Cc: stable@vger.kernel.org, mst@redhat.com
-Date: Wed, 30 May 2012 13:47:02 +0800
-Message-ID: <20120530054702.6146.8503.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1756877Ab2E3F45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 01:56:57 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:50531 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756458Ab2E3F44 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 01:56:56 -0400
+Message-ID: <4FC5B682.4010509@us.ibm.com>
+Date: Tue, 29 May 2012 22:56:18 -0700
+From: John Stultz <johnstul@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Richard Cochran <richardcochran@gmail.com>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC V2 3/6] time: keep track of the pending utc/tai threshold
+References: <20120522173953.GA4177@netboy.at.omicron.at> <4FBBD591.1000103@linaro.org> <20120523082916.GA15627@localhost.localdomain> <4FBD1545.4070408@linaro.org> <20120523191747.GA2348@netboy.at.omicron.at> <4FBD4613.7040003@linaro.org> <20120524064340.GA2180@netboy.at.omicron.at> <20120524065726.GB2180@netboy.at.omicron.at> <4FC57BF9.5010608@linaro.org> <4FC57CAA.3030809@us.ibm.com> <20120530051138.GA3356@netboy.at.omicron.at>
+In-Reply-To: <20120530051138.GA3356@netboy.at.omicron.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053005-3270-0000-0000-000006BF5071
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to validate the number of pages consumed by data_len, otherwise frags
-array could be overflowed by userspace. So this patch validate data_len and
-return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
+On 05/29/2012 10:11 PM, Richard Cochran wrote:
+> On Tue, May 29, 2012 at 06:49:30PM -0700, John Stultz wrote:
+>> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+>> index 6e46cac..81c76a9 100644
+>> --- a/kernel/time/timekeeping.c
+>> +++ b/kernel/time/timekeeping.c
+>> @@ -962,6 +962,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+>>   		timekeeper.xtime.tv_sec++;
+>>   		leap = second_overflow(timekeeper.xtime.tv_sec);
+>>   		timekeeper.xtime.tv_sec += leap;
+>> +		timekeeper.wall_to_monotonic.tv_sec -= leap;
+> Don't you need this in update_wall_time() too?
+Yep. Good point.
 
-Cc: stable@vger.kernel.org [2.6.27+]
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- net/core/sock.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+> BTW I suggest refactoring this code (two almost identical if{} bodies)
+> into a shared helper function.
+>
+Sounds good, although since the logic is ever so slightly different I 
+might split up the pure fix and do the refactoring later so the fix is 
+easier to apply to -stable branches.
 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 653f8c0..4ad5fa5 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1599,6 +1599,7 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
- 
- 	timeo = sock_sndtimeo(sk, noblock);
- 	while (1) {
-+		int npages;
- 		err = sock_error(sk);
- 		if (err != 0)
- 			goto failure;
-@@ -1607,17 +1608,20 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
- 		if (sk->sk_shutdown & SEND_SHUTDOWN)
- 			goto failure;
- 
-+		err = -EMSGSIZE;
-+		npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
-+		if (npages > MAX_SKB_FRAGS)
-+			goto failure;
-+
- 		if (atomic_read(&sk->sk_wmem_alloc) < sk->sk_sndbuf) {
- 			skb = alloc_skb(header_len, gfp_mask);
- 			if (skb) {
--				int npages;
- 				int i;
- 
- 				/* No pages, we're done... */
- 				if (!data_len)
- 					break;
- 
--				npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
- 				skb->truesize += data_len;
- 				skb_shinfo(skb)->nr_frags = npages;
- 				for (i = 0; i < npages; i++) {
+thanks
+-john
+
 
