@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab2E3Ee5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 00:34:57 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39282 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2E3Eez (ORCPT
+	id S1751475Ab2E3EmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 00:42:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52863 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956Ab2E3EmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 00:34:55 -0400
-Date: Wed, 30 May 2012 05:34:43 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@us.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-Message-ID: <20120530043443.GA3200@ZenIV.linux.org.uk>
-References: <CA+55aFzrJNd5J7i3Rp7-ctc=bDn5GTWu=H1xyCgGZ-rzu74Gbw@mail.gmail.com>
- <CA+55aFyPPZ0wayqPMCZtfP1w9nN-GnKJxYc9i_XM_Qk8d-zJzg@mail.gmail.com>
- <CACLa4pujEBAS349Pr-EcBmzQgTHWthhCMV0Yqq0BG-F_gDjz4Q@mail.gmail.com>
- <1337112446.20904.50.camel@falcor>
- <CA+55aFxRRuWGD-4LYzO-T8eg22goKpej5AV36ALL8GaLP56oRA@mail.gmail.com>
- <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
- <20120516004251.GO22082@ZenIV.linux.org.uk>
- <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
- <20120516021828.GP22082@ZenIV.linux.org.uk>
- <1337807899.15138.31.camel@falcor>
+	Wed, 30 May 2012 00:42:01 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, fweisbec@gmail.com, paulus@samba.org,
+        tglx@linutronix.de, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf tool: build fix, remove duplicate declarations
+Date: Tue, 29 May 2012 22:41:53 -0600
+Message-Id: <1338352913-60483-1-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337807899.15138.31.camel@falcor>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 05:18:19PM -0400, Mimi Zohar wrote:
+I'm sure I have some gremlins running around today, but I am
+consistently hitting this compile failure on Fedora 14 and 16:
 
-> > 2) get_unmapped_area() probably ought to grow such a caller and
-> > I really suspect that it would've killed quite a few of them.
-> 
-> ?
+In file included from util/sort.h:12:0,
+                 from builtin-diff.c:15:
+util/string.h:7:5: error: redundant redeclaration of ‘hex2u64’ [-Werror=redundant-decls]
+util/symbol.h:32:5: note: previous declaration of ‘hex2u64’ was here
+util/string.h:8:7: error: redundant redeclaration of ‘strxfrchar’ [-Werror=redundant-decls]
+util/symbol.h:33:7: note: previous declaration of ‘strxfrchar’ was here
+util/string.h:9:5: error: redundant redeclaration of ‘perf_atoll’ [-Werror=redundant-decls]
+util/util.h:238:5: note: previous declaration of ‘perf_atoll’ was here
+util/string.h:10:8: error: redundant redeclaration of ‘argv_split’ [-Werror=redundant-decls]
+util/util.h:239:8: note: previous declaration of ‘argv_split’ was here
+util/string.h:11:6: error: redundant redeclaration of ‘argv_free’ [-Werror=redundant-decls]
+util/util.h:240:6: note: previous declaration of ‘argv_free’ was here
+util/string.h:12:6: error: redundant redeclaration of ‘strglobmatch’ [-Werror=redundant-decls]
+util/util.h:241:6: note: previous declaration of ‘strglobmatch’ was here
+util/string.h:13:6: error: redundant redeclaration of ‘strlazymatch’ [-Werror=redundant-decls]
+util/util.h:242:6: note: previous declaration of ‘strlazymatch’ was here
+cc1: all warnings being treated as errors
+make: *** [/tmp/pbuild/builtin-diff.o] Error 1
+make: *** Waiting for unfinished jobs....
+make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
 
-This belong at the same level as arch_mmap_check().  We insist on not
-having VMAs with address range that has certain properties.  E.g. extends
-beyond the maximal user process address (TASK_SIZE, all architectures),
-overlaps a range forbidden by MMU (like on sparc boxen) *or* page at
-fixed address that must not be unmapped (e.g. page 0 at old arm systems,
-with their "IRQ vectors live at fixed small virtual address" lossage).
-Or hugepage VMA in range where huge pages are not allowed.  Or page 0
-on systems where it's forbidden by security policy.  Same kind of
-restriction, as far as the rest of the system is concerned.
+Fix it by removing duplicates.
 
-The obvious place for enforcing such restrictions is get_unmapped_area().
-That's what produces such VMA address ranges and validates ones that
-are explicitly given by userland (when called with MAP_FIXED).
+Signed-off-by: David Ahern <dsahern@gmail.com>
+---
+ tools/perf/util/symbol.h |    4 +---
+ tools/perf/util/util.h   |    6 +-----
+ 2 files changed, 2 insertions(+), 8 deletions(-)
 
-> > 3) expand_downwards() seems to be missing the basic sanity checks on the
-> > validity of VMA range (arch_mmap_check(), that is).  itanic opencodes
-> > the equivalent before calling expand_stack(); arm and mn10300 do not
-> > bother, which might or might not be legitimate - depends on whether
-> > one can get a fault in the first page *and* reach the check_stack:
-> > in e.g. arm __do_page_fault().  Which just might be possible, if attacker
-> > maps something just above said first page with MAP_GROWSDOWN and
-> > tries to write at very small address - IIRC, the first page on arm
-> > contains the stuff that shouldn't be world-writable...  s390 doesn't
-> > care and I'm not sure about sparc32/sparc64 - it looks like that shouldn't
-> > be possible to hit, but...
-> 
-> ?
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 1f00388..4ba5206 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -9,6 +9,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include "string.h"
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+ extern char *cplus_demangle(const char *, int);
+@@ -29,9 +30,6 @@ static inline char *bfd_demangle(void __used *v, const char __used *c,
+ #endif
+ #endif
+ 
+-int hex2u64(const char *ptr, u64 *val);
+-char *strxfrchar(char *s, char from, char to);
+-
+ /*
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+  * for newer versions we can use mmap to reduce memory usage:
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 2daaedb..5152592 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -78,6 +78,7 @@
+ #include "../../../include/linux/magic.h"
+ #include "types.h"
+ #include <sys/ttydefaults.h>
++#include "string.h"
+ 
+ extern const char *graph_line;
+ extern const char *graph_dotted_line;
+@@ -235,11 +236,6 @@ static inline int sane_case(int x, int high)
+ int mkdir_p(char *path, mode_t mode);
+ int copyfile(const char *from, const char *to);
+ 
+-s64 perf_atoll(const char *str);
+-char **argv_split(const char *str, int *argcp);
+-void argv_free(char **argv);
+-bool strglobmatch(const char *str, const char *pat);
+-bool strlazymatch(const char *str, const char *pat);
+ int strtailcmp(const char *s1, const char *s2);
+ unsigned long convert_unit(unsigned long value, char *unit);
+ int readn(int fd, void *buf, size_t size);
+-- 
+1.7.10.1
 
-Any place that does this check without the rest of restriction enforcement
-is very suspicious.  expand_downwards() is one such place.  I'm not saying
-that we need a full-blown get_unmapped_area() in there, but we *do* want
-arch_mmap_check().  Itanic does it in caller of expand_stack() (which is
-where expand_downwards() come from).  So does arm, now that rmk has fixed
-the bug there.  The rest either has arch_mmap_check() returning "no special
-restrictions for this architecture" or seems to be guaranteed that if an
-area used to satisfy those restrictions then extending its lower end towards
-0 can't violate them.  Probably.  Frankly, I would rather just do
-arch_mmap_check() in expand_downwards() (and remove it from callers in
-arch/{arm,ia64}).  Dumber is better in this case...
-
-Another place is __bprm_mm_init() and there the check doesn't make any sense.
-
-Yet another is install_special_mapping().  And I do not believe that the
-check is needed there either.  Address comes either from get_unmapped_area()
-(and that's where the checks should be done) or it's cast in stone (e.g.
-unicore32 with special vma for its IRQ vectors, fixed at virtual address
-0xffff000 and if somebody doesn't like a page being there (r/o, etc.), they
-can take that with hardware designers; the damn thing will be there, or the
-box won't work).
-
-And the rest of security_file_mmap() callers has the address come through
-get_unmapped_area(), AFAICS.  It would bloody better, because otherwise
-we are very likely to have a serious hole on a bunch of architectures...
