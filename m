@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab2E3VWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:22:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51979 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753526Ab2E3VWw (ORCPT
+	id S1756140Ab2E3VXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:23:22 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:30026 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754340Ab2E3VXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:22:52 -0400
-Date: Wed, 30 May 2012 22:22:36 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
-        sivanich@sgi.com
-Message-ID: <20120530212235.GB20051@decadent.org.uk>
-References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
- <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com>
- <alpine.DEB.2.00.1205301328550.31768@router.home>
- <20120530184638.GU27374@one.firstfloor.org>
- <alpine.DEB.2.00.1205301349230.31768@router.home>
- <20120530193234.GV27374@one.firstfloor.org>
- <alpine.DEB.2.00.1205301441350.31768@router.home>
- <20120530195244.GX27374@one.firstfloor.org>
- <CAHGf_=rS6cGjcJ7tKH05cMMdJKEO9f60mNBa0VaCkzs=kVjCQQ@mail.gmail.com>
+	Wed, 30 May 2012 17:23:20 -0400
+Date: Wed, 30 May 2012 17:16:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: William Dauchy <wdauchy@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, shli@fusionio.com, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        xen-devel@lists.xensource.com, Shaohua Li <shli@kernel.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [Xen-devel] swap: don't do discard if no discard option added
+Message-ID: <20120530211614.GA31789@phenom.dumpdata.com>
+References: <CAJ75kXbC3gqQAaghKo2i1L650dw9-vrFuEwoy4defagoyR8p4Q@mail.gmail.com>
+ <20120521181558.GA7829@phenom.dumpdata.com>
+ <alpine.LSU.2.00.1205261113470.2033@eggly.anvils>
+ <20120529144743.GG3558@phenom.dumpdata.com>
+ <CAJ75kXZSqyyk0j2sNS1gq8fV_Z+Kj12mxKmpOAjKmwhDxs_9vQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHGf_=rS6cGjcJ7tKH05cMMdJKEO9f60mNBa0VaCkzs=kVjCQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <CAJ75kXZSqyyk0j2sNS1gq8fV_Z+Kj12mxKmpOAjKmwhDxs_9vQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 04:00:55PM -0400, KOSAKI Motohiro wrote:
-> On Wed, May 30, 2012 at 3:52 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> > On Wed, May 30, 2012 at 02:42:42PM -0500, Christoph Lameter wrote:
-> >> On Wed, 30 May 2012, Andi Kleen wrote:
-> >>
-> >> > On Wed, May 30, 2012 at 01:50:02PM -0500, Christoph Lameter wrote:
-> >> > > On Wed, 30 May 2012, Andi Kleen wrote:
-> >> > >
-> >> > > > I always regretted that cpusets were no done with custom node lists.
-> >> > > > That would have been much cleaner and also likely faster than what we have.
-> >> > >
-> >> > > Could shared memory policies ignore cpuset constraints?
-> >> >
-> >> > Only if noone uses cpusets as a "security" mechanism, just for a "soft policy"
-> >> > Even with soft policy you could well break someone's setup.
-> >>
-> >> Well at least lets exempt shared memory from memory migration and memory
-> >> policy updates. That seems to be causing many of these issues.
-> >
-> > Migration on the page level is needed for the memory error handling.
-> >
-> > Updates: you mean not allowing to set the policy when there are already
-> > multiple mappers? I could see that causing some unexpected behaviour. Presumably
-> > a standard database will only set it at the beginning, but I don't know
-> > if that would work for all users.
+On Wed, May 30, 2012 at 10:29:16PM +0200, William Dauchy wrote:
+> Hello Konrad,
 > 
-> We don't need to kill migration core. We only need to kill that mbind(2) updates
-> vma->policy of shmem.
-[...]
+> On Tue, May 29, 2012 at 4:47 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> > I think I know and just narrowed down the issue this Friday.
+> > William, could you please apply the patch outlined in
+> > https://bugzilla.redhat.com/show_bug.cgi?id=824641
+> > to your dom0 and see if that (so do not have 052b198 in your branch)
+> 
+> I applied the patch on dom0 and removed 052b198 from my virtual
+> machine and it worked.
 
-So should I (and Greg) drop 'mm: mempolicy: Let vma_merge and
-vma_split handle vma->vm_policy linkages' from the pending stable
-releases?  Or is that OK as an interim fix until these changes go
-into mainline?
- 
-Ben.
-
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Great. Is it OK to attach a Tested-by tag to the patch with your name?
+> 
+> Regards,
+> -- 
+> William
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
