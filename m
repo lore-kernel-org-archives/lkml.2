@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2E3JWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:22:22 -0400
+	id S932447Ab2E3JWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:22:46 -0400
 Received: from mail-vc0-f174.google.com ([209.85.220.174]:51108 "EHLO
 	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2E3JWU (ORCPT
+	with ESMTP id S1755975Ab2E3JWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:22:20 -0400
-Message-ID: <4FC5F2FA.4050606@gmail.com>
-Date: Wed, 30 May 2012 18:14:18 +0800
+	Wed, 30 May 2012 05:22:33 -0400
+Message-ID: <4FC5F309.9080604@gmail.com>
+Date: Wed, 30 May 2012 18:14:33 +0800
 From: Xiao Jiang <jgq516@gmail.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
-To: "Cousson, Benoit" <b-cousson@ti.com>
-CC: Jon Hunter <jon-hunter@ti.com>, linux@arm.linux.org.uk,
-        rob.herring@calxeda.com, grant.likely@secretlab.ca, rnayak@ti.com,
-        tony@atomide.com, wim@iguana.be, devicetree-discuss@lists.ozlabs.org,
+To: Jon Hunter <jon-hunter@ti.com>
+CC: linux@arm.linux.org.uk, b-cousson@ti.com, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, rnayak@ti.com, tony@atomide.com,
+        wim@iguana.be, devicetree-discuss@lists.ozlabs.org,
         linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: omap_wdt: add device tree support
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-4-git-send-email-jgq516@gmail.com> <4FC51008.1050004@ti.com> <4FC59171.8040009@gmail.com> <4FC5D21F.2030702@ti.com>
-In-Reply-To: <4FC5D21F.2030702@ti.com>
+Subject: Re: [PATCH 0/3] omap3/omap4: add device tree support for wdt
+References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <4FC50BA2.4070404@ti.com>
+In-Reply-To: <4FC50BA2.4070404@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cousson, Benoit wrote:
-> On 5/30/2012 5:18 AM, Xiao Jiang wrote:
->> Jon Hunter wrote:
->>> On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
->>>> From: Xiao Jiang <jgq516@gmail.com>
->>>>
->>>> Add device table for omap_wdt to support dt.
->>>>
->>>> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
->>>> ---
->>>> drivers/watchdog/omap_wdt.c | 8 ++++++++
->>>> 1 files changed, 8 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
->>>> index 8285d65..d98c615 100644
->>>> --- a/drivers/watchdog/omap_wdt.c
->>>> +++ b/drivers/watchdog/omap_wdt.c
->>>> @@ -430,6 +430,13 @@ static int omap_wdt_resume(struct
->>>> platform_device *pdev)
->>>> #define omap_wdt_resume NULL
->>>> #endif
->>>>
->>>> +static const struct of_device_id omap_wdt_of_match[] = {
->>>> + { .compatible = "ti,omap3-wdt", },
->>>> + { .compatible = "ti,omap4-wdt", },
+Jon Hunter wrote:
+> Hi Xiao Jiang,
 >
-> If there is no difference between the OMAP3 and the OMAP4 WDT IP, just 
-> add one entry "ti,omap3-wdt". And then in the OMAP4 DTS you will just 
-> put : compatible = "ti,omap3-wdt"; or compatible =  "ti,omap4-wdt", 
-> "ti,omap3-wdt";
-> I'm still a little bit confused about the real need for the 
-> "ti,omap4-wdt: entry, but it seems to be the way to do it in PPC.
-I believe OMAP2, OMAP3 and OMAP4 share the same IP, so how about use 
-"ti, omap2-wdt"? and other dts files
-put compatible like "ti,omap4-wdt", "ti,omap2-wdt" and "ti,omap4-wdt", 
-"ti,omap2-wdt".
+> On 05/25/2012 05:42 AM, jgq516@gmail.com wrote:
+>   
+>> From: Xiao Jiang <jgq516@gmail.com>
+>>
+>> This series can be applied to dt branch of linux-omap tree.
+>>     
 >
->>>> + {},
->>>> +};
->>>> +MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
->>>> +
->>>> static struct platform_driver omap_wdt_driver = {
->>>> .probe = omap_wdt_probe,
->>>> .remove = __devexit_p(omap_wdt_remove),
->>>> @@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
->>>> .driver = {
->>>> .owner = THIS_MODULE,
->>>> .name = "omap_wdt",
->>>> + .of_match_table = omap_wdt_of_match,
->>>> },
->>>> };
->>>>
->>>
->>> I think we need to add some code to the probe function that calls
->>> of_match_device() and ensures we find a match. For example ...
->>>
->>> if (of_have_populated_dt())
->>> if (!of_match_device(omap_wdt_of_match, &pdev->dev))
->>> return -EINVAL;
->>>
->> Will add it in v2, thanks for suggestion.
+> Thanks for sending this!
 >
-> No, in fact this is not needed. We need that mainly when several 
-> instances can match the same driver and thus we select the proper one 
-> using the of_match_device. Otherwise, just check is the device_node is 
-> there.
+>   
+>> Since omap24xx series has different wdt base addr (omap2420: 0x48022000 and
+>> omap2430: 0x49016000) per commit 2817142f31bfbf26c216bf4f9192540c81b2d071, so
+>> I don't add wdt node in omap2.dtsi just like omap3 and omap4, maybe different
+>> dts files are needed for omap2420 and omap2430.
+>>     
 >
-> In that case, the driver does not even care about any DT node so there 
-> is no need to add extra code for that. Keep it simple.
+> Good point. I am wondering if we can simple drop the address from the
+> wdt2 node for omap2. It is not really being used. May be Benoit can comment.
 >
-Thanks for elaborating, simple is good for this one.
+>   
+Hmm, I think the address doesn't need anymore since the related hw_mod 
+has the right addr as follows.
+
+static struct omap_hwmod_addr_space omap2420_wd_timer2_addrs[] = {
+        {  
+                .pa_start       = 0x48022000,
+                .pa_end         = 0x4802207f,
+                .flags          = ADDR_TYPE_RT
+        }, 
+        { }
+};
+
+static struct omap_hwmod_addr_space omap2430_wd_timer2_addrs[] = {
+        {  
+                .pa_start       = 0x49016000,
+                .pa_end         = 0x4901607f,
+                .flags          = ADDR_TYPE_RT
+        }, 
+        { }
+};
+
+static struct omap_hwmod_addr_space omap3xxx_wd_timer2_addrs[] = {
+        {   
+                .pa_start       = 0x48314000,
+                .pa_end         = 0x4831407f,
+                .flags          = ADDR_TYPE_RT
+        },  
+        { } 
+};
+
+static struct omap_hwmod_addr_space omap44xx_wd_timer2_addrs[] = {
+        {   
+                .pa_start       = 0x4a313000,
+                .pa_end         = 0x4a31407f,
+                .flags          = ADDR_TYPE_RT
+        },  
+        { } 
+};
 
 Regards,
 Xiao
-> Regards,
-> Benoit
+> Cheers
+> Jon
 
