@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab2E3HPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:15:54 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:51775 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab2E3HPw convert rfc822-to-8bit (ORCPT
+	id S1756954Ab2E3HQD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:16:03 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:32996 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937Ab2E3HP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:15:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338353260-10097-19-git-send-email-lee.jones@linaro.org>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
-	<1338353260-10097-19-git-send-email-lee.jones@linaro.org>
-Date: Wed, 30 May 2012 15:15:52 +0800
-Message-ID: <CACRpkdYpCMRurpDgz5X-Qsv5qUgzeVX3S8trWHByTaw6R35_jg@mail.gmail.com>
-Subject: Re: [PATCH 18/22] mfd: Remove redundant Kconfig entry
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 30 May 2012 03:15:59 -0400
+Date: Wed, 30 May 2012 09:15:53 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCHv2 4/4] ARM: dma-mapping: remove custom consistent dma region
+In-reply-to: <4FC5659D.6040805@gmail.com>
+To: "'KOSAKI Motohiro'" <kosaki.motohiro@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Krishna Reddy'" <vdumpa@nvidia.com>,
+        "'Konrad Rzeszutek Wilk'" <konrad.wilk@oracle.com>,
+        "'Hiroshi Doyu'" <hdoyu@nvidia.com>,
+        "'Subash Patel'" <subashrp@gmail.com>
+Message-id: <019401cd3e34$0c6af4d0$2540de70$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: Ac09+LkV1X9UXSC6RJC9eDuE1GoLUgAOiDQg
+References: <1337252085-22039-1-git-send-email-m.szyprowski@samsung.com>
+ <1337252085-22039-5-git-send-email-m.szyprowski@samsung.com>
+ <4FC5659D.6040805@gmail.com>
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hello,
 
-> During ab8500-core clean-up the Kconfig entry for AB8500_I2C_CORE
-> was left remnant. This patch simply removes it.
->
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mfd/Kconfig |   10 ----------
->  1 file changed, 10 deletions(-)
->
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 11a1b65..b697136 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -660,16 +660,6 @@ config AB8500_CORE
->          the irq_chip parts for handling the Mixed Signal chip events.
->          This chip embeds various other multimedia funtionalities as well.
->
-> -config AB8500_I2C_CORE
-> -       bool "AB8500 register access via PRCMU I2C"
-> -       depends on AB8500_CORE && MFD_DB8500_PRCMU
+On Wednesday, May 30, 2012 2:11 AM KOSAKI Motohiro wrote:
 
-You need to move these dependencies under the AB8500_CORE config
-entry instead.
+> >   static void *
+> >   __dma_alloc_remap(struct page *page, size_t size, gfp_t gfp, pgprot_t prot,
+> >   	const void *caller)
+> >   {
+> > -	struct arm_vmregion *c;
+> > -	size_t align;
+> > -	int bit;
+> > +	struct vm_struct *area;
+> > +	unsigned long addr;
+> >
+> > -	if (!consistent_pte) {
+> > -		printk(KERN_ERR "%s: not initialised\n", __func__);
+> > +	area = get_vm_area_caller(size, VM_DMA | VM_USERMAP, caller);
+> 
+> In this patch, VM_DMA is only used here. So, is this no effect?
 
-> -       default y
+I introduced it mainly to let user know which areas have been allocated by the dma-mapping api.
 
-I wonder if in  arch/arm/mach-ux500/Kconfig MACH_MOP500 should
-select this instead, all MOP500 children have this an *won't* work
-without it.
+I also plan to add a check suggested by Minchan Kim in __dma_free_remap() if the vmalloc area
+have been in fact allocated with VM_DMA set. 
 
-Yours,
-Linus Walleij
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
