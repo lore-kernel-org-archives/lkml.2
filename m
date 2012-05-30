@@ -1,98 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab2E3Nkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:40:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38461 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754269Ab2E3Nku (ORCPT
+	id S1754788Ab2E3OFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:05:24 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:13726 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754271Ab2E3OFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:40:50 -0400
-Date: Wed, 30 May 2012 06:40:35 -0700
-From: tip-bot for Colin Cross <ccross@android.com>
-Message-ID: <tip-454c79999f7eaedcdf4c15c449e43902980cbdf5@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, ccross@android.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ccross@android.com, tglx@linutronix.de
-In-Reply-To: <1337229266-15798-1-git-send-email-ccross@android.com>
-References: <1337229266-15798-1-git-send-email-ccross@android.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/rt: Fix SCHED_RR across cgroups
-Git-Commit-ID: 454c79999f7eaedcdf4c15c449e43902980cbdf5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 30 May 2012 10:05:23 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAAEoxk/CTtAn/2dsb2JhbABEtA2BB4IXAQEEATIBRgULCxguFBgxE4gGCbkbiwUBhGFgA5UXAYkfhlSCYoFd
+Date: Wed, 30 May 2012 16:04:44 +0200
+From: Philippe De Muyter <phdm@macqel.be>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(),
+	and strnlen_user()
+Message-ID: <20120530140444.GA10543@frolo.macqel>
+References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org> <20120530102226.GA28628@frolo.macqel> <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 06:40:41 -0700 (PDT)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  454c79999f7eaedcdf4c15c449e43902980cbdf5
-Gitweb:     http://git.kernel.org/tip/454c79999f7eaedcdf4c15c449e43902980cbdf5
-Author:     Colin Cross <ccross@android.com>
-AuthorDate: Wed, 16 May 2012 21:34:23 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 30 May 2012 14:02:25 +0200
+On Wed, May 30, 2012 at 01:20:02PM +0200, Geert Uytterhoeven wrote:
+> On Wed, May 30, 2012 at 12:22 PM, Philippe De Muyter <phdm@macqel.be> wrote:
+> > On Tue, May 29, 2012 at 11:33:36PM +0200, Geert Uytterhoeven wrote:
+> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> >> ---
+> >> Do we also want
+> >>
+> >>     select HAVE_EFFICIENT_UNALIGNED_ACCESS if (!COLDFIRE && !M68000)
+> >
+> > Sorry, I did not follow what happened to unaligned accesses, but
+> > CPU32 family (at least 68340) crashes on unaligned accesses.
+> 
+> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
 
-sched/rt: Fix SCHED_RR across cgroups
+I have a local port here (but based on an ancient linux kernel, 2.6.2 IIRC)
 
-task_tick_rt() has an optimization to only reschedule SCHED_RR tasks
-if they were the only element on their rq.  However, with cgroups
-a SCHED_RR task could be the only element on its per-cgroup rq but
-still be competing with other SCHED_RR tasks in its parent's
-cgroup.  In this case, the SCHED_RR task in the child cgroup would
-never yield at the end of its timeslice.  If the child cgroup
-rt_runtime_us was the same as the parent cgroup rt_runtime_us,
-the task in the parent cgroup would starve completely.
+> But Freescale's website confirms both 68340 and 68360 are CPU32.
+> 
+> arch/m68k/include/asm/unaligned.h assumes CPU32 (CONFIG_MCPU32)
+> can do unaligned accesses:
 
-Modify task_tick_rt() to check that the task is the only task on its
-rq, and that the each of the scheduling entities of its ancestors
-is also the only entity on its rq.
+That's not true.  Accessing a 16- or 32-bit word at an odd address
+with a 68340 generates an Address Error Exception.  I remember
+discovering a bug in the ppp kernel code because of that.
 
-Signed-off-by: Colin Cross <ccross@android.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1337229266-15798-1-git-send-email-ccross@android.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/rt.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+> 
+> #if defined(CONFIG_COLDFIRE) || defined(CONFIG_M68000)
+> #include <linux/unaligned/be_struct.h>
+> #include <linux/unaligned/le_byteshift.h>
+> #include <linux/unaligned/generic.h>
+> 
+> #define get_unaligned   __get_unaligned_be
+> #define put_unaligned   __put_unaligned_be
+> 
+> #else
+> /*
+>  * The m68k can do unaligned accesses itself.
+>  */
+> #include <linux/unaligned/access_ok.h>
+> #include <linux/unaligned/generic.h>
+> 
+> #define get_unaligned   __get_unaligned_be
+> #define put_unaligned   __put_unaligned_be
+> 
+> #endif
+> 
+> Is this wrong?
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 295da73..2a4e8df 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1985,6 +1985,8 @@ static void watchdog(struct rq *rq, struct task_struct *p)
- 
- static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- {
-+	struct sched_rt_entity *rt_se = &p->rt;
-+
- 	update_curr_rt(rq);
- 
- 	watchdog(rq, p);
-@@ -2002,12 +2004,15 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
- 	p->rt.time_slice = RR_TIMESLICE;
- 
- 	/*
--	 * Requeue to the end of queue if we are not the only element
--	 * on the queue:
-+	 * Requeue to the end of queue if we (and all of our ancestors) are the
-+	 * only element on the queue
- 	 */
--	if (p->rt.run_list.prev != p->rt.run_list.next) {
--		requeue_task_rt(rq, p, 0);
--		set_tsk_need_resched(p);
-+	for_each_sched_rt_entity(rt_se) {
-+		if (rt_se->run_list.prev != rt_se->run_list.next) {
-+			requeue_task_rt(rq, p, 0);
-+			set_tsk_need_resched(p);
-+			return;
-+		}
- 	}
- }
- 
+I can't tell from reading just the lines above, but I think one should add
+"|| defined(CONFIG_MCPU32)" at the end of the if condition.
+
+I also think that the Coldfire 5272 can do unaligned accesses, but I
+cannot test that at the moment.
+
+> 
+> However, for CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS,
+> the question is not whether unaligned accesses are supported, but
+> whether they are more efficient than byte copies when copying larger blocks.
+
+OK, thanks
+
+Philippe
+
+-- 
+Philippe De Muyter +32 2 6101532 Macq SA rue de l'Aeronef 2 B-1140 Bruxelles
