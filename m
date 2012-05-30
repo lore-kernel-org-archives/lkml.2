@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab2E3U0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:26:35 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:48207 "EHLO
+	id S1756028Ab2E3U0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:26:43 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41823 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755069Ab2E3U0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:26:31 -0400
+	id S1755964Ab2E3U0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 16:26:40 -0400
 From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Brett Rudley <brudley@broadcom.com>, Roland Vossen <rvossen@broadcom.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        "Franky (Zhenhui) Lin" <frankyl@broadcom.com>,
-        Kan Yan <kanyan@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 3/4] brcmfmac: Fix likely misuse of | for &
-Date: Wed, 30 May 2012 13:25:56 -0700
-Message-Id: <af79247f427979584f3e07753ec3ad4766844ec9.1338408931.git.joe@perches.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/4] usb: gadget: pch_udc: Fix likely misuse of | for &
+Date: Wed, 30 May 2012 13:25:57 -0700
+Message-Id: <2530fb0cbede64dad718d41012156043d1ca424e.1338408931.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 In-Reply-To: <cover.1338408931.git.joe@perches.com>
 References: <cover.1338408931.git.joe@perches.com>
@@ -29,25 +25,22 @@ Likely this should have be &.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/pch_udc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-index e2480d1..8e7e692 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/bcmsdh.c
-@@ -89,9 +89,9 @@ int brcmf_sdio_intr_register(struct brcmf_sdio_dev *sdiodev)
- 	data |= 1 << SDIO_FUNC_1 | 1 << SDIO_FUNC_2 | 1;
- 	brcmf_sdio_regwb(sdiodev, SDIO_CCCR_IENx, data, &ret);
- 
--	/* redirect, configure ane enable io for interrupt signal */
-+	/* redirect, configure and enable io for interrupt signal */
- 	data = SDIO_SEPINT_MASK | SDIO_SEPINT_OE;
--	if (sdiodev->irq_flags | IRQF_TRIGGER_HIGH)
-+	if (sdiodev->irq_flags & IRQF_TRIGGER_HIGH)
- 		data |= SDIO_SEPINT_ACT_HI;
- 	brcmf_sdio_regwb(sdiodev, SDIO_CCCR_BRCM_SEPINT, data, &ret);
- 
+diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
+index 1cfcc9e..f4fb71c 100644
+--- a/drivers/usb/gadget/pch_udc.c
++++ b/drivers/usb/gadget/pch_udc.c
+@@ -2208,7 +2208,7 @@ static void pch_udc_complete_receiver(struct pch_udc_ep *ep)
+ 			return;
+ 		}
+ 		if ((td->status & PCH_UDC_BUFF_STS) == PCH_UDC_BS_DMA_DONE)
+-			if (td->status | PCH_UDC_DMA_LAST) {
++			if (td->status & PCH_UDC_DMA_LAST) {
+ 				count = td->status & PCH_UDC_RXTX_BYTES;
+ 				break;
+ 			}
 -- 
 1.7.8.111.gad25c.dirty
 
