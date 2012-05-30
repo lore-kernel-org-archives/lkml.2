@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756990Ab2E3HU1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:20:27 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:59976 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755859Ab2E3HU0 (ORCPT
+	id S1756987Ab2E3HWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:22:32 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:54904 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab2E3HWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:20:26 -0400
-Date: Wed, 30 May 2012 09:20:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Chen <hi3766691@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Plumbers: Tweaking scheduler policy micro-conf RFP
-Message-ID: <20120530072019.GD2587@gmail.com>
-References: <1337084609.27020.156.camel@laptop>
- <CAKfTPtDz1-fR2i5x7AVd8sGZhX2VNtz2rnQC3ePrcHO9MWK3FQ@mail.gmail.com>
- <1337086834.27020.162.camel@laptop>
- <CAKfTPtDrZ-tfC81jnxwpB+DCtmxhU+VfoYbtSBr8MkFt+P8JcA@mail.gmail.com>
- <1337096141.27694.82.camel@twins>
- <1337193010.27694.146.camel@twins>
- <CA+55aFzuygx6L-2hVCMbk5cvEdDp6AUtOGq-wYFn=4yEyebPLw@mail.gmail.com>
- <1337468148.573.139.camel@twins>
- <CANQmPXhN92i9E8HqxE7pqz=kOwtn5Mz0crW37H6qs+XD420Yuw@mail.gmail.com>
- <CANQmPXjiqtDE_4ZmNrtrb9qjB=gyv=NiPr3pdaHFirSs0T3ptQ@mail.gmail.com>
+	Wed, 30 May 2012 03:22:30 -0400
+Date: Wed, 30 May 2012 12:52:02 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH -tip  8/9] kprobes: introduce ftrace based
+	optiomization
+Message-ID: <20120530072202.GA29068@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120529124833.9191.23007.stgit@localhost.localdomain> <20120529124944.9191.81924.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CANQmPXjiqtDE_4ZmNrtrb9qjB=gyv=NiPr3pdaHFirSs0T3ptQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120529124944.9191.81924.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053007-3270-0000-0000-000006BFA984
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 29, 2012 at 09:49:45PM +0900, Masami Hiramatsu wrote:
+> Introduce function trace based kprobes optimization.
+> 
+> With using ftrace optimization, kprobes on the mcount calling
+> address, use ftrace's mcount call instead of breakpoint.
+> Farthermore, this optimization works with preemptive kernel
+> not like as current jump-based optimization. Of cource,
+> this feature is limited only if the probe on mcount call.
 
-(restored the Cc:s)
+The above paragraph doesn't parse correctly for me. Do you mean to say
+if the probe is on the mcount calling address, use the jump based
+approach instead of the breakpoint one? Could you please rephrase?
 
-* Chen <hi3766691@gmail.com> wrote:
+...
 
-> Oh, Just count the size of the scheduler code yourself, 
-> actually 400 - 500k. core.c + fair.c + rt.c + idle_task.c + 
-> everything
+> +static void __kprobes kprobe_ftrace_init(void)
+> +{
+> +	int ret;
+> +
+> +	ret = register_ftrace_function(&kprobe_ftrace_ops);
+> +	WARN(ret < 0, "Failed to init kprobe-ftrace (%d)\n", ret);
+> +
+> +	kprobe_ftrace_enabled = 1;
 
-Only binary code is counted in bytes, source code is counted in 
-lines.
+Hmm.. is this right? kprobe_ftrace_enabled is 1 even if the init failed.
 
-20 KLOC for a full-featured CPU scheduler that does everything 
-from simple UP scheduling to thousands of CPUs NUMA scheduling, 
-cgroups, real-time and more, is entirely reasonable.
+Ananth
 
-As a comparison the VM is 80+ KLOCS, arch/x86/ is 260+ KLOCs, 
-networking is 720+ KLOCS and the FS subsystem is over 1 million 
-lines of code.
-
-The scheduler is in fact one of the smaller subsystems.
-
-Thanks,
-
-	Ingo
