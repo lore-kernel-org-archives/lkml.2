@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab2E3M2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:28:53 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52645 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab2E3M2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:28:52 -0400
-Message-ID: <4FC611F4.7010202@parallels.com>
-Date: Wed, 30 May 2012 16:26:28 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge infrastructure
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-17-git-send-email-glommer@parallels.com> <20120530121706.GB25094@somewhere.redhat.com>
-In-Reply-To: <20120530121706.GB25094@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753510Ab2E3McS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:32:18 -0400
+Received: from nm12-vm2.bullet.mail.ne1.yahoo.com ([98.138.91.88]:31030 "HELO
+	nm12-vm2.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753314Ab2E3McR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 08:32:17 -0400
+X-Yahoo-Newman-Id: 201234.86768.bm@smtp215.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: UTufzvkVM1nYSjcmYHRhIGIkcGpuPOFqDPij52NaOVtz9au
+ IbJU2jrgfDmGVsPW5s_Sshp20_D5nbaRxLVunONeEL0P56m9ec144QPxJc.Y
+ p2Sbe_lrOCPp9TNu.fro.kLf.W38TBeqfiob4Cp5YPBiEe0y0hRw3nO1e1ND
+ _bnwXJlvqZ57QmPuM1vWiLMks5seS1Fu.ZMVlQv4X4GJqUNMJmrjzTWDyjvl
+ QkRzHSP_FdArwuPlGebtdM05c0tmJWGnoaVymPQyrQ36T1KIyMJnC.A.m838
+ ctMKeeJmTwTVLlDExW64d6tO5qF67KqHUvrQqS3qoijzS0q3X7rQtQXSQQu7
+ cykC_weGmj1EjHGR5_PPyDJaGvOSZjGlm5.8xT80fsy6C0EaYt_6jT28HoDf
+ ME.vS5gCYFCmh2ZttSssavoE.vCFrjAJSZmi7XUTNPvWitMq5qC0ibmzp3YN
+ .Sqw6Gue4TK.wIR.WvxNXUw3LgNvJSAdITeFsgNL8
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: mdharm-usb@one-eyed-alien.net, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
+        linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
+Subject: [PATCH]USB:storage:fixed space issues in coding style.
+Date: Wed, 30 May 2012 18:05:47 +0530
+Message-Id: <1338381347-2608-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 04:17 PM, Frederic Weisbecker wrote:
-> On Fri, May 25, 2012 at 05:03:36PM +0400, Glauber Costa wrote:
->>   #endif /* CONFIG_CGROUP_MEM_RES_CTLR_KMEM */
->> +static __always_inline struct kmem_cache *
->> +mem_cgroup_get_kmem_cache(struct kmem_cache *cachep, gfp_t gfp)
->> +{
->> +	if (!mem_cgroup_kmem_on)
->> +		return cachep;
->> +	if (!current->mm)
->> +		return cachep;
->> +	if (in_interrupt())
->> +		return cachep;
->
-> Does that mean interrupts are kept out of accounting?
+Fixed space issues in coding style found by
+checkpatch.pl tool in drivers/usb/storage/protocol.c
 
-Well, since interrupts have no process context, if you are in an 
-interrupt I can't think of any sane thing to do than relay it to the 
-root memcg. That's what happen when I return cachep: I return the 
-original parent cache, and we allocate from that.
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ drivers/usb/storage/protocol.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/storage/protocol.c b/drivers/usb/storage/protocol.c
+index 82dd834..5dfb4c3 100644
+--- a/drivers/usb/storage/protocol.c
++++ b/drivers/usb/storage/protocol.c
+@@ -66,7 +66,7 @@ void usb_stor_pad12_command(struct scsi_cmnd *srb, struct us_data *us)
+ 	 * NOTE: This only works because a scsi_cmnd struct field contains
+ 	 * a unsigned char cmnd[16], so we know we have storage available
+ 	 */
+-	for (; srb->cmd_len<12; srb->cmd_len++)
++	for (; srb->cmd_len < 12; srb->cmd_len++)
+ 		srb->cmnd[srb->cmd_len] = 0;
+ 
+ 	/* send the command to the transport layer */
+@@ -76,14 +76,14 @@ void usb_stor_pad12_command(struct scsi_cmnd *srb, struct us_data *us)
+ void usb_stor_ufi_command(struct scsi_cmnd *srb, struct us_data *us)
+ {
+ 	/* fix some commands -- this is a form of mode translation
+-	 * UFI devices only accept 12 byte long commands 
++	 * UFI devices only accept 12 byte long commands
+ 	 *
+ 	 * NOTE: This only works because a scsi_cmnd struct field contains
+ 	 * a unsigned char cmnd[16], so we know we have storage available
+ 	 */
+ 
+ 	/* Pad the ATAPI command with zeros */
+-	for (; srb->cmd_len<12; srb->cmd_len++)
++	for (; srb->cmd_len < 12; srb->cmd_len++)
+ 		srb->cmnd[srb->cmd_len] = 0;
+ 
+ 	/* set command length to 12 bytes (this affects the transport layer) */
+-- 
+1.7.10
 
