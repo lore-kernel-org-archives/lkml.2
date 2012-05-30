@@ -1,235 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab2E3TkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 15:40:08 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45613 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258Ab2E3TkE (ORCPT
+	id S1752816Ab2E3TlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 15:41:09 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:37373 "EHLO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752423Ab2E3TlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 15:40:04 -0400
-Message-ID: <1338406801.23168.74.camel@shawn-ssd>
-Subject: Re: include/linux/dynamic_debug.h:111:2: error: implicit
- declaration of function =?UTF-8?Q?=E2=80=98strstr=E2=80=99?=
-From: shawn <shawnlandden@gmail.com>
-To: Jim Cromie <jim.cromie@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Jason Baron <jbaron@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-arm@vger.kernel.org
-Date: Wed, 30 May 2012 12:40:01 -0700
-In-Reply-To: <CAJfuBxxkMJbmvQMCZx=6GUqJ8c6VnT8jaRTKA-OWZLa0gG7kUw@mail.gmail.com>
-References: <1338334286.2658.536.camel@shawn-ssd>
-	 <CAJfuBxweY7sG2KZDPHsrOP6iu8sQxw8EvCKA1QtGnDFKA92zag@mail.gmail.com>
-	 <1338342203.2658.544.camel@shawn-ssd>
-	 <CAJfuBxwP_p4Y4pp50qfEts4zoOkJ16Hj_Yu68q3qd7=5UMLeiw@mail.gmail.com>
-	 <1338387021.23168.18.camel@shawn-ssd>
-	 <CAJfuBxxkMJbmvQMCZx=6GUqJ8c6VnT8jaRTKA-OWZLa0gG7kUw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 30 May 2012 15:41:07 -0400
+Date: Wed, 30 May 2012 12:40:59 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] clk: add extension API
+Message-ID: <20120530194059.GA13243@gmail.com>
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+ <4FC5DFCF.1020606@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC5DFCF.1020606@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-summary:
+On 20120530-01:52, Stephen Boyd wrote:
+> On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
+> > Add an extension API for clocks. This allows clocktypes to provide extensions
+> > for features which are uncommon and cannot be easily mapped onto normal clock
+> > framework concecpts. eg: resetting blocks, configuring clock phase etc.
+> 
+> This seems rather generic. Why not add more specific APIs/concepts like
+> clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
+> make them map.
+> 
 
-the recently added to arm, CONFIG_KERNEL_XZ is broken because
-arch/arm/boot/compressed/decompress.c defines _LINUX_STRING_H
-overriding <linux/string.h> used in include/linux/dynamic_debug.h:111
+I also wonder if exposing some of these knobs should be done in the
+basic clock types.  Meaning that instead of having additional calls in
+the clk.h API those calls could be exposed by the basic clock types that
+map to the actions.
 
+The question that needs to be answered is this: do generic drivers need
+access to these additional functions (clk.h) or just the platform code
+which implements some of the clock logic (basic clock types &
+platform-speciic clock types).
 
-On Wed, 2012-05-30 at 11:53 -0600, Jim Cromie wrote: 
-> On Wed, May 30, 2012 at 8:10 AM, shawn <shawnlandden@gmail.com> wrote:
-> > On Wed, 2012-05-30 at 02:35 -0600, Jim Cromie wrote:
-> >> On Tue, May 29, 2012 at 7:43 PM, shawn <shawnlandden@gmail.com> wrote:
-> >> > jim,
-> >> > On Tue, 2012-05-29 at 19:11 -0600, Jim Cromie wrote:
-> >> >> On Tue, May 29, 2012 at 5:31 PM, shawn <shawnlandden@gmail.com> wrote:
-> >> >> >  SHIPPED arch/arm/boot/compressed/lib1funcs.S
-> >> >> > In file included from include/linux/kernel.h:23:0,
-> >> >> >                 from
-> >> >> > arch/arm/boot/compressed/../../../../lib/xz/xz_private.h:15,
-> >> >> >                 from
-> >> >> > arch/arm/boot/compressed/../../../../lib/decompress_unxz.c:145,
-> >> >> >                 from arch/arm/boot/compressed/decompress.c:50:
-> >> >> > include/linux/dynamic_debug.h: In function
-> >> >> > ‘ddebug_dyndbg_module_param_cb’:
-> >> >> > include/linux/dynamic_debug.h:111:2: error: implicit declaration of
-> >> >> > function ‘strstr’ [-Werror=implicit-function-declaration]
-> >> >> >
-> >> >> > git blame shows b48420c1d3019ce8d84fb8e58f4ca86b8e3655b8 as introducing
-> >> >> > this call
-> >> >>
-> >> >> that symbol should have been provided by line 100
-> >> >>
-> >> >>      98 #else
-> >> >>      99
-> >> >>     100 #include <linux/string.h>
-> >> >>     101 #include <linux/errno.h>
-> >> >> ...
-> >> >>     108 static inline int ddebug_dyndbg_module_param_cb(char *param, char *val,
-> >> >>     109                                                 const char *modname)
-> >> >>     110 {
-> >> >>     111         if (strstr(param, "dyndbg")) {
-> >> >
-> >> >> which has:
-> >> >>
-> >> >>      74 #ifndef __HAVE_ARCH_STRSTR
-> >> >>      75 extern char * strstr(const char *, const char *);
-> >> >>      76 #endif
-> >> >> does your arch have __HAVE_ARCH_STRSTR ?
-> >> >> if so, is strstr exported under different conditions ??
-> >> > a git grep __HAVE_ARCH_STRSTR did not show and such defines in the arm
-> >> > tree
-> >>
-> >> thats odd - you should have gotten the generic one then.
-> >>
-> >> >> Can you send me
-> >> >> arch/arm/boot/compressed/decompress.i  ?
-> >> > I didn't have that file after the failure, but
-> >>
-> >> nor would you with success, but you did the right thing below..
-> >>
-> >> > make arch/arm/boot/compressed/decompress.i
-> >> >
-> >> > summoned it, also including string.o from that folder (which was present
-> >> > after the failure)
-> >> >
-> >> > I am compiling on amd64, using
-> >> > export ARCH=arm
-> >> > and
-> >> > CONFIG_CROSS_COMPILE="arm-linux-gnueabi-"
-> >> >
-> >> >
-> >> > I have had issues with the cross compiler not always being called since
-> >> > the 3.5 merge window opened up, (ld reporting corrupted binary files and
-> >> > gcc saying it doesn't understand arm-specific flags) and have not yet
-> >> > compiled a post-v3.4 successful kernel. This could be a symptom of that.
-> >> > (esp as the host arch, x86 DOES have __HAVE_ARCH_STRSTR)
-> >> >
-> >>
-> >> hmm
-> >> CONFIG_CROSS_COMPILE is new in 3.5-rc isnt it ?
-> >> what happens if you do it the old (3.4) way ?
-> > No, CONFIG_CROSS_COMPILE is not new, I've been doing it this way for a
-> > few versions, before with the emdebian cross toolchain. in meuconfig it
-> > shows up under: General Config --> Cross-compiler tool prefix
-> 
-> Ah yes - I see its not new (far from it)
-> 
-> commit 84336466011c589b6af554f2f2f1fcfa1a5c1437
-> Author: Roland McGrath <roland@redhat.com>
-> Date:   Mon Dec 21 16:24:06 2009 -0800
-> 
->     kconfig CROSS_COMPILE option
-> 
-> 
-> > This is the arm toolchain that is in the Ubuntu repos.
-> >
-> > http://packages.ubuntu.com/precise/gcc-4.6-arm-linux-gnueabi
-> 
-> I went ahead and installed the arm toolchain from kernel.org,
-> and got what look to be errors like you mentioned:
-> 
-> [jimc@groucho linux-2.6-dep]$ make
-> make[1]: Nothing to be done for `all'.
-> make[1]: Nothing to be done for `relocs'.
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CC      kernel/bounds.s
-> cc1: error: unrecognized command line option '-m64'
-> cc1: error: unrecognized command line option '-mno-red-zone'
-> cc1: error: unrecognized command line option '-mcmodel=kernel'
-> cc1: error: unrecognized command line option '-maccumulate-outgoing-args'
-> make[1]: *** [kernel/bounds.s] Error 1
-> make: *** [prepare0] Error 2
-> 
-> this is with toolchain dir in the front of the path, after doing
-> make ARCH=arm defconfig
-> make xconfig # and adding the cross-compile value
-> 
-> I got much further when I kept ARCH=arm as make arg;
-> it completed the build.  Youre getting it from the environment,
-> which should be the same, but its worth a try...
-> 
-> [jimc@groucho linux-2.6-dep]$ file vmlinux*
-> vmlinux:   ELF 32-bit LSB executable, ARM, version 1, statically
-> linked, not stripped
-> vmlinux.o: ELF 32-bit LSB relocatable, ARM, version 1, not stripped
-> 
-> FWIW, this was an in-src build, my attempt at O=../build-arm spat at me.
-> 
-> 
-> > And I have successfully built kernels with this toolchain, and the
-> > debian native arm 4.6 compiler, at the same time, using distcc. (however
-> > I turned both distcc and ccache off for the error I sent)
-> >
-> > After having the issues with 3.5, I reinstalled, well parts of the tools
-> > chain with apt-get install --reinstall.
-> >
-> > What is the old way to cross-compile?
-> 
-> from the config help text:
-> 
-> Same as running 'make CROSS_COMPILE=prefix-' but stored for
-> default make runs in this kernel build directory. You don't
-> need to set this unless you want the configured kernel build
-> directory to select the cross-compiler automatically.
-> 
-> FWIW, it sounds more fiddly than using the now-quite-mature
-> CROSS_COMPILE config-item
-> 
-> 
-> 
-> >> What toolchain are you using ?
-> >> can you replicate it using something here ?
-> >>
-> >> http://kernel.org/pub/tools/crosstool/
-> 
-> Since I got a build using this, you should give it a go.
-> If it works, file a bug report with ubuntu.
+Regards,
+Mike
 
-arch/arm/boot/compressed/decompress.c
-
-has
-
-#define _LINUX_STRING_H_
-
-which prevents <linux/string.h> from loading
-
-
-therefore: xz_private.h cannot include <linux/kernel.h>, or
-arch/arm/boot/compressed/decompress.c must define strstr
-
-I tried to remove the #include <linux/kernel.h> 
-from xz_private.h, and replace it with more specific includes but cannot
-because lib/xz/xz_dec_lzma2.c uses min() which is defined in the
-<linux/kernel.h> header
-
-  CC      arch/arm/boot/compressed/decompress.o
-In file included from include/linux/kernel.h:23:0,
-                 from
-arch/arm/boot/compressed/../../../../lib/xz/xz_private.h:15,
-                 from
-arch/arm/boot/compressed/../../../../lib/decompress_unxz.c:145,
-                 from arch/arm/boot/compressed/decompress.c:50:
-include/linux/dynamic_debug.h: In function
-‘ddebug_dyndbg_module_param_cb’:
-include/linux/dynamic_debug.h:111:2: error: implicit declaration of
-function ‘strstr’ [-Werror=implicit-function-declaration]
-
-> 
-> >
-> > --
-> > -Shawn Landden
-> >
-> 
-> let me know how you get on,
-> ( learning from others' pain is one of the values of empathy! )
-> 
-> Jim
-
-
--- 
--Shawn Landden
-
+> At the least it should be documented so that people know what it should
+> be used for.
