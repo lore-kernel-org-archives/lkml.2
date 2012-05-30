@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517Ab2E3JZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 05:25:27 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:53629 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932360Ab2E3JZ0 convert rfc822-to-8bit (ORCPT
+	id S932516Ab2E3J2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 05:28:31 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:41787 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932381Ab2E3J2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 05:25:26 -0400
+	Wed, 30 May 2012 05:28:30 -0400
+Message-ID: <4FC5E837.30702@ti.com>
+Date: Wed, 30 May 2012 14:58:23 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-+MqwncOAJLhnkcJANLS8gebgTEAcsvK8rHtMrdqb+UfA@mail.gmail.com>
-References: <1337614542-31696-1-git-send-email-siretart@tauware.de> <CAK5ve-+MqwncOAJLhnkcJANLS8gebgTEAcsvK8rHtMrdqb+UfA@mail.gmail.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Wed, 30 May 2012 17:25:04 +0800
-X-Google-Sender-Auth: -RH9vRZyY3uGXwYXFoCR_OM5cOo
-Message-ID: <CAK5ve-LVGy70fy9bBBazdbMXTAKJVdRXTt1fT-zCXOQin1sE4Q@mail.gmail.com>
-Subject: Re: [PATCH] drivers/leds/leds-lp5521.c: actually check return value
- of lp5521_read
-To: Reinhard Tartler <siretart@tauware.de>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
-        linux-leds@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [RFC PATCH] clk: add extension API
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, Reinhard, I just found this issue was fixed by Dan Carpenter in
-mainline now, (commit 5bc9ad774c063f6b41965e7314f2c26aa5e465a0)
+Hi Peter,
 
-So I have to drop this.
+On Tuesday 29 May 2012 03:28 PM, Peter De Schrijver wrote:
+> Add an extension API for clocks. This allows clocktypes to provide extensions
+> for features which are uncommon and cannot be easily mapped onto normal clock
+> framework concecpts. eg: resetting blocks, configuring clock phase etc.
 
--Bryan
+I was thinking on similar lines for OMAP wherein I need to control
+'hardware-auto-gating' bits on clocks which are otherwise just normal
+gates or dividers. We just disable all of them early at boot and
+re-enable them late in the boot process once PM kicks in.
 
-On Tue, May 22, 2012 at 11:27 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
-> On Mon, May 21, 2012 at 11:35 PM, Reinhard Tartler <siretart@tauware.de> wrote:
->> This detects device failures properly. Fixes compiler warning:
->> drivers/leds/leds-lp5521.c:741: warning: 'buf' may be used uninitialized in this function
->>
->> Signed-off-by: Reinhard Tartler <siretart@tauware.de>
->> ---
->>  drivers/leds/leds-lp5521.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> This problem was found by tools developed by the VAMOS project:
->> http://www4.cs.fau.de/Research/VAMOS/
->>
->> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
->> index 410a723..943c69d 100644
->> --- a/drivers/leds/leds-lp5521.c
->> +++ b/drivers/leds/leds-lp5521.c
->> @@ -785,7 +785,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
->>         * LP5521_REG_ENABLE register will not have any effect - strange!
->>         */
->>        ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
->> -       if (buf != LP5521_REG_R_CURR_DEFAULT) {
->> +       if (ret == -EIO || buf != LP5521_REG_R_CURR_DEFAULT) {
+regards,
+Rajendra
+
 >
-> Looks fine to me.
-> Acked-by: Bryan Wu <bryan.wu@canonical.com>
+> Signed-off-by: Peter De Schrijver<pdeschrijver@nvidia.com>
+> ---
+>   drivers/clk/clk.c            |    8 ++++++++
+>   include/linux/clk-provider.h |    2 ++
+>   include/linux/clk.h          |    2 ++
+>   3 files changed, 12 insertions(+), 0 deletions(-)
 >
-> And applied to fixes-for-3.5 branch of linux-leds.git
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index e5d5dc1..39bc458 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -956,6 +956,14 @@ struct clk *clk_get_parent(struct clk *clk)
+>   }
+>   EXPORT_SYMBOL_GPL(clk_get_parent);
 >
-> -Bryan
+> +int clk_ext(struct clk *clk, unsigned int op, unsigned long param)
+> +{
+> +	if (clk->ops->ext)
+> +		return clk->ops->ext(clk->hw, op, param);
+> +
+> +	return -EINVAL;
+> +}
+> +
+>   /*
+>    * .get_parent is mandatory for clocks with multiple possible parents.  It is
+>    * optional for single-parent clocks.  Always call .get_parent if it is
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 6803fb4..08025d3 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -109,6 +109,8 @@ struct clk_ops {
+>   	int		(*set_rate)(struct clk_hw *hw, unsigned long,
+>   				    unsigned long);
+>   	void		(*init)(struct clk_hw *hw);
+> +	int		(*ext)(struct clk_hw *hw, unsigned int op,
+> +					unsigned long param);
+>   };
+>
+>   /**
+> diff --git a/include/linux/clk.h b/include/linux/clk.h
+> index 0e078bd..74be656 100644
+> --- a/include/linux/clk.h
+> +++ b/include/linux/clk.h
+> @@ -278,4 +278,6 @@ struct clk *clk_get_sys(const char *dev_id, const char *con_id);
+>   int clk_add_alias(const char *alias, const char *alias_dev_name, char *id,
+>   			struct device *dev);
+>
+> +int clk_ext(struct clk *clk, unsigned int op, unsigned long param);
+> +
+>   #endif
 
-
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
