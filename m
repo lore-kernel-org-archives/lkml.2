@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab2E3Mk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:40:59 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:52257 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753268Ab2E3Mk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:40:58 -0400
-Message-ID: <4FC614CF.5000906@parallels.com>
-Date: Wed, 30 May 2012 16:38:39 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753669Ab2E3Mnj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:43:39 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:49369 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab2E3Mni (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 08:43:38 -0400
+Date: Wed, 30 May 2012 14:43:33 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Comrade DOS <suloevdmitry@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Performance drop
+Message-ID: <20120530124333.GA3008@alberich.amd.com>
+References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
+ <20120524123116.GA4048@alberich.amd.com>
+ <CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com>
+ <20120529140940.GA10421@alberich.amd.com>
+ <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Greg Thelen <gthelen@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, <devel@openvz.org>,
-        David Rientjes <rientjes@google.com>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH v3 16/28] memcg: kmem controller charge/uncharge infrastructure
-References: <1337951028-3427-1-git-send-email-glommer@parallels.com> <1337951028-3427-17-git-send-email-glommer@parallels.com> <20120530123406.GC25094@somewhere.redhat.com>
-In-Reply-To: <20120530123406.GC25094@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 04:34 PM, Frederic Weisbecker wrote:
-> On Fri, May 25, 2012 at 05:03:36PM +0400, Glauber Costa wrote:
->> +bool __mem_cgroup_new_kmem_page(struct page *page, gfp_t gfp)
->> +{
->> +	struct mem_cgroup *memcg;
->> +	struct page_cgroup *pc;
->> +	bool ret = true;
->> +	size_t size;
->> +	struct task_struct *p;
->> +
->> +	if (!current->mm || in_interrupt())
->> +		return true;
->> +
->> +	rcu_read_lock();
->> +	p = rcu_dereference(current->mm->owner);
->> +	memcg = mem_cgroup_from_task(p);
->
-> So this takes the memcg of the group owner rather than the
-> task? I understand why we want this for user memory, but for
-> kernel?
+On Wed, May 30, 2012 at 03:20:27AM +0700, Comrade DOS wrote:
+> > Unfortunately you have used acpi=debug instead of apic=debug.  So I
+> > can't compare I/O APIC configurations between the different test
+> > scenarios.
+> 
+> Sorry me for this mistake.
 
-That was already discussed when this first came up in my last submission
-If I recall correctly, Kame pointed out that this would be needed for 
-proper OOM-scoring and killing.
+No problem.
 
-Now of course we won't oom kernel threads or anything like that. But 
-since this is also accounted towards memcg, it should at least be 
-consistent with each memcg it accounts to.
+The logs show no difference in IO-APIC pin usage.
+So it's not the old problem ...
 
-We can't account kmem for the thread's memcg, and mem to the process'.
+Comparing both logs I found following differences:
+
+(Most other stuff seems just to be changed formatting.)
+
+-ACPI: Thermal Zone [TZ1] (67 C)
++ACPI: Thermal Zone [TZ1] (62 C)
+
+I think what's shown is the temperature value which just differed
+between the boots. But that made me look at acpi/thermal.c where the
+messages came from. The only change between 3.3 and 3.4 is this
+commit:
+
+  commit 9bcb8118965ab4631a65ee0726e6518f75cda6c5
+  Author: Matthew Garrett <mjg@redhat.com>
+  Date:   Wed Feb 1 10:26:54 2012 -0500
+
+    ACPI: Evaluate thermal trip points before reading temperature
+
+I'd suggest to do a test with this patch reverted.  Maybe this change
+to fix issues with one HP Laptop (re-)intruduced the trouble with your
+system.
+
+If reverting the patch helps we have to take a closer look at your
+ACPI tables.  So can you please do a
+
+ # git revert 9bcb8118965ab4631a65ee0726e6518f75cda6c5
+
+on top of v3.4 and rebuid your kernel and rerun your test (with
+apic=debug. This allows easier diff to dmesg output of your previous
+test runs).
+
+In any case it also would be good to have the acpi tables from your
+system. So please also use
+# acpidump >acpidump.3.3    (using the 3.3.x kernel)
+# acpidump >acpidump.3.4    (using the unmodified 3.4 version)
+
+and send all files as attachments to your mail.
+
+This will allow me to look at your thermal zone definitions in the
+working and non-working case.
 
 
+Thanks,
 
+Andreas
