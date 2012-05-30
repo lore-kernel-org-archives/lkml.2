@@ -1,89 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355Ab2E3C1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 22:27:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64744 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756278Ab2E3C1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 22:27:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158487638"
-From: Andi Kleen <andi@firstfloor.org>
-To: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Tilo =?utf-8?Q?M=C3=BCller?= 
-	<tilo.mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler implementation
-References: <20120527145112.GF17705@kronos.redsun>
-Date: Tue, 29 May 2012 19:27:43 -0700
-In-Reply-To: <20120527145112.GF17705@kronos.redsun> (Johannes Goetzfried's
-	message of "Sun, 27 May 2012 16:51:12 +0200")
-Message-ID: <m2396il7xc.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756315Ab2E3Cbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 22:31:39 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:33538 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756199Ab2E3Cbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 29 May 2012 22:31:38 -0400
+Date: Tue, 29 May 2012 22:31:30 -0400 (EDT)
+Message-Id: <20120529.223130.1732658596355230297.davem@davemloft.net>
+To: devendra.aaru@gmail.com
+Cc: florian@openwrt.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/2] r6040: disable pci device if the subsequent
+ calls (after pci_enable_device) fails
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1338334722-14730-1-git-send-email-devendra.aaru@gmail.com>
+References: <1338334722-14730-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 29 May 2012 19:31:34 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Goetzfried
-<Johannes.Goetzfried@informatik.stud.uni-erlangen.de> writes:
-> +
-> +static int __init serpent_init(void)
-> +{
-> +	u64 xcr0;
-> +
-> +	if (!cpu_has_avx || !cpu_has_osxsave) {
-> +		printk(KERN_INFO "AVX instructions are not detected.\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	xcr0 = xgetbv(XCR_XFEATURE_ENABLED_MASK);
-> +	if ((xcr0 & (XSTATE_SSE | XSTATE_YMM)) != (XSTATE_SSE | XSTATE_YMM)) {
-> +		printk(KERN_INFO "AVX detected but unusable.\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	return crypto_register_algs(serpent_algs, ARRAY_SIZE(serpent_algs));
-> +}
-> +
-> +static void __exit serpent_exit(void)
-> +{
-> +	crypto_unregister_algs(serpent_algs, ARRAY_SIZE(serpent_algs));
-> +}
-> +
-> +module_init(serpent_init);
-> +module_exit(serpent_exit);
-> +
-> +MODULE_DESCRIPTION("Serpent Cipher Algorithm, AVX optimized");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("serpent");
+From: Devendra Naga <devendra.aaru@gmail.com>
+Date: Wed, 30 May 2012 05:08:42 +0530
 
-The driver needs CPUID annotations now (since 3.3), so that it can be 
-autoloaded.  Something like:
+> the calls after the pci_enable_device may fail, and will error out with out
+> disabling it. disable the device at error paths.
+> 
+> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 
-#include <asm/cpu_device_id.h>
-
-
-static const struct x86_cpu_id avx_cpu_id[] = {
-        X86_FEATURE_MATCH(X86_FEATURE_AVX),
-        {}
-};
-MODULE_DEVICE_TABLE(x86cpu, avx_cpu_id);
-
-
-Replace the manual check in init with
-
-            if (!x86_match_cpu(avx_cpu_id))
-                return -ENODEV;
-
-Also drivers should never print anything when they cannot find hardware.
-Remove that printk.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Applied.
