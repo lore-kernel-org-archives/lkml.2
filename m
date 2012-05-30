@@ -1,72 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab2E3VZP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:25:15 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64088 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246Ab2E3VZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:25:13 -0400
-Message-ID: <4FC69035.3000509@gmail.com>
-Date: Wed, 30 May 2012 17:25:09 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756095Ab2E3V32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:29:28 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:45180 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753833Ab2E3V30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 17:29:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH v2 4/4] scsi: cleanup usages of scsi_complete_async_scans
+Date: Wed, 30 May 2012 23:34:12 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, mroos@linux.ee,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        James Bottomley <JBottomley@parallels.com>
+References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com> <20120530182145.23574.5156.stgit@dwillia2-linux.jf.intel.com>
+In-Reply-To: <20120530182145.23574.5156.stgit@dwillia2-linux.jf.intel.com>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
-        sivanich@sgi.com
-Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
-References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com> <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org> <alpine.DEB.2.00.1205301349230.31768@router.home> <20120530193234.GV27374@one.firstfloor.org> <alpine.DEB.2.00.1205301441350.31768@router.home> <20120530195244.GX27374@one.firstfloor.org> <CAHGf_=rS6cGjcJ7tKH05cMMdJKEO9f60mNBa0VaCkzs=kVjCQQ@mail.gmail.com> <20120530212235.GB20051@decadent.org.uk>
-In-Reply-To: <20120530212235.GB20051@decadent.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201205302334.12247.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/30/12 5:22 PM), Ben Hutchings wrote:
-> On Wed, May 30, 2012 at 04:00:55PM -0400, KOSAKI Motohiro wrote:
->> On Wed, May 30, 2012 at 3:52 PM, Andi Kleen<andi@firstfloor.org>  wrote:
->>> On Wed, May 30, 2012 at 02:42:42PM -0500, Christoph Lameter wrote:
->>>> On Wed, 30 May 2012, Andi Kleen wrote:
->>>>
->>>>> On Wed, May 30, 2012 at 01:50:02PM -0500, Christoph Lameter wrote:
->>>>>> On Wed, 30 May 2012, Andi Kleen wrote:
->>>>>>
->>>>>>> I always regretted that cpusets were no done with custom node lists.
->>>>>>> That would have been much cleaner and also likely faster than what we have.
->>>>>>
->>>>>> Could shared memory policies ignore cpuset constraints?
->>>>>
->>>>> Only if noone uses cpusets as a "security" mechanism, just for a "soft policy"
->>>>> Even with soft policy you could well break someone's setup.
->>>>
->>>> Well at least lets exempt shared memory from memory migration and memory
->>>> policy updates. That seems to be causing many of these issues.
->>>
->>> Migration on the page level is needed for the memory error handling.
->>>
->>> Updates: you mean not allowing to set the policy when there are already
->>> multiple mappers? I could see that causing some unexpected behaviour. Presumably
->>> a standard database will only set it at the beginning, but I don't know
->>> if that would work for all users.
->>
->> We don't need to kill migration core. We only need to kill that mbind(2) updates
->> vma->policy of shmem.
-> [...]
->
-> So should I (and Greg) drop 'mm: mempolicy: Let vma_merge and
-> vma_split handle vma->vm_policy linkages' from the pending stable
-> releases?  Or is that OK as an interim fix until these changes go
-> into mainline?
+On Wednesday, May 30, 2012, Dan Williams wrote:
+> Now that scsi registers its async scan work with the async subsystem,
+> wait_for_device_probe() is sufficient for ensuring all scanning is
+> complete.
+> 
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: James Bottomley <JBottomley@parallels.com>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+> ---
+>  drivers/scsi/scsi_scan.c      |   12 ------------
+>  drivers/scsi/scsi_wait_scan.c |   15 +++++----------
+>  include/scsi/scsi_scan.h      |   11 -----------
+>  kernel/power/hibernate.c      |    8 --------
+>  kernel/power/user.c           |    2 --
+>  5 files changed, 5 insertions(+), 43 deletions(-)
+>  delete mode 100644 include/scsi/scsi_scan.h
+> 
+> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+> index fb42aa0..20c7108 100644
+> --- a/drivers/scsi/scsi_scan.c
+> +++ b/drivers/scsi/scsi_scan.c
+> @@ -184,18 +184,6 @@ int scsi_complete_async_scans(void)
+>  	return 0;
+>  }
+>  
+> -/* Only exported for the benefit of scsi_wait_scan */
+> -EXPORT_SYMBOL_GPL(scsi_complete_async_scans);
+> -
+> -#ifndef MODULE
+> -/*
+> - * For async scanning we need to wait for all the scans to complete before
+> - * trying to mount the root fs.  Otherwise non-modular drivers may not be ready
+> - * yet.
+> - */
+> -late_initcall(scsi_complete_async_scans);
+> -#endif
+> -
+>  /**
+>   * scsi_unlock_floptical - unlock device via a special MODE SENSE command
+>   * @sdev:	scsi device to send command to
+> diff --git a/drivers/scsi/scsi_wait_scan.c b/drivers/scsi/scsi_wait_scan.c
+> index 74708fc..57de24a 100644
+> --- a/drivers/scsi/scsi_wait_scan.c
+> +++ b/drivers/scsi/scsi_wait_scan.c
+> @@ -12,21 +12,16 @@
+>  
+>  #include <linux/module.h>
+>  #include <linux/device.h>
+> -#include <scsi/scsi_scan.h>
+>  
+>  static int __init wait_scan_init(void)
+>  {
+>  	/*
+> -	 * First we need to wait for device probing to finish;
+> -	 * the drivers we just loaded might just still be probing
+> -	 * and might not yet have reached the scsi async scanning
+> +	 * This will not return until all async work (system wide) is
+> +	 * quiesced.  Probing queues host-scanning work to the async
+> +	 * queue which is why we don't need a separate call to
+> +	 * scsi_complete_async_scans()
+>  	 */
+>  	wait_for_device_probe();
+> -	/*
+> -	 * and then we wait for the actual asynchronous scsi scan
+> -	 * to finish.
+> -	 */
+> -	scsi_complete_async_scans();
+>  	return 0;
+>  }
+>  
+> @@ -38,5 +33,5 @@ MODULE_DESCRIPTION("SCSI wait for scans");
+>  MODULE_AUTHOR("James Bottomley");
+>  MODULE_LICENSE("GPL");
+>  
+> -late_initcall(wait_scan_init);
+> +module_init(wait_scan_init);
+>  module_exit(wait_scan_exit);
+> diff --git a/include/scsi/scsi_scan.h b/include/scsi/scsi_scan.h
+> deleted file mode 100644
+> index 7889888..0000000
+> --- a/include/scsi/scsi_scan.h
+> +++ /dev/null
+> @@ -1,11 +0,0 @@
+> -#ifndef _SCSI_SCSI_SCAN_H
+> -#define _SCSI_SCSI_SCAN_H
+> -
+> -#ifdef CONFIG_SCSI
+> -/* drivers/scsi/scsi_scan.c */
+> -extern int scsi_complete_async_scans(void);
+> -#else
+> -static inline int scsi_complete_async_scans(void) { return 0; }
+> -#endif
+> -
+> -#endif /* _SCSI_SCSI_SCAN_H */
+> diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> index e09dfbf..821114a 100644
+> --- a/kernel/power/hibernate.c
+> +++ b/kernel/power/hibernate.c
+> @@ -25,7 +25,6 @@
+>  #include <linux/freezer.h>
+>  #include <linux/gfp.h>
+>  #include <linux/syscore_ops.h>
+> -#include <scsi/scsi_scan.h>
+>  
+>  #include "power.h"
+>  
+> @@ -735,13 +734,6 @@ static int software_resume(void)
+>  			async_synchronize_full();
+>  		}
+>  
+> -		/*
+> -		 * We can't depend on SCSI devices being available after loading
+> -		 * one of their modules until scsi_complete_async_scans() is
+> -		 * called and the resume device usually is a SCSI one.
+> -		 */
+> -		scsi_complete_async_scans();
+> -
 
-Please drop. It screw up mbind(2).
+I believe this is wrong.  You're going to introduce a regression on systems
+using built-in hibernation and built-in SCSI stack.
 
+>  		swsusp_resume_device = name_to_dev_t(resume_file);
+>  		if (!swsusp_resume_device) {
+>  			error = -ENODEV;
+> diff --git a/kernel/power/user.c b/kernel/power/user.c
+> index 91b0fd0..4ed81e7 100644
+> --- a/kernel/power/user.c
+> +++ b/kernel/power/user.c
+> @@ -24,7 +24,6 @@
+>  #include <linux/console.h>
+>  #include <linux/cpu.h>
+>  #include <linux/freezer.h>
+> -#include <scsi/scsi_scan.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -84,7 +83,6 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+>  		 * appear.
+>  		 */
+>  		wait_for_device_probe();
+> -		scsi_complete_async_scans();
 
+Same here.
 
+>  
+>  		data->swap = -1;
+>  		data->mode = O_WRONLY;
 
+Thanks,
+Rafael
