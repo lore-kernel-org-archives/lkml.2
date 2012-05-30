@@ -1,47 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab2E3VkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 17:40:14 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:48599 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754266Ab2E3VkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 17:40:12 -0400
-Date: Wed, 30 May 2012 23:40:06 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?Q?M=FCller?= 
-	<Tilo.Mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler implementation
-Message-ID: <20120530214006.GZ27374@one.firstfloor.org>
-References: <20120527145112.GF17705@kronos.redsun> <m2396il7xc.fsf@firstfloor.org> <20120530103025.19252e1urui8sfb4@www.81.fi> <20120530113235.GO17705@kronos.redsun> <20120530153949.GS27374@one.firstfloor.org> <20120530212911.GA14884@gondor.apana.org.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530212911.GA14884@gondor.apana.org.au>
-User-Agent: Mutt/1.4.2.2i
+	id S1756240Ab2E3Vo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 17:44:29 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:45227 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753526Ab2E3Vo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 17:44:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
+Date: Wed, 30 May 2012 23:49:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+References: <1337305725-10482-1-git-send-email-ying.huang@intel.com> <1337305725-10482-3-git-send-email-ying.huang@intel.com> <201205220011.31283.rjw@sisk.pl>
+In-Reply-To: <201205220011.31283.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205302349.30989.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can you provide an example where it doesn't work as intended?
+On Tuesday, May 22, 2012, Rafael J. Wysocki wrote:
+> On Friday, May 18, 2012, Huang Ying wrote:
+> > This patch adds runtime D3cold support to PCIe bus.  D3cold is the
+> > deepest power saving state for PCIe devices.  Where the main PCIe link
+> > will be powered off totally, so before the PCIe main link is powered
+> > on again, you can not access the device, even the configuration space,
+> > which is still accessible in D3hot.  Because the main PCIe link is not
+> > available, the PCI PM registers can not be used to put device into/out
+> > of D3cold state, that will be done by platform logic such as ACPI
+> > _PR3.
+> > 
+> > To support remote wake up in D3cold, aux power is supplied, and a
+> > side-band pin: WAKE# is used to notify remote wake up event, the pin
+> > is usually connected to platform logic such as ACPI GPE.  This is
+> > quite different with other power saving states, where remote wake up
+> > is notified via PME message through the PCIe main link.
+> > 
+> > PCIe devices in plug-in slot usually has no direct platform logic, for
+> > example, there is usually no ACPI _PR3 for them.  The D3cold support
+> > for these devices can be done via the PCIe port connected to it.  When
+> > power on/off the PCIe port, the corresponding PCIe devices are powered
+> > on/off too.  And the remote wake up event from PCIe device will be
+> > notified to the corresponding PCIe port.
+> > 
+> > The PCI subsystem D3cold support and corresponding ACPI platform
+> > support is implemented in the patch.  Including the support for PCIe
+> > devices in plug-in slot.
+> > 
+> > For more information about PCIe D3cold and corresponding ACPI support,
+> > please refer to:
+> > 
+> > - PCI Express Base Specification Revision 2.0
+> > - Advanced Configuration and Power Interface Specification Revision 5.0
+> > 
+> > Originally-by: Zheng Yan <zheng.z.yan@intel.com>
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> 
+> Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-It works for the current algorithms except serpent.
+On a second thought ...
 
-> What we could do is to use the cpuid-based probing when an algorithm
-> is needed to selectively load the relevant implementations instead
-> of all of them.  However, for most algorithms it won't make that
-> big a difference since all the available ones will be loaded anyway.
+> > ---
+> >  drivers/pci/pci-acpi.c         |   23 +++++++-
+> >  drivers/pci/pci-driver.c       |    3 +
+> >  drivers/pci/pci-sysfs.c        |   29 ++++++++++
+> >  drivers/pci/pci.c              |  110 +++++++++++++++++++++++++++++++++++++----
+> >  drivers/pci/pci.h              |    1 
+> >  drivers/pci/pcie/portdrv_pci.c |   44 ++++++++++++++--
+> >  include/linux/pci.h            |   16 ++++-
+> >  7 files changed, 205 insertions(+), 21 deletions(-)
+> > 
+> > --- a/drivers/pci/pci-acpi.c
+> > +++ b/drivers/pci/pci-acpi.c
+> > @@ -48,6 +48,12 @@ static void pci_acpi_wake_dev(acpi_handl
+> >  	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
+> >  		return;
+> >  
+> > +	if (pci_dev->current_state == PCI_D3cold) {
+> > +		pci_wakeup_event(pci_dev);
+> > +		pm_runtime_resume(&pci_dev->dev);
+> > +		return;
+> > +	}
+> > +
+> >  	if (!pci_dev->pm_cap || !pci_dev->pme_support
+> >  	     || pci_check_pme_status(pci_dev)) {
+> >  		if (pci_dev->pme_poll)
+> > @@ -187,10 +193,13 @@ acpi_status pci_acpi_remove_pm_notifier(
+> >  
+> >  static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
+> >  {
+> > -	int acpi_state;
+> > +	int acpi_state, d_max;
+> >  
+> > -	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
+> > -						ACPI_STATE_D3);
 
-Yes cpuid probing does that.
+I wonder what tree this patch is against?  The code above doesn't seem to
+be present in the current mainline.
 
-The only problem is just that serpent does not use cpuid probing.
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks,
+Rafael
