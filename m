@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab2E3Fe7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 01:34:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59803 "EHLO mx1.redhat.com"
+	id S932305Ab2E3FfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 01:35:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36361 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753492Ab2E3Fey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 01:34:54 -0400
+	id S1753492Ab2E3FfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 01:35:18 -0400
 From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3/4] vfio: Type1 IOMMU implementation
+Subject: [PATCH 4/4] vfio: Add PCI device driver
 To: benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
         gregkh@linuxfoundation.org
 Cc: joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
@@ -17,8 +17,8 @@ Cc: joerg.roedel@amd.com, dwmw2@infradead.org, chrisw@sous-sol.org,
         iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, bhelgaas@google.com, ddutile@redhat.com,
         alex.williamson@redhat.com
-Date: Tue, 29 May 2012 23:34:28 -0600
-Message-ID: <20120530053428.1934.7088.stgit@bling.home>
+Date: Tue, 29 May 2012 23:34:36 -0600
+Message-ID: <20120530053435.1934.18928.stgit@bling.home>
 In-Reply-To: <20120530051317.1934.28218.stgit@bling.home>
 References: <20120530051317.1934.28218.stgit@bling.home>
 User-Agent: StGIT/0.14.3
@@ -29,90 +29,644 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This VFIO IOMMU backend is designed primarily for AMD-Vi and Intel
-VT-d hardware, but is potentially usable by anything supporting
-similar mapping functionality.  We arbitrarily call this a Type1
-backend for lack of a better name.  This backend has no IOVA
-or host memory mapping restrictions for the user and is optimized
-for relatively static mappings.  Mapped areas are pinned into system
-memory.
+Add PCI device support for VFIO.  PCI devices expose regions
+for accessing config space, I/O port space, and MMIO areas
+of the device.  PCI config access is virtualized in the kernel,
+allowing us to ensure the integrity of the system, by preventing
+various accesses while reducing duplicate support across various
+userspace drivers.  I/O port supports read/write access while
+MMIO also supports mmap of sufficiently sized regions.  Support
+for INTx, MSI, and MSI-X interrupts are provided using eventfds to
+userspace.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
 
- Documentation/ioctl/ioctl-number.txt |    2 
- drivers/vfio/Kconfig                 |    6 
- drivers/vfio/Makefile                |    2 
- drivers/vfio/vfio.c                  |    7 
- drivers/vfio/vfio_iommu_type1.c      |  754 ++++++++++++++++++++++++++++++++++
- include/linux/vfio.h                 |   54 ++
- 6 files changed, 823 insertions(+), 2 deletions(-)
- create mode 100644 drivers/vfio/vfio_iommu_type1.c
+ drivers/vfio/Kconfig                |    2 
+ drivers/vfio/pci/Kconfig            |    8 
+ drivers/vfio/pci/Makefile           |    4 
+ drivers/vfio/pci/vfio_pci.c         |  559 +++++++++++++
+ drivers/vfio/pci/vfio_pci_config.c  | 1528 +++++++++++++++++++++++++++++++++++
+ drivers/vfio/pci/vfio_pci_intrs.c   |  725 +++++++++++++++++
+ drivers/vfio/pci/vfio_pci_private.h |   91 ++
+ drivers/vfio/pci/vfio_pci_rdwr.c    |  269 ++++++
+ include/linux/vfio.h                |   26 +
+ 9 files changed, 3212 insertions(+)
+ create mode 100644 drivers/vfio/pci/Kconfig
+ create mode 100644 drivers/vfio/pci/Makefile
+ create mode 100644 drivers/vfio/pci/vfio_pci.c
+ create mode 100644 drivers/vfio/pci/vfio_pci_config.c
+ create mode 100644 drivers/vfio/pci/vfio_pci_intrs.c
+ create mode 100644 drivers/vfio/pci/vfio_pci_private.h
+ create mode 100644 drivers/vfio/pci/vfio_pci_rdwr.c
 
-diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-index 89bd3c4..170d838 100644
---- a/Documentation/ioctl/ioctl-number.txt
-+++ b/Documentation/ioctl/ioctl-number.txt
-@@ -88,7 +88,7 @@ Code  Seq#(hex)	Include File		Comments
- 		and kernel/power/user.c
- '8'	all				SNP8023 advanced NIC card
- 					<mailto:mcr@solidum.com>
--';'	64-6F	linux/vfio.h
-+';'	64-72	linux/vfio.h
- '@'	00-0F	linux/radeonfb.h	conflict!
- '@'	00-0F	drivers/video/aty/aty128fb.c	conflict!
- 'A'	00-1F	linux/apm_bios.h	conflict!
 diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-index 9acb1e7..128b979 100644
+index 128b979..7cd5dec 100644
 --- a/drivers/vfio/Kconfig
 +++ b/drivers/vfio/Kconfig
-@@ -1,6 +1,12 @@
-+config VFIO_IOMMU_TYPE1
-+	tristate
-+	depends on VFIO
-+	default n
-+
- menuconfig VFIO
- 	tristate "VFIO Non-Privileged userspace driver framework"
- 	depends on IOMMU_API
-+	select VFIO_IOMMU_TYPE1 if X86
- 	help
- 	  VFIO provides a framework for secure userspace device drivers.
+@@ -12,3 +12,5 @@ menuconfig VFIO
  	  See Documentation/vfio.txt for more details.
-diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-index 7500a67..2398d4a 100644
---- a/drivers/vfio/Makefile
-+++ b/drivers/vfio/Makefile
-@@ -1 +1,3 @@
- obj-$(CONFIG_VFIO) += vfio.o
-+obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
-+obj-$(CONFIG_VFIO_PCI) += pci/
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index cbdd525..0c25819 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -1378,6 +1378,13 @@ static int __init vfio_init(void)
  
- 	pr_info(DRIVER_DESC " version: " DRIVER_VERSION "\n");
- 
-+	/*
-+	 * Attempt to load known iommu-drivers.  This gives us a working
-+	 * environment without the user needing to explicitly load iommu
-+	 * drivers.
-+	 */
-+	request_module_nowait("vfio_iommu_type1");
+ 	  If you don't know what to do here, say N.
 +
- 	return 0;
- 
- err_groups_cdev:
-diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
++source "drivers/vfio/pci/Kconfig"
+diff --git a/drivers/vfio/pci/Kconfig b/drivers/vfio/pci/Kconfig
 new file mode 100644
-index 0000000..5bb6fad
+index 0000000..cc7db62
 --- /dev/null
-+++ b/drivers/vfio/vfio_iommu_type1.c
-@@ -0,0 +1,754 @@
++++ b/drivers/vfio/pci/Kconfig
+@@ -0,0 +1,8 @@
++config VFIO_PCI
++	tristate "VFIO support for PCI devices"
++	depends on VFIO && PCI
++	help
++	  Support for the PCI VFIO bus driver.  This is required to make
++	  use of PCI drivers using the VFIO framework.
++
++	  If you don't know what to do here, say N.
+diff --git a/drivers/vfio/pci/Makefile b/drivers/vfio/pci/Makefile
+new file mode 100644
+index 0000000..1310792
+--- /dev/null
++++ b/drivers/vfio/pci/Makefile
+@@ -0,0 +1,4 @@
++
++vfio-pci-y := vfio_pci.o vfio_pci_intrs.o vfio_pci_rdwr.o vfio_pci_config.o
++
++obj-$(CONFIG_VFIO_PCI) += vfio-pci.o
+diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+new file mode 100644
+index 0000000..1e5315c
+--- /dev/null
++++ b/drivers/vfio/pci/vfio_pci.c
+@@ -0,0 +1,559 @@
 +/*
-+ * VFIO: IOMMU DMA mapping support for Type1 IOMMU
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/device.h>
++#include <linux/eventfd.h>
++#include <linux/interrupt.h>
++#include <linux/iommu.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/notifier.h>
++#include <linux/pci.h>
++#include <linux/pm_runtime.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++#include <linux/uaccess.h>
++#include <linux/vfio.h>
++
++#include "vfio_pci_private.h"
++
++#define DRIVER_VERSION  "0.1.9"
++#define DRIVER_AUTHOR   "Alex Williamson <alex.williamson@redhat.com>"
++#define DRIVER_DESC     "VFIO PCI - User Level meta-driver"
++
++static int vfio_pci_enable(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	int ret;
++	u16 cmd;
++	u8 msix_pos;
++
++	vdev->reset_works = (pci_reset_function(pdev) == 0);
++	pci_save_state(pdev);
++	vdev->pci_saved_state = pci_store_saved_state(pdev);
++	if (!vdev->pci_saved_state)
++		printk(KERN_DEBUG "%s: Couldn't store %s saved state\n",
++		       __func__, dev_name(&pdev->dev));
++
++	ret = vfio_config_init(vdev);
++	if (ret)
++		goto out;
++
++	vdev->pci_2_3 = pci_intx_mask_supported(pdev);
++
++	pci_read_config_word(pdev, PCI_COMMAND, &cmd);
++	if (vdev->pci_2_3 && (cmd & PCI_COMMAND_INTX_DISABLE)) {
++		cmd &= ~PCI_COMMAND_INTX_DISABLE;
++		pci_write_config_word(pdev, PCI_COMMAND, cmd);
++	}
++
++	msix_pos = pci_find_capability(pdev, PCI_CAP_ID_MSIX);
++	if (msix_pos) {
++		u16 flags;
++		u32 table;
++
++		pci_read_config_word(pdev, msix_pos + PCI_MSIX_FLAGS, &flags);
++		pci_read_config_dword(pdev, msix_pos + PCI_MSIX_TABLE, &table);
++
++		vdev->msix_bar = table & PCI_MSIX_FLAGS_BIRMASK;
++		vdev->msix_offset = table & ~PCI_MSIX_FLAGS_BIRMASK;
++		vdev->msix_size = ((flags & PCI_MSIX_FLAGS_QSIZE) + 1) * 16;
++	} else
++		vdev->msix_bar = 0xFF;
++
++	ret = pci_enable_device(pdev);
++	if (ret)
++		goto out;
++
++	return ret;
++
++out:
++	kfree(vdev->pci_saved_state);
++	vdev->pci_saved_state = NULL;
++	vfio_config_free(vdev);
++	return ret;
++}
++
++static void vfio_pci_disable(struct vfio_pci_device *vdev)
++{
++	int bar;
++
++	pci_disable_device(vdev->pdev);
++
++	vfio_pci_set_irqs_ioctl(vdev, VFIO_IRQ_SET_DATA_NONE |
++				VFIO_IRQ_SET_ACTION_TRIGGER,
++				vdev->irq_type, 0, 0, NULL);
++
++	vdev->virq_disabled = false;
++
++	vfio_config_free(vdev);
++
++	if (pci_reset_function(vdev->pdev) == 0) {
++		if (pci_load_and_free_saved_state(vdev->pdev,
++						  &vdev->pci_saved_state) == 0)
++			pci_restore_state(vdev->pdev);
++		else
++			printk(KERN_INFO "%s: Couldn't reload %s saved state\n",
++			       __func__, dev_name(&vdev->pdev->dev));
++	}
++
++	for (bar = PCI_STD_RESOURCES; bar <= PCI_STD_RESOURCE_END; bar++) {
++		if (!vdev->barmap[bar])
++			continue;
++		pci_iounmap(vdev->pdev, vdev->barmap[bar]);
++		pci_release_selected_regions(vdev->pdev, 1 << bar);
++		vdev->barmap[bar] = NULL;
++	}
++}
++
++static void vfio_pci_release(void *device_data)
++{
++	struct vfio_pci_device *vdev = device_data;
++
++	if (atomic_dec_and_test(&vdev->refcnt))
++		vfio_pci_disable(vdev);
++
++	module_put(THIS_MODULE);
++}
++
++static int vfio_pci_open(void *device_data)
++{
++	struct vfio_pci_device *vdev = device_data;
++
++	if (!try_module_get(THIS_MODULE))
++		return -ENODEV;
++
++	if (atomic_inc_return(&vdev->refcnt) == 1) {
++		int ret = vfio_pci_enable(vdev);
++		if (ret) {
++			module_put(THIS_MODULE);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static int vfio_pci_get_irq_count(struct vfio_pci_device *vdev, int irq_type)
++{
++	if (irq_type == VFIO_PCI_INTX_IRQ_INDEX) {
++		u8 pin;
++		pci_read_config_byte(vdev->pdev, PCI_INTERRUPT_PIN, &pin);
++		if (pin)
++			return 1;
++
++	} else if (irq_type == VFIO_PCI_MSI_IRQ_INDEX) {
++		u8 pos;
++		u16 flags;
++
++		pos = pci_find_capability(vdev->pdev, PCI_CAP_ID_MSI);
++		if (pos) {
++			pci_read_config_word(vdev->pdev,
++					     pos + PCI_MSI_FLAGS, &flags);
++
++			return 1 << (flags & PCI_MSI_FLAGS_QMASK);
++		}
++	} else if (irq_type == VFIO_PCI_MSIX_IRQ_INDEX) {
++		u8 pos;
++		u16 flags;
++
++		pos = pci_find_capability(vdev->pdev, PCI_CAP_ID_MSIX);
++		if (pos) {
++			pci_read_config_word(vdev->pdev,
++					     pos + PCI_MSIX_FLAGS, &flags);
++
++			return (flags & PCI_MSIX_FLAGS_QSIZE) + 1;
++		}
++	}
++
++	return 0;
++}
++
++static long vfio_pci_ioctl(void *device_data,
++			   unsigned int cmd, unsigned long arg)
++{
++	struct vfio_pci_device *vdev = device_data;
++	unsigned long minsz;
++
++	if (cmd == VFIO_DEVICE_GET_INFO) {
++		struct vfio_device_info info;
++
++		minsz = offsetofend(struct vfio_device_info, num_irqs);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz)
++			return -EINVAL;
++
++		info.flags = VFIO_DEVICE_FLAGS_PCI;
++
++		if (vdev->reset_works)
++			info.flags |= VFIO_DEVICE_FLAGS_RESET;
++
++		info.num_regions = VFIO_PCI_NUM_REGIONS;
++		info.num_irqs = VFIO_PCI_NUM_IRQS;
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++
++	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
++		struct pci_dev *pdev = vdev->pdev;
++		struct vfio_region_info info;
++
++		minsz = offsetofend(struct vfio_region_info, offset);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz || info.index >= VFIO_PCI_NUM_REGIONS)
++			return -EINVAL;
++
++		info.flags = 0;
++		info.size = 0;
++		info.offset = VFIO_PCI_INDEX_TO_OFFSET(info.index);
++
++		if (info.index == VFIO_PCI_CONFIG_REGION_INDEX) {
++			info.size = pdev->cfg_size;
++		} else if (pci_resource_start(pdev, info.index)) {
++			unsigned long flags;
++
++			flags = pci_resource_flags(pdev, info.index);
++
++			info.size = pci_resource_len(pdev, info.index);
++
++			/* If we can't read the ROM, don't report it. */
++			if (info.index == VFIO_PCI_ROM_REGION_INDEX) {
++				void __iomem *io;
++				size_t size;
++
++				io = pci_map_rom(pdev, &size);
++				if (!io || !size) {
++					info.size = 0;
++				} else {
++					info.flags = VFIO_REGION_INFO_FLAG_READ;
++					pci_unmap_rom(pdev, io);
++				}
++			} else if (flags & IORESOURCE_MEM) {
++				info.flags = (VFIO_REGION_INFO_FLAG_READ |
++					      VFIO_REGION_INFO_FLAG_WRITE |
++					      VFIO_REGION_INFO_FLAG_MMAP);
++			} else {
++				info.flags = (VFIO_REGION_INFO_FLAG_READ |
++					      VFIO_REGION_INFO_FLAG_WRITE);
++			}
++		}
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++
++	} else if (cmd == VFIO_DEVICE_GET_IRQ_INFO) {
++		struct vfio_irq_info info;
++
++		minsz = offsetofend(struct vfio_irq_info, count);
++
++		if (copy_from_user(&info, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (info.argsz < minsz || info.index >= VFIO_PCI_NUM_IRQS)
++			return -EINVAL;
++
++		info.flags = VFIO_IRQ_INFO_EVENTFD;
++
++		info.count = vfio_pci_get_irq_count(vdev, info.index);
++
++		if (info.index == VFIO_PCI_INTX_IRQ_INDEX)
++			info.flags |= (VFIO_IRQ_INFO_MASKABLE |
++				       VFIO_IRQ_INFO_AUTOMASKED);
++		else
++			info.flags |= VFIO_IRQ_INFO_NORESIZE;
++
++		return copy_to_user((void __user *)arg, &info, minsz);
++
++	} else if (cmd == VFIO_DEVICE_SET_IRQS) {
++		struct vfio_irq_set hdr;
++		u8 *data = NULL;
++		int ret = 0;
++
++		minsz = offsetofend(struct vfio_irq_set, count);
++
++		if (copy_from_user(&hdr, (void __user *)arg, minsz))
++			return -EFAULT;
++
++		if (hdr.argsz < minsz || hdr.index >= VFIO_PCI_NUM_IRQS ||
++		    hdr.flags & ~(VFIO_IRQ_SET_DATA_TYPE_MASK |
++				  VFIO_IRQ_SET_ACTION_TYPE_MASK))
++			return -EINVAL;
++
++		if (!(hdr.flags & VFIO_IRQ_SET_DATA_NONE)) {
++			size_t size;
++
++			if (hdr.flags & VFIO_IRQ_SET_DATA_BOOL)
++				size = sizeof(uint8_t);
++			else if (hdr.flags & VFIO_IRQ_SET_DATA_EVENTFD)
++				size = sizeof(int32_t);
++			else
++				return -EINVAL;
++
++			if (hdr.argsz - minsz < hdr.count * size ||
++			    hdr.count > vfio_pci_get_irq_count(vdev, hdr.index))
++				return -EINVAL;
++
++			data = kmalloc(hdr.count * size, GFP_KERNEL);
++			if (!data)
++				return -ENOMEM;
++
++			if (copy_from_user(data, (void __user *)(arg + minsz),
++					   hdr.count * size)) {
++				kfree(data);
++				return -EFAULT;
++			}
++		}
++
++		mutex_lock(&vdev->igate);
++
++		ret = vfio_pci_set_irqs_ioctl(vdev, hdr.flags, hdr.index,
++					      hdr.start, hdr.count, data);
++
++		mutex_unlock(&vdev->igate);
++		kfree(data);
++
++		return ret;
++
++	} else if (cmd == VFIO_DEVICE_RESET)
++		return vdev->reset_works ?
++			pci_reset_function(vdev->pdev) : -EINVAL;
++
++	return -ENOTTY;
++}
++
++static ssize_t vfio_pci_read(void *device_data, char __user *buf,
++			     size_t count, loff_t *ppos)
++{
++	unsigned int index = VFIO_PCI_OFFSET_TO_INDEX(*ppos);
++	struct vfio_pci_device *vdev = device_data;
++	struct pci_dev *pdev = vdev->pdev;
++
++	if (index >= VFIO_PCI_NUM_REGIONS)
++		return -EINVAL;
++
++	if (index == VFIO_PCI_CONFIG_REGION_INDEX)
++		return vfio_pci_config_readwrite(vdev, buf, count, ppos, false);
++	else if (index == VFIO_PCI_ROM_REGION_INDEX)
++		return vfio_pci_mem_readwrite(vdev, buf, count, ppos, false);
++	else if (pci_resource_flags(pdev, index) & IORESOURCE_IO)
++		return vfio_pci_io_readwrite(vdev, buf, count, ppos, false);
++	else if (pci_resource_flags(pdev, index) & IORESOURCE_MEM)
++		return vfio_pci_mem_readwrite(vdev, buf, count, ppos, false);
++
++	return -EINVAL;
++}
++
++static ssize_t vfio_pci_write(void *device_data, const char __user *buf,
++			      size_t count, loff_t *ppos)
++{
++	unsigned int index = VFIO_PCI_OFFSET_TO_INDEX(*ppos);
++	struct vfio_pci_device *vdev = device_data;
++	struct pci_dev *pdev = vdev->pdev;
++
++	if (index >= VFIO_PCI_NUM_REGIONS)
++		return -EINVAL;
++
++	if (index == VFIO_PCI_CONFIG_REGION_INDEX)
++		return vfio_pci_config_readwrite(vdev, (char __user *)buf,
++						 count, ppos, true);
++	else if (index == VFIO_PCI_ROM_REGION_INDEX)
++		return -EINVAL;
++	else if (pci_resource_flags(pdev, index) & IORESOURCE_IO)
++		return vfio_pci_io_readwrite(vdev, (char __user *)buf,
++					     count, ppos, true);
++	else if (pci_resource_flags(pdev, index) & IORESOURCE_MEM) {
++		return vfio_pci_mem_readwrite(vdev, (char __user *)buf,
++					      count, ppos, true);
++	}
++
++	return -EINVAL;
++}
++
++static int vfio_pci_mmap(void *device_data, struct vm_area_struct *vma)
++{
++	struct vfio_pci_device *vdev = device_data;
++	struct pci_dev *pdev = vdev->pdev;
++	unsigned int index;
++	u64 phys_len, req_len, pgoff, req_start, phys;
++	int ret;
++
++	index = vma->vm_pgoff >> (VFIO_PCI_OFFSET_SHIFT - PAGE_SHIFT);
++
++	if (vma->vm_end < vma->vm_start)
++		return -EINVAL;
++	if ((vma->vm_flags & VM_SHARED) == 0)
++		return -EINVAL;
++	if (index >= VFIO_PCI_ROM_REGION_INDEX)
++		return -EINVAL;
++	if (!(pci_resource_flags(pdev, index) & IORESOURCE_MEM))
++		return -EINVAL;
++
++	phys_len = pci_resource_len(pdev, index);
++	req_len = vma->vm_end - vma->vm_start;
++	pgoff = vma->vm_pgoff &
++		((1U << (VFIO_PCI_OFFSET_SHIFT - PAGE_SHIFT)) - 1);
++	req_start = pgoff << PAGE_SHIFT;
++
++	if (phys_len < PAGE_SIZE || req_start + req_len > phys_len)
++		return -EINVAL;
++
++	if (index == vdev->msix_bar) {
++		/*
++		 * Disallow mmaps overlapping the MSI-X table; users don't
++		 * get to touch this directly.  We could find somewhere
++		 * else to map the overlap, but page granularity is only
++		 * a recommendation, not a requirement, so the user needs
++		 * to know which bits are real.  Requiring them to mmap
++		 * around the table makes that clear.
++		 */
++
++		/* If neither entirely above nor below, then it overlaps */
++		if (!(req_start >= vdev->msix_offset + vdev->msix_size ||
++		      req_start + req_len <= vdev->msix_offset))
++			return -EINVAL;
++	}
++
++	/*
++	 * Even though we don't make use of the barmap for the mmap,
++	 * we need to request the region and the barmap tracks that.
++	 */
++	if (!vdev->barmap[index]) {
++		ret = pci_request_selected_regions(pdev,
++						   1 << index, "vfio-pci");
++		if (ret)
++			return ret;
++
++		vdev->barmap[index] = pci_iomap(pdev, index, 0);
++	}
++
++	vma->vm_private_data = vdev;
++	vma->vm_flags |= (VM_IO | VM_RESERVED);
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	phys = (pci_resource_start(pdev, index) >> PAGE_SHIFT) + pgoff;
++
++	return remap_pfn_range(vma, vma->vm_start, phys,
++			       req_len, vma->vm_page_prot);
++}
++
++static const struct vfio_device_ops vfio_pci_ops = {
++	.name		= "vfio-pci",
++	.open		= vfio_pci_open,
++	.release	= vfio_pci_release,
++	.ioctl		= vfio_pci_ioctl,
++	.read		= vfio_pci_read,
++	.write		= vfio_pci_write,
++	.mmap		= vfio_pci_mmap,
++};
++
++static int vfio_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
++{
++	u8 type;
++	struct vfio_pci_device *vdev;
++	struct iommu_group *group;
++	int ret;
++
++	pci_read_config_byte(pdev, PCI_HEADER_TYPE, &type);
++	if ((type & PCI_HEADER_TYPE) != PCI_HEADER_TYPE_NORMAL)
++		return -EINVAL;
++
++	group = iommu_group_get(&pdev->dev);
++	if (!group)
++		return -EINVAL;
++
++	vdev = kzalloc(sizeof(*vdev), GFP_KERNEL);
++	if (!vdev) {
++		iommu_group_put(group);
++		return -ENOMEM;
++	}
++
++	vdev->pdev = pdev;
++	vdev->irq_type = VFIO_PCI_NUM_IRQS;
++	mutex_init(&vdev->igate);
++	spin_lock_init(&vdev->irqlock);
++	atomic_set(&vdev->refcnt, 0);
++
++	ret = vfio_add_group_dev(&pdev->dev, &vfio_pci_ops, vdev);
++	if (ret) {
++		iommu_group_put(group);
++		kfree(vdev);
++	}
++
++	return ret;
++}
++
++static void vfio_pci_remove(struct pci_dev *pdev)
++{
++	struct vfio_pci_device *vdev;
++
++	vdev = vfio_del_group_dev(&pdev->dev);
++	if (!vdev)
++		return;
++
++	iommu_group_put(pdev->dev.iommu_group);
++	kfree(vdev);
++}
++
++static struct pci_driver vfio_pci_driver = {
++	.name		= "vfio-pci",
++	.id_table	= NULL, /* only dynamic ids */
++	.probe		= vfio_pci_probe,
++	.remove		= vfio_pci_remove,
++};
++
++void __exit vfio_pci_cleanup(void)
++{
++	pci_unregister_driver(&vfio_pci_driver);
++	vfio_pci_virqfd_exit();
++	vfio_pci_uninit_perm_bits();
++}
++
++int __init vfio_pci_init(void)
++{
++	int ret;
++
++	/* Allocate shared config space permision data used by all devices */
++	ret = vfio_pci_init_perm_bits();
++	if (ret)
++		return ret;
++
++	/* Start the virqfd cleanup handler */
++	ret = vfio_pci_virqfd_init();
++	if (ret)
++		goto out_virqfd;
++
++	/* Register and scan for devices */
++	ret = pci_register_driver(&vfio_pci_driver);
++	if (ret)
++		goto out_driver;
++
++	return 0;
++
++out_virqfd:
++	vfio_pci_virqfd_exit();
++out_driver:
++	vfio_pci_uninit_perm_bits();
++	return ret;
++}
++
++module_init(vfio_pci_init);
++module_exit(vfio_pci_cleanup);
++
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR(DRIVER_AUTHOR);
++MODULE_DESCRIPTION(DRIVER_DESC);
+diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+new file mode 100644
+index 0000000..a87d4f4
+--- /dev/null
++++ b/drivers/vfio/pci/vfio_pci_config.c
+@@ -0,0 +1,1528 @@
++/*
++ * VFIO PCI config space virtualization
 + *
 + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
 + *     Author: Alex Williamson <alex.williamson@redhat.com>
@@ -124,815 +678,2666 @@ index 0000000..5bb6fad
 + * Derived from original vfio:
 + * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
 + * Author: Tom Lyon, pugs@cisco.com
-+ *
-+ * We arbitrarily define a Type1 IOMMU as one matching the below code.
-+ * It could be called the x86 IOMMU as it's designed for AMD-Vi & Intel
-+ * VT-d, but that makes it harder to re-use as theoretically anyone
-+ * implementing a similar IOMMU could make use of this.  We expect the
-+ * IOMMU to support the IOMMU API and have few to no restrictions around
-+ * the IOVA range that can be mapped.  The Type1 IOMMU is currently
-+ * optimized for relatively static mappings of a userspace process with
-+ * userpsace pages pinned into memory.  We also assume devices and IOMMU
-+ * domains are PCI based as the IOMMU API is still centered around a
-+ * device/bus interface rather than a group interface.
 + */
 +
-+#include <linux/compat.h>
-+#include <linux/device.h>
++/*
++ * This code handles reading and writing of PCI configuration registers.
++ * This is hairy because we want to allow a lot of flexibility to the
++ * user driver, but cannot trust it with all of the config fields.
++ * Tables determine which fields can be read and written, as well as
++ * which fields are 'virtualized' - special actions and translations to
++ * make it appear to the user that he has control, when in fact things
++ * must be negotiated with the underlying OS.
++ */
++
 +#include <linux/fs.h>
-+#include <linux/iommu.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/pci.h>		/* pci_bus_type */
-+#include <linux/sched.h>
-+#include <linux/slab.h>
++#include <linux/pci.h>
 +#include <linux/uaccess.h>
 +#include <linux/vfio.h>
-+#include <linux/workqueue.h>
 +
-+#define DRIVER_VERSION  "0.2"
-+#define DRIVER_AUTHOR   "Alex Williamson <alex.williamson@redhat.com>"
-+#define DRIVER_DESC     "Type1 IOMMU driver for VFIO"
++#include "vfio_pci_private.h"
 +
-+static bool allow_unsafe_interrupts;
-+module_param_named(allow_unsafe_interrupts,
-+		   allow_unsafe_interrupts, bool, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(allow_unsafe_interrupts,
-+		 "Enable VFIO IOMMU support for on platforms without interrupt remapping support.");
++#define PCI_CFG_SPACE_SIZE	256
 +
-+struct vfio_iommu {
-+	struct iommu_domain	*domain;
-+	struct mutex		lock;
-+	struct list_head	dma_list;
-+	struct list_head	group_list;
-+	bool			cache;
-+};
++/* Useful "pseudo" capabilities */
++#define PCI_CAP_ID_BASIC	0
++#define PCI_CAP_ID_INVALID	0xFF
 +
-+struct vfio_dma {
-+	struct list_head	next;
-+	dma_addr_t		iova;		/* Device address */
-+	unsigned long		vaddr;		/* Process virtual addr */
-+	long			npage;		/* Number of pages */
-+	int			prot;		/* IOMMU_READ/WRITE */
-+};
++#define is_bar(offset)	\
++	((offset >= PCI_BASE_ADDRESS_0 && offset < PCI_BASE_ADDRESS_5 + 4) || \
++	 (offset >= PCI_ROM_ADDRESS && offset < PCI_ROM_ADDRESS + 4))
 +
-+struct vfio_group {
-+	struct iommu_group	*iommu_group;
-+	struct list_head	next;
++/*
++ * Lengths of PCI Config Capabilities
++ *   0: Removed from the user visible capability list
++ *   FF: Variable length
++ */
++static u8 pci_cap_length[] = {
++	[PCI_CAP_ID_BASIC]	= PCI_STD_HEADER_SIZEOF, /* pci config header */
++	[PCI_CAP_ID_PM]		= PCI_PM_SIZEOF,
++	[PCI_CAP_ID_AGP]	= PCI_AGP_SIZEOF,
++	[PCI_CAP_ID_VPD]	= PCI_CAP_VPD_SIZEOF,
++	[PCI_CAP_ID_SLOTID]	= 0,		/* bridge - don't care */
++	[PCI_CAP_ID_MSI]	= 0xFF,		/* 10, 14, 20, or 24 */
++	[PCI_CAP_ID_CHSWP]	= 0,		/* cpci - not yet */
++	[PCI_CAP_ID_PCIX]	= 0xFF,		/* 8 or 24 */
++	[PCI_CAP_ID_HT]		= 0xFF,		/* hypertransport */
++	[PCI_CAP_ID_VNDR]	= 0xFF,		/* variable */
++	[PCI_CAP_ID_DBG]	= 0,		/* debug - don't care */
++	[PCI_CAP_ID_CCRC]	= 0,		/* cpci - not yet */
++	[PCI_CAP_ID_SHPC]	= 0,		/* hotswap - not yet */
++	[PCI_CAP_ID_SSVID]	= 0,		/* bridge - don't care */
++	[PCI_CAP_ID_AGP3]	= 0,		/* AGP8x - not yet */
++	[PCI_CAP_ID_SECDEV]	= 0,		/* secure device not yet */
++	[PCI_CAP_ID_EXP]	= 0xFF,		/* 20 or 44 */
++	[PCI_CAP_ID_MSIX]	= PCI_CAP_MSIX_SIZEOF,
++	[PCI_CAP_ID_SATA]	= 0xFF,
++	[PCI_CAP_ID_AF]		= PCI_CAP_AF_SIZEOF,
 +};
 +
 +/*
-+ * This code handles mapping and unmapping of user data buffers
-+ * into DMA'ble space using the IOMMU
++ * Lengths of PCIe/PCI-X Extended Config Capabilities
++ *   0: Removed or masked from the user visible capabilty list
++ *   FF: Variable length
 + */
-+
-+#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
-+
-+struct vwork {
-+	struct mm_struct	*mm;
-+	long			npage;
-+	struct work_struct	work;
++static u16 pci_ext_cap_length[] = {
++	[PCI_EXT_CAP_ID_ERR]	=	PCI_ERR_ROOT_COMMAND,
++	[PCI_EXT_CAP_ID_VC]	=	0xFF,
++	[PCI_EXT_CAP_ID_DSN]	=	PCI_EXT_CAP_DSN_SIZEOF,
++	[PCI_EXT_CAP_ID_PWR]	=	PCI_EXT_CAP_PWR_SIZEOF,
++	[PCI_EXT_CAP_ID_RCLD]	=	0,	/* root only - don't care */
++	[PCI_EXT_CAP_ID_RCILC]	=	0,	/* root only - don't care */
++	[PCI_EXT_CAP_ID_RCEC]	=	0,	/* root only - don't care */
++	[PCI_EXT_CAP_ID_MFVC]	=	0xFF,
++	[PCI_EXT_CAP_ID_VC9]	=	0xFF,	/* same as CAP_ID_VC */
++	[PCI_EXT_CAP_ID_RCRB]	=	0,	/* root only - don't care */
++	[PCI_EXT_CAP_ID_VNDR]	=	0xFF,
++	[PCI_EXT_CAP_ID_CAC]	=	0,	/* obsolete */
++	[PCI_EXT_CAP_ID_ACS]	=	0xFF,
++	[PCI_EXT_CAP_ID_ARI]	=	PCI_EXT_CAP_ARI_SIZEOF,
++	[PCI_EXT_CAP_ID_ATS]	=	PCI_EXT_CAP_ATS_SIZEOF,
++	[PCI_EXT_CAP_ID_SRIOV]	=	PCI_EXT_CAP_SRIOV_SIZEOF,
++	[PCI_EXT_CAP_ID_MRIOV]	=	0,	/* not yet */
++	[PCI_EXT_CAP_ID_MCAST]	=	PCI_EXT_CAP_MCAST_ENDPOINT_SIZEOF,
++	[PCI_EXT_CAP_ID_PRI]	=	PCI_EXT_CAP_PRI_SIZEOF,
++	[PCI_EXT_CAP_ID_AMD_XXX] =	0,	/* not yet */
++	[PCI_EXT_CAP_ID_REBAR]	=	0xFF,
++	[PCI_EXT_CAP_ID_DPA]	=	0xFF,
++	[PCI_EXT_CAP_ID_TPH]	=	0xFF,
++	[PCI_EXT_CAP_ID_LTR]	=	PCI_EXT_CAP_LTR_SIZEOF,
++	[PCI_EXT_CAP_ID_SECPCI]	=	0,	/* not yet */
++	[PCI_EXT_CAP_ID_PMUX]	=	0,	/* not yet */
++	[PCI_EXT_CAP_ID_PASID]	=	0,	/* not yet */
 +};
 +
-+/* delayed decrement/increment for locked_vm */
-+static void vfio_lock_acct_bg(struct work_struct *work)
-+{
-+	struct vwork *vwork = container_of(work, struct vwork, work);
-+	struct mm_struct *mm;
++/*
++ * Read/Write Permission Bits - one bit for each bit in capability
++ * Any field can be read if it exists, but what is read depends on
++ * whether the field is 'virtualized', or just pass thru to the
++ * hardware.  Any virtualized field is also virtualized for writes.
++ * Writes are only permitted if they have a 1 bit here.
++ */
++struct perm_bits {
++	u8	*virt;		/* read/write virtual data, not hw */
++	u8	*write;		/* writeable bits */
++	int	(*readfn)(struct vfio_pci_device *vdev, int pos, int count,
++			  struct perm_bits *perm, int offset, u32 *val);
++	int	(*writefn)(struct vfio_pci_device *vdev, int pos, int count,
++			   struct perm_bits *perm, int offset, u32 val);
++};
 +
-+	mm = vwork->mm;
-+	down_write(&mm->mmap_sem);
-+	mm->locked_vm += vwork->npage;
-+	up_write(&mm->mmap_sem);
-+	mmput(mm);
-+	kfree(vwork);
++#define	NO_VIRT		0
++#define	ALL_VIRT	0xFFFFFFFFU
++#define	NO_WRITE	0
++#define	ALL_WRITE	0xFFFFFFFFU
++
++static int vfio_user_config_read(struct pci_dev *pdev, int offset,
++				 u32 *val, int count)
++{
++	int ret = -EINVAL;
++
++	switch (count) {
++	case 1:
++	{
++		u8 tmp;
++		ret = pci_user_read_config_byte(pdev, offset, &tmp);
++		*val = tmp;
++		break;
++	}
++	case 2:
++	{
++		u16 tmp;
++		ret = pci_user_read_config_word(pdev, offset, &tmp);
++		*val = tmp;
++		break;
++	}
++	case 4:
++		ret = pci_user_read_config_dword(pdev, offset, val);
++		break;
++	}
++
++	*val = cpu_to_le32(*val);
++
++	return pcibios_err_to_errno(ret);
 +}
 +
-+static void vfio_lock_acct(long npage)
++static int vfio_user_config_write(struct pci_dev *pdev, int offset,
++				  u32 val, int count)
 +{
-+	struct vwork *vwork;
-+	struct mm_struct *mm;
++	int ret = -EINVAL;
 +
-+	if (!current->mm)
-+		return; /* process exited */
++	val = le32_to_cpu(val);
 +
-+	if (down_write_trylock(&current->mm->mmap_sem)) {
-+		current->mm->locked_vm += npage;
-+		up_write(&current->mm->mmap_sem);
-+		return;
++	switch (count) {
++	case 1:
++		ret = pci_user_write_config_byte(pdev, offset, val);
++		break;
++	case 2:
++		ret = pci_user_write_config_word(pdev, offset, val);
++		break;
++	case 4:
++		ret = pci_user_write_config_dword(pdev, offset, val);
++		break;
 +	}
++
++	return pcibios_err_to_errno(ret);
++}
++
++static int vfio_default_config_read(struct vfio_pci_device *vdev, int pos,
++				    int count, struct perm_bits *perm,
++				    int offset, u32 *val)
++{
++	u32 virt = 0;
++
++	memcpy(val, vdev->vconfig + pos, count);
++
++	memcpy(&virt, perm->virt + offset, count);
++
++	/* Any non-virtualized bits? */
++	if (cpu_to_le32(~0U >> (32 - (count * 8))) != virt) {
++		struct pci_dev *pdev = vdev->pdev;
++		u32 phys_val = 0;
++		int ret;
++
++		ret = vfio_user_config_read(pdev, pos, &phys_val, count);
++		if (ret)
++			return ret;
++
++		*val = (phys_val & ~virt) | (*val & virt);
++	}
++
++	return count;
++}
++
++static int vfio_default_config_write(struct vfio_pci_device *vdev, int pos,
++				     int count, struct perm_bits *perm,
++				     int offset, u32 val)
++{
++	u32 virt = 0, write = 0;
++
++	memcpy(&write, perm->write + offset, count);
++
++	if (!write)
++		return count; /* drop, no writable bits */
++
++	memcpy(&virt, perm->virt + offset, count);
++
++	/* Virtualized and writable bits go to vconfig */
++	if (write & virt) {
++		u32 virt_val = 0;
++
++		memcpy(&virt_val, vdev->vconfig + pos, count);
++
++		virt_val &= ~(write & virt);
++		virt_val |= (val & (write & virt));
++
++		memcpy(vdev->vconfig + pos, &virt_val, count);
++	}
++
++	/* Non-virtualzed and writable bits go to hardware */
++	if (write & ~virt) {
++		struct pci_dev *pdev = vdev->pdev;
++		u32 phys_val = 0;
++		int ret;
++
++		ret = vfio_user_config_read(pdev, pos, &phys_val, count);
++		if (ret)
++			return ret;
++
++		phys_val &= ~(write & ~virt);
++		phys_val |= (val & (write & ~virt));
++
++		ret = vfio_user_config_write(pdev, pos, phys_val, count);
++		if (ret)
++			return ret;
++	}
++
++	return count;
++}
++
++/* Allow direct read from hardware, except for capability next pointer */
++static int vfio_direct_config_read(struct vfio_pci_device *vdev, int pos,
++				   int count, struct perm_bits *perm,
++				   int offset, u32 *val)
++{
++	int ret;
++
++	ret = vfio_user_config_read(vdev->pdev, pos, val, count);
++	if (ret)
++		return pcibios_err_to_errno(ret);
++
++	if (pos >= PCI_CFG_SPACE_SIZE) { /* Extended cap header mangling */
++		if (offset < 4)
++			memcpy(val, vdev->vconfig + pos, count);
++	} else if (pos >= PCI_STD_HEADER_SIZEOF) { /* Std cap mangling */
++		if (offset == PCI_CAP_LIST_ID && count > 1)
++			memcpy(val, vdev->vconfig + pos,
++			       min(PCI_CAP_FLAGS, count));
++		else if (offset == PCI_CAP_LIST_NEXT)
++			memcpy(val, vdev->vconfig + pos, 1);
++	}
++
++	return count;
++}
++
++static int vfio_direct_config_write(struct vfio_pci_device *vdev, int pos,
++				    int count, struct perm_bits *perm,
++				    int offset, u32 val)
++{
++	int ret;
++
++	ret = vfio_user_config_write(vdev->pdev, pos, val, count);
++	if (ret)
++		return ret;
++
++	return count;
++}
++
++/* Default all regions to read-only, no-virtualization */
++static struct perm_bits cap_perms[PCI_CAP_ID_MAX + 1] = {
++	[0 ... PCI_CAP_ID_MAX] = { .readfn = vfio_direct_config_read }
++};
++static struct perm_bits ecap_perms[PCI_EXT_CAP_ID_MAX + 1] = {
++	[0 ... PCI_EXT_CAP_ID_MAX] = { .readfn = vfio_direct_config_read }
++};
++
++static void free_perm_bits(struct perm_bits *perm)
++{
++	kfree(perm->virt);
++	kfree(perm->write);
++	perm->virt = NULL;
++	perm->write = NULL;
++}
++
++static int alloc_perm_bits(struct perm_bits *perm, int size)
++{
++	/*
++	 * Round up all permission bits to the next dword, this lets us
++	 * ignore whether a read/write exceeds the defined capability
++	 * structure.  We can do this because:
++	 *  - Standard config space is already dword aligned
++	 *  - Capabilities are all dword alinged (bits 0:1 of next reserved)
++	 *  - Express capabilities defined as dword aligned
++	 */
++	size = round_up(size, 4);
 +
 +	/*
-+	 * Couldn't get mmap_sem lock, so must setup to update
-+	 * mm->locked_vm later. If locked_vm were atomic, we
-+	 * wouldn't need this silliness
++	 * Zero state is
++	 * - All Readable, None Writeable, None Virtualized
 +	 */
-+	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
-+	if (!vwork)
-+		return;
-+	mm = get_task_mm(current);
-+	if (!mm) {
-+		kfree(vwork);
-+		return;
-+	}
-+	INIT_WORK(&vwork->work, vfio_lock_acct_bg);
-+	vwork->mm = mm;
-+	vwork->npage = npage;
-+	schedule_work(&vwork->work);
-+}
-+
-+/*
-+ * Some mappings aren't backed by a struct page, for example an mmap'd
-+ * MMIO range for our own or another device.  These use a different
-+ * pfn conversion and shouldn't be tracked as locked pages.
-+ */
-+static bool is_invalid_reserved_pfn(unsigned long pfn)
-+{
-+	if (pfn_valid(pfn)) {
-+		bool reserved;
-+		struct page *tail = pfn_to_page(pfn);
-+		struct page *head = compound_trans_head(tail);
-+		reserved = !!(PageReserved(head));
-+		if (head != tail) {
-+			/*
-+			 * "head" is not a dangling pointer
-+			 * (compound_trans_head takes care of that)
-+			 * but the hugepage may have been split
-+			 * from under us (and we may not hold a
-+			 * reference count on the head page so it can
-+			 * be reused before we run PageReferenced), so
-+			 * we've to check PageTail before returning
-+			 * what we just read.
-+			 */
-+			smp_rmb();
-+			if (PageTail(tail))
-+				return reserved;
-+		}
-+		return PageReserved(tail);
++	perm->virt = kzalloc(size, GFP_KERNEL);
++	perm->write = kzalloc(size, GFP_KERNEL);
++	if (!perm->virt || !perm->write) {
++		free_perm_bits(perm);
++		return -ENOMEM;
 +	}
 +
-+	return true;
-+}
++	perm->readfn = vfio_default_config_read;
++	perm->writefn = vfio_default_config_write;
 +
-+static int put_pfn(unsigned long pfn, int prot)
-+{
-+	if (!is_invalid_reserved_pfn(pfn)) {
-+		struct page *page = pfn_to_page(pfn);
-+		if (prot & IOMMU_WRITE)
-+			SetPageDirty(page);
-+		put_page(page);
-+		return 1;
-+	}
 +	return 0;
 +}
 +
-+/* Unmap DMA region */
-+static long __vfio_dma_do_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
-+			     long npage, int prot)
++/*
++ * Helper functions for filling in permission tables
++ */
++static inline void p_setb(struct perm_bits *p, int off, u8 virt, u8 write)
 +{
-+	long i, unlocked = 0;
++	p->virt[off] = virt;
++	p->write[off] = write;
++}
 +
-+	for (i = 0; i < npage; i++, iova += PAGE_SIZE) {
-+		unsigned long pfn;
++/* Handle endian-ness - pci and tables are little-endian */
++static inline void p_setw(struct perm_bits *p, int off, u16 virt, u16 write)
++{
++	*(u16 *)(&p->virt[off]) = cpu_to_le16(virt);
++	*(u16 *)(&p->write[off]) = cpu_to_le16(write);
++}
 +
-+		pfn = iommu_iova_to_phys(iommu->domain, iova) >> PAGE_SHIFT;
-+		if (pfn) {
-+			iommu_unmap(iommu->domain, iova, PAGE_SIZE);
-+			unlocked += put_pfn(pfn, prot);
++/* Handle endian-ness - pci and tables are little-endian */
++static inline void p_setd(struct perm_bits *p, int off, u32 virt, u32 write)
++{
++	*(u32 *)(&p->virt[off]) = cpu_to_le32(virt);
++	*(u32 *)(&p->write[off]) = cpu_to_le32(write);
++}
++
++/*
++ * Restore the *real* BARs after we detect a FLR or backdoor reset.
++ * (backdoor = some device specific technique that we didn't catch)
++ */
++static void vfio_bar_restore(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u32 *rbar = vdev->rbar;
++	int i;
++
++	if (pdev->is_virtfn)
++		return;
++
++	printk(KERN_INFO "%s: %s reset recovery - restoring bars\n",
++	       __func__, dev_name(&pdev->dev));
++
++	for (i = PCI_BASE_ADDRESS_0; i <= PCI_BASE_ADDRESS_5; i += 4, rbar++)
++		pci_user_write_config_dword(pdev, i, *rbar);
++
++	pci_user_write_config_dword(pdev, PCI_ROM_ADDRESS, *rbar);
++}
++
++static u32 vfio_generate_bar_flags(struct pci_dev *pdev, int bar)
++{
++	unsigned long flags = pci_resource_flags(pdev, bar);
++	u32 val;
++
++	if (flags & IORESOURCE_IO)
++		return cpu_to_le32(PCI_BASE_ADDRESS_SPACE_IO);
++
++	val = PCI_BASE_ADDRESS_SPACE_MEMORY;
++
++	if (flags & IORESOURCE_PREFETCH)
++		val |= PCI_BASE_ADDRESS_MEM_PREFETCH;
++
++	if (flags & IORESOURCE_MEM_64)
++		val |= PCI_BASE_ADDRESS_MEM_TYPE_64;
++
++	return cpu_to_le32(val);
++}
++
++/*
++ * Pretend we're hardware and tweak the values of the *virtual* PCI BARs
++ * to reflect the hardware capabilities.  This implements BAR sizing.
++ */
++static void vfio_bar_fixup(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	int i;
++	u32 *bar;
++	u64 mask;
++
++	bar = (u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_0];
++
++	for (i = PCI_STD_RESOURCES; i <= PCI_STD_RESOURCE_END; i++, bar++) {
++		if (!pci_resource_start(pdev, i)) {
++			*bar = 0; /* Unmapped by host = unimplemented to user */
++			continue;
++		}
++
++		mask = ~(pci_resource_len(pdev, i) - 1);
++
++		*bar &= cpu_to_le32((u32)mask);
++		*bar |= vfio_generate_bar_flags(pdev, i);
++
++		if (*bar & cpu_to_le32(PCI_BASE_ADDRESS_MEM_TYPE_64)) {
++			bar++;
++			*bar &= cpu_to_le32((u32)(mask >> 32));
++			i++;
 +		}
 +	}
-+	return unlocked;
++
++	bar = (u32 *)&vdev->vconfig[PCI_ROM_ADDRESS];
++
++	/*
++	 * NB. we expose the actual BAR size here, regardless of whether
++	 * we can read it.  When we report the REGION_INFO for the ROM
++	 * we report what PCI tells us is the actual ROM size.
++	 */
++	if (pci_resource_start(pdev, PCI_ROM_RESOURCE)) {
++		mask = ~(pci_resource_len(pdev, PCI_ROM_RESOURCE) - 1);
++		mask |= PCI_ROM_ADDRESS_ENABLE;
++		*bar &= cpu_to_le32((u32)mask);
++	} else
++		*bar = 0;
++
++	vdev->bardirty = false;
 +}
 +
-+static void vfio_dma_unmap(struct vfio_iommu *iommu, dma_addr_t iova,
-+			   long npage, int prot)
++static int vfio_basic_config_read(struct vfio_pci_device *vdev, int pos,
++				  int count, struct perm_bits *perm,
++				  int offset, u32 *val)
 +{
-+	long unlocked;
++	if (is_bar(offset)) /* pos == offset for basic config */
++		vfio_bar_fixup(vdev);
 +
-+	unlocked = __vfio_dma_do_unmap(iommu, iova, npage, prot);
-+	vfio_lock_acct(-unlocked);
++	count = vfio_default_config_read(vdev, pos, count, perm, offset, val);
++
++	/* Mask in virtual memory enable for SR-IOV devices */
++	if (offset == PCI_COMMAND && vdev->pdev->is_virtfn) {
++		u16 cmd = le16_to_cpu(*(u16 *)&vdev->vconfig[PCI_COMMAND]);
++		*val = (le32_to_cpu(*val) | (cmd & PCI_COMMAND_MEMORY));
++		*val = cpu_to_le32(*val);
++	}
++
++	return count;
 +}
 +
-+static int vaddr_get_pfn(unsigned long vaddr, int prot, unsigned long *pfn)
++static int vfio_basic_config_write(struct vfio_pci_device *vdev, int pos,
++				   int count, struct perm_bits *perm,
++				   int offset, u32 val)
 +{
-+	struct page *page[1];
-+	struct vm_area_struct *vma;
-+	int ret = -EFAULT;
++	struct pci_dev *pdev = vdev->pdev;
++	u16 phys_cmd, *virt_cmd, new_cmd = 0;
++	int ret;
 +
-+	if (get_user_pages_fast(vaddr, 1, !!(prot & IOMMU_WRITE), page) == 1) {
-+		*pfn = page_to_pfn(page[0]);
-+		return 0;
++	virt_cmd = (u16 *)&vdev->vconfig[PCI_COMMAND];
++
++	if (offset == PCI_COMMAND) {
++		bool phys_mem, virt_mem, new_mem, phys_io, virt_io, new_io;
++
++		ret = pci_user_read_config_word(pdev, PCI_COMMAND, &phys_cmd);
++		if (ret)
++			return ret;
++
++		new_cmd = le32_to_cpu(val);
++
++		phys_mem = !!(phys_cmd & PCI_COMMAND_MEMORY);
++		virt_mem = !!(le16_to_cpu(*virt_cmd) & PCI_COMMAND_MEMORY);
++		new_mem = !!(new_cmd & PCI_COMMAND_MEMORY);
++
++		phys_io = !!(phys_cmd & PCI_COMMAND_IO);
++		virt_io = !!(le16_to_cpu(*virt_cmd) & PCI_COMMAND_IO);
++		new_io = !!(new_cmd & PCI_COMMAND_IO);
++
++		/*
++		 * If the user is writing mem/io enable (new_mem/io) and we
++		 * think it's already enabled (virt_mem/io), but the hardware
++		 * shows it disabled (phys_mem/io, then the device has
++		 * undergone some kind of backdoor reset and needs to be
++		 * restored before we allow it to enable the bars.
++		 * SR-IOV devices will trigger this, but we catch them later
++		 */
++		if ((new_mem && virt_mem && !phys_mem) ||
++		    (new_io && virt_io && !phys_io))
++			vfio_bar_restore(vdev);
 +	}
 +
-+	down_read(&current->mm->mmap_sem);
++	count = vfio_default_config_write(vdev, pos, count, perm, offset, val);
++	if (count < 0)
++		return count;
 +
-+	vma = find_vma_intersection(current->mm, vaddr, vaddr + 1);
++	/*
++	 * Save current memory/io enable bits in vconfig to allow for
++	 * the test above next time.
++	 */
++	if (offset == PCI_COMMAND) {
++		u16 mask = PCI_COMMAND_MEMORY | PCI_COMMAND_IO;
 +
-+	if (vma && vma->vm_flags & VM_PFNMAP) {
-+		*pfn = ((vaddr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-+		if (is_invalid_reserved_pfn(*pfn))
-+			ret = 0;
++		*virt_cmd &= cpu_to_le16(~mask);
++		*virt_cmd |= cpu_to_le16(new_cmd & mask);
 +	}
 +
-+	up_read(&current->mm->mmap_sem);
++	/* Emulate INTx disable */
++	if (offset >= PCI_COMMAND && offset <= PCI_COMMAND + 1) {
++		bool virt_intx_disable;
++
++		virt_intx_disable = !!(le16_to_cpu(*virt_cmd) &
++				       PCI_COMMAND_INTX_DISABLE);
++
++		if (virt_intx_disable && !vdev->virq_disabled) {
++			vdev->virq_disabled = true;
++			vfio_pci_intx_mask(vdev);
++		} else if (!virt_intx_disable && vdev->virq_disabled) {
++			vdev->virq_disabled = false;
++			vfio_pci_intx_unmask(vdev);
++		}
++	}
++
++	if (is_bar(offset))
++		vdev->bardirty = true;
++
++	return count;
++}
++
++/* Permissions for the Basic PCI Header */
++static int __init init_pci_cap_basic_perm(struct perm_bits *perm)
++{
++	if (alloc_perm_bits(perm, PCI_STD_HEADER_SIZEOF))
++		return -ENOMEM;
++
++	perm->readfn = vfio_basic_config_read;
++	perm->writefn = vfio_basic_config_write;
++
++	/* Virtualized for SR-IOV functions, which just have FFFF */
++	p_setw(perm, PCI_VENDOR_ID, (u16)ALL_VIRT, NO_WRITE);
++	p_setw(perm, PCI_DEVICE_ID, (u16)ALL_VIRT, NO_WRITE);
++
++	/*
++	 * Virtualize INTx disable, we use it internally for interrupt
++	 * control and can emulate it for non-PCI 2.3 devices.
++	 */
++	p_setw(perm, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE, (u16)ALL_WRITE);
++
++	/* Virtualize capability list, we might want to skip/disable */
++	p_setw(perm, PCI_STATUS, PCI_STATUS_CAP_LIST, NO_WRITE);
++
++	/* No harm to write */
++	p_setb(perm, PCI_CACHE_LINE_SIZE, NO_VIRT, (u8)ALL_WRITE);
++	p_setb(perm, PCI_LATENCY_TIMER, NO_VIRT, (u8)ALL_WRITE);
++	p_setb(perm, PCI_BIST, NO_VIRT, (u8)ALL_WRITE);
++
++	/* Virtualize all bars, can't touch the real ones */
++	p_setd(perm, PCI_BASE_ADDRESS_0, ALL_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_BASE_ADDRESS_1, ALL_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_BASE_ADDRESS_2, ALL_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_BASE_ADDRESS_3, ALL_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_BASE_ADDRESS_4, ALL_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_BASE_ADDRESS_5, ALL_VIRT, ALL_WRITE);
++	p_setd(perm, PCI_ROM_ADDRESS, ALL_VIRT, ALL_WRITE);
++
++	/* Allow us to adjust capability chain */
++	p_setb(perm, PCI_CAPABILITY_LIST, (u8)ALL_VIRT, NO_WRITE);
++
++	/* Sometimes used by sw, just virtualize */
++	p_setb(perm, PCI_INTERRUPT_LINE, (u8)ALL_VIRT, (u8)ALL_WRITE);
++	return 0;
++}
++
++/* Permissions for the Power Management capability */
++static int __init init_pci_cap_pm_perm(struct perm_bits *perm)
++{
++	if (alloc_perm_bits(perm, pci_cap_length[PCI_CAP_ID_PM]))
++		return -ENOMEM;
++
++	/*
++	 * We always virtualize the next field so we can remove
++	 * capabilities from the chain if we want to.
++	 */
++	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
++
++	/*
++	 * Power management is defined *per function*,
++	 * so we let the user write this
++	 */
++	p_setd(perm, PCI_PM_CTRL, NO_VIRT, ALL_WRITE);
++	return 0;
++}
++
++/* Permissions for PCI-X capability */
++static int __init init_pci_cap_pcix_perm(struct perm_bits *perm)
++{
++	/* Alloc 24, but only 8 are used in v0 */
++	if (alloc_perm_bits(perm, PCI_CAP_PCIX_SIZEOF_V2))
++		return -ENOMEM;
++
++	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
++
++	p_setw(perm, PCI_X_CMD, NO_VIRT, (u16)ALL_WRITE);
++	p_setd(perm, PCI_X_ECC_CSR, NO_VIRT, ALL_WRITE);
++	return 0;
++}
++
++/* Permissions for PCI Express capability */
++static int __init init_pci_cap_exp_perm(struct perm_bits *perm)
++{
++	/* Alloc larger of two possible sizes */
++	if (alloc_perm_bits(perm, PCI_CAP_EXP_ENDPOINT_SIZEOF_V2))
++		return -ENOMEM;
++
++	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
++
++	/*
++	 * Allow writes to device control fields (includes FLR!)
++	 * but not to devctl_phantom which could confuse IOMMU
++	 * or to the ARI bit in devctl2 which is set at probe time
++	 */
++	p_setw(perm, PCI_EXP_DEVCTL, NO_VIRT, ~PCI_EXP_DEVCTL_PHANTOM);
++	p_setw(perm, PCI_EXP_DEVCTL2, NO_VIRT, ~PCI_EXP_DEVCTL2_ARI);
++	return 0;
++}
++
++/* Permissions for Advanced Function capability */
++static int __init init_pci_cap_af_perm(struct perm_bits *perm)
++{
++	if (alloc_perm_bits(perm, pci_cap_length[PCI_CAP_ID_AF]))
++		return -ENOMEM;
++
++	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
++	p_setb(perm, PCI_AF_CTRL, NO_VIRT, PCI_AF_CTRL_FLR);
++	return 0;
++}
++
++/* Permissions for Advanced Error Reporting extended capability */
++static int __init init_pci_ext_cap_err_perm(struct perm_bits *perm)
++{
++	u32 mask;
++
++	if (alloc_perm_bits(perm, pci_ext_cap_length[PCI_EXT_CAP_ID_ERR]))
++		return -ENOMEM;
++
++	/*
++	 * Virtualize the first dword of all express capabilities
++	 * because it includes the next pointer.  This lets us later
++	 * remove capabilities from the chain if we need to.
++	 */
++	p_setd(perm, 0, ALL_VIRT, NO_WRITE);
++
++	/* Writable bits mask */
++	mask =	PCI_ERR_UNC_TRAIN |		/* Training */
++		PCI_ERR_UNC_DLP |		/* Data Link Protocol */
++		PCI_ERR_UNC_SURPDN |		/* Surprise Down */
++		PCI_ERR_UNC_POISON_TLP |	/* Poisoned TLP */
++		PCI_ERR_UNC_FCP |		/* Flow Control Protocol */
++		PCI_ERR_UNC_COMP_TIME |		/* Completion Timeout */
++		PCI_ERR_UNC_COMP_ABORT |	/* Completer Abort */
++		PCI_ERR_UNC_UNX_COMP |		/* Unexpected Completion */
++		PCI_ERR_UNC_RX_OVER |		/* Receiver Overflow */
++		PCI_ERR_UNC_MALF_TLP |		/* Malformed TLP */
++		PCI_ERR_UNC_ECRC |		/* ECRC Error Status */
++		PCI_ERR_UNC_UNSUP |		/* Unsupported Request */
++		PCI_ERR_UNC_ACSV |		/* ACS Violation */
++		PCI_ERR_UNC_INTN |		/* internal error */
++		PCI_ERR_UNC_MCBTLP |		/* MC blocked TLP */
++		PCI_ERR_UNC_ATOMEG |		/* Atomic egress blocked */
++		PCI_ERR_UNC_TLPPRE;		/* TLP prefix blocked */
++	p_setd(perm, PCI_ERR_UNCOR_STATUS, NO_VIRT, mask);
++	p_setd(perm, PCI_ERR_UNCOR_MASK, NO_VIRT, mask);
++	p_setd(perm, PCI_ERR_UNCOR_SEVER, NO_VIRT, mask);
++
++	mask =	PCI_ERR_COR_RCVR |		/* Receiver Error Status */
++		PCI_ERR_COR_BAD_TLP |		/* Bad TLP Status */
++		PCI_ERR_COR_BAD_DLLP |		/* Bad DLLP Status */
++		PCI_ERR_COR_REP_ROLL |		/* REPLAY_NUM Rollover */
++		PCI_ERR_COR_REP_TIMER |		/* Replay Timer Timeout */
++		PCI_ERR_COR_ADV_NFAT |		/* Advisory Non-Fatal */
++		PCI_ERR_COR_INTERNAL |		/* Corrected Internal */
++		PCI_ERR_COR_LOG_OVER;		/* Header Log Overflow */
++	p_setd(perm, PCI_ERR_COR_STATUS, NO_VIRT, mask);
++	p_setd(perm, PCI_ERR_COR_MASK, NO_VIRT, mask);
++
++	mask =	PCI_ERR_CAP_ECRC_GENE |		/* ECRC Generation Enable */
++		PCI_ERR_CAP_ECRC_CHKE;		/* ECRC Check Enable */
++	p_setd(perm, PCI_ERR_CAP, NO_VIRT, mask);
++	return 0;
++}
++
++/* Permissions for Power Budgeting extended capability */
++static int __init init_pci_ext_cap_pwr_perm(struct perm_bits *perm)
++{
++	if (alloc_perm_bits(perm, pci_ext_cap_length[PCI_EXT_CAP_ID_PWR]))
++		return -ENOMEM;
++
++	p_setd(perm, 0, ALL_VIRT, NO_WRITE);
++
++	/* Writing the data selector is OK, the info is still read-only */
++	p_setb(perm, PCI_PWR_DATA, NO_VIRT, (u8)ALL_WRITE);
++	return 0;
++}
++
++/*
++ * Initialize the shared permission tables
++ */
++void vfio_pci_uninit_perm_bits(void)
++{
++	free_perm_bits(&cap_perms[PCI_CAP_ID_BASIC]);
++
++	free_perm_bits(&cap_perms[PCI_CAP_ID_PM]);
++	free_perm_bits(&cap_perms[PCI_CAP_ID_PCIX]);
++	free_perm_bits(&cap_perms[PCI_CAP_ID_EXP]);
++	free_perm_bits(&cap_perms[PCI_CAP_ID_AF]);
++
++	free_perm_bits(&ecap_perms[PCI_EXT_CAP_ID_ERR]);
++	free_perm_bits(&ecap_perms[PCI_EXT_CAP_ID_PWR]);
++}
++
++int __init vfio_pci_init_perm_bits(void)
++{
++	int ret;
++
++	/* Basic config space */
++	ret = init_pci_cap_basic_perm(&cap_perms[PCI_CAP_ID_BASIC]);
++
++	/* Capabilities */
++	ret |= init_pci_cap_pm_perm(&cap_perms[PCI_CAP_ID_PM]);
++	cap_perms[PCI_CAP_ID_VPD].writefn = vfio_direct_config_write;
++	ret |= init_pci_cap_pcix_perm(&cap_perms[PCI_CAP_ID_PCIX]);
++	cap_perms[PCI_CAP_ID_VNDR].writefn = vfio_direct_config_write;
++	ret |= init_pci_cap_exp_perm(&cap_perms[PCI_CAP_ID_EXP]);
++	ret |= init_pci_cap_af_perm(&cap_perms[PCI_CAP_ID_AF]);
++
++	/* Extended capabilities */
++	ret |= init_pci_ext_cap_err_perm(&ecap_perms[PCI_EXT_CAP_ID_ERR]);
++	ret |= init_pci_ext_cap_pwr_perm(&ecap_perms[PCI_EXT_CAP_ID_PWR]);
++	ecap_perms[PCI_EXT_CAP_ID_VNDR].writefn = vfio_direct_config_write;
++
++	if (ret)
++		vfio_pci_uninit_perm_bits();
 +
 +	return ret;
 +}
 +
-+/* Map DMA region */
-+static int __vfio_dma_map(struct vfio_iommu *iommu, dma_addr_t iova,
-+			  unsigned long vaddr, long npage, int prot)
++static int vfio_find_cap_start(struct vfio_pci_device *vdev, int pos)
 +{
-+	dma_addr_t start = iova;
-+	long i, locked = 0;
-+	int ret;
++	u8 cap;
++	int base = (pos >= PCI_CFG_SPACE_SIZE) ? PCI_CFG_SPACE_SIZE :
++						 PCI_STD_HEADER_SIZEOF;
++	base /= 4;
++	pos /= 4;
 +
-+	/* Verify that pages are not already mapped */
-+	for (i = 0; i < npage; i++, iova += PAGE_SIZE)
-+		if (iommu_iova_to_phys(iommu->domain, iova))
-+			return -EBUSY;
++	cap = vdev->pci_config_map[pos];
 +
-+	iova = start;
++	if (cap == PCI_CAP_ID_BASIC)
++		return 0;
 +
-+	if (iommu->cache)
-+		prot |= IOMMU_CACHE;
++	/* XXX Can we have to abutting capabilities of the same type? */
++	while (pos - 1 >= base && vdev->pci_config_map[pos - 1] == cap)
++		pos--;
++
++	return pos * 4;
++}
++
++static int vfio_msi_config_read(struct vfio_pci_device *vdev, int pos,
++				int count, struct perm_bits *perm,
++				int offset, u32 *val)
++{
++	/* Update max available queue size from msi_qmax */
++	if (offset <= PCI_MSI_FLAGS && offset + count >= PCI_MSI_FLAGS) {
++		u16 *flags;
++		int start;
++
++		start = vfio_find_cap_start(vdev, pos);
++
++		flags = (u16 *)&vdev->vconfig[start];
++
++		*flags &= cpu_to_le16(~PCI_MSI_FLAGS_QMASK);
++		*flags |= cpu_to_le16(vdev->msi_qmax << 1);
++	}
++
++	return vfio_default_config_read(vdev, pos, count, perm, offset, val);
++}
++
++static int vfio_msi_config_write(struct vfio_pci_device *vdev, int pos,
++				 int count, struct perm_bits *perm,
++				 int offset, u32 val)
++{
++	count = vfio_default_config_write(vdev, pos, count, perm, offset, val);
++	if (count < 0)
++		return count;
++
++	/* Fixup and write configured queue size and enable to hardware */
++	if (offset <= PCI_MSI_FLAGS && offset + count >= PCI_MSI_FLAGS) {
++		u16 *pflags, flags;
++		int start, ret;
++
++		start = vfio_find_cap_start(vdev, pos);
++
++		pflags = (u16 *)&vdev->vconfig[start + PCI_MSI_FLAGS];
++
++		flags = le16_to_cpu(*pflags);
++
++		/* MSI is enabled via ioctl */
++		if  (!is_msi(vdev))
++			flags &= ~PCI_MSI_FLAGS_ENABLE;
++
++		/* Check queue size */
++		if ((flags & PCI_MSI_FLAGS_QSIZE) >> 4 > vdev->msi_qmax) {
++			flags &= ~PCI_MSI_FLAGS_QSIZE;
++			flags |= vdev->msi_qmax << 4;
++		}
++
++		/* Write back to virt and to hardware */
++		*pflags = cpu_to_le16(flags);
++		ret = pci_user_write_config_word(vdev->pdev,
++						 start + PCI_MSI_FLAGS,
++						 flags);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++	}
++
++	return count;
++}
++
++/*
++ * MSI determination is per-device, so this routine gets used beyond
++ * initialization time. Don't add __init
++ */
++static int init_pci_cap_msi_perm(struct perm_bits *perm, int len, u16 flags)
++{
++	if (alloc_perm_bits(perm, len))
++		return -ENOMEM;
++
++	perm->readfn = vfio_msi_config_read;
++	perm->writefn = vfio_msi_config_write;
++
++	p_setb(perm, PCI_CAP_LIST_NEXT, (u8)ALL_VIRT, NO_WRITE);
 +
 +	/*
-+	 * XXX We break mappings into pages and use get_user_pages_fast to
-+	 * pin the pages in memory.  It's been suggested that mlock might
-+	 * provide a more efficient mechanism, but nothing prevents the
-+	 * user from munlocking the pages, which could then allow the user
-+	 * access to random host memory.  We also have no guarantee from the
-+	 * IOMMU API that the iommu driver can unmap sub-pages of previous
-+	 * mappings.  This means we might lose an entire range if a single
-+	 * page within it is unmapped.  Single page mappings are inefficient,
-+	 * but provide the most flexibility for now.
++	 * The upper byte of the control register is reserved,
++	 * just setup the lower byte.
 +	 */
-+	for (i = 0; i < npage; i++, iova += PAGE_SIZE, vaddr += PAGE_SIZE) {
-+		unsigned long pfn = 0;
++	p_setb(perm, PCI_MSI_FLAGS, (u8)ALL_VIRT, (u8)ALL_WRITE);
++	p_setd(perm, PCI_MSI_ADDRESS_LO, ALL_VIRT, ALL_WRITE);
++	if (flags & PCI_MSI_FLAGS_64BIT) {
++		p_setd(perm, PCI_MSI_ADDRESS_HI, ALL_VIRT, ALL_WRITE);
++		p_setw(perm, PCI_MSI_DATA_64, (u16)ALL_VIRT, (u16)ALL_WRITE);
++		if (flags & PCI_MSI_FLAGS_MASKBIT) {
++			p_setd(perm, PCI_MSI_MASK_64, NO_VIRT, ALL_WRITE);
++			p_setd(perm, PCI_MSI_PENDING_64, NO_VIRT, ALL_WRITE);
++		}
++	} else {
++		p_setw(perm, PCI_MSI_DATA_32, (u16)ALL_VIRT, (u16)ALL_WRITE);
++		if (flags & PCI_MSI_FLAGS_MASKBIT) {
++			p_setd(perm, PCI_MSI_MASK_32, NO_VIRT, ALL_WRITE);
++			p_setd(perm, PCI_MSI_PENDING_32, NO_VIRT, ALL_WRITE);
++		}
++	}
++	return 0;
++}
 +
-+		ret = vaddr_get_pfn(vaddr, prot, &pfn);
++/* Determine MSI CAP field length; initialize msi_perms on 1st call per vdev */
++static int vfio_msi_cap_len(struct vfio_pci_device *vdev, u8 pos)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	int len, ret;
++	u16 flags;
++
++	ret = pci_read_config_word(pdev, pos + PCI_MSI_FLAGS, &flags);
++	if (ret)
++		return pcibios_err_to_errno(ret);
++
++	len = 10; /* Minimum size */
++	if (flags & PCI_MSI_FLAGS_64BIT)
++		len += 4;
++	if (flags & PCI_MSI_FLAGS_MASKBIT)
++		len += 10;
++
++	if (vdev->msi_perm)
++		return len;
++
++	vdev->msi_perm = kmalloc(sizeof(struct perm_bits), GFP_KERNEL);
++	if (!vdev->msi_perm)
++		return -ENOMEM;
++
++	ret = init_pci_cap_msi_perm(vdev->msi_perm, len, flags);
++	if (ret)
++		return ret;
++
++	return len;
++}
++
++/* Determine extended capability length for VC (2 & 9) and MFVC */
++static int vfio_vc_cap_len(struct vfio_pci_device *vdev, u16 pos)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u32 tmp;
++	int ret, evcc, phases, vc_arb;
++	int len = PCI_CAP_VC_BASE_SIZEOF;
++
++	ret = pci_read_config_dword(pdev, pos + PCI_VC_PORT_REG1, &tmp);
++	if (ret)
++		return pcibios_err_to_errno(ret);
++
++	evcc = tmp & PCI_VC_REG1_EVCC; /* extended vc count */
++	ret = pci_read_config_dword(pdev, pos + PCI_VC_PORT_REG2, &tmp);
++	if (ret)
++		return pcibios_err_to_errno(ret);
++
++	if (tmp & PCI_VC_REG2_128_PHASE)
++		phases = 128;
++	else if (tmp & PCI_VC_REG2_64_PHASE)
++		phases = 64;
++	else if (tmp & PCI_VC_REG2_32_PHASE)
++		phases = 32;
++	else
++		phases = 0;
++
++	vc_arb = phases * 4;
++
++	/*
++	 * Port arbitration tables are root & switch only;
++	 * function arbitration tables are function 0 only.
++	 * In either case, we'll never let user write them so
++	 * we don't care how big they are
++	 */
++	len += (1 + evcc) * PCI_CAP_VC_PER_VC_SIZEOF;
++	if (vc_arb) {
++		len = round_up(len, 16);
++		len += vc_arb / 8;
++	}
++	return len;
++}
++
++static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u16 word;
++	u8 byte;
++	int ret;
++
++	switch (cap) {
++	case PCI_CAP_ID_MSI:
++		return vfio_msi_cap_len(vdev, pos);
++	case PCI_CAP_ID_PCIX:
++		ret = pci_read_config_word(pdev, pos + PCI_X_CMD, &word);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		if (PCI_X_CMD_VERSION(word)) {
++			vdev->extended_caps = true;
++			return PCI_CAP_PCIX_SIZEOF_V2;
++		} else
++			return PCI_CAP_PCIX_SIZEOF_V0;
++	case PCI_CAP_ID_VNDR:
++		/* length follows next field */
++		ret = pci_read_config_byte(pdev, pos + PCI_CAP_FLAGS, &byte);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		return byte;
++	case PCI_CAP_ID_EXP:
++		/* length based on version */
++		ret = pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &word);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		if ((word & PCI_EXP_FLAGS_VERS) == 1)
++			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
++		else {
++			vdev->extended_caps = true;
++			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
++		}
++	case PCI_CAP_ID_HT:
++		ret = pci_read_config_byte(pdev, pos + 3, &byte);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		return (byte & HT_3BIT_CAP_MASK) ?
++			HT_CAP_SIZEOF_SHORT : HT_CAP_SIZEOF_LONG;
++	case PCI_CAP_ID_SATA:
++		ret = pci_read_config_byte(pdev, pos + PCI_SATA_REGS, &byte);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		byte &= PCI_SATA_REGS_MASK;
++		if (byte == PCI_SATA_REGS_INLINE)
++			return PCI_SATA_SIZEOF_LONG;
++		else
++			return PCI_SATA_SIZEOF_SHORT;
++	default:
++		printk(KERN_WARNING
++		       "%s: %s unknown length for pci cap 0x%x@0x%x\n",
++		       dev_name(&pdev->dev), __func__, cap, pos);
++	}
++
++	return 0;
++}
++
++static int vfio_ext_cap_len(struct vfio_pci_device *vdev, u16 ecap, u16 epos)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u8 byte;
++	u32 dword;
++	int ret;
++
++	switch (ecap) {
++	case PCI_EXT_CAP_ID_VNDR:
++		ret = pci_read_config_dword(pdev, epos + PCI_VSEC_HDR, &dword);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		return dword >> PCI_VSEC_HDR_LEN_SHIFT;
++	case PCI_EXT_CAP_ID_VC:
++	case PCI_EXT_CAP_ID_VC9:
++	case PCI_EXT_CAP_ID_MFVC:
++		return vfio_vc_cap_len(vdev, epos);
++	case PCI_EXT_CAP_ID_ACS:
++		ret = pci_read_config_byte(pdev, epos + PCI_ACS_CAP, &byte);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		if (byte & PCI_ACS_EC) {
++			int bits;
++
++			ret = pci_read_config_byte(pdev,
++						   epos + PCI_ACS_EGRESS_BITS,
++						   &byte);
++			if (ret)
++				return pcibios_err_to_errno(ret);
++
++			bits = byte ? round_up(byte, 32) : 256;
++			return 8 + (bits / 8);
++		}
++		return 8;
++
++	case PCI_EXT_CAP_ID_REBAR:
++		ret = pci_read_config_byte(pdev, epos + PCI_REBAR_CTRL, &byte);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		byte &= PCI_REBAR_CTRL_NBAR_MASK;
++		byte >>= PCI_REBAR_CTRL_NBAR_SHIFT;
++
++		return 4 + (byte * 8);
++	case PCI_EXT_CAP_ID_DPA:
++		ret = pci_read_config_byte(pdev, epos + PCI_DPA_CAP, &byte);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		byte &= PCI_DPA_CAP_SUBSTATE_MASK;
++		byte = round_up(byte + 1, 4);
++		return PCI_DPA_BASE_SIZEOF + byte;
++	case PCI_EXT_CAP_ID_TPH:
++		ret = pci_read_config_dword(pdev, epos + PCI_TPH_CAP, &dword);
++		if (ret)
++			return pcibios_err_to_errno(ret);
++
++		if ((dword & PCI_TPH_CAP_LOC_MASK) == PCI_TPH_LOC_CAP) {
++			int sts;
++
++			sts = byte & PCI_TPH_CAP_ST_MASK;
++			sts >>= PCI_TPH_CAP_ST_SHIFT;
++			return PCI_TPH_BASE_SIZEOF + round_up(sts * 2, 4);
++		}
++		return PCI_TPH_BASE_SIZEOF;
++	default:
++		printk(KERN_WARNING
++		       "%s: %s unknown length for pci ecap 0x%x@0x%x\n",
++		       dev_name(&pdev->dev), __func__, ecap, epos);
++	}
++
++	return 0;
++}
++
++static int vfio_fill_vconfig_bytes(struct vfio_pci_device *vdev,
++				   int offset, int size)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	int ret = 0;
++
++	/*
++	 * We try to read physical config space in the largest chunks
++	 * we can, assuming that all of the fields support dword access.
++	 * pci_save_state() makes this same assumption and seems to do ok.
++	 */
++	while (size) {
++		int filled;
++
++		if (size >= 4 && !(offset % 4)) {
++			u32 *dword = (u32 *)&vdev->vconfig[offset];
++			ret = pci_read_config_dword(pdev, offset, dword);
++			if (ret)
++				return ret;
++			*dword = cpu_to_le32(*dword);
++			filled = 4;
++		} else if (size >= 2 && !(offset % 2)) {
++			u16 *word = (u16 *)&vdev->vconfig[offset];
++			ret = pci_read_config_word(pdev, offset, word);
++			if (ret)
++				return ret;
++			*word = cpu_to_le16(*word);
++			filled = 2;
++		} else {
++			u8 *byte = &vdev->vconfig[offset];
++			ret = pci_read_config_byte(pdev, offset, byte);
++			if (ret)
++				return ret;
++			filled = 1;
++		}
++
++		offset += filled;
++		size -= filled;
++	}
++
++	return ret;
++}
++
++static int vfio_cap_init(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u8 *map = vdev->pci_config_map;
++	u16 status;
++	u8 pos, *prev, cap;
++	int loops, ret, caps = 0;
++
++	/* Any capabilities? */
++	ret = pci_read_config_word(pdev, PCI_STATUS, &status);
++	if (ret)
++		return ret;
++
++	if (!(status & PCI_STATUS_CAP_LIST))
++		return 0; /* Done */
++
++	ret = pci_read_config_byte(pdev, PCI_CAPABILITY_LIST, &pos);
++	if (ret)
++		return ret;
++
++	/* Mark the previous position in case we want to skip a capability */
++	prev = &vdev->vconfig[PCI_CAPABILITY_LIST];
++
++	/* We can bound our loop, capabilities are dword aligned */
++	loops = (PCI_CFG_SPACE_SIZE - PCI_STD_HEADER_SIZEOF) / PCI_CAP_SIZEOF;
++	while (pos && loops--) {
++		u8 next;
++		int i, len = 0;
++
++		ret = pci_read_config_byte(pdev, pos, &cap);
++		if (ret)
++			return ret;
++
++		ret = pci_read_config_byte(pdev,
++					   pos + PCI_CAP_LIST_NEXT, &next);
++		if (ret)
++			return ret;
++
++		if (cap <= PCI_CAP_ID_MAX) {
++			len = pci_cap_length[cap];
++			if (len == 0xFF) { /* Variable length */
++				len = vfio_cap_len(vdev, cap, pos);
++				if (len < 0)
++					return len;
++			}
++		}
++
++		if (!len) {
++			printk(KERN_INFO "%s: %s hiding cap 0x%x\n",
++			       __func__, dev_name(&pdev->dev), cap);
++			*prev = next;
++			pos = next;
++			continue;
++		}
++
++		/* Sanity check, do we overlap other capabilities? */
++		for (i = 0; i < len; i += 4) {
++			if (likely(map[(pos + i) / 4] == PCI_CAP_ID_INVALID))
++				continue;
++
++			printk(KERN_WARNING
++			       "%s: %s pci config conflict @0x%x, was cap 0x%x now cap 0x%x\n",
++			       __func__, dev_name(&pdev->dev), pos + i,
++			       map[pos + i], cap);
++		}
++
++		memset(map + (pos / 4), cap, len / 4);
++		ret = vfio_fill_vconfig_bytes(vdev, pos, len);
++		if (ret)
++			return ret;
++
++		prev = &vdev->vconfig[pos + PCI_CAP_LIST_NEXT];
++		pos = next;
++		caps++;
++	}
++
++	/* If we didn't fill any capabilities, clear the status flag */
++	if (!caps) {
++		u16 *vstatus = (u16 *)&vdev->vconfig[PCI_STATUS];
++		*vstatus &= ~cpu_to_le16(PCI_STATUS_CAP_LIST);
++	}
++
++	return 0;
++}
++
++static int vfio_ecap_init(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u8 *map = vdev->pci_config_map;
++	u16 epos;
++	u32 *prev = NULL;
++	int loops, ret, ecaps = 0;
++
++	if (!vdev->extended_caps)
++		return 0;
++
++	epos = PCI_CFG_SPACE_SIZE;
++
++	loops = (pdev->cfg_size - PCI_CFG_SPACE_SIZE) / PCI_CAP_SIZEOF;
++
++	while (loops-- && epos >= PCI_CFG_SPACE_SIZE) {
++		u32 header;
++		u16 ecap;
++		int i, len = 0;
++		bool hidden = false;
++
++		ret = pci_read_config_dword(pdev, epos, &header);
++		if (ret)
++			return ret;
++
++		ecap = PCI_EXT_CAP_ID(header);
++
++		if (ecap <= PCI_EXT_CAP_ID_MAX) {
++			len = pci_ext_cap_length[ecap];
++			if (len == 0xFF) {
++				len = vfio_ext_cap_len(vdev, ecap, epos);
++				if (len < 0)
++					return ret;
++			}
++		}
++
++		if (!len) {
++			printk(KERN_INFO "%s: %s hiding ecap 0x%x@0x%x\n",
++			       __func__, dev_name(&pdev->dev), ecap, epos);
++
++			/* If not the first in the chain, we can skip over it */
++			if (prev) {
++				epos = PCI_EXT_CAP_NEXT(header);
++				*prev &= cpu_to_le32(~((u32)0xffc << 20));
++				*prev |= cpu_to_le32((u32)epos << 20);
++				continue;
++			}
++
++			/*
++			 * Otherwise, fill in a placeholder, the direct
++			 * readfn will virtualize this automatically
++			 */
++			len = PCI_CAP_SIZEOF;
++			hidden = true;
++		}
++
++		for (i = 0; i < len; i += 4) {
++			if (likely(map[(epos + i) / 4] == PCI_CAP_ID_INVALID))
++				continue;
++
++			printk(KERN_WARNING
++			       "%s: %s pci config conflict @0x%x, was ecap 0x%x now ecap 0x%x\n",
++			       __func__, dev_name(&pdev->dev),
++			       epos + i, map[epos + i], ecap);
++		}
++
++		/*
++		 * Even though ecap is 2 bytes, we're currently a long way
++		 * from exceeding 1 byte capabilities.  If we ever make it
++		 * up to 0xFF we'll need to up this to a two-byte, byte map.
++		 */
++		BUILD_BUG_ON(PCI_EXT_CAP_ID_MAX >= PCI_CAP_ID_INVALID);
++
++		memset(map + (epos / 4), ecap, len / 4);
++		ret = vfio_fill_vconfig_bytes(vdev, epos, len);
++		if (ret)
++			return ret;
++
++		/*
++		 * If we're just using this capability to anchor the list,
++		 * hide the real ID.  Only count real ecaps.  XXX PCI spec
++		 * indicates to use cap id = 0, version = 0, next = 0 if
++		 * ecaps are absent, hope users check all the way to next.
++		 */
++		if (hidden)
++			*(u32 *)&vdev->vconfig[epos] &=
++				cpu_to_le32(((u32)0xffc << 20));
++		else
++			ecaps++;
++
++		prev = (u32 *)&vdev->vconfig[epos];
++		epos = PCI_EXT_CAP_NEXT(header);
++	}
++
++	if (!ecaps)
++		*(u32 *)&vdev->vconfig[PCI_CFG_SPACE_SIZE] = 0;
++
++	return 0;
++}
++
++/*
++ * For each device we allocate a pci_config_map that indicates the
++ * capability occupying each dword and thus the struct perm_bits we
++ * use for read and write.  We also allocate a virtualized config
++ * space which tracks reads and writes to bits that we emulate for
++ * the user.  Initial values filled from device.
++ *
++ * Using shared stuct perm_bits between all vfio-pci devices saves
++ * us from allocating cfg_size buffers for virt and write for every
++ * device.  We could remove vconfig and allocate individual buffers
++ * for each area requring emulated bits, but the array of pointers
++ * would be comparable in size (at least for standard config space).
++ */
++int vfio_config_init(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	u8 *map, *vconfig;
++	int ret;
++
++	/*
++	 * Config space, caps and ecaps are all dword aligned, so we can
++	 * use one byte per dword to record the type.
++	 */
++	map = kmalloc(pdev->cfg_size / 4, GFP_KERNEL);
++	if (!map)
++		return -ENOMEM;
++
++	vconfig = kmalloc(pdev->cfg_size, GFP_KERNEL);
++	if (!vconfig) {
++		kfree(map);
++		return -ENOMEM;
++	}
++
++	vdev->pci_config_map = map;
++	vdev->vconfig = vconfig;
++
++	memset(map, PCI_CAP_ID_BASIC, PCI_STD_HEADER_SIZEOF / 4);
++	memset(map + (PCI_STD_HEADER_SIZEOF / 4), PCI_CAP_ID_INVALID,
++	       (pdev->cfg_size - PCI_STD_HEADER_SIZEOF) / 4);
++
++	ret = vfio_fill_vconfig_bytes(vdev, 0, PCI_STD_HEADER_SIZEOF);
++	if (ret)
++		goto out;
++
++	vdev->bardirty = true;
++
++	/*
++	 * XXX can we just pci_load_saved_state/pci_restore_state?
++	 * may need to rebuild vconfig after that
++	 */
++
++	/* For restore after reset */
++	vdev->rbar[0] = *(u32 *)&vconfig[PCI_BASE_ADDRESS_0];
++	vdev->rbar[1] = *(u32 *)&vconfig[PCI_BASE_ADDRESS_1];
++	vdev->rbar[2] = *(u32 *)&vconfig[PCI_BASE_ADDRESS_2];
++	vdev->rbar[3] = *(u32 *)&vconfig[PCI_BASE_ADDRESS_3];
++	vdev->rbar[4] = *(u32 *)&vconfig[PCI_BASE_ADDRESS_4];
++	vdev->rbar[5] = *(u32 *)&vconfig[PCI_BASE_ADDRESS_5];
++	vdev->rbar[6] = *(u32 *)&vconfig[PCI_ROM_ADDRESS];
++
++	if (pdev->is_virtfn) {
++		*(u16 *)&vconfig[PCI_VENDOR_ID] = cpu_to_le16(pdev->vendor);
++		*(u16 *)&vconfig[PCI_DEVICE_ID] = cpu_to_le16(pdev->device);
++	}
++
++	ret = vfio_cap_init(vdev);
++	if (ret)
++		goto out;
++
++	ret = vfio_ecap_init(vdev);
++	if (ret)
++		goto out;
++
++	return 0;
++
++out:
++	kfree(map);
++	vdev->pci_config_map = NULL;
++	kfree(vconfig);
++	vdev->vconfig = NULL;
++	return pcibios_err_to_errno(ret);
++}
++
++void vfio_config_free(struct vfio_pci_device *vdev)
++{
++	kfree(vdev->vconfig);
++	vdev->vconfig = NULL;
++	kfree(vdev->pci_config_map);
++	vdev->pci_config_map = NULL;
++	kfree(vdev->msi_perm);
++	vdev->msi_perm = NULL;
++}
++
++ssize_t vfio_config_do_rw(struct vfio_pci_device *vdev, char __user *buf,
++			  size_t count, loff_t *ppos, bool iswrite)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	struct perm_bits *perm;
++	u32 val = 0;
++	int cap_start = 0, offset;
++	u8 cap_id;
++
++
++	if (*ppos < 0 || *ppos + count > pdev->cfg_size)
++		return -EFAULT;
++
++	cap_id = vdev->pci_config_map[*ppos / 4];
++
++	if (cap_id == PCI_CAP_ID_INVALID) {
++		if (iswrite)
++			return count; /* drop */
++
++		/*
++		 * Per PCI spec 3.0, section 6.1, reads from reserved and
++		 * unimplemented registers return 0
++		 */
++		if (copy_to_user(buf, &val, count))
++			return -EFAULT;
++
++		return count;
++	}
++
++	/*
++	 * All capabilities are minimum 4 bytes and aligned on dword
++	 * boundaries.  Since we don't support unaligned accesses, we're
++	 * only ever accessing a single capability.
++	 */
++	if (*ppos >= PCI_CFG_SPACE_SIZE) {
++		WARN_ON(cap_id > PCI_EXT_CAP_ID_MAX);
++
++		perm = &ecap_perms[cap_id];
++		cap_start = vfio_find_cap_start(vdev, *ppos);
++
++	} else {
++		WARN_ON(cap_id > PCI_CAP_ID_MAX);
++
++		perm = &cap_perms[cap_id];
++
++		if (cap_id == PCI_CAP_ID_MSI)
++			perm = vdev->msi_perm;
++
++		if (cap_id > PCI_CAP_ID_BASIC)
++			cap_start = vfio_find_cap_start(vdev, *ppos);
++	}
++
++	WARN_ON(!cap_start && cap_id != PCI_CAP_ID_BASIC);
++	WARN_ON(cap_start > *ppos);
++
++	offset = *ppos - cap_start;
++
++	if (iswrite) {
++		if (perm->writefn) {
++			if (copy_from_user(&val, buf, count))
++				return -EFAULT;
++
++			count = perm->writefn(vdev, *ppos, count,
++					      perm, offset, val);
++		}
++	} else {
++		if (perm->readfn) {
++			count = perm->readfn(vdev, *ppos, count,
++					     perm, offset, &val);
++			if (count < 0)
++				return count;
++		}
++
++		if (copy_to_user(buf, &val, count))
++			return -EFAULT;
++	}
++
++	return count;
++}
++
++ssize_t vfio_pci_config_readwrite(struct vfio_pci_device *vdev,
++				  char __user *buf, size_t count,
++				  loff_t *ppos, bool iswrite)
++{
++	size_t done = 0;
++	int ret = 0;
++	loff_t pos = *ppos;
++
++	pos &= VFIO_PCI_OFFSET_MASK;
++
++	/*
++	 * We want to both keep the access size the caller users as well as
++	 * support reading large chunks of config space in a single call.
++	 * PCI doesn't support unaligned accesses, so we can safely break
++	 * those apart.
++	 */
++	while (count) {
++		if (count >= 4 && !(pos % 4))
++			ret = vfio_config_do_rw(vdev, buf, 4, &pos, iswrite);
++		else if (count >= 2 && !(pos % 2))
++			ret = vfio_config_do_rw(vdev, buf, 2, &pos, iswrite);
++		else
++			ret = vfio_config_do_rw(vdev, buf, 1, &pos, iswrite);
++
++		if (ret < 0)
++			return ret;
++
++		count -= ret;
++		done += ret;
++		buf += ret;
++		pos += ret;
++	}
++
++	*ppos += done;
++
++	return done;
++}
+diff --git a/drivers/vfio/pci/vfio_pci_intrs.c b/drivers/vfio/pci/vfio_pci_intrs.c
+new file mode 100644
+index 0000000..a6f895c
+--- /dev/null
++++ b/drivers/vfio/pci/vfio_pci_intrs.c
+@@ -0,0 +1,725 @@
++/*
++ * VFIO PCI interrupt handling
++ *
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/device.h>
++#include <linux/interrupt.h>
++#include <linux/eventfd.h>
++#include <linux/pci.h>
++#include <linux/file.h>
++#include <linux/poll.h>
++#include <linux/vfio.h>
++#include <linux/wait.h>
++#include <linux/workqueue.h>
++
++#include "vfio_pci_private.h"
++
++/*
++ * IRQfd - generic
++ */
++struct virqfd {
++	struct vfio_pci_device	*vdev;
++	void			*data;
++	struct eventfd_ctx	*eventfd;
++	poll_table		pt;
++	wait_queue_t		wait;
++	struct work_struct	inject;
++	struct work_struct	shutdown;
++	struct virqfd		**pvirqfd;
++};
++
++static struct workqueue_struct *vfio_irqfd_cleanup_wq;
++
++int __init vfio_pci_virqfd_init(void)
++{
++	vfio_irqfd_cleanup_wq =
++		create_singlethread_workqueue("vfio-irqfd-cleanup");
++	if (!vfio_irqfd_cleanup_wq)
++		return -ENOMEM;
++
++	return 0;
++}
++
++void vfio_pci_virqfd_exit(void)
++{
++	destroy_workqueue(vfio_irqfd_cleanup_wq);
++}
++
++static void virqfd_deactivate(struct virqfd *virqfd)
++{
++	queue_work(vfio_irqfd_cleanup_wq, &virqfd->shutdown);
++}
++
++static int virqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
++{
++	struct virqfd *virqfd = container_of(wait, struct virqfd, wait);
++	unsigned long flags = (unsigned long)key;
++
++	if (flags & POLLIN)
++		/* An event has been signaled, inject an interrupt */
++		schedule_work(&virqfd->inject);
++
++	if (flags & POLLHUP)
++		/* The eventfd is closing, detach from VFIO */
++		virqfd_deactivate(virqfd);
++
++	return 0;
++}
++
++static void virqfd_ptable_queue_proc(struct file *file,
++				     wait_queue_head_t *wqh, poll_table *pt)
++{
++	struct virqfd *virqfd = container_of(pt, struct virqfd, pt);
++	add_wait_queue(wqh, &virqfd->wait);
++}
++
++static void virqfd_shutdown(struct work_struct *work)
++{
++	u64 cnt;
++	struct virqfd *virqfd = container_of(work, struct virqfd, shutdown);
++	struct virqfd **pvirqfd = virqfd->pvirqfd;
++
++	eventfd_ctx_remove_wait_queue(virqfd->eventfd, &virqfd->wait, &cnt);
++	flush_work(&virqfd->inject);
++	eventfd_ctx_put(virqfd->eventfd);
++
++	kfree(virqfd);
++	*pvirqfd = NULL;
++}
++
++static int virqfd_enable(struct vfio_pci_device *vdev,
++			 void (*inject)(struct work_struct *work),
++			 void *data, struct virqfd **pvirqfd, int fd)
++{
++	struct file *file = NULL;
++	struct eventfd_ctx *ctx = NULL;
++	struct virqfd *virqfd;
++	int ret = 0;
++	unsigned int events;
++
++	if (*pvirqfd)
++		return -EBUSY;
++
++	virqfd = kzalloc(sizeof(*virqfd), GFP_KERNEL);
++	if (!*pvirqfd)
++		return -ENOMEM;
++
++	virqfd->vdev = vdev;
++	virqfd->data = data;
++	virqfd->pvirqfd = pvirqfd;
++	*pvirqfd = virqfd;
++
++	INIT_WORK(&virqfd->inject, inject);
++	INIT_WORK(&virqfd->shutdown, virqfd_shutdown);
++
++	file = eventfd_fget(fd);
++	if (IS_ERR(file)) {
++		ret = PTR_ERR(file);
++		goto fail;
++	}
++
++	ctx = eventfd_ctx_fileget(file);
++	if (IS_ERR(ctx)) {
++		ret = PTR_ERR(ctx);
++		goto fail;
++	}
++
++	virqfd->eventfd = ctx;
++
++	/*
++	 * Install our own custom wake-up handling so we are notified via
++	 * a callback whenever someone signals the underlying eventfd.
++	 */
++	init_waitqueue_func_entry(&virqfd->wait, virqfd_wakeup);
++	init_poll_funcptr(&virqfd->pt, virqfd_ptable_queue_proc);
++
++	events = file->f_op->poll(file, &virqfd->pt);
++
++	/*
++	 * Check if there was an event already pending on the eventfd
++	 * before we registered and trigger it as if we didn't miss it.
++	 */
++	if (events & POLLIN)
++		schedule_work(&virqfd->inject);
++
++	/*
++	 * Do not drop the file until the irqfd is fully initialized,
++	 * otherwise we might race against the POLLHUP.
++	 */
++	fput(file);
++
++	return 0;
++
++fail:
++	if (ctx && !IS_ERR(ctx))
++		eventfd_ctx_put(ctx);
++
++	if (!IS_ERR(file))
++		fput(file);
++
++	kfree(virqfd);
++	*pvirqfd = NULL;
++
++	return ret;
++}
++
++static void virqfd_disable(struct virqfd *virqfd)
++{
++	if (!virqfd)
++		return;
++
++	virqfd_deactivate(virqfd);
++
++	/* Block until we know all outstanding shutdown jobs have completed. */
++	flush_workqueue(vfio_irqfd_cleanup_wq);
++}
++
++/*
++ * INTx
++ */
++static inline void vfio_send_intx_eventfd(struct vfio_pci_device *vdev)
++{
++	if (likely(is_intx(vdev) && !vdev->virq_disabled))
++		eventfd_signal(vdev->ctx[0].trigger, 1);
++}
++
++void vfio_pci_intx_mask(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++
++	spin_lock_irq(&vdev->irqlock);
++
++	/*
++	 * Masking can come from interrupt, ioctl, or config space
++	 * via INTx disable.  The latter means this can get called
++	 * even when not using intx delivery.  In this case, just
++	 * try to have the physical bit follow the virtual bit.
++	 */
++	if (unlikely(!is_intx(vdev))) {
++		if (vdev->pci_2_3)
++			pci_intx(pdev, 0);
++	} else if (!vdev->ctx[0].masked) {
++		/*
++		 * Can't use check_and_mask here because we always want to
++		 * mask, not just when something is pending.
++		 */
++		if (vdev->pci_2_3)
++			pci_intx(pdev, 0);
++		else
++			disable_irq_nosync(pdev->irq);
++
++		vdev->ctx[0].masked = true;
++	}
++
++	spin_unlock_irq(&vdev->irqlock);
++}
++
++void vfio_pci_intx_unmask(struct vfio_pci_device *vdev)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	bool signal = false;
++
++	spin_lock_irq(&vdev->irqlock);
++
++	/*
++	 * Unmasking comes from ioctl or config, so again, have the
++	 * physical bit follow the virtual even when not using INTx.
++	 */
++	if (unlikely(!is_intx(vdev))) {
++		if (vdev->pci_2_3)
++			pci_intx(pdev, 1);
++	} else if (vdev->ctx[0].masked && !vdev->virq_disabled) {
++		/*
++		 * A pending interrupt here would immediately trigger,
++		 * but we can avoid that overhead by just re-sending
++		 * the interrupt to the user.
++		 */
++		if (vdev->pci_2_3) {
++			if (!pci_check_and_unmask_intx(pdev))
++				signal = true;
++		} else
++			enable_irq(pdev->irq);
++
++		vdev->ctx[0].masked = signal;
++	}
++
++	spin_unlock_irq(&vdev->irqlock);
++
++	if (signal)
++		vfio_send_intx_eventfd(vdev);
++}
++
++static irqreturn_t vfio_intx_handler(int irq, void *dev_id)
++{
++	struct vfio_pci_device *vdev = dev_id;
++	struct pci_dev *pdev = vdev->pdev;
++	irqreturn_t ret = IRQ_NONE;
++	unsigned long flags;
++
++	spin_lock_irqsave(&vdev->irqlock, flags);
++
++	/* Non-PCI 2.3 device don't use this hard handler */
++	if (pci_check_and_mask_intx(pdev)) {
++		ret = IRQ_WAKE_THREAD;
++		vdev->ctx[0].masked = true;
++	}
++
++	spin_unlock_irqrestore(&vdev->irqlock, flags);
++
++	return ret;
++}
++
++static irqreturn_t vfio_intx_thread(int irq, void *dev_id)
++{
++	struct vfio_pci_device *vdev = dev_id;
++	int ret = IRQ_HANDLED;
++
++	if (unlikely(!vdev->pci_2_3)) {
++		spin_lock_irq(&vdev->irqlock);
++		if (!vdev->ctx[0].masked) {
++			disable_irq_nosync(vdev->pdev->irq);
++			vdev->ctx[0].masked = true;
++		} else
++			ret = IRQ_NONE;
++		spin_unlock_irq(&vdev->irqlock);
++	}
++
++	if (ret == IRQ_HANDLED)
++		vfio_send_intx_eventfd(vdev);
++
++	return ret;
++}
++
++static int vfio_intx_enable(struct vfio_pci_device *vdev)
++{
++	if (!is_irq_none(vdev))
++		return -EINVAL;
++
++	if (!vdev->pdev->irq)
++		return -ENODEV;
++
++	vdev->ctx = kzalloc(sizeof(struct vfio_pci_irq_ctx), GFP_KERNEL);
++	if (!vdev->ctx)
++		return -ENOMEM;
++
++	vdev->num_ctx = 1;
++	vdev->irq_type = VFIO_PCI_INTX_IRQ_INDEX;
++
++	return 0;
++}
++
++static int vfio_intx_set_signal(struct vfio_pci_device *vdev, int fd)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	irq_handler_t handler = vfio_intx_handler;
++	unsigned long irqflags = IRQF_SHARED;
++	int ret;
++
++	if (vdev->ctx[0].trigger) {
++		free_irq(pdev->irq, vdev);
++		kfree(vdev->ctx[0].name);
++		eventfd_ctx_put(vdev->ctx[0].trigger);
++		vdev->ctx[0].trigger = NULL;
++	}
++
++	if (fd >= 0) {
++		vdev->ctx[0].name = kasprintf(GFP_KERNEL, "vfio-intx(%s)",
++					    pci_name(pdev));
++		if (!vdev->ctx[0].name)
++			return -ENOMEM;
++
++		vdev->ctx[0].trigger = eventfd_ctx_fdget(fd);
++		if (!vdev->ctx[0].trigger) {
++			kfree(vdev->ctx[0].name);
++			return -EINVAL;
++		}
++
++		if (!vdev->pci_2_3) {
++			handler = NULL;
++			irqflags = IRQF_ONESHOT;
++		}
++
++		ret = request_threaded_irq(pdev->irq, handler, vfio_intx_thread,
++					   irqflags, vdev->ctx[0].name, vdev);
 +		if (ret) {
-+			__vfio_dma_do_unmap(iommu, start, i, prot);
++			eventfd_ctx_put(vdev->ctx[0].trigger);
++			kfree(vdev->ctx[0].name);
 +			return ret;
 +		}
 +
 +		/*
-+		 * Only add actual locked pages to accounting
-+		 * XXX We're effectively marking a page locked for every
-+		 * IOVA page even though it's possible the user could be
-+		 * backing multiple IOVAs with the same vaddr.  This over-
-+		 * penalizes the user process, but we currently have no
-+		 * easy way to do this properly.
++		 * INTx disable will stick across the new irq setup,
++		 * disable_irq won't.
 +		 */
-+		if (!is_invalid_reserved_pfn(pfn))
-+			locked++;
++		if (!vdev->pci_2_3)
++			if (vdev->ctx[0].masked || vdev->virq_disabled)
++				disable_irq_nosync(pdev->irq);
++	}
++	return 0;
++}
 +
-+		ret = iommu_map(iommu->domain, iova,
-+				(phys_addr_t)pfn << PAGE_SHIFT,
-+				PAGE_SIZE, prot);
++static void vfio_intx_disable(struct vfio_pci_device *vdev)
++{
++	vfio_intx_set_signal(vdev, -1);
++	virqfd_disable(vdev->ctx[0].unmask);
++	virqfd_disable(vdev->ctx[0].mask);
++	vdev->irq_type = VFIO_PCI_NUM_IRQS;
++	vdev->num_ctx = 0;
++	kfree(vdev->ctx);
++}
++
++static void vfio_intx_unmask_inject(struct work_struct *work)
++{
++	struct virqfd *virqfd = container_of(work, struct virqfd, inject);
++	vfio_pci_intx_unmask(virqfd->vdev);
++}
++
++/*
++ * MSI/MSI-X
++ */
++static irqreturn_t vfio_msihandler(int irq, void *arg)
++{
++	struct eventfd_ctx *trigger = arg;
++
++	eventfd_signal(trigger, 1);
++	return IRQ_HANDLED;
++}
++
++static int vfio_msi_enable(struct vfio_pci_device *vdev, int nvec, bool msix)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	int ret;
++
++	if (!is_irq_none(vdev))
++		return -EINVAL;
++
++	vdev->ctx = kzalloc(nvec * sizeof(struct vfio_pci_irq_ctx), GFP_KERNEL);
++	if (!vdev->ctx)
++		return -ENOMEM;
++
++	if (msix) {
++		int i;
++
++		vdev->msix = kzalloc(nvec * sizeof(struct msix_entry),
++				     GFP_KERNEL);
++		if (!vdev->msix) {
++			kfree(vdev->ctx);
++			return -ENOMEM;
++		}
++
++		for (i = 0; i < nvec; i++)
++			vdev->msix[i].entry = i;
++
++		ret = pci_enable_msix(pdev, vdev->msix, nvec);
 +		if (ret) {
-+			/* Back out mappings on error */
-+			put_pfn(pfn, prot);
-+			__vfio_dma_do_unmap(iommu, start, i, prot);
++			kfree(vdev->msix);
++			kfree(vdev->ctx);
++			return ret;
++		}
++	} else {
++		ret = pci_enable_msi_block(pdev, nvec);
++		if (ret) {
++			kfree(vdev->ctx);
 +			return ret;
 +		}
 +	}
-+	vfio_lock_acct(locked);
++
++	vdev->num_ctx = nvec;
++	vdev->irq_type = msix ? VFIO_PCI_MSIX_IRQ_INDEX :
++				VFIO_PCI_MSI_IRQ_INDEX;
++
++	if (!msix) {
++		/*
++		 * Compute the virtual hardware field for max msi vectors -
++		 * it is the log base 2 of the number of vectors.
++		 */
++		vdev->msi_qmax = fls(nvec * 2 - 1) - 1;
++	}
++
 +	return 0;
 +}
 +
-+static inline bool ranges_overlap(dma_addr_t start1, size_t size1,
-+				  dma_addr_t start2, size_t size2)
++static int vfio_msi_set_vector_signal(struct vfio_pci_device *vdev,
++				      int vector, int fd, bool msix)
 +{
-+	if (start1 < start2)
-+		return (start2 - start1 < size1);
-+	else if (start2 < start1)
-+		return (start1 - start2 < size2);
-+	return (size1 > 0 && size2 > 0);
-+}
++	struct pci_dev *pdev = vdev->pdev;
++	int irq = msix ? vdev->msix[vector].vector : pdev->irq + vector;
++	char *name = msix ? "vfio-msix" : "vfio-msi";
 +
-+static struct vfio_dma *vfio_find_dma(struct vfio_iommu *iommu,
-+						dma_addr_t start, size_t size)
-+{
-+	struct vfio_dma *dma;
-+
-+	list_for_each_entry(dma, &iommu->dma_list, next) {
-+		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
-+				   start, size))
-+			return dma;
-+	}
-+	return NULL;
-+}
-+
-+static long vfio_remove_dma_overlap(struct vfio_iommu *iommu, dma_addr_t start,
-+				    size_t size, struct vfio_dma *dma)
-+{
-+	struct vfio_dma *split;
-+	long npage_lo, npage_hi;
-+
-+	/* Existing dma region is completely covered, unmap all */
-+	if (start <= dma->iova &&
-+	    start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
-+		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
-+		list_del(&dma->next);
-+		npage_lo = dma->npage;
-+		kfree(dma);
-+		return npage_lo;
-+	}
-+
-+	/* Overlap low address of existing range */
-+	if (start <= dma->iova) {
-+		size_t overlap;
-+
-+		overlap = start + size - dma->iova;
-+		npage_lo = overlap >> PAGE_SHIFT;
-+
-+		vfio_dma_unmap(iommu, dma->iova, npage_lo, dma->prot);
-+		dma->iova += overlap;
-+		dma->vaddr += overlap;
-+		dma->npage -= npage_lo;
-+		return npage_lo;
-+	}
-+
-+	/* Overlap high address of existing range */
-+	if (start + size >= dma->iova + NPAGE_TO_SIZE(dma->npage)) {
-+		size_t overlap;
-+
-+		overlap = dma->iova + NPAGE_TO_SIZE(dma->npage) - start;
-+		npage_hi = overlap >> PAGE_SHIFT;
-+
-+		vfio_dma_unmap(iommu, start, npage_hi, dma->prot);
-+		dma->npage -= npage_hi;
-+		return npage_hi;
-+	}
-+
-+	/* Split existing */
-+	npage_lo = (start - dma->iova) >> PAGE_SHIFT;
-+	npage_hi = dma->npage - (size >> PAGE_SHIFT) - npage_lo;
-+
-+	split = kzalloc(sizeof *split, GFP_KERNEL);
-+	if (!split)
-+		return -ENOMEM;
-+
-+	vfio_dma_unmap(iommu, start, size >> PAGE_SHIFT, dma->prot);
-+
-+	dma->npage = npage_lo;
-+
-+	split->npage = npage_hi;
-+	split->iova = start + size;
-+	split->vaddr = dma->vaddr + NPAGE_TO_SIZE(npage_lo) + size;
-+	split->prot = dma->prot;
-+	list_add(&split->next, &iommu->dma_list);
-+	return size >> PAGE_SHIFT;
-+}
-+
-+static int vfio_dma_do_unmap(struct vfio_iommu *iommu,
-+			     struct vfio_iommu_type1_dma_unmap *unmap)
-+{
-+	long ret = 0, npage = unmap->size >> PAGE_SHIFT;
-+	struct vfio_dma *dma, *tmp;
-+	uint64_t mask;
-+
-+	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
-+
-+	if (unmap->iova & mask)
-+		return -EINVAL;
-+	if (unmap->size & mask)
++	if (vector >= vdev->num_ctx)
 +		return -EINVAL;
 +
-+	/* XXX We still break these down into PAGE_SIZE */
-+	WARN_ON(mask & PAGE_MASK);
-+
-+	mutex_lock(&iommu->lock);
-+
-+	list_for_each_entry_safe(dma, tmp, &iommu->dma_list, next) {
-+		if (ranges_overlap(dma->iova, NPAGE_TO_SIZE(dma->npage),
-+				   unmap->iova, unmap->size)) {
-+			ret = vfio_remove_dma_overlap(iommu, unmap->iova,
-+						      unmap->size, dma);
-+			if (ret > 0)
-+				npage -= ret;
-+			if (ret < 0 || npage == 0)
-+				break;
-+		}
-+	}
-+	mutex_unlock(&iommu->lock);
-+	return ret > 0 ? 0 : (int)ret;
-+}
-+
-+static int vfio_dma_do_map(struct vfio_iommu *iommu,
-+			   struct vfio_iommu_type1_dma_map *map)
-+{
-+	struct vfio_dma *dma, *pdma = NULL;
-+	dma_addr_t iova = map->iova;
-+	unsigned long locked, lock_limit, vaddr = map->vaddr;
-+	size_t size = map->size;
-+	int ret = 0, prot = 0;
-+	uint64_t mask;
-+	long npage;
-+
-+	mask = ((uint64_t)1 << __ffs(iommu->domain->ops->pgsize_bitmap)) - 1;
-+
-+	/* READ/WRITE from device perspective */
-+	if (map->flags & VFIO_DMA_MAP_FLAG_WRITE)
-+		prot |= IOMMU_WRITE;
-+	if (map->flags & VFIO_DMA_MAP_FLAG_READ)
-+		prot |= IOMMU_READ;
-+
-+	if (!prot)
-+		return -EINVAL; /* No READ/WRITE? */
-+
-+	if (vaddr & mask)
-+		return -EINVAL;
-+	if (iova & mask)
-+		return -EINVAL;
-+	if (size & mask)
-+		return -EINVAL;
-+
-+	/* XXX We still break these down into PAGE_SIZE */
-+	WARN_ON(mask & PAGE_MASK);
-+
-+	/* Don't allow IOVA wrap */
-+	if (iova + size && iova + size < iova)
-+		return -EINVAL;
-+
-+	/* Don't allow virtual address wrap */
-+	if (vaddr + size && vaddr + size < vaddr)
-+		return -EINVAL;
-+
-+	npage = size >> PAGE_SHIFT;
-+	if (!npage)
-+		return -EINVAL;
-+
-+	mutex_lock(&iommu->lock);
-+
-+	if (vfio_find_dma(iommu, iova, size)) {
-+		ret = -EBUSY;
-+		goto out_lock;
++	if (vdev->ctx[vector].trigger) {
++		free_irq(irq, vdev->ctx[vector].trigger);
++		kfree(vdev->ctx[vector].name);
++		eventfd_ctx_put(vdev->ctx[vector].trigger);
++		vdev->ctx[vector].trigger = NULL;
 +	}
 +
-+	/* account for locked pages */
-+	locked = current->mm->locked_vm + npage;
-+	lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
-+	if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
-+		printk(KERN_WARNING "%s: RLIMIT_MEMLOCK (%ld) exceeded\n",
-+			__func__, rlimit(RLIMIT_MEMLOCK));
-+		ret = -ENOMEM;
-+		goto out_lock;
-+	}
++	if (fd >= 0) {
++		struct eventfd_ctx *trigger;
++		int ret;
 +
-+	ret = __vfio_dma_map(iommu, iova, vaddr, npage, prot);
-+	if (ret)
-+		goto out_lock;
++		vdev->ctx[vector].name = kasprintf(GFP_KERNEL, "%s[%d](%s)",
++						   name, vector,
++						   pci_name(pdev));
++		if (!vdev->ctx[vector].name)
++			return -ENOMEM;
 +
-+	/* Check if we abut a region below - nothing below 0 */
-+	if (iova) {
-+		dma = vfio_find_dma(iommu, iova - 1, 1);
-+		if (dma && dma->prot == prot &&
-+		    dma->vaddr + NPAGE_TO_SIZE(dma->npage) == vaddr) {
-+
-+			dma->npage += npage;
-+			iova = dma->iova;
-+			vaddr = dma->vaddr;
-+			npage = dma->npage;
-+			size = NPAGE_TO_SIZE(npage);
-+
-+			pdma = dma;
-+		}
-+	}
-+
-+	/* Check if we abut a region above - nothing above ~0 + 1 */
-+	if (iova + size) {
-+		dma = vfio_find_dma(iommu, iova + size, 1);
-+		if (dma && dma->prot == prot &&
-+		    dma->vaddr == vaddr + size) {
-+
-+			dma->npage += npage;
-+			dma->iova = iova;
-+			dma->vaddr = vaddr;
-+
-+			/*
-+			 * If merged above and below, remove previously
-+			 * merged entry.  New entry covers it.
-+			 */
-+			if (pdma) {
-+				list_del(&pdma->next);
-+				kfree(pdma);
-+			}
-+			pdma = dma;
-+		}
-+	}
-+
-+	/* Isolated, new region */
-+	if (!pdma) {
-+		dma = kzalloc(sizeof *dma, GFP_KERNEL);
-+		if (!dma) {
-+			ret = -ENOMEM;
-+			vfio_dma_unmap(iommu, iova, npage, prot);
-+			goto out_lock;
++		trigger = eventfd_ctx_fdget(fd);
++		if (IS_ERR(trigger)) {
++			kfree(vdev->ctx[vector].name);
++			return PTR_ERR(trigger);
 +		}
 +
-+		dma->npage = npage;
-+		dma->iova = iova;
-+		dma->vaddr = vaddr;
-+		dma->prot = prot;
-+		list_add(&dma->next, &iommu->dma_list);
++		ret = request_threaded_irq(irq, NULL, vfio_msihandler,
++					   IRQF_ONESHOT,
++					   vdev->ctx[vector].name, trigger);
++		if (ret) {
++			eventfd_ctx_put(trigger);
++			kfree(vdev->ctx[vector].name);
++			return ret;
++		}
++
++		vdev->ctx[vector].trigger = trigger;
 +	}
 +
-+out_lock:
-+	mutex_unlock(&iommu->lock);
++	return 0;
++}
++
++static int vfio_msi_set_block(struct vfio_pci_device *vdev, int start,
++			      int count, int32_t *fds, bool msix)
++{
++	int i, j, ret = 0;
++
++	if (start + count > vdev->num_ctx)
++		return -EINVAL;
++
++	for (i = 0, j = start; i < count && !ret; i++, j++) {
++		int fd = fds ? fds[i] : -1;
++		ret = vfio_msi_set_vector_signal(vdev, j, fd, msix);
++	}
++
++	if (ret) {
++		for (--j; j >= start; j--)
++			vfio_msi_set_vector_signal(vdev, j, -1, msix);
++	}
++
 +	return ret;
 +}
 +
-+static int vfio_iommu_type1_attach_group(void *iommu_data,
-+					 struct iommu_group *iommu_group)
++static void vfio_msi_disable(struct vfio_pci_device *vdev, bool msix)
 +{
-+	struct vfio_iommu *iommu = iommu_data;
-+	struct vfio_group *group, *tmp;
-+	int ret;
++	struct pci_dev *pdev = vdev->pdev;
++	int i;
 +
-+	group = kzalloc(sizeof(*group), GFP_KERNEL);
-+	if (!group)
-+		return -ENOMEM;
++	vfio_msi_set_block(vdev, 0, vdev->num_ctx, NULL, msix);
 +
-+	mutex_lock(&iommu->lock);
-+
-+	list_for_each_entry(tmp, &iommu->group_list, next) {
-+		if (tmp->iommu_group == iommu_group) {
-+			mutex_unlock(&iommu->lock);
-+			kfree(group);
-+			return -EINVAL;
-+		}
++	for (i = 0; i < vdev->num_ctx; i++) {
++		virqfd_disable(vdev->ctx[i].unmask);
++		virqfd_disable(vdev->ctx[i].mask);
 +	}
 +
-+	/*
-+	 * TODO: Domain have capabilities that might change as we add
-+	 * groups (see iommu->cache, currently never set).  Check for
-+	 * them and potentially disallow groups to be attached when it
-+	 * would change capabilities (ugh).
-+	 */
-+	ret = iommu_attach_group(iommu->domain, iommu_group);
-+	if (ret) {
-+		mutex_unlock(&iommu->lock);
-+		kfree(group);
-+		return ret;
++	if (msix) {
++		pci_disable_msix(vdev->pdev);
++		kfree(vdev->msix);
++	} else
++		pci_disable_msi(pdev);
++
++	vdev->irq_type = VFIO_PCI_NUM_IRQS;
++	vdev->num_ctx = 0;
++	kfree(vdev->ctx);
++}
++
++/*
++ * IOCTL support
++ */
++static int vfio_pci_set_intx_unmask(struct vfio_pci_device *vdev,
++				    int index, int start, int count,
++				    uint32_t flags, void *data)
++{
++	if (!is_intx(vdev) || start != 0 || count != 1)
++		return -EINVAL;
++
++	if (flags & VFIO_IRQ_SET_DATA_NONE) {
++		vfio_pci_intx_unmask(vdev);
++	} else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
++		uint8_t unmask = *(uint8_t *)data;
++		if (unmask)
++			vfio_pci_intx_unmask(vdev);
++	} else if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
++		int32_t fd = *(int32_t *)data;
++		if (fd >= 0)
++			return virqfd_enable(vdev, vfio_intx_unmask_inject,
++					     NULL, &vdev->ctx[0].unmask, fd);
++
++		virqfd_disable(vdev->ctx[0].unmask);
 +	}
-+
-+	group->iommu_group = iommu_group;
-+	list_add(&group->next, &iommu->group_list);
-+
-+	mutex_unlock(&iommu->lock);
 +
 +	return 0;
 +}
 +
-+static void vfio_iommu_type1_detach_group(void *iommu_data,
-+					  struct iommu_group *iommu_group)
++static int vfio_pci_set_intx_mask(struct vfio_pci_device *vdev,
++				  int index, int start, int count,
++				  uint32_t flags, void *data)
 +{
-+	struct vfio_iommu *iommu = iommu_data;
-+	struct vfio_group *group;
++	if (!is_intx(vdev) || start != 0 || count != 1)
++		return -EINVAL;
 +
-+	mutex_lock(&iommu->lock);
++	if (flags & VFIO_IRQ_SET_DATA_NONE) {
++		vfio_pci_intx_mask(vdev);
++	} else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
++		uint8_t mask = *(uint8_t *)data;
++		if (mask)
++			vfio_pci_intx_mask(vdev);
++	} else if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
++		return -ENOTTY; /* XXX implement me */
++	}
 +
-+	list_for_each_entry(group, &iommu->group_list, next) {
-+		if (group->iommu_group == iommu_group) {
-+			iommu_detach_group(iommu->domain, iommu_group);
-+			list_del(&group->next);
-+			kfree(group);
++	return 0;
++}
++
++static int vfio_pci_set_intx_trigger(struct vfio_pci_device *vdev,
++				     int index, int start, int count,
++				     uint32_t flags, void *data)
++{
++	if (is_intx(vdev) && !count && (flags & VFIO_IRQ_SET_DATA_NONE)) {
++		vfio_intx_disable(vdev);
++		return 0;
++	}
++
++	if (!(is_intx(vdev) || is_irq_none(vdev)) || start != 0 || count != 1)
++		return -EINVAL;
++
++	if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
++		int32_t fd = *(int32_t *)data;
++		int ret;
++
++		if (is_intx(vdev))
++			return vfio_intx_set_signal(vdev, fd);
++
++		ret = vfio_intx_enable(vdev);
++		if (ret)
++			return ret;
++
++		ret = vfio_intx_set_signal(vdev, fd);
++		if (ret)
++			vfio_intx_disable(vdev);
++
++		return ret;
++	}
++
++	if (!is_intx(vdev))
++		return -EINVAL;
++
++	if (flags & VFIO_IRQ_SET_DATA_NONE) {
++		vfio_send_intx_eventfd(vdev);
++	} else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
++		uint8_t trigger = *(uint8_t *)data;
++		if (trigger)
++			vfio_send_intx_eventfd(vdev);
++	}
++	return 0;
++}
++
++static int vfio_pci_set_msi_trigger(struct vfio_pci_device *vdev,
++				    int index, int start, int count,
++				    uint32_t flags, void *data)
++{
++	int i;
++	bool msix = (index == VFIO_PCI_MSIX_IRQ_INDEX) ? true : false;
++
++	if (irq_is(vdev, index) && !count && (flags & VFIO_IRQ_SET_DATA_NONE)) {
++		vfio_msi_disable(vdev, msix);
++		return 0;
++	}
++
++	if (!(irq_is(vdev, index) || is_irq_none(vdev)))
++		return -EINVAL;
++
++	if (flags & VFIO_IRQ_SET_DATA_EVENTFD) {
++		int32_t *fds = data;
++		int ret;
++
++		if (vdev->irq_type == index)
++			return vfio_msi_set_block(vdev, start, count,
++						  fds, msix);
++
++		ret = vfio_msi_enable(vdev, start + count, msix);
++		if (ret)
++			return ret;
++
++		ret = vfio_msi_set_block(vdev, start, count, fds, msix);
++		if (ret)
++			vfio_msi_disable(vdev, msix);
++
++		return ret;
++	}
++
++	if (!irq_is(vdev, index) || start + count > vdev->num_ctx)
++		return -EINVAL;
++
++	for (i = start; i < start + count; i++) {
++		if (!vdev->ctx[i].trigger)
++			continue;
++		if (flags & VFIO_IRQ_SET_DATA_NONE) {
++			eventfd_signal(vdev->ctx[i].trigger, 1);
++		} else if (flags & VFIO_IRQ_SET_DATA_BOOL) {
++			uint8_t *bools = data;
++			if (bools[i - start])
++				eventfd_signal(vdev->ctx[i].trigger, 1);
++		}
++	}
++	return 0;
++}
++
++int vfio_pci_set_irqs_ioctl(struct vfio_pci_device *vdev, uint32_t flags,
++			    int index, int start, int count, void *data)
++{
++	int (*func)(struct vfio_pci_device *vdev, int index, int start,
++		    int count, uint32_t flags, void *data) = NULL;
++
++	switch (index) {
++	case VFIO_PCI_INTX_IRQ_INDEX:
++		switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
++		case VFIO_IRQ_SET_ACTION_MASK:
++			func = vfio_pci_set_intx_mask;
++			break;
++		case VFIO_IRQ_SET_ACTION_UNMASK:
++			func = vfio_pci_set_intx_unmask;
++			break;
++		case VFIO_IRQ_SET_ACTION_TRIGGER:
++			func = vfio_pci_set_intx_trigger;
 +			break;
 +		}
-+	}
-+
-+	mutex_unlock(&iommu->lock);
-+}
-+
-+static void *vfio_iommu_type1_open(unsigned long arg)
-+{
-+	struct vfio_iommu *iommu;
-+
-+	if (arg != VFIO_TYPE1_IOMMU)
-+		return ERR_PTR(-EINVAL);
-+
-+	iommu = kzalloc(sizeof(*iommu), GFP_KERNEL);
-+	if (!iommu)
-+		return ERR_PTR(-ENOMEM);
-+
-+	INIT_LIST_HEAD(&iommu->group_list);
-+	INIT_LIST_HEAD(&iommu->dma_list);
-+	mutex_init(&iommu->lock);
-+
-+	/*
-+	 * Wish we didn't have to know about bus_type here.
-+	 */
-+	iommu->domain = iommu_domain_alloc(&pci_bus_type);
-+	if (!iommu->domain) {
-+		kfree(iommu);
-+		return ERR_PTR(-EIO);
-+	}
-+
-+	/*
-+	 * Wish we could specify required capabilities rather than create
-+	 * a domain, see what comes out and hope it doesn't change along
-+	 * the way.  Fortunately we know interrupt remapping is global for
-+	 * our iommus.
-+	 */
-+	if (!allow_unsafe_interrupts &&
-+	    !iommu_domain_has_cap(iommu->domain, IOMMU_CAP_INTR_REMAP)) {
-+		printk(KERN_WARNING
-+		       "%s: No interrupt remapping support.  Use the module param \"allow_unsafe_interrupts\" to enable VFIO IOMMU support on this platform\n",
-+		       __func__);
-+		iommu_domain_free(iommu->domain);
-+		kfree(iommu);
-+		return ERR_PTR(-EPERM);
-+	}
-+
-+	return iommu;
-+}
-+
-+static void vfio_iommu_type1_release(void *iommu_data)
-+{
-+	struct vfio_iommu *iommu = iommu_data;
-+	struct vfio_group *group, *group_tmp;
-+	struct vfio_dma *dma, *dma_tmp;
-+
-+	list_for_each_entry_safe(group, group_tmp, &iommu->group_list, next) {
-+		iommu_detach_group(iommu->domain, group->iommu_group);
-+		list_del(&group->next);
-+		kfree(group);
-+	}
-+
-+	list_for_each_entry_safe(dma, dma_tmp, &iommu->dma_list, next) {
-+		vfio_dma_unmap(iommu, dma->iova, dma->npage, dma->prot);
-+		list_del(&dma->next);
-+		kfree(dma);
-+	}
-+
-+	iommu_domain_free(iommu->domain);
-+	iommu->domain = NULL;
-+	kfree(iommu);
-+}
-+
-+static long vfio_iommu_type1_ioctl(void *iommu_data,
-+				   unsigned int cmd, unsigned long arg)
-+{
-+	struct vfio_iommu *iommu = iommu_data;
-+	unsigned long minsz;
-+
-+	if (cmd == VFIO_CHECK_EXTENSION) {
-+		switch (arg) {
-+		case VFIO_TYPE1_IOMMU:
-+			return 1;
-+		default:
-+			return 0;
++		break;
++	case VFIO_PCI_MSI_IRQ_INDEX:
++	case VFIO_PCI_MSIX_IRQ_INDEX:
++		switch (flags & VFIO_IRQ_SET_ACTION_TYPE_MASK) {
++		case VFIO_IRQ_SET_ACTION_MASK:
++		case VFIO_IRQ_SET_ACTION_UNMASK:
++			/* XXX Need masking support exported */
++			break;
++		case VFIO_IRQ_SET_ACTION_TRIGGER:
++			func = vfio_pci_set_msi_trigger;
++			break;
 +		}
-+	} else if (cmd == VFIO_IOMMU_GET_INFO) {
-+		struct vfio_iommu_type1_info info;
-+
-+		minsz = offsetofend(struct vfio_iommu_type1_info, iova_pgsizes);
-+
-+		if (copy_from_user(&info, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (info.argsz < minsz)
-+			return -EINVAL;
-+
-+		info.flags = 0;
-+
-+		info.iova_pgsizes = iommu->domain->ops->pgsize_bitmap;
-+
-+		return copy_to_user((void __user *)arg, &info, minsz);
-+
-+	} else if (cmd == VFIO_IOMMU_MAP_DMA) {
-+		struct vfio_iommu_type1_dma_map map;
-+		uint32_t mask = VFIO_DMA_MAP_FLAG_READ |
-+				VFIO_DMA_MAP_FLAG_WRITE;
-+
-+		minsz = offsetofend(struct vfio_iommu_type1_dma_map, size);
-+
-+		if (copy_from_user(&map, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (map.argsz < minsz || map.flags & ~mask)
-+			return -EINVAL;
-+
-+		return vfio_dma_do_map(iommu, &map);
-+
-+	} else if (cmd == VFIO_IOMMU_UNMAP_DMA) {
-+		struct vfio_iommu_type1_dma_unmap unmap;
-+
-+		minsz = offsetofend(struct vfio_iommu_type1_dma_unmap, size);
-+
-+		if (copy_from_user(&unmap, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (unmap.argsz < minsz || unmap.flags)
-+			return -EINVAL;
-+
-+		return vfio_dma_do_unmap(iommu, &unmap);
++		break;
 +	}
 +
-+	return -ENOTTY;
-+}
++	if (!func)
++		return -ENOTTY;
 +
-+const struct vfio_iommu_driver_ops vfio_iommu_driver_ops_type1 = {
-+	.name		= "vfio-iommu-type1",
-+	.owner		= THIS_MODULE,
-+	.open		= vfio_iommu_type1_open,
-+	.release	= vfio_iommu_type1_release,
-+	.ioctl		= vfio_iommu_type1_ioctl,
-+	.attach_group	= vfio_iommu_type1_attach_group,
-+	.detach_group	= vfio_iommu_type1_detach_group,
++	return func(vdev, index, start, count, flags, data);
++}
+diff --git a/drivers/vfio/pci/vfio_pci_private.h b/drivers/vfio/pci/vfio_pci_private.h
+new file mode 100644
+index 0000000..a4a3678
+--- /dev/null
++++ b/drivers/vfio/pci/vfio_pci_private.h
+@@ -0,0 +1,91 @@
++/*
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/mutex.h>
++#include <linux/pci.h>
++
++#ifndef VFIO_PCI_PRIVATE_H
++#define VFIO_PCI_PRIVATE_H
++
++#define VFIO_PCI_OFFSET_SHIFT   40
++
++#define VFIO_PCI_OFFSET_TO_INDEX(off)	(off >> VFIO_PCI_OFFSET_SHIFT)
++#define VFIO_PCI_INDEX_TO_OFFSET(index)	((u64)(index) << VFIO_PCI_OFFSET_SHIFT)
++#define VFIO_PCI_OFFSET_MASK	(((u64)(1) << VFIO_PCI_OFFSET_SHIFT) - 1)
++
++struct vfio_pci_irq_ctx {
++	struct eventfd_ctx	*trigger;
++	struct virqfd		*unmask;
++	struct virqfd		*mask;
++	char			*name;
++	bool			masked;
 +};
 +
-+static int __init vfio_iommu_type1_init(void)
-+{
-+	if (!iommu_present(&pci_bus_type))
-+		return -ENODEV;
++struct vfio_pci_device {
++	struct pci_dev		*pdev;
++	void __iomem		*barmap[PCI_STD_RESOURCE_END + 1];
++	u8			*pci_config_map;
++	u8			*vconfig;
++	struct perm_bits	*msi_perm;
++	spinlock_t		irqlock;
++	struct mutex		igate;
++	struct msix_entry	*msix;
++	struct vfio_pci_irq_ctx	*ctx;
++	int			num_ctx;
++	int			irq_type;
++	u8			msi_qmax;
++	u8			msix_bar;
++	u16			msix_size;
++	u32			msix_offset;
++	u32			rbar[7];
++	bool			pci_2_3;
++	bool			virq_disabled;
++	bool			reset_works;
++	bool			extended_caps;
++	bool			bardirty;
++	struct pci_saved_state	*pci_saved_state;
++	atomic_t		refcnt;
++};
 +
-+	return vfio_register_iommu_driver(&vfio_iommu_driver_ops_type1);
++#define is_intx(vdev) (vdev->irq_type == VFIO_PCI_INTX_IRQ_INDEX)
++#define is_msi(vdev) (vdev->irq_type == VFIO_PCI_MSI_IRQ_INDEX)
++#define is_msix(vdev) (vdev->irq_type == VFIO_PCI_MSIX_IRQ_INDEX)
++#define is_irq_none(vdev) (!(is_intx(vdev) || is_msi(vdev) || is_msix(vdev)))
++#define irq_is(vdev, type) (vdev->irq_type == type)
++
++extern void vfio_pci_intx_mask(struct vfio_pci_device *vdev);
++extern void vfio_pci_intx_unmask(struct vfio_pci_device *vdev);
++
++extern int vfio_pci_set_irqs_ioctl(struct vfio_pci_device *vdev,
++				   uint32_t flags, int index, int start,
++				   int count, void *data);
++
++extern ssize_t vfio_pci_config_readwrite(struct vfio_pci_device *vdev,
++					 char __user *buf, size_t count,
++					 loff_t *ppos, bool iswrite);
++extern ssize_t vfio_pci_mem_readwrite(struct vfio_pci_device *vdev,
++				      char __user *buf, size_t count,
++				      loff_t *ppos, bool iswrite);
++extern ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev,
++				     char __user *buf, size_t count,
++				     loff_t *ppos, bool iswrite);
++
++extern int vfio_pci_init_perm_bits(void);
++extern void vfio_pci_uninit_perm_bits(void);
++
++extern int vfio_pci_virqfd_init(void);
++extern void vfio_pci_virqfd_exit(void);
++
++extern int vfio_config_init(struct vfio_pci_device *vdev);
++extern void vfio_config_free(struct vfio_pci_device *vdev);
++#endif /* VFIO_PCI_PRIVATE_H */
+diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
+new file mode 100644
+index 0000000..883cd33
+--- /dev/null
++++ b/drivers/vfio/pci/vfio_pci_rdwr.c
+@@ -0,0 +1,269 @@
++/*
++ * VFIO PCI I/O Port & MMIO access
++ *
++ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
++ *     Author: Alex Williamson <alex.williamson@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Derived from original vfio:
++ * Copyright 2010 Cisco Systems, Inc.  All rights reserved.
++ * Author: Tom Lyon, pugs@cisco.com
++ */
++
++#include <linux/fs.h>
++#include <linux/pci.h>
++#include <linux/uaccess.h>
++#include <linux/io.h>
++
++#include "vfio_pci_private.h"
++
++/* I/O Port BAR access */
++ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev, char __user *buf,
++			      size_t count, loff_t *ppos, bool iswrite)
++{
++	struct pci_dev *pdev = vdev->pdev;
++	loff_t pos = *ppos & VFIO_PCI_OFFSET_MASK;
++	int bar = VFIO_PCI_OFFSET_TO_INDEX(*ppos);
++	void __iomem *io;
++	size_t done = 0;
++
++	if (!pci_resource_start(pdev, bar))
++		return -EINVAL;
++
++	if (pos + count > pci_resource_len(pdev, bar))
++		return -EINVAL;
++
++	if (!vdev->barmap[bar]) {
++		int ret;
++
++		ret = pci_request_selected_regions(pdev, 1 << bar, "vfio");
++		if (ret)
++			return ret;
++
++		vdev->barmap[bar] = pci_iomap(pdev, bar, 0);
++
++		if (!vdev->barmap[bar]) {
++			pci_release_selected_regions(pdev, 1 << bar);
++			return -EINVAL;
++		}
++	}
++
++	io = vdev->barmap[bar];
++
++	while (count) {
++		int filled;
++
++		if (count >= 3 && !(pos % 4)) {
++			u32 val;
++
++			if (iswrite) {
++				if (copy_from_user(&val, buf, 4))
++					return -EFAULT;
++
++				iowrite32(le32_to_cpu(val), io + pos);
++			} else {
++				val = cpu_to_le32(ioread32(io + pos));
++
++				if (copy_to_user(buf, &val, 4))
++					return -EFAULT;
++			}
++
++			filled = 4;
++
++		} else if ((pos % 2) == 0 && count >= 2) {
++			u16 val;
++
++			if (iswrite) {
++				if (copy_from_user(&val, buf, 2))
++					return -EFAULT;
++
++				iowrite16(le16_to_cpu(val), io + pos);
++			} else {
++				val = cpu_to_le16(ioread16(io + pos));
++
++				if (copy_to_user(buf, &val, 2))
++					return -EFAULT;
++			}
++
++			filled = 2;
++		} else {
++			u8 val;
++
++			if (iswrite) {
++				if (copy_from_user(&val, buf, 1))
++					return -EFAULT;
++
++				iowrite8(val, io + pos);
++			} else {
++				val = ioread8(io + pos);
++
++				if (copy_to_user(buf, &val, 1))
++					return -EFAULT;
++			}
++
++			filled = 1;
++		}
++
++		count -= filled;
++		done += filled;
++		buf += filled;
++		pos += filled;
++	}
++
++	*ppos += done;
++
++	return done;
 +}
 +
-+static void __exit vfio_iommu_type1_cleanup(void)
++/*
++ * MMIO BAR access
++ * We handle two excluded ranges here as well, if the user tries to read
++ * the ROM beyond what PCI tells us is available or the MSI-X table region,
++ * we return 0xFF and writes are dropped.
++ */
++ssize_t vfio_pci_mem_readwrite(struct vfio_pci_device *vdev, char __user *buf,
++			       size_t count, loff_t *ppos, bool iswrite)
 +{
-+	vfio_unregister_iommu_driver(&vfio_iommu_driver_ops_type1);
++	struct pci_dev *pdev = vdev->pdev;
++	loff_t pos = *ppos & VFIO_PCI_OFFSET_MASK;
++	int bar = VFIO_PCI_OFFSET_TO_INDEX(*ppos);
++	void __iomem *io;
++	resource_size_t end;
++	size_t done = 0;
++	size_t x_start = 0, x_end = 0; /* excluded range */
++
++	if (!pci_resource_start(pdev, bar))
++		return -EINVAL;
++
++	end = pci_resource_len(pdev, bar);
++
++	if (pos > end)
++		return -EINVAL;
++
++	if (pos == end)
++		return 0;
++
++	if (pos + count > end)
++		count = end - pos;
++
++	if (bar == PCI_ROM_RESOURCE) {
++		io = pci_map_rom(pdev, &x_start);
++		x_end = end;
++	} else {
++		if (!vdev->barmap[bar]) {
++			int ret;
++
++			ret = pci_request_selected_regions(pdev, 1 << bar,
++							   "vfio");
++			if (ret)
++				return ret;
++
++			vdev->barmap[bar] = pci_iomap(pdev, bar, 0);
++
++			if (!vdev->barmap[bar]) {
++				pci_release_selected_regions(pdev, 1 << bar);
++				return -EINVAL;
++			}
++		}
++
++		io = vdev->barmap[bar];
++
++		if (bar == vdev->msix_bar) {
++			x_start = vdev->msix_offset;
++			x_end = vdev->msix_offset + vdev->msix_size;
++		}
++	}
++
++	if (!io)
++		return -EINVAL;
++
++	while (count) {
++		size_t fillable, filled;
++
++		if (pos < x_start)
++			fillable = x_start - pos;
++		else if (pos >= x_end)
++			fillable = end - pos;
++		else
++			fillable = 0;
++
++		if (fillable >= 4 && !(pos % 4) && (count >= 4)) {
++			u32 val;
++
++			if (iswrite) {
++				if (copy_from_user(&val, buf, 4))
++					goto out;
++
++				iowrite32(le32_to_cpu(val), io + pos);
++			} else {
++				val = cpu_to_le32(ioread32(io + pos));
++
++				if (copy_to_user(buf, &val, 4))
++					goto out;
++			}
++
++			filled = 4;
++		} else if (fillable >= 2 && !(pos % 2) && (count >= 2)) {
++			u16 val;
++
++			if (iswrite) {
++				if (copy_from_user(&val, buf, 2))
++					goto out;
++
++				iowrite16(le16_to_cpu(val), io + pos);
++			} else {
++				val = cpu_to_le16(ioread16(io + pos));
++
++				if (copy_to_user(buf, &val, 2))
++					goto out;
++			}
++
++			filled = 2;
++		} else if (fillable) {
++			u8 val;
++
++			if (iswrite) {
++				if (copy_from_user(&val, buf, 1))
++					goto out;
++
++				iowrite8(val, io + pos);
++			} else {
++				val = ioread8(io + pos);
++
++				if (copy_to_user(buf, &val, 1))
++					goto out;
++			}
++
++			filled = 1;
++		} else {
++			/* Drop writes, fill reads with FF */
++			if (!iswrite) {
++				char val = 0xFF;
++				size_t i;
++
++				for (i = 0; i < x_end - pos; i++) {
++					if (put_user(val, buf + i))
++						goto out;
++				}
++			}
++
++			filled = x_end - pos;
++		}
++
++		count -= filled;
++		done += filled;
++		buf += filled;
++		pos += filled;
++	}
++
++	*ppos += done;
++
++out:
++	if (bar == PCI_ROM_RESOURCE)
++		pci_unmap_rom(pdev, io);
++
++	return count ? -EFAULT : done;
 +}
-+
-+module_init(vfio_iommu_type1_init);
-+module_exit(vfio_iommu_type1_cleanup);
-+
-+MODULE_VERSION(DRIVER_VERSION);
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
 diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index a586f6b..43c58b2 100644
+index 43c58b2..300d49b 100644
 --- a/include/linux/vfio.h
 +++ b/include/linux/vfio.h
-@@ -98,7 +98,7 @@ extern void vfio_unregister_iommu_driver(
- 
- /* Extensions */
- 
--/* None yet */
-+#define VFIO_TYPE1_IOMMU		1
- 
- /*
-  * The IOCTL interface is designed for extensibility by embedding the
-@@ -364,4 +364,56 @@ struct vfio_irq_set {
+@@ -223,6 +223,7 @@ struct vfio_device_info {
+ 	__u32	argsz;
+ 	__u32	flags;
+ #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
++#define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
+ 	__u32	num_regions;	/* Max region index + 1 */
+ 	__u32	num_irqs;	/* Max IRQ index + 1 */
+ };
+@@ -364,6 +365,31 @@ struct vfio_irq_set {
   */
  #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
  
-+/* -------- API for Type1 VFIO IOMMU -------- */
-+
-+/**
-+ * VFIO_IOMMU_GET_INFO - _IOR(VFIO_TYPE, VFIO_BASE + 12, struct vfio_iommu_info)
-+ *
-+ * Retrieve information about the IOMMU object. Fills in provided
-+ * struct vfio_iommu_info. Caller sets argsz.
-+ *
-+ * XXX Should we do these by CHECK_EXTENSION too?
++/*
++ * The VFIO-PCI bus driver makes use of the following fixed region and
++ * IRQ index mapping.  Unimplemented regions return a size of zero.
++ * Unimplemented IRQ types return a count of zero.
 + */
-+struct vfio_iommu_type1_info {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_IOMMU_INFO_PGSIZES (1 << 0)	/* supported page sizes info */
-+	__u64	iova_pgsizes;		/* Bitmap of supported page sizes */
++
++enum {
++	VFIO_PCI_BAR0_REGION_INDEX,
++	VFIO_PCI_BAR1_REGION_INDEX,
++	VFIO_PCI_BAR2_REGION_INDEX,
++	VFIO_PCI_BAR3_REGION_INDEX,
++	VFIO_PCI_BAR4_REGION_INDEX,
++	VFIO_PCI_BAR5_REGION_INDEX,
++	VFIO_PCI_ROM_REGION_INDEX,
++	VFIO_PCI_CONFIG_REGION_INDEX,
++	VFIO_PCI_NUM_REGIONS
 +};
 +
-+#define VFIO_IOMMU_GET_INFO _IO(VFIO_TYPE, VFIO_BASE + 12)
-+
-+/**
-+ * VFIO_IOMMU_MAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 13, struct vfio_dma_map)
-+ *
-+ * Map process virtual addresses to IO virtual addresses using the
-+ * provided struct vfio_dma_map. Caller sets argsz. READ &/ WRITE required.
-+ */
-+struct vfio_iommu_type1_dma_map {
-+	__u32	argsz;
-+	__u32	flags;
-+#define VFIO_DMA_MAP_FLAG_READ (1 << 0)		/* readable from device */
-+#define VFIO_DMA_MAP_FLAG_WRITE (1 << 1)	/* writable from device */
-+	__u64	vaddr;				/* Process virtual address */
-+	__u64	iova;				/* IO virtual address */
-+	__u64	size;				/* Size of mapping (bytes) */
++enum {
++	VFIO_PCI_INTX_IRQ_INDEX,
++	VFIO_PCI_MSI_IRQ_INDEX,
++	VFIO_PCI_MSIX_IRQ_INDEX,
++	VFIO_PCI_NUM_IRQS
 +};
 +
-+#define VFIO_IOMMU_MAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 13)
-+
-+/**
-+ * VFIO_IOMMU_UNMAP_DMA - _IOW(VFIO_TYPE, VFIO_BASE + 14, struct vfio_dma_unmap)
-+ *
-+ * Unmap IO virtual addresses using the provided struct vfio_dma_unmap.
-+ * Caller sets argsz.
-+ */
-+struct vfio_iommu_type1_dma_unmap {
-+	__u32	argsz;
-+	__u32	flags;
-+	__u64	iova;				/* IO virtual address */
-+	__u64	size;				/* Size of mapping (bytes) */
-+};
-+
-+#define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
-+
- #endif /* VFIO_H */
+ /* -------- API for Type1 VFIO IOMMU -------- */
+ 
+ /**
 
