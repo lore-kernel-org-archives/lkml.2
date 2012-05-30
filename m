@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab2E3Ry3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:54:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57456 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756281Ab2E3Ry2 convert rfc822-to-8bit (ORCPT
+	id S1757232Ab2E3R4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:56:41 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:41411 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756281Ab2E3R4k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:54:28 -0400
-Message-ID: <1338400450.28384.16.camel@twins>
-Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
- is_swbp_insn() == T
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 30 May 2012 19:54:10 +0200
-In-Reply-To: <1338400142.28384.12.camel@twins>
-References: <20120530165757.GA8077@redhat.com>
-	 <20120530165816.GA8085@redhat.com> <1338398931.28384.7.camel@twins>
-	 <20120530173717.GM15587@linux.vnet.ibm.com>
-	 <1338400142.28384.12.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Wed, 30 May 2012 13:56:40 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Stultz <john.stultz@linaro.org>, stable@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] time: Fix CLOCK_MONOTONIC inconsistency during leapsecond
+Date: Wed, 30 May 2012 10:54:57 -0700
+Message-Id: <1338400497-12420-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053017-1780-0000-0000-000006033579
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000278; HX=3.00000188; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00143738; UDB=6.00033057; UTC=2012-05-30
+ 17:56:21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 19:49 +0200, Peter Zijlstra wrote:
-> Oh, indeed. I overlooked copy_insn() is taking the page from the
-> page-cache instead of the page-tables and will thus get the original.
-> 
-> OK, no worries then. 
+Make sure we update wall_to_monotonic when adding a leapsecond.
+This could otherwise cause discontinuities in CLOCK_MONOTONIC.
 
-So its the -EEXIST from set_swbp() that I was thinking about. I think I
-was also wrong on the reason that that can happen. register's vma
-iteration is very careful not to have the same vma twice, but it can
-race against mmap() because of the uprobe_hash() vs uprobe_mmap_hash()
-madness, right?
+This fixes a regression caused by
+6b43ae8a619d17c4935c3320d2ef9e92bdeed05d
 
-Something like so?
-
+CC: stable@kernel.org
+CC: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/events/uprobes.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ kernel/time/timekeeping.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 985be4d..b4e749e 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -45,6 +45,19 @@ static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6e46cac..6f46a00 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -962,6 +962,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		timekeeper.xtime.tv_sec++;
+ 		leap = second_overflow(timekeeper.xtime.tv_sec);
+ 		timekeeper.xtime.tv_sec += leap;
++		timekeeper.wall_to_monotonic.tv_sec -= leap;
+ 	}
  
- #define UPROBES_HASH_SZ	13
+ 	/* Accumulate raw time */
+@@ -1077,6 +1078,7 @@ static void update_wall_time(void)
+ 		timekeeper.xtime.tv_sec++;
+ 		leap = second_overflow(timekeeper.xtime.tv_sec);
+ 		timekeeper.xtime.tv_sec += leap;
++		timekeeper.wall_to_monotonic.tv_sec -= leap;
+ 	}
  
-+/*
-+ * We need separate register/unregister and mmap/munmap lock hashes because of
-+ * mmap_sem nesting.
-+ *
-+ * {,un}egister_uprobe() needs to install probes on (potentially) all processes
-+ * and thus need to acquire multiple mmap_sems (consecutively, not
-+ * concurrently), whereas uprobe_m{,un}map() is called while holding mmap_sem
-+ * for the particular process doing the mmap.
-+ *
-+ * This all means that register_uprobe() can race with uprobe_mmap() and we
-+ * can try and install a probe where one is already installed.
-+ */
-+
- /* serialize (un)register */
- static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
- 
-@@ -356,6 +369,9 @@ int __weak set_swbp(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned
- {
- 	int result;
- 
-+	/*
-+	 * See the comment near uprobes_hash().
-+	 */
- 	result = is_swbp_at_addr(mm, vaddr);
- 	if (result == 1)
- 		return -EEXIST;
+ 	timekeeping_update(false);
+-- 
+1.7.3.2.146.gca209
 
