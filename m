@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2E3C0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 29 May 2012 22:26:17 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56013 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204Ab2E3C0P (ORCPT
+	id S1756329Ab2E3C1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 29 May 2012 22:27:44 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:50176 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756199Ab2E3C1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 29 May 2012 22:26:15 -0400
-Message-ID: <4FC59171.8040009@gmail.com>
-Date: Wed, 30 May 2012 11:18:09 +0800
+	Tue, 29 May 2012 22:27:42 -0400
+Message-ID: <4FC591C9.2050004@gmail.com>
+Date: Wed, 30 May 2012 11:19:37 +0800
 From: Xiao Jiang <jgq516@gmail.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
@@ -18,9 +18,9 @@ CC: linux@arm.linux.org.uk, b-cousson@ti.com, rob.herring@calxeda.com,
         wim@iguana.be, devicetree-discuss@lists.ozlabs.org,
         linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 3/3] watchdog: omap_wdt: add device tree support
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-4-git-send-email-jgq516@gmail.com> <4FC51008.1050004@ti.com>
-In-Reply-To: <4FC51008.1050004@ti.com>
+Subject: Re: [PATCH 1/3] arm/dts: add wdt node for omap3 and omap4
+References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-2-git-send-email-jgq516@gmail.com> <4FC50CCD.7090404@ti.com>
+In-Reply-To: <4FC50CCD.7090404@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,54 +32,95 @@ Jon Hunter wrote:
 >   
 >> From: Xiao Jiang <jgq516@gmail.com>
 >>
->> Add device table for omap_wdt to support dt.
+>> Add wdt node to support dt.
 >>
 >> Signed-off-by: Xiao Jiang <jgq516@gmail.com>
 >> ---
->>  drivers/watchdog/omap_wdt.c |    8 ++++++++
->>  1 files changed, 8 insertions(+), 0 deletions(-)
+>>  arch/arm/boot/dts/omap3.dtsi |    5 +++++
+>>  arch/arm/boot/dts/omap4.dtsi |    5 +++++
+>>  2 files changed, 10 insertions(+), 0 deletions(-)
 >>
->> diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
->> index 8285d65..d98c615 100644
->> --- a/drivers/watchdog/omap_wdt.c
->> +++ b/drivers/watchdog/omap_wdt.c
->> @@ -430,6 +430,13 @@ static int omap_wdt_resume(struct platform_device *pdev)
->>  #define	omap_wdt_resume		NULL
->>  #endif
->>  
->> +static const struct of_device_id omap_wdt_of_match[] = {
->> +	{ .compatible = "ti,omap3-wdt", },
->> +	{ .compatible = "ti,omap4-wdt", },
->> +	{},
->> +};
->> +MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
+>> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+>> index 99474fa..039df5c 100644
+>> --- a/arch/arm/boot/dts/omap3.dtsi
+>> +++ b/arch/arm/boot/dts/omap3.dtsi
+>> @@ -215,5 +215,10 @@
+>>  			compatible = "ti,omap3-hsmmc";
+>>  			ti,hwmods = "mmc3";
+>>  		};
 >> +
->>  static struct platform_driver omap_wdt_driver = {
->>  	.probe		= omap_wdt_probe,
->>  	.remove		= __devexit_p(omap_wdt_remove),
->> @@ -439,6 +446,7 @@ static struct platform_driver omap_wdt_driver = {
->>  	.driver		= {
->>  		.owner	= THIS_MODULE,
->>  		.name	= "omap_wdt",
->> +		.of_match_table = omap_wdt_of_match,
->>  	},
->>  };
->>  
+>> +		wdt: wdt@48314000{
 >>     
 >
-> I think we need to add some code to the probe function that calls
-> of_match_device() and ensures we find a match. For example ...
->
-> 	if (of_have_populated_dt())
-> 		if (!of_match_device(omap_wdt_of_match, &pdev->dev))
-> 			return -EINVAL;
+> Minor comment, may be call this wdt2 as this is watchdog timer 2. Also
+> ass a space between the address and the "{".
 >
 >   
-Will add it in v2, thanks for suggestion.
+Ok, will change it to "wdt2: wdt@48314000 {".
+>> +			compatible = "ti,omap3-wdt";
+>> +			ti,hwmods = "wd_timer2";
+>> +		};
+>>  	};
+>>  };
+>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+>> index 359c497..d01403d 100644
+>> --- a/arch/arm/boot/dts/omap4.dtsi
+>> +++ b/arch/arm/boot/dts/omap4.dtsi
+>> @@ -272,5 +272,10 @@
+>>  			ti,hwmods = "mmc5";
+>>  			ti,needs-special-reset;
+>>  		};
+>> +
+>> +		wdt: wdt@4a314000{
+>>     
+>
+> Same as above.
+>
+>   
+Ditto.
+>> +			compatible = "ti,omap4-wdt";
+>> +			ti,hwmods = "wd_timer2";
+>> +		};
+>>  	};
+>>  };
+>>     
+>
+> Also we should add some documentation to describe the binding. Here it
+> is very simple, but nonetheless we should have something as we have for
+> gpio [1].
+>
+>   
+Thanks for reminding, how about below patch?
+
+diff --git a/Documentation/devicetree/bindings/watchdog/omap-wdt.txt 
+b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+new file mode 100644
+index 0000000..4272d06
+--- /dev/null
++++ b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+@@ -0,0 +1,15 @@
++TI Watchdog Timer (WDT) Controller for OMAP
++
++Required properties:
++- compatible:
++  - "ti,omap2-wdt" for OMAP2
++  - "ti,omap3-wdt" for OMAP3
++  - "ti,omap4-wdt" for OMAP4
++- ti,hwmods: Name of the hwmod associated to the WDT
++
++Examples:
++
++wdt2: wdt@73f98000 {
++       compatible = "ti,omap4-wdt";
++       ti,hwmods = "wd_timer2";
++};
 
 Regards,
 Xiao
 > Cheers
 > Jon
+>
+> [1]
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/devicetree/bindings/gpio/gpio-omap.txt;h=bff51a2fee1eae7d387b40ea913e04782554bf68;hb=HEAD
 >   
 
