@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab2E3Pkm (ORCPT <rfc822;w@1wt.eu>);
+	id S1755139Ab2E3Pko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 11:40:44 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:31221 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753620Ab2E3Pkm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 30 May 2012 11:40:42 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:52299 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab2E3Pkl convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:8:1>);
-	Wed, 30 May 2012 11:40:41 -0400
-Message-Id: <4FC65B950200007800086F5B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 30 May 2012 16:40:37 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Borislav Petkov" <bp@alien8.de>
-Cc: "Andre Przywara" <andre.przywara@amd.com>,
-        "Jacob Shin" <Jacob.Shin@amd.com>, <mingo@elte.hu>, <jeremy@goop.org>,
-        <tglx@linutronix.de>, <xen-devel@lists.xensource.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
- <4FC63DAF0200007800086DC5@nat28.tlf.novell.com> <4FC62888.9010407@amd.com>
- <4FC649790200007800086E51@nat28.tlf.novell.com>
- <4FC631F0.9080109@zytor.com> <20120530144929.GH3207@phenom.dumpdata.com>
- <20120530151235.GB15635@x1.osrc.amd.com>
-In-Reply-To: <20120530151235.GB15635@x1.osrc.amd.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: rp9BKzUVM1mDlB3LCrc2jnjrDLxo2mvP93sH.J3tBWhNuw7
+ zKWcObw2mX5CatxyyPziIuTqDNtJEz3E6spyBWqcasxcY2UUJUcAWVGrnGr2
+ VbnMjPvX6wEU0Vt0MEuRo93ouvdEElsIxQttrbOFuTtXhqk6jIklHXOMRgxD
+ uyV1z21E1JO7K7tPcHmKoIviO0zdFm1OEzteTTmMpAGHJjnBr7AKvzM92i9p
+ rPFpxJRFC2iNFbSWsNAlYrok_Kuqk5C8d5_Mb7mFnHR_MJD7O4gUuH1DYqyj
+ loYpeO3rBCKEwV.fl74DUUoNa1a7SwWiJDhAsEAt5dhmiCYzFscGlEWOviBt
+ nkFM89knAryq65c028F6O33CvVOWdGX4zmWLQ3X8JZL6VkCvD27Y3JCY_vHk
+ e
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 30 May 2012 10:40:39 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
+ context v3
+In-Reply-To: <alpine.LFD.2.02.1205300947180.2681@tux.localdomain>
+Message-ID: <alpine.DEB.2.00.1205301040170.29257@router.home>
+References: <1336431315-29736-1-git-send-email-andi@firstfloor.org> <CAHGf_=p7JbWW8jgzWGHX+xwU8JWzpSMZS0kn-rmP=eg_Uqrgow@mail.gmail.com> <alpine.DEB.2.00.1205082158570.10766@chino.kir.corp.google.com> <alpine.LFD.2.02.1205300947180.2681@tux.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 30.05.12 at 17:12, Borislav Petkov <bp@alien8.de> wrote:
-> This current case should be a perfect example for why xen shouldn't be
-> sprinkling code all over the place.
+On Wed, 30 May 2012, Pekka Enberg wrote:
 
-Which means you're denying the benefits of para-virtualization
-(at the base system level; perhaps it's less of a problem for you
-when it comes to pv device drivers, which are generally
-standalone entities) as that's what distinguishes Xen from all
-other virtualization solutions Linux supports.
+> On Tue, 8 May 2012, David Rientjes wrote:
+> > > But this doesn't mean NAK anyway.
+> > >
+> > >  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> >
+> > Sigh, this was acked by Christoph and KOSAKI when the logic is reversed
+> > and does the exact opposite of what's intended?
+>
+> Ping? Anyone going to send a fixed up patch?
 
-Jan
+I thought this was done and fixed in another email thread?
 
