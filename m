@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab2E3Mnj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:43:39 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:49369 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab2E3Mni (ORCPT
+	id S1753706Ab2E3Mou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:44:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44965 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab2E3Mos convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:43:38 -0400
-Date: Wed, 30 May 2012 14:43:33 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Comrade DOS <suloevdmitry@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Performance drop
-Message-ID: <20120530124333.GA3008@alberich.amd.com>
-References: <CA+fU7qen=cwc1vMY1bv21_0GuNKXPQZXsQLVszYG1WG_r1XUGA@mail.gmail.com>
- <20120524123116.GA4048@alberich.amd.com>
- <CA+fU7qfPznJpRABC4Z=xmRZW6p5Mw3dFLBySk9HuPnaCYMMnEg@mail.gmail.com>
- <20120529140940.GA10421@alberich.amd.com>
- <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+fU7qdKYA3KJr3xET_evO_1ztSKh0K0csn5Coro7Mkv_my+eg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 May 2012 08:44:48 -0400
+Message-ID: <1338381877.26856.272.camel@twins>
+Subject: Re: [PATCH v3 5/6] Also record sleep start for a task group
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, devel@openvz.org, Tejun Heo <tj@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, handai.szj@gmail.com,
+        Andrew.Phillips@lmax.com, Serge Hallyn <serge.hallyn@canonical.com>
+Date: Wed, 30 May 2012 14:44:37 +0200
+In-Reply-To: <4FC61188.8000908@parallels.com>
+References: <1338371317-5980-1-git-send-email-glommer@parallels.com>
+	 <1338371317-5980-6-git-send-email-glommer@parallels.com>
+	 <CAPM31R+VXsffUOSOtMPG=g+G9OdzWMKQvx9usTFa3KBbrqPe6A@mail.gmail.com>
+	 <4FC61188.8000908@parallels.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 03:20:27AM +0700, Comrade DOS wrote:
-> > Unfortunately you have used acpi=debug instead of apic=debug.  So I
-> > can't compare I/O APIC configurations between the different test
-> > scenarios.
+On Wed, 2012-05-30 at 16:24 +0400, Glauber Costa wrote:
+> sleep_start is not for iowait. This is for idle. And I know no other way 
+> to collect idle time per cgroup, other than the time during which it was 
+> out of the runqueue.
 > 
-> Sorry me for this mistake.
+> Now what you say about the sleepers don't make that much sense for idle 
+> because this information is per-cpu as well.
+> 
+> When the se is being dequeued, it means none of its children is running 
+> on that runqueue. That's idle. 
 
-No problem.
-
-The logs show no difference in IO-APIC pin usage.
-So it's not the old problem ...
-
-Comparing both logs I found following differences:
-
-(Most other stuff seems just to be changed formatting.)
-
--ACPI: Thermal Zone [TZ1] (67 C)
-+ACPI: Thermal Zone [TZ1] (62 C)
-
-I think what's shown is the temperature value which just differed
-between the boots. But that made me look at acpi/thermal.c where the
-messages came from. The only change between 3.3 and 3.4 is this
-commit:
-
-  commit 9bcb8118965ab4631a65ee0726e6518f75cda6c5
-  Author: Matthew Garrett <mjg@redhat.com>
-  Date:   Wed Feb 1 10:26:54 2012 -0500
-
-    ACPI: Evaluate thermal trip points before reading temperature
-
-I'd suggest to do a test with this patch reverted.  Maybe this change
-to fix issues with one HP Laptop (re-)intruduced the trouble with your
-system.
-
-If reverting the patch helps we have to take a closer look at your
-ACPI tables.  So can you please do a
-
- # git revert 9bcb8118965ab4631a65ee0726e6518f75cda6c5
-
-on top of v3.4 and rebuid your kernel and rerun your test (with
-apic=debug. This allows easier diff to dmesg output of your previous
-test runs).
-
-In any case it also would be good to have the acpi tables from your
-system. So please also use
-# acpidump >acpidump.3.3    (using the 3.3.x kernel)
-# acpidump >acpidump.3.4    (using the unmodified 3.4 version)
-
-and send all files as attachments to your mail.
-
-This will allow me to look at your thermal zone definitions in the
-working and non-working case.
+But does that mean the cgroup is idle? Its impossible to re-construct
+the machine state from this per-cpu data if your definition of
+cgroup-idle is the time when _all_ cpus are idle.
 
 
-Thanks,
-
-Andreas
