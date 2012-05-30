@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab2E3RsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:48:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40734 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab2E3RsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:48:07 -0400
-Message-ID: <4FC65D34.1060803@zytor.com>
-Date: Wed, 30 May 2012 10:47:32 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756365Ab2E3RtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:49:09 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50112 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab2E3RtH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 13:49:07 -0400
+Date: Wed, 30 May 2012 19:49:01 +0200
+From: Johannes Goetzfried 
+	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org,
+        Tilo =?iso-8859-1?Q?M=FCller?= 
+	<Tilo.Mueller@informatik.uni-erlangen.de>
+Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler
+ implementation
+Message-ID: <20120530174901.GR17705@kronos.redsun>
+References: <20120527145112.GF17705@kronos.redsun>
+ <m2396il7xc.fsf@firstfloor.org>
+ <20120530113651.GP17705@kronos.redsun>
+ <20120530162645.GT27374@one.firstfloor.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity
- systems
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC63DAF0200007800086DC5@nat28.tlf.novell.com> <4FC62888.9010407@amd.com> <20120530144851.GA12184@jshin-Toonie> <20120530145005.GI3207@phenom.dumpdata.com> <20120530150334.GA13349@jshin-Toonie> <20120530171754.GA5115@phenom.dumpdata.com> <20120530173247.GC15635@x1.osrc.amd.com>
-In-Reply-To: <20120530173247.GC15635@x1.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120530162645.GT27374@one.firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Provags-ID: V02:K0:IRTApgPuZ3jn+9U6kK15i1rm3C6zNaKr4at5q9zbyDn
+ dKzSlA1sMVmIu1ZqykXqyiafJFj1R9MiEzhQ6jjAPTMiXdA7f9
+ eb/gwV5anwXkKXp2F6SYOG6dqrvSGscVuuEhL5X5ITkxs0iB0g
+ UZUGXG8LDK/NYMdhxcWsvZtMf3tbLfj8SwyeeL8VkDGZct+7D8
+ 6T4070YULTxzRFpkfddImajryBHEGSijQtR169GGzH2lLTuvwo
+ 2kVRuXglqY3YIdwdrge3SRF52PpqHsJcd9MvrC8Xuyr7t5VmCD
+ TPE4PxZWbkag1LyupjPPGYOABN/KD1Z3YqAYMu8/Hp5YoU6wgB
+ tNLNiq61xjwKdreYXbO0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 10:32 AM, Borislav Petkov wrote:
+On Wed, May 30, 2012 at 06:26:45PM +0200, Andi Kleen wrote:
+> > I tried to be consistent with the existing ciphers in arch/x86/crypto.
+> > In serpent_sse2_glue.c and sha1_ssse3_glue.c it is done exactly that way, so if
+> > it will be decided to remove the printk in this patch it probably should also
+> > be removed in the other modules.
 > 
-> I wouldn't do that. Andre's patch switches to the
-> rdmsrl_safe/checking_wrmsrl functions so you don't need to implement the
-> _regs functions for pvops.
 > 
+> They are wrong and need to be fixed.
+> 
+> Drivers can be loaded for all kinds of reasons, but they are not supposed
+> to spam your kernel log when they do nothing.
+> 
+> In fact I fixed all the existing ones with the cpuid changes, unfortunately
+> somehow snuck in wrong code :-(
 
-But we just stated - it is wrong for K8?
+Hm, ok, removing the printk stuff is no big deal. I would fix this together
+with the cpuid probing, when I'm sure that this is the preferred "new" way :-)
 
-	-hpa
-
+- Johannes
