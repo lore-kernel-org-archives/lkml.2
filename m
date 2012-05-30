@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab2E3Rvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:51:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53403 "EHLO mail.skyhub.de"
+	id S1756897Ab2E3RwZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:52:25 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:41067 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756240Ab2E3Rvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:51:53 -0400
-Date: Wed, 30 May 2012 19:51:51 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-Message-ID: <20120530175150.GE15438@x1.osrc.amd.com>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Jacob Shin <jacob.shin@amd.com>,
-	Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-	xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-	Jan Beulich <JBeulich@suse.com>, mingo@elte.hu, tglx@linutronix.de
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
- <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
- <4FC62888.9010407@amd.com>
- <20120530144851.GA12184@jshin-Toonie>
- <20120530145005.GI3207@phenom.dumpdata.com>
- <20120530150334.GA13349@jshin-Toonie>
- <20120530171754.GA5115@phenom.dumpdata.com>
- <20120530173247.GC15635@x1.osrc.amd.com>
- <4FC65D34.1060803@zytor.com>
+	id S1756255Ab2E3RwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 13:52:24 -0400
+Date: Wed, 30 May 2012 23:18:58 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] uprobes: simplify the usage of uprobe->pending_list
+Message-ID: <20120530174858.GN15587@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120530165757.GA8077@redhat.com>
+ <20120530165846.GC8085@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4FC65D34.1060803@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120530165846.GC8085@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053017-8974-0000-0000-00000997F6B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 10:47:32AM -0700, H. Peter Anvin wrote:
-> > I wouldn't do that. Andre's patch switches to the
-> > rdmsrl_safe/checking_wrmsrl functions so you don't need to implement the
-> > _regs functions for pvops.
-> > 
-> But we just stated - it is wrong for K8?
+* Oleg Nesterov <oleg@redhat.com> [2012-05-30 18:58:46]:
 
-Not executed on K8 - only on F15h, models 0x10 - 0x1f.
+> uprobe->pending_list is only used to create the temporary list,
+> it has no meaning after we drop uprobes_mmap_hash(inode).
+> 
+> No need to initialize this node or remove it from tmp_list, and
+> we can use list_for_each_entry().
+
+
+I actually dont see the patch that removed the uprobe->pending_list.
+I dont see it as part of the 7 that you sent yesterday. Nor does is it
+part of the series that you sent today.
+
+the uprobe_mmap_hash was required because we can do only one insert or
+remove operation at a time. 
+
+How are we going to synchronize uprobe_mmap() for two different vmas
+that belong two different mms but map the same inode?
+
+May be I am missing a patch somewhere.
 
 -- 
-Regards/Gruss,
-Boris.
+thanks and regards
+Srikar
+
