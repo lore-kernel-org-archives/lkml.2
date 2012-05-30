@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab2E3U4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 16:56:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34406 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab2E3U4R (ORCPT
+	id S1754568Ab2E3U6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 16:58:53 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40653 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab2E3U6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 16:56:17 -0400
-Date: Wed, 30 May 2012 21:56:13 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-Message-ID: <20120530205612.GY11775@ZenIV.linux.org.uk>
-References: <CA+55aFzOtY7tBw4YNH+QX+6L4opMsJ=sN4DfJURMv_yBTWqL1w@mail.gmail.com>
- <20120516004251.GO22082@ZenIV.linux.org.uk>
- <CA+55aFy0wJdq+-OAkUBsrkQogF5-N0P4DBQ+6-LXjBGscRQFNw@mail.gmail.com>
- <20120516021828.GP22082@ZenIV.linux.org.uk>
- <1337807899.15138.31.camel@falcor>
- <20120530043443.GA3200@ZenIV.linux.org.uk>
- <20120530163605.GV11775@ZenIV.linux.org.uk>
- <1338406967.2257.24.camel@localhost>
- <20120530202427.GW11775@ZenIV.linux.org.uk>
- <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+	Wed, 30 May 2012 16:58:51 -0400
+Message-ID: <4FC68A08.7000708@gmail.com>
+Date: Wed, 30 May 2012 16:58:48 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andi Kleen <andi@firstfloor.org>
+CC: kosaki.motohiro@gmail.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@google.com>,
+        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, stable@vger.kernel.org,
+        hughd@google.com, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/6] mempolicy: Kill all mempolicy sharing
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <1338368529-21784-3-git-send-email-kosaki.motohiro@gmail.com> <m2vcjdjtr9.fsf@firstfloor.org>
+In-Reply-To: <m2vcjdjtr9.fsf@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 01:28:09PM -0700, Linus Torvalds wrote:
-> On Wed, May 30, 2012 at 1:24 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Wed, May 30, 2012 at 03:42:47PM -0400, Eric Paris wrote:
-> >> security_file_mmap() would pretty much only be used in do_mmap_pgoff()
-> >> (or validate_mmap_request)
-> >
-> > Callers, actually - the whole point is to lift it out of under ->mmap_sem.
-> > The tricky part is reqprot vs. prot mess.
-> 
-> See how I solved reqprot vs prot in my suggested original patch. You
-> have it somewhere in your inbox, I know, because you called me out on
-> the fact that my original email forgot to attach it ;)
-> 
-> It actually cleaned things up, and made the calling conventions
-> simpler. Just always pass in "reqprot", and have the security layer do
-> the trivial "calculate final prot".
+(5/30/12 4:31 PM), Andi Kleen wrote:
+> kosaki.motohiro@gmail.com writes:
+>
+>> From: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+>>
+>> Dave Jones' system call fuzz testing tool "trinity" triggered the following
+>> bug error with slab debugging enabled
+>
+> We have to fix it properly sorry. There are users who benefit from it
+> and just disabling it is not gonna fly.
 
-If only it would be trivial ;-/  Take a look at !MMU case (or at the
-description in the posting upthread if you want to avoid seeing your
-breakfast one more time - the code in validate_mmap_request() is
-really ugly).
+Why? This patch doesn't make any user visible behavior change. I haven't
+caught what does your "proper" mean.
+
+
+
