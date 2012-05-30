@@ -1,177 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab2E3Ngc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 09:36:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38398 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab2E3Nga (ORCPT
+	id S1755161Ab2E3OcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:32:23 -0400
+Received: from [204.209.205.32] ([204.209.205.32]:64823 "EHLO defout.telus.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754455Ab2E3OcV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 09:36:30 -0400
-Date: Wed, 30 May 2012 06:36:15 -0700
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-kt0trz0apodbf84ucjfdbr1a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/nohz: Fix rq->
- cpu_load calculations some more
-Git-Commit-ID: 5aaa0b7a2ed5b12692c9ffb5222182bd558d3146
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 30 May 2012 10:32:21 -0400
+X-Authority-Analysis: v=1.1 cv=3felTBVTKDV4kUdUbqJShFvbTikv5tYY+WRXPduaGmg=
+ c=1 sm=2 a=ur5R_stfBv0A:10 a=LGgl8L9ij00A:10 a=IkcTkHD0fZMA:10
+ a=FGbulvE0AAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=danhDmx_AAAA:8
+ a=D19gQVrFAAAA:8 a=20KFwNOVAAAA:8 a=Br9LfDWDAAAA:8 a=yrOjzl9yAAAA:8
+ a=A6_IoWdwskp9QONEr-8A:9 a=QEXdDO2ut3YA:10 a=Mw4ukg_C7IkA:10 a=MSl-tDqOz04A:10
+X-Telus-Outbound-IP: 209.121.28.192
+From: "Doug Smythies" <dsmythies@telus.net>
+To: "'Jonathan Nieder'" <jrnieder@gmail.com>,
+        "=?utf-8?Q?'Anders_Bostr=C3=B6m'?=" <anders@netinsight.net>
+Cc: <linux-kernel@vger.kernel.org>,
+        "=?utf-8?Q?'Les=C5=82aw_Kope=C4=87'?=" <leslaw.kopec@nasza-klasa.pl>,
+        "'Aman Gupta'" <aman@tmm1.net>,
+        "'Peter Zijlstra'" <a.p.zijlstra@chello.nl>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "Doug Smythies" <dsmythies@telus.net>
+References: <20120523.144057.899060240318474097.anders@netinsight.net> <20120523215359.GA19798@burratino> <20120524214516.GB1158@burratino>
+In-Reply-To: <20120524214516.GB1158@burratino>
+Subject: RE: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
+Date: Wed, 30 May 2012 07:30:04 -0700
+Message-ID: <000c01cd3e70$b651dd10$22f59730$@net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 30 May 2012 06:36:20 -0700 (PDT)
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Ac059oUEh4VPnoLSSpKMOVSQCqsN1AEdsIyw
+Content-Language: en-ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5aaa0b7a2ed5b12692c9ffb5222182bd558d3146
-Gitweb:     http://git.kernel.org/tip/5aaa0b7a2ed5b12692c9ffb5222182bd558d3146
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 17 May 2012 17:15:29 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 30 May 2012 14:02:16 +0200
+Hi,
 
-sched/nohz: Fix rq->cpu_load calculations some more
+The referenced PNG file was sent to everyone on the address list on 2012.05.22 and the previous version was sent 2012.05.09.
+The only reason the PNG file was made was for the e-mail and because I was instructed not to refer to external sources.
+The web page version of the PNG file, which is kept up to date, is at [3].
 
-Follow up on commit 556061b00 ("sched/nohz: Fix rq->cpu_load[]
-calculations") since while that fixed the busy case it regressed the
-mostly idle case.
+"does 556061b00c9f ("sched/nohz: Fix rq->cpu_load[] calculations", 2012-05-11) change anything?"
+I back edited those changes into my test environment yesterday. It made no difference with respect to this issue. (minimally tested.)
 
-Add a callback from the nohz exit to also age the rq->cpu_load[]
-array. This closes the hole where either there was no nohz load
-balance pass during the nohz, or there was a 'significant' amount of
-idle time between the last nohz balance and the nohz exit.
+This statement: "Starting with 3.2.17-1, the CPU load accounting is broken when the computer is idle. The CPU load is reported as >0.50 when idle. 3.2.16-1 don't suffer from this problem."
+In my opinion has the following mistakes:
+. The computer is not actually idle. If it was actually idle the reported load average would be 0.
+. Yes, the new kernel reported load average is high, as detailed in the PNG file or the web notes.
+. The older kernel suffers from a different problem, under all other conditions being the same, the reported load average would have been too low.
 
-So we'll update unconditionally from the tick to not insert any
-accidental 0 load periods while busy, and we try and catch up from
-nohz idle balance and nohz exit. Both these are still prone to missing
-a jiffy, but that has always been the case.
+[3] http://www.smythies.com/~doug/network/load_average/new.html
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: pjt@google.com
-Cc: Venkatesh Pallipadi <venki@google.com>
-Link: http://lkml.kernel.org/n/tip-kt0trz0apodbf84ucjfdbr1a@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h    |    1 +
- kernel/sched/core.c      |   53 +++++++++++++++++++++++++++++++++++++--------
- kernel/time/tick-sched.c |    1 +
- 3 files changed, 45 insertions(+), 10 deletions(-)
+Doug Smythies
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f45c0b2..d61e597 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -145,6 +145,7 @@ extern unsigned long this_cpu_load(void);
- 
- 
- extern void calc_global_load(unsigned long ticks);
-+extern void update_cpu_load_nohz(void);
- 
- extern unsigned long get_parent_ip(unsigned long addr);
- 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 39eb601..75844a8 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2517,25 +2517,32 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- 	sched_avg_update(this_rq);
- }
- 
-+#ifdef CONFIG_NO_HZ
-+/*
-+ * There is no sane way to deal with nohz on smp when using jiffies because the
-+ * cpu doing the jiffies update might drift wrt the cpu doing the jiffy reading
-+ * causing off-by-one errors in observed deltas; {0,2} instead of {1,1}.
-+ *
-+ * Therefore we cannot use the delta approach from the regular tick since that
-+ * would seriously skew the load calculation. However we'll make do for those
-+ * updates happening while idle (nohz_idle_balance) or coming out of idle
-+ * (tick_nohz_idle_exit).
-+ *
-+ * This means we might still be one tick off for nohz periods.
-+ */
-+
- /*
-  * Called from nohz_idle_balance() to update the load ratings before doing the
-  * idle balance.
-  */
- void update_idle_cpu_load(struct rq *this_rq)
- {
--	unsigned long curr_jiffies = jiffies;
-+	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
- 	unsigned long load = this_rq->load.weight;
- 	unsigned long pending_updates;
- 
- 	/*
--	 * Bloody broken means of dealing with nohz, but better than nothing..
--	 * jiffies is updated by one cpu, another cpu can drift wrt the jiffy
--	 * update and see 0 difference the one time and 2 the next, even though
--	 * we ticked at roughtly the same rate.
--	 *
--	 * Hence we only use this from nohz_idle_balance() and skip this
--	 * nonsense when called from the scheduler_tick() since that's
--	 * guaranteed a stable rate.
-+	 * bail if there's load or we're actually up-to-date.
- 	 */
- 	if (load || curr_jiffies == this_rq->last_load_update_tick)
- 		return;
-@@ -2547,12 +2554,38 @@ void update_idle_cpu_load(struct rq *this_rq)
- }
- 
- /*
-+ * Called from tick_nohz_idle_exit() -- try and fix up the ticks we missed.
-+ */
-+void update_cpu_load_nohz(void)
-+{
-+	struct rq *this_rq = this_rq();
-+	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-+	unsigned long pending_updates;
-+
-+	if (curr_jiffies == this_rq->last_load_update_tick)
-+		return;
-+
-+	raw_spin_lock(&this_rq->lock);
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	if (pending_updates) {
-+		this_rq->last_load_update_tick = curr_jiffies;
-+		/*
-+		 * We were idle, this means load 0, the current load might be
-+		 * !0 due to remote wakeups and the sort.
-+		 */
-+		__update_cpu_load(this_rq, 0, pending_updates);
-+	}
-+	raw_spin_unlock(&this_rq->lock);
-+}
-+#endif /* CONFIG_NO_HZ */
-+
-+/*
-  * Called from scheduler_tick()
-  */
- static void update_cpu_load_active(struct rq *this_rq)
- {
- 	/*
--	 * See the mess in update_idle_cpu_load().
-+	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
- 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6a3a5b9..0c927cd 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -576,6 +576,7 @@ void tick_nohz_idle_exit(void)
- 	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
- 	tick_do_update_jiffies64(now);
-+	update_cpu_load_nohz();
- 
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
- 	/*
+-----Original Message-----
+From: Jonathan Nieder [mailto:jrnieder@gmail.com] 
+Sent: May-24-2012 14:45
+To: Anders Boström
+Cc: linux-kernel@vger.kernel.org; Lesław Kopeć; Aman Gupta; Doug Smythies; Peter Zijlstra; Thomas Gleixner
+Subject: Re: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
+
+(cc-ing Peter and Thomas because there is a nice graph)
+> Anders Boström wrote[1]:
+
+>> Starting with 3.2.17-1, the CPU load accounting is broken when the 
+>> computer is idle. The CPU load is reported as >0.50 when idle. 
+>> 3.2.16-1 don't suffer from this problem.
+>>
+>> Suspected patch is the upstream patch
+>> "sched: Fix nohz load accounting -- again!"
+>> commit 5e2d50da11f0e6ec3ce8fe658d7c83b0b4346c68 to 3.2 and 
+>> originating from c308b56b5398779cd3da0f62ab26b0453494c3d4 .
+>>
+>> See also:
+>>
+>> https://bugs.launchpad.net/unity/+bug/991370
+>> https://lkml.org/lkml/2012/5/22/310
+>> https://bugzilla.redhat.com/show_bug.cgi?id=822877
+>> https://bbs.archlinux.org/viewtopic.php?id=141289
+
+I just found [1] from [2] which seems to describe the symptoms pretty well.  Peter, Thomas, advice?
+
+Anders et al: does 556061b00c9f ("sched/nohz: Fix rq->cpu_load[] calculations", 2012-05-11) change anything?
+
+Thanks,
+Jonathan
+
+[1] https://launchpadlibrarian.net/105809696/commit_low_load_rev2.png
+[2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/838811
+
+
