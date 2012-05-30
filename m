@@ -1,119 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab2E3RZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 13:25:09 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30946 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754177Ab2E3RZH (ORCPT
+	id S1756084Ab2E3R0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 13:26:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52966 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754177Ab2E3R0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 13:25:07 -0400
-Date: Wed, 30 May 2012 13:17:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Jan Beulich <JBeulich@suse.com>, hpa@zytor.com, mingo@elte.hu,
-        tglx@linutronix.de
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-Message-ID: <20120530171754.GA5115@phenom.dumpdata.com>
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
- <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
- <4FC62888.9010407@amd.com>
- <20120530144851.GA12184@jshin-Toonie>
- <20120530145005.GI3207@phenom.dumpdata.com>
- <20120530150334.GA13349@jshin-Toonie>
+	Wed, 30 May 2012 13:26:54 -0400
+Date: Wed, 30 May 2012 18:26:52 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH v5] regulator: MAX77686: Add Maxim 77686 regulator driver
+Message-ID: <20120530172652.GS9947@opensource.wolfsonmicro.com>
+References: <1338258051-3155-1-git-send-email-jonghwa3.lee@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ffBYM5qgR8HH9Mta"
 Content-Disposition: inline
-In-Reply-To: <20120530150334.GA13349@jshin-Toonie>
+In-Reply-To: <1338258051-3155-1-git-send-email-jonghwa3.lee@samsung.com>
+X-Cookie: Give him an evasive answer.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, the following patch also fixed the crash for us:
-> 
-> Implement rdmsr_regs and wrmsr_regs for Xen pvops.
 
-That needs more data. Such as the reason for it, the crash
-tombstone, and an analysis of the bug.
+--ffBYM5qgR8HH9Mta
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-But at this point I am not sure what we are going to do.
+On Tue, May 29, 2012 at 11:20:51AM +0900, Jonghwa Lee wrote:
+> Add driver for support max77686 regulator.
+> MAX77686 provides LDOs[1~26] and BUCKs[1~9]. It support to set or get the
+> volatege of regulator on max77686 chip with using regmap.
+>=20
+> v5
+> - Remove unnecessary initializing and variable.
+>=20
 
-I think Peter leans towards ripping the .rdmsr_regs/wdmsr_regs
-function out altogether (so altering the amd_rdmsr... to use the
-.rdmsr/.wrdmsr). At which point I think this would all work
-just fine?
+Don't put stuff like this in the changelog, it's useless noise in git.
+Include it after the cut as documented in SubmittingPatches.
 
-I am tempted to write a patch that checks all the pv-cpu-ops
-to see if there are any that are NULL and throw a warning so
-that this does not hit us in the future - to be at least more
-proactive about this sort of thing.
+> +#ifdef CONFIG_COMMON_CLK
+> +	struct clk clk32khz_ap;
+> +	struct clk clk32khz_cp;
+> +	struct clk clk32khz_pmic;
+> +#endif
 
+This should be a clock driver in drivers/clock.
 
-> 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
-> Cc: stable@vger.kernel.org # 3.4+
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 75f33b2..f3ae5ec 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -945,9 +945,12 @@ static void xen_write_cr4(unsigned long cr4)
->  	native_write_cr4(cr4);
->  }
->  
-> -static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
-> +static int xen_wrmsr_safe_regs(u32 regs[8])
->  {
->  	int ret;
-> +	unsigned int msr = regs[1];
-> +	unsigned low = regs[0];
-> +	unsigned high = regs[2];
->  
->  	ret = 0;
->  
-> @@ -985,12 +988,23 @@ static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
->  		break;
->  
->  	default:
-> -		ret = native_write_msr_safe(msr, low, high);
-> +		ret = native_wrmsr_safe_regs(regs);
->  	}
->  
->  	return ret;
->  }
->  
-> +static int xen_write_msr_safe(unsigned int msr, unsigned low, unsigned high)
+> +static int max77686_set_voltage_time_sel(struct regulator_dev *rdev,
+> +			unsigned int old_selector, unsigned int new_selector)
 > +{
-> +	u32 regs[8] = { 0 };
+> +	struct max77686_data *max77686 =3D rdev_get_drvdata(rdev);
+> +	int rid =3D rdev_get_id(rdev);
 > +
-> +	regs[0] = low;
-> +	regs[1] = msr;
-> +	regs[2] = high;
-> +
-> +	return xen_wrmsr_safe_regs(regs);
+> +	switch (rid) {
+> +	case MAX77686_BUCK2 ... MAX77686_BUCK4:
+> +		return (DIV_ROUND_UP(rdev->desc->uV_step
+> +			* abs(new_selector - old_selector),
+> +			max77686->ramp_delay * 1000));
+> +	}
+> +	/* Unconditionally 100 mV/us */
+> +	return (DIV_ROUND_UP(rdev->desc->uV_step
+> +		 * abs(new_selector - old_selector), 100000));
 > +}
-> +
->  void xen_setup_shared_info(void)
->  {
->  	if (!xen_feature(XENFEAT_auto_translated_physmap)) {
-> @@ -1116,7 +1130,9 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
->  	.wbinvd = native_wbinvd,
->  
->  	.read_msr = native_read_msr_safe,
-> +	.rdmsr_regs = native_rdmsr_safe_regs,
->  	.write_msr = xen_write_msr_safe,
-> +	.wrmsr_regs = xen_wrmsr_safe_regs,
->  	.read_tsc = native_read_tsc,
->  	.read_pmc = native_read_pmc,
->  
-> 
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+
+Just do separate functions.  The above is pretty illegible.
+
+> +	max77686->ramp_delay =3D MAX77686_RAMP_RATE; /* Set 0x3 for RAMP */
+> +	regmap_update_bits(max77686->iodev->regmap,
+> +					 MAX77686_REG_BUCK2CTRL1, 0xC0, 0xC0);
+> +	regmap_update_bits(max77686->iodev->regmap,
+> +					 MAX77686_REG_BUCK3CTRL1, 0xC0, 0xC0);
+> +	regmap_update_bits(max77686->iodev->regmap,
+> +					 MAX77686_REG_BUCK4CTRL1, 0xC0, 0xC0);
+
+This still appears to not be referencing the ramp rate that's being set?
+
+--ffBYM5qgR8HH9Mta
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPxlf/AAoJEBus8iNuMP3djQEP/1IaYjs8S4uZ5I1mZ/ltmUkc
+s2PSY20dIMUGo9Ue2sXCygYcFlZhCGT5kPAzTynqeTHGYwPeY0GPuIDcicy52oF4
+Vv9U9mZ/7fPiyHPaflG2HBQFllWwRk44yX58eIRW65rxleBoB1/XxdyCTTPxGRiD
+xQVKrhvmI1Zm/HqRMYM2QbgUNYqouFzRWeLdUzx9OZVpTq8gDxDjRQE45PC4OwZo
+KWbhyqa5fSImPFFCcH+4NzVqDBPWa+eP5ABXWMbhwxk98HpoT85zgmLpVN6KYK+C
+vX+vWYTJ6m7vmFWrmE9SPvOFU5w76bw8iEcoqTohz97IRHPyzlGJ5LpCZ1ltXpb5
+jZ1m6U19TZAYZ+jswpD6KszH2SXpFl7HCjA9JI4g3QI70OJnBzHRmKIJNOusqJR4
+RlG50sw8e/fbsj7K+ZSLrAxo/bPjpyG95psdDwDHIDkdXE/aJrDQA18ZWo+pQcol
+z+ouKhRuMeiaNZSKVwgjo/jNNhjVx6eXUllLyKO1gpB6ppfTpJDYJq0nuQLsX+6Y
+ora2/Uzn6aFatnYS2I6F4/Y4VdcpC7xtpF+GrOSoqczlvKaEodcei91mtZinC5Ma
+C6vzmMePQzFGGLWsnFSjLTBOxnhjF7onAlQggW6Gj8CyIAl/eSLOf3hE1yzK2lVA
+nbi1H/Kes99CJOoUP862
+=23ZT
+-----END PGP SIGNATURE-----
+
+--ffBYM5qgR8HH9Mta--
