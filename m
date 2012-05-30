@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab2E3HLq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:11:46 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:48267 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728Ab2E3HLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:11:45 -0400
-Message-ID: <4FC5C82E.4020806@msgid.tls.msk.ru>
-Date: Wed, 30 May 2012 11:11:42 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1756929Ab2E3HPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:15:54 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:51775 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752728Ab2E3HPw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 03:15:52 -0400
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-nfs@vger.kernel.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0+ NFS issues
-References: <4FBF2C57.3070203@msgid.tls.msk.ru> <20120529152416.GC3441@fieldses.org>
-In-Reply-To: <20120529152416.GC3441@fieldses.org>
-X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
+In-Reply-To: <1338353260-10097-19-git-send-email-lee.jones@linaro.org>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+	<1338353260-10097-19-git-send-email-lee.jones@linaro.org>
+Date: Wed, 30 May 2012 15:15:52 +0800
+Message-ID: <CACRpkdYpCMRurpDgz5X-Qsv5qUgzeVX3S8trWHByTaw6R35_jg@mail.gmail.com>
+Subject: Re: [PATCH 18/22] mfd: Remove redundant Kconfig entry
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.05.2012 19:24, J. Bruce Fields wrote:
-> On Fri, May 25, 2012 at 10:53:11AM +0400, Michael Tokarev wrote:
->> I updated my nfs server machine to kernel 3.0, and
->> noticed that its main usage become, well, problematic.
->>
->> While trying to dig deeper, I also found a few other
->> interesting issues, which are mentioned below.
->>
->> But first thing first: nfs.
->>
->> i686pae kernel, lots of RAM, Atom-based (cedar trail)
->> machine with usual rtl8169 NIC.  3.0 or 3.2 kernel
->> (I will try current 3.4 but I don't have much hopes
->> there).  NFSv4.
->>
->> When a client machine (also 3.0 kernel) does some reading,
->> the process often stalls somewhere in the read syscall,
->> or, rarer, during close, for up to two MINUTES.  During
->> this time, the client (kernel) reports "NFS server <foo>
->> does not respond" several times, and finally "NFS server
->> <foo> ok", client process "unstucks" from the read(2),
->> and is able to perform a few more reads till the whole
->> thing repeats.
-> 
-> You say 2.6.32 was OK; have you tried anything else between?
+On Wed, May 30, 2012 at 12:47 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Well, I thought bisecting between 2.6.32 and 3.0 will be quite
-painful...  But I'll try if nothing else helps.  And no, I haven't
-tried anything in-between.
+> During ab8500-core clean-up the Kconfig entry for AB8500_I2C_CORE
+> was left remnant. This patch simply removes it.
+>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mfd/Kconfig |   10 ----------
+>  1 file changed, 10 deletions(-)
+>
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 11a1b65..b697136 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -660,16 +660,6 @@ config AB8500_CORE
+>          the irq_chip parts for handling the Mixed Signal chip events.
+>          This chip embeds various other multimedia funtionalities as well.
+>
+> -config AB8500_I2C_CORE
+> -       bool "AB8500 register access via PRCMU I2C"
+> -       depends on AB8500_CORE && MFD_DB8500_PRCMU
 
-> And you're holding the client constant while varying only the server
-> version, right?
+You need to move these dependencies under the AB8500_CORE config
+entry instead.
 
-Yes.
+> -       default y
 
-> Is your network otherwise working?  (E.g. does transferring a bunch of
-> data from server to client using some other protocol work reliably?)
+I wonder if in  arch/arm/mach-ux500/Kconfig MACH_MOP500 should
+select this instead, all MOP500 children have this an *won't* work
+without it.
 
-Yes, it works flawlessly, all other protocols works so far.
-
-To the date, I resorted to using a small webserver plus wget as an ugly
-workaround for the problem - http works for reads from the server, while
-nfs works for writes.
-
-> Is there anything happening on the network during these stalls?  (You
-> can watch the network with wireshark, for example.)
-
-The network load is irrelevant - it behaves the same way with
-100% idle network or with network busy doing other stuff.
-
-> Does NFSv3 behave the same way?
-
-Yes it does.  With all NFSDs on server eating all available CPUs for
-quite some time, and with being "ghosts" for perf top.
-
-And with the client being unkillable again.
-
-Can at least the client be made interruptible?  Mounting with
--o intr,soft makes no visible difference...
-
-Thanks,
-
-/mjt
+Yours,
+Linus Walleij
