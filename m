@@ -1,65 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab2E3O5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:57:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39688 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab2E3O5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:57:18 -0400
-Date: Wed, 30 May 2012 10:50:05 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Andre Przywara <andre.przywara@amd.com>, Jan Beulich <JBeulich@suse.com>,
-        mingo@elte.hu, jeremy@goop.org, tglx@linutronix.de,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
- Trinity systems
-Message-ID: <20120530145005.GI3207@phenom.dumpdata.com>
-References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com>
- <4FC63DAF0200007800086DC5@nat28.tlf.novell.com>
- <4FC62888.9010407@amd.com>
- <20120530144851.GA12184@jshin-Toonie>
+	id S1751797Ab2E3O67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:58:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39141 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959Ab2E3O66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:58:58 -0400
+Message-ID: <4FC6358F.2010405@zytor.com>
+Date: Wed, 30 May 2012 07:58:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530144851.GA12184@jshin-Toonie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Borislav Petkov <bp@alien8.de>, Andre Przywara <andre.przywara@amd.com>,
+        mingo@elte.hu, tglx@linutronix.de, konrad.wilk@oracle.com,
+        jeremy@goop.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, stable@vger.kernel.org.#.3.4+
+Subject: Re: [PATCH] x86/amd: fix crash as Xen Dom0 on AMD Trinity systems
+References: <1338383402-3838-1-git-send-email-andre.przywara@amd.com> <4FC631D3.9080907@zytor.com> <20120530145523.GA15635@x1.osrc.amd.com>
+In-Reply-To: <20120530145523.GA15635@x1.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 09:48:51AM -0500, Jacob Shin wrote:
-> On Wed, May 30, 2012 at 04:02:48PM +0200, Andre Przywara wrote:
-> > On 05/30/2012 03:33 PM, Jan Beulich wrote:
-> > >>>>On 30.05.12 at 15:10, Andre Przywara<andre.przywara@amd.com>  wrote:
-> > >>Because we are behind a family check before tweaking the topology
-> > >>bit, we can use the standard rd/wrmsr variants for the CPUID feature
-> > >>register.
-> > >>This fixes a crash when using the kernel as a Xen Dom0 on affected
-> > >>Trinity systems. The wrmsrl_amd_safe is not properly paravirtualized
-> > >>yet (this will be fixed in another patch).
-> > >
-> > >I'm not following: If the AMD variants (putting a special value into
-> > >%edi) can be freely replaced by the non-AMD variants, why did
-> > >the AMD special ones get used in the first place?
-> > 
-> > Older CPUs (K8) needed the AMD variants, starting with family 10h we
-> > can use the normal versions.
-> > 
-> > >Further, I can't see how checking_wrmsrl() is being paravirtualized
-> > >any better than wrmsrl_amd_safe() - both have nothing but an
-> > >exception handling fixup attached to the wrmsr invocation. Care
-> > >to point out what actual crash it is that was seen?
-> > 
-> > AFAIK, the difference is between the "l" and the regs version for
-> > rd/wrmsr. We have a patch already here to fix this. Will send it out
-> > soon. Jacob, can you comment on this?
+On 05/30/2012 07:55 AM, Borislav Petkov wrote:
+> On Wed, May 30, 2012 at 07:42:27AM -0700, H. Peter Anvin wrote:
+>> On 05/30/2012 06:10 AM, Andre Przywara wrote:
+>>> Because we are behind a family check before tweaking the topology
+>>> bit, we can use the standard rd/wrmsr variants for the CPUID feature
+>>> register.
+>>
+>> That is not what the *msr*_amd*() functions do.
+>>
+>> NAK.  This is a totally bogus patch.
 > 
-> Right, the checking_wrmsrl turns into wrmsr_safe which is paravirtualized
-> but the rdmsrl_amd_safe which turns into rdmsr_regs is not paravirtualized
-> by enlighten.
+> The *msr*_amd*() variants were used instead of the normal *msrl_safe
+> variants although the AMD variants weren't needed there at all.
+> 
+> This has no issue on baremetal but breaks xen and this is how we caught
+> this.
+> 
+> So the patch corrects the original patch so that xen is happy too.
+> 
 
-So would a patch to implements the rdmsr_regs fix this crash?
+If so, then fix the description to match reality and we can take the patch.
+
+	-hpa
+
