@@ -1,108 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2E3MWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 08:22:44 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:62689 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab2E3MWm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 08:22:42 -0400
-Message-ID: <4FC61107.8050002@openvz.org>
-Date: Wed, 30 May 2012 16:22:31 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
-MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
-        "hughd@google.com" <hughd@google.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
- val:-59
-References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz> <4FC606E7.4090701@openvz.org> <4FC60BBC.203@fold.natur.cuni.cz>
-In-Reply-To: <4FC60BBC.203@fold.natur.cuni.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753504Ab2E3MY2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 08:24:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22060 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753249Ab2E3MYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 08:24:25 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: acme@redhat.com, a.p.zijlstra@chello.nl, mingo@elte.hu, paulus@samba.org,
+        cjashfor@linux.vnet.ibm.com, fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, dsahern@gmail.com
+Subject: [PATCHv5 0/3] perf, tool: Fix endian issues
+Date: Wed, 30 May 2012 14:23:41 +0200
+Message-Id: <1338380624-7443-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Mokrejs wrote:
->
->
-> Konstantin Khlebnikov wrote:
->> Martin Mokrejs wrote:
->>> Andrew Morton wrote:
->>>> On Wed, 30 May 2012 00:18:31 +0400
->>>> Konstantin Khlebnikov<khlebnikov@openvz.org>   wrote:
->>>>
->>>>> Oleg Nesterov wrote:
->>>>>> On 05/22, Andrew Morton wrote:
->>>>>>>
->>>>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
->>>>>>> happiness is important.  Has he cheered up yet?
->>>>>>
->>>>>> Well, yes, I do not really like this patch ;) Because I think there is
->>>>>> a more simple/straightforward fix, see below. In my opinion it also
->>>>>> makes the original code simpler.
->>>>>>
->>>>>> But. Obviously this is subjective, I can't prove my patch is "better",
->>>>>> and I didn't try to test it.
->>>>>>
->>>>>> So I won't argue with Konstantin who dislikes my patch, although I
->>>>>> would like to know the reason.
->>>>>
->>>>> I don't remember why I dislike your patch.
->>>>> For now I can only say ACK )
->>>>
->>>> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
->>>> that it was tested would be nice ;)
->>>
->>> I will reboot in few hours, finally after few days ... I am running this first
->>> patch. I will try to test the second/alternative patch more quickly. Sorry for
->>> the delay.
->>>
->>
->> easiest way trigger this bug:
->>
->> #define _GNU_SOURCE
->> #include<unistd.h>
->> #include<sched.h>
->> #include<sys/syscall.h>
->> #include<sys/mman.h>
->>
->> static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
->> {
->>      return syscall(SYS_clone, flags, stack, ptid, ctid);
->> }
->>
->> int main(int argc, char **argv)
->> {
->>      void *page;
->>
->>      page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
->>      sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
->> }
->>
->
-> I am getting segfaults with this.
->
-> (gdb) where
-> #0  0x0000000000000000 in ?? ()
-> #1  0x00007f430f70a7e0 in __elf_set___libc_subfreeres_element_free_mem__ () from /lib64/libc.so.6
-> #2  0x00007f430f70a7e8 in __elf_set___libc_atexit_element__IO_cleanup__ () from /lib64/libc.so.6
-> #3  0x0000000000000001 in ?? ()
-> #4  0x0000000000000000 in ?? ()
-> (gdb)
->
-> What number should I give it as an argument? ;-)
+hi,
+sending fixies to properly handle perf.data endians.
 
-there is no arguments.
+This patchset contains 3 updated patches with comments from David.
 
-yeah it corrupts stack. I'm too lazy to write it properly =)
-but on non-patched kernel it also triggers this bug:
-[206732.025131] BUG: Bad rss-counter state mm:ffff88000d8a6c80 idx:1 val:-1
+I can see still some discrepancies when reporting data on target
+and origin system. It's not related to endianity but to kallsyms
+symbols processing and deserves another patchset.
 
+There's another David's fix that needs to be taken as well:
+http://marc.info/?l=linux-kernel&m=133770186330032&w=2
+
+v5 changes:
+  - patch 1/3 s/DSO__READ/DSO__SWAP/
+  - updated all changelogs with perf report diff example
+
+v4 changes:
+  - fixed patch 6/7 which was broken for -fstrict-aliasing related optimization
+  - added patch 3/7 and 7/7
+
+v3 changes:
+  - added patch 5 to fix addons bitmask handling
+
+v2 changes:
+  - added patches 3 and 4 to handle sample_id_all header endianity
+
+
+Attached patches:
+  1/3 perf, tool: Handle different endians properly during symbol load
+  2/3 perf, tool: Handle endianity swap on sample_id_all header data
+  3/3 perf, tool: Fix 32 bit values endianity swap for sample_id_all header
+
+
+Tested by running following usecases:
+test 1)
+  - origin system:
+    # perf record -a -- sleep 10 (any perf record will do)
+    # perf report > report.origin
+    # perf archive perf.data
+    
+  - copy the perf.data, report.origin and perf.data.tar.bz2
+    to a target system and run:
+    # tar xjvf perf.data.tar.bz2 -C ~/.debug
+    # perf report > report.target
+    # diff -u report.origin report.target
+    
+  - the diff should produce no output
+    (besides some white space stuff and possibly different
+     date/TZ output)
+
+test 2)
+  - origin system:
+    # perf record -ag -fo /tmp/perf.data -- sleep 1
+  - mount origin system root to the target system on /mnt/origin
+  - target system:
+    # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
+     --kallsyms /mnt/origin/proc/kallsyms
+  - complete perf.data header is displayed 
+
+test 3)
+  - tested with old perf.data version, worked proplerly
+
+Tested by above usecase cross following architectures:
+  i386, x86_64, s390x, ppc64, ppc32
+
+Big thank to Caspar Zhang who verified this within RH QE testsuites.
+
+thanks,
+jirka
+---
+ tools/perf/util/evsel.c   |   29 +++++++++++++++-----
+ tools/perf/util/session.c |   67 +++++++++++++++++++++++++++++++++++++--------
+ tools/perf/util/symbol.c  |   33 +++++++++++++++++++++-
+ tools/perf/util/symbol.h  |   30 ++++++++++++++++++++
+ 4 files changed, 139 insertions(+), 20 deletions(-)
