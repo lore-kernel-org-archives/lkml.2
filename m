@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2E3HhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:37:24 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49485 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab2E3HhX (ORCPT
+	id S1752031Ab2E3Hi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:38:57 -0400
+Received: from mail19b.g19.rapidsite.net ([204.202.242.88]:23778 "HELO
+	mail19b.g19.rapidsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751031Ab2E3Hi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 03:37:23 -0400
-Message-ID: <4FC5CE2E.6000501@linaro.org>
-Date: Wed, 30 May 2012 15:37:18 +0800
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Wed, 30 May 2012 03:38:56 -0400
+thread-index: Ac0+N0Q0yMiJEJTZSk2SY69ARz1izg==
+Thread-Topic: You have an unanswered message Recommends Advanced Sports to you
+From: <christian@ymail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: You have an unanswered message Recommends Advanced Sports to you
+Date: Wed, 30 May 2012 03:38:55 -0400
+Message-ID: <4AB21A7C9521492CBA0E1D3DF5A4A079@g19.win.smewh.net>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, broonie@opensource.wolfsonmicro.com,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/22] mfd: Remove redundant Kconfig entry
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-19-git-send-email-lee.jones@linaro.org> <CACRpkdYpCMRurpDgz5X-Qsv5qUgzeVX3S8trWHByTaw6R35_jg@mail.gmail.com>
-In-Reply-To: <CACRpkdYpCMRurpDgz5X-Qsv5qUgzeVX3S8trWHByTaw6R35_jg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft CDO for Windows 2000
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+X-Spam: [F=0.2000000000; S=0.200(2010122901); MH=0.500(2012053002)]
+X-MAIL-FROM: <christian@ymail.com>
+X-SOURCE-IP: [199.239.254.58]
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/05/12 15:15, Linus Walleij wrote:
-> On Wed, May 30, 2012 at 12:47 PM, Lee Jones<lee.jones@linaro.org>  wrote:
->
->> During ab8500-core clean-up the Kconfig entry for AB8500_I2C_CORE
->> was left remnant. This patch simply removes it.
->>
->> Cc: Samuel Ortiz<sameo@linux.intel.com>
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Lee Jones<lee.jones@linaro.org>
->> ---
->>   drivers/mfd/Kconfig |   10 ----------
->>   1 file changed, 10 deletions(-)
->>
->> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
->> index 11a1b65..b697136 100644
->> --- a/drivers/mfd/Kconfig
->> +++ b/drivers/mfd/Kconfig
->> @@ -660,16 +660,6 @@ config AB8500_CORE
->>           the irq_chip parts for handling the Mixed Signal chip events.
->>           This chip embeds various other multimedia funtionalities as well.
->>
->> -config AB8500_I2C_CORE
->> -       bool "AB8500 register access via PRCMU I2C"
->> -       depends on AB8500_CORE&&  MFD_DB8500_PRCMU
->
-> You need to move these dependencies under the AB8500_CORE config
-> entry instead.
+>From         :You have an unanswered message
+Email        :christian@ymail.com
+Friend Name  :Friend
+Friend Email :linux-kernel@vger.kernel.org
+comment      :
 
-Already done and upstreamed: 21f082a66177852365df0c955ecaef50fba9a691
 
->> -       default y
->
-> I wonder if in  arch/arm/mach-ux500/Kconfig MACH_MOP500 should
-> select this instead, all MOP500 children have this an *won't* work
-> without it.
+Hi Friend,
 
-As described, I have already moved the dependency in the Kconfig file.
+Mike IS still waiting for an
+answer...
 
-I guess what you've just mentioned is a separate patch (for another 
-time). I'll stick it on my ever growing TODO.
+It's very rare that some will actually
+take you by the hand and flat-out
+give you their personal ClickBank 
+software
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Downloads are currently available
+at the time of writing this to you.
+
+What are you waiting for? The site
+to be closed down?
+
+Watch a live demo and see verified 
+proof of ClickBank income here... 
+
+==>http://www.mymillionaire-society.com/?code=4fc2ae6b6f40c 
+
+Christian
+
+
+
+
+PS: Before you close the site wait
+    you have special $10 Discount!
+
+
+==>http://www.mymillionaire-society.com/?code=4fc2ae6b6f40c 
+
+
+
+
+
+
+
+
+
+
