@@ -1,204 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab2E3Oev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:34:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47399 "EHLO
+	id S1755939Ab2E3Ofp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:35:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47415 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab2E3Oes (ORCPT
+	with ESMTP id S1754852Ab2E3Oet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:34:48 -0400
+	Wed, 30 May 2012 10:34:49 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <tony@atomide.com>, <linux@arm.linux.org.uk>, <gregkh@linuxfoundation.org>,
         <kishon@ti.com>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <balbi@ti.com>
-Subject: [RFC PATCH 3/3] arm: omap: phy: remove unused functions from omap-phy-internal.c
-Date: Wed, 30 May 2012 20:04:26 +0530
-Message-ID: <1338388466-3565-4-git-send-email-kishon@ti.com>
+Subject: [RFC PATCH 0/3] usb: musb: add new phy driver
+Date: Wed, 30 May 2012 20:04:23 +0530
+Message-ID: <1338388466-3565-1-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1338388466-3565-1-git-send-email-kishon@ti.com>
-References: <1338388466-3565-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the unnessary functions in omap-phy-internal is removed.
-These functionality are now handled by omap-usb2 phy driver.
+This series adds a new usb2 phy driver. The device for which is created
+by the ocp2scp driver. This also uses control module driver.
 
-Cc: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/mach-omap2/omap_phy_internal.c |  138 -------------------------------
+This series converts twl6030 as a comparator driver (previously it was
+also the phy driver) and makes use of omap-usb2 as the phy driver.
+
+Instead of notification mechanism by power chip to omap glue to pass detection
+of any events, an export API has been added in omap glue. Both twl4030 and
+twl6030 will call to this API to pass any event. (twl6030 is used in omap4 and
+twl4030 is used in omap3).
+
+This series depends on:
+*[RFC PATCH 00/11] OMAP System Control Module* patch series
+However System Control Module driver has only dt support, so wouldn't
+be able to test this patch series. However I'll adapt omap usb2 phy
+driver and musb driver for dt and send it asap to the list.
+
+This series also depends on:
+*[PATCH v3 0/3] usb: multi-phy support* patch series
+*[RFC PATCH 0/5] omap: add ocp2scp as a misc driver* patch series
+
+Compile tested only.
+
+Kishon Vijay Abraham I (3):
+  drivers: usb: otg: add a new driver for omap usb2 phy
+  usb: musb: omap glue: use omap-usb2 as the phy driver
+  arm: omap: phy: remove unused functions from omap-phy-internal.c
+
+ arch/arm/mach-omap2/omap_phy_internal.c |  138 ------------------
  arch/arm/mach-omap2/twl-common.c        |    5 -
- 2 files changed, 0 insertions(+), 143 deletions(-)
+ arch/arm/mach-omap2/usb-musb.c          |    3 -
+ drivers/usb/musb/musb_core.h            |    1 -
+ drivers/usb/musb/omap2430.c             |  150 ++++++++++++++------
+ drivers/usb/otg/Kconfig                 |   17 ++-
+ drivers/usb/otg/Makefile                |    1 +
+ drivers/usb/otg/omap-usb2.c             |  232 +++++++++++++++++++++++++++++++
+ drivers/usb/otg/twl4030-usb.c           |   40 ++----
+ drivers/usb/otg/twl6030-usb.c           |  172 +++++------------------
+ include/linux/usb/musb-omap.h           |   31 ++++
+ include/linux/usb/omap_usb.h            |   47 ++++++
+ include/linux/usb/phy_companion.h       |   34 +++++
+ 13 files changed, 514 insertions(+), 357 deletions(-)
+ create mode 100644 drivers/usb/otg/omap-usb2.c
+ create mode 100644 include/linux/usb/musb-omap.h
+ create mode 100644 include/linux/usb/omap_usb.h
+ create mode 100644 include/linux/usb/phy_companion.h
 
-diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
-index b2c9253..9a9e960 100644
---- a/arch/arm/mach-omap2/omap_phy_internal.c
-+++ b/arch/arm/mach-omap2/omap_phy_internal.c
-@@ -31,144 +31,6 @@
- #include <plat/usb.h>
- #include <mach/control.h>
- 
--/* OMAP control module register for UTMI PHY */
--#define CONTROL_DEV_CONF		0x300
--#define PHY_PD				0x1
--
--#define USBOTGHS_CONTROL		0x33c
--#define	AVALID				BIT(0)
--#define	BVALID				BIT(1)
--#define	VBUSVALID			BIT(2)
--#define	SESSEND				BIT(3)
--#define	IDDIG				BIT(4)
--
--static struct clk *phyclk, *clk48m, *clk32k;
--static void __iomem *ctrl_base;
--static int usbotghs_control;
--
--int omap4430_phy_init(struct device *dev)
--{
--	ctrl_base = ioremap(OMAP443X_SCM_BASE, SZ_1K);
--	if (!ctrl_base) {
--		pr_err("control module ioremap failed\n");
--		return -ENOMEM;
--	}
--	/* Power down the phy */
--	__raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
--
--	if (!dev) {
--		iounmap(ctrl_base);
--		return 0;
--	}
--
--	phyclk = clk_get(dev, "ocp2scp_usb_phy_ick");
--	if (IS_ERR(phyclk)) {
--		dev_err(dev, "cannot clk_get ocp2scp_usb_phy_ick\n");
--		iounmap(ctrl_base);
--		return PTR_ERR(phyclk);
--	}
--
--	clk48m = clk_get(dev, "ocp2scp_usb_phy_phy_48m");
--	if (IS_ERR(clk48m)) {
--		dev_err(dev, "cannot clk_get ocp2scp_usb_phy_phy_48m\n");
--		clk_put(phyclk);
--		iounmap(ctrl_base);
--		return PTR_ERR(clk48m);
--	}
--
--	clk32k = clk_get(dev, "usb_phy_cm_clk32k");
--	if (IS_ERR(clk32k)) {
--		dev_err(dev, "cannot clk_get usb_phy_cm_clk32k\n");
--		clk_put(phyclk);
--		clk_put(clk48m);
--		iounmap(ctrl_base);
--		return PTR_ERR(clk32k);
--	}
--	return 0;
--}
--
--int omap4430_phy_set_clk(struct device *dev, int on)
--{
--	static int state;
--
--	if (on && !state) {
--		/* Enable the phy clocks */
--		clk_enable(phyclk);
--		clk_enable(clk48m);
--		clk_enable(clk32k);
--		state = 1;
--	} else if (state) {
--		/* Disable the phy clocks */
--		clk_disable(phyclk);
--		clk_disable(clk48m);
--		clk_disable(clk32k);
--		state = 0;
--	}
--	return 0;
--}
--
--int omap4430_phy_power(struct device *dev, int ID, int on)
--{
--	if (on) {
--		if (ID)
--			/* enable VBUS valid, IDDIG groung */
--			__raw_writel(AVALID | VBUSVALID, ctrl_base +
--							USBOTGHS_CONTROL);
--		else
--			/*
--			 * Enable VBUS Valid, AValid and IDDIG
--			 * high impedance
--			 */
--			__raw_writel(IDDIG | AVALID | VBUSVALID,
--						ctrl_base + USBOTGHS_CONTROL);
--	} else {
--		/* Enable session END and IDIG to high impedance. */
--		__raw_writel(SESSEND | IDDIG, ctrl_base +
--					USBOTGHS_CONTROL);
--	}
--	return 0;
--}
--
--int omap4430_phy_suspend(struct device *dev, int suspend)
--{
--	if (suspend) {
--		/* Disable the clocks */
--		omap4430_phy_set_clk(dev, 0);
--		/* Power down the phy */
--		__raw_writel(PHY_PD, ctrl_base + CONTROL_DEV_CONF);
--
--		/* save the context */
--		usbotghs_control = __raw_readl(ctrl_base + USBOTGHS_CONTROL);
--	} else {
--		/* Enable the internel phy clcoks */
--		omap4430_phy_set_clk(dev, 1);
--		/* power on the phy */
--		if (__raw_readl(ctrl_base + CONTROL_DEV_CONF) & PHY_PD) {
--			__raw_writel(~PHY_PD, ctrl_base + CONTROL_DEV_CONF);
--			mdelay(200);
--		}
--
--		/* restore the context */
--		__raw_writel(usbotghs_control, ctrl_base + USBOTGHS_CONTROL);
--	}
--
--	return 0;
--}
--
--int omap4430_phy_exit(struct device *dev)
--{
--	if (ctrl_base)
--		iounmap(ctrl_base);
--	if (phyclk)
--		clk_put(phyclk);
--	if (clk48m)
--		clk_put(clk48m);
--	if (clk32k)
--		clk_put(clk32k);
--
--	return 0;
--}
--
- void am35x_musb_reset(void)
- {
- 	u32	regval;
-diff --git a/arch/arm/mach-omap2/twl-common.c b/arch/arm/mach-omap2/twl-common.c
-index 119d5a9..396d189 100644
---- a/arch/arm/mach-omap2/twl-common.c
-+++ b/arch/arm/mach-omap2/twl-common.c
-@@ -250,11 +250,6 @@ void __init omap3_pmic_get_config(struct twl4030_platform_data *pmic_data,
- 
- #if defined(CONFIG_ARCH_OMAP4)
- static struct twl4030_usb_data omap4_usb_pdata = {
--	.phy_init	= omap4430_phy_init,
--	.phy_exit	= omap4430_phy_exit,
--	.phy_power	= omap4430_phy_power,
--	.phy_set_clock	= omap4430_phy_set_clk,
--	.phy_suspend	= omap4430_phy_suspend,
- };
- 
- static struct regulator_init_data omap4_vdac_idata = {
 -- 
 1.7.5.4
 
