@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2E3HAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 03:00:00 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:56895 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2E3G76 (ORCPT
+	id S1753920Ab2E3HA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 03:00:29 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52765 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab2E3HA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 02:59:58 -0400
-X-AuditID: b753bd60-a2688ba000000655-60-4fc5c56aa3d7
-X-AuditID: b753bd60-a2688ba000000655-60-4fc5c56aa3d7
-Message-ID: <4FC5C55E.9000909@hitachi.com>
-Date: Wed, 30 May 2012 15:59:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Wed, 30 May 2012 03:00:27 -0400
+Date: Wed, 30 May 2012 09:00:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe optimization
-References: <20120529124833.9191.23007.stgit@localhost.localdomain> <1338331514.13348.298.camel@gandalf.stny.rr.com>
-In-Reply-To: <1338331514.13348.298.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Pekka Enberg <penberg@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 0/4] perf/urgent fixes
+Message-ID: <20120530070018.GA2587@gmail.com>
+References: <1338336688-25616-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338336688-25616-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/30 7:45), Steven Rostedt wrote:
-> On Tue, 2012-05-29 at 21:48 +0900, Masami Hiramatsu wrote:
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 > 
->> Also, this makes all __kprobes functions "notrace", because
->> some of those functions are considered as to be called from
->> kprobes handler which is called from function tracer.
->> I think that is another discussion point. Perhaps, we need
->> to introduce another tag which means "don't put kprobe on
->> this function" instead of __kprobes and apply that.
+> Hi Ingo,
 > 
-> Actually, instead, we can force kprobes to have all "__kprobes"
-> functions added to its 'notrace' ftrace_ops. This will just keep kprobes
-> from function tracing these, as I find myself tracing functions marked
-> by kprobes quite a bit.
+> 	Please consider pulling.
+> 
+> 	There are 5 other fixes in this repo, that went on my previous
+> perf/urgent pull request.
+> 
+> Thanks,
+> 
+> - Arnaldo
+> 
+> 
+> The following changes since commit a00dc319e98161949aa87f71a17db32e925c3257:
+> 
+>   perf record: Fix branch_stack type in perf_record_opts (2012-05-25 18:32:44 -0300)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to a44b45f236dd1c1a8caccf9a078adf2941a20267:
+> 
+>   perf annotate browser: The idx_asm field should be used in asm only view (2012-05-29 20:52:38 -0300)
+> 
+> ----------------------------------------------------------------
+> Fixes for perf/urgent
+> 
+> . Fix fallback to --stdio when TUI not supported, from Namhyung Kim.
+> 
+> . Use right cast for pointers/long in libtraceevent, from Namhyung Kim.
+> 
+> . Be consistent on using the right error reporting interface for fatal errors,
+>   from Namhyung Kim.
+> 
+> . Fix fallback to --stdio when TUI not supported, from Namhyung Kim.
+> 
+> . Use the right index in asm only view in the annotate browser.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       perf annotate browser: The idx_asm field should be used in asm only view
+> 
+> Namhyung Kim (3):
+>       tools lib traceevent: Silence compiler warning on 32bit build
+>       perf ui: Make --stdio default when TUI is not supported
+>       perf tools: Convert critical messages to ui__error()
+> 
+>  tools/lib/traceevent/parse-filter.c |    2 +-
+>  tools/perf/builtin-annotate.c       |    2 +-
+>  tools/perf/builtin-record.c         |   14 +++++++-------
+>  tools/perf/builtin-report.c         |   14 ++++++--------
+>  tools/perf/builtin-top.c            |   22 +++++++++++-----------
+>  tools/perf/ui/browsers/annotate.c   |    6 +++++-
+>  tools/perf/ui/setup.c               |    1 +
+>  7 files changed, 32 insertions(+), 29 deletions(-)
 
-Hmm, I'm not so sure how the notrace and filter works.
-What happens if I set a foo function-entry on filter
-and keep notrace empty?
- - only foo's nop is replaced with call?
- - or all functions including foo is traced?
+Pulled, thanks Arnaldo!
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+	Ingo
