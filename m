@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab2E3Lg7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 07:36:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64793 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab2E3Lg6 (ORCPT
+	id S1753157Ab2E3Lj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 07:39:28 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:61098 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738Ab2E3Lj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 07:36:58 -0400
-Date: Wed, 30 May 2012 13:36:51 +0200
-From: Johannes Goetzfried 
-	<Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org,
-        Tilo =?iso-8859-1?Q?M=FCller?= 
-	<Tilo.Mueller@informatik.uni-erlangen.de>
-Subject: Re: [PATCH] crypto: serpent - add x86_64/avx assembler
- implementation
-Message-ID: <20120530113651.GP17705@kronos.redsun>
-References: <20120527145112.GF17705@kronos.redsun>
- <m2396il7xc.fsf@firstfloor.org>
+	Wed, 30 May 2012 07:39:26 -0400
+Message-ID: <4FC606E7.4090701@openvz.org>
+Date: Wed, 30 May 2012 15:39:19 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2396il7xc.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Provags-ID: V02:K0:sENFO9dMDlak4rK3MWLGdHJSR0QyuMJtofgt3ltdcdo
- bRcWcCV5YuV8mTHlnhkRALtKRaMYX2rajvQi3EXzB7oaUVQ75e
- MWXMuE+KEUSMcgri8aokr8dGCQ5daBkKQlubR5vpjy8+beWZYQ
- jiT9bFN5nUQN7wpgV7YSjy5rtM7+tTPC4i3pXtJBs3EcCSuxmM
- gK6OwbVw01JywQ+GJMBOIJo1MLDqakAG2dg17Na5bBbWhee95Y
- v1o3aG9mSpZ+dxuXGIh5nF5MnV7vbn4BIJV/ibllXDxit5z3EX
- o4KqgoZ+qJ9IybFKXRbHcZTjZXkd/kV42YLJi8PoTYu9D+DVET
- 1ot8jFhe2w4ymv+hx3Sc=
+To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "markus@trippelsdorf.de" <markus@trippelsdorf.de>,
+        "hughd@google.com" <hughd@google.com>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: 3.4-rc7: BUG: Bad rss-counter state mm:ffff88040b56f800 idx:1
+ val:-59
+References: <4FBC1618.5010408@fold.natur.cuni.cz> <20120522162835.c193c8e0.akpm@linux-foundation.org> <20120522162946.2afcdb50.akpm@linux-foundation.org> <20120523172146.GA27598@redhat.com> <4FC52F17.20709@openvz.org> <20120529132658.14ab9ba3.akpm@linux-foundation.org> <4FC546B1.8050508@fold.natur.cuni.cz>
+In-Reply-To: <4FC546B1.8050508@fold.natur.cuni.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 07:27:43PM -0700, Andi Kleen wrote:
-> Also drivers should never print anything when they cannot find hardware.
-> Remove that printk.
+Martin Mokrejs wrote:
+> Andrew Morton wrote:
+>> On Wed, 30 May 2012 00:18:31 +0400
+>> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>>
+>>> Oleg Nesterov wrote:
+>>>> On 05/22, Andrew Morton wrote:
+>>>>>
+>>>>> Also, I have a note here that Oleg was unhappy with the patch.  Oleg
+>>>>> happiness is important.  Has he cheered up yet?
+>>>>
+>>>> Well, yes, I do not really like this patch ;) Because I think there is
+>>>> a more simple/straightforward fix, see below. In my opinion it also
+>>>> makes the original code simpler.
+>>>>
+>>>> But. Obviously this is subjective, I can't prove my patch is "better",
+>>>> and I didn't try to test it.
+>>>>
+>>>> So I won't argue with Konstantin who dislikes my patch, although I
+>>>> would like to know the reason.
+>>>
+>>> I don't remember why I dislike your patch.
+>>> For now I can only say ACK )
+>>
+>> We'll need a changelogged signed-off patch, please Oleg.  And some evidence
+>> that it was tested would be nice ;)
+>
+> I will reboot in few hours, finally after few days ... I am running this first
+> patch. I will try to test the second/alternative patch more quickly. Sorry for
+> the delay.
+>
 
-I tried to be consistent with the existing ciphers in arch/x86/crypto.
-In serpent_sse2_glue.c and sha1_ssse3_glue.c it is done exactly that way, so if
-it will be decided to remove the printk in this patch it probably should also
-be removed in the other modules.
+easiest way trigger this bug:
 
-- Johannes
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <sched.h>
+#include <sys/syscall.h>
+#include <sys/mman.h>
+
+static inline int sys_clone(unsigned long flags, void *stack, int *ptid, int *ctid)
+{
+	return syscall(SYS_clone, flags, stack, ptid, ctid);
+}
+
+int main(int argc, char **argv)
+{
+	void *page;
+
+	page = mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	sys_clone(CLONE_VFORK | CLONE_VM | CLONE_CHILD_CLEARTID, NULL, NULL, page);
+}
