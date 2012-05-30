@@ -1,134 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab2E3Or0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 10:47:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45630 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab2E3OrY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 10:47:24 -0400
-Message-ID: <1338389200.26856.273.camel@twins>
-Subject: Re: [PATCH 00/35] AutoNUMA alpha14
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Date: Wed, 30 May 2012 16:46:40 +0200
-In-Reply-To: <CA+55aFxpD+LsE+aNvDJtz9sGsGMvdusisgOY3Csbzyx1mEqW-w@mail.gmail.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-	 <4FC112AB.1040605@redhat.com>
-	 <CA+55aFxpD+LsE+aNvDJtz9sGsGMvdusisgOY3Csbzyx1mEqW-w@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1754877Ab2E3Os0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 10:48:26 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:34625 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754201Ab2E3OsY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 10:48:24 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338375394-16268-2-git-send-email-kishon@ti.com>
+References: <1338375394-16268-1-git-send-email-kishon@ti.com> <1338375394-16268-2-git-send-email-kishon@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Wed, 30 May 2012 20:18:02 +0530
+Message-ID: <CAMQu2gw___u=g0=EQ3Q0fVuzG1gZKAoMpt268_Npbp26sWPHaA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/5] arm: omap: hwmod: make *phy_48m* as the main_clk
+ of ocp2scp
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        arnd@arndb.de, gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-05-26 at 13:42 -0700, Linus Torvalds wrote:
-
-> I'm a *firm* believer that if it cannot be done automatically "well
-> enough", the absolute last thing we should ever do is worry about the
-> crazy people who think they can tweak it to perfection with complex
-> interfaces.
-> 
-> You can't do it, except for trivial loads (often benchmarks), and for
-> very specific machines.
-> 
-> So I think very strongly that we should entirely dismiss all the
-> people who want to do manual placement and claim that they know what
-> their loads do. They're either full of sh*t (most likely), or they
-> have a very specific benchmark and platform that they are tuning for
-> that is totally irrelevant to everybody else.
-> 
-> What we *should* try to aim for is a system that doesn't do horribly
-> badly right out of the box. IOW, no tuning what-so-ever (at most a
-> kind of "yes, I want you to try to do the NUMA thing" flag to just
-> enable it at all), and try to not suck.
-> 
-> Seriously. "Try to avoid sucking" is *way* superior to "We can let the
-> user tweak things to their hearts content". Because users won't get it
-> right.
-> 
-> Give the anal people a knob they can tweak, and tell them it does
-> something fancy. And never actually wire the damn thing up. They'll be
-> really happy with their OCD tweaking, and do lots of nice graphs that
-> just show how the error bars are so big that you can find any damn
-> pattern you want in random noise.
-
-So the thing is, my homenode-per-process approach should work for
-everything except the case where a single process out-strips a single
-node in either cpu utilization or memory consumption.
-
-Now I claim such processes are rare since nodes are big, typically 6-8
-cores. Writing anything that can sustain parallel execution larger than
-that is very specialist (and typically already employs strong data
-separation).
-
-Yes there are such things out there, some use JVMs some are virtual
-machines some regular applications, but by and large processes are small
-compared to nodes.
-
-So my approach is focus on the normal case, and provide 2 system calls
-to replace sched_setaffinity() and mbind() for the people who use those.
-
-Now, maybe I shouldn't have bothered with the system calls.. but I
-thought providing something better than hard-affinity would be nice.
+On Wed, May 30, 2012 at 4:26 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Made *ocp2scp_usb_phy_phy_48m* as the main_clk for ocp2scp.
+> Since this ocp2scp module does not have any fck but does have a
+> single opt_clock, it is added as the main_clk for ocp2scp.
+>
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
 
 
-Andrea went the other way and focused on these big processes. His
-approach relies on a pte scanner and faults. His code builds a
-page<->thread map using this data either moves memory around or
-processes (I'm a little vague on the details simply because I haven't
-seen it explained anywhere yet -- and the code is non-obvious).
+>  arch/arm/mach-omap2/omap_hwmod_44xx_data.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> index 950454a..249ff76 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+> @@ -2508,6 +2508,7 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod = {
+>        .name           = "ocp2scp_usb_phy",
+>        .class          = &omap44xx_ocp2scp_hwmod_class,
+>        .clkdm_name     = "l3_init_clkdm",
+> +       .main_clk       = "ocp2scp_usb_phy_phy_48m",
+>        .prcm = {
+>                .omap4 = {
+>                        .clkctrl_offs = OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
+> --
+> 1.7.5.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I have a number of problems with both the approach as well as the
-implementation. 
+Minor ..
+$subject
+s/arm: omap: / ARM: OMAP
 
-On the approach my biggest complaints are:
-
- - the complexity, it focuses on the rarest sort of processes and thus
-   results in a rather complex setup.
-
- - load-balance state explosion, the page-tables become part of the
-   load-balance state -- this is a lot of extra state making
-   reproduction more 'interesting'.
-
- - the overhead, since its per page, it needs per-page state.
-
- - I don't see how it can reliably work for virtual machines, because
-   the host page<->thread (vcpu) relation doesn't reflect a
-   data<->compute relation in this case. The guest scheduler can move
-   the guest thread (the compute) part around between the vcpus at a
-   much higher rate than the host will update its page<->vcpu map.
-
-On the implementation:
-
- - he works around the scheduler instead of with it.
-
- - its x86 only (although he claims adding archs is trivial
-   I've yet to see the first !x86 support).
-
- - complete lack of useful comments describing the balancing goal and
-   approach.
-
-The worst part is that I've asked for this stuff several times, but
-nothing seems forth-coming.
-
-Anyway, I prefer doing the simple thing first and then seeing if there's
-need for more complexity, esp. given the overheads involved. But if you
-prefer we can dive off the deep end :-)
+An maintain this naming consistency since one of
+the patch in the series uses capital where as others
+not
