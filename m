@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757881Ab2EaS7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:59:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56607 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752732Ab2EaS7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:59:39 -0400
-Message-ID: <4FC7BF8B.60201@zytor.com>
-Date: Thu, 31 May 2012 11:59:23 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758369Ab2EaTBv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:01:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:23660 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab2EaTBu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 15:01:50 -0400
+Date: Thu, 31 May 2012 14:54:44 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        Borislav Petkov <bp@amd64.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
+ platform
+Message-ID: <20120531185444.GA7557@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
+ <20120531161139.GA13939@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351FFB11@SHSMSX101.ccr.corp.intel.com>
+ <20120531173137.GA31735@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923352000E2@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Jan Kiszka <jan.kiszka@siemens.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Rob Landley <rob@landley.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Alexander Graf <agraf@suse.de>, KVM <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
-References: <20120531080116.24838.15692.sendpatchset@codeblue.in.ibm.com> <4FC7AE15.9040807@xenotime.net> <4FC7BEB2.8000207@siemens.com>
-In-Reply-To: <4FC7BEB2.8000207@siemens.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923352000E2@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2012 11:55 AM, Jan Kiszka wrote:
->>
->> No "Status", does that imply "Active" ?
+> >> That's vMCE injection logic.
+> > 
+> > Are you sure about it? The comments in it speak of piggybacking on
+> > the native MCE handling routines. But since that is not used anymore
+> > do you need to use a different mechanism?
 > 
-> It should actually state that this call is in use.
+> What is not used anymore? what's your concern about cvt_gate_to_trap? I really confused here.
+> Could you elaborate more?
+
+Well, the mce.c is not involved anymore. So if it we are piggybacking
+on the native MCE handling routines - those routines (do_machine_check)
+won't deliever the data to your driver anymore? B/c the do_machine_check
+is doing mce_log which spools data. But your driver is using a different
+system to de-spool the data - and it does not use the mcelog structure
+array.
+
+.. snip.
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> >> c/s a01ee165a132fadb57659d26246e340d6ac53265
+> > 
+> > Which I think the tree is based on too.
 > 
+> So it would not be stuck?
 
-It might be nice to point out when a call was introduced, and for
-deprecated calls, when it was deprecated.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+I've no idea what you mean here. Could you elaborate please?
