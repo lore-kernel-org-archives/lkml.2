@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab2EaSpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:45:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56483 "EHLO mail.zytor.com"
+	id S1758391Ab2EaSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:45:27 -0400
+Received: from mga02.intel.com ([134.134.136.20]:48812 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758160Ab2EaSpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:45:18 -0400
-Message-ID: <4FC7BC1D.8030002@zytor.com>
-Date: Thu, 31 May 2012 11:44:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+	id S1758369Ab2EaSpZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:45:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="146732866"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
-References: <20120531012829.160060586@goodmis.org> <20120531020441.500105258@goodmis.org>
-In-Reply-To: <20120531020441.500105258@goodmis.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Ingo Molnar <mingo@redhat.com>
+Subject: RE: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Thread-Topic: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Thread-Index: AQHNOZYGtI1DcNZxtEGCK0mbRpqc+pbZOc0AgABYoYCAAAkdAIAAFPOAgAd2gYCAACJ1AIAADiKAgAAIj4CAAZ5vgIABK+aA///7NhCAAH/JAP//mExA
+Date: Thu, 31 May 2012 18:14:56 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F6CE1@ORSMSX104.amr.corp.intel.com>
+References: <4FBE5E1D.7070804@redhat.com>
+ <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com>
+ <20120529115851.GB29157@aftab.osrc.amd.com> <4FC4D6E2.9060501@redhat.com>
+ <20120529145245.GG29157@aftab.osrc.amd.com> <4FC4E9EB.5030801@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
+ <20120531100005.GC14074@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6C61@ORSMSX104.amr.corp.intel.com>
+ <20120531172018.GO14515@aftab.osrc.amd.com>
+In-Reply-To: <20120531172018.GO14515@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 06:28 PM, Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> When the NMI handler runs, it checks if it preempted a debug
-> handler and if that handler is using the debug stack. If it is, it
-> changes the IDT table not to update the stack, otherwise it will
-> reset the debug stack and corrupt the debug handler it preempted.
-> 
-> Now that ftrace uses breakpoints to change functions from nops to 
-> callers, many more places may hit a breakpoint. Unfortunately this 
-> includes some of the calls that lockdep performs. Which causes
-> issues with the debug stack. It too needs to change the debug stack
-> before tracing (if called from the debug handler).
-> 
-> Allow the debug_stack_set_zero() and debug_stack_reset() to be
-> nested so that the debug handlers can take advantage of them too.
-> 
+> Ok, thus the dynamic granularity. But we're going to end up reporting
+> rank and row too so that it can be matched to the DIMM. I consider
+> physical address a bonus in such cases and it is only of importance to
+> those who like to replace single DRAM chips or single MOSFET transistors
+> :-) :-) :-).
 
-NAK on this in its current form.  A few minutes to let me write up a
-technical review.
+Perhaps you don't really need to replace your 32GB DIMM because a single
+bit is stuck (one bad bit out of > 300 billion). With the physical address
+we can tell Linux to try to stop using the page that contains the stuck
+bit - most of the time it can do that.
 
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+-Tony
