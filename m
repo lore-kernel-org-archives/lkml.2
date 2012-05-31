@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab2EaObZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:31:25 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:58157 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753505Ab2EaObY (ORCPT
+	id S1754783Ab2EaOW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:22:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2339 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab2EaOW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:31:24 -0400
-Date: Thu, 31 May 2012 11:31:16 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Sunjin Yang <fan4326@gmail.com>,
-        Arun Sharma <asharma@fb.com>
-Subject: Re: [PATCH/RFC 2/2] perf tools: Check callchain is corrupted
-Message-ID: <20120531143116.GC13591@infradead.org>
-References: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
- <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
- <20120531134557.GB13591@infradead.org>
- <1338473077.1484.8.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1338473077.1484.8.camel@leonhard>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 May 2012 10:22:56 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=uCChaeT6IvQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VnNF1IyMAAAA:8 a=CjastpgQm507VLERPU0A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338474158.13348.346.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/3] uprobes/core: Remove redundant lock_page/unlock_page
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>
+Date: Thu, 31 May 2012 10:22:38 -0400
+In-Reply-To: <1338465518.28384.55.camel@twins>
+References: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com>
+	 <1338465518.28384.55.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 31, 2012 at 11:04:37PM +0900, Namhyung Kim escreveu:
-> 2012-05-31 (목), 10:45 -0300, Arnaldo Carvalho de Melo:
-> > Em Thu, May 31, 2012 at 02:43:27PM +0900, Namhyung Kim escreveu:
-> > > We faced segmentation fault on perf top -G at very high sampling
-> > > rate due to a corrupted callchain. While the root cause was not
-> > > revealed (I failed to figure it out), this patch tries to protect
-> > > us from the segfault on such cases.
+On Thu, 2012-05-31 at 13:58 +0200, Peter Zijlstra wrote:
+> On Thu, 2012-05-31 at 17:16 +0530, Srikar Dronamraju wrote:
+> > From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > 
+> > No need to lock the page when copying the opcode in read_opcode().
+> 
+> It would be good if the changelog said _why_ this is so :-)
 
-> > Capping the callchain lenght may even be a feature, not a consistency
-> > check, but I don't know how long, for consistency checking, we should
-> > consider too much, as there are cases of loooong callchains.
+I thought the same thing when I read it.
 
-> Maybe we should consider applying (a part of, at least) Arun's multiple
-> stack patchset. Also note that Linus complained about the current stack
-> depth (255) is too long.
+-- Steve
 
->   https://lkml.org/lkml/2012/4/20/497
 
-Ok, I applied it, 'perf top -G -F 100000' now is holding up, no
-segfaults, yay!
-
-Thanks,
-
-- Arnaldo
