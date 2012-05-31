@@ -1,100 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964786Ab2EaTze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:55:34 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:57449 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755261Ab2EaTzd (ORCPT
+	id S1758381Ab2EaT6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:58:05 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:52458 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757535Ab2EaT6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:55:33 -0400
-Date: Thu, 31 May 2012 15:55:29 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
-	breakpoints
-Message-ID: <20120531195529.GA22976@Krystal>
-References: <20120531012829.160060586@goodmis.org> <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins> <1338473302.13348.336.camel@gandalf.stny.rr.com> <1338486029.28384.93.camel@twins> <1338486820.13348.366.camel@gandalf.stny.rr.com> <1338487413.28384.103.camel@twins> <1338490218.13348.379.camel@gandalf.stny.rr.com> <1338491176.28384.114.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338491176.28384.114.camel@twins>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 31 May 2012 15:58:03 -0400
+Subject: Re: [GIT PULL] Final round of SCSI updates for the 3.4+ merge
+ window
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>
+In-Reply-To: <1338466675.3073.21.camel@dabdike.int.hansenpartnership.com>
+References: <1338466675.3073.21.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 May 2012 12:57:59 -0700
+Message-ID: <1338494279.30470.461.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2012-05-31 at 14:50 -0400, Steven Rostedt wrote:
-> 
-> > > Well, the fail is before that, how could we grow two pieces of code
-> > > doing similar things in the first place? 
-> > 
-> > Again, ftrace is slightly different as it does 30,000 changes at once,
-> > on top of known nops. This was done through stop_machine(), thus any
-> > slowdown was a large hit to system performance. text_poke() took the way
-> > of mapping a page to do the change, and Mathieu didn't want to change
-> > that (IIRC). But now we want the two to be similar.
-> 
-> We could give text_poke a function argument to do the actual
-> modification, leaving all the magic centralized.
-> 
-> Also, why did Mathieu insist on keeping that kmap()?
+On Thu, 2012-05-31 at 13:17 +0100, James Bottomley wrote:
+> This is primarily another round of driver updates (bnx2fc, qla2xxx,
+> qla4xxx) including the target mode driver for qla2xxx.
 
-Not sure about the entire context here, but the goal of using kmap() is
-to allow modification of text in configurations where the kernel text
-is read-only: the kmap does a temporary shadow RW mapping that allows
-modification of the text. Presumably that Ftrace's 30k changes are done
-before the kernel text mapping is set to read-only ? If this is the
-case, then it is similar to text_poke_early, which don't use the kmap
-since it happens before kernel text gets write-protected. But text_poke
-has to deal with RO pages.
+Hi everyone,
 
-Hopefully my answer makes sense in the context of your discussion.
+With the Qlogic >= 24xx series HW target driver code now upstream for
+3.5-rc1, I wanted to take this brief moment to thank those who have
+contributed to reaching this initial milestone:
 
-Thanks,
+Andrew Vasquez (Qlogic)
+Arun Easi (Qlogic)
+Chad Dupuis (Qlogic)
+Giridhar Malavali (Qlogic)
+Joern Engel (Pure)
+John 'Coz' Colgrove (Pure)
+Marco Sanvido (Pure)
+Patrick Lee (Pure)
+Roland Dreier (Pure)
+Scott Dietzen (Pure)
+Steve Hodgson (Pure)
+Jerome Martin (RisingTide)
+Madhu Iyengar (RisingTide)
+Marc Fleischmann (RisingTide)
+Christoph Hellwig (LSF / RTS)
+Andy Grover (RHAT)
+Dan Carpenter (Oracle)
+Hannes Reinecke (Suse.de)
+James Bottomley (Parallels)
+Stephen Rothwell (IBM)
+Vladislav Bolkhovitin (SCST / ID7)
 
-Mathieu
+Without the help and support of these people the initial merge for
+v3.5-rc1 would not have been possible.
 
-> 
-> > > I hardly ever use dyn-ftrace but I do use some text_poke() through
-> > > jump_labels.
-> > 
-> > You don't use function tracer? That's dyn-ftrace.
-> 
-> Not much no.. I do use trace_printk() and ftrace_dump_on_oops a lot
-> though.
-> 
-> > But still, we need to keep the record as small as possible because it is
-> > persistent throughout the life of the system running. Every location
-> > must be recorded, and maintain a state (flags).
-> > 
-> > Text_poke() mostly grew out of the jump-label work. But yes, there's
-> > still a lot that can be shared. The actual code modification may be.
-> 
-> Afaicr we didn't change text_poke() for the jump-label stuff, except in
-> trivial ways (added a #ifdef and exposed a function etc..).
-> 
-> > > I would still like to end up with one code base doing CMC with two
-> > > implementations depending on a Kconfig knob.
-> > 
-> > You mean keep stop_machine around?
-> 
-> Yeah, like have CONFIG_CMC_STOPMACHINE and CONFIG_CMC_FANCY for a little
-> while.
-> 
-> If we find a problem with the fancy approach going back is easy, once
-> its proven stable we could remove the stop-machine one.
+Thank you!
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--nab
+
