@@ -1,55 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab2EaJ6Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:58:16 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9355 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab2EaJ6P (ORCPT
+	id S1756657Ab2EaJ7k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 05:59:40 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41365 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab2EaJ7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:58:15 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 31 May 2012 02:57:58 -0700
-Date: Thu, 31 May 2012 12:57:23 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531095723.GU8026@tbergstrom-lnx.Nvidia.com>
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
- <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
- <20120531081841.GG5377@arwen.pp.htv.fi>
- <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
- <20120531085432.GK5377@arwen.pp.htv.fi>
- <20120531090518.GR8026@tbergstrom-lnx.Nvidia.com>
- <20120531092603.GM5377@arwen.pp.htv.fi>
- <20120531094301.GT8026@tbergstrom-lnx.Nvidia.com>
- <20120531094616.GP5377@arwen.pp.htv.fi>
+	Thu, 31 May 2012 05:59:38 -0400
+Date: Thu, 31 May 2012 12:00:05 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Message-ID: <20120531100005.GC14074@aftab.osrc.amd.com>
+References: <1337854460-25191-1-git-send-email-mchehab@redhat.com>
+ <20120524105604.GC27063@aftab.osrc.amd.com>
+ <4FBE5E1D.7070804@redhat.com>
+ <20120524164554.GM27063@aftab.osrc.amd.com>
+ <4FBE7755.2080301@redhat.com>
+ <20120529115851.GB29157@aftab.osrc.amd.com>
+ <4FC4D6E2.9060501@redhat.com>
+ <20120529145245.GG29157@aftab.osrc.amd.com>
+ <4FC4E9EB.5030801@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120531094616.GP5377@arwen.pp.htv.fi>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
+On Wed, May 30, 2012 at 11:24:41PM +0000, Luck, Tony wrote:
+> >         u32 grain;              /* granularity of reported error in bytes */
+> > 				   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 > 
-> Well, that's just because struct device doesn't know about its own clock
-> providers, right ? Should that be patched too ?
+> >> 			dimm->grain = nr_pages << PAGE_SHIFT;
 > 
-> Russell, as the orignal author of the clk API, what do you think ?
+> I'm not at all sure what we'll see digging into the chipset registers
+> like EDAC does - but we do have different granularity when reporting
+> via machine check banks.  That's why we have this code:
+> 
+>                 /*
+>                  * Mask the reported address by the reported granularity.
+>                  */
+>                 if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
+>                         u8 shift = MCI_MISC_ADDR_LSB(m->misc);
+>                         m->addr >>= shift;
+>                         m->addr <<= shift;
 
-Even if it would know, how would that solve the problem? only the
-clockframework is supposed to know about struct clk.
+That's 64 bytes max, IIRC.
 
-Cheers,
+> in mce_read_aux().  In practice right now I think that many errors will
+> report with cache line granularity,
 
-Peter.
+Yep.
+
+> while a few (IIRC patrol scrub) will report with page (4K)
+> granularity. Linux doesn't really care - they all have to get rounded
+> up to page size because we can't take away just one cache line from a
+> process.
+
+I'd like to see that :-)
+
+> > @Tony: Can you ensure us that, on Intel memory controllers, the address
+> > mask remains constant at module's lifetime, or are there any events that
+> > may change it (memory hot-plug, mirror mode changes, interleaving 
+> > reconfiguration, ...)?
+> 
+> I could see different controllers (or even different channels) having
+> different setup if you have a system with different size/speed/#ranks
+> DIMMs ... most systems today allow almost arbitrary mix & match, and the
+> BIOS will decide which interleave modes are possible based on what it
+> finds in the slots.  Mirroring imposes more constraints, so you will
+> see less crazy options. Hot plug for Linux reduces to just the hot add
+> case (as we still don't have a good way to remove DIMM sized chunks of
+> memory) ... so I don't see any clever reconfiguration possibilities
+> there (when you add memory, all the existing memory had better stay
+> where it is, preserving contents).
+
+You're funny :-)
+
+> Perhaps the only option where things might change radically is socket
+> migration ... where the constraint is only that the target of the
+> migration have >= memory of the source. So you might move from some
+> weird configuration with mixed DIMM sizes and thus no interleave, to a
+> homogeneous socket with matched DIMMs and full interleave. But from an
+> EDAC level, this is a new controller on a new socket ... not a changed
+> configuration on an existing socket.
+
+Right, from the frequency of such events happening, it still sounds to
+me like the perfect place for the grain value is in sysfs.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
