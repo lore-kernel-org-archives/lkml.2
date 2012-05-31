@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab2EaN1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:27:48 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57174 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758102Ab2EaN1r (ORCPT
+	id S1758114Ab2EaNWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:22:30 -0400
+Received: from mail-gh0-f180.google.com ([209.85.160.180]:34552 "EHLO
+	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757956Ab2EaNW2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:27:47 -0400
-Date: Thu, 31 May 2012 14:27:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Anthony Olech <Anthony.Olech@diasemi.com>
-Subject: Re: [PATCH 1/2] regmap: Reorganise regmap internal read/write
- functions.
-Message-ID: <20120531132714.GG2666@opensource.wolfsonmicro.com>
-References: <201205311316.q4VDGj8d013771@sw-eng-lt-dc-vm2>
+	Thu, 31 May 2012 09:22:28 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yQbNiKLmgenwUfTN"
-Content-Disposition: inline
-In-Reply-To: <201205311316.q4VDGj8d013771@sw-eng-lt-dc-vm2>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1338451231_375838@CP5-2952>
+References: <20120530213128.GA10407@redhat.com>
+	<CAKMK7uE7RtzFd1RR4gyOaStSEisircr7gC7sz5BwVNiy2EtV+g@mail.gmail.com>
+	<20120530215848.GB19223@redhat.com>
+	<20120530222651.GA22449@redhat.com>
+	<1338451231_375838@CP5-2952>
+Date: Thu, 31 May 2012 10:22:28 -0300
+Message-ID: <CA+gsUGTP5S9Az5oHMxYgyJbDPv9R7gRoC614RW0OLk7_TBeDZQ@mail.gmail.com>
+Subject: Re: Lots of i915/drm spew on 3.4
+From: Paulo Zanoni <przanoni@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Jones <davej@redhat.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org, Dave Airlie <airlied@redhat.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Rob Clark <rob.clark@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012/5/31 Chris Wilson <chris@chris-wilson.co.uk>:
+> Before that commit we had no idea that we had run out of property slots.
+> I think the WARN is genuine, but maybe we should just bump the count set
+> it to WARN_ONCE and hope the conversion to lists arrives sooner rather
+> than latter.
+> -Chris
+>
 
---yQbNiKLmgenwUfTN
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Chris is right: this is not a regression. Before that patch, no one
+checked if property creation really worked. I chose not to use
+WARN_ONCE because we need to increase the variable once for each time
+you see the message. Assuming this message appears on your log less
+than 8 times, does this patch fix your problem?
 
-On Mon, May 14, 2012 at 02:20:42PM +0200, Krystian Garbaciak wrote:
-> Separate caching and bus access.
-> Make functions reentrant.
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 73e4560..bac55c2 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -54,7 +54,7 @@ struct drm_mode_object {
+        struct drm_object_properties *properties;
+ };
 
-One change per commit, and please provide clearer changelogs.
+-#define DRM_OBJECT_MAX_PROPERTY 16
++#define DRM_OBJECT_MAX_PROPERTY 24
+ struct drm_object_properties {
+        int count;
+        uint32_t ids[DRM_OBJECT_MAX_PROPERTY];
 
---yQbNiKLmgenwUfTN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPx3F/AAoJEBus8iNuMP3dJMgP/R0DoAqvlnDDN3iWXpNkrEIL
-d3lwtzhKOBmn0nHm11ZowGCMVncbqFii7nwBl1W60Iib2ELYfFRbrUiTeigRggBW
-jYlVkjSnRKeMUFcd4LgSkzFWQSisobZIl2XsnCQ2fTiMND+v26OMp9nIVFd0E7LM
-hMwnce79b5B9ntM5AU8PSIvBpVPBzym+2Src/Tn2PHaPeeHI8SYl0Viacpk1DSwP
-Y0SAuWv4OJDf2o5ry4tEVnyTUR1ZvIiQBEpnkhf2a1ONO61lWdF/v9iFx14ZL73C
-MVrVR6Y4JvI6qNZHdNZh4HSPA++y4Qtg4jHl6bK6g1UgrIedNP/y338EucjcDR1F
-2i/zWRV5MUZ+VLXNs9VAYNb+4NiK3XNn0lETEdFpfcdtbZnKmCChzd/5QLoJ4L/x
-MmZ6mWpqrP5jiXcbUZF+boCQEMIhSJJz3ImpsgXWsRLiMddZUMp/O/BUQLfQnBqa
-3UcMukET2qjNdSYmkUbA+Sg6x/fIUy2DgN26lhIeZcpgtJMlEboGGObE3PRSMTvU
-kHSCAe4m8jguI3REwCGsMNfe51idCAAL/5bJq4LNOeMgd92Vfa22gerTB9xxmgHP
-B+9AHCnJWQAdlx2eS8KJZgnLmu+xrilVXdgeJY1Bq8mvwBIPs7Q+xkEA7HIHCz8c
-iwNSica7kjGDQZdhcCCU
-=7MaN
------END PGP SIGNATURE-----
 
---yQbNiKLmgenwUfTN--
+-- 
+Paulo Zanoni
