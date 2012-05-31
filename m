@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab2EaTsR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:48:17 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:36248 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964781Ab2EaTsO (ORCPT
+	id S964786Ab2EaTze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:55:34 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:57449 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755261Ab2EaTzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:48:14 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: konrad@darnok.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@kernel.org
-Subject: [PATCH] x86/i386: Check PSE bit before using PAGE_KERNEL_LARGE.
-Date: Thu, 31 May 2012 15:40:18 -0400
-Message-Id: <1338493218-25006-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.6
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 31 May 2012 15:55:33 -0400
+Date: Thu, 31 May 2012 15:55:29 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+	breakpoints
+Message-ID: <20120531195529.GA22976@Krystal>
+References: <20120531012829.160060586@goodmis.org> <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins> <1338473302.13348.336.camel@gandalf.stny.rr.com> <1338486029.28384.93.camel@twins> <1338486820.13348.366.camel@gandalf.stny.rr.com> <1338487413.28384.103.camel@twins> <1338490218.13348.379.camel@gandalf.stny.rr.com> <1338491176.28384.114.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338491176.28384.114.camel@twins>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During bootup we would unconditionally do this on any
-machine that was built with CONFIG_NUMA=y on i386:
+* Peter Zijlstra (peterz@infradead.org) wrote:
+> On Thu, 2012-05-31 at 14:50 -0400, Steven Rostedt wrote:
+> 
+> > > Well, the fail is before that, how could we grow two pieces of code
+> > > doing similar things in the first place? 
+> > 
+> > Again, ftrace is slightly different as it does 30,000 changes at once,
+> > on top of known nops. This was done through stop_machine(), thus any
+> > slowdown was a large hit to system performance. text_poke() took the way
+> > of mapping a page to do the change, and Mathieu didn't want to change
+> > that (IIRC). But now we want the two to be similar.
+> 
+> We could give text_poke a function argument to do the actual
+> modification, leaving all the magic centralized.
+> 
+> Also, why did Mathieu insist on keeping that kmap()?
 
-setup_arch
-  \-initmem_init
-      \-x86_numa_init (with dummy_init as callback)
-          \- init_alloc_remap
-               \- set_pmd_pfn (with PAGE_PSE)
+Not sure about the entire context here, but the goal of using kmap() is
+to allow modification of text in configurations where the kernel text
+is read-only: the kmap does a temporary shadow RW mapping that allows
+modification of the text. Presumably that Ftrace's 30k changes are done
+before the kernel text mapping is set to read-only ? If this is the
+case, then it is similar to text_poke_early, which don't use the kmap
+since it happens before kernel text gets write-protected. But text_poke
+has to deal with RO pages.
 
-without checking to see if the CPU supports PSE. This
-patch adds that and also allows the init_alloc_remap function
-to properly work by falling back on PTEs.
+Hopefully my answer makes sense in the context of your discussion.
 
-CC: stable@kernel.org
-Tested-by: William Dauchy <wdauchy@gmail.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/mm/pgtable_32.c |   25 ++++++++++++++++++++++++-
- 1 files changed, 24 insertions(+), 1 deletions(-)
+Thanks,
 
-diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
-index a69bcb8..9fd4abc 100644
---- a/arch/x86/mm/pgtable_32.c
-+++ b/arch/x86/mm/pgtable_32.c
-@@ -86,7 +86,30 @@ void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags)
- 	}
- 	pud = pud_offset(pgd, vaddr);
- 	pmd = pmd_offset(pud, vaddr);
--	set_pmd(pmd, pfn_pmd(pfn, flags));
-+
-+	if ((!cpu_has_pse) && (pgprot_val(flags) & _PAGE_PSE)) {
-+		pte_t *pte;
-+		int i;
-+
-+		pgprot_val(flags) &= ~_PAGE_PSE;
-+
-+		/*
-+		 * This is run _after_ initial memory mapped so the
-+		 * PTE page are allocated - but we check it just in case.
-+		 */
-+		if (pmd_none(*pmd)) {
-+			printk(KERN_WARNING "set_pmd_pfn: pmd_none\n");
-+			return;
-+		}
-+
-+		pte = (pte_t *)pmd_page_vaddr(*pmd);
-+		for (i = 0; i < PTRS_PER_PTE; i++) {
-+			set_pte(pte, pfn_pte(pfn + i, flags));
-+			pte++;
-+		}
-+	} else
-+		set_pmd(pmd, pfn_pmd(pfn, flags));
-+
- 	/*
- 	 * It's enough to flush this one mapping.
- 	 * (PGE mappings get flushed as well)
+Mathieu
+
+> 
+> > > I hardly ever use dyn-ftrace but I do use some text_poke() through
+> > > jump_labels.
+> > 
+> > You don't use function tracer? That's dyn-ftrace.
+> 
+> Not much no.. I do use trace_printk() and ftrace_dump_on_oops a lot
+> though.
+> 
+> > But still, we need to keep the record as small as possible because it is
+> > persistent throughout the life of the system running. Every location
+> > must be recorded, and maintain a state (flags).
+> > 
+> > Text_poke() mostly grew out of the jump-label work. But yes, there's
+> > still a lot that can be shared. The actual code modification may be.
+> 
+> Afaicr we didn't change text_poke() for the jump-label stuff, except in
+> trivial ways (added a #ifdef and exposed a function etc..).
+> 
+> > > I would still like to end up with one code base doing CMC with two
+> > > implementations depending on a Kconfig knob.
+> > 
+> > You mean keep stop_machine around?
+> 
+> Yeah, like have CONFIG_CMC_STOPMACHINE and CONFIG_CMC_FANCY for a little
+> while.
+> 
+> If we find a problem with the fancy approach going back is easy, once
+> its proven stable we could remove the stop-machine one.
+
 -- 
-1.7.7.6
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
