@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab2EaLth (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 07:49:37 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58058 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab2EaLtg (ORCPT
+	id S1757233Ab2EaLv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 07:51:28 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:49579 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2EaLv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 07:49:36 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>
-Date: Thu, 31 May 2012 17:16:43 +0530
-Message-Id: <20120531114643.23691.38666.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com>
-References: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH 2/3] perf/uprobes: Remove unnecessary check before strlist__delete
-x-cbid: 12053101-0260-0000-0000-000001450B4D
+	Thu, 31 May 2012 07:51:27 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] r8169: call netif_napi_del at errpaths and at driver unload
+Date: Thu, 31 May 2012 17:21:20 +0530
+Message-Id: <1338465080-22720-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+when register_netdev fails, the init'ed NAPIs by netif_napi_add must be
+deleted with netif_napi_del, and also when driver unloads, it should
+delete the NAPI before unregistering netdevice using unregister_netdev.
 
-Since strlist__delete() itself checks, the additional check
-before calling strlist__delete() is redundant.
-
-No Functional change.
-
-Suggested-by: Arnaldo Carvalho de Melo <acme@infradead.org>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 ---
- tools/perf/util/probe-event.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/realtek/r8169.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 59dccc9..0dda25d 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2164,16 +2164,12 @@ int del_perf_probe_events(struct strlist *dellist)
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 00b4f56..9757ce3 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -6345,6 +6345,8 @@ static void __devexit rtl_remove_one(struct pci_dev *pdev)
  
- error:
- 	if (kfd >= 0) {
--		if (namelist)
--			strlist__delete(namelist);
--
-+		strlist__delete(namelist);
- 		close(kfd);
- 	}
+ 	cancel_work_sync(&tp->wk.work);
  
- 	if (ufd >= 0) {
--		if (unamelist)
--			strlist__delete(unamelist);
--
-+		strlist__delete(unamelist);
- 		close(ufd);
- 	}
++	netif_napi_del(&tp->napi);
++
+ 	unregister_netdev(dev);
  
-
+ 	rtl_release_firmware(tp);
+@@ -6668,6 +6670,7 @@ out:
+ 	return rc;
+ 
+ err_out_msi_4:
++	netif_napi_del(&tp->napi);
+ 	rtl_disable_msi(pdev, tp);
+ 	iounmap(ioaddr);
+ err_out_free_res_3:
+-- 
+1.7.9.5
 
