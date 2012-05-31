@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab2EaTUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:20:11 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22599 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933094Ab2EaTUI (ORCPT
+	id S933140Ab2EaTZF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:25:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20130 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933116Ab2EaTZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:20:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6728"; a="194192683"
-Message-ID: <4cff1edb39da3b03e37840871a75c2c4.squirrel@www.codeaurora.org>
-In-Reply-To: <000001cd3d98$f015db60$d0419220$@codeaurora.org>
-References: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
-    <d98d78ec2312cbc5edb1b2c337ab788d.squirrel@www.codeaurora.org>
-    <000001cd3d98$f015db60$d0419220$@codeaurora.org>
-Date: Thu, 31 May 2012 12:19:48 -0700 (PDT)
-Subject: RE: [PATCH v6 1/3] mmc: core: Add packed command feature of eMMC4.5
-From: merez@codeaurora.org
-To: "Subhash Jadavani" <subhashj@codeaurora.org>
-Cc: merez@codeaurora.org, "'Seungwon Jeon'" <tgih.jun@samsung.com>,
-        linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Thu, 31 May 2012 15:25:04 -0400
+X-Authority-Analysis: v=2.0 cv=PqgRnnw3 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=6I2XFdsDAPIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=vAlqWlI16SXUnGFgg20A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338492300.13348.384.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 15:25:00 -0400
+In-Reply-To: <4FC7BF59.3070906@zytor.com>
+References: <20120531012829.160060586@goodmis.org>
+	 <20120531020441.500105258@goodmis.org> <4FC7BF59.3070906@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-05-31 at 11:58 -0700, H. Peter Anvin wrote:
 
->
->
->> -----Original Message-----
->> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
->> owner@vger.kernel.org] On Behalf Of merez@codeaurora.org
->> Sent: Tuesday, May 29, 2012 5:08 PM
->> To: Seungwon Jeon
->> Cc: linux-mmc@vger.kernel.org; 'Chris Ball'; merez@codeaurora.org;
->> linux-
->> kernel@vger.kernel.org
->> Subject: Re: [PATCH v6 1/3] mmc: core: Add packed command feature of
->> eMMC4.5
->>
->> > @@ -1244,6 +1249,25 @@ static int mmc_init_card(struct mmc_host *host,
->> > u32 ocr,
->> >  		}
->> >  	}
->> >
->> > +	if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
->> > +			(card->ext_csd.max_packed_writes > 0) &&
->> > +			(card->ext_csd.max_packed_reads > 0)) {
->> > +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
->> > +				EXT_CSD_EXP_EVENTS_CTRL,
->> > +				EXT_CSD_PACKED_EVENT_EN,
->> > +				card->ext_csd.generic_cmd6_time);
->> > +		if (err && err != -EBADMSG)
->> > +			goto free_card;
->> > +		if (err) {
->> > +			pr_warning("%s: Enabling packed event failed\n",
->> > +					mmc_hostname(card->host));
->> > +			card->ext_csd.packed_event_en = 0;
->> > +			err = 0;
->> > +		} else {
->> > +			card->ext_csd.packed_event_en = 1;
->> > +		}
->> > +	}
->> > +
->> The above shoud not be performed in case of resume. Therefore it needs
->> to
-> be
->> done only if (!oldcard)
->
-> Maya,
-> What if eMMC power (VCC and VCCQ) was removed during suspend? Then in that
-> case during resume, we have to send this mmc_switch() command again. So
-> this
-> operation should not be under "if (!oldcard)" check.
->
-> Regards,
-> Subhash
-Thanks for the correction, my mistake.
+> What you have here is a nesting counter, which is good, but I have
+> some objections to the implementation.
+> 
+> The name "debug_idt_zero" doesn't convey a counter in any way, shape
+> or form; perhaps debug_stack_users or something like that.
 
-Thanks,
-Maya Erez
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+Well, it is 'debug_idt_SET_zero' which is what it is doing, regardless
+of counter (see below). But perhaps we should change it to:
+
+debug_idt_get()
+debug_idt_put()
+
+?
+
+> 
+> Since this is percpu, there is no reason to use the atomic operations
+> (globally locked!), and since it is on the local CPU there is no need
+> to manifest a pointer; we can instead use this_cpu_inc/dec_return:
+> 
+> static DEFINE_PER_CPU(u32, debug_stack_use_ctr);
+> 
+> void debug_stack_set_zero(void)
+> {
+> 	if (this_cpu_inc_return(debug_stack_use_ctr) == 1)
+
+If an NMI comes in here, it will not update the IDT and will corrupt the
+stack. The load_idt() must happen for all calls. There's only two static
+IDT tables. It's either one or the other. Thus, if it loads it twice, it
+will just set it to the same value. The counter is to know when to set
+it back.
+
+-- Steve
+
+> 	 	load_idt((const struct desc_ptr *)&nmi_idt_descr);
+> }
+> 
+> void debug_stack_reset(void)
+> {
+> 	if (this_cpu_dec_return(debug_stack_use_ctr) == 0)
+> 		load_idt((const struct desc_ptr *)&idt_descr);
+> }
+> 
+> 	-hpa
+> 
+
 
