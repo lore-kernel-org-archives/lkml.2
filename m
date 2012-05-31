@@ -1,121 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab2EaWmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:42:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54620 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753055Ab2EaWmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:42:08 -0400
-Date: Fri, 1 Jun 2012 00:42:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
- flexible proportions
-Message-ID: <20120531224206.GC19050@quack.suse.cz>
-References: <1337878751-22942-1-git-send-email-jack@suse.cz>
- <1337878751-22942-3-git-send-email-jack@suse.cz>
- <1338220185.4284.19.camel@lappy>
- <20120529123408.GA23991@quack.suse.cz>
- <1338295111.26856.57.camel@twins>
- <20120529125452.GB23991@quack.suse.cz>
- <20120531221146.GA19050@quack.suse.cz>
- <1338503165.28384.134.camel@twins>
+	id S1757314Ab2EaWtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:49:31 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:51805 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754994Ab2EaWt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 18:49:29 -0400
+X-Greylist: delayed 1507 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 18:49:29 EDT
+Date: Fri, 1 Jun 2012 00:24:07 +0200
+From: Harald Welte <laforge@gnumonks.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] List LGPL (v2 / v2.1) as GPL compatible in
+ license_is_gpl_compatible()
+Message-ID: <20120531222407.GB5256@prithivi.gnumonks.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="IiVenqGWf+H9Y6IX"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338503165.28384.134.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It may be a highly unusual choice to license Linux kernel drivers under
+LGPL, but at least as long as LGPLv2 or LGPLv2.1 is used, this is fully
+GPL compatible and shouldn't taint the kernel.
 
---IiVenqGWf+H9Y6IX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Harald Welte <laforge@gnumonks.org>
+---
+ include/linux/license.h |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-On Fri 01-06-12 00:26:05, Peter Zijlstra wrote:
-> On Fri, 2012-06-01 at 00:11 +0200, Jan Kara wrote:
-> >  bool fprop_new_period(struct fprop_global *p, int periods)
-> >  {
-> > -       u64 events = percpu_counter_sum(&p->events);
-> > +       u64 events;
-> > +       unsigned long flags;
-> >  
-> > +       local_irq_save(flags);
-> > +       events = percpu_counter_sum(&p->events);
-> > +       local_irq_restore(flags);
-> >         /*
-> >          * Don't do anything if there are no events.
-> >          */
-> > @@ -73,7 +77,9 @@ bool fprop_new_period(struct fprop_global *p, int periods)
-> >         if (periods < 64)
-> >                 events -= events >> periods;
-> >         /* Use addition to avoid losing events happening between sum and set */
-> > +       local_irq_save(flags);
-> >         percpu_counter_add(&p->events, -events);
-> > +       local_irq_restore(flags);
-> >         p->period += periods;
-> >         write_seqcount_end(&p->sequence); 
-> 
-> Uhm, why bother enabling it in between? Just wrap the whole function in
-> a single IRQ disable.
-  I wanted to have interrupts disabled for as short as possible but if you
-think it doesn't matter, I'll take your advice. The result is attached.
+ NOTE: I've actually seen this happen in practise, where an embedded
+ system ships with a LPGL licensed driver which in turn taints the
+ kernel.  I suppose this was not really the intention...
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
-
---IiVenqGWf+H9Y6IX
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="flex-proportion-irq-save.diff"
-
-From: Jan Kara <jack@suse.cz>
-Subject: lib: Fix possible deadlock in flexible proportion code
-
-When percpu counter function in fprop_new_period() is interrupted by an
-interrupt while holding counter lock, it can cause deadlock when the
-interrupt wants to take the lock as well. Fix the problem by disabling
-interrupts when calling percpu counter functions.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-
-diff -u b/lib/flex_proportions.c b/lib/flex_proportions.c
---- b/lib/flex_proportions.c
-+++ b/lib/flex_proportions.c
-@@ -62,13 +62,18 @@
-  */
- bool fprop_new_period(struct fprop_global *p, int periods)
- {
--	u64 events = percpu_counter_sum(&p->events);
-+	u64 events;
-+	unsigned long flags;
- 
-+	local_irq_save(flags);
-+	events = percpu_counter_sum(&p->events);
- 	/*
- 	 * Don't do anything if there are no events.
- 	 */
--	if (events <= 1)
-+	if (events <= 1) {
-+		local_irq_restore(flags);
- 		return false;
-+	}
- 	write_seqcount_begin(&p->sequence);
- 	if (periods < 64)
- 		events -= events >> periods;
-@@ -76,6 +81,7 @@
- 	percpu_counter_add(&p->events, -events);
- 	p->period += periods;
- 	write_seqcount_end(&p->sequence);
-+	local_irq_restore(flags);
- 
- 	return true;
+diff --git a/include/linux/license.h b/include/linux/license.h
+index decdbf4..9c0df0e 100644
+--- a/include/linux/license.h
++++ b/include/linux/license.h
+@@ -8,7 +8,10 @@ static inline int license_is_gpl_compatible(const char *license)
+ 		|| strcmp(license, "GPL and additional rights") == 0
+ 		|| strcmp(license, "Dual BSD/GPL") == 0
+ 		|| strcmp(license, "Dual MIT/GPL") == 0
+-		|| strcmp(license, "Dual MPL/GPL") == 0);
++		|| strcmp(license, "Dual MPL/GPL") == 0
++		|| strcmp(license, "LGPL") == 0
++		|| strcmp(license, "LGPL v2") == 0
++		|| strcmp(license, "LGPL v2.1") == 0);
  }
-
---IiVenqGWf+H9Y6IX--
+ 
+ #endif
+-- 
+1.7.10
