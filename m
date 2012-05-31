@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab2EaG26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 02:28:58 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42923 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab2EaG24 (ORCPT
+	id S1752291Ab2EaGa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 02:30:26 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:47397 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab2EaGaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 02:28:56 -0400
-Date: Wed, 30 May 2012 23:28:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
-In-Reply-To: <4FC70E5E.1010003@gmail.com>
-Message-ID: <alpine.DEB.2.00.1205302325500.25774@chino.kir.corp.google.com>
-References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com>
- <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com>
- <4FC70355.70805@jp.fujitsu.com> <alpine.DEB.2.00.1205302314190.25774@chino.kir.corp.google.com> <4FC70E5E.1010003@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 31 May 2012 02:30:25 -0400
+Message-ID: <4FC70FFE.50809@gmail.com>
+Date: Thu, 31 May 2012 02:30:22 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Cong Wang <amwang@redhat.com>
+CC: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, kosaki.motohiro@gmail.com
+Subject: Re: [RFC Patch] fs: implement per-file drop caches
+References: <1338385120-14519-1-git-send-email-amwang@redhat.com>  <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>
+In-Reply-To: <1338445233.19369.21.camel@cr0>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012, KOSAKI Motohiro wrote:
+(5/31/12 2:20 AM), Cong Wang wrote:
+> On Wed, 2012-05-30 at 16:14 +0100, Pádraig Brady wrote:
+>> On 05/30/2012 02:38 PM, Cong Wang wrote:
+>>> This is a draft patch of implementing per-file drop caches.
+>>>
+>>> It introduces a new fcntl command  F_DROP_CACHES to drop
+>>> file caches of a specific file. The reason is that currently
+>>> we only have a system-wide drop caches interface, it could
+>>> cause system-wide performance down if we drop all page caches
+>>> when we actually want to drop the caches of some huge file.
+>>
+>> This is useful functionality.
+>> Though isn't it already provided with POSIX_FADV_DONTNEED?
+>
+> Thanks for teaching this!
+>
+> However, from the source code of madvise_dontneed() it looks like it is
+> using a totally different way to drop page caches, that is to invalidate
+> the page mapping, and trigger a re-mapping of the file pages after a
+> page fault. So, yeah, this could probably drop the page caches too (I am
+> not so sure, haven't checked the code in details), but with my patch, it
+> flushes the page caches directly, what's more, it can also prune
+> dcache/icache of the file.
 
-> > An application should always know the cgroup that its attached to and be
-> > able to read its state using the command that I gave earlier.
-> 
-> No. you don't need why userland folks want namespaces. Even though you don't
-> need namespaces. It doesn't good reason to refuse another use case.
-> 
+madvise should work. I don't think we need duplicate interface. Moreomover
+madvise(2) is cleaner than fcntl(2).
 
-This is tangent to the discussion, we need to revisit why an application 
-other than a daemon managing a set of memcgs would ever need to know the 
-information in /proc/meminfo.  No use-case was ever presented in the 
-changelog and its not clear how this is at all relevant.  So before 
-changing the kernel, please describe how this actually matters in a real-
-world scenario.
