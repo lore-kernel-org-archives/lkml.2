@@ -1,156 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab2EaMn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:43:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754625Ab2EaMnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:43:25 -0400
-Date: Thu, 31 May 2012 15:43:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] kvm: optimize ISR lookups
-Message-ID: <20120531124316.GA17457@redhat.com>
-References: <20120522125456.GA4337@redhat.com>
- <20120530205442.GA8937@amt.cnet>
- <20120531100657.GN2311@redhat.com>
+	id S1757859Ab2EaMqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:46:15 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:64533 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754625Ab2EaMqN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 08:46:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531100657.GN2311@redhat.com>
+In-Reply-To: <4FC71617.7070801@samsung.com>
+References: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
+	<CAKew6eXsf5UKe4t5m3MAuU1OUSZcUPBoSRUCjyR-gKRmDC8MOw@mail.gmail.com>
+	<4FC43018.9040702@samsung.com>
+	<CAKew6eXq-5vCDgncYYPKUdKE2CNyqDErKUUdPbWeYe0uurpQ-w@mail.gmail.com>
+	<4FC5F866.6030708@samsung.com>
+	<CAKew6eVjUCSkX=JRtYV2mRQ8hy4J1SSsvNn+p=MQcTD51J__sQ@mail.gmail.com>
+	<4FC71617.7070801@samsung.com>
+Date: Thu, 31 May 2012 18:16:13 +0530
+Message-ID: <CAKew6eWf1Cnk3qWh0kw7Ggdvgz3_sZ6-6X0pC12apYgvOZZ9mw@mail.gmail.com>
+Subject: Re: [PATCH v4] regulator: MAX77686: Add Maxim 77686 regulator driver
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: jonghwa3.lee@samsung.com
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 01:06:57PM +0300, Gleb Natapov wrote:
-> On Wed, May 30, 2012 at 05:54:42PM -0300, Marcelo Tosatti wrote:
-> > On Tue, May 22, 2012 at 03:54:56PM +0300, Michael S. Tsirkin wrote:
-> > > We perform ISR lookups twice: during interrupt
-> > > injection and on EOI. Typical workloads only have
-> > > a single bit set there. So we can avoid ISR scans by
-> > > 1. counting bits as we set/clear them in ISR
-> > > 2. if count is 1, caching the vector number
-> > > 3. if count != 1, invalidating the cache
-> > > 
-> > > The real purpose of this is enabling PV EOI
-> > > which needs to quickly validate the vector.
-> > > But non PV guests might also benefit.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > > 
-> > > I am well aware of Thomas and Peter's suggestion of reworking APIC
-> > > register handling in kvm instead of adding a cache like this patch does.
-> > > 
-> > > This revision does *not* address that comment yet: it only corrects a
-> > > bug in the original patch.
-> > > 
-> > > Posting in this form for ease of testing.
-> > > 
-> > > Changes from v1:
-> > > 	replace ASSERT by BUG_ON, correcting inverted logic
-> > > 
-> > >  arch/x86/kvm/lapic.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++-
-> > >  arch/x86/kvm/lapic.h |    2 +
-> > >  2 files changed, 51 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> > > index 93c1574..0d2985d 100644
-> > > --- a/arch/x86/kvm/lapic.c
-> > > +++ b/arch/x86/kvm/lapic.c
-> > > @@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
-> > >  	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > >  }
-> > >  
-> > > +static inline int __apic_test_and_set_vector(int vec, void *bitmap)
-> > > +{
-> > > +	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > > +}
-> > > +
-> > > +static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
-> > > +{
-> > > +	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > > +}
-> > > +
-> > >  static inline int apic_hw_enabled(struct kvm_lapic *apic)
-> > >  {
-> > >  	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
-> > > @@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
-> > >  		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
-> > >  }
-> > >  
-> > > +static u8 count_vectors(void *bitmap)
-> > > +{
-> > > +	u32 *word = bitmap;
-> > > +	int word_offset;
-> > > +	u8 count = 0;
-> > > +	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
-> > > +		count += hweight32(word[word_offset << 2]);
-> > > +	return count;
-> > > +}
-> > > +
-> > >  static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
-> > >  {
-> > >  	apic->irr_pending = true;
-> > > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> > >  		apic->irr_pending = true;
-> > >  }
-> > >  
-> > > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> > > +{
-> > > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> > > +		++apic->isr_count;
-> > > +	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-> > > +	if (likely(apic->isr_count == 1))
-> > > +		apic->isr_cache = vec;
-> > > +	else
-> > > +		apic->isr_cache = -1;
-> > > +}
-> > > +
-> > > +static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
-> > > +{
-> > > +	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-> > > +		--apic->isr_count;
-> > > +	BUG_ON(apic->isr_count < 0);
-> > > +	apic->isr_cache = -1;
-> > > +}
-> > > +
-> > >  int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
-> > >  {
-> > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > > @@ -273,6 +312,10 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
-> > >  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-> > >  {
-> > >  	int result;
-> > > +	if (!apic->isr_count)
-> > > +		return -1;
-> > > +	if (likely(apic->isr_cache != -1))
-> > 
-> > assert(isr_count == 1).
-> > 
-> > Looks fine otherwise. Gleb can you review please?
-> I am not convinced we need to keep track of isr_count. isr_cache should be enough.
-> Why setting isr_cache to -1 if isr_count > 1? Just overwrite isr_cache
-> values with newly injected vector and use it on next EOI.
+On Thu, May 31, 2012 at 12:26 PM,  <jonghwa3.lee@samsung.com> wrote:
+> On 2012년 05월 30일 21:08, Yadwinder Singh Brar wrote:
+>
+>> Hi Jonghwa,
+>>
+>> On Wed, May 30, 2012 at 4:07 PM,  <jonghwa3.lee@samsung.com> wrote:
+>>> Hi Yadwinder,
+>>>
+>>> I'm sorry for late reply. I understand the problem you pointed out, but
+>>> i don't agree with you all.
+>>
+>> Sorry,I think you didn't get my points. Lets forget my code and talk
+>> about this code now.
+>>
+>>>>>>> +
+>>>>>>> +       for (i = 0; i < MAX77686_REGULATORS; i++) {
+>>>>>>> +               if (pdata)
+>>>>>>> +                       init_data[pdata->regulators[i].id] =
+>>>>>>> +                                                pdata->regulators[i].initdata;
+>>
+>> In case we have a list of 5 regulators only in pdata, than what will
+>> happen here when i > 5 ???
+>>
+>
+>
+> You're right, it has bug. How do you think that change the condition to
+> (pdata && i < pdata->num_regulators)?
+>
 
-I thought about this some more. This counter is a win because
-apic_find_highest_isr is called twice:
+I think this stuff is not at right place, It should be moved out of this loop
+to solve this both problems.
+Please try to do all this stuff rel
 
-	1. apic_set_eoi calls apic_find_highest_isr before clearing
+>>>>>>
+>>>>>> I  think we can directly use  pdata->regulators[i].initdata instead of
+>>>>>> init_data[i].
+>>>>>> In case if pdata is not their we can use same instance of
+>>>>>> init_data(default)  for all regulators.
+>>>>>>
+>>>>>
+>>>>>
+>>>>> This if for some situation that pdata's initdata doensn't line up. When
+>>
+>>>>>>> +               config.init_data = init_data[i];
+>>>>>>> +               rdev[i] = regulator_register(&regulators[i], &config);
+>>
+>> In case pdata->regulators[0] is not the first regulator(i.e id > 0), then
+>> will it get proper initdata for regulators[0] before registering ????
+>>
+>
+>
+> Yes, because above code replaces pdata->regalator's initdata to proper
+> position of initdata array referencing regulator's id.
+>
 
-	2. apic_update_ppr calls apic_find_highest_isr after clearing
+No, sorry i think you again missed the point.
+Anyways, moving above stuff out of this loop
+will also sove this problem.
 
-So with isr_count you never scan ISR unless there is nesting.
+>>>>
+>>>> Ok, but I think this not right place for sorting (sorting is not taking
+>>>> place.) You have to sort it before entering in loop for registering
+>>>> regulators.
+>>>>
+>>>>> user sets only initdata considered it being used, there may be
+>>>>> regulators not having initdata, also its order is not clear. So for
+>>>>
+>>>> Ok, I think this is a bug in present driver also, because
+>>>> without checking pdata->num_regulators, you are running in
+>>>> loop  for (i = 0; i < MAX77686_REGULATORS; i++)
+>>>> where MAX77686_REGULATORS should be equal to
+>>>> pdata->num_regulators for this driver to work fine.
+>>>>
+>>>
+>>>
+>>> I think we have same variable num_regulators but use differently. In my
+>>> code, it represents number of regulators to be used actually, but in
+>>> your code it equals to total number of regulators. Since it has
+>>
+>> not exactly.
+>>
+>>> different meaning, it doesn't have to same with MAX77686_REGULATORS.
+>>> MAX77686_REGULATORS is macro which indicates total number of regulators
+>>> in max77686, and it equals to ARRAY_SIZE(regulators). Even if they are
+>>> not same, it's not a bug because we want to register all regulators
+>>> whether it will be used or not.
+>>>
+>>>
 
-So we do need isr_count. I agree we can make this work for
-more cases because the latest ISR set is always the
-highest one. Ronen suggested such an
-optimization offline too, and it makes
-code simpler so I'll implement this optimization.
 
-> --
-> 			Gleb.
+>
+> So, to sum up to this, you think it is better to sort pdata->regulators
+> by its id before entering loop and just use pdata->regulators directly,
+> right? Okay, I'll do modify it.
+>
+
+Yes, this will allow us to add device tree support without any
+modifications to this code in future and keeping our code simple
+and compact.
+
+In my opinion
+>>  Regards,
+>>  Yadwinder.
