@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab2EaUsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:48:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50496 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797Ab2EaUsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:48:14 -0400
-Date: Thu, 31 May 2012 22:48:06 +0200
-From: Jan Kara <jack@suse.cz>
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>
-Subject: Re: [PATCH 2/4] [RFC] Range tree implementation
-Message-ID: <20120531204806.GB16338@quack.suse.cz>
-References: <1337973456-19533-1-git-send-email-john.stultz@linaro.org>
- <1337973456-19533-3-git-send-email-john.stultz@linaro.org>
+	id S1757736Ab2EaUt0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:49:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:57425 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab2EaUtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 16:49:24 -0400
+Date: Thu, 31 May 2012 13:49:22 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: a.p.zijlstra@chello.nl
+cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tj@kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] x86/numa: Allow specifying node_distance() 
+ for numa=fake
+In-Reply-To: <tip-e1136ef7kdffj7yf9tjhydln@git.kernel.org>
+Message-ID: <alpine.DEB.2.00.1205311346490.2764@chino.kir.corp.google.com>
+References: <tip-e1136ef7kdffj7yf9tjhydln@git.kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337973456-19533-3-git-send-email-john.stultz@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 25-05-12 12:17:34, John Stultz wrote:
-> I suspect range-tree isn't a totally accurate name, but I
-> couldn't quite make out the difference between range trees
-> and interval trees, so I just picked one to call it. Do
-> let me know if you have a better name.
-  Well, interval tree is a data structure for tracking a set of
-possibly overlapping intervals. Range tree is a data structure tracking
-points allowing for fast queries on a set of points contained in a given
-range (gets useful and interesting when dimension > 1). Your data structure
-is neither so it would be good to have a different name. OTOH there are so
-many data structures that it's hard to find a reasonable unused name ;)
+On Wed, 9 May 2012, tip-bot for Peter Zijlstra wrote:
 
-> +/**
-> + * range_tree_next_in_range - Return the next range in a range_tree still
-> + *                            contained within a specified range.
-  'within' isn't really correct, right? It should rather be 'intersecting'.
+> Commit-ID:  94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
+> Gitweb:     http://git.kernel.org/tip/94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Wed, 18 Apr 2012 19:04:17 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Wed, 9 May 2012 13:28:59 +0200
+> 
+> x86/numa: Allow specifying node_distance() for numa=fake
+> 
+> Allows emulating more interesting NUMA configurations like a quad
+> socket AMD Magny-Cour:
+> 
+>  "numa=fake=8:10,16,16,22,16,22,16,22,
+>               16,10,22,16,22,16,22,16,
+>               16,22,10,16,16,22,16,22,
+>               22,16,16,10,22,16,22,16,
+>               16,22,16,22,10,16,16,22,
+>               22,16,22,16,16,10,22,16,
+>               16,22,16,22,16,22,10,16,
+>               22,16,22,16,22,16,16,10"
+> 
+> Which has a non-fully-connected topology.
+> 
 
-> + * @root: range_tree root
-> + * @start: range start
-> + * @end: range end
-> + *
-> + */
-> +struct range_tree_node *range_tree_next_in_range(struct range_tree_node *node,
-> +							u64 start, u64 end)
-> +{
-> +	struct rb_node *next;
-> +	struct range_tree_node *candidate;
-> +	if (!node)
-> +		return NULL;
-> +	next = rb_next(&node->rb);
-> +	if (!next)
-> +		return NULL;
-> +
-> +	candidate = container_of(next, struct range_tree_node, rb);
-> +
-> +	if ((candidate->start > end) || (candidate->end < start))
-> +		return NULL;
-> +
-> +	return candidate;
-> +}
-> +
-> +/**
-> + * range_tree_add - Add a node to a range tree
-> + * @root: range tree to be added to
-> + * @node: range_tree_node to be added
-> + *
-> + * Adds a node to the range tree.
-  I think you should document here that the added range must not intersect
-with any other range in the tree.
+I like this support and I'm pretty sure you used it to reproduce my 
+problems with sched/numa locally, but I think it would be better to 
+seperate it out as a different parameter such as slit=fake so that we can 
+still use it to fake the SLIT of our NUMA machines without requiring 
+numa=fake which provides no guarantees to break the nodes along physical 
+boundaries.
 
-> + */
-> +void range_tree_add(struct range_tree_root *root,
-> +					struct range_tree_node *node)
-> +{
-> +	struct rb_node **p = &root->head.rb_node;
-> +	struct rb_node *parent = NULL;
-> +	struct range_tree_node *ptr;
-> +
-> +	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
-> +
-> +	while (*p) {
-> +		parent = *p;
-> +		ptr = rb_entry(parent, struct range_tree_node, rb);
-> +		if (node->start < ptr->start)
-> +			p = &(*p)->rb_left;
-> +		else
-> +			p = &(*p)->rb_right;
-> +	}
-> +	rb_link_node(&node->rb, parent, p);
-> +	rb_insert_color(&node->rb, &root->head);
-> +
-  ^^ Spurious empty line.
-
-> +}
-> +
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+So without seperating it out into slit=fake, we can't change this 
+information without changing the SLIT itself and that makes debugging 
+harder.
