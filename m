@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab2EaMBH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:01:07 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44017 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab2EaMBG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:01:06 -0400
-Date: Thu, 31 May 2012 13:00:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Felipe Balbi <balbi@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531120057.GA15786@sirena.org.uk>
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
- <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
- <20120531081841.GG5377@arwen.pp.htv.fi>
- <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
-X-Cookie: Here there be tygers.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	id S1757537Ab2EaMBX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:01:23 -0400
+Received: from plane.gmane.org ([80.91.229.3]:60958 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756870Ab2EaMBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 08:01:22 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: walt <w41ter@gmail.com>
+Subject: git <8f6576a> Causes non-interruptible stalls in NFS clients
+Date: Thu, 31 May 2012 05:01:01 -0700
+Message-ID: <4FC75D7D.6060002@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: adsl-69-234-178-9.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120420 Thunderbird/12.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 11:31:31AM +0300, Peter De Schrijver wrote:
+Merge: 8f6576a cc0a984
+Author: Linus Torvalds 
+Date:   Tue May 29 10:43:51 2012 -0700
 
-> > What I wonder most is if this should be done at the clock level or at
-> > the device level. In the end you reset the IP block, not the clock,
-> > right ?
+    Merge tag 'nfs-for-3.5-1' of git://git.linux-nfs.org/projects/trondmy/linux-nfs
+    
+    Pull NFS client updates from Trond Myklebust:
 
-> Yes. but, every block has at least 1 clock and thus the mapping is identical
-> down to the register level. Ie. we could do this outside the clockframework,
-> but then we would have the keep a list of IDs (1 per module) which the drivers
-> can use to call some tegra reset function which would in the end use registers
-> in the same memory area to cause a reset. (the registers controlling
-> modulereset are interleaved with those controlling the enable/disable of the
-> main moduleclock and bitpositions are identical)
+- Improve the code sharing between NFSv2/v3 and v4 mounts
 
-One option which doesn't really need anything from the clock API is for
-the module resets to restore these registers so the clock API never
-notices anything changed.
+
+That last comment gave me the idea to enable NFSv4 client support in my kernel
+(which I had disabled many months ago because of NFSv4 weirdness).
+
+Enabling NFSv4 client support completely fixed the non-interruptible NFS stalls
+and, strangely, also fixed the very similar stalls in my scp/sftp clients when
+pushing files > 800KB or so.
+
+Enabling the NFSv4 client support fixes everything even though I'm still using
+NFSv3 mounts explicitly/exclusively.
+
