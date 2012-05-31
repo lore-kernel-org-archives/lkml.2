@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab2EaL71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 07:59:27 -0400
+	id S1757489Ab2EaL7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 07:59:43 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:50417 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754620Ab2EaL70 (ORCPT
+	with ESMTP id S1756521Ab2EaL7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 07:59:26 -0400
-Date: Thu, 31 May 2012 14:58:45 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: kmemleak: Kernel memory leak detector disabled
-Message-ID: <20120531115845.GC3676@swordfish.minsk.epam.com>
-References: <20120531115537.GA3676@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531115537.GA3676@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 May 2012 07:59:42 -0400
+Subject: Re: [PATCH] tty: add lockdep annotations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <alpine.LRH.2.00.1205311343080.14604@twin.jikos.cz>
+References: <4FC6189B.9080909@fusionio.com>
+	 <1338402812.2760.413.camel@edumazet-glaptop>
+	 <4FC66D3D.6080509@fusionio.com>
+	 <1338404902.2760.451.camel@edumazet-glaptop>
+	 <1338410107.2760.544.camel@edumazet-glaptop>
+	 <1338456918.2760.1318.camel@edumazet-glaptop>
+	 <alpine.LRH.2.00.1205311343080.14604@twin.jikos.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 May 2012 13:59:38 +0200
+Message-ID: <1338465578.2760.1340.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (05/31/12 14:55), Sergey Senozhatsky wrote:
->
+On Thu, 2012-05-31 at 13:45 +0200, Jiri Kosina wrote:
+> On Thu, 31 May 2012, Eric Dumazet wrote:
+> 
+> > From: Eric Dumazet <edumazet@google.com>
+> > 
+> > tty_lock_pair() do the right thing to avoid deadlocks, but should
+> > instruct LOCKDEP of this to avoid a splat. 
+> 
+> I have submitted very similar patch to Greg/Alan already 3 days ago[1], 
+> but have been told that this is already fixed. Apparently it wasn't?
+> 
+> [1] https://lkml.org/lkml/2012/5/28/226
 
-Oops... Sorry, forgot to specify message subject:
-        'kmemleak: Kernel memory leak detector disabled'
+I saw that right now.
 
- 
-> Hello,
-> 
-> I'm seeing pretty often (may be 10-15 times during last 2 months) kmemleak failed
-> allocation:
-> 
-> 	[ 8213.936237] kmemleak: Kernel memory leak detector disabled
-> 	[ 8214.660454] kmemleak: Automatic memory scanning thread ended
-> 
-> 
-> I've a patch that gives a bit more info on last kmemleak step (for example):
-> 
-> [ 8213.935927] kmemleak: Cannot allocate a kmemleak_object structure
-> [ 8213.935950] kmemleak: size: 192, mask: 70144
-> [ 8213.935955] Pid: 444, comm: kswapd0 Not tainted 3.5.0-rc0-dbg-10118-gaf992ce-dirty #1152
-> [ 8213.935957] Call Trace:
-> [ 8213.935986]  [<ffffffff8111ec4c>] create_object+0x7d/0x305
-> [ 8213.936009]  [<ffffffff810dc89e>] ? mempool_alloc_slab+0x15/0x17
-> [ 8213.936014]  [<ffffffff810dc89e>] ? mempool_alloc_slab+0x15/0x17
-> [ 8213.936020]  [<ffffffff8149a2e3>] kmemleak_alloc+0x26/0x43
-> [ 8213.936041]  [<ffffffff81114d54>] kmem_cache_alloc+0xd7/0x1e6
-> [ 8213.936046]  [<ffffffff810dc89e>] mempool_alloc_slab+0x15/0x17
-> [ 8213.936050]  [<ffffffff810dcb28>] mempool_alloc+0x81/0x146
-> [ 8213.936074]  [<ffffffff81284052>] ? do_raw_spin_lock+0x69/0xe9
-> [ 8213.936079]  [<ffffffff81150829>] bio_alloc_bioset+0x33/0xc4
-> [ 8213.936085]  [<ffffffff8110a0f9>] ? get_swap_bio+0x79/0x79
-> [ 8213.936089]  [<ffffffff811508cf>] bio_alloc+0x15/0x24
-> [ 8213.936109]  [<ffffffff8110a09f>] get_swap_bio+0x1f/0x79
-> [ 8213.936114]  [<ffffffff8110a20b>] swap_writepage+0x3d/0x9f
-> [ 8213.936120]  [<ffffffff810e8cde>] pageout.isra.48+0x127/0x2f9
-> [ 8213.936141]  [<ffffffff810ea570>] shrink_inactive_list+0x4eb/0x94f
-> [ 8213.936146]  [<ffffffff810ead10>] shrink_lruvec+0x33c/0x46f
-> [ 8213.936151]  [<ffffffff810ebb94>] kswapd+0x680/0xa58
-> [ 8213.936172]  [<ffffffff810eb514>] ? try_to_free_pages+0x27f/0x27f
-> [ 8213.936178]  [<ffffffff81053da5>] kthread+0x8b/0x93
-> [ 8213.936184]  [<ffffffff814be134>] kernel_thread_helper+0x4/0x10
-> [ 8213.936207]  [<ffffffff814b59f0>] ? retint_restore_args+0x13/0x13
-> [ 8213.936211]  [<ffffffff81053d1a>] ? __init_kthread_worker+0x5a/0x5a
-> [ 8213.936215]  [<ffffffff814be130>] ? gs_change+0x13/0x13
-> 
-> The question is - could it be of any use to printk stack trace with function parameters
-> (size, flag) for failed allocation?
-> 
-> If so, I'll prepare a proper patch.
-> 
-> 
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> 
-> ---
-> 
->  mm/kmemleak.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-> index 45eb621..60c49a5 100644
-> --- a/mm/kmemleak.c
-> +++ b/mm/kmemleak.c
-> @@ -521,8 +521,10 @@ static struct kmemleak_object *create_object(unsigned long ptr, size_t size,
->  
->  	object = kmem_cache_alloc(object_cache, gfp_kmemleak_mask(gfp));
->  	if (!object) {
-> +		write_lock_irqsave(&kmemleak_lock, flags);
->  		pr_warning("Cannot allocate a kmemleak_object structure\n");
-> -		kmemleak_disable();
-> +		kmemleak_stop("size: %zu, mask: %u\n", size, gfp_kmemleak_mask(gfp));
-> +		write_unlock_irqrestore(&kmemleak_lock, flags);
->  		return NULL;
->  	}
->  
+Not sure your patch is the right fix with hard coded 1 and 2 values ?
+
+0 and 1 should be enough.
+
+
+
+
