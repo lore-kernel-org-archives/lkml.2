@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2EaJEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:04:39 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:34960 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab2EaJEi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:04:38 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6727"; a="196291407"
-Message-ID: <4FC73424.80107@codeaurora.org>
-Date: Thu, 31 May 2012 02:04:36 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1753667Ab2EaJEw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 05:04:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52202 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111Ab2EaJEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 05:04:50 -0400
+Date: Thu, 31 May 2012 12:04:38 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, netdev@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio-net: remove useless disable on freeze
+Message-ID: <20120531090437.GA15447@redhat.com>
+References: <20120404091954.GA3776@redhat.com>
+ <20120528125325.GA22576@redhat.com>
+ <87r4u2dllo.fsf@rustcorp.com.au>
+ <20120531183508.f426eb25fe1b94139c637348@canb.auug.org.au>
+ <20120531084717.GB32310@redhat.com>
 MIME-Version: 1.0
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com> <4FC5DFCF.1020606@codeaurora.org> <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120531084717.GB32310@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/31/2012 12:51 AM, Peter De Schrijver wrote:
-> On Wed, May 30, 2012 at 10:52:31AM +0200, Stephen Boyd wrote:
->> On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
->>> Add an extension API for clocks. This allows clocktypes to provide extensions
->>> for features which are uncommon and cannot be easily mapped onto normal clock
->>> framework concecpts. eg: resetting blocks, configuring clock phase etc.
->> This seems rather generic. Why not add more specific APIs/concepts like
->> clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
->> make them map.
->>
-> Some of those might be very SoC specific. Eg OMAP doesn't need software
-> controlled modulereset. I don't think we should add a new function to the
-> clock framework for clock related features which only exist in a single
-> SoC or family. Ideally we could use inheritance to add methods to derived
-> clocktypes, but that's not really possible in C unfortunately.
+On Thu, May 31, 2012 at 11:47:17AM +0300, Michael S. Tsirkin wrote:
+> On Thu, May 31, 2012 at 06:35:08PM +1000, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > On Wed, 30 May 2012 19:41:47 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > >
+> > > On Mon, 28 May 2012 15:53:25 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > > > On Wed, Apr 04, 2012 at 12:19:54PM +0300, Michael S. Tsirkin wrote:
+> > > > > disable_cb is just an optimization: it
+> > > > > can not guarantee that there are no callbacks.
+> > > > > 
+> > > > > I didn't yet figure out whether a callback
+> > > > > in freeze will trigger a bug, but disable_cb
+> > > > > won't address it in any case. So let's remove
+> > > > > the useless calls as a first step.
+> > > > > 
+> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > > 
+> > > > Looks like this isn't in the 3.5 pull request -
+> > > > just lost in the shuffle?
+> > > > disable_cb is advisory so can't be relied upon.
+> > > 
+> > > I always (try to?) reply as I accept patches.
+> > > 
+> > > This one did slip by, but it's harmless so no need to push AFAICT.
+> > > 
+> > > Applied.
+> > 
+> > This patch exists in two trees in linux-next already ... Davem's net tree
+> > (so presumably he will send it to Linus shortly) and Michael's vhost tree
+> > (is that tree needed any more?).
+> 
+> Yes and I dropped the patch from there, just did not push yet.
 
-Most likely your hardware is not that special and the functionality you
-think exists only on your SoC actually exists on 5 others. MSM needs
-software resets too and we also associate them with each clock (there
-can be many clocks for one device and one reset for each clock). We use
-them mostly for the power domain code (looks like tegra and omap do the
-same thing albeit slightly differently).
+pushed.
+There's usually not too much in my tree but it helps me a lot
+that it's in linux-next.
 
-What do you plan to support under this API?
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+> >  Presumably it is now also in the rr
+> > tree?
+> > 
+> > -- 
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> 
