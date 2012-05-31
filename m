@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757808Ab2EaB5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:57:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38840 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757723Ab2EaB5u (ORCPT
+	id S1757766Ab2EaB6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:58:41 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:64217 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754633Ab2EaB6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:57:50 -0400
-Date: Wed, 30 May 2012 18:57:47 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH -V7 05/14] hugetlb: avoid taking i_mmap_mutex in
- unmap_single_vma() for hugetlb
-In-Reply-To: <1338388739-22919-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1205301857170.25774@chino.kir.corp.google.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 30 May 2012 21:58:40 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <F45880696056844FA6A73F415B568C69595AD0E365@EXDCVYMBSTM006.EQ1STM.local>
+References: <1337590701-17056-1-git-send-email-arun.murthy@stericsson.com>
+	<F45880696056844FA6A73F415B568C69595AD0E365@EXDCVYMBSTM006.EQ1STM.local>
+Date: Thu, 31 May 2012 09:58:39 +0800
+Message-ID: <CACRpkda916-6ArCb4jVdrhOizNcet9S7j_whGzoOv35CYEYyNw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] mfd: db8500-prcmu: update hostport_access enable
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 May 2012, Aneesh Kumar K.V wrote:
+On Wed, May 30, 2012 at 1:32 PM, Arun MURTHY <arun.murthy@stericsson.com> wrote:
 
-> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> 
-> i_mmap_mutex lock was added in unmap_single_vma by 502717f4e ("hugetlb:
-> fix linked list corruption in unmap_hugepage_range()") but we don't use
-> page->lru in unmap_hugepage_range any more.  Also the lock was taken
-> higher up in the stack in some code path.  That would result in deadlock.
-> 
-> unmap_mapping_range (i_mmap_mutex)
->  -> unmap_mapping_range_tree
->     -> unmap_mapping_range_vma
->        -> zap_page_range_single
->          -> unmap_single_vma
-> 	      -> unmap_hugepage_range (i_mmap_mutex)
-> 
+>> Force the Modem wakeup by asserting the CaWakeReq signal before the
+>> hostaccess_req/ack ping-pong sequence. The Awake_req signal is de-
+>> asserted
+>> asserted at the same time than the hostaccess_req. Return error on
+>> failure
+>> case so that the client using this can take appropiate steps.
+>>
+>> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+>> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+>> ---
+>
+>
+> Any Comments?
 
-You should be able to show this with lockdep?
+Have you checked that this applies cleanly to the latest v3.5 HEAD from
+Torvalds? I think I tried applying at one point and it didn't work.
 
-> For shared pagetable support for huge pages, since pagetable pages are ref
-> counted we don't need any lock during huge_pmd_unshare.  We do take
-> i_mmap_mutex in huge_pmd_share while walking the vma_prio_tree in mapping.
-> (39dde65c9940c97f ("shared page table for hugetlb page")).
-> 
+Otherwise I think it's ripe for Sam to apply?
 
-I think this should be folded into patch 4, the code you're removing here 
-is just added in that function unnecessarily.
+Yours,
+Linus Walleij
