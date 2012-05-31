@@ -1,133 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757625Ab2EaBJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:09:46 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54694 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756338Ab2EaBJo (ORCPT
+	id S1757634Ab2EaBK1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:10:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64838 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756318Ab2EaBKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:09:44 -0400
-Date: Wed, 30 May 2012 18:09:41 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, agk@redhat.com
-Subject: Re: [Bcache v13 11/16] bcache: Core btree code
-Message-ID: <20120531010940.GB5645@google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
- <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
- <20120530074708.GA32121@google.com>
+	Wed, 30 May 2012 21:10:25 -0400
+Date: Wed, 30 May 2012 18:08:45 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20120531010844.GA23101@lizard>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120530074708.GA32121@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 04:47:08PM +0900, Tejun Heo wrote:
-> A couple more comments from this round of reading.
-> 
-> On Wed, May 09, 2012 at 11:10:48PM -0400, Kent Overstreet wrote:
-> > +#define btree_prio		USHRT_MAX
-> > +#define initial_prio		32768
-> 
-> Why are these in lower case?
+Hello Linus,
 
-No good reason. I'll change it.
+I guess my pull requests have a distinct style already: they are somewhat
+boring (in sense that it's just a pile of fixes), late, and my gpg key is
+not signed by anyone. :-)
 
-> 
-> > +#define PTR_BUCKET(c, k, n)						\
-> > +	(PTR_CACHE(c, k, n)->buckets + PTR_BUCKET_NR(c, k, n))
-> 
-> PTR_BUCKET(c, k, n)
-> 
-> Awesome.  I don't know what type it takes or what each single
-> character argument stands for.
+So here it is:
 
-Yeah, that should be an inline function, along with some others. Fixed -
-well, have to convert the rest of the code to the lowercase names:
+The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
 
-Maybe ptr_bucket_idx() instead of ptr_bucket_nr()?
+  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 1011a73..0617885 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -717,15 +717,41 @@ PTR_FIELD(PTR_GEN,		0,  8)
- #define PTR(gen, offset, dev)						\
- 	((((uint64_t) dev) << 51) | ((uint64_t) offset) << 8 | gen)
- 
--#define sector_to_bucket(c, s)	((long) ((s) >> (c)->bucket_bits))
--#define bucket_to_sector(c, b)	(((sector_t) (b)) << (c)->bucket_bits)
--#define bucket_remainder(c, b)	((b) & ((c)->sb.bucket_size - 1))
-+static inline size_t sector_to_bucket(struct cache_set *c, sector_t s)
-+{
-+	return s >> c->bucket_bits;
-+}
-+
-+static inline sector_t bucket_to_sector(struct cache_set *c, size_t b)
-+{
-+	return ((sector_t) b) << c->bucket_bits;
-+}
- 
--#define PTR_CACHE(c, k, n)	((c)->cache[PTR_DEV(k, n)])
--#define PTR_BUCKET_NR(c, k, n)	sector_to_bucket(c, PTR_OFFSET(k, n))
-+static inline sector_t bucket_remainder(struct cache_set *c, sector_t s)
-+{
-+	return s & (c->sb.bucket_size - 1);
-+}
- 
--#define PTR_BUCKET(c, k, n)						\
--	(PTR_CACHE(c, k, n)->buckets + PTR_BUCKET_NR(c, k, n))
-+static inline struct cache *ptr_cache(struct cache_set *c,
-+				      struct bkey *k,
-+				      unsigned ptr)
-+{
-+	return c->cache[PTR_DEV(k, ptr)];
-+}
-+
-+static inline size_t ptr_bucket_nr(struct cache_set *c,
-+				   struct bkey *k,
-+				   unsigned ptr)
-+{
-+	return sector_to_bucket(c, PTR_OFFSET(k, ptr));
-+}
-+
-+static inline struct bucket *ptr_bucket(struct cache_set *c,
-+					struct bkey *k,
-+					unsigned ptr)
-+{
-+	return ptr_cache(c, k, ptr)->buckets + ptr_bucket_nr(c, k, ptr);
-+}
- 
- /* Btree key macros */
- 
-> 
-> > +static inline bool cached_dev_get(struct cached_dev *d)
-> > +{
-> > +	if (!atomic_inc_not_zero(&d->count))
-> > +		return false;
-> > +
-> > +	smp_mb__after_atomic_inc();
-> 
-> What is this mb() paired with?  Whenever using a mb, please specify
-> what the mb is paired with.
+are available in the git repository at:
 
-super.c, cached_dev_attach():
+  git://git.infradead.org/battery-2.6.git tags/for-v3.5
 
-	smp_wmb();
-	/* d->c must be set before d->count != 0 */
-	atomic_set(&d->count, 1);
+for you to fetch changes up to 96facd23e45e6d5020be135c8ab392ba9e044fa4:
 
-I'm improving the comments.
+  smb347-charger: Include missing <linux/err.h> (2012-05-18 17:15:48 -0700)
 
-> 
-> > +	return true;
-> > +}
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+----------------------------------------------------------------
+A bunch of fixes for v3.5, nothing extraordinary.
+
+----------------------------------------------------------------
+Anton Vorontsov (3):
+      max17042_battery: Move dev_pm_ops struct under CONFIG_PM
+      power_supply: Make the core a boolean instead of a tristate
+      MAINTAINERS: Fix 'F' entry for the power supply class
+
+Axel Lin (2):
+      power_supply: Fix a typo in BATTERY_DS2781 Kconfig entry
+      ds2781_battery: Use DS2781_PARAM_EEPROM_SIZE and DS2781_USER_EEPROM_SIZE
+
+Chanwoo Choi (2):
+      charger-manager: Poll battery health in normal state
+      charger-manager: Provide cm_notify_event function for in-kernel use
+
+Dan Carpenter (2):
+      max17042_battery: Fix a couple buffer overflows
+      isp1704_charger: Use after free on probe error
+
+Lee Jones (1):
+      ab8500: Clean up probe routines
+
+Linus Walleij (3):
+      ab8500_charger: Harden platform data check
+      ab8500_btemp: Harden platform data check
+      ab8500_fg: Harden platform data check
+
+Mika Westerberg (5):
+      smb347-charger: Convert to use module_i2c_driver()
+      smb347-charger: Rename few functions to match better what they are doing
+      smb347-charger: Move IRQ enabling to the end of probe
+      smb347-charger: Convert to regmap API
+      smb347-charger: Include missing <linux/err.h>
+
+Nikolaus Voss (1):
+      sbs-battery.c: Capacity attr = remaining relative capacity
+
+Ramakrishna Pallala (8):
+      max17042_battery: Fix driver exit function
+      max17042_battery: Add suspend/resume hooks
+      power_supply: Add voltage_ocv property and use it for max17042 driver
+      max17042_battery: Fix power supply and irq registration ordering
+      max17042_battery: Handle irq request failure case
+      smb347_charger: Cleanup power supply registration code in probe
+      max17042_battery: Add support for max17047/50 chip
+      smb347-charger: Clean up battery attributes
+
+ Documentation/power/charger-manager.txt    |   41 +-
+ Documentation/power/power_supply_class.txt |    2 +
+ MAINTAINERS                                |    2 +-
+ drivers/power/Kconfig                      |   10 +-
+ drivers/power/ab8500_btemp.c               |   12 +-
+ drivers/power/ab8500_charger.c             |   13 +-
+ drivers/power/ab8500_fg.c                  |   12 +-
+ drivers/power/charger-manager.c            |  392 +++++++++++++++
+ drivers/power/ds2781_battery.c             |   20 +-
+ drivers/power/isp1704_charger.c            |    2 +-
+ drivers/power/max17042_battery.c           |  148 +++++-
+ drivers/power/power_supply_sysfs.c         |    1 +
+ drivers/power/sbs-battery.c                |    2 +-
+ drivers/power/smb347-charger.c             |  712 +++++++++++-----------------
+ include/linux/power/charger-manager.h      |   50 +-
+ include/linux/power/max17042_battery.h     |   17 +
+ include/linux/power_supply.h               |    4 +-
+ 17 files changed, 943 insertions(+), 497 deletions(-)
