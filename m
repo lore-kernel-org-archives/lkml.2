@@ -1,158 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab2EaRcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:32:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:50509 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754728Ab2EaRcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:32:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208,223";a="106369706"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] X86, MCE, AMD: Adjust initcall sequence for xen
-Thread-Topic: [PATCH 2/3] X86, MCE, AMD: Adjust initcall sequence for xen
-Thread-Index: Ac0/U1N3hg23ys/+REik1lYOKQOUiw==
-Date: Thu, 31 May 2012 17:32:18 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FFB5F@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC82923351FFB5FSHSMSX101ccrcorpi_"
+	id S932184Ab2EaRd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:33:26 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44161 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab2EaRdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 13:33:25 -0400
+Date: Thu, 31 May 2012 19:33:51 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH 1/2] perf: Add persistent event facilities
+Message-ID: <20120531173351.GP14515@aftab.osrc.amd.com>
+References: <1332340496-21658-1-git-send-email-bp@amd64.org>
+ <1332340496-21658-2-git-send-email-bp@amd64.org>
+ <1337336040.573.12.camel@twins>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337336040.573.12.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC82923351FFB5FSHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Fri, May 18, 2012 at 12:14:00PM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-03-21 at 15:34 +0100, Borislav Petkov wrote:
+> > +int perf_add_persistent_on_cpu(int cpu, struct pers_event_desc *desc,
+> > +                              struct dentry *dir, unsigned nr_pages) 
+> 
+> OK, so this creates an even and registers it somewhere in debugfs.
+> 
+>  - you allow an arbitrary place in debugfs; this might make finding them
+> 'interesting'. Should we put them all in the same place?
+> 
+>  - persistent events created from userspace don't seem to get a debugfs
+> entry and will be lost forever?
+> 
+> In general I think a little more exploring of the semantics and
+> ramifications might be in order.
 
->From bd14e0b1f0bf4586d03cc1fc810606d2ef2c1076 Mon Sep 17 00:00:00 2001
-From: Liu, Jinsong <jinsong.liu@intel.com>
-Date: Fri, 1 Jun 2012 08:30:21 +0800
-Subject: [PATCH 2/3] X86, MCE, AMD: Adjust initcall sequence for xen
+Ok, how about the following. This is rough and not in any way ready - it
+is supposed to feel out how you guys feel about it. Basically, it adds
+another file in (debugfs)/tracing/events/<subsys>/<event_name>/ which
+can be used for whatever.
 
-there are 3 funcs which need to be _initcalled in a logic sequence:
-1. xen_late_init_mcelog
-2. mcheck_init_device
-3. threshold_init_device
+In the persistent event case, I get this:
 
-xen_late_init_mcelog must register xen_mce_chrdev_device before
-native mce_chrdev_device registration if running under xen platform;
+/mnt/dbg/tracing/events/mce/mce_record/
+|-- enable
+|-- filter
+|-- format
+|-- id
+`-- pers
 
-mcheck_init_device should be inited before threshold_init_device to
-initialize mce_device, otherwise a NULL ptr dereference will cause panic.
+and 'pers' contains the file descriptor of the perf per-cpu buffer which
+I can mmap in userspace. I can read that out later.
 
-so we use following _initcalls
-1. device_initcall(xen_late_init_mcelog);
-2. device_initcall_sync(mcheck_init_device);
-3. late_initcall(threshold_init_device);
+Other events can put other files in there containing other relevant
+stuff for them.
 
-when running under xen, the initcall order is 1,2,3;
-on baremetal, we skip 1 and we do only 2 and 3.
+The interface trace_add_file() is pretty generic (it can be done
+even more so). It is not design-finished - it is only meant to show
+the intent. Oh, and don't look at bob_add_trace_file() - it is a
+quick'n'dirty hack for testing :-).
 
-Reported-by: Borislav Petkov <bp@amd64.org>
-Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce_amd.c |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+So, what do you guys think, Peter, Steven?
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mch=
-eck/mce_amd.c
-index f4873a6..be52744 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-@@ -777,4 +777,24 @@ static __init int threshold_init_device(void)
-=20
+Thanks.
+
+--
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 176a939d1547..1c13fb5e9a50 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -222,6 +222,8 @@ struct ftrace_event_call {
+ #ifdef CONFIG_PERF_EVENTS
+ 	int				perf_refcount;
+ 	struct hlist_head __percpu	*perf_events;
++	/* persistent event filedes */
++	int				pers_fd;
+ #endif
+ };
+ 
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 29111da1d100..57ad0fbe0aef 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -980,6 +980,29 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ 	return r;
+ }
+ 
++static ssize_t
++event_pers_fd_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
++{
++	struct ftrace_event_call *call = filp->private_data;
++	struct trace_seq *s;
++	int r;
++
++	if (*ppos)
++		return 0;
++
++	s = kmalloc(sizeof(*s), GFP_KERNEL);
++	if (!s)
++		return -ENOMEM;
++
++	trace_seq_init(s);
++	trace_seq_printf(s, "%d\n", call->pers_fd);
++
++	r = simple_read_from_buffer(ubuf, cnt, ppos,
++				    s->buffer, s->len);
++	kfree(s);
++	return r;
++}
++
+ static const struct seq_operations show_event_seq_ops = {
+ 	.start = t_start,
+ 	.next = t_next,
+@@ -1058,6 +1081,12 @@ static const struct file_operations ftrace_show_header_fops = {
+ 	.llseek = default_llseek,
+ };
+ 
++static const struct file_operations ftrace_persistent_fops = {
++	.open = tracing_open_generic,
++	.read = event_pers_fd_read,
++	.llseek = default_llseek,
++};
++
+ static struct dentry *event_trace_events_dir(void)
+ {
+ 	static struct dentry *d_tracer;
+@@ -1199,6 +1228,56 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
  	return 0;
  }
--device_initcall(threshold_init_device);
+ 
++static int __trace_add_file(struct ftrace_event_call *call, const char *fname,
++			    umode_t mode, const struct file_operations *fops)
++{
++	int ret = 0;
++	mutex_lock(&event_mutex);
++
++	if (!trace_create_file(fname, mode, call->dir, call, fops))
++		ret = -EINVAL;
++
++	mutex_unlock(&event_mutex);
++	return ret;
++}
++
++extern struct ftrace_event_call *__start_ftrace_events[];
++extern struct ftrace_event_call *__stop_ftrace_events[];
++
++#define for_each_event(event, start, end)			\
++	for (event = start;					\
++	     (unsigned long)event < (unsigned long)end;		\
++	     event++)
++
 +/*
-+ * there are 3 funcs which need to be _initcalled in a logic sequence:
-+ * 1. xen_late_init_mcelog
-+ * 2. mcheck_init_device
-+ * 3. threshold_init_device
-+ *
-+ * xen_late_init_mcelog must register xen_mce_chrdev_device before
-+ * native mce_chrdev_device registration if running under xen platform;
-+ *
-+ * mcheck_init_device should be inited before threshold_init_device to
-+ * initialize mce_device, otherwise a NULL ptr dereference will cause pani=
-c.
-+ *
-+ * so we use following _initcalls
-+ * 1. device_initcall(xen_late_init_mcelog);
-+ * 2. device_initcall_sync(mcheck_init_device);
-+ * 3. late_initcall(threshold_init_device);
-+ *
-+ * when running under xen, the initcall order is 1,2,3;
-+ * on baremetal, we skip 1 and we do only 2 and 3.
++ * Assumptions:
++ * - event debugfs dir is already initialized
++ * - trace event is not declared in a module
 + */
-+late_initcall(threshold_init_device);
---=20
-1.7.1
++int trace_add_file(const char *dir_name, const char *fname, umode_t mode,
++		   const struct file_operations *fops)
++{
++	struct ftrace_event_call *call;
++
++	if (!strlen(fname))
++		return -EINVAL;
++
++	list_for_each_entry(call, &ftrace_events, list) {
++		if (!strncmp(call->name, dir_name, strlen(dir_name)))
++			return __trace_add_file(call, fname, mode, fops);
++	}
++	return -EINVAL;
++}
++
++static __init int bob_add_trace_file(void)
++{
++	int ret = 0;
++
++	ret = trace_add_file("mce_record", "pers", 0444, &ftrace_persistent_fops);
++
++	return ret;
++}
++
+ static int
+ __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
+ 		       const struct file_operations *id,
+@@ -1292,11 +1371,6 @@ void trace_remove_event_call(struct ftrace_event_call *call)
+ 	mutex_unlock(&event_mutex);
+ }
+ 
+-#define for_each_event(event, start, end)			\
+-	for (event = start;					\
+-	     (unsigned long)event < (unsigned long)end;		\
+-	     event++)
+-
+ #ifdef CONFIG_MODULES
+ 
+ static LIST_HEAD(ftrace_module_file_list);
+@@ -1435,9 +1509,6 @@ static struct notifier_block trace_module_nb = {
+ 	.priority = 0,
+ };
+ 
+-extern struct ftrace_event_call *__start_ftrace_events[];
+-extern struct ftrace_event_call *__stop_ftrace_events[];
+-
+ static char bootup_event_buf[COMMAND_LINE_SIZE] __initdata;
+ 
+ static __init int setup_trace_event(char *str)
+@@ -1753,3 +1824,4 @@ static __init int event_trace_self_tests_init(void)
+ late_initcall(event_trace_self_tests_init);
+ 
+ #endif
++late_initcall(bob_add_trace_file);
 
---_002_DE8DF0795D48FD4CA783C40EC82923351FFB5FSHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0002-X86-MCE-AMD-Adjust-initcall-sequence-for-xen.patch"
-Content-Description: 0002-X86-MCE-AMD-Adjust-initcall-sequence-for-xen.patch
-Content-Disposition: attachment;
-	filename="0002-X86-MCE-AMD-Adjust-initcall-sequence-for-xen.patch";
-	size=2379; creation-date="Thu, 31 May 2012 17:10:05 GMT";
-	modification-date="Fri, 01 Jun 2012 00:43:22 GMT"
-Content-Transfer-Encoding: base64
 
-RnJvbSBiZDE0ZTBiMWYwYmY0NTg2ZDAzY2MxZmM4MTA2MDZkMmVmMmMxMDc2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogRnJpLCAxIEp1biAyMDEyIDA4OjMwOjIxICswODAwClN1YmplY3Q6IFtQQVRDSCAyLzNd
-IFg4NiwgTUNFLCBBTUQ6IEFkanVzdCBpbml0Y2FsbCBzZXF1ZW5jZSBmb3IgeGVuCgp0aGVyZSBh
-cmUgMyBmdW5jcyB3aGljaCBuZWVkIHRvIGJlIF9pbml0Y2FsbGVkIGluIGEgbG9naWMgc2VxdWVu
-Y2U6CjEuIHhlbl9sYXRlX2luaXRfbWNlbG9nCjIuIG1jaGVja19pbml0X2RldmljZQozLiB0aHJl
-c2hvbGRfaW5pdF9kZXZpY2UKCnhlbl9sYXRlX2luaXRfbWNlbG9nIG11c3QgcmVnaXN0ZXIgeGVu
-X21jZV9jaHJkZXZfZGV2aWNlIGJlZm9yZQpuYXRpdmUgbWNlX2NocmRldl9kZXZpY2UgcmVnaXN0
-cmF0aW9uIGlmIHJ1bm5pbmcgdW5kZXIgeGVuIHBsYXRmb3JtOwoKbWNoZWNrX2luaXRfZGV2aWNl
-IHNob3VsZCBiZSBpbml0ZWQgYmVmb3JlIHRocmVzaG9sZF9pbml0X2RldmljZSB0bwppbml0aWFs
-aXplIG1jZV9kZXZpY2UsIG90aGVyd2lzZSBhIE5VTEwgcHRyIGRlcmVmZXJlbmNlIHdpbGwgY2F1
-c2UgcGFuaWMuCgpzbyB3ZSB1c2UgZm9sbG93aW5nIF9pbml0Y2FsbHMKMS4gZGV2aWNlX2luaXRj
-YWxsKHhlbl9sYXRlX2luaXRfbWNlbG9nKTsKMi4gZGV2aWNlX2luaXRjYWxsX3N5bmMobWNoZWNr
-X2luaXRfZGV2aWNlKTsKMy4gbGF0ZV9pbml0Y2FsbCh0aHJlc2hvbGRfaW5pdF9kZXZpY2UpOwoK
-d2hlbiBydW5uaW5nIHVuZGVyIHhlbiwgdGhlIGluaXRjYWxsIG9yZGVyIGlzIDEsMiwzOwpvbiBi
-YXJlbWV0YWwsIHdlIHNraXAgMSBhbmQgd2UgZG8gb25seSAyIGFuZCAzLgoKUmVwb3J0ZWQtYnk6
-IEJvcmlzbGF2IFBldGtvdiA8YnBAYW1kNjQub3JnPgpTdWdnZXN0ZWQtYnk6IEtvbnJhZCBSemVz
-enV0ZWsgV2lsayA8a29ucmFkLndpbGtAb3JhY2xlLmNvbT4KQWNrZWQtYW5kLXRlc3RlZC1ieTog
-Qm9yaXNsYXYgUGV0a292IDxib3Jpc2xhdi5wZXRrb3ZAYW1kLmNvbT4KU2lnbmVkLW9mZi1ieTog
-TGl1LCBKaW5zb25nIDxqaW5zb25nLmxpdUBpbnRlbC5jb20+Ci0tLQogYXJjaC94ODYva2VybmVs
-L2NwdS9tY2hlY2svbWNlX2FtZC5jIHwgICAyMiArKysrKysrKysrKysrKysrKysrKystCiAxIGZp
-bGVzIGNoYW5nZWQsIDIxIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
-IGEvYXJjaC94ODYva2VybmVsL2NwdS9tY2hlY2svbWNlX2FtZC5jIGIvYXJjaC94ODYva2VybmVs
-L2NwdS9tY2hlY2svbWNlX2FtZC5jCmluZGV4IGY0ODczYTYuLmJlNTI3NDQgMTAwNjQ0Ci0tLSBh
-L2FyY2gveDg2L2tlcm5lbC9jcHUvbWNoZWNrL21jZV9hbWQuYworKysgYi9hcmNoL3g4Ni9rZXJu
-ZWwvY3B1L21jaGVjay9tY2VfYW1kLmMKQEAgLTc3Nyw0ICs3NzcsMjQgQEAgc3RhdGljIF9faW5p
-dCBpbnQgdGhyZXNob2xkX2luaXRfZGV2aWNlKHZvaWQpCiAKIAlyZXR1cm4gMDsKIH0KLWRldmlj
-ZV9pbml0Y2FsbCh0aHJlc2hvbGRfaW5pdF9kZXZpY2UpOworLyoKKyAqIHRoZXJlIGFyZSAzIGZ1
-bmNzIHdoaWNoIG5lZWQgdG8gYmUgX2luaXRjYWxsZWQgaW4gYSBsb2dpYyBzZXF1ZW5jZToKKyAq
-IDEuIHhlbl9sYXRlX2luaXRfbWNlbG9nCisgKiAyLiBtY2hlY2tfaW5pdF9kZXZpY2UKKyAqIDMu
-IHRocmVzaG9sZF9pbml0X2RldmljZQorICoKKyAqIHhlbl9sYXRlX2luaXRfbWNlbG9nIG11c3Qg
-cmVnaXN0ZXIgeGVuX21jZV9jaHJkZXZfZGV2aWNlIGJlZm9yZQorICogbmF0aXZlIG1jZV9jaHJk
-ZXZfZGV2aWNlIHJlZ2lzdHJhdGlvbiBpZiBydW5uaW5nIHVuZGVyIHhlbiBwbGF0Zm9ybTsKKyAq
-CisgKiBtY2hlY2tfaW5pdF9kZXZpY2Ugc2hvdWxkIGJlIGluaXRlZCBiZWZvcmUgdGhyZXNob2xk
-X2luaXRfZGV2aWNlIHRvCisgKiBpbml0aWFsaXplIG1jZV9kZXZpY2UsIG90aGVyd2lzZSBhIE5V
-TEwgcHRyIGRlcmVmZXJlbmNlIHdpbGwgY2F1c2UgcGFuaWMuCisgKgorICogc28gd2UgdXNlIGZv
-bGxvd2luZyBfaW5pdGNhbGxzCisgKiAxLiBkZXZpY2VfaW5pdGNhbGwoeGVuX2xhdGVfaW5pdF9t
-Y2Vsb2cpOworICogMi4gZGV2aWNlX2luaXRjYWxsX3N5bmMobWNoZWNrX2luaXRfZGV2aWNlKTsK
-KyAqIDMuIGxhdGVfaW5pdGNhbGwodGhyZXNob2xkX2luaXRfZGV2aWNlKTsKKyAqCisgKiB3aGVu
-IHJ1bm5pbmcgdW5kZXIgeGVuLCB0aGUgaW5pdGNhbGwgb3JkZXIgaXMgMSwyLDM7CisgKiBvbiBi
-YXJlbWV0YWwsIHdlIHNraXAgMSBhbmQgd2UgZG8gb25seSAyIGFuZCAzLgorICovCitsYXRlX2lu
-aXRjYWxsKHRocmVzaG9sZF9pbml0X2RldmljZSk7Ci0tIAoxLjcuMQoK
+-- 
+Regards/Gruss,
+Boris.
 
---_002_DE8DF0795D48FD4CA783C40EC82923351FFB5FSHSMSX101ccrcorpi_--
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
