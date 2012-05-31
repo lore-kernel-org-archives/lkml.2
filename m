@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2EaKLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:11:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab2EaKLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:11:17 -0400
-Date: Thu, 31 May 2012 13:11:11 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv5 5/5] kvm: host side for eoi optimization
-Message-ID: <20120531101111.GA15836@redhat.com>
-References: <cover.1337695416.git.mst@redhat.com>
- <f434b6864a1af1f813e6ead964026553cd879c38.1337695416.git.mst@redhat.com>
- <20120531095710.GM2311@redhat.com>
+	id S1756983Ab2EaKMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:12:48 -0400
+Received: from static.78-46-68-141.clients.your-server.de ([78.46.68.141]:56545
+	"HELO eristoteles.iwoars.net" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with SMTP id S1752124Ab2EaKMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 06:12:46 -0400
+Date: Thu, 31 May 2012 12:12:42 +0200 (CEST)
+From: Joel Reardon <joel@clambassador.com>
+X-X-Sender: joel@eristoteles.iwoars.net
+To: Artem Bityutskiy <dedekind1@gmail.com>
+cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] UBIFS: compute KSA size and store in superblock
+In-Reply-To: <1338391121.2536.94.camel@sauron.fi.intel.com>
+Message-ID: <alpine.DEB.2.00.1205311211340.15137@eristoteles.iwoars.net>
+References: <alpine.DEB.2.00.1205251509220.2989@eristoteles.iwoars.net>  <1337952271.30969.37.camel@sauron.fi.intel.com>  <alpine.DEB.2.00.1205301531220.6465@eristoteles.iwoars.net> <1338391121.2536.94.camel@sauron.fi.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531095710.GM2311@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 12:57:10PM +0300, Gleb Natapov wrote:
-> > @@ -1345,17 +1437,40 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
-> >  	apic_set_tpr(vcpu->arch.apic, data & 0xff);
-> >  }
-> >  
-> > +/*
-> > + * apic_sync_pv_eoi_to_guest - called before vmentry
-> > + *
-> > + * Detect whether it's safe to enable PV EOI and
-> > + * if yes do so.
-> > + */
-> > +static void apic_sync_pv_eoi_to_guest(struct kvm_vcpu *vcpu,
-> > +					struct kvm_lapic *apic)
-> > +{
-> > +	if (!pv_eoi_enabled(vcpu) ||
-> > +	    /* IRR set or many bits in ISR: could be nested. */
-> > +	    unlikely(apic->irr_pending) ||
-> > +	    unlikely(apic->isr_count != 1) ||
-> Remind me why pv_eoi should not be set if there is more than one isr?
 
-There's a comment below: it might be safe but
-we do not bother: no easy way to know which interrupt
-has higher priority.
+> You need to validate that:
+>
+> 1. if use_ubifsec is true, then ksa_lebs is not zero.
+> 2. ksa_lebs is sane - not too small, not too large.
+>
 
-In my testing more than one bit almost never happens in practice so not
-worth optimizing for.
+Will add an assert and a dbg check function.
 
 
-> 
-> > +	    /* Cache not set: safe but we don't bother. */
-> > +	    unlikely(apic->isr_cache == -1) ||
-> > +	    /* Need EOI to update ioapic. */
-> > +	    unlikely(kvm_ioapic_handles_vector(vcpu->kvm, apic->isr_cache)))
-> > +		return;
-> > +
-> > +	pv_eoi_set_pending(apic->vcpu);
-> > +}
-> > +
-> apic_sync_pv_eoi_to_guest() is not paired with
-> apic_sync_pv_eoi_from_guest() if event injection is canceled.
-> You can enter guest with stale pv_eoi bit.
+> > diff --git a/fs/ubifs/ubifs-media.h b/fs/ubifs/ubifs-media.h
+> > index 90f348c..1dda25d 100644
+> > --- a/fs/ubifs/ubifs-media.h
+> > +++ b/fs/ubifs/ubifs-media.h
+> > @@ -618,10 +618,13 @@ struct ubifs_pad_node {
+> >   * @rp_uid: reserve pool UID
+> >   * @rp_gid: reserve pool GID
+> >   * @rp_size: size of the reserved pool in bytes
+> > - * @padding2: reserved for future, zeroes
+>
+> Do not remove this comment.
+>
 
-Never. The pv_eoi bit is cleared on each exit.
-It will stay cleared unless we set it here.
-I will add a comment.
+I only moved it, new fields were added to the struct and it was not longer
+in the correct place in the comment.
 
+> >   * @time_gran: time granularity in nanoseconds
+> >   * @uuid: UUID generated when the file system image was created
+> >   * @ro_compat_version: UBIFS R/O compatibility version
+> > + * @crypto_lebs: number of LEBS being used to store keys
+> > + * @use_ubifsec: the LSB signifies whether the file system should use secure
+> > + *		 deletion
+> > + * @padding2: reserved for future, zeroes
+> >   */
+
+
+Cheers,
+Joel Reardon
