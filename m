@@ -1,115 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab2EaWEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:04:05 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37024 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab2EaWEC (ORCPT
+	id S1754901Ab2EaWEe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:04:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53528 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab2EaWEK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:04:02 -0400
-Date: Thu, 31 May 2012 15:02:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 11/41] nohz/cpuset: Don't turn off the tick if rcu needs
- it
-Message-ID: <20120531220229.GM2357@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-12-git-send-email-fweisbec@gmail.com>
- <20120522171658.GA8087@linux.vnet.ibm.com>
- <20120523135205.GB1663@somewhere>
- <20120523151537.GA2402@linux.vnet.ibm.com>
- <20120523160629.GJ1663@somewhere>
- <20120523162739.GE2402@linux.vnet.ibm.com>
- <20120531160117.GD27841@somewhere.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531160117.GD27841@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12053122-3270-0000-0000-000006CDF7AF
+	Thu, 31 May 2012 18:04:10 -0400
+Message-ID: <1338501826.28384.133.camel@twins>
+Subject: Re: [tip:sched/numa] sched/numa: Introduce sys_numa_{t,m}bind()
+From: Peter Zijlstra <peterz@infradead.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, hpa@zytor.com,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, pjt@google.com,
+        cl@linux.com, riel@redhat.com, bharata.rao@gmail.com,
+        Andrew Morton <akpm@linux-foundation.org>, Lee.Schermerhorn@hp.com,
+        aarcange@redhat.com, danms@us.ibm.com, suresh.b.siddha@intel.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+Date: Fri, 01 Jun 2012 00:03:46 +0200
+In-Reply-To: <1337934953.9783.162.camel@laptop>
+References: <tip-nf7brf1b88w0ojwuf689xeet@git.kernel.org>
+	 <alpine.DEB.2.00.1205191922250.24674@chino.kir.corp.google.com>
+	 <20120521084046.GB31407@gmail.com>
+	 <alpine.DEB.2.00.1205211914100.13682@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1205211932350.13682@chino.kir.corp.google.com>
+	 <1337688268.9698.29.camel@twins>  <1337698830.9698.37.camel@twins>
+	 <1337788843.9783.14.camel@laptop>
+	 <alpine.DEB.2.00.1205231757140.28167@chino.kir.corp.google.com>
+	 <1337934953.9783.162.camel@laptop>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 06:01:21PM +0200, Frederic Weisbecker wrote:
-> On Wed, May 23, 2012 at 09:27:39AM -0700, Paul E. McKenney wrote:
-> > On Wed, May 23, 2012 at 06:06:33PM +0200, Frederic Weisbecker wrote:
-> > > On Wed, May 23, 2012 at 08:15:42AM -0700, Paul E. McKenney wrote:
-> > > > On Wed, May 23, 2012 at 03:52:09PM +0200, Frederic Weisbecker wrote:
-> > > > > > > +#ifdef CONFIG_CPUSETS_NO_HZ
-> > > > > > > +static bool can_stop_adaptive_tick(void)
-> > > > > > > +{
-> > > > > > > +	if (!sched_can_stop_tick())
-> > > > > > > +		return false;
-> > > > > > > +
-> > > > > > > +	/* Is there a grace period to complete ? */
-> > > > > > > +	if (rcu_pending(smp_processor_id()))
-> > > > > > 
-> > > > > > You lost me on this one.  Why can't this be rcu_needs_cpu()?
-> > > > > 
-> > > > > We already have an rcu_needs_cpu() check in tick_nohz_stop_sched_tick()
-> > > > > that prevents the tick to shut down if the CPU has local callbacks to handle.
-> > > > > 
-> > > > > The rcu_pending() check is there in case some other CPU is waiting for the
-> > > > > current one to help completing a grace period, by reporting a quiescent state
-> > > > > for example. This happens because we may stop the tick in the kernel, not only
-> > > > > userspace. And if we are in the kernel, we still need to be part of the global
-> > > > > state machine.
-> > > > 
-> > > > Ah!  But RCU will notice that the CPU is in dyntick-idle mode, and will
-> > > > therefore take any needed quiescent-state action on that CPU's behalf.
-> > > > So there should be no need to call rcu_pending() anywhere outside of the
-> > > > RCU core code.
-> > > 
-> > > No. If the tick is stopped and we are in the kernel, we may be using RCU
-> > > anytime, so we need to be part of the RCU core.
-> > 
-> > OK, so the only problem is if we spend a long time CPU-bound in the kernel,
-> > where "long" is milliseconds or tens of milliseconds.  In that case, the
-> > RCU core will notice that the CPU has not responded but is not idle, for
-> > example, in rcu_implicit_dynticks_qs().  It can take action at this point
-> > to get the offending CPU to pay attention to RCU.
-> > 
-> > Does this make sense, or am I still missing something?
-> 
-> Yeah that's exactly the purpose of the rcu_pending() check before shutting down
-> the tick and the IPI to wake it up.
+On Fri, 2012-05-25 at 10:35 +0200, Peter Zijlstra wrote:
+> What does the node distance table on that thing look like?
 
-Hmmm...  We appear to be talking past each other.
+The below makes it boot and I think even balance right. But I'm not
+happy with the patch as I think it can be done simpler. The resulting
+domain setup isn't minimal either. 
 
-If you use rcu_pending(), you defeat CONFIG_RCU_FAST_NO_HZ and thus fail
-to shut of the tick in situations where the application does a system
-call involving an RCU update every few tens of milliseconds.  This is not
-good.
 
-What we should do instead is to call rcu_needs_cpu() instead of rcu_pending().
-In the common case of short system calls, this will allow the tick to be
-turned off a higher fraction of the time with no penalty.  In the very
-unusual case where a system call runs CPU-bound for tens of milliseconds,
-RCU's existing force_quiescent_state() machinery can easily be used to
-force the CPU to pay attention to RCU.
 
-Make sense, or am I missing something?
+---
+Subject: 
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu May 31 14:47:33 CEST 2012
 
-(And yes, the CONFIG_RCU_FAST_NO_HZ heuristics likely need to be adjusted
-to better support adaptive ticks -- try less hard to retire callbacks,
-for example.)
 
-							Thanx, Paul
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/sched.h |   11 ++++++++
+ kernel/sched/core.c   |   64 +++++++++++++++++++++++++++++++++++++++++++-------
+ kernel/sched/fair.c   |    5 ++-
+ kernel/sched/sched.h  |    2 +
+ 4 files changed, 72 insertions(+), 10 deletions(-)
+
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -878,6 +878,8 @@ struct sched_group_power {
+ 	 * Number of busy cpus in this group.
+ 	 */
+ 	atomic_t nr_busy_cpus;
++
++	unsigned long cpumask[0]; /* iteration mask */
+ };
+ 
+ struct sched_group {
+@@ -902,6 +904,15 @@ static inline struct cpumask *sched_grou
+ 	return to_cpumask(sg->cpumask);
+ }
+ 
++/*
++ * cpumask masking which cpus in the group are allowed to iterate up the domain
++ * tree.
++ */
++static inline struct cpumask *sched_group_mask(struct sched_group *sg)
++{
++	return to_cpumask(sg->sgp->cpumask);
++}
++
+ /**
+  * group_first_cpu - Returns the first cpu in the cpumask of a sched_group.
+  * @group: The group whose first cpu is to be returned.
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6008,6 +6008,44 @@ struct sched_domain_topology_level {
+ 	struct sd_data      data;
+ };
+ 
++/*
++ * Build an iteration mask that can exclude certain CPUs from the upwards
++ * domain traversal.
++ *
++ * Asymmetric node setups can result in situations where the domain tree is of
++ * unequal depth, make sure to skip domains that already cover the entire
++ * range.
++ *
++ * In that case build_sched_domains() will have terminated the iteration early
++ * and our sibling sd spans will be empty. Domains should always include the
++ * cpu they're built on, so check that.
++ *
++ */
++static void build_group_mask(struct sched_domain *sd, struct sched_group *sg)
++{
++	const struct cpumask *span = sched_domain_span(sd);
++	struct sd_data *sdd = sd->private;
++	struct sched_domain *sibling;
++	int i;
++
++	for_each_cpu(i, span) {
++		sibling = *per_cpu_ptr(sdd->sd, i);
++		if (!cpumask_test_cpu(i, sched_domain_span(sibling)))
++			continue;
++
++		cpumask_set_cpu(i, sched_group_mask(sg));
++	}
++}
++
++/*
++ * Return the canonical balance cpu for this group, this is the first cpu
++ * of this group that's also in the iteration mask.
++ */
++int group_balance_cpu(struct sched_group *sg)
++{
++	return cpumask_first_and(sched_group_cpus(sg), sched_group_mask(sg));
++}
++
+ static int
+ build_overlap_sched_groups(struct sched_domain *sd, int cpu)
+ {
+@@ -6026,6 +6064,12 @@ build_overlap_sched_groups(struct sched_
+ 		if (cpumask_test_cpu(i, covered))
+ 			continue;
+ 
++		child = *per_cpu_ptr(sdd->sd, i);
++
++		/* See the comment near build_group_mask(). */
++		if (!cpumask_test_cpu(i, sched_domain_span(child)))
++			continue;
++
+ 		sg = kzalloc_node(sizeof(struct sched_group) + cpumask_size(),
+ 				GFP_KERNEL, cpu_to_node(cpu));
+ 
+@@ -6033,8 +6077,6 @@ build_overlap_sched_groups(struct sched_
+ 			goto fail;
+ 
+ 		sg_span = sched_group_cpus(sg);
+-
+-		child = *per_cpu_ptr(sdd->sd, i);
+ 		if (child->child) {
+ 			child = child->child;
+ 			cpumask_copy(sg_span, sched_domain_span(child));
+@@ -6044,13 +6086,18 @@ build_overlap_sched_groups(struct sched_
+ 		cpumask_or(covered, covered, sg_span);
+ 
+ 		sg->sgp = *per_cpu_ptr(sdd->sgp, i);
+-		atomic_inc(&sg->sgp->ref);
++		if (atomic_inc_return(&sg->sgp->ref) == 1)
++			build_group_mask(sd, sg);
++
+ 
++		/*
++		 * Make sure the first group of this domain contains the
++		 * canonical balance cpu. Otherwise the sched_domain iteration
++		 * breaks. See update_sg_lb_stats().
++		 */
+ 		if ((!groups && cpumask_test_cpu(cpu, sg_span)) ||
+-			       cpumask_first(sg_span) == cpu) {
+-			WARN_ON_ONCE(!cpumask_test_cpu(cpu, sg_span));
++		    group_balance_cpu(sg) == cpu)
+ 			groups = sg;
+-		}
+ 
+ 		if (!first)
+ 			first = sg;
+@@ -6123,6 +6170,7 @@ build_sched_groups(struct sched_domain *
+ 
+ 		cpumask_clear(sched_group_cpus(sg));
+ 		sg->sgp->power = 0;
++		cpumask_setall(sched_group_mask(sg));
+ 
+ 		for_each_cpu(j, span) {
+ 			if (get_group(j, sdd, NULL) != group)
+@@ -6164,7 +6212,7 @@ static void init_sched_groups_power(int
+ 		sg = sg->next;
+ 	} while (sg != sd->groups);
+ 
+-	if (cpu != group_first_cpu(sg))
++	if (cpu != group_balance_cpu(sg))
+ 		return;
+ 
+ 	update_group_power(sd, cpu);
+@@ -6572,7 +6620,7 @@ static int __sdt_alloc(const struct cpum
+ 
+ 			*per_cpu_ptr(sdd->sg, j) = sg;
+ 
+-			sgp = kzalloc_node(sizeof(struct sched_group_power),
++			sgp = kzalloc_node(sizeof(struct sched_group_power) + cpumask_size(),
+ 					GFP_KERNEL, cpu_to_node(j));
+ 			if (!sgp)
+ 				return -ENOMEM;
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3846,7 +3846,7 @@ static inline void update_sg_lb_stats(st
+ 	int i;
+ 
+ 	if (local_group)
+-		balance_cpu = group_first_cpu(group);
++		balance_cpu = group_balance_cpu(group);
+ 
+ 	/* Tally up the load of all CPUs in the group */
+ 	max_cpu_load = 0;
+@@ -3861,7 +3861,8 @@ static inline void update_sg_lb_stats(st
+ 
+ 		/* Bias balancing toward cpus of our domain */
+ 		if (local_group) {
+-			if (idle_cpu(i) && !first_idle_cpu) {
++			if (idle_cpu(i) && !first_idle_cpu &&
++					cpumask_test_cpu(i, sched_group_mask(group))) {
+ 				first_idle_cpu = 1;
+ 				balance_cpu = i;
+ 			}
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -542,6 +542,8 @@ DECLARE_PER_CPU(struct sched_domain *, s
+ DECLARE_PER_CPU(int, sd_llc_id);
+ DECLARE_PER_CPU(struct sched_domain *, sd_node);
+ 
++extern int group_balance_cpu(struct sched_group *sg);
++
+ #endif /* CONFIG_SMP */
+ 
+ #include "stats.h"
 
