@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab2EaIHA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 04:07:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59433 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757874Ab2EaIGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 04:06:47 -0400
-Subject: [V2 PATCH] net: sock: validate data_len before allocating skb in
- sock_alloc_send_pskb()
-To: netdev@vger.kernel.org, edumazet@google.com, mst@redhat.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org
-From: Jason Wang <jasowang@redhat.com>
-Cc: stable@vger.kernel.org
-Date: Thu, 31 May 2012 15:18:10 +0800
-Message-ID: <20120531071809.6392.26677.stgit@amd-6168-8-1.englab.nay.redhat.com>
-User-Agent: StGit/0.16-1-g60c4
+	id S1758015Ab2EaIOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 04:14:09 -0400
+Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:39335 "EHLO
+	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757967Ab2EaIOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 04:14:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201205301843.51568.arnd@arndb.de>
+References: <1338375394-16268-1-git-send-email-kishon@ti.com>
+	<201205301843.51568.arnd@arndb.de>
+Date: Thu, 31 May 2012 13:44:04 +0530
+Message-ID: <CAAe_U6LFFstds=iQ7cy7gM9vWbfRgf5z0gaRp_-bu0Qjx6eA1Q@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] omap: add ocp2scp as a misc driver
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to validate the number of pages consumed by data_len, otherwise frags
-array could be overflowed by userspace. So this patch validate data_len and
-return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
+Hi Arnd,
 
-Cc: stable@vger.kernel.org [2.6.27+]
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- net/core/sock.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+On Thu, May 31, 2012 at 12:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 30 May 2012, Kishon Vijay Abraham I wrote:
+>>
+>> This patch series is done as a preparatory step for adding phy drivers
+>> for dwc3 and musb.
+>>
+>> This series adds a new driver for ocp2scp to which phy drivers are connected.
+>>
+>> I'm planning to send phy drivers asap. Meanwhile I'd like to get some
+>> review comments for this series. I have also plans to send device tree
+>> adaptation of the ocp2scp driver.
+>>
+>> Developed on
+>> http://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next
+>>
+>> If it has to be based on some other tree, please let me know.
+>
+> This must be the most pointless driver I've seen in a long time. It doesn't
+> actually do anything at all, it just creates child devices from a static
+> lookup table.
+>
+> Just put the devices you actually want into the device tree instead and
+> have them automatically created.
 
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 653f8c0..9e5b71f 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -1592,6 +1592,11 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
- 	gfp_t gfp_mask;
- 	long timeo;
- 	int err;
-+	int npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
-+
-+	err = -EMSGSIZE;
-+	if (npages > MAX_SKB_FRAGS)
-+		goto failure;
- 
- 	gfp_mask = sk->sk_allocation;
- 	if (gfp_mask & __GFP_WAIT)
-@@ -1610,14 +1615,12 @@ struct sk_buff *sock_alloc_send_pskb(struct sock *sk, unsigned long header_len,
- 		if (atomic_read(&sk->sk_wmem_alloc) < sk->sk_sndbuf) {
- 			skb = alloc_skb(header_len, gfp_mask);
- 			if (skb) {
--				int npages;
- 				int i;
- 
- 				/* No pages, we're done... */
- 				if (!data_len)
- 					break;
- 
--				npages = (data_len + (PAGE_SIZE - 1)) >> PAGE_SHIFT;
- 				skb->truesize += data_len;
- 				skb_shinfo(skb)->nr_frags = npages;
- 				for (i = 0; i < npages; i++) {
+But shouldn't device tree support and non-device tree support co-exist
+till the non-device tree is completely knocked out of the kernel? Even
+then shouldn't there be a separate driver to extract the child nodes
+of ocp2scp and create a device (using of_platform_populate)?
+As far as I've seen, the devices are automatically created (by virtue
+of of_platform_populate() in  mach-omap2/board-generic.c in omap case)
+only for the devices that is connected to the system bus. For other
+cases, the parent should be responsible for creating the child
+devices.
 
+Thanks
+Kishon
