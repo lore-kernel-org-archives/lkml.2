@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab2EaUwy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:52:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7290 "EHLO mga03.intel.com"
+	id S932625Ab2EaUxE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:53:04 -0400
+Received: from fieldses.org ([174.143.236.118]:58743 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab2EaUww convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:52:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="106445235"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: RE: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Thread-Topic: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Thread-Index: AQHNOZYGtI1DcNZxtEGCK0mbRpqc+pbZOc0AgABYoYCAAAkdAIAAFPOAgAd2gYCAACJ1AIAADiKAgAAIj4CAAZ5vgIABK+aAgAAJUICAAB0igIAAG5oAgAAHRYCAAAZIAIAAApkAgAAB+ICAAAOVAIAAENkAgAAQiYCAACboAIAAApWAgAAIOQCAAAHrAP//kZqg
-Date: Thu, 31 May 2012 20:52:21 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F6DE2@ORSMSX104.amr.corp.intel.com>
-References: <20120531142229.GF14515@aftab.osrc.amd.com>
- <4FC783EA.80704@redhat.com> <20120531145416.GI14515@aftab.osrc.amd.com>
- <4FC787BF.3020006@redhat.com> <20120531151408.GJ14515@aftab.osrc.amd.com>
- <4FC798E2.4000402@redhat.com> <20120531171337.GN14515@aftab.osrc.amd.com>
- <1338492772.13348.388.camel@gandalf.stny.rr.com>
- <20120531194207.GC16998@aftab.osrc.amd.com>
- <1338495092.13348.419.camel@gandalf.stny.rr.com>
- <20120531201824.GD16998@aftab.osrc.amd.com>
-In-Reply-To: <20120531201824.GD16998@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932487Ab2EaUxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 16:53:00 -0400
+Date: Thu, 31 May 2012 16:53:00 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: nfsd changes for 3.5
+Message-ID: <20120531205300.GG25955@fieldses.org>
+References: <20120531182457.GB25955@fieldses.org>
+ <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
+ <20120531200138.GD25955@fieldses.org>
+ <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It could be very quiet (i.e., machine runs with no errors) and it could
-> have bursts where it reports a large number of errors back-to-back
-> depending on access patterns, DIMM health, temperature, sea level and at
-> least a bunch more factors.
+On Thu, May 31, 2012 at 01:17:26PM -0700, Linus Torvalds wrote:
+> On Thu, May 31, 2012 at 1:01 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> >
+> > Right.  By default it's 90 seconds before we'll give up on the client.
+> 
+> So a slightly buggy client can basically DoS the server by getting a
+> delegation and then crashing or something. Everybody else that tries
+> to read that directory (not that file) will be dead in the water.
+> Definitely not good.
+> 
+> > I hate that too, and originally tried to avoid it with something like:
+> >
+> >        retry:
+> >                acquire locks
+> >                lookup inode
+> >                ret = try_to_break_deleg(inode);
+> >                if (ret)
+> >                        drop locks
+> >                        really_break_deleg(inode);
+> >                        goto retry;
+> >                ... do the real work ...
+> >                drop locks
+> >
+> > I felt like I was making already complicated code logic like rename's
+> > even harder to follow.
+> 
+> I do think it's the only thing we can reasonably do.
 
-Yes - the normal case is a few errors from stray neutrons ...  perhaps
-a few per month, maybe on a very big system a few per hour.  When something
-breaks, especially if it affects a wide range of memory addresses, then
-you will see a storm of errors.
+OK, I can give that another try.  Al, does that sound like the more
+sensible choice to you?
 
-> So I can imagine buffers filling up suddenly and fast, and userspace
-> having hard time consuming them in a timely manner.
 
-But I'm wondering what agent is going to be reporting all these
-errors.  Intel has CMCI - so you can get a storm of interrupts
-which would each generate a trace record ... but we are working
-on a patch to turn off CMCI if a storm is detected. AMD doesn't
-have CMCI, so errors just report from polling - and we have a
-maximum poll rate which is quite low by trace standards (even
-when multiplied by NR_CPUS).
+Uh, that means ditching some work in my public git tree.  Which I
+haven't rebased in years.  So, a stupid process question; would you
+rather I:
 
-Will EDAC drivers loop over some chipset registers blasting
-out huge numbers of trace records ... that seems just as bad
-for system throughput as a CMCI storm. And just as useless.
+	- continue to be strict about rebasing and apply a bunch of
+	  reverts?
+	- ditch it and start over?
 
-General principle: If there are very few errors happening then
-it is important to log every single one of them.  If there are
-so many that we can't keep up, then we must sample at some level,
-and we might as well do that at generation point.
+#1 looks like a mess to me, so I guess #2's my default.  Probably nobody
+will notice but me.
 
--Tony
+> I'd love to have
+> some kind of per-dentry lock for unlink/rename, but we don't.
+> Long-term, we really do need to do something about the directory
+> locking, though, because it's also a huge problem for readdir()
+> concurrency. Or at least it used to be (samba in particular). Making
+> it an rwsem might help readdir a tiny amount, but I suspect people
+> actually depend on the mutex in readdir right now.
+
+Al called this all "highly non-trivial":
+
+	http://marc.info/?l=linux-fsdevel&m=132726495726326&w=2
+
+I don't know who'd have the cycles.
+
+--b.
+
+> 
+> > And those operations don't really know the inode till they acquire the
+> > locks, so in pathological cases that could continue forever.
+> 
+> I suspect at some point you just have to say "screw it".
