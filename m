@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827Ab2EaCEq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 22:04:46 -0400
+	id S1757858Ab2EaCE6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 22:04:58 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9704 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757701Ab2EaCEm (ORCPT
+	with ESMTP id S1757769Ab2EaCEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 22:04:42 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=17vVJ0OR0l4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=h2xc5Y505kivUmRXO0EA:9 a=QEXdDO2ut3YA:10 a=X6fUgycoKihUSBfr_X0A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 30 May 2012 22:04:45 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=Ciwy3NGCPMMA:10 a=Vl-kc5HlrXwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=Ds3GogaVUjTumUKFKR0A:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Tjavf4Jgv6dPpoJ1sD4A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120531012829.160060586@goodmis.org>
+Message-Id: <20120531020441.919136910@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 30 May 2012 21:28:29 -0400
+Date: Wed, 30 May 2012 21:28:34 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -21,7 +21,9 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 0/5] [GIT PULL] ftrace: Fix bug with function tracing and lockdep
+Subject: [PATCH 5/5] ftrace/x86: Do not change stacks in DEBUG when calling lockdep
+References: <20120531012829.160060586@goodmis.org>
+Content-Disposition: inline; filename=0005-ftrace-x86-Do-not-change-stacks-in-DEBUG-when-callin.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,140 +33,175 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
+From: Steven Rostedt <srostedt@redhat.com>
 
-Ingo,
+When both DYNAMIC_FTRACE and LOCKDEP are set, the TRACE_IRQS_ON/OFF
+will call into the lockdep code. The lockdep code can call lots of
+functions that may be traced by ftrace. When ftrace is updating its
+code and hits a breakpoint, the breakpoint handler will call into
+lockdep. If lockdep happens to call a function that also has a breakpoint
+attached, it will jump back into the breakpoint handler resetting
+the stack to the debug stack and corrupt the contents currently on
+that stack.
 
-Dave Jones reported a bug from ftrace. I saw the same bug but
-thought it was a compile problem because it would trigger everytime
-I booted, but after rebuilding the kernel, it stopped triggering.
-I mistook this as a build bug (something not cleaned properly).
+The 'do_sym' call that calls do_int3() is protected by modifying the
+IST table to point to a different location if another breakpoint is
+hit. But the TRACE_IRQS_OFF/ON are outside that protection, and if
+a breakpoint is hit from those, the stack will get corrupted, and
+the kernel will crash:
 
-What also confused me was that Dave also experienced the bug going
-away after doing a make clean.
+[ 1013.243754] BUG: unable to handle kernel NULL pointer dereference at 000=
+0000000000002
+[ 1013.272665] IP: [<ffff880145cc0000>] 0xffff880145cbffff
+[ 1013.285186] PGD 1401b2067 PUD 14324c067 PMD 0
+[ 1013.298832] Oops: 0010 [#1] PREEMPT SMP
+[ 1013.310600] CPU 2
+[ 1013.317904] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_i=
+pv6 xt_state nf_conntrack ip6table_filter ip6_tables crc32c_intel ghash_clm=
+ulni_intel microcode usb_debug serio_raw pcspkr iTCO_wdt i2c_i801 iTCO_vend=
+or_support e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo=
+_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+[ 1013.401848]
+[ 1013.407399] Pid: 112, comm: kworker/2:1 Not tainted 3.4.0+ #30
+[ 1013.437943] RIP: 8eb8:[<ffff88014630a000>]  [<ffff88014630a000>] 0xffff8=
+80146309fff
+[ 1013.459871] RSP: ffffffff8165e919:ffff88014780f408  EFLAGS: 00010046
+[ 1013.477909] RAX: 0000000000000001 RBX: ffffffff81104020 RCX: 00000000000=
+00000
+[ 1013.499458] RDX: ffff880148008ea8 RSI: ffffffff8131ef40 RDI: ffffffff822=
+03b20
+[ 1013.521612] RBP: ffffffff81005751 R08: 0000000000000000 R09: 00000000000=
+00000
+[ 1013.543121] R10: ffffffff82cdc318 R11: 0000000000000000 R12: ffff880145c=
+c0000
+[ 1013.564614] R13: ffff880148008eb8 R14: 0000000000000002 R15: ffff8801478=
+0cb40
+[ 1013.586108] FS:  0000000000000000(0000) GS:ffff880148000000(0000) knlGS:=
+0000000000000000
+[ 1013.609458] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 1013.627420] CR2: 0000000000000002 CR3: 0000000141f10000 CR4: 00000000001=
+407e0
+[ 1013.649051] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000=
+00000
+[ 1013.670724] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000=
+00400
+[ 1013.692376] Process kworker/2:1 (pid: 112, threadinfo ffff88013fe0e000, =
+task ffff88014020a6a0)
+[ 1013.717028] Stack:
+[ 1013.724131]  ffff88014780f570 ffff880145cc0000 0000400000004000 00000000=
+00000000
+[ 1013.745918]  cccccccccccccccc ffff88014780cca8 ffffffff811072bb ffffffff=
+81651627
+[ 1013.767870]  ffffffff8118f8a7 ffffffff811072bb ffffffff81f2b6c5 ffffffff=
+81f11bdb
+[ 1013.790021] Call Trace:
+[ 1013.800701] Code: 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a =
+5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a 5a =
+<e7> d7 64 81 ff ff ff ff 01 00 00 00 00 00 00 00 65 d9 64 81 ff
+[ 1013.861443] RIP  [<ffff88014630a000>] 0xffff880146309fff
+[ 1013.884466]  RSP <ffff88014780f408>
+[ 1013.901507] CR2: 0000000000000002
 
-Seems that was just shear luck!
+The solution was to reuse the NMI functions that change the IDT table to ma=
+ke the debug
+stack keep its current stack (in kernel mode) when hitting a breakpoint:
 
-After rebuilding and booting I was able to get it to trigger again.
-I found that it was something going wrong with the updating=20
-of the functions via the breakpoints (the removal of stop machine for
-function tracing). I added a mdelay(1) where I usually sync the
-updates (add breakpoint, wait 1ms, modify code, wait 1ms, remove breakpoint)
-and this happened to trigger the bug 90% of the time.
+  call debug_stack_set_zero
+  TRACE_IRQS_ON
+  call debug_stack_reset
 
-Finally figured it out. It was a combination of lockdep and the int3
-handler:
+If the TRACE_IRQS_ON happens to hit a breakpoint then it will keep the curr=
+ent stack
+and not crash the box.
 
-.macro paranoidzeroentry_ist sym do_sym ist
-ENTRY(\sym)
-	INTR_FRAME
-	PARAVIRT_ADJUST_EXCEPTION_FRAME
-	pushq_cfi $-1		/* ORIG_RAX: no syscall to restart */
-	subq $ORIG_RAX-R15, %rsp
-	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
-	call save_paranoid
-	TRACE_IRQS_OFF
-	movq %rsp,%rdi		/* pt_regs pointer */
-	xorl %esi,%esi		/* no error code */
-	subq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
-	call \do_sym
-	addq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
-	jmp paranoid_exit	/* %ebx: no swapgs flag */
-	CFI_ENDPROC
-END(\sym)
-.endm
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/kernel/entry_64.S |   44 ++++++++++++++++++++++++++++++++++++++++=
++---
+ 1 file changed, 41 insertions(+), 3 deletions(-)
 
-The above macro is called by the do_int3 code. When a int3 is hit, the
-stack jumps to the debug stack (like what happens on NMI). The
- subq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
-is a little trick incase the \do_sym happens to hit a breakpoint too.
-And for the most part, that works.
-
-But that TRACE_IRQS_OFF up there (and several more called by the
-paranoid_exit), is not protected by that trick. Thus, if the tracing
-code hits a breakpoint we reset the debug stack and start clobbering all
-over the previous code's stack.
-
-Usually this is not an issue, unless lockdep sees the TRACE_IRQS_OFF
-or TRACE_IRQS_ON while holding locks that have been taken for the first
-time (with interrupts disabled). This explains why if the bug did not
-trigger on the first try of starting the function tracer, it usually
-would not trigger. It requires a new lock to be taken. The longer you
-keep the box running, the less likely it will acquire a lock for the first
-time.
-
-Once lockdep sees a new lock changing its interrupts status, it starts
-recording it (and calling lots of code). Unfortunately, some of this
-code is traced by the function tracer.
-
-I first started making a lot of this code 'notrace' but found that
-it just wasn't reliable enough. The list of functions to mark just
-kept growing, and I would only know if I got them all if I happen
-to run all the paths.
-
-Then I tried to play tricks by doing a switch of the stack. I tried
-to modify sync_regs() but it would partially work, and it seemed
-that NMIs would cause it to crash as well. I spent too much time on
-it and finally figured to go with the easiest approach.
-
-As this is only needed when LOCKDEP (and just in case, I did it when
-TRACE_IRQFLAGS was enabled), I figured breakpoint performance wasn't
-an issue (LOCKDEP and TRACE_IRQSFLAGS has a much bigger overhead).
-
-I decided to reuse the code from the NMI to switch the IDT before calling
-the TRACE_IRQS_ON/OFF and switch it back afterward. It would be nice
-to do it just once on entering do_int3, and once leaving, but because
-the TRACE_IRQS_ON/OFF and TRACE_IRQS_IRETQ are called in several branches
-of the paranoid_exit, I decided to keep it simple and modify it every
-time.
-
-In the future, we can work to make this rely on modifying_ftrace_code,
-but there's races to deal with, and this bug needs to be fixed now.
-
-Also, while debugging this, I found a few more little bugs.
-
-The first patch fixes a race with setting the modifying_ftrace_code
-and the executing of the int3 handlers.
-
-The second fixes a bug where we don't do the breakpoint update of
-the function trace callback (the one called in the mcount trampoline).
-This could cause a GPF when tracing is running and the function
-tracer changes.
-
-The third patch is a minor bug fix in the NMI handling of the idt switch.
-If a NMI preempts a int3 handler, it switches the idt, properly, and
-sets a variable to tell the handler to put it back when it exits. The
-problem is that the variable never got reset, and it constantly loaded
-the old IDT back on every NMI from then on. This is more of a performance
-and correctness fix.
-
-The last two patches fix the lockdep and breakpoint issue.
-
-Comments are welcomed, but if there's no problem then ...
-
-Please pull the latest tip/perf/urgent tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/urgent
-
-Head SHA1: 1f9f5e93a9ab9cdf2504a25c24f3f8715c4ba785
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 320852d..7d65133 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -191,6 +191,44 @@ ENDPROC(native_usergs_sysret64)
+ .endm
+=20
+ /*
++ * When dynamic function tracer is enabled it will add a breakpoint
++ * to all locations that it is about to modify, sync CPUs, update
++ * all the code, sync CPUs, then remove the breakpoints. In this time
++ * if lockdep is enabled, it might jump back into the debug handler
++ * outside the updating of the IST protection. (TRACE_IRQS_ON/OFF).
++ *
++ * We need to change the IDT table before calling TRACE_IRQS_ON/OFF to
++ * make sure the stack pointer does not get reset back to the top
++ * of the debug stack, and instead just reuses the current stack.
++ */
++#if defined(CONFIG_DYNAMIC_FTRACE) && defined(CONFIG_TRACE_IRQFLAGS)
++
++.macro TRACE_IRQS_OFF_DEBUG
++	call debug_stack_set_zero
++	TRACE_IRQS_OFF
++	call debug_stack_reset
++.endm
++
++.macro TRACE_IRQS_ON_DEBUG
++	call debug_stack_set_zero
++	TRACE_IRQS_ON
++	call debug_stack_reset
++.endm
++
++.macro TRACE_IRQS_IRETQ_DEBUG offset=3DARGOFFSET
++	bt   $9,EFLAGS-\offset(%rsp)	/* interrupts off? */
++	jnc  1f
++	TRACE_IRQS_ON_DEBUG
++1:
++.endm
++
++#else
++# define TRACE_IRQS_OFF_DEBUG		TRACE_IRQS_OFF
++# define TRACE_IRQS_ON_DEBUG		TRACE_IRQS_ON
++# define TRACE_IRQS_IRETQ_DEBUG		TRACE_IRQS_IRETQ
++#endif
++
++/*
+  * C code is not supposed to know about undefined top of stack. Every time
+  * a C function with an pt_regs argument is called from the SYSCALL based
+  * fast path FIXUP_TOP_OF_STACK is needed.
+@@ -1098,7 +1136,7 @@ ENTRY(\sym)
+ 	subq $ORIG_RAX-R15, %rsp
+ 	CFI_ADJUST_CFA_OFFSET ORIG_RAX-R15
+ 	call save_paranoid
+-	TRACE_IRQS_OFF
++	TRACE_IRQS_OFF_DEBUG
+ 	movq %rsp,%rdi		/* pt_regs pointer */
+ 	xorl %esi,%esi		/* no error code */
+ 	subq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
+@@ -1393,7 +1431,7 @@ paranoidzeroentry machine_check *machine_check_vector=
+(%rip)
+ ENTRY(paranoid_exit)
+ 	DEFAULT_FRAME
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+-	TRACE_IRQS_OFF
++	TRACE_IRQS_OFF_DEBUG
+ 	testl %ebx,%ebx				/* swapgs needed? */
+ 	jnz paranoid_restore
+ 	testl $3,CS(%rsp)
+@@ -1404,7 +1442,7 @@ paranoid_swapgs:
+ 	RESTORE_ALL 8
+ 	jmp irq_return
+ paranoid_restore:
+-	TRACE_IRQS_IRETQ 0
++	TRACE_IRQS_IRETQ_DEBUG 0
+ 	RESTORE_ALL 8
+ 	jmp irq_return
+ paranoid_userspace:
+--=20
+1.7.10
 
 
-Steven Rostedt (5):
-      ftrace: Synchronize variable setting with breakpoints
-      ftrace: Use breakpoint method to update ftrace caller
-      x86: Reset the debug_stack update counter
-      x86: Allow nesting of the debug stack IDT setting
-      ftrace/x86: Do not change stacks in DEBUG when calling lockdep
-
-----
- arch/x86/include/asm/ftrace.h |    2 +-
- arch/x86/kernel/cpu/common.c  |    8 ++++-
- arch/x86/kernel/entry_64.S    |   44 ++++++++++++++++++++++++--
- arch/x86/kernel/ftrace.c      |   69 ++++++++++++++++++++++++++++++++++++-=
-----
- arch/x86/kernel/nmi.c         |    4 ++-
- arch/x86/kernel/traps.c       |    3 +-
- 6 files changed, 116 insertions(+), 14 deletions(-)
 
 --00GvhwF7k39YY
 Content-Type: application/pgp-signature; name="signature.asc"
@@ -173,19 +210,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABAgAGBQJPxtG0AAoJEIy3vGnGbaoAUu8P/0/Yb9R+KksvNWPmwJu/CEIH
-PJaaaVFtgStl9WbMR4nx61NO+Ew9tMcSOWg71zmDoftceJH7ZmUL7cfXBE2xW215
-vkyGEsODEfQCcaYXrApYPH7ouMIBAUm9yMOxKChiEmgtMKoowLeTFcp5xx7Jud8f
-nKySYH3BXbn3N14Xpvn3bK5izIamh4MAKpAHLMUNew6b/4fAiLzL0YHEfpILoaVf
-5wcw8xbFtNMPxBCW37/xg5H0ZWPVM3od747Iw8BhkGYtDKWf9w/I5PYdxZuqwQQP
-56PN6f5eujEzJVxrN0pNaI8bSfCRfsFy+ijMKCjUJfdNjLYBtN8hsBxRZ4CuJJ3m
-6SyDslHfo+iS0bygEISGg2LMREGWMw/vaaDktk5HWJnGXDTYA+pu4/8Q1+x26Ruc
-RrW85a5oY+W6ml3JHB7w99qiNqyrEFrZooGn9uAIzLLGM7uBhYNWjqwzNp5J1RE0
-TNeYxWOrjvKTy8gvbI+1VK2jMK+1RcdcDEqc15JRGp+Mhp4lDTwbpn3SIRYUTCbh
-ckfnw0vmyOiqKExl+IiWnlp+BRwLFM9YfhD/b7ba6tXKW20GStZygorhGz6qlb7I
-n/qPO2z3u3mcYpgGuXCw0tahblXehtkTm9qssjOPSt7k4VijSSQuzKnuFmbVNrF9
-yo0H/WKTZtxK4qNcitlt
-=57vN
+iQIcBAABAgAGBQJPxtG6AAoJEIy3vGnGbaoApIIP+wdkARnQwBGkXlbUf4rGX3o8
+SMu+i38ay738xfFdux+ZMQsk2LiqtzpDUFAyqe2s6V+Dmjn4rCAJRiwYidhzlSPy
+LLvuMeGYo/c4uQUscYxFh4tWAKcR2pZbfWG3/b4qlkKQEsXp41LOrP2xj4cTXixX
+nbtiXuS4owFOl2bGjcV0DQzk1j4mwDVEwJgnqbncaJf2ASmMCbsv70R6HurOTejF
+vlW1/HPgAFFRwnhrSMHISDj1w4h1cMQ5/umPG7tk8X9uIvVAsDTM0h1ISO9M86ym
+nUcNXrE7Qrivk6c6mDO0XzkYoLZM694PUqQqQIdEpjiMbVFzyVYSILDCnWnDuov6
+rBFSa1kMQxb1y0y8X6wimBVIxkSkH8YjRyH6njBIxqLoK5uNX67E0E5pgH8FlaHT
+2zH+CFWSiAndjjtIUAGzkeXIOF9q2pobVfLB09NIF4WhYzToub/hgnYKooJElXxh
+nNv1UNJEDjabsOldyj9YZ5+CUTKEedo0MoOA4RasiYEeAQq5dAgGp3cnmKA0DPN8
+HW7tOTGyyx/0nFleyKEYT8xhJDyUQfw/8Q1NDDhA7rTRX/G7VmSiBb52PEMnANfo
+vSoFNG/z+Qd0ekBy20w3LRd4+AJSOZs0e1SVjachwh5SOiVdYw+TRZR2DWgemMhX
+BKBpSMihby3O2/VfSzwx
+=HsvZ
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
