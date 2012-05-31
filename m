@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab2EaI2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 04:28:01 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45417 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758028Ab2EaI16 (ORCPT
+	id S1758121Ab2EaIcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 04:32:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1110 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758107Ab2EaIcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 04:27:58 -0400
-Date: Thu, 31 May 2012 18:27:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ying Han <yinghan@google.com>
-Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20120531182754.5c2affb31490bb3c5afced8b@canb.auug.org.au>
-In-Reply-To: <20120531182451.ad63c2bf993ce2f5400896a0@canb.auug.org.au>
-References: <20120531141329.6f82889bcfaa30ca83a30937@canb.auug.org.au>
-	<20120531072505.GA1371@cmpxchg.org>
-	<20120531182451.ad63c2bf993ce2f5400896a0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_18_27_54_+1000_tz3+E4vBIg54bTCC"
+	Thu, 31 May 2012 04:32:33 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 31 May 2012 01:30:18 -0700
+Date: Thu, 31 May 2012 11:31:31 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [RFC PATCH] clk: add extension API
+Message-ID: <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+ <4FC5DFCF.1020606@codeaurora.org>
+ <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
+ <20120531081841.GG5377@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120531081841.GG5377@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_18_27_54_+1000_tz3+E4vBIg54bTCC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 31, 2012 at 10:18:42AM +0200, Felipe Balbi wrote:
+> * PGP Signed by an unknown key
+> 
+> On Thu, May 31, 2012 at 10:51:25AM +0300, Peter De Schrijver wrote:
+> > On Wed, May 30, 2012 at 10:52:31AM +0200, Stephen Boyd wrote:
+> > > On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
+> > > > Add an extension API for clocks. This allows clocktypes to provide extensions
+> > > > for features which are uncommon and cannot be easily mapped onto normal clock
+> > > > framework concecpts. eg: resetting blocks, configuring clock phase etc.
+> > > 
+> > > This seems rather generic. Why not add more specific APIs/concepts like
+> > > clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
+> > > make them map.
+> > > 
+> > 
+> > Some of those might be very SoC specific. Eg OMAP doesn't need software
+> > controlled modulereset. I don't think we should add a new function to the
+> 
+> it depends on what you call modulereset. We have soft-reset logic hidden
+> under the hood, it's done before device creation, so drivers (most of
+> them) assume we're probe with the IP in reset state.
+> 
+> What I wonder most is if this should be done at the clock level or at
+> the device level. In the end you reset the IP block, not the clock,
+> right ?
 
-On Thu, 31 May 2012 18:24:51 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> > On Thu, May 31, 2012 at 02:13:29PM +1000, Stephen Rothwell wrote:
-> > >=20
-> > > Today's linux-next merge of the akpm tree got a conflict in
-> > > mm/memcontrol.c between commit 78ccf5b5ab83 ("mm: memcg: print statis=
-tics
-> > > directly to seq_file") and others from Linus' tree and commit "memcg:=
- add
-> > > mlock statistic in memory.stat" from the akpm tree.
-> > >=20
-> > > I just dropped the akpm patch for now.
+Yes. but, every block has at least 1 clock and thus the mapping is identical
+down to the register level. Ie. we could do this outside the clockframework,
+but then we would have the keep a list of IDs (1 per module) which the drivers
+can use to call some tegra reset function which would in the end use registers
+in the same memory area to cause a reset. (the registers controlling
+modulereset are interleaved with those controlling the enable/disable of the
+main moduleclock and bitpositions are identical)
 
-...
-
-> I will remove that patch tomorrow in any case.
-
-I should actually read my email - I already did remove it. :-)
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__31_May_2012_18_27_54_+1000_tz3+E4vBIg54bTCC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPxyuKAAoJEECxmPOUX5FEllAP/3fMaqOoOCKWYhA0AjVDpuah
-I4y9TsOV3Vb2Bt3IB7n+TnHmtw6lOtkk0ZPFOo6+AdcfcoIqDG46EnR77Mq8fFx8
-rdGWHDz2YSYlI9BR4Comkrg2+8PoUTL0CAYAqIwR9VpLwTOn4w55kuTA6giR5ioE
-QkxHi7p/WAw4lFtg1Z4LS+2ifJC6CKL9xKiUlrYTwjUSuxeFll/JJKd6orDpNldM
-/dgbrJ2dV8Kj8+JUl1xNR8d6MLiv5QMvI7uya+CLw6Fhd4xj7QlOdocdPO8h4+Eg
-4Hq5MiIZq2L3cP2i1NYS7Am7hPwUD0OJZOUjtAvNTu82RBfj/sCy+zObK3zaOR8u
-9Ik9na/GKjhtOeizvKsGnBfBUhQkY9ivUsHPIctIBRnK4nEU+o7u62SIQk4nPxse
-cWtgxiDaipsNghLsN1YLB0IiQqWpAJKMvm27x2sTUxojSzwDLLTwHKxYvvrh6rrB
-+UNScsWNrjzdrxr1sGJVzjswy8Vl+ZHHPpwDmUBV7ziJKfBEHB//ANjQJceeiGwx
-ktfAuyL7Y89WOGiPRRpWX0EGGYK0ZGV74CPRHTzD/OamGQZwIUYI0Y0XOoCAqaHO
-5Ks7etUP84PD3vH9z7msYCmhhf9r7qTNkR/5pasfGEbqk+fzownkAu9UKQkPpcW/
-sJnJnihE1nX45pwxX7+L
-=6my/
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_18_27_54_+1000_tz3+E4vBIg54bTCC--
+Peter.
