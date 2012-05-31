@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab2EaJV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:21:27 -0400
-Received: from www84.your-server.de ([213.133.104.84]:59053 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab2EaJVY (ORCPT
+	id S1754181Ab2EaJWn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 05:22:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64303 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab2EaJWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:21:24 -0400
-Message-ID: <1338456100.6454.82.camel@wall-e>
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-From: Stefani Seibold <stefani@seibold.net>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com, gregkh@linuxfoundation.org,
-        thomas.braunstorfinger@rohde-schwarz.com
-Date: Thu, 31 May 2012 11:21:40 +0200
-In-Reply-To: <201205311020.50076.oneukum@suse.de>
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
-	 <201205301010.22913.oneukum@suse.de> <1338450221.6454.16.camel@wall-e>
-	 <201205311020.50076.oneukum@suse.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
+	Thu, 31 May 2012 05:22:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Subject: Re: [RFC PATCH 0/5] omap: add ocp2scp as a misc driver
+Date: Thu, 31 May 2012 09:22:18 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
+        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        balbi@ti.com
+References: <1338375394-16268-1-git-send-email-kishon@ti.com> <201205301843.51568.arnd@arndb.de> <CAAe_U6LFFstds=iQ7cy7gM9vWbfRgf5z0gaRp_-bu0Qjx6eA1Q@mail.gmail.com>
+In-Reply-To: <CAAe_U6LFFstds=iQ7cy7gM9vWbfRgf5z0gaRp_-bu0Qjx6eA1Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+Message-Id: <201205310922.18550.arnd@arndb.de>
+X-Provags-ID: V02:K0:siVXrMdLMG9lD4rXtFTEMRUcj2AAe+ZYs+P262gWvXJ
+ 3WDnZuvZBWr9R2HlHpcZFpuFMKweljyCsF1pFJLZSpfoeD1Bm4
+ mtzH4+z0OJkSjKASkrt9Qqs2ZMVqc7JN3VFstcwngRkLrpoEUc
+ wSrW+dg6g/S1TaxlcAZd1WmGGTrFAcBVGO65cCjPMzSdb+PO91
+ GOFPbTaekuAxPbACeAZtqpIs73KPd7Lef4NqfEOTP1zuzqeo2y
+ sRBwaRn8y0+h8R7N1WzRTx6SeJ30XstRY99zqxznURcpmrw3FK
+ xkRZtIfehIupKx1B3F8NWHvnfnTOCSQnhWO8EJqsirWPTGijv7
+ MwDC0DWNAxCN/v5IeXoE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 10:20 +0200, Oliver Neukum wrote:
-
-> > > 
-> > > > +		if (arg) {
-> > > > +			ret = wait_event_interruptible_timeout(
-> > > > +				dev->out_running.wait,
-> > > > +				list_empty(&dev->out_running.urb_list),
-> > > > +				msecs_to_jiffies(arg));
-> > > > +			if (!ret)
-> > > > +				return -ETIMEDOUT;
-> > > > +			if (ret < 0)
-> > > > +				return ret;
-> > > > +			return 0;
-> > > > +		} else {
-> > > > +			return wait_event_interruptible(
-> > > > +				dev->out_running.wait,
-> > > > +				list_empty(&dev->out_running.urb_list));
-> > > > +		}
-> > > > +		break;
-> > > 
-> > > This is very ugly. If you need fsync(), then implement it.
-> > > 
-> > 
-> > fsync() did not meat the requirements, since i need in some case a
-> > timeout for the device. poll() will also not help, since it signals only
-> > that there is space to write.
+On Thursday 31 May 2012, ABRAHAM, KISHON VIJAY wrote:
+> >
+> > Just put the devices you actually want into the device tree instead and
+> > have them automatically created.
 > 
-> Well, then implement fsync() with interruptible sleep and use a timer
-> in user space.
-> 
+> But shouldn't device tree support and non-device tree support co-exist
+> till the non-device tree is completely knocked out of the kernel? Even
 
-But this will not solve the problem of older software which is still
-depending on this ioctl.
+Well, it's a new driver, so there is no regression in supporting it only
+on DT-enabled boards. OMAP5 is DT-only anyway and OMAP4 only supports two
+boards that should both be working with the generic DT code already.
 
+> then shouldn't there be a separate driver to extract the child nodes
+> of ocp2scp and create a device (using of_platform_populate)?
+> As far as I've seen, the devices are automatically created (by virtue
+> of of_platform_populate() in  mach-omap2/board-generic.c in omap case)
+> only for the devices that is connected to the system bus. For other
+> cases, the parent should be responsible for creating the child
+> devices.
 
-> Yes, but this seems to be buggy:
-> 
-> +	ret = usb_submit_urb(urb, GFP_KERNEL);
-> +	if (ret) {
-> +		usb_unanchor_urb(urb);
-> +		urb_list_add_tail(&dev->read_lock, urb, &dev->in_avail);
-> +		nrpz_err("Failed submitting read urb (error %d)", ret);
-> +	}
-> 
-> You have already transfered the data to user space. It seems to me that you
-> need to zero out the URB and need to handle the case of getting an URB
-> without data.
-> 
+I would mark the multiplexed device compatible with "simple-bus", which
+results in the child devices automatically getting added.
 
-Okay, i understand what you mean. Zeroing out is not necessary since
-usb_submit_urb will set urb->status to -EINPROGRESS. This behavior is
-well documented.
-
-I checked it again, and it will work perfectly in case of an error.
-
-And in my opinion it is safe to reuse an urb without reinitialization,
-this is a common practice in the callback handlers, so i see no reason
-why this should not work in the read() function.
-
-> > > > +static int nrpz_pre_reset(struct usb_interface *intf)
-> > > > +{
-> > > > +	struct usb_nrpz *dev = usb_get_intfdata(intf);
-> > > > +
-> > > > +	if (dev)
-> > > > +		nrpz_draw_down(dev);
-> > > > +	return 0;
-> > > > +}
-> > > > +
-> > > > +static int nrpz_post_reset(struct usb_interface *intf)
-> > > > +{
-> > > > +	return 0;
-> > > > +}
-> > > 
-> > > And you don't tell user space that the device has been reset?
-> > > And what restarts reading?
-> > > 
-> > 
-> > I have no idea how to do this. But i will have a look in the kernel
-> > source and figure it out.
-> 
-> There probably is no generic answer. But I presume a reset will
-> reinit the device and destroy anything you set up before, so I guess
-> the next read() or write() after a reset has to return an error code that
-> tells user space that it has to redo its setup.
-> 
-
-Is it okay to kick out the whole ..._reset() thing, since i have no idea
-what it is good for.
-
-Greetings,
-Stefani
-
-
+	Arnd
