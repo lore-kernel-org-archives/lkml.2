@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab2EaKPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:15:19 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:62387 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab2EaKPQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:15:16 -0400
+	id S1754974Ab2EaKP0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:15:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60439 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754366Ab2EaKPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 06:15:22 -0400
+Date: Thu, 31 May 2012 13:15:13 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv5 5/5] kvm: host side for eoi optimization
+Message-ID: <20120531101513.GO2311@redhat.com>
+References: <cover.1337695416.git.mst@redhat.com>
+ <f434b6864a1af1f813e6ead964026553cd879c38.1337695416.git.mst@redhat.com>
+ <20120531095710.GM2311@redhat.com>
+ <20120531101111.GA15836@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFrpXc7cODie9g-QK_ZhVpmVZPQ36TDF9CWJcVPL_-EU2Q@mail.gmail.com>
-References: <CAEV-rjeEKMNs2N8KEatCi+guFKihgFok4k4nDnd=vTQ5x7iStg@mail.gmail.com>
-	<1338282140-11106-1-git-send-email-torne@google.com>
-	<CAPDyKFrpXc7cODie9g-QK_ZhVpmVZPQ36TDF9CWJcVPL_-EU2Q@mail.gmail.com>
-Date: Thu, 31 May 2012 11:15:14 +0100
-Message-ID: <CAEV-rjd1zymsZwsJjzJtF-9fvgYLz00r+K4K4xD2aeLwi76mPw@mail.gmail.com>
-Subject: Re: [PATCH] MMC: core: cap MMC card timeouts at 2 seconds.
-From: "Torne (Richard Coles)" <torne@google.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: cjb@laptop.org, linus.walleij@linaro.org, jh80.chung@samsung.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ben@decadent.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120531101111.GA15836@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 May 2012 11:00, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> Hi Richard,
->
-> On 29 May 2012 17:02, Torne (Richard Coles) <torne@google.com> wrote:
->> From: "Torne (Richard Coles)" <torne@google.com>
->>
->> MMC CSD info can specify very large, ridiculous timeouts, big enough to
->> overflow timeout_ns on 32-bit machines. This can result in the card
->> timing out on every operation because the wrapped timeout value is far
->> too small.
->>
->> Fix the overflow by capping the result at 2 seconds.  Cards specifying
->> longer timeouts are almost certainly insane, and host controllers
->> generally cannot support timeouts that long in any case.
->>
->> 2 seconds should be plenty of time for any card to actually function;
->> the timeout calculation code is already using 1 second as a "worst case"
->> timeout for cards running in SPI mode.
->>
->> Signed-off-by: Torne (Richard Coles) <torne@google.com>
->> ---
->>  drivers/mmc/core/core.c |   11 ++++++++++-
->>  1 files changed, 10 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->> index 0b6141d..3b4a9fc 100644
->> --- a/drivers/mmc/core/core.c
->> +++ b/drivers/mmc/core/core.c
->> @@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
->>        if (data->flags & MMC_DATA_WRITE)
->>                mult <<= card->csd.r2w_factor;
->>
->> -       data->timeout_ns = card->csd.tacc_ns * mult;
->> +       /*
->> +        * The timeout in nanoseconds may overflow with some cards. Cap it at
->> +        * two seconds both to avoid the overflow and also because host
->> +        * controllers cannot generally generate timeouts that long anyway.
->> +        */
->> +       if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
->> +               data->timeout_ns = card->csd.tacc_ns * mult;
->> +       else
->> +               data->timeout_ns = 2 * NSEC_PER_SEC;
->> +
->
-> The above looks OK to me, although if doing this for tacc_ns we might
-> want to do this for tacc_clks as well. Could we include that is this
-> patch as well?
+On Thu, May 31, 2012 at 01:11:11PM +0300, Michael S. Tsirkin wrote:
+> On Thu, May 31, 2012 at 12:57:10PM +0300, Gleb Natapov wrote:
+> > > @@ -1345,17 +1437,40 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+> > >  	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+> > >  }
+> > >  
+> > > +/*
+> > > + * apic_sync_pv_eoi_to_guest - called before vmentry
+> > > + *
+> > > + * Detect whether it's safe to enable PV EOI and
+> > > + * if yes do so.
+> > > + */
+> > > +static void apic_sync_pv_eoi_to_guest(struct kvm_vcpu *vcpu,
+> > > +					struct kvm_lapic *apic)
+> > > +{
+> > > +	if (!pv_eoi_enabled(vcpu) ||
+> > > +	    /* IRR set or many bits in ISR: could be nested. */
+> > > +	    unlikely(apic->irr_pending) ||
+> > > +	    unlikely(apic->isr_count != 1) ||
+> > Remind me why pv_eoi should not be set if there is more than one isr?
+> 
+> There's a comment below: it might be safe but
+> we do not bother: no easy way to know which interrupt
+> has higher priority.
+Last injected interrupt has highest priority.
 
-timeout_clks can't overflow, that I can see: the highest possible
-value for tacc_clks is 25500 (it's an 8 bit field specified in
-100-clock increments) and the highest mult is 12800 (r2w_factor only
-goes up to 128). This only makes 0x13747800 :)
+> 
+> In my testing more than one bit almost never happens in practice so not
+> worth optimizing for.
+> 
+> 
+> > 
+> > > +	    /* Cache not set: safe but we don't bother. */
+> > > +	    unlikely(apic->isr_cache == -1) ||
+> > > +	    /* Need EOI to update ioapic. */
+> > > +	    unlikely(kvm_ioapic_handles_vector(vcpu->kvm, apic->isr_cache)))
+> > > +		return;
+> > > +
+> > > +	pv_eoi_set_pending(apic->vcpu);
+> > > +}
+> > > +
+> > apic_sync_pv_eoi_to_guest() is not paired with
+> > apic_sync_pv_eoi_from_guest() if event injection is canceled.
+> > You can enter guest with stale pv_eoi bit.
+> 
+> Never. The pv_eoi bit is cleared on each exit.
+There will be no exit since there will be no entry. Search for
+"goto out" after kvm_lapic_sync_to_vapic().
 
->>        data->timeout_clks = card->csd.tacc_clks * mult;
->>
->>        /*
->> --
->> 1.7.7.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> Kind regards
-> Ulf Hansson
+> It will stay cleared unless we set it here.
+> I will add a comment.
 
-
-
--- 
-Torne (Richard Coles)
-torne@google.com
+--
+			Gleb.
