@@ -1,76 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab2EaJEw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:04:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52202 "EHLO mx1.redhat.com"
+	id S1753699Ab2EaJFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 05:05:23 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:48996 "EHLO smtp2.it.da.ut.ee"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753111Ab2EaJEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:04:50 -0400
-Date: Thu, 31 May 2012 12:04:38 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio-net: remove useless disable on freeze
-Message-ID: <20120531090437.GA15447@redhat.com>
-References: <20120404091954.GA3776@redhat.com>
- <20120528125325.GA22576@redhat.com>
- <87r4u2dllo.fsf@rustcorp.com.au>
- <20120531183508.f426eb25fe1b94139c637348@canb.auug.org.au>
- <20120531084717.GB32310@redhat.com>
+	id S1753130Ab2EaJFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 05:05:21 -0400
+Date: Thu, 31 May 2012 12:05:15 +0300 (EEST)
+From: mroos@linux.ee
+To: Dan Williams <dan.j.williams@intel.com>
+cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        JBottomley@parallels.com
+Subject: Re: [PATCH v2 0/4] fix / cleanup async scsi scanning
+In-Reply-To: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+Message-ID: <alpine.SOC.1.00.1205311203530.29083@math.ut.ee>
+References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531084717.GB32310@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 11:47:17AM +0300, Michael S. Tsirkin wrote:
-> On Thu, May 31, 2012 at 06:35:08PM +1000, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > On Wed, 30 May 2012 19:41:47 +0930 Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > >
-> > > On Mon, 28 May 2012 15:53:25 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > > > On Wed, Apr 04, 2012 at 12:19:54PM +0300, Michael S. Tsirkin wrote:
-> > > > > disable_cb is just an optimization: it
-> > > > > can not guarantee that there are no callbacks.
-> > > > > 
-> > > > > I didn't yet figure out whether a callback
-> > > > > in freeze will trigger a bug, but disable_cb
-> > > > > won't address it in any case. So let's remove
-> > > > > the useless calls as a first step.
-> > > > > 
-> > > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > 
-> > > > Looks like this isn't in the 3.5 pull request -
-> > > > just lost in the shuffle?
-> > > > disable_cb is advisory so can't be relied upon.
-> > > 
-> > > I always (try to?) reply as I accept patches.
-> > > 
-> > > This one did slip by, but it's harmless so no need to push AFAICT.
-> > > 
-> > > Applied.
-> > 
-> > This patch exists in two trees in linux-next already ... Davem's net tree
-> > (so presumably he will send it to Linus shortly) and Michael's vhost tree
-> > (is that tree needed any more?).
+> Commit a7a20d10 "[SCSI] sd: limit the scope of the async probe domain"
+> introduces a boot regression by moving sd probe work off of the global
+> async queue.  Using a local async domain hides the probe work from being
+> synchronized by wait_for_device_probe()->async_synchronize_full().
 > 
-> Yes and I dropped the patch from there, just did not push yet.
+> Fix this by teaching async_synchronize_full() to flush all async work
+> regardless of domain, and take the opportunity to convert scsi scanning
+> to async_schedule().  This enables wait_for_device_probe() to flush scsi
+> scanning work.
+> 
+> Changes since v1: http://marc.info/?l=linux-scsi&m=133793153025832&w=2
+> 
+> 1/ Tested to fix the boot hang that Meelis reported with v1.  Reworked
+>    async_synchronize_full() to walk through all the active domains,
+>    otherwise we spin on !list_empty(async_domains) and prevent the async
+>    context from running.
+> 
+> 2/ Added the ability for domains to opt-out of global syncing as
+>    requested by Arjan, but also needed for domains that don't want to worry
+>    about list corruption when the domain goes out of scope (stack-allocated
+>    domains).
 
-pushed.
-There's usually not too much in my tree but it helps me a lot
-that it's in linux-next.
+Tested successfully on my Netra X1 where the original problem happened, 
+on top of 3.4.0-08215-g1e2aec8. Thank you!
 
-> >  Presumably it is now also in the rr
-> > tree?
-> > 
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> 
+-- 
+Meelis Roos (mroos@linux.ee)
