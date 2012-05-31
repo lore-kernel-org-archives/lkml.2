@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab2EaMua (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:50:30 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65448 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab2EaMu0 (ORCPT
+	id S932310Ab2EaM4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:56:46 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44547 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757119Ab2EaM4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:50:26 -0400
-Date: Thu, 31 May 2012 20:50:12 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH] ARM: cmpxchg: define __HAVE_ARCH_CMPXCHG for armv6
- and later
-Message-ID: <20120531125012.GA3741@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1338364287-11614-1-git-send-email-yong.zhang0@gmail.com>
- <20120531012450.GA8506@mudshark.cambridge.arm.com>
+	Thu, 31 May 2012 08:56:45 -0400
+Date: Thu, 31 May 2012 18:24:11 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
+ is_swbp_insn() == T
+Message-ID: <20120531125411.GA24279@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20120530165757.GA8077@redhat.com>
+ <20120530165816.GA8085@redhat.com>
+ <1338398931.28384.7.camel@twins>
+ <20120530173717.GM15587@linux.vnet.ibm.com>
+ <1338400142.28384.12.camel@twins>
+ <1338466518.28384.57.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120531012450.GA8506@mudshark.cambridge.arm.com>
+In-Reply-To: <1338466518.28384.57.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053112-1780-0000-0000-000006096C28
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000279; HX=3.00000188; KW=3.00000007;
+ PH=3.00000001; SC=3.00000002; SDB=6.00143966; UDB=6.00033088; UTC=2012-05-31
+ 12:56:42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 02:24:50AM +0100, Will Deacon wrote:
-> Hello,
-> 
-> On Wed, May 30, 2012 at 08:51:26AM +0100, Yong Zhang wrote:
-> > diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
-> > index 7eb18c1..a91b44e 100644
-> > --- a/arch/arm/include/asm/cmpxchg.h
-> > +++ b/arch/arm/include/asm/cmpxchg.h
-> > @@ -127,6 +127,8 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr, int size
-> >  
-> >  #else	/* min ARCH >= ARMv6 */
-> >  
-> > +#define __HAVE_ARCH_CMPXCHG 1
-> > +
-> >  extern void __bad_cmpxchg(volatile void *ptr, int size);
-> 
-> As long as this only requires 4-byte cmpxchg support then I think this is
-> fine. It looks like that's currently the case, so:
+* Peter Zijlstra <peterz@infradead.org> [2012-05-31 14:15:18]:
 
-Yes and thanks for review.
-
-Yong
-
+> On Wed, 2012-05-30 at 19:49 +0200, Peter Zijlstra wrote:
+> > 
+> > Oh, indeed. I overlooked copy_insn() is taking the page from the
+> > page-cache instead of the page-tables and will thus get the original.
+> > 
 > 
-> Acked-by: Will Deacon <will.deacon@arm.com>
+> Related to this, what happens when we try to install a probe on a page
+> that's already been COWed by a ptrace user?
 > 
-> Will
+> Say gdb did a code modification at or near the intended probe site.
+> 
+
+If the page is already COWED because of an existing code modification
+near the intended probe site, we are replacing it with another page
+keeping the previous modification as is.
+
+ptrace and uprobes tracing the same instruction wont work cleanly for
+now.
+
+-- 
+thanks and regards
+Srikar
+
