@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab2EaHZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 03:25:13 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:34134 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab2EaHZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 03:25:12 -0400
-Date: Thu, 31 May 2012 09:25:05 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ying Han <yinghan@google.com>
-Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
-Message-ID: <20120531072505.GA1371@cmpxchg.org>
-References: <20120531141329.6f82889bcfaa30ca83a30937@canb.auug.org.au>
+	id S1756567Ab2EaHX7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 03:23:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61596 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab2EaHX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 03:23:57 -0400
+Message-ID: <4FC71C54.3060909@gmail.com>
+Date: Thu, 31 May 2012 03:23:00 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531141329.6f82889bcfaa30ca83a30937@canb.auug.org.au>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com> <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com> <4FC70355.70805@jp.fujitsu.com> <alpine.DEB.2.00.1205302314190.25774@chino.kir.corp.google.com> <4FC70E5E.1010003@gmail.com> <alpine.DEB.2.00.1205302325500.25774@chino.kir.corp.google.com> <4FC711A5.4090003@gmail.com> <4FC718BA.8060608@jp.fujitsu.com>
+In-Reply-To: <4FC718BA.8060608@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 02:13:29PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> Today's linux-next merge of the akpm tree got a conflict in
-> mm/memcontrol.c between commit 78ccf5b5ab83 ("mm: memcg: print statistics
-> directly to seq_file") and others from Linus' tree and commit "memcg: add
-> mlock statistic in memory.stat" from the akpm tree.
-> 
-> I just dropped the akpm patch for now.
+(5/31/12 3:07 AM), Kamezawa Hiroyuki wrote:
+> (2012/05/31 15:37), KOSAKI Motohiro wrote:
+>> (5/31/12 2:28 AM), David Rientjes wrote:
+>>> On Thu, 31 May 2012, KOSAKI Motohiro wrote:
+>>>
+>>>>> An application should always know the cgroup that its attached to and be
+>>>>> able to read its state using the command that I gave earlier.
+>>>>
+>>>> No. you don't need why userland folks want namespaces. Even though you don't
+>>>> need namespaces. It doesn't good reason to refuse another use case.
+>>>>
+>>>
+>>> This is tangent to the discussion, we need to revisit why an application
+>>> other than a daemon managing a set of memcgs would ever need to know the
+>>> information in /proc/meminfo. No use-case was ever presented in the
+>>> changelog and its not clear how this is at all relevant. So before
+>>> changing the kernel, please describe how this actually matters in a real-
+>>> world scenario.
+>>
+>> Huh? Don't you know a meanings of a namespace ISOLATION? isolation mean,
+>> isolated container shouldn't be able to access global information. If you
+>> want to lean container/namespace concept, tasting openvz or solaris container
+>> is a good start.
+>>
+>> But anyway, I dislike current implementaion. So, I NAK this patch too.
+>
+> Could you give us advice for improving this ? What idea do you have ?
 
-Thanks, Stephen.
+?
+I'm ok your idea. I only NAKed current Gao's patch.
 
-However, the patch is known to be broken and, according to mm-commits,
-was removed from -mm on May 16 already.  How'd it reappear?
+
+
+
