@@ -1,95 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab2EaIfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 04:35:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46450 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758111Ab2EaIfT (ORCPT
+	id S932330Ab2EaIi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 04:38:56 -0400
+Received: from [37.128.190.40] ([37.128.190.40]:40765 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932214Ab2EaIix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 04:35:19 -0400
-Date: Thu, 31 May 2012 18:35:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio-net: remove useless disable on freeze
-Message-Id: <20120531183508.f426eb25fe1b94139c637348@canb.auug.org.au>
-In-Reply-To: <87r4u2dllo.fsf@rustcorp.com.au>
-References: <20120404091954.GA3776@redhat.com>
-	<20120528125325.GA22576@redhat.com>
-	<87r4u2dllo.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_18_35_08_+1000_mGGj9zYT=zxyfc/k"
+	Thu, 31 May 2012 04:38:53 -0400
+Message-ID: <4FC72DBB.6030601@codethink.co.uk>
+Date: Thu, 31 May 2012 09:37:15 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Alessandro Rubini <rubini@gnudd.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        STEricsson_nomadik_linux@list.st.com, linux-i2c@vger.kernel.org,
+        Jean Delvare <khali@linux-fr.org>,
+        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH RFC 1/3] i2c-nomadik: move header from <plat/i2c.h> to
+ <linux/i2c-nomadik.h>
+References: <cover.1338398567.git.rubini@gnudd.com> <ca47a47e0a4db31545549ed978e1dc7b3aad4377.1338398567.git.rubini@gnudd.com> <CACRpkdY_bg5s_eKot8Ywbmb+SmixsJOSJW_jWjjenedjJng4Jg@mail.gmail.com>
+In-Reply-To: <CACRpkdY_bg5s_eKot8Ywbmb+SmixsJOSJW_jWjjenedjJng4Jg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_18_35_08_+1000_mGGj9zYT=zxyfc/k
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi all,
-
-On Wed, 30 May 2012 19:41:47 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
+On 31/05/12 02:47, Linus Walleij wrote:
+> On Thu, May 31, 2012 at 1:45 AM, Alessandro Rubini<rubini@gnudd.com>  wrote:
 >
-> On Mon, 28 May 2012 15:53:25 +0300, "Michael S. Tsirkin" <mst@redhat.com>=
- wrote:
-> > On Wed, Apr 04, 2012 at 12:19:54PM +0300, Michael S. Tsirkin wrote:
-> > > disable_cb is just an optimization: it
-> > > can not guarantee that there are no callbacks.
-> > >=20
-> > > I didn't yet figure out whether a callback
-> > > in freeze will trigger a bug, but disable_cb
-> > > won't address it in any case. So let's remove
-> > > the useless calls as a first step.
-> > >=20
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> >=20
-> > Looks like this isn't in the 3.5 pull request -
-> > just lost in the shuffle?
-> > disable_cb is advisory so can't be relied upon.
->=20
-> I always (try to?) reply as I accept patches.
->=20
-> This one did slip by, but it's harmless so no need to push AFAICT.
->=20
-> Applied.
+>> The header and driver were only used by arm/mach-nomadik and
+>> arm/mach-u8500.  The STA2X11 I/O Hub exports on PCIe a number of
+>> devices, including i2c-nomadik.  This patch allows compilation of
+>> the driver under x86.
+>>
+>> Signed-off-by: Alessandro Rubini<rubini@gnudd.com>
+>> Acked-by: Giancarlo Asnaghi<giancarlo.asnaghi@st.com>
+>
+> The new place to put pure platform data headers is:
+> include/linux/platform_data/i2c-nomadik.h so please use this.
 
-This patch exists in two trees in linux-next already ... Davem's net tree
-(so presumably he will send it to Linus shortly) and Michael's vhost tree
-(is that tree needed any more?).  Presumably it is now also in the rr
-tree?
+Aha, didn't see your reply before making mine.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Pls use git format-patch -M so we get a nice movement patch
+> without all the -/+ lines. (No big deal though.)
 
---Signature=_Thu__31_May_2012_18_35_08_+1000_mGGj9zYT=zxyfc/k
-Content-Type: application/pgp-signature
+Agreed, useful for when actually submitting.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPxy08AAoJEECxmPOUX5FE5/sP/RWjfggpLyTmSrN4+KiLppww
-0/frDP2sJjKeQSCpxYsuc5mi8SuhgXUVxIAK1mpBL/5+51Cki32kzb2sOutZrPMc
-Z3jMYkOMyP1R0VLFScJtls9D0Wth3SrnG8EXDF6ozlKi4SZ6LQQfaoT15HWp21TD
-ZWPLbiiPTQmTd0CVRseinmi9CLHM15fRBQ+ST/m5nZX+hTpPbCdyHwHVfGMl8rwI
-4KOtPihw6VbKFcAIGtW/3VczZmeVIi1LMDHpnJ/n1+dbLFlg6BDCx999JsccH47/
-Nbqnsn0OKWFXt2DPwratdJtuBIkGHGhPolZzHtpg0PYX7tALkPR0DxbPG/6WRSvj
-ySkk19xRcIsXg7qHrjhYtLUsIaZOfbl9Ov9IzlN7u/qais1Cst4cHmoNkPkwZheE
-7ifcpa78SLG4kTqSA2rsoxvUcUui8YM4Z8Ytozo7UcHFxrwsK4/Osz9OTinRkeB0
-0+SpQLiGbjJcNQVOP8kQUAQasiEk15SqqfvXOogkfIurgleOS3zhRq12+Ko8wnuZ
-7hkv3Up4GegsTH93lIl61cdAfhYzYueTEQvwBaMYRKFyIDsBR29/7tH1Gmu5rBj2
-ErcrsEa//H7sN3mVVXqdC+Mxkuyc5ekXTUa86sDdFmgZBObyEY+7FJluDwDiIhZ8
-iRwCHw6P+rw5Hc8DZtgE
-=0znk
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_18_35_08_+1000_mGGj9zYT=zxyfc/k--
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
