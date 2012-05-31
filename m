@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab2EaTcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:32:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26063 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933147Ab2EaTcy (ORCPT
+	id S933213Ab2EaThO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:37:14 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44977 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933170Ab2EaThM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:32:54 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=qkk5gtdUeUMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=FhTsiWAN-fuJitd0r5AA:9 a=PUjeQqilurYA:10 a=hnJDk0GgsYnuvlWa:21 a=vp01xS_Q1RQbRkSh:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338492772.13348.388.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
+	Thu, 31 May 2012 15:37:12 -0400
+Date: Thu, 31 May 2012 21:37:39 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
         Linux Edac Mailing List <linux-edac@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>
-Date: Thu, 31 May 2012 15:32:52 -0400
-In-Reply-To: <20120531171337.GN14515@aftab.osrc.amd.com>
-References: <20120531100005.GC14074@aftab.osrc.amd.com>
-	 <4FC748F5.9070709@redhat.com> <20120531121741.GB14515@aftab.osrc.amd.com>
-	 <4FC7788C.1070405@redhat.com> <20120531142229.GF14515@aftab.osrc.amd.com>
-	 <4FC783EA.80704@redhat.com> <20120531145416.GI14515@aftab.osrc.amd.com>
-	 <4FC787BF.3020006@redhat.com> <20120531151408.GJ14515@aftab.osrc.amd.com>
-	 <4FC798E2.4000402@redhat.com> <20120531171337.GN14515@aftab.osrc.amd.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Message-ID: <20120531193739.GB16998@aftab.osrc.amd.com>
+References: <20120531121741.GB14515@aftab.osrc.amd.com>
+ <4FC7788C.1070405@redhat.com>
+ <20120531142229.GF14515@aftab.osrc.amd.com>
+ <4FC783EA.80704@redhat.com>
+ <20120531145416.GI14515@aftab.osrc.amd.com>
+ <4FC787BF.3020006@redhat.com>
+ <20120531151408.GJ14515@aftab.osrc.amd.com>
+ <4FC798E2.4000402@redhat.com>
+ <20120531171337.GN14515@aftab.osrc.amd.com>
+ <4FC7B2C7.80504@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FC7B2C7.80504@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 19:13 +0200, Borislav Petkov wrote:
+On Thu, May 31, 2012 at 03:04:55PM -0300, Mauro Carvalho Chehab wrote:
+> The tracepoint approach is proposed as a way to replace dmesg, so,
+> dmesg is not an option.
 
-> > 	- No other userspace API provides it;
-> 
-> Yes, it should.
-> 
-> > 	- The granularity is a property of the per-error address;
-> 
-> Not necessarily, as it is shown above.
-> 
-> > 	- There are well-known cases where the address grain changes are
-> > 	  dynamically filled by the error registers (MCA arch on Intel).
-> 
-> Ok.
-> 
-> > So, the memory error tracepoint is the proper place to store it, as it is
-> > the place where the address and the other memory error information is
-> > reported to userspace.
-> 
-> Yes, but not as a separate field but in driver_detail _only_ on those
-> drivers where grain is dynamic. The remaining ones simply don't output
-> it all because they have done so in dmesg or sysfs.
-> 
-> > Also, converting the grain to a string, as you proposed would require
-> > at least 26 bytes to store "grain: 0xdeadbeef:deadbeef", while putting
-> > it as a u64 will consume only 8 bytes.
-> 
-> Again, only on those drivers which have dynamic grain. Other drivers
-> which keep outputting 'x' (and 'x' doesn't change) on every tracepoint
-> invocation don't need to output it all in the tracepoint. Their
-> tracepoint records shouldn't be inflated for no reason.
+Of course it is an option: userspace parses dmesg and gets grain value.
 
-Just so I understand your point. You are saying things like grain that
-don't change but are different per device, should just be in some sysfs
-file somewhere, and things that are dynamic during runtime should go
-into the tracepoint.
+> Sysfs nodes for address grain won't work, as, on MCA, the grain is
+> only known when an error is generated, and it is valid only together
+> with an error report.
 
-Correct?
+This is only true on Intel.
 
--- Steve
+> Having the _same_ field exported either in sysfs or via the trace,
+> depending if the grain is dynamic or if it is global-wide is a very
+> crappy API, as the same information would be provided to userspace via
+> different API's, with is insane.
 
+No, what is crappy is "punishing" other drivers just because you need
+grain for your drivers.
 
+Ask Steven how expensive are 4 bytes in a tracepoint and what it means
+wasting space in the ring buffer.
 
+[ … ]
+
+> > Again, only on those drivers which have dynamic grain. Other drivers
+> > which keep outputting 'x' (and 'x' doesn't change) on every tracepoint
+> > invocation don't need to output it all in the tracepoint.
+> 
+> So what? If only one type of granularity applies to all addresses, the
+> information provided to userspace won't be wrong.
+
+The argument is not whether it is wrong or not - it is about wasting
+space unnecessarily where it counts. Write this down and hammer it to
+your forehead so that you can finally understand it!
+
+<remove some random unrelated blubber>
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
