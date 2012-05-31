@@ -1,162 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab2EaMrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:47:11 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55443 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756895Ab2EaMrJ convert rfc822-to-8bit (ORCPT
+	id S1757913Ab2EaMsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:48:04 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34575 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757091Ab2EaMsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:47:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FC71617.7070801@samsung.com>
-References: <1337919230-8296-1-git-send-email-jonghwa3.lee@samsung.com>
-	<CAKew6eXsf5UKe4t5m3MAuU1OUSZcUPBoSRUCjyR-gKRmDC8MOw@mail.gmail.com>
-	<4FC43018.9040702@samsung.com>
-	<CAKew6eXq-5vCDgncYYPKUdKE2CNyqDErKUUdPbWeYe0uurpQ-w@mail.gmail.com>
-	<4FC5F866.6030708@samsung.com>
-	<CAKew6eVjUCSkX=JRtYV2mRQ8hy4J1SSsvNn+p=MQcTD51J__sQ@mail.gmail.com>
-	<4FC71617.7070801@samsung.com>
-Date: Thu, 31 May 2012 18:17:08 +0530
-Message-ID: <CAKew6eV2V=ydmyVXhE4km+tc3MU=5eiNJ66gMeHkYHa7cVtq1A@mail.gmail.com>
-Subject: Re: [PATCH v4] regulator: MAX77686: Add Maxim 77686 regulator driver
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+	Thu, 31 May 2012 08:48:01 -0400
+Date: Thu, 31 May 2012 13:47:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: jonghwa3.lee@samsung.com
 Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Yadwinder Singh Brar <yadi.brar01@gmail.com>,
         Chiwoong Byun <woong.byun@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH v5] regulator: MAX77686: Add Maxim 77686 regulator driver
+Message-ID: <20120531124758.GE2666@opensource.wolfsonmicro.com>
+References: <1338258051-3155-1-git-send-email-jonghwa3.lee@samsung.com>
+ <20120530172652.GS9947@opensource.wolfsonmicro.com>
+ <4FC71161.9010002@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vv4Sf/kQfcwinyKX"
+Content-Disposition: inline
+In-Reply-To: <4FC71161.9010002@samsung.com>
+X-Cookie: You are fairminded, just and loving.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PLEASE
 
-On Thu, May 31, 2012 at 12:26 PM,  <jonghwa3.lee@samsung.com> wrote:
-> On 2012년 05월 30일 21:08, Yadwinder Singh Brar wrote:
->
->> Hi Jonghwa,
->>
->> On Wed, May 30, 2012 at 4:07 PM,  <jonghwa3.lee@samsung.com> wrote:
->>> Hi Yadwinder,
->>>
->>> I'm sorry for late reply. I understand the problem you pointed out, but
->>> i don't agree with you all.
->>
->> Sorry,I think you didn't get my points. Lets forget my code and talk
->> about this code now.
->>
->>>>>>> +
->>>>>>> +       for (i = 0; i < MAX77686_REGULATORS; i++) {
->>>>>>> +               if (pdata)
->>>>>>> +                       init_data[pdata->regulators[i].id] =
->>>>>>> +                                                pdata->regulators[i].initdata;
->>
->> In case we have a list of 5 regulators only in pdata, than what will
->> happen here when i > 5 ???
->>
->
->
-> You're right, it has bug. How do you think that change the condition to
-> (pdata && i < pdata->num_regulators)?
->
->>>>>>
->>>>>> I  think we can directly use  pdata->regulators[i].initdata instead of
->>>>>> init_data[i].
->>>>>> In case if pdata is not their we can use same instance of
->>>>>> init_data(default)  for all regulators.
->>>>>>
->>>>>
->>>>>
->>>>> This if for some situation that pdata's initdata doensn't line up. When
->>
->>>>>>> +               config.init_data = init_data[i];
->>>>>>> +               rdev[i] = regulator_register(&regulators[i], &config);
->>
->> In case pdata->regulators[0] is not the first regulator(i.e id > 0), then
->> will it get proper initdata for regulators[0] before registering ????
->>
->
->
-> Yes, because above code replaces pdata->regalator's initdata to proper
-> position of initdata array referencing regulator's id.
->
->>>>
->>>> Ok, but I think this not right place for sorting (sorting is not taking
->>>> place.) You have to sort it before entering in loop for registering
->>>> regulators.
->>>>
->>>>> user sets only initdata considered it being used, there may be
->>>>> regulators not having initdata, also its order is not clear. So for
->>>>
->>>> Ok, I think this is a bug in present driver also, because
->>>> without checking pdata->num_regulators, you are running in
->>>> loop  for (i = 0; i < MAX77686_REGULATORS; i++)
->>>> where MAX77686_REGULATORS should be equal to
->>>> pdata->num_regulators for this driver to work fine.
->>>>
->>>
->>>
->>> I think we have same variable num_regulators but use differently. In my
->>> code, it represents number of regulators to be used actually, but in
->>> your code it equals to total number of regulators. Since it has
->>
->> not exactly.
->>
->>> different meaning, it doesn't have to same with MAX77686_REGULATORS.
->>> MAX77686_REGULATORS is macro which indicates total number of regulators
->>> in max77686, and it equals to ARRAY_SIZE(regulators). Even if they are
->>> not same, it's not a bug because we want to register all regulators
->>> whether it will be used or not.
->>>
->>>
->>>> If we consider a case pdata->num_regulators is
->>>> equal to MAX77686_REGULATORS and initdata is
->>>> not their(i.e. NULL) than I think it will initialise
->>>> init_data[pdata->regulators[i].id to NULL, which again will be a bug.
->>>>
->>>>> those state, i think just using temporary array which satisfies
->>>>> regulator's id order is fine while it can't use pdata's initdata directly.
->>>>>
->>>>
->>>> If I am not wrong, I think we can also sort pdata's initdata also using
->>>> kernel's sort api and use one instance of (default)initdata for
->>>> all unused or uninitialized regulators in platform file.
->>>>
->>>
->>>
->>> If init_data references to NULL, it will be ignored while
->>> register_regulators() does initialize. Thus it doesn't make any problem.
->>>
->>> I'm afraid of using Kernel's sort API because of its overhead. Do you
->>
->> I don't think it's overhead will matter more than that of allocating a
->> new array and than
->> sorting it here.
->>
->>> think it will be better to use them? If you mind that init_data has been
->>> dynamic allocated, it can be modified to a static pointer array.
->>>
->>
->> No, their is no problem with dynamic.
->> Anyways, I had just suggested you to use pdata->regulators[i].initdata.
->>
->
->
-> So, to sum up to this, you think it is better to sort pdata->regulators
-> by its id before entering loop and just use pdata->regulators directly,
-> right? Okay, I'll do modify it.
->
->
->>  Regards,
->>  Yadwinder.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
+--vv4Sf/kQfcwinyKX
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, May 31, 2012 at 03:36:17PM +0900, jonghwa3.lee@samsung.com wrote:
+> On 2012=EB=85=84 05=EC=9B=94 31=EC=9D=BC 02:26, Mark Brown wrote:
+> > On Tue, May 29, 2012 at 11:20:51AM +0900, Jonghwa Lee wrote:
+
+> >> +#ifdef CONFIG_COMMON_CLK
+> >> +	struct clk clk32khz_ap;
+> >> +	struct clk clk32khz_cp;
+> >> +	struct clk clk32khz_pmic;
+> >> +#endif
+
+> > This should be a clock driver in drivers/clock.
+
+> Isn't it drivers/clk ? Could you explain more about this?
+
+It's using the drivers/clk API, yes - what I'm saying is that you should
+make a new MFD child driver drivers/clk/clk-max77686.c (or whatever) to
+contain this code.
+
+--vv4Sf/kQfcwinyKX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPx2h4AAoJEBus8iNuMP3dn+wP/iafJsx7oimx7F2BQl8NhPsV
+mTuJh25CPv/WwUBupfcjtgPxf800RaYR5b5sPGehdnaqBVmtJCzpT/17+au5H5Dt
+TNMelWet+FHlTtNTmTGCdYEp8uOvEUuaqZeOVGxRGwxElG5s/DcuIjKh5RhKa6VP
+Np3um5YW1B7ZsD6tg481ykFZZuEGv3cuD4DzixuKszy/AQv5MJ7EMGPJ9yqu1KrE
+yk4quphZ2Jnha2E09s6xh/33VbhWSYXJnkP7L/qsURvQ49Af4/t9MUOsNL1bqgQV
+1v5KHS9GZ4b2q7S/v0vnQ7cuwVFln9DsSRyotatBsGPMNNliMPY762IpkBpHl5/5
+K2+jJ9PrqSeGWZLcnA3Jr5zFUGv275ryi1R2C/3i2OCWJJ5h6tcWT/Sb6c1qBTLR
+MjjuCE5IRZOxLz5YIZnU9BWj6lm4sjS+LUiPkScTKm2BzBFUeDfIsyH9SYC7T7pM
+2hw4m9fpuiJ8SSnzvJw6520ifTMFejXWbKw5dwSBiTLbvJNDmJfIrwJGJq7Uc528
+jBd8EiwL3sRz+ADTpUp/EDAx7K82ta55mNkP6apuXJVfQ0AaKgnxUEgPejXMLdVz
+Qnp/B4+vSKyYd7ZBFSIg1lecv4U2bW9AkGb1CdubNnB3k8AIRz7wgyfEza7Ab0r4
+QccV/pRKcCBe5sq+xmtZ
+=Ak3K
+-----END PGP SIGNATURE-----
+
+--vv4Sf/kQfcwinyKX--
