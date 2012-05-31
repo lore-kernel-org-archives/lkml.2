@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757922Ab2EaHwr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 03:52:47 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4729 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757874Ab2EaHwq (ORCPT
+	id S1757928Ab2EaH4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 03:56:31 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40714 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757764Ab2EaH4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 03:52:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 31 May 2012 00:50:12 -0700
-Date: Thu, 31 May 2012 10:51:25 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FC5DFCF.1020606@codeaurora.org>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 31 May 2012 03:56:30 -0400
+Subject: Re: NOHZ: local_softirq_pending 08
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1205310938080.3231@ionos>
+References: <20120530214809.GA19223@redhat.com>
+	 <alpine.LFD.2.02.1205310938080.3231@ionos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 May 2012 09:56:25 +0200
+Message-ID: <1338450985.2760.1270.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 10:52:31AM +0200, Stephen Boyd wrote:
-> On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
-> > Add an extension API for clocks. This allows clocktypes to provide extensions
-> > for features which are uncommon and cannot be easily mapped onto normal clock
-> > framework concecpts. eg: resetting blocks, configuring clock phase etc.
+On Thu, 2012-05-31 at 09:52 +0200, Thomas Gleixner wrote:
+> Dave,
 > 
-> This seems rather generic. Why not add more specific APIs/concepts like
-> clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
-> make them map.
+> On Wed, 30 May 2012, Dave Jones wrote:
 > 
+> > May 30 17:43:04 [ 1095.335659] NOHZ: local_softirq_pending 08
+> > 
+> > According to git, you ratelimited this back in 2007 with the message
+> > "until we found the root cause of that problem."
+> > 
+> > Is this an old problem that has returned ?
+> 
+> Looks like.
+>  
+> > Maybe interesting note: Both machines I see this on regularly are Atom cpus,
+> > and it's always '08'.
+> 
+> So it goes idle with NET_RX softirq pending. That really should not
+> happen. I fear you need to fire up the tracer :)
 
-Some of those might be very SoC specific. Eg OMAP doesn't need software
-controlled modulereset. I don't think we should add a new function to the
-clock framework for clock related features which only exist in a single
-SoC or family. Ideally we could use inheritance to add methods to derived
-clocktypes, but that's not really possible in C unfortunately.
+It might be a bug in the network driver, a race with NAPI completion.
 
-Cheers,
+Dave, which net drivers run on these machines ?
 
-Peter.
+
