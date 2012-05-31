@@ -1,71 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab2EaBRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:17:40 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37155 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab2EaBRj (ORCPT
+	id S1757651Ab2EaBUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:20:00 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:44550 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756295Ab2EaBT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:17:39 -0400
-Date: Thu, 31 May 2012 11:17:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: cbouatmailru@gmail.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] battery-2.6.git
-Message-Id: <20120531111730.f9b4bc12cdbeae7a3952f602@canb.auug.org.au>
-In-Reply-To: <20120531010844.GA23101@lizard>
-References: <20120531010844.GA23101@lizard>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb"
+	Wed, 30 May 2012 21:19:59 -0400
+Date: Wed, 30 May 2012 21:19:54 -0400
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH -V7 10/14] hugetlbfs: Add new HugeTLB cgroup
+Message-ID: <20120531011953.GE401@localhost.localdomain>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1338388739-22919-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338388739-22919-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> +static inline bool hugetlb_cgroup_have_usage(struct cgroup *cg)
+> +{
+> +	int idx;
+> +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cg);
+> +
+> +	for (idx = 0; idx < HUGE_MAX_HSTATE; idx++) {
+> +		if ((res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE)) > 0)
+> +			return 1;
 
-Hi Anton,
+return true;
+> +	}
+> +	return 0;
 
-On Wed, 30 May 2012 18:08:45 -0700 Anton Vorontsov <cbouatmailru@gmail.com>=
- wrote:
->
-> I guess my pull requests have a distinct style already: they are somewhat
-> boring (in sense that it's just a pile of fixes), late, and my gpg key is
-> not signed by anyone. :-)
+And return false here
+> +}
+> +
+> +static struct cgroup_subsys_state *hugetlb_cgroup_create(struct cgroup *cgroup)
+> +{
+> +	int idx;
+> +	struct cgroup *parent_cgroup;
+> +	struct hugetlb_cgroup *h_cgroup, *parent_h_cgroup;
+> +
+> +	h_cgroup = kzalloc(sizeof(*h_cgroup), GFP_KERNEL);
+> +	if (!h_cgroup)
+> +		return ERR_PTR(-ENOMEM);
+> +
 
-At least you get points for it all being in linux-next since before the
-merge window opened. ;-)
+No need to check cgroup for NULL?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> +	parent_cgroup = cgroup->parent;
+> +	if (parent_cgroup) {
+> +		parent_h_cgroup = hugetlb_cgroup_from_cgroup(parent_cgroup);
+> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
+> +			res_counter_init(&h_cgroup->hugepage[idx],
+> +					 &parent_h_cgroup->hugepage[idx]);
+> +	} else {
+> +		root_h_cgroup = h_cgroup;
+> +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
+> +			res_counter_init(&h_cgroup->hugepage[idx], NULL);
+> +	}
+> +	return &h_cgroup->css;
+> +}
+> +
+> +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
+> +				      struct page *page)
+> +{
+> +	int csize,  ret = 0;
+> +	struct page_cgroup *pc;
+> +	struct res_counter *counter;
+> +	struct res_counter *fail_res;
+> +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
+> +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
+> +
+> +	if (!get_page_unless_zero(page))
+> +		goto out;
 
---Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb
-Content-Type: application/pgp-signature
+Hmm, so it goes to out, and does return ret. ret is zero. Is
+that correct? Should ret be set to -EBUSY or such?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> +
+> +	pc = lookup_page_cgroup(page);
 
-iQIcBAEBCAAGBQJPxsaqAAoJEECxmPOUX5FELUwP/Ano2MrpZqAXuXkd6yxvESu5
-+2jZ5K+Nh4XdxKlNB9NFQjTOZ0sy2bDJHsHqdq9ubnK6PyQ3Fy2SY/lCJ+AZfx1Y
-5gITGqj3xQYIyFlJfxCmznd7EXnCr5/KzwrBy1WhcaNHgQhzfCtL5TbqNSxp+VGD
-ZABXAn1KpueAqMrAaxJUkw+iWSzsCOIRvEXvn7n2K0mMoBVRmKUcCJPISu3M98dp
-AbGcbA6lxO1oJdmk94AJMUW0iYSUaG5/mWQ4zm0rPExmCjuBcCP0NSMVykJ/IYYI
-mc9IGaODv4t9K6DguFzyHPLlX6tyDY04XnqioszB2mrA9WZYlLtbKoSE/+/bkF4W
-qeUYn6wqjo0Ai2TKMwHfjGV/mNfo6oqHs5S9D2q6y5XCIsT/xST6aY7vQ13dgihm
-jrKnvFtq0xFb6jbcp87QG0Jd4XltHRBJ9QQ5Xs8JKAV0XzZ8lNFAvng84XTbYWS1
-AAAAJrlyo+j0bHj/hFcW1pLYct6OkElBG+urLl/iYyxwsn9ipxatLaSJquC+S4Ow
-WiOqdZckYC8adWcPVtLCVWZCD85kmUGv67B4XpaPqDgpp1ynu+BAnjXiWnOvyRqd
-zHYn7KcTWyqGGjEQiWuBppqfGn6o799h2sWV+eHXRHIIIAcMsz/ADwq0/4nhw7co
-XTmaaja9UGz5Ah8frXbo
-=EQrF
------END PGP SIGNATURE-----
+What if pc is NULL? Or is it guaranteed that it will
+never happen so?
 
---Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb--
+> +	lock_page_cgroup(pc);
+> +	if (!PageCgroupUsed(pc) || pc->cgroup != cgroup)
+> +		goto err_out;
+
+err is still set to zero. Is that OK? Should it be -EINVAL
+or such?
+
+> +
+> +	csize = PAGE_SIZE << compound_order(page);
+> +	/* If use_hierarchy == 0, we need to charge root */
+> +	if (!parent) {
+> +		parent = root_h_cgroup;
+> +		/* root has no limit */
+> +		res_counter_charge_nofail(&parent->hugepage[idx],
+> +					  csize, &fail_res);
+> +	}
+> +	counter = &h_cg->hugepage[idx];
+> +	res_counter_uncharge_until(counter, counter->parent, csize);
+> +
+> +	pc->cgroup = cgroup->parent;
+> +err_out:
+> +	unlock_page_cgroup(pc);
+> +	put_page(page);
+> +out:
+> +	return ret;
+> +}
+> +
+> +/*
+> + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
+> + * the parent cgroup.
+> + */
+> +static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
+> +{
+> +	struct hstate *h;
+> +	struct page *page;
+> +	int ret = 0, idx = 0;
+> +
+> +	do {
+> +		if (cgroup_task_count(cgroup) ||
+> +		    !list_empty(&cgroup->children)) {
+> +			ret = -EBUSY;
+> +			goto out;
+> +		}
+> +		/*
+> +		 * If the task doing the cgroup_rmdir got a signal
+> +		 * we don't really need to loop till the hugetlb resource
+> +		 * usage become zero.
+
+Why don't we need to loop? Is somebody else (and if so can you
+say who) doing the deletion?
+
+> +		 */
+> +		if (signal_pending(current)) {
+> +			ret = -EINTR;
+> +			goto out;
+> +		}
+> +		for_each_hstate(h) {
+> +			spin_lock(&hugetlb_lock);
+> +			list_for_each_entry(page, &h->hugepage_activelist, lru) {
+> +				ret = hugetlb_cgroup_move_parent(idx, cgroup, page);
+> +				if (ret) {
+> +					spin_unlock(&hugetlb_lock);
+> +					goto out;
+> +				}
+> +			}
+> +			spin_unlock(&hugetlb_lock);
+> +			idx++;
+> +		}
+> +		cond_resched();
+> +	} while (hugetlb_cgroup_have_usage(cgroup));
+> +out:
+> +	return ret;
+> +}
+> +
+> +static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
+> +{
+> +	struct hugetlb_cgroup *h_cgroup;
+> +
+> +	h_cgroup = hugetlb_cgroup_from_cgroup(cgroup);
+> +	kfree(h_cgroup);
+> +}
+> +
+> +int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
+> +			       struct hugetlb_cgroup **ptr)
+> +{
+> +	int ret = 0;
+> +	struct res_counter *fail_res;
+> +	struct hugetlb_cgroup *h_cg = NULL;
+> +	unsigned long csize = nr_pages * PAGE_SIZE;
+> +
+> +	if (hugetlb_cgroup_disabled())
+> +		goto done;
+> +again:
+> +	rcu_read_lock();
+> +	h_cg = hugetlb_cgroup_from_task(current);
+> +	if (!h_cg)
+> +		h_cg = root_h_cgroup;
+> +
+> +	if (!css_tryget(&h_cg->css)) {
+> +		rcu_read_unlock();
+> +		goto again;
+
+You don't want some form of limit on how many times you can
+loop around?
+
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	ret = res_counter_charge(&h_cg->hugepage[idx], csize, &fail_res);
+> +	css_put(&h_cg->css);
+> +done:
+> +	*ptr = h_cg;
+> +	return ret;
+> +}
+> +
