@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab2EaTJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:09:08 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:57099 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757647Ab2EaTJF (ORCPT
+	id S932718Ab2EaTKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:10:13 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:34747 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757352Ab2EaTKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:09:05 -0400
-Message-ID: <4FC7C1CD.7020701@gmail.com>
-Date: Thu, 31 May 2012 15:09:01 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 31 May 2012 15:10:11 -0400
+Date: Thu, 31 May 2012 12:09:46 -0700
+From: Mike Turquette <mturquette@ti.com>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] clk: add extension API
+Message-ID: <20120531190946.GA16878@gmail.com>
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+ <4FC5DFCF.1020606@codeaurora.org>
+ <20120530194059.GA13243@gmail.com>
+ <4FC68304.9050208@codeaurora.org>
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        =?UTF-8?B?UMOhZHJhaWcgQnI=?= =?UTF-8?B?YWR5?= <P@draigBrady.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [RFC Patch] fs: implement per-file drop caches
-References: <1338385120-14519-1-git-send-email-amwang@redhat.com>   <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>  <4FC70FFE.50809@gmail.com> <1338466281.19369.44.camel@cr0>
-In-Reply-To: <1338466281.19369.44.camel@cr0>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC68304.9050208@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/31/12 8:11 AM), Cong Wang wrote:
-> On Thu, 2012-05-31 at 02:30 -0400, KOSAKI Motohiro wrote:
->> (5/31/12 2:20 AM), Cong Wang wrote:
->>> On Wed, 2012-05-30 at 16:14 +0100, Pádraig Brady wrote:
->>>> On 05/30/2012 02:38 PM, Cong Wang wrote:
->>>>> This is a draft patch of implementing per-file drop caches.
->>>>>
->>>>> It introduces a new fcntl command  F_DROP_CACHES to drop
->>>>> file caches of a specific file. The reason is that currently
->>>>> we only have a system-wide drop caches interface, it could
->>>>> cause system-wide performance down if we drop all page caches
->>>>> when we actually want to drop the caches of some huge file.
->>>>
->>>> This is useful functionality.
->>>> Though isn't it already provided with POSIX_FADV_DONTNEED?
->>>
->>> Thanks for teaching this!
->>>
->>> However, from the source code of madvise_dontneed() it looks like it is
->>> using a totally different way to drop page caches, that is to invalidate
->>> the page mapping, and trigger a re-mapping of the file pages after a
->>> page fault. So, yeah, this could probably drop the page caches too (I am
->>> not so sure, haven't checked the code in details), but with my patch, it
->>> flushes the page caches directly, what's more, it can also prune
->>> dcache/icache of the file.
->>
->> madvise should work. I don't think we need duplicate interface. Moreomover
->> madvise(2) is cleaner than fcntl(2).
->>
->
-> I think madvise(DONTNEED) attacks the problem in a different approach,
-> it munmaps the file mapping and by the way drops the page caches, my
-> approach is to drop the page caches directly similar to what sysctl
-> drop_caches.
->
-> What about private file mapping? Could madvise(DONTNEED) drop the page
-> caches too even when the other process is doing the same private file
-> mapping? At least my patch could do this.
+On 20120530-13:28, Stephen Boyd wrote:
+> On 05/30/12 12:40, Mike Turquette wrote:
+> > I also wonder if exposing some of these knobs should be done in the
+> > basic clock types.  Meaning that instead of having additional calls in
+> > the clk.h API those calls could be exposed by the basic clock types that
+> > map to the actions.
+> 
+> What do you mean by basic clock types that map to actions? Perhaps an
+> example?
+> 
 
-Right. But a process can makes another mappings if a process have enough
-permission. and if it doesn't, a process shouldn't be able to drop a shared
-cache.
+No exmaples to give, just tossing out ideas.
 
+> >
+> > The question that needs to be answered is this: do generic drivers need
+> > access to these additional functions (clk.h) or just the platform code
+> > which implements some of the clock logic (basic clock types &
+> > platform-speciic clock types).
+> 
+> At least for tegra it looks like they need reset assertion and
+> deassertion in generic drivers.
+> 
+> $ git grep tegra_periph_reset_assert
+> arch/arm/mach-tegra/clock.c:void tegra_periph_reset_assert(struct clk *c)
+> arch/arm/mach-tegra/clock.c:EXPORT_SYMBOL(tegra_periph_reset_assert);
+> arch/arm/mach-tegra/include/mach/clk.h:void tegra_periph_reset_assert(struct clk *c);
+> arch/arm/mach-tegra/pcie.c:     tegra_periph_reset_assert(tegra_pcie.pcie_xclk);
+> arch/arm/mach-tegra/pcie.c:     tegra_periph_reset_assert(tegra_pcie.afi_clk);
+> arch/arm/mach-tegra/pcie.c:     tegra_periph_reset_assert(tegra_pcie.pex_clk);
+> arch/arm/mach-tegra/pcie.c:     tegra_periph_reset_assert(tegra_pcie.pcie_xclk);
+> arch/arm/mach-tegra/pcie.c:     tegra_periph_reset_assert(tegra_pcie.afi_clk);
+> arch/arm/mach-tegra/powergate.c:        tegra_periph_reset_assert(clk);
+> drivers/i2c/busses/i2c-tegra.c: tegra_periph_reset_assert(i2c_dev->clk);
+> drivers/input/keyboard/tegra-kbc.c:     tegra_periph_reset_assert(kbc->clk);
+> drivers/staging/nvec/nvec.c:    tegra_periph_reset_assert(nvec->i2c_clk);
+> 
 
-> I am not sure if fcntl() is a good interface either, this is why the
-> patch is marked as RFC. :-D
+Ok, this is good to know.  The same sort of thing is achieved via
+runtime pm and the hwmod framework in OMAP code.  I had given similar
+feedback to Andrew Lunn for using clk_prepare/clk_unprepare to power
+down the PHY for some of his IP blocks.  I don't think that the clock
+framework should be used for that and this clk_reset(...) stuff seems
+similar.
 
-But, if you can find certain usecase, I'm not against anymore.
+Like Benoit, I am partial to associating these actions to module-level
+APIs, not necessarily clock-level APIs.
 
+A yardstick to determine whether or not the clock framework is the right
+place for a _reset() function might be whether or not it will change the
+values of struct clk's members.  If we had a clk_reset(...) call it
+would clearly bang some bits in a register via clk->ops->reset ... but
+what data would it change in struct clk?  Adjust the rate to 0?  Reset
+prepare_count and enable_count to 0?
 
+If it doesn't actually change any of the bookkeeping or accounting in
+the clock framework then it might be a clue that the clock framework
+isn't the best place for this API.
+
+Thanks,
+Mike
