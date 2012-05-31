@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab2EaHX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 03:23:59 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61596 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2EaHX5 (ORCPT
+	id S1757678Ab2EaHbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 03:31:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55298 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757558Ab2EaHbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 03:23:57 -0400
-Message-ID: <4FC71C54.3060909@gmail.com>
-Date: Thu, 31 May 2012 03:23:00 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Thu, 31 May 2012 03:31:17 -0400
+Date: Thu, 31 May 2012 09:30:52 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Sundar Iyer <sundar.iyer@intel.com>
+cc: linux-kernel@vger.kernel.org, arjan.van.de.ven@intel.com,
+        german.monroy@intel.com
+Subject: Re: [PATCH v1] x86/irq: handle chained interrupts during IRQ
+ migration
+In-Reply-To: <1338298808-2265-1-git-send-email-sundar.iyer@intel.com>
+Message-ID: <alpine.LFD.2.02.1205310930030.3231@ionos>
+References: <1338298808-2265-1-git-send-email-sundar.iyer@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
-References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com> <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com> <4FC70355.70805@jp.fujitsu.com> <alpine.DEB.2.00.1205302314190.25774@chino.kir.corp.google.com> <4FC70E5E.1010003@gmail.com> <alpine.DEB.2.00.1205302325500.25774@chino.kir.corp.google.com> <4FC711A5.4090003@gmail.com> <4FC718BA.8060608@jp.fujitsu.com>
-In-Reply-To: <4FC718BA.8060608@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/31/12 3:07 AM), Kamezawa Hiroyuki wrote:
-> (2012/05/31 15:37), KOSAKI Motohiro wrote:
->> (5/31/12 2:28 AM), David Rientjes wrote:
->>> On Thu, 31 May 2012, KOSAKI Motohiro wrote:
->>>
->>>>> An application should always know the cgroup that its attached to and be
->>>>> able to read its state using the command that I gave earlier.
->>>>
->>>> No. you don't need why userland folks want namespaces. Even though you don't
->>>> need namespaces. It doesn't good reason to refuse another use case.
->>>>
->>>
->>> This is tangent to the discussion, we need to revisit why an application
->>> other than a daemon managing a set of memcgs would ever need to know the
->>> information in /proc/meminfo. No use-case was ever presented in the
->>> changelog and its not clear how this is at all relevant. So before
->>> changing the kernel, please describe how this actually matters in a real-
->>> world scenario.
->>
->> Huh? Don't you know a meanings of a namespace ISOLATION? isolation mean,
->> isolated container shouldn't be able to access global information. If you
->> want to lean container/namespace concept, tasting openvz or solaris container
->> is a good start.
->>
->> But anyway, I dislike current implementaion. So, I NAK this patch too.
->
-> Could you give us advice for improving this ? What idea do you have ?
+On Tue, 29 May 2012, Sundar Iyer wrote:
 
-?
-I'm ok your idea. I only NAKed current Gao's patch.
+> Chained interrupt handlers dont have an irqaction and hence are not
+> handled during migrating interrupts when some cores go offline.
+> 
+> Handle this by introducing a irq_is_chained() check which is based
+> on the IRQ_NOREQUEST flag being set for such interrupts. fixup_irq()
+> can then handle such interrupts and not skip them over.
 
+No, we need a separate flag for those. IRQ_NORREQUEST is not a
+reliable indicator.
+ 
+Thanks,
 
-
-
+	tglx
