@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964869Ab2EaUPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:15:42 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50383 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964842Ab2EaUPk (ORCPT
+	id S964898Ab2EaUPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:15:46 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:37806 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964855Ab2EaUPm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:15:40 -0400
-Date: Thu, 31 May 2012 21:15:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Philipp Riemer <ruderphilipp@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Jiri Kosina <jkosina@suse.cz>,
-        Paul Mundt <lethal@linux-sh.org>, Michael B?sch <m@bues.ch>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
-Message-ID: <20120531201502.GA30000@ZenIV.linux.org.uk>
-References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
- <20120516143830.GA483@kroah.com>
- <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
- <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
- <20120516150813.GA3293@kroah.com>
- <CAFU-uVvzyN0asmReOVJcAEiAtbQ=styfGxRRbnrJKgNFDS5X_g@mail.gmail.com>
- <CAFU-uVsStG0KoiQm95-uC8ZPXWAq=8Q8vXircxOuUCHhk+r9uw@mail.gmail.com>
- <1338492342.5861.23.camel@joe2Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338492342.5861.23.camel@joe2Laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 31 May 2012 16:15:42 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-m68k@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/2] m68k: Use asm-generic version of <asm/types.h>
+Date: Thu, 31 May 2012 22:15:38 +0200
+Message-Id: <1338495338-1962-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1338495338-1962-1-git-send-email-geert@linux-m68k.org>
+References: <1338495338-1962-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 12:25:42PM -0700, Joe Perches wrote:
+The extra definition for BITS_PER_LONG we had is also indirectly provided
+by <asm-generic/types.h>, via <asm-generic/int-ll64.h> and
+<asm/bitsperlong.h>
 
-> -Al Viro <viro@ftp.linux.org.uk>
-> -Al Viro <viro@zenIV.linux.org.uk>
-> []
-> +Alexander Viro <viro@ftp.linux.org.uk>
-> 
-> I think I've never seen that name before.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/Kbuild  |    1 +
+ arch/m68k/include/asm/types.h |   22 ----------------------
+ 2 files changed, 1 insertions(+), 22 deletions(-)
+ delete mode 100644 arch/m68k/include/asm/types.h
 
-*snort*
+diff --git a/arch/m68k/include/asm/Kbuild b/arch/m68k/include/asm/Kbuild
+index 4d1f8fa..064f867 100644
+--- a/arch/m68k/include/asm/Kbuild
++++ b/arch/m68k/include/asm/Kbuild
+@@ -23,5 +23,6 @@ generic-y += scatterlist.h
+ generic-y += siginfo.h
+ generic-y += statfs.h
+ generic-y += topology.h
++generic-y += types.h
+ generic-y += word-at-a-time.h
+ generic-y += xor.h
+diff --git a/arch/m68k/include/asm/types.h b/arch/m68k/include/asm/types.h
+deleted file mode 100644
+index 89705ad..0000000
+--- a/arch/m68k/include/asm/types.h
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#ifndef _M68K_TYPES_H
+-#define _M68K_TYPES_H
+-
+-/*
+- * This file is never included by application software unless
+- * explicitly requested (e.g., via linux/types.h) in which case the
+- * application is Linux specific so (user-) name space pollution is
+- * not a major issue.  However, for interoperability, libraries still
+- * need to be careful to avoid a name clashes.
+- */
+-#include <asm-generic/int-ll64.h>
+-
+-/*
+- * These aren't exported outside the kernel to avoid name space clashes
+- */
+-#ifdef __KERNEL__
+-
+-#define BITS_PER_LONG 32
+-
+-#endif /* __KERNEL__ */
+-
+-#endif /* _M68K_TYPES_H */
+-- 
+1.7.0.4
 
-Same thing, but I prefer to go by the former variant (and I normally
-use zeniv.linux.org.uk for s-o-b, etc.)
-
-The real question is, why bother with all that stuff?  Somebody sees
-slightly inaccurate commit counts (in my case, that would be having
-patches posted from aviro@redhat.com counted separately from those
-posted from zeniv/committed in my trees)?  Who _cares_?
