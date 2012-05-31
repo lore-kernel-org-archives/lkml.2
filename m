@@ -1,139 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab2EaSFP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:05:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46095 "EHLO mx1.redhat.com"
+	id S1758299Ab2EaSFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:05:38 -0400
+Received: from seven.medozas.de ([188.40.89.202]:40506 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab2EaSFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:05:13 -0400
-Message-ID: <4FC7B2C7.80504@redhat.com>
-Date: Thu, 31 May 2012 15:04:55 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-References: <20120531100005.GC14074@aftab.osrc.amd.com> <4FC748F5.9070709@redhat.com> <20120531121741.GB14515@aftab.osrc.amd.com> <4FC7788C.1070405@redhat.com> <20120531142229.GF14515@aftab.osrc.amd.com> <4FC783EA.80704@redhat.com> <20120531145416.GI14515@aftab.osrc.amd.com> <4FC787BF.3020006@redhat.com> <20120531151408.GJ14515@aftab.osrc.amd.com> <4FC798E2.4000402@redhat.com> <20120531171337.GN14515@aftab.osrc.amd.com>
-In-Reply-To: <20120531171337.GN14515@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755139Ab2EaSFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:05:36 -0400
+From: Jan Engelhardt <jengelh@inai.de>
+To: xfs@oss.sgi.com
+Cc: bpm@sgi.com, hch@infradead.org, joe@perches.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] xfs: use standard (u)intptr_t types
+Date: Thu, 31 May 2012 20:05:34 +0200
+Message-Id: <1338487534-14575-2-git-send-email-jengelh@inai.de>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1338487534-14575-1-git-send-email-jengelh@inai.de>
+References: <1338487534-14575-1-git-send-email-jengelh@inai.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-05-2012 14:13, Borislav Petkov escreveu:
-> On Thu, May 31, 2012 at 01:14:26PM -0300, Mauro Carvalho Chehab wrote:
->>> 5 amd76x_edac.c     amd76x_init_csrows          214 dimm->grain = dimm->nr_pages << PAGE_SHIFT;
->>> 6 cpc925_edac.c     cpc925_init_csrows          367 dimm->grain = 32;
->>> 7 cpc925_edac.c     cpc925_init_csrows          371 dimm->grain = 64;
->>> 8 e752x_edac.c      e752x_init_csrows          1119 dimm->grain = 1 << 12;
->>> 9 e7xxx_edac.c      e7xxx_init_csrows           399 dimm->grain = 1 << 12;
->>> k i3000_edac.c      i3000_probe1                416 dimm->grain = I3000_DEAP_GRAIN;
->>> l i3200_edac.c      i3200_probe1                395 dimm->grain = nr_pages << PAGE_SHIFT;
->>> m i5000_edac.c      i5000_init_csrows          1286 dimm->grain = 8;
->>> n i5100_edac.c      i5100_init_csrows           852 dimm->grain = 32;
->>> o i5400_edac.c      i5400_init_dimms           1212 dimm->grain = 8;
->>> p i7300_edac.c      decode_mtr                  662 dimm->grain = 8;
->>> q i7core_edac.c     get_dimm_config             637 dimm->grain = 8;
->>> r i82443bxgx_edac.c i82443bxgx_init_csrows      225 dimm->grain = 1 << 12;
->>> s i82860_edac.c     i82860_init_csrows          180 dimm->grain = 1 << 12;
->>> t i82875p_edac.c    i82875p_init_csrows         388 dimm->grain = 1 << 12;
->>> v i82975x_edac.c    i82975x_init_csrows         430 dimm->grain = 1 << 7;
->>> w mpc85xx_edac.c    mpc85xx_init_csrows         956 dimm->grain = 8;
->>> x mv64x60_edac.c    mv64x60_init_csrows         677 dimm->grain = 8;
->>> y pasemi_edac.c     pasemi_edac_init_csrows     183 dimm->grain = PASEMI_EDAC_ERROR_GRAIN;
->>> z ppc4xx_edac.c     ppc4xx_edac_init_csrows     983 dimm->grain = 1;
->>> A r82600_edac.c     r82600_init_csrows          259 dimm->grain = 1 << 14;
->>> B sb_edac.c         get_dimm_config             597 dimm->grain = 32;
->>> C tile_edac.c       tile_edac_init_csrows       117 dimm->grain = TILE_EDAC_ERROR_GRAIN;
->>> D x38_edac.c        x38_probe1                  394 dimm->grain = nr_pages << PAGE_SHIFT;
->>
->> The grains among the drivers are different; userspace needs to know, so an
->> API is needed.
-> 
-> Sure, that's why I'm preaching about sysfs or dmesg for so long.
-> 
-> [ … ]
-> 
->>> Don't create a bloated API just to fit your purpose because you're
->>> staring at the world through your glasses.
->>
->> It is not a bloated API. The error grain should be reported to userspace,
->> as:
->> 	- Not all drivers have the same address granularity, as you've shown
->> 	  above;
-> 
-> Yes.
-> 
->> 	- No other userspace API provides it;
-> 
-> Yes, it should.
-> 
->> 	- The granularity is a property of the per-error address;
-> 
-> Not necessarily, as it is shown above.
-> 
->> 	- There are well-known cases where the address grain changes are
->> 	  dynamically filled by the error registers (MCA arch on Intel).
-> 
-> Ok.
-> 
->> So, the memory error tracepoint is the proper place to store it, as it is
->> the place where the address and the other memory error information is
->> reported to userspace.
-> 
-> Yes, but not as a separate field but in driver_detail _only_ on those
-> drivers where grain is dynamic. The remaining ones simply don't output
-> it all because they have done so in dmesg or sysfs.
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Jan Engelhardt <jengelh@inai.de>
+---
+ fs/xfs/xfs_extfree_item.c |    2 +-
+ fs/xfs/xfs_filestream.c   |   34 +++++++++++++++++-----------------
+ fs/xfs/xfs_log.c          |   10 +++++-----
+ fs/xfs/xfs_trans_ail.c    |    6 +++---
+ fs/xfs/xfs_types.h        |   11 -----------
+ 5 files changed, 26 insertions(+), 37 deletions(-)
 
-The tracepoint approach is proposed as a way to replace dmesg, so, dmesg is
-not an option.
-
-Sysfs nodes for address grain won't work, as, on MCA, the grain is only 
-known when an error is generated, and it is valid only together with an
-error report.
-
-The same issue with MCA is also probably true for memory scrubbing on other
-drivers, e. g. errors generated via scrubbing logic likely have a different
-grain.
-
-Having the _same_ field exported either in sysfs or via the trace, depending if
-the grain is dynamic or if it is global-wide is a very crappy API, as the same
-information would be provided to userspace via different API's, with is
-insane.
-
->> Also, converting the grain to a string, as you proposed would require
->> at least 26 bytes to store "grain: 0xdeadbeef:deadbeef", while putting
->> it as a u64 will consume only 8 bytes.
-> 
-> Again, only on those drivers which have dynamic grain. Other drivers
-> which keep outputting 'x' (and 'x' doesn't change) on every tracepoint
-> invocation don't need to output it all in the tracepoint.
-
-So what? If only one type of granularity applies to all addresses, the
-information provided to userspace won't be wrong.
-
-This is about the same as network masks: on the majority of Linux usecases,
-the network mask for the local network is /24, but that doesn't mean that
-the network stack would require a different API to be used if the mask
-is not /24.
-
-Regards,
-Mauro
-
-
-
-
-
-
-
+diff --git a/fs/xfs/xfs_extfree_item.c b/fs/xfs/xfs_extfree_item.c
+index feb36d7..2dfef98 100644
+--- a/fs/xfs/xfs_extfree_item.c
++++ b/fs/xfs/xfs_extfree_item.c
+@@ -239,7 +239,7 @@ xfs_efi_init(
+ 
+ 	xfs_log_item_init(mp, &efip->efi_item, XFS_LI_EFI, &xfs_efi_item_ops);
+ 	efip->efi_format.efi_nextents = nextents;
+-	efip->efi_format.efi_id = (__psint_t)(void*)efip;
++	efip->efi_format.efi_id = (intptr_t)(void*)efip;
+ 	atomic_set(&efip->efi_next_extent, 0);
+ 
+ 	return efip;
+diff --git a/fs/xfs/xfs_filestream.c b/fs/xfs/xfs_filestream.c
+index 5170306..a05595e 100644
+--- a/fs/xfs/xfs_filestream.c
++++ b/fs/xfs/xfs_filestream.c
+@@ -42,24 +42,24 @@ xfs_filestreams_trace(
+ 	int		type,	/* type of trace */
+ 	const char	*func,	/* source function */
+ 	int		line,	/* source line number */
+-	__psunsigned_t	arg0,
+-	__psunsigned_t	arg1,
+-	__psunsigned_t	arg2,
+-	__psunsigned_t	arg3,
+-	__psunsigned_t	arg4,
+-	__psunsigned_t	arg5)
++	uintptr_t	arg0,
++	uintptr_t	arg1,
++	uintptr_t	arg2,
++	uintptr_t	arg3,
++	uintptr_t	arg4,
++	uintptr_t	arg5)
+ {
+ 	ktrace_enter(xfs_filestreams_trace_buf,
+-		(void *)(__psint_t)(type | (line << 16)),
++		(void *)(intptr_t)(type | (line << 16)),
+ 		(void *)func,
+-		(void *)(__psunsigned_t)current_pid(),
++		(void *)(uintptr_t)current_pid(),
+ 		(void *)mp,
+-		(void *)(__psunsigned_t)arg0,
+-		(void *)(__psunsigned_t)arg1,
+-		(void *)(__psunsigned_t)arg2,
+-		(void *)(__psunsigned_t)arg3,
+-		(void *)(__psunsigned_t)arg4,
+-		(void *)(__psunsigned_t)arg5,
++		(void *)(uintptr_t)arg0,
++		(void *)(uintptr_t)arg1,
++		(void *)(uintptr_t)arg2,
++		(void *)(uintptr_t)arg3,
++		(void *)(uintptr_t)arg4,
++		(void *)(uintptr_t)arg5,
+ 		NULL, NULL, NULL, NULL, NULL, NULL);
+ }
+ 
+@@ -71,9 +71,9 @@ xfs_filestreams_trace(
+ #define TRACE5(mp,t,a0,a1,a2,a3,a4)	TRACE6(mp,t,a0,a1,a2,a3,a4,0)
+ #define TRACE6(mp,t,a0,a1,a2,a3,a4,a5) \
+ 	xfs_filestreams_trace(mp, t, __func__, __LINE__, \
+-				(__psunsigned_t)a0, (__psunsigned_t)a1, \
+-				(__psunsigned_t)a2, (__psunsigned_t)a3, \
+-				(__psunsigned_t)a4, (__psunsigned_t)a5)
++				(uintptr_t)a0, (uintptr_t)a1, \
++				(uintptr_t)a2, (uintptr_t)a3, \
++				(uintptr_t)a4, (uintptr_t)a5)
+ 
+ #define TRACE_AG_SCAN(mp, ag, ag2) \
+ 		TRACE2(mp, XFS_FSTRM_KTRACE_AGSCAN, ag, ag2);
+diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
+index 6b965bf..70f6f73 100644
+--- a/fs/xfs/xfs_log.c
++++ b/fs/xfs/xfs_log.c
+@@ -3382,7 +3382,7 @@ xlog_verify_iclog(xlog_t	 *log,
+ 	xlog_in_core_2_t	*xhdr;
+ 	xfs_caddr_t		ptr;
+ 	xfs_caddr_t		base_ptr;
+-	__psint_t		field_offset;
++	intptr_t		field_offset;
+ 	__uint8_t		clientid;
+ 	int			len, i, j, k, op_len;
+ 	int			idx;
+@@ -3421,7 +3421,7 @@ xlog_verify_iclog(xlog_t	 *log,
+ 		ophead = (xlog_op_header_t *)ptr;
+ 
+ 		/* clientid is only 1 byte */
+-		field_offset = (__psint_t)
++		field_offset = (intptr_t)
+ 			       ((xfs_caddr_t)&(ophead->oh_clientid) - base_ptr);
+ 		if (syncing == B_FALSE || (field_offset & 0x1ff)) {
+ 			clientid = ophead->oh_clientid;
+@@ -3444,13 +3444,13 @@ xlog_verify_iclog(xlog_t	 *log,
+ 				(unsigned long)field_offset);
+ 
+ 		/* check length */
+-		field_offset = (__psint_t)
++		field_offset = (intptr_t)
+ 			       ((xfs_caddr_t)&(ophead->oh_len) - base_ptr);
+ 		if (syncing == B_FALSE || (field_offset & 0x1ff)) {
+ 			op_len = be32_to_cpu(ophead->oh_len);
+ 		} else {
+-			idx = BTOBBT((__psint_t)&ophead->oh_len -
+-				    (__psint_t)iclog->ic_datap);
++			idx = BTOBBT((intptr_t)&ophead->oh_len -
++				    (intptr_t)iclog->ic_datap);
+ 			if (idx >= (XLOG_HEADER_CYCLE_SIZE / BBSIZE)) {
+ 				j = idx / (XLOG_HEADER_CYCLE_SIZE / BBSIZE);
+ 				k = idx % (XLOG_HEADER_CYCLE_SIZE / BBSIZE);
+diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
+index 9c51448..def28e0 100644
+--- a/fs/xfs/xfs_trans_ail.c
++++ b/fs/xfs/xfs_trans_ail.c
+@@ -187,7 +187,7 @@ xfs_trans_ail_cursor_next(
+ {
+ 	struct xfs_log_item	*lip = cur->item;
+ 
+-	if ((__psint_t)lip & 1)
++	if ((intptr_t)lip & 1)
+ 		lip = xfs_ail_min(ailp);
+ 	if (lip)
+ 		cur->item = xfs_ail_next(ailp, lip);
+@@ -225,7 +225,7 @@ xfs_trans_ail_cursor_clear(
+ 	list_for_each_entry(cur, &ailp->xa_cursors, list) {
+ 		if (cur->item == lip)
+ 			cur->item = (struct xfs_log_item *)
+-					((__psint_t)cur->item | 1);
++					((intptr_t)cur->item | 1);
+ 	}
+ }
+ 
+@@ -316,7 +316,7 @@ xfs_ail_splice(
+ 	 * find the place in the AIL where the items belong.
+ 	 */
+ 	lip = cur ? cur->item : NULL;
+-	if (!lip || (__psint_t) lip & 1)
++	if (!lip || (intptr_t)lip & 1)
+ 		lip = __xfs_trans_ail_cursor_last(ailp, lsn);
+ 
+ 	/*
+diff --git a/fs/xfs/xfs_types.h b/fs/xfs/xfs_types.h
+index 398cf68..7e0639a 100644
+--- a/fs/xfs/xfs_types.h
++++ b/fs/xfs/xfs_types.h
+@@ -43,17 +43,6 @@ typedef char *			xfs_caddr_t;	/* <core address> type */
+ typedef __u32			xfs_dev_t;
+ typedef __u32			xfs_nlink_t;
+ 
+-/* __psint_t is the same size as a pointer */
+-#if (BITS_PER_LONG == 32)
+-typedef __int32_t __psint_t;
+-typedef __uint32_t __psunsigned_t;
+-#elif (BITS_PER_LONG == 64)
+-typedef __int64_t __psint_t;
+-typedef __uint64_t __psunsigned_t;
+-#else
+-#error BITS_PER_LONG must be 32 or 64
+-#endif
+-
+ #endif	/* __KERNEL__ */
+ 
+ typedef __uint32_t	xfs_agblock_t;	/* blockno in alloc. group */
+-- 
+1.7.7
 
