@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab2EaT2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:28:00 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57217 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933128Ab2EaT17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:27:59 -0400
-Message-ID: <4FC7C62C.1020807@zytor.com>
-Date: Thu, 31 May 2012 12:27:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
-References: <20120531012829.160060586@goodmis.org>  <20120531020441.500105258@goodmis.org> <4FC7BF59.3070906@zytor.com> <1338492300.13348.384.camel@gandalf.stny.rr.com>
-In-Reply-To: <1338492300.13348.384.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+	id S933192Ab2EaT2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:28:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44898 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933148Ab2EaT2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 15:28:31 -0400
+Date: Thu, 31 May 2012 12:28:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nathan Zimmer <nzimmer@sgi.com>
+Cc: hughd@google.com, npiggin@gmail.com, cl@linux.com, lee.schermerhorn@hp.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        stable@vger.kernel.org, riel@redhat.com
+Subject: Re: [PATCH v2] tmpfs not interleaving properly
+Message-Id: <20120531122829.8c478372.akpm@linux-foundation.org>
+In-Reply-To: <20120531143916.GA16162@gulag1.americas.sgi.com>
+References: <20120531143916.GA16162@gulag1.americas.sgi.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2012 12:25 PM, Steven Rostedt wrote:
->> void debug_stack_set_zero(void)
->> {
->> 	if (this_cpu_inc_return(debug_stack_use_ctr) == 1)
-> 
-> If an NMI comes in here, it will not update the IDT and will corrupt the
-> stack. The load_idt() must happen for all calls. There's only two static
-> IDT tables. It's either one or the other. Thus, if it loads it twice, it
-> will just set it to the same value. The counter is to know when to set
-> it back.
-> 
+On Thu, 31 May 2012 09:39:17 -0500
+Nathan Zimmer <nzimmer@sgi.com> wrote:
 
-Now I'm really confused.  Why would it have to set it if it is already set?
+> When tmpfs has the memory policy interleaved it always starts allocating at each
+> file at node 0.  When there are many small files the lower nodes fill up
+> disproportionately.
+> This patch attempts to spread out node usage by starting files at nodes other
+> then 0.  I disturbed the addr parameter since alloc_pages_vma will only use it
+> when the policy is MPOL_INTERLEAVE.  Random was picked over using another
+> variable which would require some sort of contention management.
 
-	-hpa
+The patch title is a bit scummy ;) It describes a kernel problem, not
+the patch.  I renamed it to "tmpfs: implement NUMA node interleaving".
 
+It looks nice and simple
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> Cc: stable@vger.kernel.org
+
+We could probably sneak this past Greg, but should we?  It's a feature
+and a performance enhancement.  Such things are not normally added to
+-stable.  If there were some nice performance improvements in workloads
+which our users care about then I guess we could backport it.
+
+But you've provided us with no measurements at all, hence no reason to
+backport it.
+
 
