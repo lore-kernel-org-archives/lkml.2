@@ -1,231 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab2EaRd0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:33:26 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44161 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731Ab2EaRdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:33:25 -0400
-Date: Thu, 31 May 2012 19:33:51 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [PATCH 1/2] perf: Add persistent event facilities
-Message-ID: <20120531173351.GP14515@aftab.osrc.amd.com>
-References: <1332340496-21658-1-git-send-email-bp@amd64.org>
- <1332340496-21658-2-git-send-email-bp@amd64.org>
- <1337336040.573.12.camel@twins>
+	id S932659Ab2EaRdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:33:55 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5447 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755810Ab2EaRdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 13:33:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208,223";a="106370358"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] Register native mce handler as vMCE bounce back point
+Thread-Topic: [PATCH 3/3] Register native mce handler as vMCE bounce back
+ point
+Thread-Index: Ac0/U4oGOmcgMxj2Q7+f4qg6RfEkEg==
+Date: Thu, 31 May 2012 17:33:49 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FFB7C@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: multipart/mixed;
+	boundary="_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337336040.573.12.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 18, 2012 at 12:14:00PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-03-21 at 15:34 +0100, Borislav Petkov wrote:
-> > +int perf_add_persistent_on_cpu(int cpu, struct pers_event_desc *desc,
-> > +                              struct dentry *dir, unsigned nr_pages) 
-> 
-> OK, so this creates an even and registers it somewhere in debugfs.
-> 
->  - you allow an arbitrary place in debugfs; this might make finding them
-> 'interesting'. Should we put them all in the same place?
-> 
->  - persistent events created from userspace don't seem to get a debugfs
-> entry and will be lost forever?
-> 
-> In general I think a little more exploring of the semantics and
-> ramifications might be in order.
+--_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Ok, how about the following. This is rough and not in any way ready - it
-is supposed to feel out how you guys feel about it. Basically, it adds
-another file in (debugfs)/tracing/events/<subsys>/<event_name>/ which
-can be used for whatever.
+>From ca1f8a2347eb34acdc7c54b805c78a982a0a590d Mon Sep 17 00:00:00 2001
+From: Liu, Jinsong <jinsong.liu@intel.com>
+Date: Fri, 1 Jun 2012 08:41:00 +0800
+Subject: [PATCH 3/3] Register native mce handler as vMCE bounce back point
 
-In the persistent event case, I get this:
+When xen hypervisor inject vMCE to guest, use native mce handler to handle =
+it
 
-/mnt/dbg/tracing/events/mce/mce_record/
-|-- enable
-|-- filter
-|-- format
-|-- id
-`-- pers
+Signed-off-by: Ke, Liping <liping.ke@intel.com>
+Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+---
+ arch/x86/xen/enlighten.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-and 'pers' contains the file descriptor of the perf per-cpu buffer which
-I can mmap in userspace. I can read that out later.
-
-Other events can put other files in there containing other relevant
-stuff for them.
-
-The interface trace_add_file() is pretty generic (it can be done
-even more so). It is not design-finished - it is only meant to show
-the intent. Oh, and don't look at bob_add_trace_file() - it is a
-quick'n'dirty hack for testing :-).
-
-So, what do you guys think, Peter, Steven?
-
-Thanks.
-
---
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 176a939d1547..1c13fb5e9a50 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -222,6 +222,8 @@ struct ftrace_event_call {
- #ifdef CONFIG_PERF_EVENTS
- 	int				perf_refcount;
- 	struct hlist_head __percpu	*perf_events;
-+	/* persistent event filedes */
-+	int				pers_fd;
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index ff2d00e..0cb12dd 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -618,8 +618,8 @@ static int cvt_gate_to_trap(int vector, const gate_desc=
+ *val,
+ 	/*
+ 	 * Look for known traps using IST, and substitute them
+ 	 * appropriately.  The debugger ones are the only ones we care
+-	 * about.  Xen will handle faults like double_fault and
+-	 * machine_check, so we should never see them.  Warn if
++	 * about.  Xen will handle faults like double_fault,
++	 * so we should never see them.  Warn if
+ 	 * there's an unexpected IST-using fault handler.
+ 	 */
+ 	if (addr =3D=3D (unsigned long)debug)
+@@ -634,7 +634,11 @@ static int cvt_gate_to_trap(int vector, const gate_des=
+c *val,
+ 		return 0;
+ #ifdef CONFIG_X86_MCE
+ 	} else if (addr =3D=3D (unsigned long)machine_check) {
+-		return 0;
++		/*
++		 * when xen hyeprvisor inject vMCE to guest,
++		 * use native mce handler to handle it
++		 */
++		;
  #endif
- };
- 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 29111da1d100..57ad0fbe0aef 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -980,6 +980,29 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
- 	return r;
- }
- 
-+static ssize_t
-+event_pers_fd_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
-+{
-+	struct ftrace_event_call *call = filp->private_data;
-+	struct trace_seq *s;
-+	int r;
-+
-+	if (*ppos)
-+		return 0;
-+
-+	s = kmalloc(sizeof(*s), GFP_KERNEL);
-+	if (!s)
-+		return -ENOMEM;
-+
-+	trace_seq_init(s);
-+	trace_seq_printf(s, "%d\n", call->pers_fd);
-+
-+	r = simple_read_from_buffer(ubuf, cnt, ppos,
-+				    s->buffer, s->len);
-+	kfree(s);
-+	return r;
-+}
-+
- static const struct seq_operations show_event_seq_ops = {
- 	.start = t_start,
- 	.next = t_next,
-@@ -1058,6 +1081,12 @@ static const struct file_operations ftrace_show_header_fops = {
- 	.llseek = default_llseek,
- };
- 
-+static const struct file_operations ftrace_persistent_fops = {
-+	.open = tracing_open_generic,
-+	.read = event_pers_fd_read,
-+	.llseek = default_llseek,
-+};
-+
- static struct dentry *event_trace_events_dir(void)
- {
- 	static struct dentry *d_tracer;
-@@ -1199,6 +1228,56 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 	return 0;
- }
- 
-+static int __trace_add_file(struct ftrace_event_call *call, const char *fname,
-+			    umode_t mode, const struct file_operations *fops)
-+{
-+	int ret = 0;
-+	mutex_lock(&event_mutex);
-+
-+	if (!trace_create_file(fname, mode, call->dir, call, fops))
-+		ret = -EINVAL;
-+
-+	mutex_unlock(&event_mutex);
-+	return ret;
-+}
-+
-+extern struct ftrace_event_call *__start_ftrace_events[];
-+extern struct ftrace_event_call *__stop_ftrace_events[];
-+
-+#define for_each_event(event, start, end)			\
-+	for (event = start;					\
-+	     (unsigned long)event < (unsigned long)end;		\
-+	     event++)
-+
-+/*
-+ * Assumptions:
-+ * - event debugfs dir is already initialized
-+ * - trace event is not declared in a module
-+ */
-+int trace_add_file(const char *dir_name, const char *fname, umode_t mode,
-+		   const struct file_operations *fops)
-+{
-+	struct ftrace_event_call *call;
-+
-+	if (!strlen(fname))
-+		return -EINVAL;
-+
-+	list_for_each_entry(call, &ftrace_events, list) {
-+		if (!strncmp(call->name, dir_name, strlen(dir_name)))
-+			return __trace_add_file(call, fname, mode, fops);
-+	}
-+	return -EINVAL;
-+}
-+
-+static __init int bob_add_trace_file(void)
-+{
-+	int ret = 0;
-+
-+	ret = trace_add_file("mce_record", "pers", 0444, &ftrace_persistent_fops);
-+
-+	return ret;
-+}
-+
- static int
- __trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
- 		       const struct file_operations *id,
-@@ -1292,11 +1371,6 @@ void trace_remove_event_call(struct ftrace_event_call *call)
- 	mutex_unlock(&event_mutex);
- }
- 
--#define for_each_event(event, start, end)			\
--	for (event = start;					\
--	     (unsigned long)event < (unsigned long)end;		\
--	     event++)
--
- #ifdef CONFIG_MODULES
- 
- static LIST_HEAD(ftrace_module_file_list);
-@@ -1435,9 +1509,6 @@ static struct notifier_block trace_module_nb = {
- 	.priority = 0,
- };
- 
--extern struct ftrace_event_call *__start_ftrace_events[];
--extern struct ftrace_event_call *__stop_ftrace_events[];
--
- static char bootup_event_buf[COMMAND_LINE_SIZE] __initdata;
- 
- static __init int setup_trace_event(char *str)
-@@ -1753,3 +1824,4 @@ static __init int event_trace_self_tests_init(void)
- late_initcall(event_trace_self_tests_init);
- 
- #endif
-+late_initcall(bob_add_trace_file);
+ 	} else {
+ 		/* Some other trap using IST? */
+--=20
+1.7.1
 
+--_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_
+Content-Type: application/octet-stream;
+	name="0003-Register-native-mce-handler-as-vMCE-bounce-back-poin.patch"
+Content-Description: 0003-Register-native-mce-handler-as-vMCE-bounce-back-poin.patch
+Content-Disposition: attachment;
+	filename="0003-Register-native-mce-handler-as-vMCE-bounce-back-poin.patch";
+	size=1662; creation-date="Thu, 31 May 2012 17:10:05 GMT";
+	modification-date="Fri, 01 Jun 2012 00:43:22 GMT"
+Content-Transfer-Encoding: base64
 
--- 
-Regards/Gruss,
-Boris.
+RnJvbSBjYTFmOGEyMzQ3ZWIzNGFjZGM3YzU0YjgwNWM3OGE5ODJhMGE1OTBkIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
+RGF0ZTogRnJpLCAxIEp1biAyMDEyIDA4OjQxOjAwICswODAwClN1YmplY3Q6IFtQQVRDSCAzLzNd
+IFJlZ2lzdGVyIG5hdGl2ZSBtY2UgaGFuZGxlciBhcyB2TUNFIGJvdW5jZSBiYWNrIHBvaW50CgpX
+aGVuIHhlbiBoeXBlcnZpc29yIGluamVjdCB2TUNFIHRvIGd1ZXN0LCB1c2UgbmF0aXZlIG1jZSBo
+YW5kbGVyIHRvIGhhbmRsZSBpdAoKU2lnbmVkLW9mZi1ieTogS2UsIExpcGluZyA8bGlwaW5nLmtl
+QGludGVsLmNvbT4KU2lnbmVkLW9mZi1ieTogSmlhbmcsIFl1bmhvbmcgPHl1bmhvbmcuamlhbmdA
+aW50ZWwuY29tPgpTaWduZWQtb2ZmLWJ5OiBKZXJlbXkgRml0emhhcmRpbmdlIDxqZXJlbXkuZml0
+emhhcmRpbmdlQGNpdHJpeC5jb20+ClNpZ25lZC1vZmYtYnk6IExpdSwgSmluc29uZyA8amluc29u
+Zy5saXVAaW50ZWwuY29tPgotLS0KIGFyY2gveDg2L3hlbi9lbmxpZ2h0ZW4uYyB8ICAgMTAgKysr
+KysrKy0tLQogMSBmaWxlcyBjaGFuZ2VkLCA3IGluc2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0p
+CgpkaWZmIC0tZ2l0IGEvYXJjaC94ODYveGVuL2VubGlnaHRlbi5jIGIvYXJjaC94ODYveGVuL2Vu
+bGlnaHRlbi5jCmluZGV4IGZmMmQwMGUuLjBjYjEyZGQgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L3hl
+bi9lbmxpZ2h0ZW4uYworKysgYi9hcmNoL3g4Ni94ZW4vZW5saWdodGVuLmMKQEAgLTYxOCw4ICs2
+MTgsOCBAQCBzdGF0aWMgaW50IGN2dF9nYXRlX3RvX3RyYXAoaW50IHZlY3RvciwgY29uc3QgZ2F0
+ZV9kZXNjICp2YWwsCiAJLyoKIAkgKiBMb29rIGZvciBrbm93biB0cmFwcyB1c2luZyBJU1QsIGFu
+ZCBzdWJzdGl0dXRlIHRoZW0KIAkgKiBhcHByb3ByaWF0ZWx5LiAgVGhlIGRlYnVnZ2VyIG9uZXMg
+YXJlIHRoZSBvbmx5IG9uZXMgd2UgY2FyZQotCSAqIGFib3V0LiAgWGVuIHdpbGwgaGFuZGxlIGZh
+dWx0cyBsaWtlIGRvdWJsZV9mYXVsdCBhbmQKLQkgKiBtYWNoaW5lX2NoZWNrLCBzbyB3ZSBzaG91
+bGQgbmV2ZXIgc2VlIHRoZW0uICBXYXJuIGlmCisJICogYWJvdXQuICBYZW4gd2lsbCBoYW5kbGUg
+ZmF1bHRzIGxpa2UgZG91YmxlX2ZhdWx0LAorCSAqIHNvIHdlIHNob3VsZCBuZXZlciBzZWUgdGhl
+bS4gIFdhcm4gaWYKIAkgKiB0aGVyZSdzIGFuIHVuZXhwZWN0ZWQgSVNULXVzaW5nIGZhdWx0IGhh
+bmRsZXIuCiAJICovCiAJaWYgKGFkZHIgPT0gKHVuc2lnbmVkIGxvbmcpZGVidWcpCkBAIC02MzQs
+NyArNjM0LDExIEBAIHN0YXRpYyBpbnQgY3Z0X2dhdGVfdG9fdHJhcChpbnQgdmVjdG9yLCBjb25z
+dCBnYXRlX2Rlc2MgKnZhbCwKIAkJcmV0dXJuIDA7CiAjaWZkZWYgQ09ORklHX1g4Nl9NQ0UKIAl9
+IGVsc2UgaWYgKGFkZHIgPT0gKHVuc2lnbmVkIGxvbmcpbWFjaGluZV9jaGVjaykgewotCQlyZXR1
+cm4gMDsKKwkJLyoKKwkJICogd2hlbiB4ZW4gaHllcHJ2aXNvciBpbmplY3Qgdk1DRSB0byBndWVz
+dCwKKwkJICogdXNlIG5hdGl2ZSBtY2UgaGFuZGxlciB0byBoYW5kbGUgaXQKKwkJICovCisJCTsK
+ICNlbmRpZgogCX0gZWxzZSB7CiAJCS8qIFNvbWUgb3RoZXIgdHJhcCB1c2luZyBJU1Q/ICovCi0t
+IAoxLjcuMQoK
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+--_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_--
