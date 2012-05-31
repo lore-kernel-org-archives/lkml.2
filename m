@@ -1,200 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab2EaSYS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:24:18 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43020 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757174Ab2EaSYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:24:16 -0400
-Date: Thu, 31 May 2012 14:17:12 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/2] xen/blkfront: Add BUG_ON to deal with
- misbehaving backends.
-Message-ID: <20120531181712.GA19700@phenom.dumpdata.com>
-References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com>
- <1337982603-15692-3-git-send-email-konrad.wilk@oracle.com>
- <alpine.DEB.2.00.1205281111460.26786@kaball-desktop>
- <4FC4A10F0200007800086842@nat28.tlf.novell.com>
+	id S1758315Ab2EaSYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:24:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15710 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab2EaSYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:24:37 -0400
+Message-ID: <4FC7B754.5040209@redhat.com>
+Date: Thu, 31 May 2012 15:24:20 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC4A10F0200007800086842@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Borislav Petkov <bp@amd64.org>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <4FBE5E1D.7070804@redhat.com> <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com> <4FC4D6E2.9060501@redhat.com> <20120529145245.GG29157@aftab.osrc.amd.com> <4FC4E9EB.5030801@redhat.com> <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com> <20120531100005.GC14074@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F192F6C61@ORSMSX104.amr.corp.intel.com> <20120531172018.GO14515@aftab.osrc.amd.com>
+In-Reply-To: <20120531172018.GO14515@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> @@ -145,6 +145,7 @@ static void add_id_to_freelist(struct blkfront_info 
-> > *info,
-> >>  			       unsigned long id)
-> >>  {
-> >>  	info->shadow[id].req.u.rw.id  = info->shadow_free;
-> >> +	BUG_ON(info->shadow[id].request == NULL);
+Em 31-05-2012 14:20, Borislav Petkov escreveu:
+> On Thu, May 31, 2012 at 04:51:27PM +0000, Luck, Tony wrote:
+>> No, it's a 6-bit field used as a shift ... so if it has value "6", it
+>> means cache line granularity. Value "12" would mean 4K granularity.
+>> Architecturally it could say "30" to mean gigabyte, or even "63" to
+>> mean "everything is gone".
 > 
-> This only catches a small sub-portion of possible bad backend
-> behavior. Checking (as the very first thing in the function) e.g.
+> Right, 0x3f are 6 bits, correct, doh!
 > 
-> info->shadow[id].req.u.rw.id == id
+>>>> while a few (IIRC patrol scrub) will report with page (4K)
+>>>> granularity. Linux doesn't really care - they all have to get rounded
+>>>> up to page size because we can't take away just one cache line from a
+>>>> process.
+>>>
+>>> I'd like to see that :-)
+>>
+>> Patrol scrub works inside the depths of the memory controller on rank/row
+>> addresses, not on system physical addresses. When it finds a problem, a
+>> reverse translation is needed to be able to report a system physical
+>> address in MCi_ADDR. Getting all the bits right is apparently a hard thing
+>> to do, so the MCI_MISC_ADDR_LSB bits are used to indicate that some low
+>> order bits are not valid.
 > 
-> would seem to cover a broader set (based on my recent looking
-> at similar mismatches apparently resulting from the qdisk
-> backend occasionally sending bad/duplicate responses).
+> Ok, thus the dynamic granularity. But we're going to end up reporting
+> rank and row too so that it can be matched to the DIMM. I consider
+> physical address a bonus in such cases and it is only of importance to
+> those who like to replace single DRAM chips or single MOSFET transistors
+> :-) :-) :-).
 > 
-> But take this with the below applied here too.
-> 
-> >>  	info->shadow[id].request = NULL;
-> >>  	info->shadow_free = id;
-> >>  }
-> >> @@ -746,6 +747,12 @@ static irqreturn_t blkif_interrupt(int irq, void 
-> > *dev_id)
-> >>  
-> >>  		bret = RING_GET_RESPONSE(&info->ring, i);
-> >>  		id   = bret->id;
-> >> +		/*
-> >> +		 * The backend has messed up and given us an id that we would
-> >> +		 * never have given to it (we stamp it up to BLK_RING_SIZE -
-> >> +		 * look in get_id_from_freelist.
-> >> +		 */
-> >> +		BUG_ON(id >= BLK_RING_SIZE);
-> >>  		req  = info->shadow[id].request;
-> >>  
-> >>  		if (bret->operation != BLKIF_OP_DISCARD)
-> > 
-> > While we should certainly check whether bret->id is valid before
-> > using it, is it actually correct that the frontend BUGs in response of a
-> > backend bug?
 
-The 'id' is used to get the 'struct request' and to do do the grant unmaps.
-Since it would be outside the shadow structure it would fetch garbage as
-'struct request'.
+A single corrected error doesn't mean you need to replace anything. The need
+for a replacement is due to a joint probability of several independent
+events:
+	- a random noise;
+	- a failure on a MOSFET transistor;
+	- a failure at the DIMM contacts.
 
-> > 
-> > If the IO doesn't involve the root disk, the guest might be able to
-> > function correctly without communicating with the backend at all.
-> > I think we should WARN and return error. Maybe also call blkfront_remove
-> > if we can.
-> 
-> I very much agree to this.
+In order to distinguish between them, you need to know the statistics of
+each of the above stochastic process and use some correlation functions
+to detect to each group of event a series of error belongs.
 
-The blkfront_remove part is .. that is going to take some surgery to do
-and I don't think I am going to be able to attempt that within the next couple
-of weeks. So lets put that on the TODO list and just do this one?
+For example, the error address at the DIMM contacts can be given by a
+constant random variable, affecting a group of bits at the syndrome,
+while a failure at a group of MOSFET transistors will be given by a
+(series) of degenerate distribution function.
 
->From 4aabb5b44778fc0c0b8d4f5a2e2cd8e8490064d7 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Fri, 25 May 2012 17:34:51 -0400
-Subject: [PATCH] xen/blkfront: Add WARN to deal with misbehaving backends.
+By properly exporting the address/grain/syndrome, an userspace program
+can filter random noise failures from a defect at a DRAM or a bad contact
+issue at the DIMM, and use different error count limits for each type of
+error, when telling userspace when a memory should be replaced or not.
 
-Part of the ring structure is the 'id' field which is under
-control of the frontend. The frontend stamps it with "some"
-value (this some in this implementation being a value less
-than BLK_RING_SIZE), and when it gets a response expects
-said value to be in the response structure. We have a check
-for the id field when spolling new requests but not when
-de-spolling responses.
-
-We also add an extra check in add_id_to_freelist to make
-sure that the 'struct request' was not NULL - as we cannot
-pass a NULL to __blk_end_request_all, otherwise that crashes
-(and all the operations that the response is dealing with
-end up with __blk_end_request_all).
-
-Lastly we also print the name of the operation that failed.
-
-[v1: s/BUG/WARN/ suggested by Stefano]
-[v2: Add extra check in add_id_to_freelist]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/block/xen-blkfront.c |   39 +++++++++++++++++++++++++++++----------
- 1 files changed, 29 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 60eed4b..c7ef8a4 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -144,11 +144,22 @@ static int get_id_from_freelist(struct blkfront_info *info)
- static void add_id_to_freelist(struct blkfront_info *info,
- 			       unsigned long id)
- {
-+	BUG_ON(info->shadow[id].req.u.rw.id != id);
- 	info->shadow[id].req.u.rw.id  = info->shadow_free;
-+	BUG_ON(info->shadow[id].request == NULL);
- 	info->shadow[id].request = NULL;
- 	info->shadow_free = id;
- }
- 
-+static const char *op_name(int op)
-+{
-+	const char *names[BLKIF_OP_DISCARD+1] = {
-+		"read" , "write", "barrier", "flush", "reserved", "discard"};
-+
-+	if (op > BLKIF_OP_DISCARD)
-+		return "unknown";
-+	return names[op];
-+}
- static int xlbd_reserve_minors(unsigned int minor, unsigned int nr)
- {
- 	unsigned int end = minor + nr;
-@@ -746,6 +757,18 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 
- 		bret = RING_GET_RESPONSE(&info->ring, i);
- 		id   = bret->id;
-+		/*
-+		 * The backend has messed up and given us an id that we would
-+		 * never have given to it (we stamp it up to BLK_RING_SIZE -
-+		 * look in get_id_from_freelist.
-+		 */
-+		if (id >= BLK_RING_SIZE) {
-+			/* We can't safely get the 'struct request' as
-+			 * the id is busted. So limp along. */
-+			WARN(1, "%s: response to %s has incorrect id (%d)!\n",
-+			     info->gd->disk_name, op_name(bret->operation), id);
-+			continue;
-+		}
- 		req  = info->shadow[id].request;
- 
- 		if (bret->operation != BLKIF_OP_DISCARD)
-@@ -758,8 +781,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 		case BLKIF_OP_DISCARD:
- 			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
- 				struct request_queue *rq = info->rq;
--				printk(KERN_WARNING "blkfront: %s: discard op failed\n",
--					   info->gd->disk_name);
-+				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
-+					   info->gd->disk_name, op_name(bret->operation));
- 				error = -EOPNOTSUPP;
- 				info->feature_discard = 0;
- 				info->feature_secdiscard = 0;
-@@ -771,18 +794,14 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
- 		case BLKIF_OP_FLUSH_DISKCACHE:
- 		case BLKIF_OP_WRITE_BARRIER:
- 			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
--				printk(KERN_WARNING "blkfront: %s: write %s op failed\n",
--				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
--				       "barrier" :  "flush disk cache",
--				       info->gd->disk_name);
-+				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
-+				       info->gd->disk_name, op_name(bret->operation));
- 				error = -EOPNOTSUPP;
- 			}
- 			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
- 				     info->shadow[id].req.u.rw.nr_segments == 0)) {
--				printk(KERN_WARNING "blkfront: %s: empty write %s op failed\n",
--				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
--				       "barrier" :  "flush disk cache",
--				       info->gd->disk_name);
-+				printk(KERN_WARNING "blkfront: %s: empty %s op failed\n",
-+				       info->gd->disk_name, op_name(bret->operation));
- 				error = -EOPNOTSUPP;
- 			}
- 			if (unlikely(error)) {
--- 
-1.7.7.6
+Regards,
+Mauro
 
