@@ -1,147 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab2EaKOn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:14:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24507 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753882Ab2EaKOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:14:41 -0400
-Date: Thu, 31 May 2012 13:14:35 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] kvm: optimize ISR lookups
-Message-ID: <20120531101434.GB15836@redhat.com>
-References: <20120522125456.GA4337@redhat.com>
- <20120530205442.GA8937@amt.cnet>
- <20120531100657.GN2311@redhat.com>
+	id S1754255Ab2EaKPT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:15:19 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:62387 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab2EaKPQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 06:15:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531100657.GN2311@redhat.com>
+In-Reply-To: <CAPDyKFrpXc7cODie9g-QK_ZhVpmVZPQ36TDF9CWJcVPL_-EU2Q@mail.gmail.com>
+References: <CAEV-rjeEKMNs2N8KEatCi+guFKihgFok4k4nDnd=vTQ5x7iStg@mail.gmail.com>
+	<1338282140-11106-1-git-send-email-torne@google.com>
+	<CAPDyKFrpXc7cODie9g-QK_ZhVpmVZPQ36TDF9CWJcVPL_-EU2Q@mail.gmail.com>
+Date: Thu, 31 May 2012 11:15:14 +0100
+Message-ID: <CAEV-rjd1zymsZwsJjzJtF-9fvgYLz00r+K4K4xD2aeLwi76mPw@mail.gmail.com>
+Subject: Re: [PATCH] MMC: core: cap MMC card timeouts at 2 seconds.
+From: "Torne (Richard Coles)" <torne@google.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: cjb@laptop.org, linus.walleij@linaro.org, jh80.chung@samsung.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ben@decadent.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 01:06:57PM +0300, Gleb Natapov wrote:
-> On Wed, May 30, 2012 at 05:54:42PM -0300, Marcelo Tosatti wrote:
-> > On Tue, May 22, 2012 at 03:54:56PM +0300, Michael S. Tsirkin wrote:
-> > > We perform ISR lookups twice: during interrupt
-> > > injection and on EOI. Typical workloads only have
-> > > a single bit set there. So we can avoid ISR scans by
-> > > 1. counting bits as we set/clear them in ISR
-> > > 2. if count is 1, caching the vector number
-> > > 3. if count != 1, invalidating the cache
-> > > 
-> > > The real purpose of this is enabling PV EOI
-> > > which needs to quickly validate the vector.
-> > > But non PV guests might also benefit.
-> > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > > 
-> > > I am well aware of Thomas and Peter's suggestion of reworking APIC
-> > > register handling in kvm instead of adding a cache like this patch does.
-> > > 
-> > > This revision does *not* address that comment yet: it only corrects a
-> > > bug in the original patch.
-> > > 
-> > > Posting in this form for ease of testing.
-> > > 
-> > > Changes from v1:
-> > > 	replace ASSERT by BUG_ON, correcting inverted logic
-> > > 
-> > >  arch/x86/kvm/lapic.c |   51 ++++++++++++++++++++++++++++++++++++++++++++++++-
-> > >  arch/x86/kvm/lapic.h |    2 +
-> > >  2 files changed, 51 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-> > > index 93c1574..0d2985d 100644
-> > > --- a/arch/x86/kvm/lapic.c
-> > > +++ b/arch/x86/kvm/lapic.c
-> > > @@ -107,6 +107,16 @@ static inline void apic_clear_vector(int vec, void *bitmap)
-> > >  	clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > >  }
-> > >  
-> > > +static inline int __apic_test_and_set_vector(int vec, void *bitmap)
-> > > +{
-> > > +	return __test_and_set_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > > +}
-> > > +
-> > > +static inline int __apic_test_and_clear_vector(int vec, void *bitmap)
-> > > +{
-> > > +	return __test_and_clear_bit(VEC_POS(vec), (bitmap) + REG_POS(vec));
-> > > +}
-> > > +
-> > >  static inline int apic_hw_enabled(struct kvm_lapic *apic)
-> > >  {
-> > >  	return (apic)->vcpu->arch.apic_base & MSR_IA32_APICBASE_ENABLE;
-> > > @@ -210,6 +220,16 @@ static int find_highest_vector(void *bitmap)
-> > >  		return fls(word[word_offset << 2]) - 1 + (word_offset << 5);
-> > >  }
-> > >  
-> > > +static u8 count_vectors(void *bitmap)
-> > > +{
-> > > +	u32 *word = bitmap;
-> > > +	int word_offset;
-> > > +	u8 count = 0;
-> > > +	for (word_offset = 0; word_offset < MAX_APIC_VECTOR >> 5; ++word_offset)
-> > > +		count += hweight32(word[word_offset << 2]);
-> > > +	return count;
-> > > +}
-> > > +
-> > >  static inline int apic_test_and_set_irr(int vec, struct kvm_lapic *apic)
-> > >  {
-> > >  	apic->irr_pending = true;
-> > > @@ -242,6 +262,25 @@ static inline void apic_clear_irr(int vec, struct kvm_lapic *apic)
-> > >  		apic->irr_pending = true;
-> > >  }
-> > >  
-> > > +static inline void apic_set_isr(int vec, struct kvm_lapic *apic)
-> > > +{
-> > > +	if (!__apic_test_and_set_vector(vec, apic->regs + APIC_ISR))
-> > > +		++apic->isr_count;
-> > > +	BUG_ON(apic->isr_count > MAX_APIC_VECTOR);
-> > > +	if (likely(apic->isr_count == 1))
-> > > +		apic->isr_cache = vec;
-> > > +	else
-> > > +		apic->isr_cache = -1;
-> > > +}
-> > > +
-> > > +static inline void apic_clear_isr(int vec, struct kvm_lapic *apic)
-> > > +{
-> > > +	if (__apic_test_and_clear_vector(vec, apic->regs + APIC_ISR))
-> > > +		--apic->isr_count;
-> > > +	BUG_ON(apic->isr_count < 0);
-> > > +	apic->isr_cache = -1;
-> > > +}
-> > > +
-> > >  int kvm_lapic_find_highest_irr(struct kvm_vcpu *vcpu)
-> > >  {
-> > >  	struct kvm_lapic *apic = vcpu->arch.apic;
-> > > @@ -273,6 +312,10 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
-> > >  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
-> > >  {
-> > >  	int result;
-> > > +	if (!apic->isr_count)
-> > > +		return -1;
-> > > +	if (likely(apic->isr_cache != -1))
-> > 
-> > assert(isr_count == 1).
-> > 
-> > Looks fine otherwise. Gleb can you review please?
-> I am not convinced we need to keep track of isr_count. isr_cache should be enough.
-> Why setting isr_cache to -1 if isr_count > 1?
+On 31 May 2012 11:00, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> Hi Richard,
+>
+> On 29 May 2012 17:02, Torne (Richard Coles) <torne@google.com> wrote:
+>> From: "Torne (Richard Coles)" <torne@google.com>
+>>
+>> MMC CSD info can specify very large, ridiculous timeouts, big enough to
+>> overflow timeout_ns on 32-bit machines. This can result in the card
+>> timing out on every operation because the wrapped timeout value is far
+>> too small.
+>>
+>> Fix the overflow by capping the result at 2 seconds.  Cards specifying
+>> longer timeouts are almost certainly insane, and host controllers
+>> generally cannot support timeouts that long in any case.
+>>
+>> 2 seconds should be plenty of time for any card to actually function;
+>> the timeout calculation code is already using 1 second as a "worst case"
+>> timeout for cards running in SPI mode.
+>>
+>> Signed-off-by: Torne (Richard Coles) <torne@google.com>
+>> ---
+>>  drivers/mmc/core/core.c |   11 ++++++++++-
+>>  1 files changed, 10 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>> index 0b6141d..3b4a9fc 100644
+>> --- a/drivers/mmc/core/core.c
+>> +++ b/drivers/mmc/core/core.c
+>> @@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
+>>        if (data->flags & MMC_DATA_WRITE)
+>>                mult <<= card->csd.r2w_factor;
+>>
+>> -       data->timeout_ns = card->csd.tacc_ns * mult;
+>> +       /*
+>> +        * The timeout in nanoseconds may overflow with some cards. Cap it at
+>> +        * two seconds both to avoid the overflow and also because host
+>> +        * controllers cannot generally generate timeouts that long anyway.
+>> +        */
+>> +       if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
+>> +               data->timeout_ns = card->csd.tacc_ns * mult;
+>> +       else
+>> +               data->timeout_ns = 2 * NSEC_PER_SEC;
+>> +
+>
+> The above looks OK to me, although if doing this for tacc_ns we might
+> want to do this for tacc_clks as well. Could we include that is this
+> patch as well?
 
-So that data path can check cache and if != -1 know it
-is valid: we check the cache more than we set it.
+timeout_clks can't overflow, that I can see: the highest possible
+value for tacc_clks is 25500 (it's an 8 bit field specified in
+100-clock increments) and the highest mult is 12800 (r2w_factor only
+goes up to 128). This only makes 0x13747800 :)
 
-I'll add a comment to explain this.
+>>        data->timeout_clks = card->csd.tacc_clks * mult;
+>>
+>>        /*
+>> --
+>> 1.7.7.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> Kind regards
+> Ulf Hansson
 
-> Just overwrite isr_cache
-> values with newly injected vector and use it on next EOI.
-> --
-> 			Gleb.
+
+
+-- 
+Torne (Richard Coles)
+torne@google.com
