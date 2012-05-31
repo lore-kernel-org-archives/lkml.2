@@ -1,35 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab2EaU01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:26:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41069 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758306Ab2EaU00 convert rfc822-to-8bit (ORCPT
+	id S1758446Ab2EaUbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:31:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40747 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758411Ab2EaUbJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:26:26 -0400
-Message-ID: <1338495969.28384.119.camel@twins>
-Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
- breakpoints
+	Thu, 31 May 2012 16:31:09 -0400
+Message-ID: <1338496257.28384.121.camel@twins>
+Subject: Re: [PATCH] sched/x86: Calculate booted cores after construction of
+ sibling_mask
 From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, acme <acme@ghostprotocols.net>
-Date: Thu, 31 May 2012 22:26:09 +0200
-In-Reply-To: <1338495006.13348.418.camel@gandalf.stny.rr.com>
-References: <20120531012829.160060586@goodmis.org>
-	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
-	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
-	 <1338486029.28384.93.camel@twins>
-	 <1338486820.13348.366.camel@gandalf.stny.rr.com>
-	 <1338487413.28384.103.camel@twins>
-	 <1338490218.13348.379.camel@gandalf.stny.rr.com>
-	 <1338491176.28384.114.camel@twins> <20120531195529.GA22976@Krystal>
-	 <1338495006.13348.418.camel@gandalf.stny.rr.com>
+To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+Date: Thu, 31 May 2012 22:30:57 +0200
+In-Reply-To: <20120531073738.GH7511@linux.vnet.ibm.com>
+References: <20120531073738.GH7511@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -38,43 +24,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 16:10 -0400, Steven Rostedt wrote:
-> On Thu, 2012-05-31 at 15:55 -0400, Mathieu Desnoyers wrote:
+On Thu, 2012-05-31 at 13:07 +0530, Kamalesh Babulal wrote:
+> While booting tip (1d06e6d354) on qemu with -smp sockets=1,cores=2,threads=2
+> topology. There is a mismatch between the number of cores actually present
+> and cores reported.
 > 
-> > > Also, why did Mathieu insist on keeping that kmap()?
-> > 
-> > Not sure about the entire context here, but the goal of using kmap() is
-> > to allow modification of text in configurations where the kernel text
-> > is read-only: the kmap does a temporary shadow RW mapping that allows
-> > modification of the text. Presumably that Ftrace's 30k changes are done
-> > before the kernel text mapping is set to read-only ? If this is the
-> > case, then it is similar to text_poke_early, which don't use the kmap
-> > since it happens before kernel text gets write-protected. But text_poke
-> > has to deal with RO pages.
+> Changes related to calculating the number of booted cores was introduced
+> by 316ad248307fb (sched/x86: Rewrite set_cpu_sibling_map()). With the
+> clean up, the calculation of booted cores per package is done on an
+> incompletely constructed sibling_mask per cpu.
 > 
-> No this is also when ftrace is enabled at runtime. The trick that ftrace
-> does is to temporarially  convert the kernel text from ro to rw, and
-> then back to ro when done. You can argue that this degrades the security
-> of the system, but tracing every function in the kernel does too ;-)
-> That's why it's a root only utility.
+> sched/x86: Calculate booted cores after construction of sibling_mask
 
-Right, but when you loose stop-machine you could simply do 30k
-kmap_atomic/kunmap_atomic's consecutively since you're not holding
-anybody up.
+Why repeat this subject again?
 
-> Hmm, this brings up another question. By default, perf does not allow
-> users to profile trace_events correct? IOW, perf does not let
-> unprivileged users call text_poke()? I just tried it and got the:
+> This patch re-introduces the old behaviour of constructing the complete
+> sibling mask of the cpu, before calculating the number of cores booted.
+
+> Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kernel/smpboot.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
 > 
-> $ ~/bin/perf record -e sched:sched_switch sleep 1
-> Permission error - are you root?
-> Consider tweaking /proc/sys/kernel/perf_event_paranoid:
->  -1 - Not paranoid at all
->   0 - Disallow raw tracepoint access for unpriv
->   1 - Disallow cpu events for unpriv
->   2 - Disallow kernel profiling for unpriv
+> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> index fd019d7..a8d78f3 100644
+> --- a/arch/x86/kernel/smpboot.c
+> +++ b/arch/x86/kernel/smpboot.c
+> @@ -382,7 +382,12 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+>  		if ((i == cpu) || (has_mc && match_llc(c, o)))
+>  			link_mask(llc_shared, cpu, i);
+> 
+> -		if ((i == cpu) || (has_mc && match_mc(c, o))) {
+> +	}
+> +
+> +	for_each_cpu(i, cpu_sibling_setup_mask) {
+> +		o = &cpu_data(i);
+> +
+> +	if ((i == cpu) || (has_mc && match_mc(c, o))) {
+>  			link_mask(core, cpu, i);
+> 
+>  			/*
 
-It would, except tools/perf does stupid, its unconditionally adding
-PERF_SAMPLE_RAW (even for non-sampling events), which is the bit that
-requires privs.
+This patch actually horribly mangles the indenting. I did the below to
+it:
+
+
+---
+Subject: sched/x86: Calculate booted cores after construction of sibling_mask
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Date: Thu, 31 May 2012 13:07:38 +0530
+
+Commit 316ad248307fb ("sched/x86: Rewrite set_cpu_sibling_map()")
+broke the booted_cores accounting.
+
+The problem is that the booted_cores accounting needs all the
+sibling links set up. So restore the second loop and add a comment as
+to why its needed.
+
+On qemu booted with -smp sockets=1,cores=2,threads=2;
+Before:
+$ grep cores /proc/cpuinfo
+cpu cores       : 2
+cpu cores       : 1
+cpu cores       : 4
+cpu cores       : 3
+
+With the patch:
+$ grep cores /proc/cpuinfo
+cpu cores       : 2
+cpu cores       : 2
+cpu cores       : 2
+cpu cores       : 2
+
+Signed-off-by: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120531073738.GH7511@linux.vnet.ibm.com
+---
+ arch/x86/kernel/smpboot.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -382,6 +382,15 @@ void __cpuinit set_cpu_sibling_map(int c
+ 		if ((i == cpu) || (has_mc && match_llc(c, o)))
+ 			link_mask(llc_shared, cpu, i);
+ 
++	}
++
++	/*
++	 * This needs a separate iteration over the cpus because we rely on all
++	 * cpu_sibling_mask links to be set-up.
++	 */
++	for_each_cpu(i, cpu_sibling_setup_mask) {
++		o = &cpu_data(i);
++
+ 		if ((i == cpu) || (has_mc && match_mc(c, o))) {
+ 			link_mask(core, cpu, i);
+ 
 
