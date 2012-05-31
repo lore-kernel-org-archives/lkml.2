@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2EaS6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:58:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56591 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756995Ab2EaS6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:58:53 -0400
-Message-ID: <4FC7BF59.3070906@zytor.com>
-Date: Thu, 31 May 2012 11:58:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932641Ab2EaS67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:58:59 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:38845 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932576Ab2EaS64 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:58:56 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
-References: <20120531012829.160060586@goodmis.org> <20120531020441.500105258@goodmis.org>
-In-Reply-To: <20120531020441.500105258@goodmis.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120531182457.GB25955@fieldses.org>
+References: <20120531182457.GB25955@fieldses.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 31 May 2012 11:58:34 -0700
+X-Google-Sender-Auth: 0_9OxF0sLude_z10LRSQQDcWiYk
+Message-ID: <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
+Subject: Re: nfsd changes for 3.5
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 06:28 PM, Steven Rostedt wrote:
-> 
-> diff --git a/arch/x86/kernel/cpu/common.c
-> b/arch/x86/kernel/cpu/common.c index 82f29e7..63fc083 100644 ---
-> a/arch/x86/kernel/cpu/common.c +++ b/arch/x86/kernel/cpu/common.c 
-> @@ -1101,14 +1101,20 @@ int is_debug_stack(unsigned long addr) addr
-> > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ)); }
-> 
-> +static DEFINE_PER_CPU(atomic_t, debug_idt_zero); + void
-> debug_stack_set_zero(void) { +
-> atomic_inc(&__get_cpu_var(debug_idt_zero)); load_idt((const struct
-> desc_ptr *)&nmi_idt_descr); }
-> 
-> void debug_stack_reset(void) { -	load_idt((const struct desc_ptr
-> *)&idt_descr); +	if
-> (WARN_ON(!atomic_read(&__get_cpu_var(debug_idt_zero)))) +		return; 
-> +	if (atomic_dec_and_test(&__get_cpu_var(debug_idt_zero))) +
-> load_idt((const struct desc_ptr *)&idt_descr); }
-> 
+On Thu, May 31, 2012 at 11:24 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
+>
+> Sorry this is a bit late.  In fact I still have a review backlog (at a
+> minimum some bugfixes), so will send a second pull later.
 
-What you have here is a nesting counter, which is good, but I have
-some objections to the implementation.
+Quite frankly, I'm not going to pull this without lots of explanations.
 
-The name "debug_idt_zero" doesn't convey a counter in any way, shape
-or form; perhaps debug_stack_users or something like that.
+The VFS-level changes have no acks or sign-offs from anybody else, and
+quite frankly, if I understand them correctly they look f*cking
+disgusting. If I read them right, they break delegations of a file
+(which can involve long waits for clients - no?) while holding on to
+the directory inode lock (both directories for cross-inode renames).
+Which seems to be a singularly idiotic thing to do and sounds to me
+like a fundamental design mistake.
 
-Since this is percpu, there is no reason to use the atomic operations
-(globally locked!), and since it is on the local CPU there is no need
-to manifest a pointer; we can instead use this_cpu_inc/dec_return:
+We simply don't do these kinds of VFS changes without having
+discussions and acks from people, notably Al.
 
-static DEFINE_PER_CPU(u32, debug_stack_use_ctr);
+As to "second pull later" - if you haven't reviewed the code already,
+it's damn well much too late in the merge window to do it now.
 
-void debug_stack_set_zero(void)
-{
-	if (this_cpu_inc_return(debug_stack_use_ctr) == 1)
-	 	load_idt((const struct desc_ptr *)&nmi_idt_descr);
-}
+So quite frankly, this *all* looks like 3.6 material to me, and that's
+assuming you can convince people that file-delegation breaking really
+should happen with all lookups on the directory the file is in blocked
+by the directory inode mutex in the first place. Or tell me I'm a
+moron and I misread the patches and don't know what I'm talking about.
 
-void debug_stack_reset(void)
-{
-	if (this_cpu_dec_return(debug_stack_use_ctr) == 0)
-		load_idt((const struct desc_ptr *)&idt_descr);
-}
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+          Linus
