@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab2EaRjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:39:49 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22587 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab2EaRjs (ORCPT
+	id S1756410Ab2EaRkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:40:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50790 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385Ab2EaRkp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:39:48 -0400
-Date: Thu, 31 May 2012 13:32:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] Register native mce handler as vMCE bounce back point
-Message-ID: <20120531173243.GB31735@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FFB7C@SHSMSX101.ccr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FFB7C@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 31 May 2012 13:40:45 -0400
+Message-ID: <1338486029.28384.93.camel@twins>
+Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 19:40:29 +0200
+In-Reply-To: <1338473302.13348.336.camel@gandalf.stny.rr.com>
+References: <20120531012829.160060586@goodmis.org>
+	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
+	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 05:33:49PM +0000, Liu, Jinsong wrote:
-> >From ca1f8a2347eb34acdc7c54b805c78a982a0a590d Mon Sep 17 00:00:00 2001
-> From: Liu, Jinsong <jinsong.liu@intel.com>
-> Date: Fri, 1 Jun 2012 08:41:00 +0800
-> Subject: [PATCH 3/3] Register native mce handler as vMCE bounce back point
-
-You need to have 'xen:' in front of 'register'
+On Thu, 2012-05-31 at 10:08 -0400, Steven Rostedt wrote:
+> > Also, why does this stuff live in ftrace? I always thought you were
+> > going to replace text_poke() so everybody that uses cross-modifying code
+> > could profit?
 > 
-> When xen hypervisor inject vMCE to guest, use native mce handler to handle it
+> I discussed this with Masami at Collaboration Summit. The two are
+> similar but also very different. But we want to start merging the two
+> together where it makes sense. 
 
-And is that still OK?
-> 
-> Signed-off-by: Ke, Liping <liping.ke@intel.com>
-> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/xen/enlighten.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index ff2d00e..0cb12dd 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -618,8 +618,8 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  	/*
->  	 * Look for known traps using IST, and substitute them
->  	 * appropriately.  The debugger ones are the only ones we care
-> -	 * about.  Xen will handle faults like double_fault and
-> -	 * machine_check, so we should never see them.  Warn if
-> +	 * about.  Xen will handle faults like double_fault,
-> +	 * so we should never see them.  Warn if
->  	 * there's an unexpected IST-using fault handler.
->  	 */
->  	if (addr == (unsigned long)debug)
-> @@ -634,7 +634,11 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  		return 0;
->  #ifdef CONFIG_X86_MCE
->  	} else if (addr == (unsigned long)machine_check) {
-> -		return 0;
-> +		/*
-> +		 * when xen hyeprvisor inject vMCE to guest,
+Argh,. I so disagree. You're doing it backwards.
 
-<sigh> Pls run a spell checker.
+First you merge whatever is there, regardless of who came first.
 
-> +		 * use native mce handler to handle it
-> +		 */
-> +		;
->  #endif
->  	} else {
->  		/* Some other trap using IST? */
-> -- 
-> 1.7.1
+Then, when everybody doing text modification is using the same
+interface, do a second implementation using a Kconfig knob. If the scary
+new one breaks, no sweat, flip the config. If its proven stable, kill
+off the old one.
+
+I really don't see why ftrace would be special here.. if you have all
+text_poke() users use the magic new way you'll have more coverage and
+better chances of hitting any snags if there are any.
 
 
