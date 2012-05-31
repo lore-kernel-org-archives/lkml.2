@@ -1,147 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab2EaI4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 04:56:16 -0400
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:57191 "EHLO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751350Ab2EaI4O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 04:56:14 -0400
-Date: Thu, 31 May 2012 11:54:33 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Felipe Balbi <balbi@ti.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531085432.GK5377@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
- <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
- <20120531081841.GG5377@arwen.pp.htv.fi>
- <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
+	id S1752817Ab2EaI7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 04:59:08 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:46873 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372Ab2EaI7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 04:59:05 -0400
+Message-ID: <4FC73252.1000106@parallels.com>
+Date: Thu, 31 May 2012 12:56:50 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PpocKf6TCvdC9BKE"
-Content-Disposition: inline
-In-Reply-To: <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <hannes@cmpxchg.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <cgroups@vger.kernel.org>, <linux-mm@kvack.org>,
+        <containers@lists.linux-foundation.org>
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com> <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com> <4FC70355.70805@jp.fujitsu.com> <alpine.DEB.2.00.1205302314190.25774@chino.kir.corp.google.com> <4FC70E5E.1010003@gmail.com> <alpine.DEB.2.00.1205302325500.25774@chino.kir.corp.google.com> <4FC711A5.4090003@gmail.com> <alpine.DEB.2.00.1205302351510.25774@chino.kir.corp.google.com> <CAHGf_=qVDVT6VW2j9gE3bQKwizW24iivrDryiCKoxVu4m_fWKw@mail.gmail.com> <alpine.DEB.2.00.1205310028420.8864@chino.kir.corp.google.com> <4FC720EE.3010307@gmail.com> <4FC724B1.70508@cn.fujitsu.com> <4FC72CA4.6080708@parallels.com> <4FC73203.2070009@cn.fujitsu.com>
+In-Reply-To: <4FC73203.2070009@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PpocKf6TCvdC9BKE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>>
+>>
+>> One think to keep in mind: A file in memcg does not need to follow the same format of /proc/meminfo so we can bind mount. We should be able to reconstruct that in userspace based on information
+>> available from the kernel. You can even collect that from multiple locations, and *then* you bind mount.
+>>
+>> It helps to keep the churn out of the kernel, and in case of meminfo, you might need no extra kernel patches at all. And in the case of other files like /proc/stat, the relevant information comes from
+>> more than one cgroup anyway, so there is not too much way around it.
+>
+> I got it,thank you very much,indeed we need no extra kernel patch at all.
+> Maybe we should do this work in lxc or libvirt.
+>
+> thanks Glauber!
+>
 
-Hi,
+lxc has a fuse overlay for /proc already. I can't tell you about the 
+state of that, because I haven't looked at it in details yet. I need to 
+do something a lot similar for /proc/stat, but that is currently down in 
+my prio queue.
 
-On Thu, May 31, 2012 at 11:31:31AM +0300, Peter De Schrijver wrote:
-> On Thu, May 31, 2012 at 10:18:42AM +0200, Felipe Balbi wrote:
-> > * PGP Signed by an unknown key
-> >=20
-> > On Thu, May 31, 2012 at 10:51:25AM +0300, Peter De Schrijver wrote:
-> > > On Wed, May 30, 2012 at 10:52:31AM +0200, Stephen Boyd wrote:
-> > > > On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
-> > > > > Add an extension API for clocks. This allows clocktypes to provid=
-e extensions
-> > > > > for features which are uncommon and cannot be easily mapped onto =
-normal clock
-> > > > > framework concecpts. eg: resetting blocks, configuring clock phas=
-e etc.
-> > > >=20
-> > > > This seems rather generic. Why not add more specific APIs/concepts =
-like
-> > > > clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we sho=
-uld
-> > > > make them map.
-> > > >=20
-> > >=20
-> > > Some of those might be very SoC specific. Eg OMAP doesn't need softwa=
-re
-> > > controlled modulereset. I don't think we should add a new function to=
- the
-> >=20
-> > it depends on what you call modulereset. We have soft-reset logic hidden
-> > under the hood, it's done before device creation, so drivers (most of
-> > them) assume we're probe with the IP in reset state.
-> >=20
-> > What I wonder most is if this should be done at the clock level or at
-> > the device level. In the end you reset the IP block, not the clock,
-> > right ?
->=20
-> Yes. but, every block has at least 1 clock and thus the mapping is identi=
-cal
-> down to the register level. Ie. we could do this outside the clockframewo=
-rk,
+But it seems to be the way to go. My only concern is whether or not it 
+is usable outside of lxc. Other Container solutions like OpenVZ would
+benefit from this a lot.
 
-What if a module needs two clocks and you drive the reset on both of the
-clocks ? What would happen ?
-
-> but then we would have the keep a list of IDs (1 per module) which the dr=
-ivers
-> can use to call some tegra reset function which would in the end use regi=
-sters
-> in the same memory area to cause a reset. (the registers controlling
-> modulereset are interleaved with those controlling the enable/disable of =
-the
-> main moduleclock and bitpositions are identical)
-
-Well, under a generic device-level API, you could just call an internal
-clk_reset() function because you know which clocks feed into which
-devices anyway. It could look something like:
-
-on Tegra:
-
-device_reset(dev)
-	-> dev_pm_domain->reset()
-		-> tegra_periph_reset()
-
-on OMAP:
-
-device_reset(dev)
-	-> dev_pm_domain->reset()
-		-> omap_hwmod_reset()
-
-
-btw:
-
-tegra_periph_reset(....)
-{
-	tegra_periph_reset_assert(...);
-	udelay(2);
-	tegra_periph_reset_deassert(...);
-}
-
---=20
-balbi
-
---PpocKf6TCvdC9BKE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPxzHIAAoJEIaOsuA1yqREplUP/1GZ6p4XwNw+5AFHKvcQKj7K
-CzdyKfcMZxq7k5yPRrGsieFYRjJRbsZfTaFJ4l/SQTmIg062NUfAgwAZtc143vcS
-kphF4YhtQaCyUmvCJ/qi5goDzpoSO5K4wrJ+2L6X6oxpPq43I1whCqI9fbYq/ycp
-0LqOzEv0gr/UdwTM4w8PtBm52//O7HG0yBwWa8A/ZXHI8Y5lx+GX6NI17jwyae0X
-POwik1HwZVcobdkHpmEWEnowdJz7YOiVaMaFr2sNkTzGWTTEPBEVHohfMGSiY5zb
-ARBCdlF2CS8BRQ/b7cNbsEt9Lqok9m/8P3O0DqT+QjMMGDo4toKzaNRTsT9kbTJ6
-X3mtd+EyTtsI5b6m18tzUhpeHvnOc1V7+C3KXnk8+R2A2esx2pdfyZbRCvknhnnE
-q+SV25k0q0F1ltKBVdC58IfOzLyCIGV3aOIcw1gCtXhtHgOoS8Gr5rpn0b+oiLQU
-VC2Rrz0XzQI3wsNgstw/qQzMPsaZxmEwCqRglIdhnD04HrsU2fsRA+nbgpUDInMX
-On3itHk61skD3hcUDwVnHe31rg/OdbPgyldfr4+G6rs506SHZr2e2LuW1JEsTD5h
-7azLo/+9rcWIk1EguNJZ8PEVd6dROPIT98jq+EuhY86Co3eaU934Z47yNHZeDVie
-d5ZVLooPrRfzttyuJWui
-=/j9N
------END PGP SIGNATURE-----
-
---PpocKf6TCvdC9BKE--
