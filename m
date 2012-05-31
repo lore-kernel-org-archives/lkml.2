@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab2EaDYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 23:24:43 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:43987 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab2EaDYm (ORCPT
+	id S1755870Ab2EaD34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 23:29:56 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6557 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab2EaD3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 23:24:42 -0400
-Date: Thu, 31 May 2012 13:24:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: fate of the fsnotify tree
-Message-Id: <20120531132437.da79f116728d2aa3ba72dadf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_13_24_37_+1000_SAW8bae8tIL31=RZ"
+	Wed, 30 May 2012 23:29:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6727"; a="193908087"
+Message-ID: <4FC6E5B2.2010700@codeaurora.org>
+Date: Wed, 30 May 2012 20:29:54 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@ti.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] clk: add extension API
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com> <4FC5DFCF.1020606@codeaurora.org> <20120530194059.GA13243@gmail.com>
+In-Reply-To: <20120530194059.GA13243@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_13_24_37_+1000_SAW8bae8tIL31=RZ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/30/2012 12:40 PM, Mike Turquette wrote:
+> On 20120530-01:52, Stephen Boyd wrote:
+>> On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
+>>> Add an extension API for clocks. This allows clocktypes to provide extensions
+>>> for features which are uncommon and cannot be easily mapped onto normal clock
+>>> framework concecpts. eg: resetting blocks, configuring clock phase etc.
+>>
+>> This seems rather generic. Why not add more specific APIs/concepts like
+>> clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
+>> make them map.
+>>
+>
+> I also wonder if exposing some of these knobs should be done in the
+> basic clock types.  Meaning that instead of having additional calls in
+> the clk.h API those calls could be exposed by the basic clock types that
+> map to the actions.
+>
+> The question that needs to be answered is this: do generic drivers need
+> access to these additional functions (clk.h) or just the platform code
+> which implements some of the clock logic (basic clock types&
+> platform-speciic clock types).
 
-Hi Eric,
+One of the main reason for the common clock framework is so that each 
+platform doesn't have it's own extension and have mostly similar code 
+repeat all over the place. So, having clock APIs outside of clk.h 
+doesn't make sense when we look at the direction we want the code base 
+to proceed in.
 
-Just wondering if the fsnotify tree stuff is going upstream this time.
-The most recent commit to that tree is dated March 27.
+-Saravana
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__31_May_2012_13_24_37_+1000_SAW8bae8tIL31=RZ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPxuR1AAoJEECxmPOUX5FEGz4P/j+JICYF7ZQDq1bsYK7e2jQT
-oNuAavrwKsi4GaDjy6g+u+ChVYWQaO28F7ENDqH4Vb0eqDxQeGdoiyhpcQ6+cDiU
-RvrI1qxBLNzVcPjJK/lC6iPS15E4do6TB8t6MXQDzNxN7RRR75YZ4Uac5dvBfPoF
-mTFEMssp5GuBw9bvs6olzz6zjbETZzmuIgso0LpvKFUqiQvr8XWttVByhm8sxby9
-JEhvEBgXP7OPMTxKnUz0SLxO5Yu6j9u8ubCQDSuUZAWH4dM0JqfKKbXihz87qcyH
-G9ebU34+qWgSNXFrV/1MhN56aefTvzo4ktngRPsVqaRFfkK+UBV3Wg7slTW0scIy
-QKDXW2BNuapuphllpHuNPR6yOLm5D6wMlx2A0fXz6W80s3AV9S3RbBD+xU++MEEN
-h65b5UfRS9qsT8Yg4Sn2mYDi5Pd3BVTnHlKtD+2DuqU+65sC+OqmZISkF7CfuSo7
-oqoZ9BD9xBL96Jun718c8fpNBMpCBJp62hnp9QE653tgA4MbHE4qzFEsfsyLTdY/
-Km8NyZCFSVEWkGDjIaAic0MtwVRGNCtm0QgR1fA3SEv8hJG/ue/DbTdIyo3nbWia
-J9OHo1HhUJ41V5UpQgFqiC+NizL0vOTaafuGLeI787QlFGpSpW4MEz/QQthMZbmJ
-P6gq48+HUkG79vJ70jD1
-=hArf
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_13_24_37_+1000_SAW8bae8tIL31=RZ--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
