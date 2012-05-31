@@ -1,131 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab2EaNx1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:53:27 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42565 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409Ab2EaNx0 (ORCPT
+	id S932418Ab2EaN5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:57:49 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64348 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932378Ab2EaN5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:53:26 -0400
-Date: Thu, 31 May 2012 15:53:53 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] initcall sequence adjust for 3 funcs
-Message-ID: <20120531135353.GD14515@aftab.osrc.amd.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE95@SHSMSX101.ccr.corp.intel.com>
+	Thu, 31 May 2012 09:57:48 -0400
+From: Florian Fainelli <florian@openwrt.org>
+To: Rogier Wolff <R.E.Wolff@bitwizard.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: BCM36xx support.
+Date: Thu, 31 May 2012 15:55:34 +0200
+Message-ID: <7383662.i0oNtC19fQ@flexo>
+User-Agent: KMail/4.8.2 (Linux/3.2.0-24-generic; KDE/4.8.2; x86_64; ; )
+In-Reply-To: <20120418055139.GA25952@bitwizard.nl>
+References: <20120418055139.GA25952@bitwizard.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FEE95@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just minor nitpicks below:
+Hi Rogier,
 
-On Thu, May 31, 2012 at 12:59:05PM +0000, Liu, Jinsong wrote:
-> From eb5ff1bef5dd3116fa2624b594b853e9334ccbce Mon Sep 17 00:00:00 2001
-> From: root <root@ljsromley.bj.intel.com>
-> Date: Fri, 1 Jun 2012 03:56:25 +0800
-> Subject: [PATCH 2/2] initcall sequence adjust for 3 funcs
+First of all, you should have CC'd linux-mips, because that's where BCM63xx 
+development happens.
 
-Change subject line to
-
-Subject: [PATCH 2/2] x86, MCE, AMD: Adjust initcall sequence for xen
-
-> there are 3 funcs need to be _initcalled in a logic sequence:
-> 1. xen_late_init_mcelog
-> 2. mcheck_init_device
-> 3. threshold_init_device
+On Wednesday 18 April 2012 07:51:40 Rogier Wolff wrote:
 > 
-> xen_late_init_mcelog need register xen_mce_chrdev_device before
-> native mce_chrdev_device registeration if running under xen platform;
+> While working on SPI and I2C support for the BCM2835, I found the
+> BCM63xx SPI driver in the kernel. Turns out that this support
+> was partially merged: 
 > 
-> mcheck_init_device should be inited before threshold_init_device to
-> initialize mce_device, otherwise a NULL pointer would occur and panic.
+> The support can only be enabled when BCM63xx configuration symbol
+> is defined which menuconfig lists as: 
 > 
-> so we use following _initcalls
-> 1. device_initcall(xen_late_init_mcelog);
-> 2. device_initcall_sync(mcheck_init_device);
-> 3. late_initcall(threshold_init_device);
+>  Symbol: BCM63XX [=BCM63XX]                                                
+>    Type  : unknown                                                           
 > 
-> when running under xen platform, 1,2,3 would take effect;
-> when running under baremetal, 2,3 would take effect;
+> I'd say the definition of this is not possible through the normal
+> channels.
 > 
-> Reported-by: Borislav Petkov <bp@amd64.org>
-> Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce_amd.c |   22 +++++++++++++++++++++-
->  1 files changed, 21 insertions(+), 1 deletions(-)
+> And in the driver (drivers/spi/spi-bcm63xx.c) I see: 
 > 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> index f4873a6..6647858 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
-> @@ -777,4 +777,24 @@ static __init int threshold_init_device(void)
->  
->  	return 0;
->  }
-> -device_initcall(threshold_init_device);
-> +/*
-> + * there are 3 funcs need to be _initcalled in a logic sequence:
+> #include <bcm63xx_dev_spi.h>
+> 
+> but that file is not in the current git release.
 
-			which need...
+No, it did not make it for a reason I ignore, probably miscommunication.
 
-> + * 1. xen_late_init_mcelog
-> + * 2. mcheck_init_device
-> + * 3. threshold_init_device
-> + *
-> + * xen_late_init_mcelog need register xen_mce_chrdev_device before
+> 
+> (some more googling has resulted in me finding out that I don't want
+> to know how the 63xx SPI controller works as it's for a MIPS processor
+> while the 2835 is ARM).
 
-			  s/need/must/
+And so? if the core is the same, just use it on your platform too. If you have 
+a look at the architecture files, you will see that the various BCM63xx SoC 
+have their internal registers shuffled but the SPI core is always software 
+compatible, another set of registers can be added for BCM2835.
 
-> + * native mce_chrdev_device registeration if running under xen platform;
-
-				registration
-
-> + *
-> + * mcheck_init_device should be inited before threshold_init_device to
-> + * initialize mce_device, otherwise a NULL pointer would occur and panic.
-
-					a NULL ptr dereference will cause panic.
-
-> + *
-> + * so we use following _initcalls
-> + * 1. device_initcall(xen_late_init_mcelog);
-> + * 2. device_initcall_sync(mcheck_init_device);
-> + * 3. late_initcall(threshold_init_device);
-> + *
-> + * when running under xen platform, 1,2,3 would take effect;
-> + * when running under baremetal, 2,3 would take effect;
-
-change both lines above to say:
-
-"when running under xen, the initcall order is 1,2,3;
-on baremetal, we skip 1 and we do only 2 and 3."
-
-The rest looks ok and it tests fine here.
-
-Once you've changed the minor stuff above, you can slap my
-
-Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
-
-@Tony: if you have any objections, please scream now! :-)
-
-Thanks Jinsong!
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+I have no objection making such a driver more generic and not limited to 
+bcm63xx like it is right now.
+--
+Florian
