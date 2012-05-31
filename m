@@ -1,65 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758327Ab2EaSkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:40:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab2EaSkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:40:31 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>, Asai Thambi S P <asamymuthupa@micron.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 05/11] mtip32xx: Set block queue boundary variables
-References: <4FC57B1B.5010901@micron.com> <4FC7130B.6040506@kernel.dk>
-	<4FC794BD.1000309@micron.com>
-	<x49sjegb7h4.fsf@segfault.boston.devel.redhat.com>
-	<4FC7B491.9030105@micron.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 31 May 2012 14:40:22 -0400
-In-Reply-To: <4FC7B491.9030105@micron.com> (Asai Thambi S. P.'s message of
-	"Thu, 31 May 2012 11:12:33 -0700")
-Message-ID: <x49hauwb3e1.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758347Ab2EaSmi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:42:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31191 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab2EaSmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:42:36 -0400
+X-Authority-Analysis: v=2.0 cv=PqgRnnw3 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=nA43mK65oyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=Zk8jxFJ6mR73uJTIrkUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338489754.13348.371.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 14:42:34 -0400
+In-Reply-To: <1338485338.28384.85.camel@twins>
+References: <20120531012829.160060586@goodmis.org>
+	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
+	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
+	 <1338485338.28384.85.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> @@ -3631,7 +3631,11 @@ skip_create_disk:
->>>>>  	set_bit(QUEUE_FLAG_NONROT, &dd->queue->queue_flags);
->>>>>  	blk_queue_max_segments(dd->queue, MTIP_MAX_SG);
->>>>>  	blk_queue_physical_block_size(dd->queue, 4096);
->>>>> +	blk_queue_max_hw_sectors(dd->queue, 0xffff);
->>>>> +	blk_queue_max_segment_size(dd->queue, 0x400000);
->>>>>  	blk_queue_io_min(dd->queue, 4096);
->>>>> +	dd->queue->nr_requests = 255;
->>>>
->>>> ->nr_requests isn't a boundary variable you set for the queue. It's set
->>>> by the core bits, or by the user via the sysfs interface.
->>>>
->>>> So you should not touch that from the driver.
->>>>
->>>
->>> Ok.
->>>
->>> I saw scsi lib module changing it, so thought of changing the value close to
->>> device queue depth.
->> 
->> That's actually a fair point.  What is the device queue depth for this
->> card?
->> 
-> 256
+On Thu, 2012-05-31 at 19:28 +0200, Peter Zijlstra wrote:
 
-Jens, I actually think changing nr_requests makes sense;  the only
-question in my mind is where to do it.  (There's no point in artificially
-limiting the device by default.)  IIRC, your general rule was to set this
-value to 2x the device's queue depth.  So, given that this driver
-doesn't use the blk-tag interfaces, what do you think would be the
-cleanest way to bump nr_requests in this (and the more general) case?
+> I don't know, nor did you explain the implicit ordering there. Also in
+> such diagrams you need the other side as well.
 
-Cheers,
-Jeff
+Right, I forgot to add that.
+
+> 
+> > If another breakpoint is hit (one other than one put in by ftrace) then
+> > we don't care. It wont crash the system whether or not A is 1 or 0. We
+> > just need to make sure that a ftrace breakpoint that is hit knows that
+> > it was a ftrace breakpoint (calls the ftrace handler). No other
+> > breakpoint should be on a ftrace nop anyway.
+> 
+> So the ordering is like:
+> 
+> ---
+> 
+>  CPU-0				CPU-1
+> 
+> 
+>  lock inc mod-count /* implicit (w)mb */
+>  write int3
+> 				<trap-int3> /* implicit (r)mb */
+> 				load mod-count
+> 
+>  sync-ipi-broadcast
+>  write rest-of-instruction
+>  sync-ipi-broadcast
+>  write head-of-instruction
+>  sync-ipi-broadcast
+>  lock dec mod-count /* implicit (w)mb */
+> 
+> 
+> Such that when we observe the int3 on CPU-1 we also must see the
+> increment on mod-count.
+> 
+> ---
+> 
+> A simple something like the above makes it very clear what we're doing
+> and what we're expecting.
+
+You are obviously better at drawing such diagrams than I am. Which also
+explains why I needed to do the lockdep annotations to understand them
+better. Because I don't have your ability to visualize it in such a nice
+simple diagram. My vision is more of a bayesian tree than an oak. I
+guess that explains why I like complex code so much :-)
+
+
+>  I think a (local) trap should imply a barrier
+> of sorts but will have to defer to others (hpa?) to confirm.
+
+I would think it does, but lets have hpa or others confirm.
+
+
+>  But at the
+> very least write it down someplace that you are assuming that.
+
+I'll cut and paste this into the comments.
+
+> 
+> 
+> 
+> fwiw run_sync() could do with a much bigger comment on why its sane to
+> enable interrupts.. That simply reeks, enabling interrupts too early can
+> wreck stuff properly.
+
+Hmm, actually, I think these patches avoid the need for run_sync() at
+boot up now anyway. Thus it shouldn't need to enable interrupts.
+
+The ftrace.c code was what disabled interrupts on start up (and
+re-enables them) before calling into this, this is because the old way
+needed interrupts disabled, and other archs still use the old way. But,
+your point stands, it should be commented better.
+
+-- Steve
+
+
+
+
