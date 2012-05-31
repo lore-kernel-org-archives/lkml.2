@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812Ab2EaUBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:01:42 -0400
-Received: from fieldses.org ([174.143.236.118]:37672 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757879Ab2EaUBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:01:39 -0400
-Date: Thu, 31 May 2012 16:01:38 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: nfsd changes for 3.5
-Message-ID: <20120531200138.GD25955@fieldses.org>
-References: <20120531182457.GB25955@fieldses.org>
- <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S964818Ab2EaUDN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:03:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33087 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933251Ab2EaUDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 16:03:12 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Constify regmap_irq_chip
+Date: Thu, 31 May 2012 21:03:09 +0100
+Message-Id: <1338494589-8830-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 11:58:34AM -0700, Linus Torvalds wrote:
-> On Thu, May 31, 2012 at 11:24 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> >
-> > Sorry this is a bit late.  In fact I still have a review backlog (at a
-> > minimum some bugfixes), so will send a second pull later.
-> 
-> Quite frankly, I'm not going to pull this without lots of explanations.
-> 
-> The VFS-level changes have no acks or sign-offs from anybody else,
+We should never be modifying it and it lets drivers declare it const.
 
-Sorry, yes, at best I had a verbal OK from Al (and maybe I'm wrong about
-that).  I got impatient.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-irq.c |    6 +++---
+ include/linux/regmap.h           |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-> and quite frankly, if I understand them correctly they look f*cking
-> disgusting. If I read them right, they break delegations of a file
-> (which can involve long waits for clients - no?)
+diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
+index 4fac4b9..c190229 100644
+--- a/drivers/base/regmap/regmap-irq.c
++++ b/drivers/base/regmap/regmap-irq.c
+@@ -24,7 +24,7 @@ struct regmap_irq_chip_data {
+ 	struct mutex lock;
+ 
+ 	struct regmap *map;
+-	struct regmap_irq_chip *chip;
++	const struct regmap_irq_chip *chip;
+ 
+ 	int irq_base;
+ 	struct irq_domain *domain;
+@@ -103,7 +103,7 @@ static struct irq_chip regmap_irq_chip = {
+ static irqreturn_t regmap_irq_thread(int irq, void *d)
+ {
+ 	struct regmap_irq_chip_data *data = d;
+-	struct regmap_irq_chip *chip = data->chip;
++	const struct regmap_irq_chip *chip = data->chip;
+ 	struct regmap *map = data->map;
+ 	int ret, i;
+ 	bool handled = false;
+@@ -195,7 +195,7 @@ static struct irq_domain_ops regmap_domain_ops = {
+  * register values used by the IRQ controller over suspend and resume.
+  */
+ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+-			int irq_base, struct regmap_irq_chip *chip,
++			int irq_base, const struct regmap_irq_chip *chip,
+ 			struct regmap_irq_chip_data **data)
+ {
+ 	struct regmap_irq_chip_data *d;
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 56af22e..390a5ed 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -243,7 +243,7 @@ struct regmap_irq_chip {
+ struct regmap_irq_chip_data;
+ 
+ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
+-			int irq_base, struct regmap_irq_chip *chip,
++			int irq_base, const struct regmap_irq_chip *chip,
+ 			struct regmap_irq_chip_data **data);
+ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *data);
+ int regmap_irq_chip_get_base(struct regmap_irq_chip_data *data);
+-- 
+1.7.10
 
-Right.  By default it's 90 seconds before we'll give up on the client.
-
-> while holding on to
-> the directory inode lock (both directories for cross-inode renames).
-> Which seems to be a singularly idiotic thing to do and sounds to me
-> like a fundamental design mistake.
-
-I hate that too, and originally tried to avoid it with something like:
-
-	retry:
-		acquire locks
-		lookup inode
-		ret = try_to_break_deleg(inode);
-		if (ret)
-			drop locks
-			really_break_deleg(inode);
-			goto retry;
-		... do the real work ...
-		drop locks
-
-I felt like I was making already complicated code logic like rename's
-even harder to follow.
-
-And those operations don't really know the inode till they acquire the
-locks, so in pathological cases that could continue forever.
-
-...
-> So quite frankly, this *all* looks like 3.6 material to me, and that's
-> assuming you can convince people that file-delegation breaking really
-> should happen with all lookups on the directory the file is in blocked
-> by the directory inode mutex in the first place. Or tell me I'm a
-> moron and I misread the patches and don't know what I'm talking about.
-
-No, I think you understand correctly.
-
-The presence of a delegation requires blocking certain operations until
-a client somewhere responds (or we time out).
-
-So the question as I understand it is whether there's a way to lessen
-the impact by blocking only what we really need to.
-
-I don't know if there's a way to do that without reworking the vfs
-directory locking to be much more fine-grained.
-
---b.
