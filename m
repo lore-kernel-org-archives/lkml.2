@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab2EaNBO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:01:14 -0400
-Received: from mga14.intel.com ([143.182.124.37]:3806 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757119Ab2EaNBK convert rfc822-to-8bit (ORCPT
+	id S932346Ab2EaNFD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:05:03 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44763 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194Ab2EaNFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:01:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="149924987"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Borislav Petkov <bp@amd64.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>
-Subject: RE: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
-Thread-Topic: [PATCH 1/3] xen/mce: Add mcelog support for Xen platform (RFC)
-Thread-Index: AQHNPy1r2PYyBpFJIkSi2OAovIP0Yg==
-Date: Thu, 31 May 2012 13:00:58 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FEEAF@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351ED712@SHSMSX101.ccr.corp.intel.com>
- <20120524184947.GA28338@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0C4E@SHSMSX101.ccr.corp.intel.com>
- <20120525180102.GA27280@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351F0D53@SHSMSX101.ccr.corp.intel.com>
- <DE8DF0795D48FD4CA783C40EC82923351F44F3@SHSMSX101.ccr.corp.intel.com>
- <20120529133858.GD29157@aftab.osrc.amd.com>
- <DE8DF0795D48FD4CA783C40EC82923351FC452@SHSMSX101.ccr.corp.intel.com>
- <20120530150827.GA12109@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351FC523@SHSMSX101.ccr.corp.intel.com>
- <20120530152948.GD4771@aftab.osrc.amd.com>
-In-Reply-To: <20120530152948.GD4771@aftab.osrc.amd.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 May 2012 09:05:01 -0400
+Date: Thu, 31 May 2012 14:04:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@ti.com>
+Subject: Re: [RFC PATCH] clk: add extension API
+Message-ID: <20120531130456.GB15786@sirena.org.uk>
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
+ <4FC5DFCF.1020606@codeaurora.org>
+ <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
+ <20120531081841.GG5377@arwen.pp.htv.fi>
+ <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
+ <20120531085432.GK5377@arwen.pp.htv.fi>
+ <20120531090518.GR8026@tbergstrom-lnx.Nvidia.com>
+ <4FC768F8.4050406@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC768F8.4050406@ti.com>
+X-Cookie: Here there be tygers.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov wrote:
-> On Wed, May 30, 2012 at 03:20:03PM +0000, Liu, Jinsong wrote:
->>>> IMO currently there are 2 options:
->>>> 1). use the original approach (implicitly redirect /dev/mcelog to
->>>> xen_mce_chrdev_device) --> what point of this approach do you think
->>>> unreasonable? It just remove a 'static' from native mce code! 2).
->>>> use another /dev/xen-mcelog interface, with another misc minor
->>>> '226' 
->>> 
->>> The 2) is no good.
->>> 
->>> 3) What about moving the corresponding other users (so
->>> threshold_init_device), to be at late_initcall and the mce to be at
->>> late_initcall_sync
->> 
->> I can try, but only if Boris would not jump out.
->> and it can only be tested by Boris at AMD platform :(
-> 
-> Sure, I'll test it.
-> 
+On Thu, May 31, 2012 at 02:50:00PM +0200, Cousson, Benoit wrote:
 
-Boris,
+> Now the question is should we extend the Linux device structure to
+> handle such HW IP, or should we extend the clock definition to
+> handle this kind of extended clock node.
 
-I have update patches, and they have been tested under baremetal (Intel platform) and xen platform.
-So you can test it at AMD platform, and thanks ahead!
+> It looks to me that this kind of function does belong to the device
+> more than to the clock node.
 
-Regards,
-Jinsong
+This is looking a lot like what power domains do to me...
