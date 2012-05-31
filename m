@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964824Ab2EaUJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:09:22 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:39655 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933243Ab2EaUJU (ORCPT
+	id S964846Ab2EaUKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:10:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24317 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964827Ab2EaUKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:09:20 -0400
-Message-ID: <4FC7CFEB.5040009@gmail.com>
-Date: Thu, 31 May 2012 16:09:15 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: hughd@google.com, npiggin@gmail.com, cl@linux.com, lee.schermerhorn@hp.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org, riel@redhat.com,
-        kosaki.motohiro@gmail.com
-Subject: Re: [PATCH v2] tmpfs not interleaving properly
-References: <20120531143916.GA16162@gulag1.americas.sgi.com>
-In-Reply-To: <20120531143916.GA16162@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 31 May 2012 16:10:08 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=nA43mK65oyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=7S2y3cM3T-zfQrycXc4A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338495006.13348.418.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 16:10:06 -0400
+In-Reply-To: <20120531195529.GA22976@Krystal>
+References: <20120531012829.160060586@goodmis.org>
+	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
+	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
+	 <1338486029.28384.93.camel@twins>
+	 <1338486820.13348.366.camel@gandalf.stny.rr.com>
+	 <1338487413.28384.103.camel@twins>
+	 <1338490218.13348.379.camel@gandalf.stny.rr.com>
+	 <1338491176.28384.114.camel@twins> <20120531195529.GA22976@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/31/12 10:39 AM), Nathan Zimmer wrote:
-> When tmpfs has the memory policy interleaved it always starts allocating at each
-> file at node 0.  When there are many small files the lower nodes fill up
-> disproportionately.
-> This patch attempts to spread out node usage by starting files at nodes other
-> then 0.  I disturbed the addr parameter since alloc_pages_vma will only use it
-> when the policy is MPOL_INTERLEAVE.  Random was picked over using another
-> variable which would require some sort of contention management.
->
-> Cc: Christoph Lameter<cl@linux.com>
-> Cc: Nick Piggin<npiggin@gmail.com>
-> Cc: Hugh Dickins<hughd@google.com>
-> Cc: Lee Schermerhorn<lee.schermerhorn@hp.com>
-> Acked-by: Rik van Riel<riel@redhat.com>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Nathan T Zimmer<nzimmer@sgi.com>
-> ---
->   include/linux/shmem_fs.h |    1 +
->   mm/shmem.c               |    3 ++-
->   2 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-> index bef2cf0..cfe8a34 100644
-> --- a/include/linux/shmem_fs.h
-> +++ b/include/linux/shmem_fs.h
-> @@ -17,6 +17,7 @@ struct shmem_inode_info {
->   		char		*symlink;	/* unswappable short symlink */
->   	};
->   	struct shared_policy	policy;		/* NUMA memory alloc policy */
-> +	unsigned long           node_offset;	/* bias for interleaved nodes */
->   	struct list_head	swaplist;	/* chain of maybes on swap */
->   	struct list_head	xattr_list;	/* list of shmem_xattr */
->   	struct inode		vfs_inode;
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index d576b84..69a47fb 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -929,7 +929,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->   	/*
->   	 * alloc_page_vma() will drop the shared policy reference
->   	 */
-> -	return alloc_page_vma(gfp,&pvma, 0);
-> +	return alloc_page_vma(gfp,&pvma, info->node_offset<<  PAGE_SHIFT );
+On Thu, 2012-05-31 at 15:55 -0400, Mathieu Desnoyers wrote:
 
-3rd argument of alloc_page_vma() is an address. This is type error.
+> > Also, why did Mathieu insist on keeping that kmap()?
+> 
+> Not sure about the entire context here, but the goal of using kmap() is
+> to allow modification of text in configurations where the kernel text
+> is read-only: the kmap does a temporary shadow RW mapping that allows
+> modification of the text. Presumably that Ftrace's 30k changes are done
+> before the kernel text mapping is set to read-only ? If this is the
+> case, then it is similar to text_poke_early, which don't use the kmap
+> since it happens before kernel text gets write-protected. But text_poke
+> has to deal with RO pages.
+
+No this is also when ftrace is enabled at runtime. The trick that ftrace
+does is to temporarially  convert the kernel text from ro to rw, and
+then back to ro when done. You can argue that this degrades the security
+of the system, but tracing every function in the kernel does too ;-)
+That's why it's a root only utility.
+
+Hmm, this brings up another question. By default, perf does not allow
+users to profile trace_events correct? IOW, perf does not let
+unprivileged users call text_poke()? I just tried it and got the:
+
+$ ~/bin/perf record -e sched:sched_switch sleep 1
+Permission error - are you root?
+Consider tweaking /proc/sys/kernel/perf_event_paranoid:
+ -1 - Not paranoid at all
+  0 - Disallow raw tracepoint access for unpriv
+  1 - Disallow cpu events for unpriv
+  2 - Disallow kernel profiling for unpriv
 
 
+> 
+> Hopefully my answer makes sense in the context of your discussion.
 
->   }
->   #else /* !CONFIG_NUMA */
->   #ifdef CONFIG_TMPFS
-> @@ -1357,6 +1357,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
->   			inode->i_fop =&shmem_file_operations;
->   			mpol_shared_policy_init(&info->policy,
->   						 shmem_get_sbmpol(sbinfo));
-> +			info->node_offset = node_random(&node_online_map);
->   			break;
->   		case S_IFDIR:
->   			inc_nlink(inode);
+Almost,
+
+-- Steve
 
