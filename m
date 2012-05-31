@@ -1,80 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636Ab2EaEZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 00:25:01 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:52077 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab2EaEY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 00:24:59 -0400
-Date: Thu, 31 May 2012 14:24:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, Hugh Dickins <hughd@google.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20120531142451.6bdcda603c98d9ad8c4f3bbd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_14_24_51_+1000_j.YG4xizB5.yEfum"
+	id S1751684Ab2EaEeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 00:34:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21687 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750757Ab2EaEeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 00:34:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="146475565"
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>, penberg@kernel.org, cl@linux.com
+Subject: [PATCH] slab/mempolicy: always use local policy from interrupt context v3
+Date: Wed, 30 May 2012 21:34:04 -0700
+Message-Id: <1338438844-5022-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_14_24_51_+1000_j.YG4xizB5.yEfum
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Andi Kleen <ak@linux.intel.com>
 
-Hi Andrew,
+slab_node() could access current->mempolicy from interrupt context.
+However there's a race condition during exit where the mempolicy
+is first freed and then the pointer zeroed.
 
-Today's linux-next merge of the akpm tree got a conflict in mm/swap.c
-between commit fa9add641b1b ("mm/memcg: apply add/del_page to lruvec")
-from Linus' tree and commit "mm/huge_memory.c: use lockdep_assert_held()"
-from the akpm tree.
+Using this from interrupts seems bogus anyways. The interrupt
+will interrupt a random process and therefore get a random
+mempolicy. Many times, this will be idle's, which noone can change.
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Just disable this here and always use local for slab
+from interrupts. I also cleaned up the callers of slab_node a bit
+which always passed the same argument.
 
-diff --cc mm/swap.c
-index 4e7e2ec,8ff73d8..0000000
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@@ -685,8 -653,7 +685,7 @@@ void lru_add_page_tail(struct page *pag
-  	VM_BUG_ON(!PageHead(page));
-  	VM_BUG_ON(PageCompound(page_tail));
-  	VM_BUG_ON(PageLRU(page_tail));
-- 	VM_BUG_ON(NR_CPUS !=3D 1 &&
-- 		  !spin_is_locked(&lruvec_zone(lruvec)->lru_lock));
- -	lockdep_assert_held(&zone->lru_lock);
-++	lockdep_assert_held(&lruvec_zone(lruvec)->lru_lock);
- =20
-  	SetPageLRU(page_tail);
- =20
+I believe the original mempolicy code did that in fact,
+so it's likely a regression.
 
---Signature=_Thu__31_May_2012_14_24_51_+1000_j.YG4xizB5.yEfum
-Content-Type: application/pgp-signature
+v2: send version with correct logic
+v3: simplify. fix typo.
+Reported-by: Arun Sharma <asharma@fb.com>
+Cc: penberg@kernel.org
+Cc: cl@linux.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ include/linux/mempolicy.h |    2 +-
+ mm/mempolicy.c            |    6 ++++--
+ mm/slab.c                 |    4 ++--
+ mm/slub.c                 |    2 +-
+ 4 files changed, 8 insertions(+), 6 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index 7c727a9..7106786 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -215,7 +215,7 @@ extern struct zonelist *huge_zonelist(struct vm_area_struct *vma,
+ extern bool init_nodemask_of_mempolicy(nodemask_t *mask);
+ extern bool mempolicy_nodemask_intersects(struct task_struct *tsk,
+ 				const nodemask_t *mask);
+-extern unsigned slab_node(struct mempolicy *policy);
++extern unsigned slab_node(void);
+ 
+ extern enum zone_type policy_zone;
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index cfb6c86..b65eb06 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -1586,9 +1586,11 @@ static unsigned interleave_nodes(struct mempolicy *policy)
+  * task can change it's policy.  The system default policy requires no
+  * such protection.
+  */
+-unsigned slab_node(struct mempolicy *policy)
++unsigned slab_node(void)
+ {
+-	if (!policy || policy->flags & MPOL_F_LOCAL)
++	struct mempolicy *policy = current->mempolicy;
++
++	if (in_interrupt() || !policy || policy->flags & MPOL_F_LOCAL)
+ 		return numa_node_id();
+ 
+ 	switch (policy->mode) {
+diff --git a/mm/slab.c b/mm/slab.c
+index e901a36..af3b405 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3336,7 +3336,7 @@ static void *alternate_node_alloc(struct kmem_cache *cachep, gfp_t flags)
+ 	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
+ 		nid_alloc = cpuset_slab_spread_node();
+ 	else if (current->mempolicy)
+-		nid_alloc = slab_node(current->mempolicy);
++		nid_alloc = slab_node();
+ 	if (nid_alloc != nid_here)
+ 		return ____cache_alloc_node(cachep, flags, nid_alloc);
+ 	return NULL;
+@@ -3368,7 +3368,7 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
+ 
+ retry_cpuset:
+ 	cpuset_mems_cookie = get_mems_allowed();
+-	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++	zonelist = node_zonelist(slab_node(), flags);
+ 
+ retry:
+ 	/*
+diff --git a/mm/slub.c b/mm/slub.c
+index ffe13fd..ef936f3 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1614,7 +1614,7 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags,
+ 
+ 	do {
+ 		cpuset_mems_cookie = get_mems_allowed();
+-		zonelist = node_zonelist(slab_node(current->mempolicy), flags);
++		zonelist = node_zonelist(slab_node(), flags);
+ 		for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+ 			struct kmem_cache_node *n;
+ 
+-- 
+1.7.7.6
 
-iQIcBAEBCAAGBQJPxvKTAAoJEECxmPOUX5FE6A4P/1X9IW0GRR9WHb/wiMv5rSpE
-5IrubaXjNGc9p2v6+hMluYzcxCJC7NV0tlvCIEA7XmvihjjEgrgFUxwTwT6shm3H
-uhbQT9TBP7hH4RJlP0llMjseI2kFpC1xx6D940CODImgq+PKurBVcbbCXXrlT9Xx
-7AcCK7dTyaCqnpwBZWuOhZxQWpyweSYTCtAm7Jf4xmI3Yt/yrfgXAzKMQzFWSVQS
-/0Lg05ts3bQsOawkVMz5E8gyrRZfbZpIhlBFHY9RvuYZ4LE31TVCCUp5lzWdFjyp
-sFiB5HbetNq9ts8mMM96wIQHGnwdYPKjYES+sKvTcP8TUppBVRVI3NeFM3YfrSAo
-AkdpFfzYSjZwhP7+IHVGVnKHACxkbG8LoVTRWwSLSZiz1lf4XUzJaZxAxylf7hzj
-O6lFt9dNc0xKblgD/5WNP5ng30E/T7z8cbA+4aymQDAvuD4cJJjWPjjhPDQa4EyO
-Y5fTKl78Bt1x+WBVJM6VSU9jbYZVs5DEE00Ty9MHl5EVJKtyFuTV8A2GqjxYHKBd
-qUcs7Rk43qo8tOUNEx8GQZmDLqJPlVEyU6vRnEIqFsaFJkHkTYlUpuRrYKcTzKun
-ZHPoOT6+Dh/fIJ5BPCh+lQzODwpyVX8AJrfY+RKIn2hEk3CAJp1YyksQ3R361gk0
-5eKHXMPaLccfSxbLqlWc
-=Ndsb
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_14_24_51_+1000_j.YG4xizB5.yEfum--
