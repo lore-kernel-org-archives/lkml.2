@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab2EaMPM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:15:12 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61559 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab2EaMPL convert rfc822-to-8bit (ORCPT
+	id S1757640Ab2EaMPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:15:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33532 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756500Ab2EaMPf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:15:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+i8gKKQyGBc-BNBJ72S6rq7aiFqS=onqWQyeY4P+VVvFCeXJw@mail.gmail.com>
-References: <CAJd=RBB1s-_VOtoDsBbLidS51HwW6e98p=U-4mL-spByUMvETw@mail.gmail.com>
-	<CA+i8gKKQyGBc-BNBJ72S6rq7aiFqS=onqWQyeY4P+VVvFCeXJw@mail.gmail.com>
-Date: Thu, 31 May 2012 20:15:09 +0800
-Message-ID: <CAJd=RBA=mvMGQgdKgW26dgd8nK2-_dW_epQLwbjOo2Zx2gsbeg@mail.gmail.com>
-Subject: Re: [patch] BFS 420: a tiny step forward
-From: Hillf Danton <dhillf@gmail.com>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 May 2012 08:15:35 -0400
+Message-ID: <1338466518.28384.57.camel@twins>
+Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
+ is_swbp_insn() == T
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 31 May 2012 14:15:18 +0200
+In-Reply-To: <1338400142.28384.12.camel@twins>
+References: <20120530165757.GA8077@redhat.com>
+	 <20120530165816.GA8085@redhat.com> <1338398931.28384.7.camel@twins>
+	 <20120530173717.GM15587@linux.vnet.ibm.com>
+	 <1338400142.28384.12.camel@twins>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 3:12 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
->
-> This is what happens with Greg's 3.3.7 + Con's bfs-420 + your
-> bfs-420-421 patches, any idea?
->
->  CC      kernel/sched/bfs.o
-> kernel/sched/bfs.c: In function 'try_preempt':
-> kernel/sched/bfs.c:1450:2: error: incompatible type for argument 2 of
-> 'cpumask_next_and'
-> include/linux/cpumask.h:192:5: note: expected 'const struct cpumask *'
-> but argument is of type 'cpumask_t'
-> kernel/sched/bfs.c:1450:2: error: incompatible type for argument 3 of
-> 'cpumask_next_and'
-> include/linux/cpumask.h:192:5: note: expected 'const struct cpumask *'
-> but argument is of type 'cpumask_t'
-> kernel/sched/bfs.c:1450:2: warning: left-hand operand of comma
-> expression has no effect
-> make[2]: *** [kernel/sched/bfs.o] Error 1
-> make[1]: *** [kernel/sched] Error 2
-> make: *** [kernel] Error 2
->
+On Wed, 2012-05-30 at 19:49 +0200, Peter Zijlstra wrote:
+> 
+> Oh, indeed. I overlooked copy_insn() is taking the page from the
+> page-cache instead of the page-tables and will thus get the original.
+> 
 
-My bad, lets try the follwoing fix /hd
+Related to this, what happens when we try to install a probe on a page
+that's already been COWed by a ptrace user?
 
-
---- a/kernel/sched/bfs.c	Wed May 30 21:04:10 2012
-+++ b/kernel/sched/bfs.c	Thu May 31 20:05:44 2012
-@@ -1447,7 +1447,7 @@ static void try_preempt(struct task_stru
- 	highest_prio = p->prio;
- 	latest_deadline = p->deadline;
-
--	for_each_cpu_and(cpu, cpu_online_map, p->cpus_allowed) {
-+	for_each_cpu_and(cpu, cpu_online_mask, tsk_cpus_allowed(p)) {
- 		struct rq *rq;
- 		int rq_prio;
-
---
+Say gdb did a code modification at or near the intended probe site.
