@@ -1,341 +1,397 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab2EaJxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:53:13 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63249 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753964Ab2EaJxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:53:11 -0400
-Date: Thu, 31 May 2012 17:53:04 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, thomas.braunstorfinger@rohde-schwarz.com
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-Message-ID: <20120531095304.GA3884@kroah.com>
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
- <20120529231549.GB28736@kroah.com>
- <1338454041.6454.67.camel@wall-e>
+	id S1756281Ab2EaJ50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 05:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751465Ab2EaJ5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 05:57:24 -0400
+Date: Thu, 31 May 2012 12:57:10 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv5 5/5] kvm: host side for eoi optimization
+Message-ID: <20120531095710.GM2311@redhat.com>
+References: <cover.1337695416.git.mst@redhat.com>
+ <f434b6864a1af1f813e6ead964026553cd879c38.1337695416.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338454041.6454.67.camel@wall-e>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <f434b6864a1af1f813e6ead964026553cd879c38.1337695416.git.mst@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 10:47:21AM +0200, Stefani Seibold wrote:
-> Hi Greg,
+On Tue, May 22, 2012 at 05:05:47PM +0300, Michael S. Tsirkin wrote:
+> Implementation of PV EOI using shared memory.
+> This reduces the number of exits an interrupt
+> causes as much as by half.
 > 
-> thanks for review the code.
+> The idea is simple: there's a bit, per APIC, in guest memory,
+> that tells the guest that it does not need EOI.
+> We set it before injecting an interrupt and clear
+> before injecting a nested one. Guest tests it using
+> a test and clear operation - this is necessary
+> so that host can detect interrupt nesting -
+> and if set, it can skip the EOI MSR.
 > 
-> On Wed, 2012-05-30 at 07:15 +0800, Greg KH wrote:
-> > On Tue, May 29, 2012 at 09:14:18PM +0200, stefani@seibold.net wrote:
-> > > From: Stefani Seibold <stefani@seibold.net>
-> > > 
-> > > This driver supports all of the Rohde&Schwarz RF Power Meter NRP Sensors. These
-> > > sensors are intelligent standalone instruments that communicate via USB.
-> > > 
-> > > A power meter is a device for analyzing the RF power output level of an
-> > > electrical device, similar to an oscilloscope.
-> > 
-> > Nice, but why is this a kernel driver?  Can't you control this device
-> > from userspace using libusb/usbfs?
-> > 
+> There's a new MSR to set the address of said register
+> in guest memory. Otherwise not much changed:
+> - Guest EOI is not required
+> - Register is tested & ISR is automatically cleared on exit
 > 
-> I have expected this objection. This driver has a long history over 10
-> years. At this time, there was no libudev and libsysfs. And libusb was
-> not capable to handle multi urb request nor handling multi devices.
-
-Wait, we have had usbfs since the 2.2 kernel days, from the very
-beginning of the USB subsystem, so this argument doesn't really fly.
-You don't need libsysfs (which is dead, and also, over 8 years old), and
-libudev doesn't seem to be needed here either.
-
-multi-device handling for libusb has been there from the beginning (over
-10 years ago) and multi-urb handling has been around for a very long
-time as well.
-
-So, sorry, I don't buy this argument :)
-
-> So it is a chicken and egg problem. A lot of software is now out with
-> depends on this driver and a lot of embedded development environments
-> doesn't provide libudev, libsysfs und libusb. It will also increase the
-> size of the image and adds additional dependencies to the application.
-
-You don't need any of those libraries to do this.  What's wrong with
-using "raw" usbfs interactions?
-
-> Also kernel space is faster and this is a key factor.
-
-I don't buy it.
-
-How much faster?  What numbers do you have?
-
-We have USB vision systems running at wire speeds using usbfs and
-libusb, and have had that since the early 2.4 kernel days.  Speed is not
-a valid argument here, unless you have some really bad userspace code.
-
-> And it possible to simple handling the device from script using printf,
-> echo, cat and so on.
-
-Not really a valid argument, sorry.
-
-> At least it is much more easier and straight forward to do this in
-> kernel space, than using libudev, libsysfs and libusb. 
+> For testing results see description of previous patch
+> 'kvm_para: guest side for eoi avoidance'.
 > 
-> This devices are very powerfull but also very special and can not
-> handled in an easy way,
-
-I don't believe it, you are going to have to prove this somehow, sorry.
-Looking at your code, it is very simple, and to write a userspace
-program to control these would even be less code that the kernel driver.
-
-> The question why is the a kernel driver can be asked by many kernel
-> driver.
-
-Which ones?  We have ripped out lots of USB drivers that could have been
-controlled by usbfs userspace programs over the years for this same
-reason.  If we missed any, please let me know and I will rectify that.
-
-> > > + * History:
-> > > + *
-> > > + * 2012_05_18 - 4.0 - revamp for kernel inclusion
-> > > + * 2007_05_15 - 2.0 - Ported the driver to kernel 2.6, mostly rewritten
-> > > + * 2001_05_01 - 0.1 - first version
-> > > + *
-> > > + * This program is free software; you can redistribute it and/or modify
-> > > + * it under the terms of the GNU General Public License as published by
-> > > + * the Free Software Foundation; either version 2 of the License, or
-> > > + * (at your option) any later version.
-> > 
-> > Are you sure "any later version"?
-> > 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |   12 ++++
+>  arch/x86/kvm/cpuid.c            |    1 +
+>  arch/x86/kvm/lapic.c            |  135 +++++++++++++++++++++++++++++++++++++-
+>  arch/x86/kvm/lapic.h            |    2 +
+>  arch/x86/kvm/trace.h            |   34 ++++++++++
+>  arch/x86/kvm/x86.c              |    5 ++
+>  6 files changed, 185 insertions(+), 4 deletions(-)
 > 
-> Fixed in the next version.
-> 
-> > > + *
-> > > + * This program is distributed in the hope that it will be useful,
-> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-> > > + * GNU General Public License for more details.
-> > > + *
-> > > + * You should have received a copy of the GNU General Public License
-> > > + * along with this program; if not, write to the Free Software
-> > > + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> > 
-> > This paragraph is never needed, unless you want to track the movements
-> > of the FSF's office for the next 40 years.
-> > 
-> 
-> You are right, will be fixed in the version.
-> 
-> > > +
-> > > +#define nrpz_dbg(format, arg...) \
-> > > +	do { if (debug) printk(KERN_DEBUG "nrpz: " format "\n", ##arg); } while (0)
-> > > +#define nrpz_err(format, arg...) \
-> > > +	do { printk(KERN_ERR "nrpz: " format "\n", ##arg); } while (0)
-> > > +#define nrpz_info(format, arg...) \
-> > > +	do { printk(KERN_INFO "nrpz: " format "\n", ##arg); } while (0)
-> > 
-> > Ick, no, please use dev_dbg(), dev_err(), and dev_info() instead, don't
-> > create your own macros.
-> > 
-> 
-> Fixed in the next version.
-> 
-> > > +/* Version Information */
-> > > +#define DRIVER_VERSION	"v4.00"
-> > 
-> > What happened to the first 3 versions of this code?  :)
-> > 
-> 
->  * 2012_05_18 - 4.0 - revamp for kernel inclusion
->  * 2007_12_07 - 3.0 - Rewritten, multi urbs for read and write
->  * 2007_05_15 - 2.0 - Ported the driver to kernel 2.6, mostly rewritten
->  * 2001_05_01 - 0.1 - first version
-> 
-> The driver have a long history, the first version was developed for
-> kernel 2.4. Since then it was adapted to the newest kernel version and
-> was optimized in performance and size.
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 32297f2..3ded418 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -174,6 +174,13 @@ enum {
+>  
+>  /* apic attention bits */
+>  #define KVM_APIC_CHECK_VAPIC	0
+> +/*
+> + * The following bit is set with PV-EOI, unset on EOI.
+> + * We detect PV-EOI changes by guest by comparing
+> + * this bit with PV-EOI in guest memory.
+> + * See the implementation in apic_update_pv_eoi.
+> + */ 
+> +#define KVM_APIC_PV_EOI_PENDING	1
+>  
+>  /*
+>   * We don't want allocation failures within the mmu code, so we preallocate
+> @@ -485,6 +492,11 @@ struct kvm_vcpu_arch {
+>  		u64 length;
+>  		u64 status;
+>  	} osvw;
+> +
+> +	struct {
+> +		u64 msr_val;
+> +		struct gfn_to_hva_cache data;
+> +	} pv_eoi;
+>  };
+>  
+>  struct kvm_lpage_info {
+> diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+> index eba8345..a9f155a 100644
+> --- a/arch/x86/kvm/cpuid.c
+> +++ b/arch/x86/kvm/cpuid.c
+> @@ -408,6 +408,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+>  			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
+>  			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
+>  			     (1 << KVM_FEATURE_ASYNC_PF) |
+> +			     (1 << KVM_FEATURE_PV_EOI) |
+>  			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
+>  
+>  		if (sched_info_on())
+> diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+> index 0d2985d..9d804e7 100644
+> --- a/arch/x86/kvm/lapic.c
+> +++ b/arch/x86/kvm/lapic.c
+> @@ -309,6 +309,54 @@ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq)
+>  			irq->level, irq->trig_mode);
+>  }
+>  
+> +static int pv_eoi_put_user(struct kvm_vcpu *vcpu, u8 val)
+> +{
+> +
+> +	return kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.pv_eoi.data, &val,
+> +				      sizeof(val));
+> +}
+> +
+> +static int pv_eoi_get_user(struct kvm_vcpu *vcpu, u8 *val)
+> +{
+> +
+> +	return kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.pv_eoi.data, val,
+> +				      sizeof(*val));
+> +}
+> +
+> +static inline bool pv_eoi_enabled(struct kvm_vcpu *vcpu)
+> +{
+> +	return vcpu->arch.pv_eoi.msr_val & KVM_MSR_ENABLED;
+> +}
+> +
+> +static bool pv_eoi_get_pending(struct kvm_vcpu *vcpu)
+> +{
+> +	u8 val;
+> +	if (pv_eoi_get_user(vcpu, &val) < 0)
+> +		apic_debug("Can't read EOI MSR value: 0x%llx\n",
+> +			   (unsigned long long)vcpi->arch.pv_eoi.msr_val);
+> +	return val & 0x1;
+> +}
+> +
+> +static void pv_eoi_set_pending(struct kvm_vcpu *vcpu)
+> +{
+> +	if (pv_eoi_put_user(vcpu, KVM_PV_EOI_ENABLED) < 0) {
+> +		apic_debug("Can't set EOI MSR value: 0x%llx\n",
+> +			   (unsigned long long)vcpi->arch.pv_eoi.msr_val);
+> +		return;
+> +	}
+> +	__set_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+> +}
+> +
+> +static void pv_eoi_clr_pending(struct kvm_vcpu *vcpu)
+> +{
+> +	if (pv_eoi_put_user(vcpu, KVM_PV_EOI_DISABLED) < 0) {
+> +		apic_debug("Can't clear EOI MSR value: 0x%llx\n",
+> +			   (unsigned long long)vcpi->arch.pv_eoi.msr_val);
+> +		return;
+> +	}
+> +	__clear_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention);
+> +}
+> +
+>  static inline int apic_find_highest_isr(struct kvm_lapic *apic)
+>  {
+>  	int result;
+> @@ -525,15 +573,18 @@ int kvm_apic_compare_prio(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2)
+>  	return vcpu1->arch.apic_arb_prio - vcpu2->arch.apic_arb_prio;
+>  }
+>  
+> -static void apic_set_eoi(struct kvm_lapic *apic)
+> +static int apic_set_eoi(struct kvm_lapic *apic)
+>  {
+>  	int vector = apic_find_highest_isr(apic);
+> +
+> +	trace_kvm_eoi(apic, vector);
+> +
+>  	/*
+>  	 * Not every write EOI will has corresponding ISR,
+>  	 * one example is when Kernel check timer on setup_IO_APIC
+>  	 */
+>  	if (vector == -1)
+> -		return;
+> +		return vector;
+>  
+>  	apic_clear_isr(vector, apic);
+>  	apic_update_ppr(apic);
+> @@ -548,6 +599,7 @@ static void apic_set_eoi(struct kvm_lapic *apic)
+>  		kvm_ioapic_update_eoi(apic->vcpu->kvm, vector, trigger_mode);
+>  	}
+>  	kvm_make_request(KVM_REQ_EVENT, apic->vcpu);
+> +	return vector;
+>  }
+>  
+>  static void apic_send_ipi(struct kvm_lapic *apic)
+> @@ -1130,6 +1182,7 @@ void kvm_lapic_reset(struct kvm_vcpu *vcpu)
+>  	atomic_set(&apic->lapic_timer.pending, 0);
+>  	if (kvm_vcpu_is_bsp(vcpu))
+>  		vcpu->arch.apic_base |= MSR_IA32_APICBASE_BSP;
+> +	vcpu->arch.pv_eoi.msr_val = 0;
+>  	apic_update_ppr(apic);
+>  
+>  	vcpu->arch.apic_arb_prio = 0;
+> @@ -1330,11 +1383,50 @@ void __kvm_migrate_apic_timer(struct kvm_vcpu *vcpu)
+>  		hrtimer_start_expires(timer, HRTIMER_MODE_ABS);
+>  }
+>  
+> +/*
+> + * apic_sync_pv_eoi_from_guest - called on vmexit
+> + *
+> + * Detect whether guest triggered PV EOI since the
+> + * last entry. If yes, set EOI on guests's behalf.
+> + */
+> +static void apic_sync_pv_eoi_from_guest(struct kvm_vcpu *vcpu,
+> +					struct kvm_lapic *apic)
+> +{
+> +	bool pending;
+> +	int vector;
+> +	/*
+> +	 * PV EOI state is derived from KVM_APIC_PV_EOI_PENDING in host
+> +	 * and KVM_PV_EOI_ENABLED in guest memory as follows:
+> +	 *
+> +	 * KVM_APIC_PV_EOI_PENDING is unset:
+> +	 * 	-> host disabled PV EOI.
+> +	 * KVM_APIC_PV_EOI_PENDING is set, KVM_PV_EOI_ENABLED is set:
+> +	 * 	-> host enabled PV EOI, guest did not execute EOI yet.
+> +	 * KVM_APIC_PV_EOI_PENDING is set, KVM_PV_EOI_ENABLED is unset:
+> +	 * 	-> host enabled PV EOI, guest executed EOI.
+> +	 */
+> +	BUG_ON(!pv_eoi_enabled(vcpu));
+> +	pending = pv_eoi_get_pending(vcpu);
+> +	/*
+> +	 * Clear pending bit in any case: it will be set again on vmentry.
+> +	 * While this might not be ideal from performance point of view,
+> +	 * this makes sure pv eoi is only enabled when we know it's safe.
+> +	 */
+> +	pv_eoi_clr_pending(vcpu);
+> +	if (pending)
+> +		return;
+> +	vector = apic_set_eoi(apic);
+> +	trace_kvm_pv_eoi(apic, vector);
+> +}
+> +
+>  void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+>  {
+>  	u32 data;
+>  	void *vapic;
+>  
+> +	if (test_bit(KVM_APIC_PV_EOI_PENDING, &vcpu->arch.apic_attention))
+> +		apic_sync_pv_eoi_from_guest(vcpu, vcpu->arch.apic);
+> +
+>  	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+>  		return;
+>  
+> @@ -1345,17 +1437,40 @@ void kvm_lapic_sync_from_vapic(struct kvm_vcpu *vcpu)
+>  	apic_set_tpr(vcpu->arch.apic, data & 0xff);
+>  }
+>  
+> +/*
+> + * apic_sync_pv_eoi_to_guest - called before vmentry
+> + *
+> + * Detect whether it's safe to enable PV EOI and
+> + * if yes do so.
+> + */
+> +static void apic_sync_pv_eoi_to_guest(struct kvm_vcpu *vcpu,
+> +					struct kvm_lapic *apic)
+> +{
+> +	if (!pv_eoi_enabled(vcpu) ||
+> +	    /* IRR set or many bits in ISR: could be nested. */
+> +	    unlikely(apic->irr_pending) ||
+> +	    unlikely(apic->isr_count != 1) ||
+Remind me why pv_eoi should not be set if there is more than one isr?
 
-Ok, but what does that really matter for a kernel driver?  What "value"
-is it for this to be here?
+> +	    /* Cache not set: safe but we don't bother. */
+> +	    unlikely(apic->isr_cache == -1) ||
+> +	    /* Need EOI to update ioapic. */
+> +	    unlikely(kvm_ioapic_handles_vector(vcpu->kvm, apic->isr_cache)))
+> +		return;
+> +
+> +	pv_eoi_set_pending(apic->vcpu);
+> +}
+> +
+apic_sync_pv_eoi_to_guest() is not paired with
+apic_sync_pv_eoi_from_guest() if event injection is canceled.
+You can enter guest with stale pv_eoi bit.
 
-> > > +#define DRIVER_AUTHOR	"Stefani Seibold <stefani@seibold.net>"
-> > > +#define DRIVER_DESC	"Rohde&Schwarz NRP-Zxx USB Powermeter"
-> > > +
-> > > +/* Get a minor range for your devices from the usb maintainer */
-> > > +#define NRPZ_MINOR_BASE		192
-> > 
-> > You didn't ask me for a minor base, did you?
-> > 
-> 
-> Sorry, that was one checkpoint in my ToDo List which i have lost. It
-> would be kind if you can assign me a minor range for the NRPZ devices.
+>  void kvm_lapic_sync_to_vapic(struct kvm_vcpu *vcpu)
+>  {
+>  	u32 data, tpr;
+>  	int max_irr, max_isr;
+> -	struct kvm_lapic *apic;
+> +	struct kvm_lapic *apic = vcpu->arch.apic;
+>  	void *vapic;
+>  
+> +	apic_sync_pv_eoi_to_guest(vcpu, apic);
+> +
+>  	if (!test_bit(KVM_APIC_CHECK_VAPIC, &vcpu->arch.apic_attention))
+>  		return;
+>  
+> -	apic = vcpu->arch.apic;
+>  	tpr = apic_get_reg(apic, APIC_TASKPRI) & 0xff;
+>  	max_irr = apic_find_highest_irr(apic);
+>  	if (max_irr < 0)
+> @@ -1441,3 +1556,15 @@ int kvm_hv_vapic_msr_read(struct kvm_vcpu *vcpu, u32 reg, u64 *data)
+>  
+>  	return 0;
+>  }
+> +
+> +int kvm_lapic_enable_pv_eoi(struct kvm_vcpu *vcpu, u64 data)
+> +{
+> +	u64 addr = data & ~KVM_MSR_ENABLED;
+> +	if (pv_eoi_enabled(vcpu))
+> +		pv_eoi_clr_pending(vcpu);
+> +	vcpu->arch.pv_eoi.msr_val = data;
+> +	if (!pv_eoi_enabled(vcpu))
+> +		return 0;
+> +	return kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.pv_eoi.data,
+> +					 addr);
+> +}
+> diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+> index 9f8deff..41c62c7 100644
+> --- a/arch/x86/kvm/lapic.h
+> +++ b/arch/x86/kvm/lapic.h
+> @@ -62,4 +62,6 @@ static inline bool kvm_hv_vapic_assist_page_enabled(struct kvm_vcpu *vcpu)
+>  {
+>  	return vcpu->arch.hv_vapic & HV_X64_MSR_APIC_ASSIST_PAGE_ENABLE;
+>  }
+> +
+> +int kvm_lapic_enable_pv_eoi(struct kvm_vcpu *vcpu, u64 data);
+>  #endif
+> diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
+> index 911d264..851914e 100644
+> --- a/arch/x86/kvm/trace.h
+> +++ b/arch/x86/kvm/trace.h
+> @@ -517,6 +517,40 @@ TRACE_EVENT(kvm_apic_accept_irq,
+>  		  __entry->coalesced ? " (coalesced)" : "")
+>  );
+>  
+> +TRACE_EVENT(kvm_eoi,
+> +	    TP_PROTO(struct kvm_lapic *apic, int vector),
+> +	    TP_ARGS(apic, vector),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	__u32,		apicid		)
+> +		__field(	int,		vector		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->apicid		= apic->vcpu->vcpu_id;
+> +		__entry->vector		= vector;
+> +	),
+> +
+> +	TP_printk("apicid %x vector %d", __entry->apicid, __entry->vector)
+> +);
+> +
+> +TRACE_EVENT(kvm_pv_eoi,
+> +	    TP_PROTO(struct kvm_lapic *apic, int vector),
+> +	    TP_ARGS(apic, vector),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	__u32,		apicid		)
+> +		__field(	int,		vector		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->apicid		= apic->vcpu->vcpu_id;
+> +		__entry->vector		= vector;
+> +	),
+> +
+> +	TP_printk("apicid %x vector %d", __entry->apicid, __entry->vector)
+> +);
+> +
+>  /*
+>   * Tracepoint for nested VMRUN
+>   */
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 3e57566..4fa26f2 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -795,6 +795,7 @@ static u32 msrs_to_save[] = {
+>  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+>  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+>  	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
+> +	MSR_KVM_PV_EOI_EN,
+>  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+>  	MSR_STAR,
+>  #ifdef CONFIG_X86_64
+> @@ -1653,6 +1654,10 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+>  		kvm_make_request(KVM_REQ_STEAL_UPDATE, vcpu);
+>  
+>  		break;
+> +	case MSR_KVM_PV_EOI_EN:
+> +		if (kvm_lapic_enable_pv_eoi(vcpu, data))
+> +			return 1;
+> +		break;
+>  
+>  	case MSR_IA32_MCG_CTL:
+>  	case MSR_IA32_MCG_STATUS:
+> -- 
+> MST
 
-Not yet, sorry, you need to convince me that this really does need to be
-a kernel driver.
-
-> > > +MODULE_DEVICE_TABLE(usb, nrpz_table);
-> > > +
-> > > +/* Structure to hold all of our device specific stuff */
-> > > +struct usb_nrpz {
-> > > +	struct usb_device *udev;
-> > > +	struct usb_interface *intf;
-> > 
-> 
-> I tried to remove the udev entry in the next version. I was successfully
-> in the most cases, but i find no solution for the nrpz_delete()
-> function, which needs the udev for the usb_put_dev() call. Since intf is
-> at this time NULL, there is no way to determinate the struct usb_device
-> pointer.
-
-Why would intf be NULL at some point in time when you really need to
-find this out?
-
-> > Do you really need both?
-> > 
-> > > +	unsigned minor;			/* minor number for this device */
-> > > +	unsigned long in_use;		/* in use flag */
-> > 
-> > Why a long for this?
-> > 
-> 
-> test_and_set_bit() expect a unsigned long. This kind of "in use"
-> handling is not uncommon in a kernel driver.
-
-Don't confuse that with a valid locking primitive.  Please just use a
-bool or char instead.
-
-> > > +
-> > > +static inline void urb_list_add_tail(spinlock_t *lock, struct urb *urb,
-> > > +				struct list_head *head)
-> > > +{
-> > > +	spin_lock_irq(lock);
-> > > +	list_add_tail(&urb->urb_list, head);
-> > > +	spin_unlock_irq(lock);
-> > > +}
-> > 
-> > Why the lists of urbs?  Why not either just create them all dynamically
-> > all the time, or use urb anchors?
-> > 
-> 
-> Anchors will be used for the running urbs. The callback will then
-> collect the handled urbs in a list and read() and write() will resubmit
-> this urbs after processing.
-> 
-> Dynamically creation is an option, but i prefer this way, since it is
-> faster, safer and has less error handling.
-
-How do you know it is faster?  Has it been measured?  How?  What was the
-results?  Why is it less error handling?  Create, submit, and
-automatically have the USB core destroy the urb is simpler and less code
-in a driver than this logic here, right?  If not, then we did something
-wrong a long time ago.
-
-> > > +	case NRPZ_GETSENSORINFO:
-> > > +	 {
-> > > +		struct nrpz_sensor_info __user *sensor_info =
-> > > +			(struct nrpz_sensor_info __user *)arg;
-> > > +
-> > > +		if (!access_ok(VERIFY_WRITE, sensor_info, sizeof(*sensor_info)))
-> > > +			return -EFAULT;
-> > > +
-> > > +		__put_user(dev->udev->descriptor.bcdDevice,
-> > > +				&sensor_info->bcdDevice);
-> > > +		__put_user(dev->udev->descriptor.bcdUSB,
-> > > +				&sensor_info->bcdUSB);
-> > > +		__put_user(dev->udev->descriptor.bDescriptorType,
-> > > +				&sensor_info->bDescriptorType);
-> > > +		__put_user(dev->udev->descriptor.bDeviceClass,
-> > > +				&sensor_info->bDeviceClass);
-> > > +		__put_user(dev->udev->descriptor.bDeviceSubClass,
-> > > +				&sensor_info->bDeviceSubClass);
-> > > +		__put_user(dev->udev->descriptor.bDeviceProtocol,
-> > > +				&sensor_info->bDeviceProtocol);
-> > > +		__put_user(dev->udev->descriptor.bMaxPacketSize0,
-> > > +				&sensor_info->bMaxPacketSize0);
-> > > +		__put_user(dev->udev->descriptor.bNumConfigurations,
-> > > +				&sensor_info->bNumConfigurations);
-> > > +		__put_user(dev->udev->descriptor.iManufacturer,
-> > > +				&sensor_info->iManufacturer);
-> > > +		__put_user(dev->udev->descriptor.iProduct,
-> > > +				&sensor_info->iProduct);
-> > > +		__put_user(dev->udev->descriptor.iSerialNumber,
-> > > +				&sensor_info->iSerialNumber);
-> > > +		__put_user(dev->udev->descriptor.idVendor,
-> > > +				&sensor_info->vendorId);
-> > > +		__put_user(dev->udev->descriptor.idProduct,
-> > > +				&sensor_info->productId);
-> > > +		usb_string(dev->udev, dev->udev->descriptor.iManufacturer,
-> > > +				(char __force *)sensor_info->manufacturer,
-> > > +				sizeof(sensor_info->manufacturer));
-> > > +		usb_string(dev->udev, dev->udev->descriptor.iProduct,
-> > > +				(char __force *)sensor_info->productName,
-> > > +				sizeof(sensor_info->productName));
-> > > +		usb_string(dev->udev, dev->udev->descriptor.iSerialNumber,
-> > > +				(char __force *)sensor_info->serialNumber,
-> > > +				sizeof(sensor_info->serialNumber));
-> > 
-> > Why are you sending this information through an ioctl, when it is
-> > already exported in sysfs?  That seems quite needless.
-> > 
-> 
-> This is very easy to do in the driver and would create a lot of code in
-> the user space using libsysfs and depends on additional libraries.
-
-You can't do a simple 'cat'?  Sorry, this is duplication, even if I
-could accept this driver, I can't accept this.
-
-> > Anyway, I think the main questions are, "Why is this a kernel driver",
-> > and "If this is a kernel driver, why not use the IIO interface"?
-> > 
-> 
-> The IIO interface is an option, but not for the Rohde&Schwarz company,
-> since the driver is in use by our customers for 10 years.
-
-Ok, but I'm not that company, and neither is Linux.  We strive to create
-unified userspace apis that all drivers can use to ensure device
-independance (hint, that's what an OS is for.)  Creating one-off
-user/kernel apis, like this one, is really special syscalls just for
-this specific piece of hardware.  Which is something we do not do
-lightly at all.
-
-> I also not sure that the IIO interface can handle all of the features of
-> the power meter.
-
-Then the IIO interface needs to be extended to do so.  Seriously, that's
-the only way I could see this being a kernel driver, not with this
-custom ioctl interface.
-
-> I have expected this objection "why is this a kernel driver?".
-> 
-> It took me years to convince the company to provide open source driver
-> and libraries. This is the first result of this effort. 
-
-All USB Linux drivers have to be open, this shouldn't have been any
-effort at all :)
-
-> Since the driver is very tiny and straight forward and has no side
-> effects with other parts to the system it would be great to add it to
-> the kernel drivers.
-> 
-> This work should not done for the trash bin.
-
-I understand your investment in this.  But understand ours as well.  You
-are creating a hardware-specific set of custom system calls that no one
-else can, or will, use.  You also duplicate interfaces that we have
-already standardized on (the USB device information in sysfs and in
-usbfs).  Why would that be acceptable?  If you were in my situation,
-would you accept this type of duplication?
-
-So, I suggest you either use usbfs from a userspace program or library,
-or if you insist on a kernel driver, use the IIO interface, extending it
-where needed.  As it is, in the current form, I can not accept this
-driver for the above reasons.
-
-thanks,
-
-greg k-h
+--
+			Gleb.
