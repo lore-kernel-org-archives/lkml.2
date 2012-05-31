@@ -1,112 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab2EaIU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 04:20:26 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:46684 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751301Ab2EaIUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 04:20:22 -0400
-Date: Thu, 31 May 2012 11:18:42 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531081841.GG5377@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
- <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
+	id S1758039Ab2EaIYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 04:24:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35778 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab2EaIYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 04:24:11 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Stefani Seibold <stefani@seibold.net>
+Subject: Re: [PATCH] add new NRP power meter USB device driver
+Date: Thu, 31 May 2012 10:20:50 +0200
+User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com, gregkh@linuxfoundation.org,
+        thomas.braunstorfinger@rohde-schwarz.com
+References: <1338318858-24144-1-git-send-email-stefani@seibold.net> <201205301010.22913.oneukum@suse.de> <1338450221.6454.16.camel@wall-e>
+In-Reply-To: <1338450221.6454.16.camel@wall-e>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MiFvc8Vo6wRSORdP"
-Content-Disposition: inline
-In-Reply-To: <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205311020.50076.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am Donnerstag, 31. Mai 2012, 09:43:41 schrieb Stefani Seibold:
+> Hi Oliver,
+> 
+> Thanks for the review.
+> 
+> On Wed, 2012-05-30 at 10:10 +0200, Oliver Neukum wrote:
+> > Am Dienstag, 29. Mai 2012, 21:14:18 schrieb stefani@seibold.net:
+> >  
+> > > The device will be controlled by a SCPI like interface.
+> > 
+> > Are there other devices using that standard whose interface you might reuse?
+> >  
+> > 
+> 
+> There are a lot of instruments from many different manufacturer which
+> use the SCPI standard. But there is now way to bring them together. The
+> commands are well defined, but there are a lot of vendor specific
+> commands. And the communication path are differing, which can be
+> IEEE488, USB, Socket, Serial and more.
 
---MiFvc8Vo6wRSORdP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is unfortunate. It would be much better if we could have a /dev/spiX
+in form of a character device.
 
-On Thu, May 31, 2012 at 10:51:25AM +0300, Peter De Schrijver wrote:
-> On Wed, May 30, 2012 at 10:52:31AM +0200, Stephen Boyd wrote:
-> > On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
-> > > Add an extension API for clocks. This allows clocktypes to provide ex=
-tensions
-> > > for features which are uncommon and cannot be easily mapped onto norm=
-al clock
-> > > framework concecpts. eg: resetting blocks, configuring clock phase et=
-c.
-> >=20
-> > This seems rather generic. Why not add more specific APIs/concepts like
-> > clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
-> > make them map.
-> >=20
->=20
-> Some of those might be very SoC specific. Eg OMAP doesn't need software
-> controlled modulereset. I don't think we should add a new function to the
+> > > +		if (copy_to_user(buffer, urb->transfer_buffer, n)) {
+> > > +			urb_list_add(&dev->read_lock, urb, &dev->in_avail);
+> > > +			ret = -EFAULT;
+> > > +			goto exit;
+> > 
+> > Is there a good reason you don't resubmit in this case?
+> > 
+> 
+> The data was not successfully transfered to the user space, so it will
+> stay again on the top of the input urb list.
 
-it depends on what you call modulereset. We have soft-reset logic hidden
-under the hood, it's done before device creation, so drivers (most of
-them) assume we're probe with the IP in reset state.
+I see. Unusual approach, but perfectly valid.
+  
+> > > +static long nrpz_compat_ioctl(struct file *file, unsigned int cmd,
+> > > +		unsigned long arg)
+> > > +{
+> > > +	struct usb_nrpz *dev;
+> > > +	int ret;
+> > > +
+> > > +	dev = (struct usb_nrpz *)file->private_data;
+> > > +
+> > > +	/* verify that the device wasn't unplugged */
+> > > +	if (!dev->intf)
+> > > +		return -ENODEV;
+> > 
+> > Locking?
+> > 
+> 
+> I see no reason why. But i will change it in the next version.
 
-What I wonder most is if this should be done at the clock level or at
-the device level. In the end you reset the IP block, not the clock,
-right ?
+1. Multithreaded tasks
+2. Check for disconnect
 
-> clock framework for clock related features which only exist in a single
-> SoC or family. Ideally we could use inheritance to add methods to derived
-> clocktypes, but that's not really possible in C unfortunately.
+> > > +	case NRPZ_START:
+> > > +	 {
+> > > +		u8 device_state[128];
+> > 
+> > DMA on stack. This may ail on some architectures. You need to use
+> > kmalloc() or better kzalloc().
+> > 
+> 
+> Never heard about this problem. The driver will work since years on X86,
+> PPC and ARM platforms. But it will be fixes in the next version.
 
-Well, it can be done... in a weird manner, but it can:
+On PPC you were lucky. However the window for the race is small.
+In a nutshell, your buffer may share a cacheline with something else
+on the stack. If you read that something else on some architectures
+DMA after that will not invalidate the cache line and the CPU will see
+the old content of the stack before the DMA in the buffer.
 
-struct my_new_clk {
-	struct clk	clk;
+And on a few architectures (ia64, ... IIRC) the stack may be incapable
+of DMA at all.
+ 
+> > > +	case NRPZ_WRITE_DONE:
+> > 
+> > EEEEEEK!
+> > 
+> > > +		if (arg) {
+> > > +			ret = wait_event_interruptible_timeout(
+> > > +				dev->out_running.wait,
+> > > +				list_empty(&dev->out_running.urb_list),
+> > > +				msecs_to_jiffies(arg));
+> > > +			if (!ret)
+> > > +				return -ETIMEDOUT;
+> > > +			if (ret < 0)
+> > > +				return ret;
+> > > +			return 0;
+> > > +		} else {
+> > > +			return wait_event_interruptible(
+> > > +				dev->out_running.wait,
+> > > +				list_empty(&dev->out_running.urb_list));
+> > > +		}
+> > > +		break;
+> > 
+> > This is very ugly. If you need fsync(), then implement it.
+> > 
+> 
+> fsync() did not meat the requirements, since i need in some case a
+> timeout for the device. poll() will also not help, since it signals only
+> that there is space to write.
 
-	int		(*reset)(struct my_new_clk *m);
-};
+Well, then implement fsync() with interruptible sleep and use a timer
+in user space.
 
-int clk_reset(struct clk *clk)
-{
-	strut my_new_clk	*m =3D container_of(clk, struct my_new_clk, clk);
+> > > +
+> > > +	ret = bulks_init(dev,
+> > > +			 dev->out_urbs,
+> > > +			 ARRAY_SIZE(dev->out_urbs),
+> > > +			 usb_sndbulkpipe(dev->udev, dev->out_epAddr),
+> > > +			 dev->out_size,
+> > > +			 nrpz_write_callback);
+> > > +	if (ret)
+> > > +		goto error;
+> > > +
+> > > +	for (i = 0; i != ARRAY_SIZE(dev->in_urbs); ++i) {
+> > > +		usb_anchor_urb(&dev->in_urbs[i], &dev->in_running);
+> > > +
+> > > +		ret = usb_submit_urb(&dev->in_urbs[i], GFP_KERNEL);
+> > 
+> > You do this here and only here. So this will see a slow attrition if you don't resubmit for som reason.
+> > 
+> 
+> No, i resubmit the urb in the nrpz_read() function.
 
-	return m->reset(m);
-}
+Yes, but this seems to be buggy:
 
-it doesn't look pretty, but it can be done.
++	ret = usb_submit_urb(urb, GFP_KERNEL);
++	if (ret) {
++		usb_unanchor_urb(urb);
++		urb_list_add_tail(&dev->read_lock, urb, &dev->in_avail);
++		nrpz_err("Failed submitting read urb (error %d)", ret);
++	}
 
---=20
-balbi
+You have already transfered the data to user space. It seems to me that you
+need to zero out the URB and need to handle the case of getting an URB
+without data.
 
---MiFvc8Vo6wRSORdP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> > > +static int nrpz_pre_reset(struct usb_interface *intf)
+> > > +{
+> > > +	struct usb_nrpz *dev = usb_get_intfdata(intf);
+> > > +
+> > > +	if (dev)
+> > > +		nrpz_draw_down(dev);
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static int nrpz_post_reset(struct usb_interface *intf)
+> > > +{
+> > > +	return 0;
+> > > +}
+> > 
+> > And you don't tell user space that the device has been reset?
+> > And what restarts reading?
+> > 
+> 
+> I have no idea how to do this. But i will have a look in the kernel
+> source and figure it out.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+There probably is no generic answer. But I presume a reset will
+reinit the device and destroy anything you set up before, so I guess
+the next read() or write() after a reset has to return an error code that
+tells user space that it has to redo its setup.
 
-iQIcBAEBAgAGBQJPxylhAAoJEIaOsuA1yqRElcsQAJ7R9C2VdjyBIRsUKXU6ci+G
-puUlb0DeWT9f9rrJnYVDKP9GoFNrGYeBorwQ9+IIl4ts8pBQTnrI0G/foKQef7Ow
-wNn0l7JNYXrV4ke5/VmZYeTc9BoaFIepsN8B2YMqNTOgD2LEs+jOh6gg3Pp6wMhX
-qC6m7ImDU5PLlOti5pi0RfwwpSiD4tdjwmMMwrB7i39Mo/oSWVK9Eex2zk8y9BcZ
-0/AMFLQ7NSLeXQlNyL7EfIz6UP6ESyhjUwQWk9vUdYrw6KJpKheobdvBjgf08Kbx
-3o68MOlobod5bgmRJ6V1mEFV/82xUSt08W2QpEHPzg7CGBTCWuV49rZzgLYPwGJd
-901lxl7eWXfBMFXpMtatmrOoPGoH3f14EZ9fJ0a8m2JKVqp5T0JzRo6d5XOEP/So
-xvF4c7nuf0T3IxvaT3wo8m+sK8TleoHuJxaC6yv/LRNGHidEwPLgIlZfuoXZdIl8
-pD4icQwjGOAdYUVUSVYUJI9fn/4R4oMAGD2sfR9iLT7fdWkhzaShMa/8IhJeFefz
-moPkxz9EwGYNZso+VhSYdssLQL0UK32FX8ungGKUt2MZ7dCSYo6SabeKSmPEoySh
-gM7pfLK3vOApsBoQuIwe7JBfHebynsya1J0hYip63favi71hZ8XGez1LVo2qYeV0
-D3FCQoAlUmPamlxkpNOg
-=4kNz
------END PGP SIGNATURE-----
-
---MiFvc8Vo6wRSORdP--
+	Regards
+		Oliver
