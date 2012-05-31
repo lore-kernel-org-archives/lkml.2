@@ -1,343 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758478Ab2EaVAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 17:00:06 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:61913 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab2EaVAE (ORCPT
+	id S1758517Ab2EaVAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 17:00:20 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58180 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758486Ab2EaVAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 17:00:04 -0400
-Date: Thu, 31 May 2012 23:01:17 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Bryan Wu <bryan.wu@canonical.com>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH 3/3] led: add oneshot trigger
-Message-ID: <20120531210117.GA2400@gmail.com>
-References: <1338074364-1829-1-git-send-email-fabio.baltieri@gmail.com>
- <1338074364-1829-3-git-send-email-fabio.baltieri@gmail.com>
- <1338134989.2968.18.camel@lorien2>
+	Thu, 31 May 2012 17:00:17 -0400
+Message-ID: <4FC7DBC9.7090406@ti.com>
+Date: Thu, 31 May 2012 22:59:53 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338134989.2968.18.camel@lorien2>
-X-Operating-System: Linux balto-eee 3.4.0-balto-eee-00005-ga209f76 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jon Hunter <jon-hunter@ti.com>
+CC: Xiao Jiang <jgq516@gmail.com>, <linux@arm.linux.org.uk>,
+        <rob.herring@calxeda.com>, <grant.likely@secretlab.ca>,
+        <rnayak@ti.com>, <tony@atomide.com>, <wim@iguana.be>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 1/3] arm/dts: add wdt node for omap3 and omap4
+References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-2-git-send-email-jgq516@gmail.com> <4FC50CCD.7090404@ti.com> <4FC591C9.2050004@gmail.com> <4FC631E5.9080000@ti.com> <4FC706D7.2010801@gmail.com> <4FC78672.6040805@ti.com>
+In-Reply-To: <4FC78672.6040805@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Shuah,
+On 5/31/2012 4:55 PM, Jon Hunter wrote:
+> On 05/31/2012 12:51 AM, Xiao Jiang wrote:
+>> Hi Jon and Benoit,
+>>>> Thanks for reminding, how about below patch?
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+>>>> b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+>>>> new file mode 100644
+>>>> index 0000000..4272d06
+>>>> --- /dev/null
+>>>> +++ b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+>>>> @@ -0,0 +1,15 @@
+>>>> +TI Watchdog Timer (WDT) Controller for OMAP
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible:
+>>>> +  - "ti,omap2-wdt" for OMAP2
+>>>> +  - "ti,omap3-wdt" for OMAP3
+>>>> +  - "ti,omap4-wdt" for OMAP4
+>>>> +- ti,hwmods: Name of the hwmod associated to the WDT
+>>>> +
+>>>> +Examples:
+>>>> +
+>>>> +wdt2: wdt@73f98000 {
+>>>> +       compatible = "ti,omap4-wdt";
+>>>> +       ti,hwmods = "wd_timer2";
+>>>> +};
+>>>>
+>>>
+>>> Yes looks good. Thanks! Minor nit-pick in the example I would just copy
+>>> the omap4 node completely with the actual omap4 address :-)
+>>>
+>>>
+>> Oops, wrong addr, :). Perhaps we can drop address as you said, since the
+>> right addresses are defined
+>> in wd_timer2 hwmod (see [1]), and wdt also works without the address as
+>> follows.
+>>
+>> diff --git a/arch/arm/boot/dts/omap2.dtsi b/arch/arm/boot/dts/omap2.dtsi
+>> index f2ab4ea..0017bd8 100644
+>> --- a/arch/arm/boot/dts/omap2.dtsi
+>> +++ b/arch/arm/boot/dts/omap2.dtsi
+>> @@ -63,5 +63,10 @@
+>>                         ti,hwmods = "uart3";
+>>                         clock-frequency =<48000000>;
+>>                 };
+>> +
+>> +               wdt2: wdt {
+>> +                       compatible = "ti,omap2-wdt";
+>> +                       ti,hwmods = "wd_timer2";
+>> +               };
+>>         };
+>> };
+>> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+>> index 99474fa..dbf8a5b 100644
+>> --- a/arch/arm/boot/dts/omap3.dtsi
+>> +++ b/arch/arm/boot/dts/omap3.dtsi
+>> @@ -215,5 +215,10 @@
+>>                         compatible = "ti,omap3-hsmmc";
+>>                         ti,hwmods = "mmc3";
+>>                 };
+>> +
+>> +               wdt2: wdt {
+>> +                       compatible = "ti,omap3-wdt", "ti,omap2-wdt";
+>> +                       ti,hwmods = "wd_timer2";
+>> +               };
+>>         };
+>> };
+>> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+>> index 359c497..ce74e87 100644
+>> --- a/arch/arm/boot/dts/omap4.dtsi
+>> +++ b/arch/arm/boot/dts/omap4.dtsi
+>> @@ -272,5 +272,10 @@
+>>                         ti,hwmods = "mmc5";
+>>                         ti,needs-special-reset;
+>>                 };
+>> +
+>> +               wdt2: wdt {
+>> +                       compatible = "ti,omap4-wdt", "ti,omap2-wdt";
+>> +                       ti,hwmods = "wd_timer2";
+>> +               };
+>>         };
+>> };
+>>
+>> Infos for omap3:
+>> # dmesg|grep Machine
+>> <6>[    0.000000] Machine: Generic OMAP3 (Flattened Device Tree), model:
+>> TI OMAP3 EVM (OMAP3530, AM/DM37x)
+>> # dmesg|grep omap_wdt_probe
+>> <4>[    2.552825] in omap_wdt_probe: 299, res->start = 0x48314000
+>>
+>> Infos for omap4:
+>> root@localhost:/root>  dmesg|grep Machine
+>> [    0.000000] Machine: Generic OMAP4 (Flattened Device Tree), model: TI
+>> OMAP4 SDP board
+>> root@localhost:/root>  dmesg|grep omap_wdt_probe
+>> [    1.687896] in omap_wdt_probe: 299, res->start = 0x4a314000
+>>
+>> So can I drop the wdt addr from dts file? otherwise it is not feasible
+>> to add omap2 wdt node in omap2.dtsi
+>> due to different addrs for omap2420 and omap2430.
+>
+> Benoit, what is your preference here?
 
-On Sun, May 27, 2012 at 10:09:49AM -0600, Shuah Khan wrote:
-> On Sun, 2012-05-27 at 01:19 +0200, Fabio Baltieri wrote:
-> > Add oneshot trigger to blink a led with configurable parameters via
-> > sysfs.
-> > 
-> > Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
-> > Cc: Bryan Wu <bryan.wu@canonical.com>
-> > Cc: Shuah Khan <shuahkhan@gmail.com>
-> > ---
-> > 
-> > That's (a cleaned up version of) what I used to test the first patch. Should
-> > we also consider this one for integration?  Shuah Khan was working on
-> > something similar, I'll add him in CC.
-> 
-> Fabio,
-> 
-> Thanks for including me in the review. If you haven't already looked at
-> the the LEDS_TRIGGER_TRANSIENT I implemented, please take a look. It is
-> in linux-next and is queued up for 3.5-rc1 inclusion. It is also a one
-> shot timer, howver it holds the LED in a transient state (could be on or
-> off depending on its permanent state) for a specified period of time and
-> then goes back to the original state. Your use-case is different in that
-> the trigger you are implementing it holds it in blink state. These two
-> are distinct use-cases that address different needs and we will need
-> both.
-> 
-> However, the in the interest of reducing confusion, I would recommend
-> changing the name of the trigger you are adding to something that
-> reflects that it holds the blink state. You could call it
-> LED_TRIGGER_PULSEONCE or LED_TRIGGER_BLINKONCE.
-> 
-> Also could you please outline the use-cases. Might be a good idea to add
-> a documentation file for this new trigger.
-> 
-> Did you look at LEDS_TRIGGER_TIMER to see if the name-space you are
-> using conflicts with that triggers name-space. I think it does unless I
-> am missing something.
-> 
-> Also you probably need to base your patch on linux-next so you can pick
-> up one other infrastructure change I made to add a new activated flag to
-> led_classdev structure. This new flag is used to keep track of trigger
-> activated state and free memory and do cleanup.
+Get rid of both omap2420 and 2430 :-)
 
-Ok, anyway as your patch has been mainlined and this (totally?) overlaps
-with it I think it's ok to just use this to test the API of first patch
-of this set.
+The point is that only OMAP3 and OMAP4 are supposed to be migrated to DT 
+for the moment.
 
-Fabio
+If you do not have any OMAP2 board to test that, it is anyway safer to 
+not touch the omap2.dtsi file.
 
-> More comments in-line.
-> 
-> 
-> > 
-> > Fabio
-> > 
-> >  drivers/leds/Kconfig           |   9 ++
-> >  drivers/leds/Makefile          |   1 +
-> >  drivers/leds/ledtrig-oneshot.c | 190 +++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 200 insertions(+)
-> >  create mode 100644 drivers/leds/ledtrig-oneshot.c
-> > 
-> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> > index ff4b8cf..17c3cf2 100644
-> > --- a/drivers/leds/Kconfig
-> > +++ b/drivers/leds/Kconfig
-> > @@ -422,6 +422,15 @@ config LEDS_TRIGGER_TIMER
-> >  
-> >  	  If unsure, say Y.
-> >  
-> > +config LEDS_TRIGGER_ONESHOT
-> > +	tristate "One-Shot Trigger"
-> > +	depends on LEDS_TRIGGERS
-> > +	help
-> > +	  This allows LEDs to blink in one-shot pulses with parameters
-> > +	  controlled via sysfs.
-> > +
-> > +	  If unsure, say Y.
-> > +
-> >  config LEDS_TRIGGER_IDE_DISK
-> >  	bool "LED IDE Disk Trigger"
-> >  	depends on IDE_GD_ATA
-> > diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> > index 890481c..ec8ff79 100644
-> > --- a/drivers/leds/Makefile
-> > +++ b/drivers/leds/Makefile
-> > @@ -51,6 +51,7 @@ obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
-> >  
-> >  # LED Triggers
-> >  obj-$(CONFIG_LEDS_TRIGGER_TIMER)	+= ledtrig-timer.o
-> > +obj-$(CONFIG_LEDS_TRIGGER_ONESHOT)	+= ledtrig-oneshot.o
-> >  obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK)	+= ledtrig-ide-disk.o
-> >  obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
-> >  obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
-> > diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
-> > new file mode 100644
-> > index 0000000..7d9a052
-> > --- /dev/null
-> > +++ b/drivers/leds/ledtrig-oneshot.c
-> > @@ -0,0 +1,190 @@
-> > +/*
-> > + * One-Shot LED Trigger
-> > + *
-> > + * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
-> > + *
-> > + * Based on ledtrig-timer.c by Richard Purdie <rpurdie@openedhand.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + */
-> > +
-> > +#include <linux/module.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/init.h>
-> > +#include <linux/device.h>
-> > +#include <linux/ctype.h>
-> > +#include <linux/slab.h>
-> > +#include <linux/leds.h>
-> > +
-> > +struct oneshot_trig_data {
-> > +	unsigned int invert;
-> > +};
-> > +
-> > +static ssize_t led_shot(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t size)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
-> > +
-> > +	led_blink_set_oneshot(led_cdev,
-> > +			&led_cdev->blink_delay_on, &led_cdev->blink_delay_off,
-> > +			oneshot_data->invert);
-> > +
-> > +	/* content is ignored */
-> > +	return size;
-> > +}
-> > +static ssize_t led_invert_show(struct device *dev,
-> > +		struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
-> > +
-> > +	return sprintf(buf, "%u\n", oneshot_data->invert);
-> > +}
-> > +
-> > +static ssize_t led_invert_store(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t size)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
-> > +	unsigned long state;
-> > +	int ret = -EINVAL;
-> This initialization is not necessary.
-> > +
-> > +	ret = kstrtoul(buf, 0, &state);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	oneshot_data->invert = !!state;
-> > +
-> > +	return size;
-> > +}
-> > +
-> > +static ssize_t led_delay_on_show(struct device *dev,
-> > +		struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +
-> > +	return sprintf(buf, "%lu\n", led_cdev->blink_delay_on);
-> > +}
-> > +
-> > +static ssize_t led_delay_on_store(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t size)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	unsigned long state;
-> > +	int ret = -EINVAL;
-> This initialization is not necessary.
-> > +
-> > +	ret = kstrtoul(buf, 0, &state);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	led_cdev->blink_delay_on = state;
-> > +
-> > +	return size;
-> > +}
-> > +static ssize_t led_delay_off_show(struct device *dev,
-> > +		struct device_attribute *attr, char *buf)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +
-> > +	return sprintf(buf, "%lu\n", led_cdev->blink_delay_off);
-> > +}
-> > +
-> > +static ssize_t led_delay_off_store(struct device *dev,
-> > +		struct device_attribute *attr, const char *buf, size_t size)
-> > +{
-> > +	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-> > +	unsigned long state;
-> > +	int ret = -EINVAL;
-> 
-> This initialization is not necessary.
-> > +
-> > +	ret = kstrtoul(buf, 0, &state);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	led_cdev->blink_delay_off = state;
-> > +
-> > +	return size;
-> > +}
-> > +
-> > +static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
-> 
-> Doesn't this conflict with LEDS_TRIGGER_TIMER namespace
-> 
-> > +static DEVICE_ATTR(delay_off, 0644, led_delay_off_show, led_delay_off_store);
-> 
-> Doesn't this conflict with LEDS_TRIGGER_TIMER namespace
-> > +static DEVICE_ATTR(invert, 0644, led_invert_show, led_invert_store);
-> 
-> This probably conflict with 
-> > +static DEVICE_ATTR(shot, 0200, NULL, led_shot);
-> > +
-> > +static void oneshot_trig_activate(struct led_classdev *led_cdev)
-> > +{
-> > +	struct oneshot_trig_data *oneshot_data;
-> > +	int rc;
-> > +
-> > +	oneshot_data = kzalloc(sizeof(*oneshot_data), GFP_KERNEL);
-> > +	if (!oneshot_data)
-> > +		return;
-> > +
-> > +	led_cdev->trigger_data = oneshot_data;
-> > +
-> > +	rc = device_create_file(led_cdev->dev, &dev_attr_delay_on);
-> > +	if (rc)
-> > +		goto err_out_trig_data;
-> > +	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
-> > +	if (rc)
-> > +		goto err_out_delayon;
-> > +	rc = device_create_file(led_cdev->dev, &dev_attr_invert);
-> > +	if (rc)
-> > +		goto err_out_delayoff;
-> > +	rc = device_create_file(led_cdev->dev, &dev_attr_shot);
-> > +	if (rc)
-> > +		goto err_out_invert;
-> > +
-> 
-> This is where you can set activated flag to true and check the flag from
-> your deactivate routine. Please check linux-next leds code. I also
-> updated all led triggers to use this new flag.
-> 
-> 
-> > +	return;
-> > +
-> > +err_out_invert:
-> > +	device_remove_file(led_cdev->dev, &dev_attr_invert);
-> > +err_out_delayoff:
-> > +	device_remove_file(led_cdev->dev, &dev_attr_delay_off);
-> > +err_out_delayon:
-> > +	device_remove_file(led_cdev->dev, &dev_attr_delay_on);
-> > +err_out_trig_data:
-> > +	kfree(led_cdev->trigger_data);
-> > +}
-> > +
-> > +static void oneshot_trig_deactivate(struct led_classdev *led_cdev)
-> > +{
-> > +	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
-> > +
-> > +	if (oneshot_data) {
-> 
-> You can check activated flag instead of onshot_data like the rest of the
-> led triggers.
-> 
-> > +		device_remove_file(led_cdev->dev, &dev_attr_delay_on);
-> > +		device_remove_file(led_cdev->dev, &dev_attr_delay_off);
-> > +		device_remove_file(led_cdev->dev, &dev_attr_invert);
-> > +		device_remove_file(led_cdev->dev, &dev_attr_shot);
-> > +		kfree(led_cdev->trigger_data);
-> > +	}
-> > +
-> > +	/* Stop blinking */
-> > +	led_brightness_set(led_cdev, LED_OFF);
-> > +}
-> > +
-> > +static struct led_trigger oneshot_led_trigger = {
-> > +	.name     = "oneshot",
-> > +	.activate = oneshot_trig_activate,
-> > +	.deactivate = oneshot_trig_deactivate,
-> > +};
-> > +
-> > +static int __init oneshot_trig_init(void)
-> > +{
-> > +	return led_trigger_register(&oneshot_led_trigger);
-> > +}
-> > +
-> > +static void __exit oneshot_trig_exit(void)
-> > +{
-> > +	led_trigger_unregister(&oneshot_led_trigger);
-> > +}
-> > +
-> > +module_init(oneshot_trig_init);
-> > +module_exit(oneshot_trig_exit);
-> > +
-> > +MODULE_AUTHOR("Fabio Baltieri <fabio.baltieri@gmail.com>");
-> > +MODULE_DESCRIPTION("One-Shot LED trigger");
-> > +MODULE_LICENSE("GPL");
-> 
-> 
+If the 2 or 3 remaining users of OMAP2 boards want to have DT support, 
+they'll be able to add that themselves.
+
+Regards,
+Benoit
+
