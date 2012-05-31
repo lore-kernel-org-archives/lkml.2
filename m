@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab2EaS5A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:57:00 -0400
-Received: from ogre.sisk.pl ([193.178.161.156]:46909 "EHLO ogre.sisk.pl"
+	id S932538Ab2EaS6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:58:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56591 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932353Ab2EaS47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:56:59 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [Update 3x][PATCH 2/2] PM / Domains: Add preliminary support for cpuidle
-Date: Thu, 31 May 2012 21:02:05 +0200
-User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Colin Cross <ccross@android.com>, Magnus Damm <magnus.damm@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-References: <201205092340.26561.rjw@sisk.pl> <201205282350.40152.rjw@sisk.pl> <878vg95n3y.fsf@ti.com>
-In-Reply-To: <878vg95n3y.fsf@ti.com>
+	id S1756995Ab2EaS6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:58:53 -0400
+Message-ID: <4FC7BF59.3070906@zytor.com>
+Date: Thu, 31 May 2012 11:58:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
+References: <20120531012829.160060586@goodmis.org> <20120531020441.500105258@goodmis.org>
+In-Reply-To: <20120531020441.500105258@goodmis.org>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201205312102.05358.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, May 31, 2012, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On 05/30/2012 06:28 PM, Steven Rostedt wrote:
 > 
-> > On Friday, May 25, 2012, Kevin Hilman wrote:
-> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> >> 
-> >> > On Thursday, May 24, 2012, Kevin Hilman wrote:
-> >> >> Hi Rafael,
-> >> >> 
-> >> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> >> >> 
-> >> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >> >> >
-> >> >> > On some systems there are CPU cores located in the same power
-> >> >> > domains as I/O devices.  Then, power can only be removed from the
-> >> >> > domain if all I/O devices in it are not in use and the CPU core
-> >> >> > is idle.  Add preliminary support for that to the generic PM domains
-> >> >> > framework.
-> >> >> >
-> >> >> > First, the platform is expected to provide a cpuidle driver with one
-> >> >> > extra state designated for use with the generic PM domains code.
-> >> >> > This state should be initially disabled and its exit_latency value
-> >> >> > should be set to whatever time is needed to bring up the CPU core
-> >> >> > itself after restoring power to it, not including the domain's
-> >> >> > power on latency.  Its .enter() callback should point to a procedure
-> >> >> > that will remove power from the domain containing the CPU core at
-> >> >> > the end of the CPU power transition.
-> >> >> >
-> >> >> > The remaining characteristics of the extra cpuidle state, referred to
-> >> >> > as the "domain" cpuidle state below, (e.g. power usage, target
-> >> >> > residency) should be populated in accordance with the properties of
-> >> >> > the hardware.
-> >> >> >
-> >> >> > Next, the platform should execute genpd_attach_cpuidle() on the PM
-> >> >> > domain containing the CPU core.  That will cause the generic PM
-> >> >> > domains framework to treat that domain in a special way such that:
-> >> >> >
-> >> >> >  * When all devices in the domain have been suspended and it is about
-> >> >> >    to be turned off, the states of the devices will be saved, but
-> >> >> >    power will not be removed from the domain.  Instead, the "domain"
-> >> >> >    cpuidle state will be enabled so that power can be removed from
-> >> >> >    the domain when the CPU core is idle and the state has been chosen
-> >> >> >    as the target by the cpuidle governor.
-> >> >> >
-> >> >> >  * When the first I/O device in the domain is resumed and
-> >> >> >    __pm_genpd_poweron(() is called for the first time after
-> >> >> >    power has been removed from the domain, the "domain" cpuidle
-> >> >> >    state will be disabled to avoid subsequent surprise power removals
-> >> >> >    via cpuidle.
-> >> >> 
-> >> >> This looks like a good approach.  I like that it keeps a pretty clean
-> >> >> separation between CPUidle and PM domains.
-> >> >> 
-> >> >> My only comment would be that the recalc of the exit_latency should be
-> >> >> described a bit more.  Specifically, I'm not sure why it's adjused at
-> >> >> every genpd poweron.  At first I thought it was just supposed to be
-> >> >> adjusted upon attach, then adjusted back on detatch, but with the recalc
-> >> >> also in every poweron, I'm a little confused.  Care to clarify?
-> >> >
-> >> > The problem is that the PM domains code measures the time it takes to
-> >> > power off a domain and updates its power on latency parameter if the
-> >> > measured time is greater.  This is done for PM QoS to operate on realistic
-> >> > numbers (most of the time at least).
-> >> 
-> >> OK, I see.  Maybe clarifying that in the changelog would help make that
-> >> clearer.
-> >
-> > Sure.  I hope the updated changelog below is better.
+> diff --git a/arch/x86/kernel/cpu/common.c
+> b/arch/x86/kernel/cpu/common.c index 82f29e7..63fc083 100644 ---
+> a/arch/x86/kernel/cpu/common.c +++ b/arch/x86/kernel/cpu/common.c 
+> @@ -1101,14 +1101,20 @@ int is_debug_stack(unsigned long addr) addr
+> > (__get_cpu_var(debug_stack_addr) - DEBUG_STKSZ)); }
 > 
-> Perfect, thanks.
+> +static DEFINE_PER_CPU(atomic_t, debug_idt_zero); + void
+> debug_stack_set_zero(void) { +
+> atomic_inc(&__get_cpu_var(debug_idt_zero)); load_idt((const struct
+> desc_ptr *)&nmi_idt_descr); }
 > 
-> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> void debug_stack_reset(void) { -	load_idt((const struct desc_ptr
+> *)&idt_descr); +	if
+> (WARN_ON(!atomic_read(&__get_cpu_var(debug_idt_zero)))) +		return; 
+> +	if (atomic_dec_and_test(&__get_cpu_var(debug_idt_zero))) +
+> load_idt((const struct desc_ptr *)&idt_descr); }
+> 
 
-Cool, thanks!
+What you have here is a nesting counter, which is good, but I have
+some objections to the implementation.
+
+The name "debug_idt_zero" doesn't convey a counter in any way, shape
+or form; perhaps debug_stack_users or something like that.
+
+Since this is percpu, there is no reason to use the atomic operations
+(globally locked!), and since it is on the local CPU there is no need
+to manifest a pointer; we can instead use this_cpu_inc/dec_return:
+
+static DEFINE_PER_CPU(u32, debug_stack_use_ctr);
+
+void debug_stack_set_zero(void)
+{
+	if (this_cpu_inc_return(debug_stack_use_ctr) == 1)
+	 	load_idt((const struct desc_ptr *)&nmi_idt_descr);
+}
+
+void debug_stack_reset(void)
+{
+	if (this_cpu_dec_return(debug_stack_use_ctr) == 0)
+		load_idt((const struct desc_ptr *)&idt_descr);
+}
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
