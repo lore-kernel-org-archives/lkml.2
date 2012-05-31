@@ -1,78 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab2EaRTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:19:53 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:44012 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab2EaRTv (ORCPT
+	id S1754887Ab2EaRZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:25:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39789 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753837Ab2EaRZo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:19:51 -0400
-Date: Thu, 31 May 2012 19:20:18 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Message-ID: <20120531172018.GO14515@aftab.osrc.amd.com>
-References: <4FBE5E1D.7070804@redhat.com>
- <20120524164554.GM27063@aftab.osrc.amd.com>
- <4FBE7755.2080301@redhat.com>
- <20120529115851.GB29157@aftab.osrc.amd.com>
- <4FC4D6E2.9060501@redhat.com>
- <20120529145245.GG29157@aftab.osrc.amd.com>
- <4FC4E9EB.5030801@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
- <20120531100005.GC14074@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F6C61@ORSMSX104.amr.corp.intel.com>
+	Thu, 31 May 2012 13:25:44 -0400
+Date: Thu, 31 May 2012 18:25:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Anthony Olech <Anthony.Olech@diasemi.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Javier Martin <javier.martin@vista-silicon.com>
+Subject: Re: [PATCH 3/4] regmap: Add support for register indirect addressing.
+Message-ID: <20120531172541.GM2666@opensource.wolfsonmicro.com>
+References: <201205311619.q4VGJ8S2014801@sw-eng-lt-dc-vm2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EE8jvUPYYQjJtG7J"
 Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F6C61@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <201205311619.q4VGJ8S2014801@sw-eng-lt-dc-vm2>
+X-Cookie: You are fairminded, just and loving.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 04:51:27PM +0000, Luck, Tony wrote:
-> No, it's a 6-bit field used as a shift ... so if it has value "6", it
-> means cache line granularity. Value "12" would mean 4K granularity.
-> Architecturally it could say "30" to mean gigabyte, or even "63" to
-> mean "everything is gone".
 
-Right, 0x3f are 6 bits, correct, doh!
+--EE8jvUPYYQjJtG7J
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> >> while a few (IIRC patrol scrub) will report with page (4K)
-> >> granularity. Linux doesn't really care - they all have to get rounded
-> >> up to page size because we can't take away just one cache line from a
-> >> process.
-> >
-> > I'd like to see that :-)
-> 
-> Patrol scrub works inside the depths of the memory controller on rank/row
-> addresses, not on system physical addresses. When it finds a problem, a
-> reverse translation is needed to be able to report a system physical
-> address in MCi_ADDR. Getting all the bits right is apparently a hard thing
-> to do, so the MCI_MISC_ADDR_LSB bits are used to indicate that some low
-> order bits are not valid.
+On Thu, May 31, 2012 at 04:47:20PM +0200, Krystian Garbaciak wrote:
 
-Ok, thus the dynamic granularity. But we're going to end up reporting
-rank and row too so that it can be matched to the DIMM. I consider
-physical address a bonus in such cases and it is only of importance to
-those who like to replace single DRAM chips or single MOSFET transistors
-:-) :-) :-).
+Adding people who've got some chips with paging, please keep them in the
+CCs on this unless they complain (though since I'm cutting context...  :/ )
 
--- 
-Regards/Gruss,
-Boris.
+> +       /* Partition all accessible registers on address ranges,
+> +          either to be accessed directly or indirectly. Arrange range
+> +          list by ascending addresses. */
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Wouldn't something naturally sorted like a rbtree be a more direct way
+of doing this?
+
+> +		range_cfg = NULL;
+> +		for (n = 0, min_base = UINT_MAX; n < config->n_ranges; n++)
+> +			if (range_base <= config->ranges[n].base_reg &&
+> +			    config->ranges[n].base_reg <= min_base)
+> +				range_cfg = &config->ranges[n];
+> +
+
+I've stared at this for a little while and I'm really not sure what it's
+supposed to do.  The whole thing with min_base is just a bit odd, we're
+doing comparisons against it but we never update it so why aren't we
+using a constant, and in fact the comparison is always going to be true
+since we're comparing against UINT_MAX.
+
+I suspect it's supposed to pick the range with the lowest base but I'm
+not convinced it does that.
+
+> +		if (!range_cfg || range_cfg->base_reg > range_base) {
+> +			/* Range of registers for direct access */
+> +			range = kzalloc(sizeof(*range), GFP_KERNEL);
+> +			if (range == NULL) {
+> +				ret = -ENOMEM;
+> +				goto err_range;
+> +			}
+> +			range->base_reg = range_base;
+> +			if (range_cfg)
+> +				range->max_reg = range_cfg->base_reg - 1;
+> +			else
+> +				range->max_reg = UINT_MAX;
+> +			list_add_tail(&range->list, &map->range_list);
+> +		}
+
+This is making my head hurt too, possibly because of the lack of clarity
+in the above.
+
+> +static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+> +			       unsigned int mask, unsigned int val,
+> +			       bool *change);
+
+Put this up at the top of the file.
+
+> +static int
+> +_regmap_range_access(int (*regmap_bus_access)(struct regmap *map,
+> +					      unsigned int reg,
+> +					      void *val, unsigned int val_len),
+
+eew, typedef this!
+
+> +       unsigned int _page, _p;
+> +       unsigned int _reg, _r;
+> +       unsigned int _num;
+
+These _s aren't helping legibility here.
+
+> +	/* Bulk write should not cross single range boundaries */
+> +	if (val_num != 0 &&
+> +	    reg + val_num - 1 > range->max_reg)
+> +		return -EINVAL;
+
+When would val_num ever be zero?
+
+> +			/* Update page register (may use caching) */
+> +			ret = _regmap_update_bits(map, range->page_sel_reg,
+> +						range->page_sel_mask,
+> +						_page << range->page_sel_shift,
+> +						&change);
+> +			if (ret < 0)
+> +				return ret;
+
+Why the comment about the cache - why would this go wrong?
+
+> +			/* There is no point to pass cache for data
+> +			   registers, as they should be volatile anyway */
+> +			ret = _regmap_range_access(regmap_bus_access,
+> +						   map, _reg, _val, _num);
+> +			if (ret < 0)
+> +				return ret;
+
+That comment needs some clarification too...
+
+> +/**
+> + * Configuration for indirect accessed register range.
+> + * Indirect or paged registers, can be defined with one or more structures.
+
+No , here.
+
+> + * @translate_reg: Function should return indirect address/page number and
+> + *                 register number (out of this range) matching virtual_reg.
+
+Why does the user need to specify this?  Shouldn't we just specify a
+size for the underlying window and then have a default which does the
+obvious translations?  I'd imagine an *overwhelming* proportion of users
+will want to do that.  Allowing an override is fine but requiring code
+seems wrong for something like this.
+
+--EE8jvUPYYQjJtG7J
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPx6mPAAoJEBus8iNuMP3djwEP+QGRTqiO46klhSHwIbrzVP3b
+YOR7NS1KR9oOXUrA63K/Tsio8zDP6wb9koO4fniuzFUwQSuZT+LYeM4KCKwptMn0
+1Fv9OGG/kQ2GSb796MkuWqdVVrLgu7kI44cnGlra/qpFS1YiKeOoqnB4na9dxOrt
+zNIOZ21Q6EREdmdeaW90JsYTcCWSMe8dkx8ldD1hC5lv7qBs9srp8wfcJIp93ZHG
+godERCOhFRqJXRWIIvtGarbwNyuzSUhue0kNRxKGqLctm5nyDC7ZR6peeSq3KBlr
+IEU+j4ryv46/gWjLdigcff7a/s3fa5iVBWmTHqMokqJyqrCM1MVEyQVrbGkf1EBC
+ETYsoTQZmh+1ALQ4oIyUvMGfpTqpfIG/ChRqdZmE+DiuA09RIst5IOXCFJm2EOTk
+rElV10oRcjkbWE7AZYSp6IsDw99RSMNROC192rOacoOF+2UePeiWiCdLapMyEFiD
+V9taoDxmjsG7Qq2LEY5OjRKYVehrQDj8xI6QfGSycwkIZ601qn+36TYoreFcYC1E
+lOGBoRXgbK9Jxh1eGw3xGKOBEewPS/jqBwdj3tOv0xItRcZJCQGrcdJsvO3/2lKv
+1tMBvsNhC4sEF5gzUranyI18i1n3BooR0cSk/9bJNusEyPvH9SAN0aqmgYr5TcVW
+DEHWR7bsCyuStyMdf/bi
+=moTq
+-----END PGP SIGNATURE-----
+
+--EE8jvUPYYQjJtG7J--
