@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab2EaVJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 17:09:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58342 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753048Ab2EaVJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 17:09:30 -0400
-Message-ID: <4FC7DDF1.5070606@zytor.com>
-Date: Thu, 31 May 2012 14:09:05 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758537Ab2EaVMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 17:12:25 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1785 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab2EaVMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 17:12:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6728"; a="194241802"
+Message-ID: <4FC7DEB4.3000208@codeaurora.org>
+Date: Thu, 31 May 2012 14:12:20 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
-References: <20120531012829.160060586@goodmis.org>     <20120531020441.500105258@goodmis.org> <4FC7BF59.3070906@zytor.com>    <1338492300.13348.384.camel@gandalf.stny.rr.com>    <4FC7C62C.1020807@zytor.com>   <1338494431.13348.410.camel@gandalf.stny.rr.com>   <4FC7D1F7.8090405@zytor.com>  <1338496555.13348.429.camel@gandalf.stny.rr.com>  <4FC7D6EC.3000904@zytor.com> <1338497811.13348.443.camel@gandalf.stny.rr.com>
-In-Reply-To: <1338497811.13348.443.camel@gandalf.stny.rr.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-15
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Mike Turquette <mturquette@ti.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH] clk: add extension API
+References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com> <4FC5DFCF.1020606@codeaurora.org> <20120530194059.GA13243@gmail.com> <4FC6E5B2.2010700@codeaurora.org> <20120531082309.GP8026@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20120531082309.GP8026@tbergstrom-lnx.Nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2012 01:56 PM, Steven Rostedt wrote:
-> On Thu, 2012-05-31 at 13:39 -0700, H. Peter Anvin wrote:
->> On 05/31/2012 01:35 PM, Steven Rostedt wrote:
+On 05/31/2012 01:23 AM, Peter De Schrijver wrote:
+> On Thu, May 31, 2012 at 05:29:54AM +0200, Saravana Kannan wrote:
+>> On 05/30/2012 12:40 PM, Mike Turquette wrote:
+>>> On 20120530-01:52, Stephen Boyd wrote:
+>>>> On 5/29/2012 2:58 AM, Peter De Schrijver wrote:
+>>>>> Add an extension API for clocks. This allows clocktypes to provide extensions
+>>>>> for features which are uncommon and cannot be easily mapped onto normal clock
+>>>>> framework concecpts. eg: resetting blocks, configuring clock phase etc.
+>>>>
+>>>> This seems rather generic. Why not add more specific APIs/concepts like
+>>>> clk_reset(), clk_set_phase(), etc.? If they don't map, maybe we should
+>>>> make them map.
+>>>>
 >>>
->>> Thus only the debug stack does the stack TSS trick.
+>>> I also wonder if exposing some of these knobs should be done in the
+>>> basic clock types.  Meaning that instead of having additional calls in
+>>> the clk.h API those calls could be exposed by the basic clock types that
+>>> map to the actions.
 >>>
->>> Is this what you were looking for? (God, it just shows how much time
->>> I've been spending on this crap, as I was able to find all this by
->>> memory and not grepping for it :-p )
->>>
+>>> The question that needs to be answered is this: do generic drivers need
+>>> access to these additional functions (clk.h) or just the platform code
+>>> which implements some of the clock logic (basic clock types&
+>>> platform-speciic clock types).
 >>
->> That's why I asked instead of pulled it up myself.
->>
->> However, what is missing is what the permitted transitions are.  This
->> affects the options.
-> 
-> Only the debug stack changes. These happen in the two places I already
-> mentioned.
-> 
-> One, the switch of the IDT in NMI (to convert the IST from 4 to 0, and
-> just keep the same stack).
-> 
-> Two, is the trick in the paranoidzeroentry_ist code (adding the debug
-> stack). That changes the DEBUG stack pointer.
-> 
+>> One of the main reason for the common clock framework is so that each
+>> platform doesn't have it's own extension and have mostly similar code
+>> repeat all over the place. So, having clock APIs outside of clk.h
+>> doesn't make sense when we look at the direction we want the code base
+>> to proceed in.
+>
+> I don't think this will lead to 'mostly similar code repeat all over the
+> place'. I don't know of any intree SoC which has a similar requirement.
+> So which code duplication would this cause?
 
-No, I'm asking what environments (alternate stacks) are permitted where.
- That is the important information.
+It's not clear what you plan to use this API for. So, I can't really 
+answer if any intree SoC needs it. But if this is about reset signals, 
+it's definitely needed for MSM too. I was planning on bringing this up 
+after the basic clock API implementation in the clock framework is 
+usable for MSM.
 
-The interaction of the above two things is part of the problem, of
-course, and I think it can (and should) be avoided.
+-Saravana
 
-	-hpa
-
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
