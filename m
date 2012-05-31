@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964890Ab2EaUgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:36:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8380 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2EaUf6 (ORCPT
+	id S964912Ab2EaUhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:37:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52016 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964865Ab2EaUhx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:35:58 -0400
-X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=6I2XFdsDAPIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=xDSAQ_2pYmEkZUIePVQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338496555.13348.429.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Date: Thu, 31 May 2012 16:35:55 -0400
-In-Reply-To: <4FC7D1F7.8090405@zytor.com>
-References: <20120531012829.160060586@goodmis.org>
-	   <20120531020441.500105258@goodmis.org> <4FC7BF59.3070906@zytor.com>
-	  <1338492300.13348.384.camel@gandalf.stny.rr.com>
-	  <4FC7C62C.1020807@zytor.com>
-	 <1338494431.13348.410.camel@gandalf.stny.rr.com>
-	 <4FC7D1F7.8090405@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 31 May 2012 16:37:53 -0400
+Date: Thu, 31 May 2012 13:37:50 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+cc: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Patch] x86 : set numa_nodes_parsed at
+ acpi_numa_memory_affinity_init
+In-Reply-To: <4FC47E88.2000403@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1205311337340.2764@chino.kir.corp.google.com>
+References: <4FC47E88.2000403@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 13:17 -0700, H. Peter Anvin wrote:
+On Tue, 29 May 2012, Yasuaki Ishimatsu wrote:
 
-> Ouch.  This is really way more complex than it has any excuse for being,
-> and it's the complexity that concerns me, not the performance.
-
-Complexity is my Sun, and I am the planet that orbits around it.
-
+> When hot-adding a CPU into my system, the system showed following message
+> since node_to_cpumask_map[2] was not allocated memory.
 > 
-> I'd like a chart, or list, of the alternate stack environments we can be
-> in and what can transfer to what.  I think there might be an easier
-> solution that is more robust.
+> Booting Node 2 Processor 32 APIC 0xc0
+> node_to_cpumask_map[2] NULL
+> Pid: 0, comm: swapper/32 Tainted: G       A     3.3.5-acd #21
+> Call Trace:
+>  [<ffffffff81048845>] debug_cpumask_set_cpu+0x155/0x160
+>  [<ffffffff8105e28a>] ? add_timer_on+0xaa/0x120
+>  [<ffffffff8150665f>] numa_add_cpu+0x1e/0x22
+>  [<ffffffff815020bb>] identify_cpu+0x1df/0x1e4
+>  [<ffffffff815020d6>] identify_econdary_cpu+0x16/0x1d
+>  [<ffffffff81504614>] smp_store_cpu_info+0x3c/0x3e
+>  [<ffffffff81505263>] smp_callin+0x139/0x1be
+>  [<ffffffff815052fb>] start_secondary+0x13/0xeb
+> 
+> In my investigation, the root cause is that the bit of node 2 was not set at
+> numa_nodes_parsed since hot-added cpu was not written in ACPI SRAT Table.
+> But hot-added memory which is same PXM as the cpu is written in here.
+> 
+> ACPI Spec Rev 5.0 says about ACPI SRAT talbe as follows:
+> This optional table provides information that allows OSPM to associate
+> processors and memory ranges, including ranges of memory provided by
+> hot-added memory devices, with system localities / proximity domains
+> and clock domains.
+> 
+> So I think the ACPI SRAT Table is not wrong. Thus numa_nodes_parsed should be set
+> by not only acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init
+> but also acpi_numa_memory_affinity_init for the case.
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Well, it's not as bad as one might think:
-
-#define STACKFAULT_STACK 1
-#define DOUBLEFAULT_STACK 2
-#define NMI_STACK 3
-#define DEBUG_STACK 4
-#define MCE_STACK 5
-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
-
-These are the exceptions that have their own stacks.
-
-arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_DB, &debug, DEBUG_STACK);
-arch/x86/kernel/traps.c:        set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
-arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
-arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
-arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
-arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
-
-We only have two IDT tables that are fixed and are switched via the NMI
-handler (debug_stack_set_zero), as well as this patch set.
-
-head_64.S:
-
-ENTRY(idt_table)
-	.skip IDT_ENTRIES * 16
-
-	.align L1_CACHE_BYTES
-ENTRY(nmi_idt_table)
-	.skip IDT_ENTRIES * 16
-
-
-Only the DEBUG stack has a double size:
-
-arch/x89/kernel/cpu/common.c:
-
-static const unsigned int exception_stack_sizes[N_EXCEPTION_STACKS] = {
-	  [0 ... N_EXCEPTION_STACKS - 1]	= EXCEPTION_STKSZ,
-	  [DEBUG_STACK - 1]			= DEBUG_STKSZ
-};
-
-
-Thus only the debug stack does the stack TSS trick.
-
-Is this what you were looking for? (God, it just shows how much time
-I've been spending on this crap, as I was able to find all this by
-memory and not grepping for it :-p )
-
--- Steve
-
-
+Acked-by: David Rientjes <rientjes@google.com>
