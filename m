@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab2EaFic (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:38:32 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44940 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab2EaFia convert rfc822-to-8bit (ORCPT
+	id S1752965Ab2EaFii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:38:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33640 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752773Ab2EaFig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:38:30 -0400
+	Thu, 31 May 2012 01:38:36 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FC70355.70805@jp.fujitsu.com>
+Date: Thu, 31 May 2012 14:36:21 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120530121449.GI9947@opensource.wolfsonmicro.com>
-References: <CANKRQnjoGN=uvej8B1BxPHAx7NQtOORD9yJRPUc134DrVmPzNg@mail.gmail.com>
-	<20120326154009.GA17506@sirena.org.uk>
-	<CANKRQnhn=ALR0ucv5gnvwnxwxBQX4ajm9Jo5qC0fL-EFjDdoZg@mail.gmail.com>
-	<20120523093857.GC4085@opensource.wolfsonmicro.com>
-	<CANKRQnhNWC2F6zKgBMJY7HnipJbA5p-=6Lz4uGZqBKNQ688Z3w@mail.gmail.com>
-	<20120524100742.GH5361@opensource.wolfsonmicro.com>
-	<CANKRQnj_LdGQPYPV7d5NNZBx8oM5aAGHu4qZidiiS6C4eNtNJQ@mail.gmail.com>
-	<1337941231.1580.19.camel@vkoul-udesk3>
-	<20120527221956.GB25019@opensource.wolfsonmicro.com>
-	<CANKRQnhwkhGUHi6WQhw-sRJuKari3SLcipCJXVp27OZ29=Vxkw@mail.gmail.com>
-	<20120530121449.GI9947@opensource.wolfsonmicro.com>
-Date: Thu, 31 May 2012 14:38:30 +0900
-Message-ID: <CANKRQni4uqQJ99ycOScHmn-g1kz2_XH7ePL+n1taG5jAbDSubw@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH v5] sound/soc/lapis: add platform driver for ML7213
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Vinod Koul <vinod.koul@linux.intel.com>, alsa-devel@alsa-project.org,
-        lars@metafoo.de, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Rientjes <rientjes@google.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com> <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 9:14 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
->> >> First you should not be writing your own dma driver, it *needs* to use
->> >> dmaenegine. We already have bunch of driver supported, so there may be a
->> > He's already done that, their current code is all open coded dmaengine
->> > stuff.
->> I don't understand why you say so ?
->> I don't use any own dma driver, right ? I use only dmaengine's.
->> If there is own, let me show.
-> Please re-read what I wrote.
-
-Let me clarify.
-Do you say native DMA driver API like dmaengine_prep_slave_sg(),
-dmaengine_submit() shouldn't be used from ASoC driver, right ?
-
->> > The existing code is far from nothing, there is a fairly substantial
->> > dmaengine library there already which should share a big chunk of code
->> > with any cyclic support.  If you were saying "this is too hard for
->> > $REASON" that'd be one thing but that's not what you're saying here.
+(2012/05/31 14:02), David Rientjes wrote:
+> On Thu, 31 May 2012, Kamezawa Hiroyuki wrote:
 >
->> If our ASoC supports cyclic dma mode, we must modify both pch_dma
->> driver and our ASoC driver.
+>>> It's not just a memcg issue, it would also be a cpusets issue.
+>>
+>> I think you can add cpuset.meminfo.
+>>
 >
-> No, all current mainline drivers using the library use cyclic DMA.
+> It's simple to find the same information by reading the per-node meminfo
+> files in sysfs for each of the allowed cpuset mems.  This is why this
+> approach has been nacked in the past, specifically by Paul Jackson when he
+> implemented cpusets.
+>
 
-I can't see any driver uses cyclic DMA. (I saw linux-next's tree from
-kernel.org.)
-Where is your saying "current mainline" ?
+I don't think there was a discussion of LXC in that era.
 
->> I don't want to do this.
->> Because I can't understand the merit. In plain words, to me, this
->> looks insignificant things.
-> The purpose of this change is to factor code out of individual drivers
-> into generic code rather than having lots of people writing exactly the
-> same code.  Code duplication at this level is pointless and makes more
-> work for everyone who will have to maintain the code going forward.
+> The bottomline is that /proc/meminfo is one of many global resource state
+> interfaces and doesn't imply that every thread has access to the full
+> resources.  It never has.  It's very simple for another thread to consume
+> a large amount of memory as soon as your read() of /proc/meminfo completes
+> and then that information is completely bogus.
 
-I understand your saying "merit".
+Why you need to discuss this here ? We know all information are snapshot.
 
-However I think it seems difficult for supporting all devices.
-Because hardware dependency control code can't be added.
-For example, for ML7213, needs interrupt control both before/after DMA transfer.
-However,  in case of using soc-dmaengine, the control can't be done.
-Because the processing is in soc-dmaengine.
+> We also don't want to
+> virtualize every single global resource state interface, it would be never
+> ending.
+>
+Just doing one by one. It will end.
 
-> Having looked at Russell's out of tree code I'm even more convinced that
-> the amount of new code needed for non-cyclic DMA should be pretty
-> trivial.
+> Applications that administer memory cgroups or cpusets can get this
+> information very easily, each application within those memory cgroups or
+> cpusets does not need it and should not rely on it: it provides no
+> guarantee about future usage nor notifies the application when the amount
+> of free memory changes.
 
-I don't know what you are talking about.
+If so, the admin should have know-how to get the information from the inside
+of the container. If container is well-isolated, he'll need some
+trick to get its own cgroup information from the inside of containers.
 
+Hmm....maybe need to mount cgroup in the container (again) and get an access to cgroup
+hierarchy and find the cgroup it belongs to......if it's allowed. I don't want to allow
+it and disable it with capability or some other check. Another idea is to exchange
+information by some network connection with daemon in root cgroup, like qemu-ga.
+And free, top, ....misc applications should support it. It doesn't seem easy.
 
-thanks.
--- 
-ROHM Co., Ltd.
-tomoya
+It may be better to think of supporting yet another FUSE procfs, which will work
+with libvirt in userland if having it in the kernel is complicated.
+
+Thanks,
+-Kame
+
