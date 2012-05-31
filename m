@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab2EaTTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:19:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57107 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932311Ab2EaTTl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:19:41 -0400
-Message-ID: <4FC7C43B.3070106@zytor.com>
-Date: Thu, 31 May 2012 12:19:23 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S933119Ab2EaTUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:20:11 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22599 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933094Ab2EaTUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 15:20:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6728"; a="194192683"
+Message-ID: <4cff1edb39da3b03e37840871a75c2c4.squirrel@www.codeaurora.org>
+In-Reply-To: <000001cd3d98$f015db60$d0419220$@codeaurora.org>
+References: <009d01cd3411$0febc350$2fc349f0$%jun@samsung.com>
+    <d98d78ec2312cbc5edb1b2c337ab788d.squirrel@www.codeaurora.org>
+    <000001cd3d98$f015db60$d0419220$@codeaurora.org>
+Date: Thu, 31 May 2012 12:19:48 -0700 (PDT)
+Subject: RE: [PATCH v6 1/3] mmc: core: Add packed command feature of eMMC4.5
+From: merez@codeaurora.org
+To: "Subhash Jadavani" <subhashj@codeaurora.org>
+Cc: merez@codeaurora.org, "'Seungwon Jeon'" <tgih.jun@samsung.com>,
+        linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/5] x86: Reset the debug_stack update counter
-References: <20120531012829.160060586@goodmis.org> <20120531020441.165841749@goodmis.org>
-In-Reply-To: <20120531020441.165841749@goodmis.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 06:28 PM, Steven Rostedt wrote:
->> 
-> diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c index
-> 9087527..c1fffc5 100644 --- a/arch/x86/kernel/nmi.c +++
-> b/arch/x86/kernel/nmi.c @@ -450,8 +450,10 @@ static inline void
-> nmi_nesting_preprocess(struct pt_regs *regs)
-> 
-> static inline void nmi_nesting_postprocess(void) { -	if
-> (unlikely(__get_cpu_var(update_debug_stack))) +	if
-> (unlikely(__get_cpu_var(update_debug_stack))) { 
-> debug_stack_reset(); +		__get_cpu_var(update_debug_stack) = 0; +	} 
-> } #endif
-> 
 
-Please don't use __get_cpu_var(); it causes a pointer to be manifest,
-which is free or almost free on most architectures but quite expensive
-on x86.
+>
+>
+>> -----Original Message-----
+>> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+>> owner@vger.kernel.org] On Behalf Of merez@codeaurora.org
+>> Sent: Tuesday, May 29, 2012 5:08 PM
+>> To: Seungwon Jeon
+>> Cc: linux-mmc@vger.kernel.org; 'Chris Ball'; merez@codeaurora.org;
+>> linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [PATCH v6 1/3] mmc: core: Add packed command feature of
+>> eMMC4.5
+>>
+>> > @@ -1244,6 +1249,25 @@ static int mmc_init_card(struct mmc_host *host,
+>> > u32 ocr,
+>> >  		}
+>> >  	}
+>> >
+>> > +	if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
+>> > +			(card->ext_csd.max_packed_writes > 0) &&
+>> > +			(card->ext_csd.max_packed_reads > 0)) {
+>> > +		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+>> > +				EXT_CSD_EXP_EVENTS_CTRL,
+>> > +				EXT_CSD_PACKED_EVENT_EN,
+>> > +				card->ext_csd.generic_cmd6_time);
+>> > +		if (err && err != -EBADMSG)
+>> > +			goto free_card;
+>> > +		if (err) {
+>> > +			pr_warning("%s: Enabling packed event failed\n",
+>> > +					mmc_hostname(card->host));
+>> > +			card->ext_csd.packed_event_en = 0;
+>> > +			err = 0;
+>> > +		} else {
+>> > +			card->ext_csd.packed_event_en = 1;
+>> > +		}
+>> > +	}
+>> > +
+>> The above shoud not be performed in case of resume. Therefore it needs
+>> to
+> be
+>> done only if (!oldcard)
+>
+> Maya,
+> What if eMMC power (VCC and VCCQ) was removed during suspend? Then in that
+> case during resume, we have to send this mmc_switch() command again. So
+> this
+> operation should not be under "if (!oldcard)" check.
+>
+> Regards,
+> Subhash
+Thanks for the correction, my mistake.
 
-Instead use this_cpu_read()/this_cpu_write().
-
-Consider:
-
-#include <linux/types.h>
-#include <linux/percpu.h>
-
-static DEFINE_PER_CPU(int, percpu_test);
-
-int read_foo(void)
-{
-	return __get_cpu_var(percpu_test);
-}
-
-void write_foo(int x)
-{
-	__get_cpu_var(percpu_test) = x;
-}
-
-int read_bar(void)
-{
-	return this_cpu_read(percpu_test);
-}
-
-void write_bar(int x)
-{
-	this_cpu_write(percpu_test, x);
-}
-
-... and the corresponding assembly code (with gcc boilerplate removed):
-
-read_foo:
-        movq    $percpu_test, %rax      #, tcp_ptr__
-        add %gs:this_cpu_off, %rax      # this_cpu_off, tcp_ptr__
-        movl    (%rax), %eax    # *D.8429_3, *D.8429_3
-        ret
-
-write_foo:
-        movq    $percpu_test, %rax      #, tcp_ptr__
-        add %gs:this_cpu_off, %rax      # this_cpu_off, tcp_ptr__
-        movl    %edi, (%rax)    # x, *D.8435_3
-        ret
-
-read_bar:
-        movl %gs:percpu_test,%eax       # percpu_test, pfo_ret__
-
-write_bar:
-        movl %edi,%gs:percpu_test       # x, percpu_test
-        ret
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Thanks,
+Maya Erez
+Consultant for Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
 
