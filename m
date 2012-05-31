@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758144Ab2EaNvW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:51:22 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:41273 "EHLO isrv.corpit.ru"
+	id S1758185Ab2EaNv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:51:29 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757409Ab2EaNvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:51:21 -0400
-Message-ID: <4FC77755.5060606@msgid.tls.msk.ru>
-Date: Thu, 31 May 2012 17:51:17 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S1757409Ab2EaNv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 09:51:27 -0400
+Message-ID: <4FC7729C.3000307@nod.at>
+Date: Thu, 31 May 2012 15:31:08 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-CC: "J. Bruce Fields" <bfields@fieldses.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.0+ NFS issues
-References: <4FBF2C57.3070203@msgid.tls.msk.ru>   <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru>   <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru>  <1338469169.2420.7.camel@lade.trondhjem.org>  <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org>
-In-Reply-To: <1338471975.7732.5.camel@lade.trondhjem.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
+        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
+        tim.bird@am.sony.com
+Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
+References: <1337771191-95358-1-git-send-email-richard@nod.at> <1337771191-95358-2-git-send-email-richard@nod.at> <4FC74A04.30100@intel.com>
+In-Reply-To: <4FC74A04.30100@intel.com>
 X-Enigmail-Version: 1.4.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig8D7BA475F269EFAC6255320E"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.05.2012 17:46, Myklebust, Trond wrote:
-> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
-[]
->> I started tcpdump:
->>
->>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
->>
->> on the client (192.168.88.2).  Next I mounted a directory on the client,
->> and started reading (tar'ing) a directory into /dev/null.  It captured a
->> few stalls.  Tcpdump shows number of packets it got, the stalls are at
->> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
->>
->> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
->> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
->> 10 files of 1Gb each, all made by using `truncate' utility, so does not
->> take place on disk at all.  This also makes it obvious that the issue
->> does not depend on the speed of disk on the server (since in this case,
->> the server disk isn't even in use).
-> 
-> OK. So from the above file it looks as if the traffic is mainly READ
-> requests.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig8D7BA475F269EFAC6255320E
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-The issue here happens only with reads.
+Am 31.05.2012 12:37, schrieb Adrian Hunter:
+> How do you know that this is the current fastmap and not a remnant of a=
+n old
+> fastmap?
 
-> In 2 places the server stops responding. In both cases, the client seems
-> to be sending a single TCP frame containing several COMPOUNDS containing
-> READ requests (which should be legal) just prior to the hang. When the
-> server doesn't respond, the client pings it with a RENEW, before it ends
-> up severing the TCP connection and then retransmitting.
+In the current fastmap we delete always the old one upon attaching.
+But I think it would to better to scan all UBI_FM_MAX_START PEBs
+and pick the super block with the highest sequence number.
 
-And sometimes -- speaking only from the behavour I've seen, not from the
-actual frames sent -- server does not respond to the RENEW too, in which
-case the client reports "nfs server no responding", and on the next
-renew it may actually respond.  This happens too, but much more rare.
+Thanks,
+//richard
 
-During these stalls, ie, when there's no network activity at all,
-the server NFSD threads are busy eating all available CPU.
 
-What does it all tell us? :)
+--------------enig8D7BA475F269EFAC6255320E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Thank you!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-/mjt
+iQEcBAEBAgAGBQJPx3KhAAoJEN9758yqZn9emCAIAKLqtvG3Yu272VSpCrsyYh70
+VaaCSG9ZOHGTyvZ8x9o3EHLNbRvIDUmX9lhSNbIUNjtcCXKRuCMU0Rbpre5r+Z5p
+rxyM9IIHpgAmcMuK7Jb4o6kFxm/H5YR5dqHIeCVR0dy+nY0u5R1gktAHGvlNLwT+
+dRj2MuSpCsPLqPT2K8iCA+jSlaXz4sKRlsIl4smKcClzPQYFOlrYlHQmfuVAMnUo
+XF9jIULFGBm6rJA5ZziXQ4y8gi5FRrpJIn+HosSBC0VUn001W6JkdBZvdHemWVqZ
+CWeZQ+cnZh/NraIrgZZiJx3GQ8iNkiyWaVb864nsaH8KsWEOV7tG2SwYAaEDBUE=
+=ci0A
+-----END PGP SIGNATURE-----
+
+--------------enig8D7BA475F269EFAC6255320E--
