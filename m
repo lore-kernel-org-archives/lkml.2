@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab2EaMBc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:01:32 -0400
-Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:54685 "EHLO
-	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756870Ab2EaMB2 (ORCPT
+	id S1757542Ab2EaMEW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:04:22 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44213 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755897Ab2EaMEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:01:28 -0400
-Message-ID: <20120531150124.119853l3a0cbvj40@www.81.fi>
-Date: Thu, 31 May 2012 15:01:24 +0300
-From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, linville@tuxdriver.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: [PATCH 1/3] drivers/net: Convert compare_ether_addr to
- ether_addr_equal
-References: <7c9881a67c52c2f218480b6742155b6d6928122d.1336618708.git.joe@perches.com>
- <20120510173201.16131du3cg90nybo@www.81.fi>
- <1336666288.22495.14.camel@joe2Laptop>
- <20120510.123353.1458740731067514606.davem@davemloft.net>
-In-Reply-To: <20120510.123353.1458740731067514606.davem@davemloft.net>
+	Thu, 31 May 2012 08:04:21 -0400
+Date: Thu, 31 May 2012 20:04:11 +0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        thomas.braunstorfinger@rohde-schwarz.com
+Subject: Re: [PATCH] add new NRP power meter USB device driver
+Message-ID: <20120531120411.GA4859@kroah.com>
+References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
+ <1338454041.6454.67.camel@wall-e>
+ <20120531095304.GA3884@kroah.com>
+ <201205311217.11692.oneukum@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.7)
+In-Reply-To: <201205311217.11692.oneukum@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting David Miller <davem@davemloft.net>:
+On Thu, May 31, 2012 at 12:17:11PM +0200, Oliver Neukum wrote:
+> Am Donnerstag, 31. Mai 2012, 11:53:04 schrieb Greg KH:
+> > > So it is a chicken and egg problem. A lot of software is now out with
+> > > depends on this driver and a lot of embedded development environments
+> > > doesn't provide libudev, libsysfs und libusb. It will also increase the
+> > > size of the image and adds additional dependencies to the application.
+> > 
+> > You don't need any of those libraries to do this.  What's wrong with
+> > using "raw" usbfs interactions?
+> 
+> SPI is not limited to USB. If we can get a unified subsystem then the
+> drivers need to be in kernel space, as some hardware does not allow
+> a solution in user space.
 
-> From: Joe Perches <joe@perches.com>
-> Date: Thu, 10 May 2012 09:11:28 -0700
->
->> (cc's trimmed)
->>
->> On Thu, 2012-05-10 at 17:32 +0300, Jussi Kivilinna wrote:
->>> Quoting Joe Perches <joe@perches.com>:
->>> > Use the new bool function ether_addr_equal to add
->>> > some clarity and reduce the likelihood for misuse
->>> > of compare_ether_addr for sorting.
->> []
->>> > diff --git a/drivers/net/wireless/rndis_wlan.c
->> []
->>> > @@ -2139,7 +2139,7 @@ resize_buf:
->>> >  	while (check_bssid_list_item(bssid, bssid_len, buf, len)) {
->>> >  		if (rndis_bss_info_update(usbdev, bssid) && match_bssid &&
->>> >  		    matched) {
->>> > -			if (compare_ether_addr(bssid->mac, match_bssid))
->>> > +			if (!ether_addr_equal(bssid->mac, match_bssid))
->>>
->>> While reviewing this, noticed that above original code is wrong. It
->>> should be !compare_ether_addr. So do I push patch fixing this through
->>> wireless-testing althought it will later cause conflict with this patch?
->>>
->>> -Jussi
->>>
->>> >  				*matched = true;
->>> >  		}
->>> >
->>
->> Up to John.
->>
->> Here's the patch I would send against net-next
->> updating the test and the style a little.
->
-> I think in this specific case it's better to push this one directly
-> through net-next.  But yes, it's up to John.
->
+Ok, now that is a valid reason for a kernel driver.
 
-It's been some time now, and I think it's ok to wait until  
-wireless-testing has
-this patch merged and then fix it there.
+But, I think it should use the IIO interface, as that should handle
+these types of devices.
 
-That line/compare was added as response to hardware bug, where bssid-list does
-not contain BSSID and other information of currently connected AP  
-(spec insists
-that device must provide this information in the list when connected). Lack
-bssid-data on current connection then causes WARN_ON somewhere in cfg80211.
-Workaround was to check if bssid-list returns current bssid and if it  
-does not,
-manually construct bssid information in other ways. And this  
-workaround worked,
-with inverse check. Which must mean that when hardware is experiencing the
-problem, it's actually returning empty bssid-list.
+thanks,
 
-Inverse check causes workaround be activated when bssid-list returns only
-entry, currently connected BSSID. That does not cause problems in itself, just
-slightly more inaccurate information in scan-list.
-
--Jussi
-
+greg k-h
