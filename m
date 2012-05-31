@@ -1,106 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab2EaOvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:51:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54166 "EHLO mx1.redhat.com"
+	id S1757317Ab2EaO7R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:59:17 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41139 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab2EaOvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:51:03 -0400
-Date: Thu, 31 May 2012 11:50:42 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Feng Tang <feng.tang@intel.com>
-Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] perf script: Replace "struct thread" with "struct
- addr_location" as a parameter for "process_event()"
-Message-ID: <20120531145042.GA28571@infradead.org>
-References: <1338446072-24655-1-git-send-email-feng.tang@intel.com>
- <1338446072-24655-2-git-send-email-feng.tang@intel.com>
+	id S1752132Ab2EaO7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:59:15 -0400
+Message-ID: <4FC78672.6040805@ti.com>
+Date: Thu, 31 May 2012 09:55:46 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338446072-24655-2-git-send-email-feng.tang@intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Xiao Jiang <jgq516@gmail.com>
+CC: <b-cousson@ti.com>, <linux@arm.linux.org.uk>, <rob.herring@calxeda.com>,
+        <grant.likely@secretlab.ca>, <rnayak@ti.com>, <tony@atomide.com>,
+        <wim@iguana.be>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-watchdog@vger.kernel.org>
+Subject: Re: [PATCH 1/3] arm/dts: add wdt node for omap3 and omap4
+References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-2-git-send-email-jgq516@gmail.com> <4FC50CCD.7090404@ti.com> <4FC591C9.2050004@gmail.com> <4FC631E5.9080000@ti.com> <4FC706D7.2010801@gmail.com>
+In-Reply-To: <4FC706D7.2010801@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 31, 2012 at 02:34:31PM +0800, Feng Tang escreveu:
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index 8e395a5..282e206 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -405,9 +405,10 @@ static void process_event(union perf_event *event __unused,
->  			  struct perf_sample *sample,
->  			  struct perf_evsel *evsel,
->  			  struct machine *machine,
-> -			  struct thread *thread)
-> +			  struct addr_location *al __unused)
 
-Why the __unused modifier, since you...
+On 05/31/2012 12:51 AM, Xiao Jiang wrote:
+> Hi Jon and Benoit,
+>>> Thanks for reminding, how about below patch?
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+>>> b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+>>> new file mode 100644
+>>> index 0000000..4272d06
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+>>> @@ -0,0 +1,15 @@
+>>> +TI Watchdog Timer (WDT) Controller for OMAP
+>>> +
+>>> +Required properties:
+>>> +- compatible:
+>>> +  - "ti,omap2-wdt" for OMAP2
+>>> +  - "ti,omap3-wdt" for OMAP3
+>>> +  - "ti,omap4-wdt" for OMAP4
+>>> +- ti,hwmods: Name of the hwmod associated to the WDT
+>>> +
+>>> +Examples:
+>>> +
+>>> +wdt2: wdt@73f98000 {
+>>> +       compatible = "ti,omap4-wdt";
+>>> +       ti,hwmods = "wd_timer2";
+>>> +};
+>>>     
+>>
+>> Yes looks good. Thanks! Minor nit-pick in the example I would just copy
+>> the omap4 node completely with the actual omap4 address :-)
+>>
+>>   
+> Oops, wrong addr, :). Perhaps we can drop address as you said, since the
+> right addresses are defined
+> in wd_timer2 hwmod (see [1]), and wdt also works without the address as
+> follows.
+> 
+> diff --git a/arch/arm/boot/dts/omap2.dtsi b/arch/arm/boot/dts/omap2.dtsi
+> index f2ab4ea..0017bd8 100644
+> --- a/arch/arm/boot/dts/omap2.dtsi
+> +++ b/arch/arm/boot/dts/omap2.dtsi
+> @@ -63,5 +63,10 @@
+>                        ti,hwmods = "uart3";
+>                        clock-frequency = <48000000>;
+>                };
+> +
+> +               wdt2: wdt {
+> +                       compatible = "ti,omap2-wdt";
+> +                       ti,hwmods = "wd_timer2";
+> +               };
+>        };
+> };
+> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+> index 99474fa..dbf8a5b 100644
+> --- a/arch/arm/boot/dts/omap3.dtsi
+> +++ b/arch/arm/boot/dts/omap3.dtsi
+> @@ -215,5 +215,10 @@
+>                        compatible = "ti,omap3-hsmmc";
+>                        ti,hwmods = "mmc3";
+>                };
+> +
+> +               wdt2: wdt {
+> +                       compatible = "ti,omap3-wdt", "ti,omap2-wdt";
+> +                       ti,hwmods = "wd_timer2";
+> +               };
+>        };
+> };
+> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+> index 359c497..ce74e87 100644
+> --- a/arch/arm/boot/dts/omap4.dtsi
+> +++ b/arch/arm/boot/dts/omap4.dtsi
+> @@ -272,5 +272,10 @@
+>                        ti,hwmods = "mmc5";
+>                        ti,needs-special-reset;
+>                };
+> +
+> +               wdt2: wdt {
+> +                       compatible = "ti,omap4-wdt", "ti,omap2-wdt";
+> +                       ti,hwmods = "wd_timer2";
+> +               };
+>        };
+> };
+> 
+> Infos for omap3:
+> # dmesg|grep Machine
+> <6>[    0.000000] Machine: Generic OMAP3 (Flattened Device Tree), model:
+> TI OMAP3 EVM (OMAP3530, AM/DM37x)
+> # dmesg|grep omap_wdt_probe
+> <4>[    2.552825] in omap_wdt_probe: 299, res->start = 0x48314000
+> 
+> Infos for omap4:
+> root@localhost:/root> dmesg|grep Machine
+> [    0.000000] Machine: Generic OMAP4 (Flattened Device Tree), model: TI
+> OMAP4 SDP board
+> root@localhost:/root> dmesg|grep omap_wdt_probe
+> [    1.687896] in omap_wdt_probe: 299, res->start = 0x4a314000
+> 
+> So can I drop the wdt addr from dts file? otherwise it is not feasible
+> to add omap2 wdt node in omap2.dtsi
+> due to different addrs for omap2420 and omap2430.
 
->  {
->  	struct perf_event_attr *attr = &evsel->attr;
-> +	struct thread *thread = al->thread;
+Benoit, what is your preference here?
 
-... are using al?
-  
->  	if (output[attr->type].fields == 0)
->  		return;
-> @@ -520,7 +521,7 @@ static int process_sample_event(struct perf_tool *tool __used,
->  	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
->  		return 0;
->  
-> -	scripting_ops->process_event(event, sample, evsel, machine, thread);
-> +	scripting_ops->process_event(event, sample, evsel, machine, &al);
->  
->  	evsel->hists.stats.total_period += sample->period;
->  	return 0;
-> diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
-> index 4c1b3d7..af9a6a4 100644
-> --- a/tools/perf/util/scripting-engines/trace-event-perl.c
-> +++ b/tools/perf/util/scripting-engines/trace-event-perl.c
-> @@ -256,7 +256,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
->  				    struct perf_sample *sample,
->  				    struct perf_evsel *evsel,
->  				    struct machine *machine __unused,
-> -				    struct thread *thread)
-> +				    struct addr_location *al __unused)
-
-Ditto
-
->  {
->  	struct format_field *field;
->  	static char handler[256];
-> @@ -268,6 +268,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
->  	int cpu = sample->cpu;
->  	void *data = sample->raw_data;
->  	unsigned long long nsecs = sample->time;
-> +	struct thread *thread = al->thread;
->  	char *comm = thread->comm;
->  
->  	dSP;
-> @@ -346,7 +347,7 @@ static void perl_process_event_generic(union perf_event *pevent __unused,
->  				       struct perf_sample *sample,
->  				       struct perf_evsel *evsel __unused,
->  				       struct machine *machine __unused,
-> -				       struct thread *thread __unused)
-> +				       struct addr_location *al __unused)
-
-Here it seems ok
-
->  {
->  	dSP;
->  
-> @@ -372,10 +373,10 @@ static void perl_process_event(union perf_event *pevent,
->  			       struct perf_sample *sample,
->  			       struct perf_evsel *evsel,
->  			       struct machine *machine,
-> -			       struct thread *thread)
-> +			       struct addr_location *al)
-
-And here it is correctly without the __unused marker
-
-Check the others please
+Cheers
+Jon
