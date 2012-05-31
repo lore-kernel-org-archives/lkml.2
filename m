@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab2EaWtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:49:31 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:51805 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994Ab2EaWt3 (ORCPT
+	id S1758312Ab2EaW71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:59:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:45161 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095Ab2EaW70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:49:29 -0400
-X-Greylist: delayed 1507 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 18:49:29 EDT
-Date: Fri, 1 Jun 2012 00:24:07 +0200
-From: Harald Welte <laforge@gnumonks.org>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] List LGPL (v2 / v2.1) as GPL compatible in
- license_is_gpl_compatible()
-Message-ID: <20120531222407.GB5256@prithivi.gnumonks.org>
+	Thu, 31 May 2012 18:59:26 -0400
+Date: Thu, 31 May 2012 15:58:59 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: baozich <baozich@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+In-Reply-To: <20120530221707.GA25095@centos-guest>
+Message-ID: <alpine.LSU.2.00.1205311544400.4561@eggly.anvils>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils> <alpine.LSU.2.00.1205132201210.6148@eggly.anvils> <20120530221707.GA25095@centos-guest>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It may be a highly unusual choice to license Linux kernel drivers under
-LGPL, but at least as long as LGPLv2 or LGPLv2.1 is used, this is fully
-GPL compatible and shouldn't taint the kernel.
+On Thu, 31 May 2012, baozich wrote:
+> > 
+> > In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> > previously a side-effect of add, and mem_cgroup_update_lru_size()
+> > to maintain the lru_size stats.
+> I have a stupid question. I'm not sure whether there is reduplication
+> to put both "page" and "zone" parameter in mem_cgroup_page_lruvec(),
+> for I noticed that the "struct zone *zone" parameter are usually from 
+> page_zone(page) in most cases. I think that the semantics of this function
+> is to grab the lruvec the page belongs to. So will it be ok if we pass
+> only "page" as the parameter, which I think would be cleaner? Please
+> fix me if I missed something.
 
-Signed-off-by: Harald Welte <laforge@gnumonks.org>
----
- include/linux/license.h |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+I share your dislike for passing down an "unnecessary" argument,
+but I do think it's justified here.
 
- NOTE: I've actually seen this happen in practise, where an embedded
- system ships with a LPGL licensed driver which in turn taints the
- kernel.  I suppose this was not really the intention...
+If the zone pointer were available simply by page->zone, then yes,
+I'd agree with you that it's probably silly to pass zone separately.
 
-diff --git a/include/linux/license.h b/include/linux/license.h
-index decdbf4..9c0df0e 100644
---- a/include/linux/license.h
-+++ b/include/linux/license.h
-@@ -8,7 +8,10 @@ static inline int license_is_gpl_compatible(const char *license)
- 		|| strcmp(license, "GPL and additional rights") == 0
- 		|| strcmp(license, "Dual BSD/GPL") == 0
- 		|| strcmp(license, "Dual MIT/GPL") == 0
--		|| strcmp(license, "Dual MPL/GPL") == 0);
-+		|| strcmp(license, "Dual MPL/GPL") == 0
-+		|| strcmp(license, "LGPL") == 0
-+		|| strcmp(license, "LGPL v2") == 0
-+		|| strcmp(license, "LGPL v2.1") == 0);
- }
- 
- #endif
--- 
-1.7.10
+But page_zone(page) is never as trivial as that, and on some memory
+layouts it can be a lookup that you'd really prefer to avoid repeating.
+
+In every(?) case where we're using mem_cgroup_page_lruvec(), the zone
+is already known: it's just been used for spin_lock_irq(&zone->lru_lock).
+
+And when CONFIG_CGROUP_MEM_RES_CTLR is not set, the inline function
+mem_cgroup_page_lruvec() uses only zone, not page at all: I wouldn't
+want to be slowing down that case with another page_zone(page) lookup.
+
+Also it's somewhat academic (though not for v3.5), in that this function
+goes away in the patches I build upon it; and I expect it also to go away
+in the patches Konstantin would build upon it - mem_cgroup_page_lruvec()
+is a staging point, before we combine memcg/zone lookup with the locking.
+
+Hugh
