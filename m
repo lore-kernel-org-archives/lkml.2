@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab2EaMLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:11:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S1757585Ab2EaMMM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:12:12 -0400
+Received: from mx1.fusionio.com ([66.114.96.30]:59357 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755897Ab2EaMLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:11:37 -0400
-Message-ID: <1338466281.19369.44.camel@cr0>
-Subject: Re: [RFC Patch] fs: implement per-file drop caches
-From: Cong Wang <amwang@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Thu, 31 May 2012 20:11:21 +0800
-In-Reply-To: <4FC70FFE.50809@gmail.com>
-References: <1338385120-14519-1-git-send-email-amwang@redhat.com>
-	  <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>
-	 <4FC70FFE.50809@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1754503Ab2EaMMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 08:12:10 -0400
+X-ASG-Debug-ID: 1338466329-03d6a5030e35000001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4FC76016.3040108@fusionio.com>
+Date: Thu, 31 May 2012 14:12:06 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] followup block pull request
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] followup block pull request
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1338466329
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.98530
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 02:30 -0400, KOSAKI Motohiro wrote:
-> (5/31/12 2:20 AM), Cong Wang wrote:
-> > On Wed, 2012-05-30 at 16:14 +0100, Pádraig Brady wrote:
-> >> On 05/30/2012 02:38 PM, Cong Wang wrote:
-> >>> This is a draft patch of implementing per-file drop caches.
-> >>>
-> >>> It introduces a new fcntl command  F_DROP_CACHES to drop
-> >>> file caches of a specific file. The reason is that currently
-> >>> we only have a system-wide drop caches interface, it could
-> >>> cause system-wide performance down if we drop all page caches
-> >>> when we actually want to drop the caches of some huge file.
-> >>
-> >> This is useful functionality.
-> >> Though isn't it already provided with POSIX_FADV_DONTNEED?
-> >
-> > Thanks for teaching this!
-> >
-> > However, from the source code of madvise_dontneed() it looks like it is
-> > using a totally different way to drop page caches, that is to invalidate
-> > the page mapping, and trigger a re-mapping of the file pages after a
-> > page fault. So, yeah, this could probably drop the page caches too (I am
-> > not so sure, haven't checked the code in details), but with my patch, it
-> > flushes the page caches directly, what's more, it can also prune
-> > dcache/icache of the file.
-> 
-> madvise should work. I don't think we need duplicate interface. Moreomover
-> madvise(2) is cleaner than fcntl(2).
-> 
+Hi Linus,
 
-I think madvise(DONTNEED) attacks the problem in a different approach,
-it munmaps the file mapping and by the way drops the page caches, my
-approach is to drop the page caches directly similar to what sysctl
-drop_caches.
+Includes the fix from Eric to resolve the infinite loop in looking up /
+creating an IO context for an exiting task.
 
-What about private file mapping? Could madvise(DONTNEED) drop the page
-caches too even when the other process is doing the same private file
-mapping? At least my patch could do this.
+Also a bunch of mtip32xx patches. Fairly trivial stuff.  It's fairly new
+though, but no point in keeping it out of the tree until 3.6 imho. I've
+thrown it through basic testing locally as well, works fine. The one
+contentious part is the patch that Greg complained about (sysfs file
+with multiple values, should be a debugfs file), which is perfectly
+valid, but not a regression from what the file contains now. That will
+be fixed up separately.
 
-I am not sure if fcntl() is a good interface either, this is why the
-patch is marked as RFC. :-D
+  git://git.kernel.dk/linux-block.git for-linus
 
-Thanks!
+----------------------------------------------------------------
+Asai Thambi S P (10):
+      mtip32xx: fix clearing an incorrect register in mtip_init_port
+      mtip32xx: Set custom timeouts for PIO commands
+      mtip32xx: Change HDIO_GET_IDENTITY to return stored data
+      mtip32xx: Fix to handle TFE for PIO(IOCTL/internal) commands
+      mtip32xx: Set block queue boundary variables
+      mtip32xx: Use plain spinlock for 'cmd_issue_lock'
+      mtip32xx: Fix to support more than one sector in exec_drive_command()
+      mtip32xx: minor performance tweak
+      mtip32xx: Convert macro definitions for flag bits to enum
+      mtip32xx: Changes to sysfs entries
+
+Eric Dumazet (1):
+      block: avoid infinite loop in get_task_io_context()
+
+ Documentation/ABI/testing/sysfs-block-rssd |  12 +-
+ block/blk-ioc.c                            |   6 +-
+ drivers/block/mtip32xx/mtip32xx.c          | 276 ++++++++++++++++++-----------
+ drivers/block/mtip32xx/mtip32xx.h          |  48 ++---
+ 4 files changed, 212 insertions(+), 130 deletions(-)
+
+-- 
+Jens Axboe
 
