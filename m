@@ -1,390 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956Ab2EaQUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 12:20:30 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:60726 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab2EaQU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 12:20:29 -0400
-Message-Id: <201205311619.q4VGJ8S2014801@sw-eng-lt-dc-vm2>
-From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Date: Thu, 31 May 2012 16:47:20 +0200
-Subject: [PATCH 3/4] regmap: Add support for register indirect addressing.
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Anthony Olech <Anthony.Olech@diasemi.com>
+	id S1754183Ab2EaQWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 12:22:44 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:8043 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751879Ab2EaQWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 12:22:42 -0400
+X-IronPort-AV: E=Sophos;i="4.75,693,1330934400"; 
+   d="scan'208";a="652400458"
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Fred Isaman <iisaman@netapp.com>
+Subject: [PATCH] NFS: Ensure that setattr and getattr wait for O_DIRECT write completion
+Date: Thu, 31 May 2012 12:22:33 -0400
+Message-Id: <1338481353-23083-1-git-send-email-Trond.Myklebust@netapp.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devices, having indirectly accessed registers or register paging implemented,
-can configure register mapping to map indirectly accessible registers on
-virtual address range. During access to virtually mapped register, indirect
-addressing is processed automatically, depending on configuration. Other
-registers are accessed directly.
+Use the same mechanism as the block devices are using, but move the
+helper functions from fs/direct-io.c into fs/inode.c to remove the
+dependency on CONFIG_BLOCK.
 
-Range configuration should contain base, number of virtual registers,
-information about addressing/paging field and translation function defined.
-translate_reg function should take virtual register and return indirect
-address/page number and data register address for proper read.
-
-Nesting of indirectly accessible register ranges is supported and will be
-automatically carried out. For example, addressing/paging register and data
-register of one address range can be located in another virtual address range,
-that yet requires paging.
-
-Caching for virtual register range is also supported and can be defined in
-regmap configuration. In order to make indirect access more efficient, register
-used for indirect addressing/paging should not be declared as volatile, when
-possible.
-
-struct regmap_config is extended with the following:
-	struct regmap_range_cfg	*ranges;
-	unsigned int		n_ranges;
-
-Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Fred Isaman <iisaman@netapp.com>
 ---
- drivers/base/regmap/internal.h |   17 ++++
- drivers/base/regmap/regmap.c   |  167 +++++++++++++++++++++++++++++++++++++++-
- include/linux/regmap.h         |   37 +++++++++
- 3 files changed, 217 insertions(+), 4 deletions(-)
+ fs/direct-io.c     |   44 --------------------------------------------
+ fs/inode.c         |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/nfs/direct.c    |   15 ++++++++++++---
+ fs/nfs/inode.c     |    5 ++++-
+ fs/nfs/internal.h  |    4 ++++
+ include/linux/fs.h |    9 +++------
+ 6 files changed, 71 insertions(+), 54 deletions(-)
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index fcafc5b..0220e4c 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -79,6 +79,8 @@ struct regmap {
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index f4aadd1..0c85fae 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -145,50 +145,6 @@ struct dio {
  
- 	struct reg_default *patch;
- 	int patch_regs;
-+
-+	struct list_head range_list;
- };
+ static struct kmem_cache *dio_cache __read_mostly;
  
- struct regcache_ops {
-@@ -99,6 +101,21 @@ bool regmap_precious(struct regmap *map, unsigned int reg);
- int _regmap_write(struct regmap *map, unsigned int reg,
- 		  unsigned int val);
- 
-+struct regmap_range {
-+	struct list_head list;
-+
-+	unsigned int base_reg;
-+	unsigned int max_reg;
-+
-+	void (*translate_reg)(struct device *dev, unsigned int virtual_reg,
-+			      unsigned int *page, unsigned int *reg);
-+	unsigned int page_sel_reg;
-+	unsigned int page_sel_mask;
-+	int page_sel_shift;
-+
-+	bool busy;
-+};
-+
- #ifdef CONFIG_DEBUG_FS
- extern void regmap_debugfs_initcall(void);
- extern void regmap_debugfs_init(struct regmap *map);
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 7c5291e..c32d1a6 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -175,6 +175,12 @@ struct regmap *regmap_init(struct device *dev,
- {
- 	struct regmap *map;
- 	int ret = -EINVAL;
-+	unsigned int range_base;
-+	unsigned int min_base;
-+	const struct regmap_range_cfg *range_cfg;
-+	struct regmap_range *range;
-+	struct list_head *entry, *entry_tmp;
-+	int n;
- 
- 	if (!bus || !config)
- 		goto err;
-@@ -283,10 +289,74 @@ struct regmap *regmap_init(struct device *dev,
- 	    !(map->format.format_reg && map->format.format_val))
- 		goto err_map;
- 
-+	/* For some formats, indirect addressing is not supported. */
-+	if (map->format.format_write && config->n_ranges != 0)
-+		goto err_map;
-+
-+	/* Partition all accessible registers on address ranges,
-+	   either to be accessed directly or indirectly. Arrange range
-+	   list by ascending addresses. */
-+	INIT_LIST_HEAD(&map->range_list);
-+	range_base = 0;
-+	do {
-+		range_cfg = NULL;
-+		for (n = 0, min_base = UINT_MAX; n < config->n_ranges; n++)
-+			if (range_base <= config->ranges[n].base_reg &&
-+			    config->ranges[n].base_reg <= min_base)
-+				range_cfg = &config->ranges[n];
-+
-+		if (!range_cfg || range_cfg->base_reg > range_base) {
-+			/* Range of registers for direct access */
-+			range = kzalloc(sizeof(*range), GFP_KERNEL);
-+			if (range == NULL) {
-+				ret = -ENOMEM;
-+				goto err_range;
-+			}
-+			range->base_reg = range_base;
-+			if (range_cfg)
-+				range->max_reg = range_cfg->base_reg - 1;
-+			else
-+				range->max_reg = UINT_MAX;
-+			list_add_tail(&range->list, &map->range_list);
-+		}
-+
-+		if (range_cfg) {
-+			unsigned int range_max_reg = range_cfg->base_reg +
-+						     range_cfg->num_regs - 1;
-+
-+			/* Sanity check for range configuration */
-+			if (range_cfg->num_regs == 0 ||
-+			    range_max_reg < range_cfg->base_reg ||
-+			    range_max_reg > map->max_register ||
-+			    range_cfg->translate_reg == NULL ||
-+			    (range_cfg->base_reg <= range_cfg->page_sel_reg &&
-+			     range_cfg->page_sel_reg <= range_max_reg)) {
-+				ret = -EINVAL;
-+				goto err_range;
-+			}
-+
-+			/* Range of registers for indirect access */
-+			range = kzalloc(sizeof(*range), GFP_KERNEL);
-+			if (range == NULL) {
-+				ret = -ENOMEM;
-+				goto err_range;
-+			}
-+			range->base_reg = range_cfg->base_reg;
-+			range->max_reg = range_max_reg;
-+			range->translate_reg = range_cfg->translate_reg;
-+			range->page_sel_reg = range_cfg->page_sel_reg;
-+			range->page_sel_mask = range_cfg->page_sel_mask;
-+			range->page_sel_shift = range_cfg->page_sel_shift;
-+			list_add_tail(&range->list, &map->range_list);
-+
-+			range_base = range->max_reg + 1;
-+		}
-+	} while (range_cfg != NULL);
-+
- 	map->work_buf = kzalloc(map->format.buf_size, GFP_KERNEL);
- 	if (map->work_buf == NULL) {
- 		ret = -ENOMEM;
--		goto err_map;
-+		goto err_range;
- 	}
- 
- 	regmap_debugfs_init(map);
-@@ -299,6 +369,9 @@ struct regmap *regmap_init(struct device *dev,
- 
- err_free_workbuf:
- 	kfree(map->work_buf);
-+err_range:
-+	list_for_each_safe(entry, entry_tmp, &map->range_list)
-+		kfree(entry_tmp);
- err_map:
- 	kfree(map);
- err:
-@@ -389,13 +462,98 @@ int regmap_reinit_cache(struct regmap *map, const struct regmap_config *config)
+-static void __inode_dio_wait(struct inode *inode)
+-{
+-	wait_queue_head_t *wq = bit_waitqueue(&inode->i_state, __I_DIO_WAKEUP);
+-	DEFINE_WAIT_BIT(q, &inode->i_state, __I_DIO_WAKEUP);
+-
+-	do {
+-		prepare_to_wait(wq, &q.wait, TASK_UNINTERRUPTIBLE);
+-		if (atomic_read(&inode->i_dio_count))
+-			schedule();
+-	} while (atomic_read(&inode->i_dio_count));
+-	finish_wait(wq, &q.wait);
+-}
+-
+-/**
+- * inode_dio_wait - wait for outstanding DIO requests to finish
+- * @inode: inode to wait for
+- *
+- * Waits for all pending direct I/O requests to finish so that we can
+- * proceed with a truncate or equivalent operation.
+- *
+- * Must be called under a lock that serializes taking new references
+- * to i_dio_count, usually by inode->i_mutex.
+- */
+-void inode_dio_wait(struct inode *inode)
+-{
+-	if (atomic_read(&inode->i_dio_count))
+-		__inode_dio_wait(inode);
+-}
+-EXPORT_SYMBOL(inode_dio_wait);
+-
+-/*
+- * inode_dio_done - signal finish of a direct I/O requests
+- * @inode: inode the direct I/O happens on
+- *
+- * This is called once we've finished processing a direct I/O request,
+- * and is used to wake up callers waiting for direct I/O to be quiesced.
+- */
+-void inode_dio_done(struct inode *inode)
+-{
+-	if (atomic_dec_and_test(&inode->i_dio_count))
+-		wake_up_bit(&inode->i_state, __I_DIO_WAKEUP);
+-}
+-EXPORT_SYMBOL(inode_dio_done);
+-
+ /*
+  * How many pages are in the queue?
   */
- void regmap_exit(struct regmap *map)
- {
-+	struct regmap_range *range, *range_tmp;
-+
- 	regcache_exit(map);
- 	regmap_debugfs_exit(map);
- 	kfree(map->work_buf);
-+	list_for_each_entry_safe(range, range_tmp, &map->range_list, list)
-+		kfree(range_tmp);
- 	kfree(map);
+diff --git a/fs/inode.c b/fs/inode.c
+index 9f4f5fe..a8138d8 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1741,3 +1741,51 @@ bool inode_owner_or_capable(const struct inode *inode)
+ 	return false;
  }
- EXPORT_SYMBOL_GPL(regmap_exit);
- 
-+static int _regmap_update_bits(struct regmap *map, unsigned int reg,
-+			       unsigned int mask, unsigned int val,
-+			       bool *change);
+ EXPORT_SYMBOL(inode_owner_or_capable);
 +
-+static int
-+_regmap_range_access(int (*regmap_bus_access)(struct regmap *map,
-+					      unsigned int reg,
-+					      void *val, unsigned int val_len),
-+		     struct regmap *map, unsigned int reg,
-+		     void *val, unsigned int val_num)
++/*
++ * Direct i/o helper functions
++ */
++static void __inode_dio_wait(struct inode *inode)
 +{
-+	struct regmap_range *range;
-+	bool change;
-+	unsigned int _page, _p;
-+	unsigned int _reg, _r;
-+	unsigned int _num;
-+	u8 *_val = val;
-+	int ret;
++	wait_queue_head_t *wq = bit_waitqueue(&inode->i_state, __I_DIO_WAKEUP);
++	DEFINE_WAIT_BIT(q, &inode->i_state, __I_DIO_WAKEUP);
 +
-+	/* Search for range to write to. Should always find one. */
-+	list_for_each_entry_reverse(range, &map->range_list, list) {
-+		if (range->base_reg <= reg)
-+			break;
-+	}
-+	BUG_ON(&range->list == &map->range_list);
-+
-+	/* Bulk write should not cross single range boundaries */
-+	if (val_num != 0 &&
-+	    reg + val_num - 1 > range->max_reg)
-+		return -EINVAL;
-+
-+	if (range->translate_reg) {
-+		/* One virtual range can be accessed through another range.
-+		   Make sure, that there is no loops during indirect access. */
-+		if (range->busy)
-+			return -EBUSY;
-+
-+		range->busy = 1;
-+
-+		/* Split bulk write to pages */
-+		range->translate_reg(map->dev, reg, &_page, &_reg);
-+		while (val_num) {
-+			for (_num = 1; _num < val_num; _num++) {
-+				range->translate_reg(map->dev, reg + _num,
-+						     &_p, &_r);
-+				if (_p != _page ||
-+				    _r != _reg + _num)
-+					break;
-+			}
-+
-+			/* Update page register (may use caching) */
-+			ret = _regmap_update_bits(map, range->page_sel_reg,
-+						range->page_sel_mask,
-+						_page << range->page_sel_shift,
-+						&change);
-+			if (ret < 0)
-+				return ret;
-+
-+			/* There is no point to pass cache for data
-+			   registers, as they should be volatile anyway */
-+			ret = _regmap_range_access(regmap_bus_access,
-+						   map, _reg, _val, _num);
-+			if (ret < 0)
-+				return ret;
-+
-+			val_num -= _num;
-+			_val += _num * map->format.val_bytes;
-+			_page = _p;
-+			_reg = _r;
-+		}
-+
-+		range->busy = 0;
-+
-+		return 0;
-+
-+	} else {
-+		return regmap_bus_access(map, reg, val,
-+					 val_num * map->format.val_bytes);
-+	}
++	do {
++		prepare_to_wait(wq, &q.wait, TASK_UNINTERRUPTIBLE);
++		if (atomic_read(&inode->i_dio_count))
++			schedule();
++	} while (atomic_read(&inode->i_dio_count));
++	finish_wait(wq, &q.wait);
 +}
 +
- static int _regmap_bus_write(struct regmap *map, unsigned int reg,
- 			     void *val, size_t val_len)
- {
-@@ -452,7 +610,6 @@ static int _regmap_bus_write(struct regmap *map, unsigned int reg,
- static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 			     const void *val, size_t val_len)
- {
--	void *_val = (void *)val;
- 	int i;
- 	int ret;
- 
-@@ -482,7 +639,8 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
- 		}
- 	}
- 
--	return _regmap_bus_write(map, reg, _val, val_len);
-+	return _regmap_range_access(_regmap_bus_write, map, reg, (void *)val,
-+				    val_len / map->format.val_bytes);
- }
- 
- int _regmap_write(struct regmap *map, unsigned int reg,
-@@ -659,7 +817,8 @@ static int _regmap_bus_read(struct regmap *map, unsigned int reg, void *val,
- static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
- 			    unsigned int val_len)
- {
--	return _regmap_bus_read(map, reg, val, val_len);
-+	return _regmap_range_access(_regmap_bus_read, map, reg, val,
-+				    val_len / map->format.val_bytes);
- }
- 
- static int _regmap_read(struct regmap *map, unsigned int reg,
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index a90abb6..fdedf34 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -20,6 +20,7 @@ struct device;
- struct i2c_client;
- struct spi_device;
- struct regmap;
-+struct regmap_range;
- 
- /* An enum of all the supported cache types */
- enum regcache_type {
-@@ -50,6 +51,9 @@ struct reg_default {
-  * @pad_bits: Number of bits of padding between register and value.
-  * @val_bits: Number of bits in a register value, mandatory.
-  *
-+ * @ranges: Array of virtual address range descriptors.
-+ * @num_ranges: Descriptor array size.
++/**
++ * inode_dio_wait - wait for outstanding DIO requests to finish
++ * @inode: inode to wait for
 + *
-  * @writeable_reg: Optional callback returning true if the register
-  *                 can be written to.
-  * @readable_reg: Optional callback returning true if the register
-@@ -81,6 +85,9 @@ struct regmap_config {
- 	int pad_bits;
- 	int val_bits;
- 
-+	const struct regmap_range_cfg *ranges;
-+	unsigned int n_ranges;
++ * Waits for all pending direct I/O requests to finish so that we can
++ * proceed with a truncate or equivalent operation.
++ *
++ * Must be called under a lock that serializes taking new references
++ * to i_dio_count, usually by inode->i_mutex.
++ */
++void inode_dio_wait(struct inode *inode)
++{
++	if (atomic_read(&inode->i_dio_count))
++		__inode_dio_wait(inode);
++}
++EXPORT_SYMBOL(inode_dio_wait);
 +
- 	bool (*writeable_reg)(struct device *dev, unsigned int reg);
- 	bool (*readable_reg)(struct device *dev, unsigned int reg);
- 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
-@@ -97,6 +104,36 @@ struct regmap_config {
- 	u8 write_flag_mask;
++/*
++ * inode_dio_done - signal finish of a direct I/O requests
++ * @inode: inode the direct I/O happens on
++ *
++ * This is called once we've finished processing a direct I/O request,
++ * and is used to wake up callers waiting for direct I/O to be quiesced.
++ */
++void inode_dio_done(struct inode *inode)
++{
++	if (atomic_dec_and_test(&inode->i_dio_count))
++		wake_up_bit(&inode->i_state, __I_DIO_WAKEUP);
++}
++EXPORT_SYMBOL(inode_dio_done);
++
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 23d170b..ad2775d 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -454,6 +454,12 @@ out:
+ 	return result;
+ }
+ 
++static void nfs_inode_dio_write_done(struct inode *inode)
++{
++	nfs_zap_mapping(inode, inode->i_mapping);
++	inode_dio_done(inode);
++}
++
+ #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
+ static void nfs_direct_write_reschedule(struct nfs_direct_req *dreq)
+ {
+@@ -564,7 +570,7 @@ static void nfs_direct_write_schedule_work(struct work_struct *work)
+ 			nfs_direct_write_reschedule(dreq);
+ 			break;
+ 		default:
+-			nfs_zap_mapping(dreq->inode, dreq->inode->i_mapping);
++			nfs_inode_dio_write_done(dreq->inode);
+ 			nfs_direct_complete(dreq);
+ 	}
+ }
+@@ -581,7 +587,7 @@ static void nfs_direct_write_schedule_work(struct work_struct *work)
+ 
+ static void nfs_direct_write_complete(struct nfs_direct_req *dreq, struct inode *inode)
+ {
+-	nfs_zap_mapping(inode, inode->i_mapping);
++	nfs_inode_dio_write_done(inode);
+ 	nfs_direct_complete(dreq);
+ }
+ #endif
+@@ -766,14 +772,16 @@ static ssize_t nfs_direct_write_schedule_iovec(struct nfs_direct_req *dreq,
+ 					       loff_t pos)
+ {
+ 	struct nfs_pageio_descriptor desc;
++	struct inode *inode = dreq->inode;
+ 	ssize_t result = 0;
+ 	size_t requested_bytes = 0;
+ 	unsigned long seg;
+ 
+-	nfs_pageio_init_write(&desc, dreq->inode, FLUSH_COND_STABLE,
++	nfs_pageio_init_write(&desc, inode, FLUSH_COND_STABLE,
+ 			      &nfs_direct_write_completion_ops);
+ 	desc.pg_dreq = dreq;
+ 	get_dreq(dreq);
++	atomic_inc(&inode->i_dio_count);
+ 
+ 	for (seg = 0; seg < nr_segs; seg++) {
+ 		const struct iovec *vec = &iov[seg];
+@@ -793,6 +801,7 @@ static ssize_t nfs_direct_write_schedule_iovec(struct nfs_direct_req *dreq,
+ 	 * generic layer handle the completion.
+ 	 */
+ 	if (requested_bytes == 0) {
++		inode_dio_done(inode);
+ 		nfs_direct_req_release(dreq);
+ 		return result < 0 ? result : -EIO;
+ 	}
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index a6f5fbb..258d38c 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -418,8 +418,10 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 		return 0;
+ 
+ 	/* Write all dirty data */
+-	if (S_ISREG(inode->i_mode))
++	if (S_ISREG(inode->i_mode)) {
++		nfs_inode_dio_wait(inode);
+ 		nfs_wb_all(inode);
++	}
+ 
+ 	fattr = nfs_alloc_fattr();
+ 	if (fattr == NULL)
+@@ -503,6 +505,7 @@ int nfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
+ 
+ 	/* Flush out writes to the server in order to update c/mtime.  */
+ 	if (S_ISREG(inode->i_mode)) {
++		nfs_inode_dio_wait(inode);
+ 		err = filemap_write_and_wait(inode->i_mapping);
+ 		if (err)
+ 			goto out;
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index 1848a72..18f99ef 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -369,6 +369,10 @@ extern int nfs_migrate_page(struct address_space *,
+ /* direct.c */
+ void nfs_init_cinfo_from_dreq(struct nfs_commit_info *cinfo,
+ 			      struct nfs_direct_req *dreq);
++static inline void nfs_inode_dio_wait(struct inode *inode)
++{
++	inode_dio_wait(inode);
++}
+ 
+ /* nfs4proc.c */
+ extern void __nfs4_read_done_cb(struct nfs_read_data *);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8de6755..eef4cd6 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2432,8 +2432,6 @@ enum {
  };
  
-+/**
-+ * Configuration for indirect accessed register range.
-+ * Indirect or paged registers, can be defined with one or more structures.
-+ * Registers out of such defined ranges are accessed directly.
-+ *
-+ * @base_reg: Register address of first register in virtual address range.
-+ * @num_regs: Number of registers asigned to this range.
-+ *
-+ * @translate_reg: Function should return indirect address/page number and
-+ *                 register number (out of this range) matching virtual_reg.
-+ *
-+ * @page_sel_reg: Register with selector for indirect address/page update.
-+ * @page_sel_shift: Bit mask for selector.
-+ * @page_sel_mask: Bit shift for selector.
-+ */
-+struct regmap_range_cfg {
-+	/* Registers of virtual address range */
-+	unsigned int base_reg;
-+	unsigned int num_regs;
+ void dio_end_io(struct bio *bio, int error);
+-void inode_dio_wait(struct inode *inode);
+-void inode_dio_done(struct inode *inode);
+ 
+ ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	struct block_device *bdev, const struct iovec *iov, loff_t offset,
+@@ -2448,12 +2446,11 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
+ 				    offset, nr_segs, get_block, NULL, NULL,
+ 				    DIO_LOCKING | DIO_SKIP_HOLES);
+ }
+-#else
+-static inline void inode_dio_wait(struct inode *inode)
+-{
+-}
+ #endif
+ 
++void inode_dio_wait(struct inode *inode);
++void inode_dio_done(struct inode *inode);
 +
-+	/* Registers translation function handler */
-+	void (*translate_reg)(struct device *dev, unsigned int virtual_reg,
-+			      unsigned int *page, unsigned int *reg);
-+
-+	/* Description of page selector for indirect addressing */
-+	unsigned int page_sel_reg;
-+	unsigned int page_sel_mask;
-+	int page_sel_shift;
-+};
-+
- typedef int (*regmap_hw_write)(struct device *dev, const void *data,
- 			       size_t count);
- typedef int (*regmap_hw_gather_write)(struct device *dev,
+ extern const struct file_operations generic_ro_fops;
+ 
+ #define special_file(m) (S_ISCHR(m)||S_ISBLK(m)||S_ISFIFO(m)||S_ISSOCK(m))
 -- 
-1.7.0.4
+1.7.10.2
 
