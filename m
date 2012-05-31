@@ -1,105 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab2EaPEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:04:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56887 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757266Ab2EaPEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:04:39 -0400
-Date: Thu, 31 May 2012 17:04:35 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Ingo Molnar <mingo@redhat.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Use of high-res timers
-In-Reply-To: <Pine.LNX.4.44L0.1205311004050.1580-100000@iolanthe.rowland.org>
-Message-ID: <alpine.LFD.2.02.1205311650130.3231@ionos>
-References: <Pine.LNX.4.44L0.1205311004050.1580-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1757339Ab2EaOwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:52:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753505Ab2EaOwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:52:32 -0400
+Date: Thu, 31 May 2012 17:52:20 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: x86@kernel.org, kvm@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv5 5/5] kvm: host side for eoi optimization
+Message-ID: <20120531145219.GA20290@redhat.com>
+References: <cover.1337695416.git.mst@redhat.com>
+ <f434b6864a1af1f813e6ead964026553cd879c38.1337695416.git.mst@redhat.com>
+ <20120531095710.GM2311@redhat.com>
+ <20120531101111.GA15836@redhat.com>
+ <20120531101513.GO2311@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120531101513.GO2311@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012, Alan Stern wrote:
-> On Thu, 31 May 2012, Thomas Gleixner wrote:
-> 
-> > > 	I need timed intervals with reliable lower bounds.  Let's say
-> > > 	I call ktime_get twice, maybe once in an interrupt handler and
-> > > 	once in an hrtimer callback (not necessarily on the same CPU).
-> > > 	Some action has to be taken no earlier than 1 ms after the 
-> > > 	first call.  If the second call returns a value that is at 
-> > > 	least 1 ms larger than the first call, is that enough of a 
-> > > 	guarantee?  If not, how much larger does it have to be?
+On Thu, May 31, 2012 at 01:15:13PM +0300, Gleb Natapov wrote:
+> > > > +	    /* Cache not set: safe but we don't bother. */
+> > > > +	    unlikely(apic->isr_cache == -1) ||
+> > > > +	    /* Need EOI to update ioapic. */
+> > > > +	    unlikely(kvm_ioapic_handles_vector(vcpu->kvm, apic->isr_cache)))
+> > > > +		return;
+> > > > +
+> > > > +	pv_eoi_set_pending(apic->vcpu);
+> > > > +}
+> > > > +
+> > > apic_sync_pv_eoi_to_guest() is not paired with
+> > > apic_sync_pv_eoi_from_guest() if event injection is canceled.
+> > > You can enter guest with stale pv_eoi bit.
 > > 
-> > ktime_get() is precise. Can you explain what you are trying to solve ?
-> 
-> Here's an example.  A hardware device accesses a software data
-> structure via DMA, and the driver needs to change the data structure.  
-> However, the data can't be updated safely while the device is using it.
-> Furthermore, we know that the device may continue to access the data
-> for as long as 1 ms after being told to stop (because of internal
-> caches and such).
+> > Never. The pv_eoi bit is cleared on each exit.
+> There will be no exit since there will be no entry. Search for
+> "goto out" after kvm_lapic_sync_to_vapic().
 
-And of course the hardware designers decided that there is no need for
-a reliable way to detect that....
- 
-> It's okay to wait longer than 1 ms, but we'd like to minimize the wait 
-> time in order to avoid delaying I/O unnecessarily.  Therefore:
-> 
->     (1) The driver removes the pointer to the data structure from
-> 	the device's DMA list, then calls ktime_get, adds 1 ms, and
-> 	stores the result.
-> 
->     (2) The driver waits for while (details are unimportant).
-> 
->     (3) Some time later, the driver calls ktime_get again and compares 
-> 	the stored value to the new value.  If the new value is 
-> 	smaller, go back to step (2).
-> 
->     (4) Now the driver knows that at least 1 ms has passed since (1),
-> 	and therefore any ongoing DMA has finished and the pointer has
-> 	been dropped from the device's cache.  Thus the device cannot
-> 	be doing DMA to the data structure any more, so the data can be
-> 	updated safely.
-> 
-> The key here is the assumption in step (4): If the new value from
-> ktime_get exceeds the stored value then one millisecond of time really
-> has elapsed.  I can imagine this might not hold true if the two calls
-> to ktime_get were made on different CPUs, or possibly for other
-> reasons.
-
-No. ktime_get() is guaranteed to be monotonic across CPUs.
- 
-> So my question is: What value should be stored in step (1) to guarantee 
-> that the assumption is value?
-> 
-> More or less equivalently, what is the relative error between two calls 
-> of ktime_get?
-
-It just depends on the resolution of the underlying clocksource and NTP
-adjustments.
-
-So the only case where you can run into trouble is when the
-clocksource is coarse grained, e.g. pure jiffies, where two
-consecutive calls can show a 1/HZ delta.
-
-But you really should not worry much about that, except you are aiming
-for some stoneage platform. Anything up to date is going to have at
-least a 32kHz counter based clocksource. At 32kHz the per clock tick
-increment is ~30us, so that's your expected error.
-
-Thanks,
-
-	tglx
-
-
-
-
-
-
+I think you've found a bug, thanks a bunch.
+I have fixed it but the x86 guys asked me not to
+post more patches until merge window closes :(
+So I'll sit on a fix for several days.
