@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab2EaHus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 03:50:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33397 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2EaHuq convert rfc822-to-8bit (ORCPT
+	id S1757939Ab2EaHwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 03:52:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55393 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757874Ab2EaHws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 03:50:46 -0400
+	Thu, 31 May 2012 03:52:48 -0400
+Date: Thu, 31 May 2012 09:52:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dave Jones <davej@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: NOHZ: local_softirq_pending 08
+In-Reply-To: <20120530214809.GA19223@redhat.com>
+Message-ID: <alpine.LFD.2.02.1205310938080.3231@ionos>
+References: <20120530214809.GA19223@redhat.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <CAHGf_=rT+X9PpJhfr=1GdRQ-5GALUHbt3txJCMDnus_C7Pkcug@mail.gmail.com>
-References: <1336431315-29736-1-git-send-email-andi@firstfloor.org>
-	<1338429749-5780-1-git-send-email-tdmackey@twitter.com>
-	<20120531042249.GG9850@tassilo.jf.intel.com>
-	<CAHGf_=rT+X9PpJhfr=1GdRQ-5GALUHbt3txJCMDnus_C7Pkcug@mail.gmail.com>
-Date: Thu, 31 May 2012 10:50:45 +0300
-X-Google-Sender-Auth: QMWUirgTN6rE7aBTgxr95uTgsYo
-Message-ID: <CAOJsxLFmoh6OCtJmFdKdYLGF5j4GD_N8oxR=A6NF_DHVSCBAUg@mail.gmail.com>
-Subject: Re: [PATCH v4] slab/mempolicy: always use local policy from interrupt context
-From: Pekka Enberg <penberg@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>, David Mackey <tdmackey@twitter.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, cl@linux.com,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 12:22 AM, Andi Kleen <ak@linux.intel.com> wrote:
->>> [tdmackey@twitter.com: Rework patch logic and avoid dereference of current
->>> task if in interrupt context.]
->>
->> avoiding this reference doesn't make sense, it's totally valid.
->> This is based on a older version. I sent the fixed one some time ago.
+Dave,
 
-On Thu, May 31, 2012 at 7:59 AM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
-> Where? I think David's version is most cleaner one.
->
->  Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Wed, 30 May 2012, Dave Jones wrote:
 
-Monsieur Lameter, Monsieur Rientjes, ACK/NAK?
+> May 30 17:43:04 [ 1095.335659] NOHZ: local_softirq_pending 08
+> 
+> According to git, you ratelimited this back in 2007 with the message
+> "until we found the root cause of that problem."
+> 
+> Is this an old problem that has returned ?
+
+Looks like.
+ 
+> Maybe interesting note: Both machines I see this on regularly are Atom cpus,
+> and it's always '08'.
+
+So it goes idle with NET_RX softirq pending. That really should not
+happen. I fear you need to fire up the tracer :)
+
+Thanks,
+
+	tglx
