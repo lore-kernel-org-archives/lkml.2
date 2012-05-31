@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab2EaVtx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 17:49:53 -0400
-Received: from usindpps06.hds.com ([207.126.252.19]:47896 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2EaVtw convert rfc822-to-8bit (ORCPT
+	id S1753996Ab2EaV4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 17:56:44 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:43640 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753125Ab2EaV4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 17:49:52 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 31 May 2012 17:49:19 -0400
-Subject: [Patch -tip]Skip spin_lock of pstore_dump in panic case
-Thread-Topic: [Patch -tip]Skip spin_lock of pstore_dump in panic case
-Thread-Index: Ac0/drD0aB/8YQaXReaQzEZfpjRBFg==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2E5A22B984@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 31 May 2012 17:56:42 -0400
+X-Greylist: delayed 2165 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 17:56:42 EDT
+Date: Thu, 31 May 2012 23:20:25 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: x86@kernel.org, Feng Tang <feng.tang@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/moorestown: change to __devinit in order to suppress
+  warning
+Message-ID: <20120531212025.GA8519@breakpoint.cc>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=11 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1205310250
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The allmodconfig hits:
 
-I would like to discuss a way to avoid deadlocking of pstore_dump(), kmsg_dump() and platform drivers.
-At first, I post pstore_dump() part.
+|WARNING: vmlinux.o(.text+0x6553d): Section mismatch in reference from the function intel_scu_devices_create() to the function .devinit.text: spi_register_board_info()
+|The function intel_scu_devices_create() references
+|the function __devinit spi_register_board_info().
+|This is often because intel_scu_devices_create lacks a __devinit
+|annotation or the annotation of spi_register_board_info is wrong.
+|
+|WARNING: vmlinux.o(.text+0x655f1): Section mismatch in reference from the function intel_scu_devices_create() to the function .init.text:i2c _register_board_info()
+|The function intel_scu_devices_create() references
+|the function __init i2c_register_board_info().
+|This is often because intel_scu_devices_create lacks a __init
+|annotation or the annotation of i2c_register_board_info is wrong.
 
-This patch is based on following comments on my previous patch.
-http://marc.info/?l=linux-kernel&m=131914554220738&w=2
-http://marc.info/?l=linux-kernel&m=132370565114963&w=2
+This patch marks intel_scu_devices_create() as devinit because it calls
+a devinit function, spi_register_board_info().
+The second problem with i2c_register_board_info() does not go away and
+should crash once build as a module because i2c_register_board_info() is
+long gone. Therefore this function should not be used from a module.
+Going through all the code here makes me ask, why don't use DT here for
+all that I2C and friends?
 
-The points are skipping spin_lock in panic case and adding WARN_ON in preparation for future change.
-
-Any comments are welcome.
-
-Seiji
-
-[Patch Description]
-
-This patch does followings.
-
-   - Skip a spin_lock of pstore_dump() in panic case because pstore_dump() is serialized via smp_send_stop.
-
-   - Add WARN_ON() in "in_nmi() and !panic" case into pstore_dump(). Currently, this condition never
-     becomes true. But if someone adds new kmsg_dump() into NMI path in the future, error record may corrupt. 
-     We can trap it and complain with it.
-
-
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- fs/pstore/platform.c |   26 ++++++++++++++++----------
- 1 files changed, 16 insertions(+), 10 deletions(-)
+And I looked like this while going over the code:
+   http://download.breakpoint.cc/meme/moorestown_no_dt.png
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c index 82c585f..e5a0354 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -31,6 +31,8 @@
- #include <linux/hardirq.h>
- #include <linux/workqueue.h>
+ arch/x86/platform/mrst/mrst.c        |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index e31bcd8..fd41a92 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -782,7 +782,7 @@ BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
+ EXPORT_SYMBOL_GPL(intel_scu_notifier);
  
-+#include <asm-generic/bug.h>
-+
- #include "internal.h"
+ /* Called by IPC driver */
+-void intel_scu_devices_create(void)
++void __devinit intel_scu_devices_create(void)
+ {
+ 	int i;
  
- /*
-@@ -107,15 +109,21 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	int		hsize, ret;
- 	unsigned int	part = 1;
- 	unsigned long	flags = 0;
--	int		is_locked = 0;
- 
- 	why = get_reason_str(reason);
- 
--	if (in_nmi()) {
--		is_locked = spin_trylock(&psinfo->buf_lock);
--		if (!is_locked)
--			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
--	} else
-+	/*
-+	 * Currently, this condition never becomes true.
-+	 * But if someone adds new kmsg_dump() into NMI path in the future,
-+	 * error record may corrupt. We can trap it and complain with it.
-+	 */
-+	WARN_ON(in_nmi() && reason != KMSG_DUMP_PANIC);
-+
-+	/*
-+	 * pstore_dump() is serialized in panic case.
-+	 * So, we don't need to take any locks.
-+	 */
-+	if (reason != KMSG_DUMP_PANIC)
- 		spin_lock_irqsave(&psinfo->buf_lock, flags);
- 	oopscount++;
- 	while (total < kmsg_bytes) {
-@@ -145,10 +153,8 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		total += l1_cpy + l2_cpy;
- 		part++;
- 	}
--	if (in_nmi()) {
--		if (is_locked)
--			spin_unlock(&psinfo->buf_lock);
--	} else
-+
-+	if (reason != KMSG_DUMP_PANIC)
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);  }
- 
---
-1.7.1
