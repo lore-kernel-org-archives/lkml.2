@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758142Ab2EaN0q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:26:46 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46788 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758103Ab2EaN0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:26:45 -0400
-Date: Thu, 31 May 2012 18:51:06 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] tty: annotate tty_lock() for lockdep
-Message-ID: <20120531132106.GB24279@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <alpine.LNX.2.00.1205282042290.15057@pobox.suse.cz>
- <20120531113115.GA1548@linux.vnet.ibm.com>
- <1338465354.2760.1336.camel@edumazet-glaptop>
+	id S1758164Ab2EaNh1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:37:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55520 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758137Ab2EaNhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 09:37:25 -0400
+Date: Thu, 31 May 2012 15:37:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, mroos@linux.ee,
+        JBottomley@parallels.com
+Subject: Re: [PATCH v2 0/4] fix / cleanup async scsi scanning
+Message-ID: <20120531133720.GA21281@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Dan Williams <dan.j.williams@intel.com>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+	mroos@linux.ee, JBottomley@parallels.com
+References: <20120530182016.23574.11056.stgit@dwillia2-linux.jf.intel.com>
+ <20120530182239.GD15635@x1.osrc.amd.com>
+ <CABE8wwsw98KZS0W1sJghzrei0mSGLiMoh+7Wn5xOzdM54qiYqA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1338465354.2760.1336.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12053113-3270-0000-0000-000006CA1FC3
+In-Reply-To: <CABE8wwsw98KZS0W1sJghzrei0mSGLiMoh+7Wn5xOzdM54qiYqA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > I saw a similar problem and applied your patch, but that doesnt seem to
-> > help me.
+On Wed, May 30, 2012 at 11:29:23AM -0700, Dan Williams wrote:
+> They're ready for a run, but are likely 3.6 material.  For 3.5 I think
+> James is going with the smaller fix posted here:
 > 
-> I was not aware of Jiri patch
-> 
-> Try this one instead :
-> 
-> https://lkml.org/lkml/2012/5/31/125
-> 
+> http://marc.info/?l=linux-scsi&m=133796775807498&w=2
 
-Yes, this works for me.
+Yep,
+
+both the smaller fix and the 4-patch set cure the box here, thanks.
+
+Tested-by: Borislav Petkov <bp@alien8.de>
 
 -- 
-Thanks and Regards
-Srikar
-> 
-
+Regards/Gruss,
+Boris.
