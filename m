@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600Ab2EaP3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:29:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13441 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab2EaP3W (ORCPT
+	id S932595Ab2EaPcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:32:00 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:39071 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932483Ab2EaPb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:29:22 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=A73EdQgzBtYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=IKFqG1DyJxL6CYKRz1cA:9 a=PUjeQqilurYA:10 a=0nTr5d7jX5bxvTU5:21 a=gD-hWwyS5pZPhJgn:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338478160.13348.355.camel@gandalf.stny.rr.com>
-Subject: Re: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
- breakpoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Thu, 31 May 2012 11:29:20 -0400
-In-Reply-To: <4FC78B45.9060806@hitachi.com>
-References: <20120531012829.160060586@goodmis.org>
-	  <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
-	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
-	 <4FC78B45.9060806@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 31 May 2012 11:31:59 -0400
+Date: Thu, 31 May 2012 12:31:53 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/22] perf tools: Backport of latest changes on
+ trace-cmd's libparseevent
+Message-ID: <20120531153153.GH13591@infradead.org>
+References: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
+ <87hauwnash.fsf@sejong.aot.lge.com>
+ <20120531145230.GF13591@infradead.org>
+ <1338476986.13348.347.camel@gandalf.stny.rr.com>
+ <20120531151356.GG13591@infradead.org>
+ <20120531152242.GB27841@somewhere.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120531152242.GB27841@somewhere.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-01 at 00:16 +0900, Masami Hiramatsu wrote:
+Em Thu, May 31, 2012 at 05:22:45PM +0200, Frederic Weisbecker escreveu:
+> On Thu, May 31, 2012 at 12:13:56PM -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, May 31, 2012 at 11:09:46AM -0400, Steven Rostedt escreveu:
+> > > On Thu, 2012-05-31 at 11:52 -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Thu, May 31, 2012 at 03:07:26PM +0900, Namhyung Kim escreveu:
+> > > > > It'd be great if you set up a branch for this so that I can continue to
+> > > > > work on it until fully-merged.
 
+> > > > Have you had luck obtaining a git.kernel.org account? It would be better
+> > > > if you used git and maintained such branch :-\
 
-> Perhaps, kprobes-*jump*-optimization may be better to handle it
-> because the target probe is simultaneously working while
-> optimizing (modifying code). This means that if someone hits
-> breakpoint of such kprobe, it must be handled by kprobes, not
-> only just tweaking IP address.
+> > > Darn it! I wish I signed his key when I had the chance :-p
 
-Yeah, ftrace is easier on what the breakpoint does. For kprobes, it's a
-bit more invasive. Ftrace only deals with a nop, or a "trace-me" call.
-As the modifications are being done, we always treat it as a nop until
-the modification is complete.
+> > I did it, Frédéric too, so he should have no problem getting an account,
+> > I think,
+> 
+> Except I haven't yet managed to get my korg account back and only Namhyung has
+> signed my key. So I'm not going to be very helpful in this regard ;)
 
-With kprobes, the text_poke() is a bit more difficult, because it can't
-treat the location as a nop, as what is changing actually performs some
-task for the kernel. It requires that the breakpoint know what to do
-with the text (out-of-line execution, and such). ftrace has the benefit
-of just "skip this instruction" and return.
+I just checked, he got other sigs, so your chain also should be good to
+go ;-)
 
--- Steve
-
-
+- Arnaldo
