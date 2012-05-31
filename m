@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab2EaAlR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 20:41:17 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:35796 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2EaAlP convert rfc822-to-8bit (ORCPT
+	id S1756485Ab2EaAmT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 20:42:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:60204 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab2EaAmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 20:41:15 -0400
+	Wed, 30 May 2012 20:42:18 -0400
+Message-ID: <4FC6BE64.6030201@linaro.org>
+Date: Thu, 31 May 2012 08:42:12 +0800
+From: Lee Jones <lee.jones@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120531002802.GA11775@ZenIV.linux.org.uk>
-References: <1337807899.15138.31.camel@falcor> <20120530043443.GA3200@ZenIV.linux.org.uk>
- <20120530163605.GV11775@ZenIV.linux.org.uk> <1338406967.2257.24.camel@localhost>
- <20120530202427.GW11775@ZenIV.linux.org.uk> <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
- <20120530205612.GY11775@ZenIV.linux.org.uk> <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
- <20120530213638.GZ11775@ZenIV.linux.org.uk> <CA+55aFzP8Eo1AX7MS-RRG_Atq3NF0bS1ReZydRtgxxy7TDn57Q@mail.gmail.com>
- <20120531002802.GA11775@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 30 May 2012 17:40:54 -0700
-X-Google-Sender-Auth: 5FjlxMIvzRBybJFqYgv9mdr9_rw
-Message-ID: <CA+55aFzDeZQeFY1i1xLES4ijtDeGBk3EBOh-mA0dhEH2yaGf9A@mail.gmail.com>
-Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.walleij@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
+ Device Tree
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-9-git-send-email-lee.jones@linaro.org> <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com> <20120530100302.GD9947@opensource.wolfsonmicro.com> <CAF2Aj3gZMF9ev9B46rBM+aY-srwthef09ad2CWfuXXFHmqqAjA@mail.gmail.com> <20120530121547.GJ9947@opensource.wolfsonmicro.com> <4FC63632.4030504@linaro.org> <20120530151119.GN9947@opensource.wolfsonmicro.com> <4FC63B39.6040905@linaro.org> <20120530164152.GP9947@opensource.wolfsonmicro.com>
+In-Reply-To: <20120530164152.GP9947@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 5:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On 31/05/12 00:41, Mark Brown wrote:
+> On Wed, May 30, 2012 at 11:22:33PM +0800, Lee Jones wrote:
+>> On 30/05/12 23:11, Mark Brown wrote:
 >
-> FWIW, I think it's cleaner to take the whole thing into an inlined helper.
+>>>> 	vin-supply =<&db8500_vape_reg>;
+>>>> 	vmmc-supply =<&ab8500_ldo_aux2_reg>;
+>
+>>> Oh, oops.  This is going to be fun when someone puts down two of the
+>>> same PMIC on a system...
+>
+>> What does that mean sorry?
+>
+> Lots of regulators are using this mechanism for identifying child nodes.
+> If the node name is also used as a handle by other things to reference
+> the regulator then if you have two PMICs of the same type DTC isn't
+> going to be able to figure out which node you mean.
 
-Even better.
+I haven't looked at the code yet, so I don't know the answer to this 
+question, but; aren't they protected by the compatible string? If not, I 
+think they should be. We shouldn't be parsing other platform's Device Trees.
 
-I notice that your inlined helper doesn't do what I did: if PROT_EXEC
-is already set, stop all the stupid games. IOW, the first test in that
-function could as well be
-
-    if (prot & (PROT_READ | PROT_EXEC) != PROT_READ)
-        return prot;
-
-because if PROT_EXEC is already set, or if PROT_READ wasn't set, none
-of the rest of the checks make any sense at all.
-
-But that's just me being anal. It doesn't really *matter* if we end up
-setting PROT_EXEC again.
-
-> It can be reorganized a bit, though.  vm_mmap() aside, there are only two
-> callers of do_mmap(), both passing it 0 as the last argument.  So let's
-> lift these checks on offset into vm_mmap() and kill do_mmap() completely -
-> all that remains of it would be a call of do_mmap_pgoff().  And there's no
-> reason to put those sanity checks (now in vm_mmap()) under ->mmap_sem,
-> of course.  At that point we *do* get 4 identical pieces of code.  Let's
-> call that vm_mmap_pgoff() and put it (and vm_mmap()) to mm/util.c.  Voila...
-
-Good.
-
-End result looks fine to me.
-
-             Linus
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+M: +44 77 88 633 515
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
