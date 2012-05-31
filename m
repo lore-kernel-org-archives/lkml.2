@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab2EaOdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:33:23 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43942 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757278Ab2EaOdV (ORCPT
+	id S1757845Ab2EaOgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:36:04 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54124 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757709Ab2EaOgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:33:21 -0400
-Date: Thu, 31 May 2012 22:32:55 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        thomas.braunstorfinger@rohde-schwarz.com
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-Message-ID: <20120531143255.GA7069@kroah.com>
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
- <201205311432.40695.oneukum@suse.de>
- <20120531124845.GA5844@kroah.com>
- <201205311622.31537.oneukum@suse.de>
+	Thu, 31 May 2012 10:36:01 -0400
+Date: Thu, 31 May 2012 11:35:54 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] perf tools: Update ioctl documentation for
+ PERF_IOC_FLAG_GROUP
+Message-ID: <20120531143554.GD13591@infradead.org>
+References: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
+ <1338443506-25009-2-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201205311622.31537.oneukum@suse.de>
+In-Reply-To: <1338443506-25009-2-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 04:22:31PM +0200, Oliver Neukum wrote:
-> Am Donnerstag, 31. Mai 2012, 14:48:45 schrieb Greg KH:
-> > On Thu, May 31, 2012 at 02:32:40PM +0200, Oliver Neukum wrote:
-> > >  Am Donnerstag, 31. Mai 2012, 14:04:11 schrieben Sie:
-> > > > On Thu, May 31, 2012 at 12:17:11PM +0200, Oliver Neukum wrote:
-> > > > > Am Donnerstag, 31. Mai 2012, 11:53:04 schrieb Greg KH:
-> > > > > > > So it is a chicken and egg problem. A lot of software is now out with
-> > > > > > > depends on this driver and a lot of embedded development environments
-> > > > > > > doesn't provide libudev, libsysfs und libusb. It will also increase the
-> > > > > > > size of the image and adds additional dependencies to the application.
-> > > > > > 
-> > > > > > You don't need any of those libraries to do this.  What's wrong with
-> > > > > > using "raw" usbfs interactions?
-> > > > > 
-> > > > > SPI is not limited to USB. If we can get a unified subsystem then the
-> > > > > drivers need to be in kernel space, as some hardware does not allow
-> > > > > a solution in user space.
-> > > > 
-> > > > Ok, now that is a valid reason for a kernel driver.
-> > > > 
-> > > > But, I think it should use the IIO interface, as that should handle
-> > > > these types of devices.
-> > > 
-> > > Bad gamble for the future. We will end up with an interface which
-> > > would not be implementable.
-> > 
-> > Why do you say that?  What's wrong with IIO?
+Em Thu, May 31, 2012 at 02:51:45PM +0900, Namhyung Kim escreveu:
+> The ioctl interface of perf event fd receives 3 arguments
+> to control event group behavior but it lacked documentation.
+
+But the argument is not used for ENABLE or DISABLE, so why require it?
+
+- Arnaldo
+ 
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+>  tools/perf/design.txt |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
 > 
-> It seems to specialised for this kind of IO. SPI over USB is closer to a generic
-> thing rather like sg or even a bus rather than an IIO device. Kernel space drivers
-> that use SPI might belong into IIO. The infrastructure itself not so much.
-
-Wait, are you talking about the SPI we already support in the kernel?
-Or something else?  This driver really looks like it wants to send to
-userspace "measurements" of something, which IIO is for.
-
-Anyway, as-is, this isn't acceptable, I'm sure we can all agree on that
-:)
-
-thanks,
-
-greg k-h
+> diff --git a/tools/perf/design.txt b/tools/perf/design.txt
+> index bd0bb1b1279b..67e5d0cace85 100644
+> --- a/tools/perf/design.txt
+> +++ b/tools/perf/design.txt
+> @@ -409,14 +409,15 @@ Counters can be enabled and disabled in two ways: via ioctl and via
+>  prctl.  When a counter is disabled, it doesn't count or generate
+>  events but does continue to exist and maintain its count value.
+>  
+> -An individual counter or counter group can be enabled with
+> +An individual counter can be enabled with
+>  
+> -	ioctl(fd, PERF_EVENT_IOC_ENABLE);
+> +	ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
+>  
+>  or disabled with
+>  
+> -	ioctl(fd, PERF_EVENT_IOC_DISABLE);
+> +	ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+>  
+> +For a counter group, pass PERF_IOC_FLAG_GROUP as the third argument.
+>  Enabling or disabling the leader of a group enables or disables the
+>  whole group; that is, while the group leader is disabled, none of the
+>  counters in the group will count.  Enabling or disabling a member of a
+> -- 
+> 1.7.10.2
