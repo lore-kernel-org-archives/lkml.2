@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab2EaIOJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 04:14:09 -0400
-Received: from na3sys009aog135.obsmtp.com ([74.125.149.84]:39335 "EHLO
-	na3sys009aog135.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757967Ab2EaIOG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 04:14:06 -0400
+	id S1758008Ab2EaIRK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 04:17:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20062 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab2EaIRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 04:17:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="150707804"
+Message-ID: <4FC7289D.2080009@intel.com>
+Date: Thu, 31 May 2012 16:15:25 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <201205301843.51568.arnd@arndb.de>
-References: <1338375394-16268-1-git-send-email-kishon@ti.com>
-	<201205301843.51568.arnd@arndb.de>
-Date: Thu, 31 May 2012 13:44:04 +0530
-Message-ID: <CAAe_U6LFFstds=iQ7cy7gM9vWbfRgf5z0gaRp_-bu0Qjx6eA1Q@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] omap: add ocp2scp as a misc driver
-From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: paul@pwsan.com, tony@atomide.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        balbi@ti.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        rusty@rustcorp.com.au, akpm@linux-foundation.org,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpumask: add a few comments of cpumask functions
+References: <1338195748-18934-1-git-send-email-alex.shi@intel.com> <4FC373D9.7040109@linux.vnet.ibm.com> <4FC38277.2030500@intel.com> <4FC39904.9080309@linux.vnet.ibm.com> <4FC4236F.309@intel.com> <4FC5F90C.9070308@intel.com> <CAHGf_=p=6t7Heyuio2t1q6Qb8KWCfnWzFjuR3kCO0VRTjiUBdA@mail.gmail.com>
+In-Reply-To: <CAHGf_=p=6t7Heyuio2t1q6Qb8KWCfnWzFjuR3kCO0VRTjiUBdA@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On 05/30/2012 06:49 PM, KOSAKI Motohiro wrote:
 
-On Thu, May 31, 2012 at 12:13 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 30 May 2012, Kishon Vijay Abraham I wrote:
+> On Wed, May 30, 2012 at 6:40 AM, Alex Shi <alex.shi@intel.com> wrote:
+>> On 05/29/2012 09:16 AM, Alex Shi wrote:
 >>
->> This patch series is done as a preparatory step for adding phy drivers
->> for dwc3 and musb.
+>>>
+>>>>>> s/return/Returns
+>>>>>>
+>>>>>> What do you mean by "old" cpumask?
+>>>>>
+>>>>> Thanks for comments!
+>>>>> Should be "the old bitmap of cpumask"?
+>>>>>
+>>>>
+>>>>
+>>>> No, there is no "old" or "new" cpumask here because this function doesn't
+>>>> change the cpumask. It just checks if that bit is set.
+>>>> So something like:
+>>>> Returns 1 if 'cpu' is set in 'cpumask', else returns 0.
+>>>>
+>>>
+>>>
+>>>
+>>> Sure, thanks! and comments changed again following your style.
+>>> Is the following new update patch ok?
 >>
->> This series adds a new driver for ocp2scp to which phy drivers are connected.
 >>
->> I'm planning to send phy drivers asap. Meanwhile I'd like to get some
->> review comments for this series. I have also plans to send device tree
->> adaptation of the ocp2scp driver.
->>
->> Developed on
->> http://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next
->>
->> If it has to be based on some other tree, please let me know.
->
-> This must be the most pointless driver I've seen in a long time. It doesn't
-> actually do anything at all, it just creates child devices from a static
-> lookup table.
->
-> Just put the devices you actually want into the device tree instead and
-> have them automatically created.
+>> Any further comments for this patch? :)
+> 
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-But shouldn't device tree support and non-device tree support co-exist
-till the non-device tree is completely knocked out of the kernel? Even
-then shouldn't there be a separate driver to extract the child nodes
-of ocp2scp and create a device (using of_platform_populate)?
-As far as I've seen, the devices are automatically created (by virtue
-of of_platform_populate() in  mach-omap2/board-generic.c in omap case)
-only for the devices that is connected to the system bus. For other
-cases, the parent should be responsible for creating the child
-devices.
 
-Thanks
-Kishon
+Thanks!
+Does someone like to pick up this patch? :)
