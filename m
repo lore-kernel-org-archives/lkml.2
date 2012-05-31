@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab2EaNLK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:11:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40159 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757496Ab2EaNLI (ORCPT
+	id S1758057Ab2EaNQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:16:11 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34026 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab2EaNQK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:11:08 -0400
-Date: Thu, 31 May 2012 14:11:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Cousson, Benoit" <b-cousson@ti.com>
-Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531131106.GF2666@opensource.wolfsonmicro.com>
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
- <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
- <20120531081841.GG5377@arwen.pp.htv.fi>
- <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
- <20120531085432.GK5377@arwen.pp.htv.fi>
- <20120531090518.GR8026@tbergstrom-lnx.Nvidia.com>
- <4FC768F8.4050406@ti.com>
- <20120531130456.GB15786@sirena.org.uk>
- <4FC76D29.8070802@ti.com>
+	Thu, 31 May 2012 09:16:10 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yH1ZJFh+qWm+VodA"
-Content-Disposition: inline
-In-Reply-To: <4FC76D29.8070802@ti.com>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJd=RBA=mvMGQgdKgW26dgd8nK2-_dW_epQLwbjOo2Zx2gsbeg@mail.gmail.com>
+References: <CAJd=RBB1s-_VOtoDsBbLidS51HwW6e98p=U-4mL-spByUMvETw@mail.gmail.com>
+	<CA+i8gKKQyGBc-BNBJ72S6rq7aiFqS=onqWQyeY4P+VVvFCeXJw@mail.gmail.com>
+	<CAJd=RBA=mvMGQgdKgW26dgd8nK2-_dW_epQLwbjOo2Zx2gsbeg@mail.gmail.com>
+Date: Thu, 31 May 2012 20:16:09 +0700
+Message-ID: <CA+i8gK+H-hm9bjJub4siH0pCdOrzRxJXaX2QjosnKCjeWYPt4A@mail.gmail.com>
+Subject: Re: [patch] BFS 420: a tiny step forward
+From: Emmanuel Benisty <benisty.e@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 31, 2012 at 7:15 PM, Hillf Danton <dhillf@gmail.com> wrote:
+> On Thu, May 31, 2012 at 3:12 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
+>>
+>> This is what happens with Greg's 3.3.7 + Con's bfs-420 + your
+>> bfs-420-421 patches, any idea?
+>>
+>>  CC      kernel/sched/bfs.o
+>> kernel/sched/bfs.c: In function 'try_preempt':
+>> kernel/sched/bfs.c:1450:2: error: incompatible type for argument 2 of
+>> 'cpumask_next_and'
+>> include/linux/cpumask.h:192:5: note: expected 'const struct cpumask *'
+>> but argument is of type 'cpumask_t'
+>> kernel/sched/bfs.c:1450:2: error: incompatible type for argument 3 of
+>> 'cpumask_next_and'
+>> include/linux/cpumask.h:192:5: note: expected 'const struct cpumask *'
+>> but argument is of type 'cpumask_t'
+>> kernel/sched/bfs.c:1450:2: warning: left-hand operand of comma
+>> expression has no effect
+>> make[2]: *** [kernel/sched/bfs.o] Error 1
+>> make[1]: *** [kernel/sched] Error 2
+>> make: *** [kernel] Error 2
+>>
+>
+> My bad, lets try the follwoing fix /hd
+>
+>
+> --- a/kernel/sched/bfs.c        Wed May 30 21:04:10 2012
+> +++ b/kernel/sched/bfs.c        Thu May 31 20:05:44 2012
+> @@ -1447,7 +1447,7 @@ static void try_preempt(struct task_stru
+>        highest_prio = p->prio;
+>        latest_deadline = p->deadline;
+>
+> -       for_each_cpu_and(cpu, cpu_online_map, p->cpus_allowed) {
+> +       for_each_cpu_and(cpu, cpu_online_mask, tsk_cpus_allowed(p)) {
+>                struct rq *rq;
+>                int rq_prio;
+>
+> --
 
---yH1ZJFh+qWm+VodA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, May 31, 2012 at 03:07:53PM +0200, Cousson, Benoit wrote:
-> On 5/31/2012 3:04 PM, Mark Brown wrote:
-> >On Thu, May 31, 2012 at 02:50:00PM +0200, Cousson, Benoit wrote:
-
-> >>It looks to me that this kind of function does belong to the device
-> >>more than to the clock node.
-
-> >This is looking a lot like what power domains do to me...
-
-> Do you mean the reset part?
-
-Yes, the general "this block goes into an idle state and so we need to
-rebuild/reset the state of the things in it afterwards" thing.
-
---yH1ZJFh+qWm+VodA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPx23kAAoJEBus8iNuMP3dj3gP/iMMaZg7iVUDFtZs5utM3y4W
-Ew/O6UhqLGgqX5BoctZ93YTZg1YwNLC8QF1Ilr8YKfaYR8f/c3JemDgKyL+V0+qS
-rG9Pek+rTwO1c2aAaVW9FnWLt56FNQmZJxnmv/0BDDaqykm7QBcxh+dFy9OZCAgm
-UKGDdVB0n/nxuO3wz8xz+2S/bfgdbtFqfPGmaOSt1Z0rr6uJ4Av2lY1XckfALhc3
-XsAan84Wq3yeCqAILdxMZXjXAD7VWIwZNRp0n/mYiwleJ+AjCUNoSmjhM1gKnJsF
-3xIQtY5EG+BuvCoxf9/CMyVGP4kM8FDeYDPLbeQfqGnqyRD6KWzp4bucMJlt7Zlw
-enwzJbyDN29OLGnfaTYNmNPc509byn+QvLtAvB0e2Yw3BogKen5l9duBov28ztIt
-/3SkRVOZcB/LS0C8E+cwaEtVuewoHei1SXqut6Z7QfvRJi+lM1pGAfLg2P1WFN1l
-M0pll48RbRn8vy3wrmxpNhOdMtuzrYlhCRmeqDgFc1lZxmJ6q2XNLtPHjCDQ2KWv
-WwjilBOrb1jCw2CIOH7VpnANxgPHbWspbe5JgOjUaTobqHxgBQvY3jG4Uf2LW3lu
-4MQ7/oteIb5E8tlHM+lGm9yHZL0GspUWQ9ED5/QGJLnMkM2r/gcBY7RLsGBk+g6Z
-3IZCDwugl2r6fIbA1K2B
-=kO5I
------END PGP SIGNATURE-----
-
---yH1ZJFh+qWm+VodA--
+Thanks a lot Hillf, it builds fine now but it won't boot. Some crappy
+mobile phone picture here:
+http://ompldr.org/vZTE1eQ/IMG_20120531_200543.jpg
