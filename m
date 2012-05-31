@@ -1,122 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab2EaAka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 20:40:30 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60367 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab2EaAk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 20:40:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="158925188"
-Message-ID: <1338424825.6824.18.camel@yhuang-dev>
-Subject: Re: [PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Zheng Yan <zheng.z.yan@intel.com>
-Date: Thu, 31 May 2012 08:40:25 +0800
-In-Reply-To: <201205302349.30989.rjw@sisk.pl>
-References: <1337305725-10482-1-git-send-email-ying.huang@intel.com>
-	 <1337305725-10482-3-git-send-email-ying.huang@intel.com>
-	 <201205220011.31283.rjw@sisk.pl> <201205302349.30989.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757394Ab2EaAlR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 20:41:17 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35796 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754583Ab2EaAlP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 30 May 2012 20:41:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120531002802.GA11775@ZenIV.linux.org.uk>
+References: <1337807899.15138.31.camel@falcor> <20120530043443.GA3200@ZenIV.linux.org.uk>
+ <20120530163605.GV11775@ZenIV.linux.org.uk> <1338406967.2257.24.camel@localhost>
+ <20120530202427.GW11775@ZenIV.linux.org.uk> <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+ <20120530205612.GY11775@ZenIV.linux.org.uk> <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
+ <20120530213638.GZ11775@ZenIV.linux.org.uk> <CA+55aFzP8Eo1AX7MS-RRG_Atq3NF0bS1ReZydRtgxxy7TDn57Q@mail.gmail.com>
+ <20120531002802.GA11775@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 30 May 2012 17:40:54 -0700
+X-Google-Sender-Auth: 5FjlxMIvzRBybJFqYgv9mdr9_rw
+Message-ID: <CA+55aFzDeZQeFY1i1xLES4ijtDeGBk3EBOh-mA0dhEH2yaGf9A@mail.gmail.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-05-30 at 23:49 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, May 22, 2012, Rafael J. Wysocki wrote:
-> > On Friday, May 18, 2012, Huang Ying wrote:
-> > > This patch adds runtime D3cold support to PCIe bus.  D3cold is the
-> > > deepest power saving state for PCIe devices.  Where the main PCIe link
-> > > will be powered off totally, so before the PCIe main link is powered
-> > > on again, you can not access the device, even the configuration space,
-> > > which is still accessible in D3hot.  Because the main PCIe link is not
-> > > available, the PCI PM registers can not be used to put device into/out
-> > > of D3cold state, that will be done by platform logic such as ACPI
-> > > _PR3.
-> > > 
-> > > To support remote wake up in D3cold, aux power is supplied, and a
-> > > side-band pin: WAKE# is used to notify remote wake up event, the pin
-> > > is usually connected to platform logic such as ACPI GPE.  This is
-> > > quite different with other power saving states, where remote wake up
-> > > is notified via PME message through the PCIe main link.
-> > > 
-> > > PCIe devices in plug-in slot usually has no direct platform logic, for
-> > > example, there is usually no ACPI _PR3 for them.  The D3cold support
-> > > for these devices can be done via the PCIe port connected to it.  When
-> > > power on/off the PCIe port, the corresponding PCIe devices are powered
-> > > on/off too.  And the remote wake up event from PCIe device will be
-> > > notified to the corresponding PCIe port.
-> > > 
-> > > The PCI subsystem D3cold support and corresponding ACPI platform
-> > > support is implemented in the patch.  Including the support for PCIe
-> > > devices in plug-in slot.
-> > > 
-> > > For more information about PCIe D3cold and corresponding ACPI support,
-> > > please refer to:
-> > > 
-> > > - PCI Express Base Specification Revision 2.0
-> > > - Advanced Configuration and Power Interface Specification Revision 5.0
-> > > 
-> > > Originally-by: Zheng Yan <zheng.z.yan@intel.com>
-> > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > 
-> > Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> On a second thought ...
-> 
-> > > ---
-> > >  drivers/pci/pci-acpi.c         |   23 +++++++-
-> > >  drivers/pci/pci-driver.c       |    3 +
-> > >  drivers/pci/pci-sysfs.c        |   29 ++++++++++
-> > >  drivers/pci/pci.c              |  110 +++++++++++++++++++++++++++++++++++++----
-> > >  drivers/pci/pci.h              |    1 
-> > >  drivers/pci/pcie/portdrv_pci.c |   44 ++++++++++++++--
-> > >  include/linux/pci.h            |   16 ++++-
-> > >  7 files changed, 205 insertions(+), 21 deletions(-)
-> > > 
-> > > --- a/drivers/pci/pci-acpi.c
-> > > +++ b/drivers/pci/pci-acpi.c
-> > > @@ -48,6 +48,12 @@ static void pci_acpi_wake_dev(acpi_handl
-> > >  	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
-> > >  		return;
-> > >  
-> > > +	if (pci_dev->current_state == PCI_D3cold) {
-> > > +		pci_wakeup_event(pci_dev);
-> > > +		pm_runtime_resume(&pci_dev->dev);
-> > > +		return;
-> > > +	}
-> > > +
-> > >  	if (!pci_dev->pm_cap || !pci_dev->pme_support
-> > >  	     || pci_check_pme_status(pci_dev)) {
-> > >  		if (pci_dev->pme_poll)
-> > > @@ -187,10 +193,13 @@ acpi_status pci_acpi_remove_pm_notifier(
-> > >  
-> > >  static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
-> > >  {
-> > > -	int acpi_state;
-> > > +	int acpi_state, d_max;
-> > >  
-> > > -	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
-> > > -						ACPI_STATE_D3);
-> 
-> I wonder what tree this patch is against?  The code above doesn't seem to
-> be present in the current mainline.
+On Wed, May 30, 2012 at 5:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> FWIW, I think it's cleaner to take the whole thing into an inlined helper.
 
-As stated in [PATCH -v4 0/2], This patchset is based on:
+Even better.
 
-[PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep
-state
+I notice that your inlined helper doesn't do what I did: if PROT_EXEC
+is already set, stop all the stupid games. IOW, the first test in that
+function could as well be
 
-Which is sent to LKML separately.
+    if (prot & (PROT_READ | PROT_EXEC) != PROT_READ)
+        return prot;
 
-Best Regards,
-Huang Ying
+because if PROT_EXEC is already set, or if PROT_READ wasn't set, none
+of the rest of the checks make any sense at all.
 
+But that's just me being anal. It doesn't really *matter* if we end up
+setting PROT_EXEC again.
 
+> It can be reorganized a bit, though.  vm_mmap() aside, there are only two
+> callers of do_mmap(), both passing it 0 as the last argument.  So let's
+> lift these checks on offset into vm_mmap() and kill do_mmap() completely -
+> all that remains of it would be a call of do_mmap_pgoff().  And there's no
+> reason to put those sanity checks (now in vm_mmap()) under ->mmap_sem,
+> of course.  At that point we *do* get 4 identical pieces of code.  Let's
+> call that vm_mmap_pgoff() and put it (and vm_mmap()) to mm/util.c.  Voila...
+
+Good.
+
+End result looks fine to me.
+
+             Linus
