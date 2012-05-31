@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab2EaFyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:54:45 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54050 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab2EaFyX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:54:23 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-03-4fc7078cac62
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] perf tools: Update ioctl documentation for PERF_IOC_FLAG_GROUP
-Date: Thu, 31 May 2012 14:51:45 +0900
-Message-Id: <1338443506-25009-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
-References: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1753533Ab2EaF6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:58:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37310 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751865Ab2EaF6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 01:58:42 -0400
+Message-ID: <4FC708EE.2020908@redhat.com>
+Date: Thu, 31 May 2012 14:00:14 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org, mst@redhat.com
+Subject: Re: [PATCH] net: sock: validate data_len before allocating skb in
+ sock_alloc_send_pskb()
+References: <20120530054702.6146.8503.stgit@amd-6168-8-1.englab.nay.redhat.com> <1338360383.2760.84.camel@edumazet-glaptop> <20120530.030205.1337682162603770949.davem@davemloft.net>
+In-Reply-To: <20120530.030205.1337682162603770949.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ioctl interface of perf event fd receives 3 arguments
-to control event group behavior but it lacked documentation.
+On 05/30/2012 03:02 PM, David Miller wrote:
+> From: Eric Dumazet<eric.dumazet@gmail.com>
+> Date: Wed, 30 May 2012 08:46:23 +0200
+>
+>> Why doing this test in the while (1) block, it should be done before the
+>> loop...
+>>
+>> Or even in the caller, note net/unix/af_unix.c does this right.
+>>
+>>          if (len>  SKB_MAX_ALLOC)
+>>                  data_len = min_t(size_t,
+>>                                   len - SKB_MAX_ALLOC,
+>>                                   MAX_SKB_FRAGS * PAGE_SIZE);
+>>
+>>          skb = sock_alloc_send_pskb(sk, len - data_len, data_len,
+>>                                     msg->msg_flags&  MSG_DONTWAIT,&err);
+> My impression is that the callers should be fixed to.  It makes no sense
+> to penalize the call sites that get this right.
+>
+> And yes, if we do check it in sock_alloc_send_pskb() it should be done
+> at function entry, not inside the loop.
 
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- tools/perf/design.txt |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Sure, so is it ok for me to send a V2 that just do the fixing in 
+sock_alloc_sned_pskb() as it's simple and easy to be accepted by stable 
+version?
 
-diff --git a/tools/perf/design.txt b/tools/perf/design.txt
-index bd0bb1b1279b..67e5d0cace85 100644
---- a/tools/perf/design.txt
-+++ b/tools/perf/design.txt
-@@ -409,14 +409,15 @@ Counters can be enabled and disabled in two ways: via ioctl and via
- prctl.  When a counter is disabled, it doesn't count or generate
- events but does continue to exist and maintain its count value.
- 
--An individual counter or counter group can be enabled with
-+An individual counter can be enabled with
- 
--	ioctl(fd, PERF_EVENT_IOC_ENABLE);
-+	ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
- 
- or disabled with
- 
--	ioctl(fd, PERF_EVENT_IOC_DISABLE);
-+	ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
- 
-+For a counter group, pass PERF_IOC_FLAG_GROUP as the third argument.
- Enabling or disabling the leader of a group enables or disables the
- whole group; that is, while the group leader is disabled, none of the
- counters in the group will count.  Enabling or disabling a member of a
--- 
-1.7.10.2
+For the fix of callers, I want to post fixes on top as I find there's 
+some code duplication of {tun|macvtap|packet}_alloc_skb() and I want to 
+unify them to a common helper in sock.c. Then I can fix this issue in 
+the new helper.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
