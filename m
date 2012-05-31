@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964778Ab2EaTsL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 15:48:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41266 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753834Ab2EaTsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 15:48:10 -0400
-Message-ID: <4FC7CAE5.7020306@redhat.com>
-Date: Thu, 31 May 2012 15:47:49 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: joerg.roedel@amd.com, dwmw2@infradead.org,
-        iommu@lists.linux-foundation.org, bhelgaas@google.com,
-        benh@kernel.crashing.org, aik@ozlabs.ru, david@gibson.dropbear.id.au,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, gregkh@linuxfoundation.org,
-        liuj97@gmail.com
-Subject: Re: [PATCH v2 6/7] intel-iommu: Make use of DMA quirks and ACS checks
- in IOMMU groups
-References: <20120530201424.31527.33142.stgit@bling.home> <20120530201942.31527.51604.stgit@bling.home>
-In-Reply-To: <20120530201942.31527.51604.stgit@bling.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S964798Ab2EaTsR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 15:48:17 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:36248 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964781Ab2EaTsO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 15:48:14 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: konrad@darnok.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@kernel.org
+Subject: [PATCH] x86/i386: Check PSE bit before using PAGE_KERNEL_LARGE.
+Date: Thu, 31 May 2012 15:40:18 -0400
+Message-Id: <1338493218-25006-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.6
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2012 04:19 PM, Alex Williamson wrote:
-> Work around broken devices and adhere to ACS support when determining
-> IOMMU grouping.
->
-> Signed-off-by: Alex Williamson<alex.williamson@redhat.com>
-> ---
->
->   drivers/iommu/intel-iommu.c |   25 +++++++++++++++++++++++++
->   1 file changed, 25 insertions(+)
->
-> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-> index 4a43452..ebf2b31 100644
-> --- a/drivers/iommu/intel-iommu.c
-> +++ b/drivers/iommu/intel-iommu.c
-> @@ -4090,6 +4090,14 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
->   	return 0;
->   }
->
-> +static void swap_pci_ref(struct pci_dev **from, struct pci_dev *to)
-> +{
-> +	pci_dev_put(*from);
-> +	*from = to;
-> +}
-> +
-> +#define REQ_ACS_FLAGS	(PCI_ACS_SV | PCI_ACS_RR | PCI_ACS_CR | PCI_ACS_UF)
-> +
->   static int intel_iommu_add_device(struct device *dev)
->   {
->   	struct pci_dev *pdev = to_pci_dev(dev);
-> @@ -4112,6 +4120,23 @@ static int intel_iommu_add_device(struct device *dev)
->   	} else
->   		dma_pdev = pci_dev_get(pdev);
->
-> +	swap_pci_ref(&dma_pdev, pci_get_dma_source(dma_pdev));
-> +
-> +	if (dma_pdev->multifunction&&
-> +	    !pci_acs_enabled(dma_pdev, REQ_ACS_FLAGS))
-> +		swap_pci_ref(&dma_pdev,
-> +			     pci_get_slot(dma_pdev->bus,
-> +					  PCI_DEVFN(PCI_SLOT(dma_pdev->devfn),
-> +					  0)));
-> +
-> +	while (!pci_is_root_bus(dma_pdev->bus)) {
-> +		if (pci_acs_path_enabled(dma_pdev->bus->self,
-> +					 NULL, REQ_ACS_FLAGS))
-> +			break;
-> +
-> +		swap_pci_ref(&dma_pdev, pci_dev_get(dma_pdev->bus->self));
-> +	}
-> +
-I'm having deja-vu on this patch....
-.... why not just make the above two patches as two functions in drivers/iommu/iommu.c,
-one exported for these two modules (and maybe others someday...), e.g., iommu_pdev_put())
-which [intel-,amd-]iommu.c call ?
+During bootup we would unconditionally do this on any
+machine that was built with CONFIG_NUMA=y on i386:
 
-  
->   	group = iommu_group_get(&dma_pdev->dev);
->   	pci_dev_put(dma_pdev);
->   	if (!group) {
->
+setup_arch
+  \-initmem_init
+      \-x86_numa_init (with dummy_init as callback)
+          \- init_alloc_remap
+               \- set_pmd_pfn (with PAGE_PSE)
+
+without checking to see if the CPU supports PSE. This
+patch adds that and also allows the init_alloc_remap function
+to properly work by falling back on PTEs.
+
+CC: stable@kernel.org
+Tested-by: William Dauchy <wdauchy@gmail.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/mm/pgtable_32.c |   25 ++++++++++++++++++++++++-
+ 1 files changed, 24 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+index a69bcb8..9fd4abc 100644
+--- a/arch/x86/mm/pgtable_32.c
++++ b/arch/x86/mm/pgtable_32.c
+@@ -86,7 +86,30 @@ void set_pmd_pfn(unsigned long vaddr, unsigned long pfn, pgprot_t flags)
+ 	}
+ 	pud = pud_offset(pgd, vaddr);
+ 	pmd = pmd_offset(pud, vaddr);
+-	set_pmd(pmd, pfn_pmd(pfn, flags));
++
++	if ((!cpu_has_pse) && (pgprot_val(flags) & _PAGE_PSE)) {
++		pte_t *pte;
++		int i;
++
++		pgprot_val(flags) &= ~_PAGE_PSE;
++
++		/*
++		 * This is run _after_ initial memory mapped so the
++		 * PTE page are allocated - but we check it just in case.
++		 */
++		if (pmd_none(*pmd)) {
++			printk(KERN_WARNING "set_pmd_pfn: pmd_none\n");
++			return;
++		}
++
++		pte = (pte_t *)pmd_page_vaddr(*pmd);
++		for (i = 0; i < PTRS_PER_PTE; i++) {
++			set_pte(pte, pfn_pte(pfn + i, flags));
++			pte++;
++		}
++	} else
++		set_pmd(pmd, pfn_pmd(pfn, flags));
++
+ 	/*
+ 	 * It's enough to flush this one mapping.
+ 	 * (PGE mappings get flushed as well)
+-- 
+1.7.7.6
 
