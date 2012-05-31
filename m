@@ -1,278 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab2EaFgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:36:47 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:52302 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2EaFgq (ORCPT
+	id S1752711Ab2EaFic (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:38:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44940 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab2EaFia convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:36:46 -0400
-Date: Thu, 31 May 2012 11:05:30 +0530
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        dhillf@gmail.com, mhocko@suse.cz,
-        Andrew Morton <akpm@linux-foundation.org>, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH -V7 04/14] hugetlb: use mmu_gather instead of a temporary
- linked list for accumulating pages
-Message-ID: <20120531053530.GB24855@skywalker.linux.vnet.ibm.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1338388739-22919-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1205301844010.25774@chino.kir.corp.google.com>
+	Thu, 31 May 2012 01:38:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205301844010.25774@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12053019-0260-0000-0000-000001434128
+In-Reply-To: <20120530121449.GI9947@opensource.wolfsonmicro.com>
+References: <CANKRQnjoGN=uvej8B1BxPHAx7NQtOORD9yJRPUc134DrVmPzNg@mail.gmail.com>
+	<20120326154009.GA17506@sirena.org.uk>
+	<CANKRQnhn=ALR0ucv5gnvwnxwxBQX4ajm9Jo5qC0fL-EFjDdoZg@mail.gmail.com>
+	<20120523093857.GC4085@opensource.wolfsonmicro.com>
+	<CANKRQnhNWC2F6zKgBMJY7HnipJbA5p-=6Lz4uGZqBKNQ688Z3w@mail.gmail.com>
+	<20120524100742.GH5361@opensource.wolfsonmicro.com>
+	<CANKRQnj_LdGQPYPV7d5NNZBx8oM5aAGHu4qZidiiS6C4eNtNJQ@mail.gmail.com>
+	<1337941231.1580.19.camel@vkoul-udesk3>
+	<20120527221956.GB25019@opensource.wolfsonmicro.com>
+	<CANKRQnhwkhGUHi6WQhw-sRJuKari3SLcipCJXVp27OZ29=Vxkw@mail.gmail.com>
+	<20120530121449.GI9947@opensource.wolfsonmicro.com>
+Date: Thu, 31 May 2012 14:38:30 +0900
+Message-ID: <CANKRQni4uqQJ99ycOScHmn-g1kz2_XH7ePL+n1taG5jAbDSubw@mail.gmail.com>
+Subject: Re: [alsa-devel] [PATCH v5] sound/soc/lapis: add platform driver for ML7213
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>, alsa-devel@alsa-project.org,
+        lars@metafoo.de, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 06:56:36PM -0700, David Rientjes wrote:
-> On Wed, 30 May 2012, Aneesh Kumar K.V wrote:
-> 
-> > diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-> > index cc9281b..ff233e4 100644
-> > --- a/fs/hugetlbfs/inode.c
-> > +++ b/fs/hugetlbfs/inode.c
-> > @@ -416,8 +416,8 @@ hugetlb_vmtruncate_list(struct prio_tree_root *root, pgoff_t pgoff)
-> >  		else
-> >  			v_offset = 0;
-> >  
-> > -		__unmap_hugepage_range(vma,
-> > -				vma->vm_start + v_offset, vma->vm_end, NULL);
-> > +		unmap_hugepage_range(vma, vma->vm_start + v_offset,
-> > +				     vma->vm_end, NULL);
-> >  	}
-> >  }
-> >  
-> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > index 217f528..c21e136 100644
-> > --- a/include/linux/hugetlb.h
-> > +++ b/include/linux/hugetlb.h
-> > @@ -7,6 +7,7 @@
-> >  
-> >  struct ctl_table;
-> >  struct user_struct;
-> > +struct mmu_gather;
-> >  
-> >  #ifdef CONFIG_HUGETLB_PAGE
-> >  
-> > @@ -40,9 +41,10 @@ int follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
-> >  			struct page **, struct vm_area_struct **,
-> >  			unsigned long *, int *, int, unsigned int flags);
-> >  void unmap_hugepage_range(struct vm_area_struct *,
-> > -			unsigned long, unsigned long, struct page *);
-> > -void __unmap_hugepage_range(struct vm_area_struct *,
-> > -			unsigned long, unsigned long, struct page *);
-> > +			  unsigned long, unsigned long, struct page *);
-> > +void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vms,
-> 
-> s/vms/vma/
+On Wed, May 30, 2012 at 9:14 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+>> >> First you should not be writing your own dma driver, it *needs* to use
+>> >> dmaenegine. We already have bunch of driver supported, so there may be a
+>> > He's already done that, their current code is all open coded dmaengine
+>> > stuff.
+>> I don't understand why you say so ?
+>> I don't use any own dma driver, right ? I use only dmaengine's.
+>> If there is own, let me show.
+> Please re-read what I wrote.
 
-done
+Let me clarify.
+Do you say native DMA driver API like dmaengine_prep_slave_sg(),
+dmaengine_submit() shouldn't be used from ASoC driver, right ?
 
-> 
-> > +				unsigned long start, unsigned long end,
-> > +				struct page *ref_page);
-> >  int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
-> >  void hugetlb_report_meminfo(struct seq_file *);
-> >  int hugetlb_report_node_meminfo(int, char *);
-> > @@ -98,7 +100,6 @@ static inline unsigned long hugetlb_total_pages(void)
-> >  #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
-> >  #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
-> >  #define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
-> > -#define unmap_hugepage_range(vma, start, end, page)	BUG()
-> >  static inline void hugetlb_report_meminfo(struct seq_file *m)
-> >  {
-> >  }
-> 
-> Why?
+>> > The existing code is far from nothing, there is a fairly substantial
+>> > dmaengine library there already which should share a big chunk of code
+>> > with any cyclic support.  If you were saying "this is too hard for
+>> > $REASON" that'd be one thing but that's not what you're saying here.
+>
+>> If our ASoC supports cyclic dma mode, we must modify both pch_dma
+>> driver and our ASoC driver.
+>
+> No, all current mainline drivers using the library use cyclic DMA.
 
-unmap_hugepage_range is now not used outside CONFIG_HUGETLB_PAGE
+I can't see any driver uses cyclic DMA. (I saw linux-next's tree from
+kernel.org.)
+Where is your saying "current mainline" ?
 
-> 
-> > @@ -112,13 +113,24 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
-> >  #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
-> >  #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
-> >  #define huge_pte_offset(mm, address)	0
-> > -#define dequeue_hwpoisoned_huge_page(page)	0
-> > +static inline int dequeue_hwpoisoned_huge_page(struct page *page)
-> > +{
-> > +	return 0;
-> > +}
-> > +
-> 
-> Unrelated from this patchset.
+>> I don't want to do this.
+>> Because I can't understand the merit. In plain words, to me, this
+>> looks insignificant things.
+> The purpose of this change is to factor code out of individual drivers
+> into generic code rather than having lots of people writing exactly the
+> same code.  Code duplication at this level is pointless and makes more
+> work for everyone who will have to maintain the code going forward.
 
-It throws a warning. Yes it can be a seperate patch. But was not sure whether to
-move that one line patch outside
+I understand your saying "merit".
 
-> 
-> >  static inline void copy_huge_page(struct page *dst, struct page *src)
-> >  {
-> >  }
-> >  
-> >  #define hugetlb_change_protection(vma, address, end, newprot)
-> >  
-> > +static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
-> > +			struct vm_area_struct *vma, unsigned long start,
-> > +			unsigned long end, struct page *ref_page)
-> > +{
-> > +	BUG();
-> > +}
-> > +
-> 
-> I think this should be done under the unmap_hugepage_range() definition 
-> you removed (and change it to be a static inline function as well).
+However I think it seems difficult for supporting all devices.
+Because hardware dependency control code can't be added.
+For example, for ML7213, needs interrupt control both before/after DMA transfer.
+However,  in case of using soc-dmaengine, the control can't be done.
+Because the processing is in soc-dmaengine.
 
-Below is what unmap_hugepage_range is after all the change. And it doesn't get
-used if CONFIG_HUGETLB_PAGE is not used. But we use __unmap_hugepage_range from
-common code.If we get called with hugetlb not enabled, then that implies a BUG()
+> Having looked at Russell's out of tree code I'm even more convinced that
+> the amount of new code needed for non-cyclic DMA should be pretty
+> trivial.
 
-void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
-			  unsigned long end, struct page *ref_page)
-{
-	struct mm_struct *mm;
-	struct mmu_gather tlb;
-
-	mm = vma->vm_mm;
-
-	tlb_gather_mmu(&tlb, mm, 0);
-	__unmap_hugepage_range(&tlb, vma, start, end, ref_page);
-	tlb_finish_mmu(&tlb, start, end);
-}
+I don't know what you are talking about.
 
 
-
-> 
-> >  #endif /* !CONFIG_HUGETLB_PAGE */
-> >  
-> >  #define HUGETLB_ANON_FILE "anon_hugepage"
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index 9b97a5c..704a269 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -24,8 +24,9 @@
-> >  
-> >  #include <asm/page.h>
-> >  #include <asm/pgtable.h>
-> > -#include <linux/io.h>
-> > +#include <asm/tlb.h>
-> >  
-> > +#include <linux/io.h>
-> >  #include <linux/hugetlb.h>
-> >  #include <linux/node.h>
-> >  #include "internal.h"
-> > @@ -2310,30 +2311,26 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
-> >  		return 0;
-> >  }
-> >  
-> > -void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
-> > -			    unsigned long end, struct page *ref_page)
-> > +void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
-> > +			    unsigned long start, unsigned long end,
-> > +			    struct page *ref_page)
-> >  {
-> > +	int force_flush = 0;
-> 
-> Can this be bool?
-> 
-> >  	struct mm_struct *mm = vma->vm_mm;
-> >  	unsigned long address;
-> >  	pte_t *ptep;
-> >  	pte_t pte;
-> >  	struct page *page;
-> > -	struct page *tmp;
-> >  	struct hstate *h = hstate_vma(vma);
-> >  	unsigned long sz = huge_page_size(h);
-> >  
-> > -	/*
-> > -	 * A page gathering list, protected by per file i_mmap_mutex. The
-> > -	 * lock is used to avoid list corruption from multiple unmapping
-> > -	 * of the same page since we are using page->lru.
-> > -	 */
-> > -	LIST_HEAD(page_list);
-> > -
-> >  	WARN_ON(!is_vm_hugetlb_page(vma));
-> >  	BUG_ON(start & ~huge_page_mask(h));
-> >  	BUG_ON(end & ~huge_page_mask(h));
-> >  
-> > +	tlb_start_vma(tlb, vma);
-> >  	mmu_notifier_invalidate_range_start(mm, start, end);
-> > +again:
-> >  	spin_lock(&mm->page_table_lock);
-> >  	for (address = start; address < end; address += sz) {
-> >  		ptep = huge_pte_offset(mm, address);
-> > @@ -2372,30 +2369,45 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
-> >  		}
-> >  
-> >  		pte = huge_ptep_get_and_clear(mm, address, ptep);
-> > +		tlb_remove_tlb_entry(tlb, ptep, address);
-> >  		if (pte_dirty(pte))
-> >  			set_page_dirty(page);
-> > -		list_add(&page->lru, &page_list);
-> >  
-> > +		page_remove_rmap(page);
-> > +		force_flush = !__tlb_remove_page(tlb, page);
-> > +		if (force_flush)
-> > +			break;
-> >  		/* Bail out after unmapping reference page if supplied */
-> >  		if (ref_page)
-> >  			break;
-> >  	}
-> > -	flush_tlb_range(vma, start, end);
-> >  	spin_unlock(&mm->page_table_lock);
-> > -	mmu_notifier_invalidate_range_end(mm, start, end);
-> > -	list_for_each_entry_safe(page, tmp, &page_list, lru) {
-> > -		page_remove_rmap(page);
-> > -		list_del(&page->lru);
-> > -		put_page(page);
-> > +	/*
-> > +	 * mmu_gather ran out of room to batch pages, we break out of
-> > +	 * the PTE lock to avoid doing the potential expensive TLB invalidate
-> > +	 * and page-free while holding it.
-> > +	 */
-> > +	if (force_flush) {
-> > +		force_flush = 0;
-> > +		tlb_flush_mmu(tlb);
-> > +		if (address < end && !ref_page)
-> > +			goto again;
-> 
-> Shouldn't be copying "start" at the beginning of this function and then 
-> updating that copy now and use it as the loop initialization?
-> 
-
-I didn't want to make larger changes here. My goal was to switch to mmu_gather APIs
-without changing other loop logic.
-
-> >  	}
-> > +	mmu_notifier_invalidate_range_end(mm, start, end);
-> > +	tlb_end_vma(tlb, vma);
-> >  }
-> >  
-> >  void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
-> >  			  unsigned long end, struct page *ref_page)
-> >  {
-> > -	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> > -	__unmap_hugepage_range(vma, start, end, ref_page);
-> > -	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-> > +	struct mm_struct *mm;
-> > +	struct mmu_gather tlb;
-> > +
-> > +	mm = vma->vm_mm;
-> > +
-> > +	tlb_gather_mmu(&tlb, mm, 0);
-> > +	__unmap_hugepage_range(&tlb, vma, start, end, ref_page);
-> > +	tlb_finish_mmu(&tlb, start, end);
-> >  }
-> >  
-> >  /*
-> 
-
-
--aneesh
-
+thanks.
+-- 
+ROHM Co., Ltd.
+tomoya
