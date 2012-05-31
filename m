@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab2EaEhG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 00:37:06 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22967 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab2EaEhD (ORCPT
+	id S1752001Ab2EaElZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 00:41:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43209 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab2EaElX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 00:37:03 -0400
-Message-ID: <4FC6F55F.7040507@oracle.com>
-Date: Thu, 31 May 2012 12:36:47 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Junxiao Bi <junxiao.bi@oracle.com>
-CC: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
-        jlbec@evilplan.org, bcrl@kvack.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, David John Kleikamp <dave.kleikamp@oracle.com>
-Subject: Re: [PATCH 2/2] ocfs2: clear unaligned io flag when dio fails
-References: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com> <1338437550-24499-2-git-send-email-junxiao.bi@oracle.com>
-In-Reply-To: <1338437550-24499-2-git-send-email-junxiao.bi@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 31 May 2012 00:41:23 -0400
+Date: Thu, 31 May 2012 14:41:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: fate of the ecryptfs tree
+Message-Id: <20120531144115.0f35af0a8a5d79b73b0ecbe6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__31_May_2012_14_41_15_+1000_/CO5XkYzbwvlhFwG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc David.
+--Signature=_Thu__31_May_2012_14_41_15_+1000_/CO5XkYzbwvlhFwG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 05/31/12 12:12, Junxiao Bi wrote:
-> The unaligned io flag is set in the kiocb when an unaligned
-> dio is issued, it should be cleared even when the dio fails,
-> or it may affect the following io which are using the same
-> kiocb.
-> 
-> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-> ---
->  fs/ocfs2/file.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> index 061591a..98513c8 100644
-> --- a/fs/ocfs2/file.c
-> +++ b/fs/ocfs2/file.c
-> @@ -2422,8 +2422,10 @@ out_dio:
->  		unaligned_dio = 0;
->  	}
->  
-> -	if (unaligned_dio)
-> +	if (unaligned_dio) {
-> +		ocfs2_iocb_clear_unaligned_aio(iocb);
->  		atomic_dec(&OCFS2_I(inode)->ip_unaligned_aio);
-> +	}
->  
->  out:
->  	if (rw_level != -1)
+Hi Tyler,
 
+I am just wondering about the fate of the ecryptfs tree.  The most recent
+commit to that tree is dated Feb 11 and seems to have been included in
+Linus' tree as a different commit.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Oracle <http://www.oracle.com>
-Joe Jin | Software Development Senior Manager | +8610.6106.5624
-ORACLE | Linux and Virtualization
-No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
+--Signature=_Thu__31_May_2012_14_41_15_+1000_/CO5XkYzbwvlhFwG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPxvZrAAoJEECxmPOUX5FEhxsQAKC92B2U6yhbS+Y8vCJ8D7o/
+dab65Ai5rnzAWhuLIQq4+93ai+oLhCHqyvVZO1S5NwO7OFzQuXWY+xB16TdrVhCC
+imG7+aG+cuOk7dT4nDQM19hde34rLfU12ZnYKOKHkIjlpYmupcj45goMlmhiL7yb
+uhYxyZ9h7akscdccZWSh9U7s3tpnC3jWgE6WcpfXWQUgENUbL/IBWnt1egBe2rha
+BBWXcJScwHX8qkYpdo8l23tbn6a5RpklKNzyd7EluvlLaVt6c5XcSDauHalILThh
+RrQh04grarVFqs0eFDaC3qxjV+dVPHJTH1O05apYwVKdaTtfkb3gpjn90/6qz2m7
+8Ab5KOviSGGvXmf9AolgyFBx7h1/BLoZ8FuEz/M55JYJMKudycitCrMbpAjAciM2
+ypxK6tZNhj00OC+iCu3XXfQEE5F37Urz+mWovALrzJxSxKqLogCrMhOjSOsszvVq
+oa002aG0gH5mn47AlNS4VlkfUMwcWOXWQDcbk0dEmOB0ClRrSn+qscDyQ3/zhAuY
+K/I60G++WqLUdaQmZkPSKSlcG12L93Z6rkqkZ16KzhrwSwSkVWBzmL3PzGqQhHVP
+3F5GfFkyn+pt+OYlM87Sn5C4SuyL7RF4WiC3g3fnTYIBxxlZPtsUbM0W/r5wKDIb
+5c/OZn7elRK0y79yB3Hv
+=LjLr
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__31_May_2012_14_41_15_+1000_/CO5XkYzbwvlhFwG--
