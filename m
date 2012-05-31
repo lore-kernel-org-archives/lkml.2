@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab2EaV4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 17:56:44 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:43640 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753125Ab2EaV4m (ORCPT
+	id S1758852Ab2FADOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 23:14:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:48742 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758827Ab2FADOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 17:56:42 -0400
-X-Greylist: delayed 2165 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 17:56:42 EDT
-Date: Thu, 31 May 2012 23:20:25 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: x86@kernel.org, Feng Tang <feng.tang@intel.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86/moorestown: change to __devinit in order to suppress
-  warning
-Message-ID: <20120531212025.GA8519@breakpoint.cc>
+	Thu, 31 May 2012 23:14:40 -0400
+Date: Fri, 1 Jun 2012 03:14:33 +0800
+From: Chen Baozi <baozich@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
+Message-ID: <20120531191433.GA14675@centos-guest>
+References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils>
+ <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+ <20120530221707.GA25095@centos-guest>
+ <alpine.LSU.2.00.1205311544400.4561@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LSU.2.00.1205311544400.4561@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The allmodconfig hits:
+On Thu, May 31, 2012 at 03:58:59PM -0700, Hugh Dickins wrote:
+> On Thu, 31 May 2012, baozich wrote:
+> > > 
+> > > In their place, mem_cgroup_page_lruvec() to decide the lruvec,
+> > > previously a side-effect of add, and mem_cgroup_update_lru_size()
+> > > to maintain the lru_size stats.
+> > I have a stupid question. I'm not sure whether there is reduplication
+> > to put both "page" and "zone" parameter in mem_cgroup_page_lruvec(),
+> > for I noticed that the "struct zone *zone" parameter are usually from 
+> > page_zone(page) in most cases. I think that the semantics of this function
+> > is to grab the lruvec the page belongs to. So will it be ok if we pass
+> > only "page" as the parameter, which I think would be cleaner? Please
+> > fix me if I missed something.
+> 
+> I share your dislike for passing down an "unnecessary" argument,
+> but I do think it's justified here.
+> 
+> If the zone pointer were available simply by page->zone, then yes,
+> I'd agree with you that it's probably silly to pass zone separately.
+> 
+> But page_zone(page) is never as trivial as that, and on some memory
+> layouts it can be a lookup that you'd really prefer to avoid repeating.
+> 
+> In every(?) case where we're using mem_cgroup_page_lruvec(), the zone
+> is already known: it's just been used for spin_lock_irq(&zone->lru_lock).
+> 
+> And when CONFIG_CGROUP_MEM_RES_CTLR is not set, the inline function
+> mem_cgroup_page_lruvec() uses only zone, not page at all: I wouldn't
+> want to be slowing down that case with another page_zone(page) lookup.
+> 
+> Also it's somewhat academic (though not for v3.5), in that this function
+> goes away in the patches I build upon it; and I expect it also to go away
+> in the patches Konstantin would build upon it - mem_cgroup_page_lruvec()
+> is a staging point, before we combine memcg/zone lookup with the locking.
+> 
+> Hugh
+I see. Thanks for the detailed explaination.
 
-|WARNING: vmlinux.o(.text+0x6553d): Section mismatch in reference from the function intel_scu_devices_create() to the function .devinit.text: spi_register_board_info()
-|The function intel_scu_devices_create() references
-|the function __devinit spi_register_board_info().
-|This is often because intel_scu_devices_create lacks a __devinit
-|annotation or the annotation of spi_register_board_info is wrong.
-|
-|WARNING: vmlinux.o(.text+0x655f1): Section mismatch in reference from the function intel_scu_devices_create() to the function .init.text:i2c _register_board_info()
-|The function intel_scu_devices_create() references
-|the function __init i2c_register_board_info().
-|This is often because intel_scu_devices_create lacks a __init
-|annotation or the annotation of i2c_register_board_info is wrong.
-
-This patch marks intel_scu_devices_create() as devinit because it calls
-a devinit function, spi_register_board_info().
-The second problem with i2c_register_board_info() does not go away and
-should crash once build as a module because i2c_register_board_info() is
-long gone. Therefore this function should not be used from a module.
-Going through all the code here makes me ask, why don't use DT here for
-all that I2C and friends?
-
-Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
----
-And I looked like this while going over the code:
-   http://download.breakpoint.cc/meme/moorestown_no_dt.png
-
- arch/x86/platform/mrst/mrst.c        |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index e31bcd8..fd41a92 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -782,7 +782,7 @@ BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
- EXPORT_SYMBOL_GPL(intel_scu_notifier);
- 
- /* Called by IPC driver */
--void intel_scu_devices_create(void)
-+void __devinit intel_scu_devices_create(void)
- {
- 	int i;
- 
+Baozi
