@@ -1,85 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab2EaSDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:03:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38574 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab2EaSDq convert rfc822-to-8bit (ORCPT
+	id S1758278Ab2EaSES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:04:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58011 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab2EaSEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:03:46 -0400
-Message-ID: <1338487413.28384.103.camel@twins>
-Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
- breakpoints
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Thu, 31 May 2012 20:03:33 +0200
-In-Reply-To: <1338486820.13348.366.camel@gandalf.stny.rr.com>
-References: <20120531012829.160060586@goodmis.org>
-	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
-	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
-	 <1338486029.28384.93.camel@twins>
-	 <1338486820.13348.366.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Thu, 31 May 2012 14:04:16 -0400
+Date: Thu, 31 May 2012 20:04:08 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Visstrim M10: fix gpio handling.
+Message-ID: <20120531180408.GV30400@pengutronix.de>
+References: <1338376389-32256-1-git-send-email-javier.martin@vista-silicon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338376389-32256-1-git-send-email-javier.martin@vista-silicon.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 20:02:19 up 201 days,  1:49, 23 users,  load average: 0.02, 0.02,
+ 0.12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 13:53 -0400, Steven Rostedt wrote:
-> On Thu, 2012-05-31 at 19:40 +0200, Peter Zijlstra wrote:
-> > On Thu, 2012-05-31 at 10:08 -0400, Steven Rostedt wrote:
-> > > > Also, why does this stuff live in ftrace? I always thought you were
-> > > > going to replace text_poke() so everybody that uses cross-modifying code
-> > > > could profit?
-> > > 
-> > > I discussed this with Masami at Collaboration Summit. The two are
-> > > similar but also very different. But we want to start merging the two
-> > > together where it makes sense. 
-> > 
-> > Argh,. I so disagree. You're doing it backwards.
-> > 
-> > First you merge whatever is there, regardless of who came first.
+On Wed, May 30, 2012 at 01:13:09PM +0200, Javier Martin wrote:
+> Some GPIOs in Visstrim M10 are used without being registered.
+> This leads to USB and video malfunctions. This patch registers
+> those GPIOs to solve the issue.
 > 
-> The comment about coming first was more about 're-inventing' then about
-> merging. You can't reinvent something that didn't exist.
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> ---
+>  arch/arm/mach-imx/mach-imx27_visstrim_m10.c |   13 ++++++++-----
+>  1 files changed, 8 insertions(+), 5 deletions(-)
 > 
-> That said, I didn't even think about text poke while doing this.
+> diff --git a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+> index e8741f9..db4aa6f 100644
+> --- a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+> +++ b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
+> @@ -116,6 +116,8 @@ static const int visstrim_m10_pins[] __initconst = {
+>  	PB23_PF_USB_PWR,
+>  	PB24_PF_USB_OC,
+>  	/* CSI */
+> +	TVP5150_RSTN | GPIO_GPIO | GPIO_OUT,
+> +	TVP5150_PWDN | GPIO_GPIO | GPIO_OUT,
+>  	PB10_PF_CSI_D0,
+>  	PB11_PF_CSI_D1,
+>  	PB12_PF_CSI_D2,
+> @@ -182,10 +184,10 @@ static void __init visstrim_camera_init(void)
+>  	int dma;
+>  
+>  	/* Initialize tvp5150 gpios */
+> -	mxc_gpio_mode(TVP5150_RSTN | GPIO_GPIO | GPIO_OUT);
+> -	mxc_gpio_mode(TVP5150_PWDN | GPIO_GPIO | GPIO_OUT);
+> -	gpio_set_value(TVP5150_RSTN, 1);
+> -	gpio_set_value(TVP5150_PWDN, 0);
+> +	gpio_request_one(TVP5150_RSTN, GPIOF_DIR_OUT | GPIOF_INIT_HIGH,
+> +			 "tvp5150_rstn");
+> +	gpio_request_one(TVP5150_PWDN, GPIOF_DIR_OUT | GPIOF_INIT_LOW,
+> +			 "tvp5150_pwdn");
+>  	ndelay(1);
+>  
+>  	gpio_set_value(TVP5150_PWDN, 1);
+> @@ -414,7 +416,8 @@ static struct i2c_board_info visstrim_m10_i2c_devices[] = {
+>  /* USB OTG */
+>  static int otg_phy_init(struct platform_device *pdev)
+>  {
+> -	gpio_set_value(OTG_PHY_CS_GPIO, 0);
+> +	gpio_request_one(OTG_PHY_CS_GPIO, GPIOF_DIR_OUT | GPIOF_INIT_LOW,
+> +			 "usbotg_cs");
 
-Well, the fail is before that, how could we grow two pieces of code
-doing similar things in the first place? 
+Could you please combine all gpios for your board into a single
+gpio_request_array? Then you can add proper error checking aswell
+without much overhead.
 
->  I was
-> just simply thinking about removing stop_machine from ftrace, that
-> required this. It was only a after thought that text_poke() could do the
-> same. And this came up at Collab, where I thought, oh yeah! we can
-> incorporate this with text poke.
+Sascha
 
-But but but but.. the thing far back when Mathieu proposed the int3
-scheme it was text_poke().. how.. did you not think of it this time!?
-
-> 
-> > Then, when everybody doing text modification is using the same
-> > interface, do a second implementation using a Kconfig knob. If the scary
-> > new one breaks, no sweat, flip the config. If its proven stable, kill
-> > off the old one.
-> 
-> What do you suggest then? To revert the code and rewrite it so that
-> text_poke() does a similar thing?
-
-Too late for that now I guess.. I just wonder why you all thought it was
-a good idea to have two pieces of code doing cross-modifying-code. I
-always assumed ftrace used text_poke().
-
-I hardly ever use dyn-ftrace but I do use some text_poke() through
-jump_labels.
-
-I would still like to end up with one code base doing CMC with two
-implementations depending on a Kconfig knob.
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
