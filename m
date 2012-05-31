@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab2EaUxE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:53:04 -0400
-Received: from fieldses.org ([174.143.236.118]:58743 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932487Ab2EaUxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:53:00 -0400
-Date: Thu, 31 May 2012 16:53:00 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: nfsd changes for 3.5
-Message-ID: <20120531205300.GG25955@fieldses.org>
-References: <20120531182457.GB25955@fieldses.org>
- <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
- <20120531200138.GD25955@fieldses.org>
- <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
+	id S1758433Ab2EaUyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:54:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42756 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901Ab2EaUyx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 16:54:53 -0400
+Message-ID: <4FC7DA93.1080905@pengutronix.de>
+Date: Thu, 31 May 2012 22:54:43 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix e.K.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/4] can: cc770: Fix likely misuse of | for &
+References: <cover.1338408931.git.joe@perches.com> <6c251b03dc626215cf696e894ac1cdda530f38d9.1338408931.git.joe@perches.com>
+In-Reply-To: <6c251b03dc626215cf696e894ac1cdda530f38d9.1338408931.git.joe@perches.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig63DDF846AE003BF88EFAFA75"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 01:17:26PM -0700, Linus Torvalds wrote:
-> On Thu, May 31, 2012 at 1:01 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> >
-> > Right.  By default it's 90 seconds before we'll give up on the client.
-> 
-> So a slightly buggy client can basically DoS the server by getting a
-> delegation and then crashing or something. Everybody else that tries
-> to read that directory (not that file) will be dead in the water.
-> Definitely not good.
-> 
-> > I hate that too, and originally tried to avoid it with something like:
-> >
-> >        retry:
-> >                acquire locks
-> >                lookup inode
-> >                ret = try_to_break_deleg(inode);
-> >                if (ret)
-> >                        drop locks
-> >                        really_break_deleg(inode);
-> >                        goto retry;
-> >                ... do the real work ...
-> >                drop locks
-> >
-> > I felt like I was making already complicated code logic like rename's
-> > even harder to follow.
-> 
-> I do think it's the only thing we can reasonably do.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig63DDF846AE003BF88EFAFA75
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-OK, I can give that another try.  Al, does that sound like the more
-sensible choice to you?
+On 05/30/2012 10:25 PM, Joe Perches wrote:
+> Using | with a constant is always true.
+> Likely this should have be &.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Sounds reasonable. And there are no in tree users of the platform driver
+that this fix could break.
+
+commited to linux-can,
+Marc
+
+> ---
+>  drivers/net/can/cc770/cc770_platform.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/net/can/cc770/cc770_platform.c b/drivers/net/can/c=
+c770/cc770_platform.c
+> index 53115ee..688371c 100644
+> --- a/drivers/net/can/cc770/cc770_platform.c
+> +++ b/drivers/net/can/cc770/cc770_platform.c
+> @@ -154,7 +154,7 @@ static int __devinit cc770_get_platform_data(struct=
+ platform_device *pdev,
+>  	struct cc770_platform_data *pdata =3D pdev->dev.platform_data;
+> =20
+>  	priv->can.clock.freq =3D pdata->osc_freq;
+> -	if (priv->cpu_interface | CPUIF_DSC)
+> +	if (priv->cpu_interface & CPUIF_DSC)
+>  		priv->can.clock.freq /=3D 2;
+>  	priv->clkout =3D pdata->cor;
+>  	priv->bus_config =3D pdata->bcr;
 
 
-Uh, that means ditching some work in my public git tree.  Which I
-haven't rebased in years.  So, a stupid process question; would you
-rather I:
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-	- continue to be strict about rebasing and apply a bunch of
-	  reverts?
-	- ditch it and start over?
 
-#1 looks like a mess to me, so I guess #2's my default.  Probably nobody
-will notice but me.
+--------------enig63DDF846AE003BF88EFAFA75
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> I'd love to have
-> some kind of per-dentry lock for unlink/rename, but we don't.
-> Long-term, we really do need to do something about the directory
-> locking, though, because it's also a huge problem for readdir()
-> concurrency. Or at least it used to be (samba in particular). Making
-> it an rwsem might help readdir a tiny amount, but I suspect people
-> actually depend on the mutex in readdir right now.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Al called this all "highly non-trivial":
+iEYEARECAAYFAk/H2pgACgkQjTAFq1RaXHNAqwCeIgt27xgLy0AE5WyKEfeNK/EY
+HSEAnRX1XvklF/b1VuIeKLJ0dithQs8H
+=G9+R
+-----END PGP SIGNATURE-----
 
-	http://marc.info/?l=linux-fsdevel&m=132726495726326&w=2
-
-I don't know who'd have the cycles.
-
---b.
-
-> 
-> > And those operations don't really know the inode till they acquire the
-> > locks, so in pathological cases that could continue forever.
-> 
-> I suspect at some point you just have to say "screw it".
+--------------enig63DDF846AE003BF88EFAFA75--
