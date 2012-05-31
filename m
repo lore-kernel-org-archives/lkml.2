@@ -1,84 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab2EaP4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:56:40 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:46739 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab2EaP4j (ORCPT
+	id S932716Ab2EaP4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:56:51 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:49549 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932609Ab2EaP4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:56:39 -0400
-Date: Thu, 31 May 2012 17:56:30 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linaro-sched-sig@lists.linaro.org,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Kevin Hilman <khilman@ti.com>, Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 17/41] rcu: Restart tick if we enqueue a callback in a
- nohz/cpuset CPU
-Message-ID: <20120531155626.GC27841@somewhere.redhat.com>
-References: <1335830115-14335-1-git-send-email-fweisbec@gmail.com>
- <1335830115-14335-18-git-send-email-fweisbec@gmail.com>
- <20120522172714.GC8087@linux.vnet.ibm.com>
- <20120522173047.GA8160@linux.vnet.ibm.com>
- <20120523140331.GE1663@somewhere>
- <20120523161514.GD2402@linux.vnet.ibm.com>
+	Thu, 31 May 2012 11:56:48 -0400
+Message-ID: <4FC794BD.1000309@micron.com>
+Date: Thu, 31 May 2012 08:56:45 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120523161514.GD2402@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 05/11] mtip32xx: Set block queue boundary variables
+References: <4FC57B1B.5010901@micron.com> <4FC7130B.6040506@kernel.dk>
+In-Reply-To: <4FC7130B.6040506@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18938.007
+X-TM-AS-Result: No--14.151000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 09:15:14AM -0700, Paul E. McKenney wrote:
-> On Wed, May 23, 2012 at 04:03:36PM +0200, Frederic Weisbecker wrote:
-> > On Tue, May 22, 2012 at 10:30:47AM -0700, Paul E. McKenney wrote:
-> > > On Tue, May 22, 2012 at 10:27:14AM -0700, Paul E. McKenney wrote:
-> > > > On Tue, May 01, 2012 at 01:54:51AM +0200, Frederic Weisbecker wrote:
-> > > > > If we enqueue an rcu callback, we need the CPU tick to stay
-> > > > > alive until we take care of those by completing the appropriate
-> > > > > grace period.
-> > > > > 
-> > > > > Thus, when we call_rcu(), send a self IPI that checks rcu_needs_cpu()
-> > > > > so that we restore a periodic tick behaviour that can take care of
-> > > > > everything.
-> > > > 
-> > > > Ouch, I hadn't considered RCU callbacks being posted from within an
-> > > > extended quiescent state.  I guess I need to make __call_rcu() either
-> > > > complain about this or handle it correctly...  It would -usually- be
-> > > > harmless, but there is getting to be quite a bit of active machinery
-> > > > in the various idle loops, so just assuming that it cannot happen is
-> > > > probably getting to be an obsolete assumption.
-> > > 
-> > > Adaptive ticks does restart the tick upon entering the kernel, correct?
-> > 
-> > No, it keeps the tick down. The tick is restarted only if it's needed:
-> > when more than one task are on the runqueue, a posix cpu timer is running,
-> > a CPU needs the current one to report a quiescent state, etc...
-> 
-> Ah, I didn't realize that you didn't restart the tick upon entry to the
-> kernel.  So this is why you need the IPI -- because there is no tick, if
-> the system call runs for a long time, RCU is not guaranteed to make any
-> progress on that CPU.
-> 
-> In the common case, this will not be a problem because system calls
-> normally spend a short amount of time in the kernel, so normally RCU's
-> dyntick-idle detection will handle this case.  The exception to this
-> rule is when there is a long CPU-bound code path in the kernel, where
-> "long" means many milliseconds.  In this exception case, this CPU needs
-> to be interrupted or whatever is needed to force the CPU to progress
-> through RCU.
+On 5/30/2012 11:43 PM, Jens Axboe wrote:
 
-Exactly!
+> On 05/30/2012 03:42 AM, Asai Thambi S P wrote:
+>>
+>> Set the following block queue boundary variables
+>> 	* max_hw_sectors
+>> 	* max_segment_size
+>> 	* nr_requests
+>>
+>> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+>> ---
+>>  drivers/block/mtip32xx/mtip32xx.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+>> index 9fe897d..801e70c 100644
+>> --- a/drivers/block/mtip32xx/mtip32xx.c
+>> +++ b/drivers/block/mtip32xx/mtip32xx.c
+>> @@ -3631,7 +3631,11 @@ skip_create_disk:
+>>  	set_bit(QUEUE_FLAG_NONROT, &dd->queue->queue_flags);
+>>  	blk_queue_max_segments(dd->queue, MTIP_MAX_SG);
+>>  	blk_queue_physical_block_size(dd->queue, 4096);
+>> +	blk_queue_max_hw_sectors(dd->queue, 0xffff);
+>> +	blk_queue_max_segment_size(dd->queue, 0x400000);
+>>  	blk_queue_io_min(dd->queue, 4096);
+>> +	dd->queue->nr_requests = 255;
+> 
+> ->nr_requests isn't a boundary variable you set for the queue. It's set
+> by the core bits, or by the user via the sysfs interface.
+> 
+> So you should not touch that from the driver.
+> 
+
+Ok.
+
+I saw scsi lib module changing it, so thought of changing the value close to
+device queue depth.
+
+--
+Regards,
+Asai Thambi
