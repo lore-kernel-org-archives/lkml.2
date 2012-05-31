@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab2EaSCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:02:55 -0400
-Received: from mail2.gnudd.com ([213.203.150.91]:56118 "EHLO mail.gnudd.com"
+	id S1758227Ab2EaSD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:03:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13759 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab2EaSCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:02:53 -0400
-Date: Thu, 31 May 2012 20:02:04 +0200
-From: Alessandro Rubini <rubini@gnudd.com>
-To: linus.walleij@linaro.org
-Cc: ben.dooks@codethink.co.uk, lee.jones@linaro.org, giancarlo.asnaghi@st.com,
-        linux@arm.linux.org.uk, linus.walleij@stericsson.com,
-        srinidhi.kasagar@stericsson.com, linux-kernel@vger.kernel.org,
-        w.sang@pengutronix.de, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
-Subject: Re: [PATCH RFC 2/3] i2c-nomadik: turn the platform driver to an
- amba driver
-Message-ID: <20120531180204.GA28779@mail.gnudd.com>
+	id S1757352Ab2EaSDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:03:24 -0400
+Date: Thu, 31 May 2012 19:20:01 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] call complete_vfork_done() after
+	put_user(clear_child_tid)
+Message-ID: <20120531172001.GB17513@redhat.com>
+References: <20120531171914.GA17505@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <CACRpkdZpjn0RBGY+CqqSW3ip0MSQUJSaqN0GD=a4THnPHNM-jg@mail.gmail.com>
-References: <CACRpkdZpjn0RBGY+CqqSW3ip0MSQUJSaqN0GD=a4THnPHNM-jg@mail.gmail.com>
-  <cover.1338398567.git.rubini@gnudd.com>
-  <349645b61d0b28f6e84f7ae1f2c8c28e12a11d92.1338398567.git.rubini@gnudd.com>
-  <CACRpkdZ79=B8N7omxYY4UPotg8gYotfLeBRViYMr8hA-Uhie0w@mail.gmail.com>
-  <4FC72DDF.7080209@codethink.co.uk>
+In-Reply-To: <20120531171914.GA17505@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> But since the device has PrimeCell ID registers, this is really the
-> right thing to do anyway, since autodetecting from hardware is
-> allways NiceToDo(TM).  Else ST and us shouldn't have put the magic
-> numbers (0xB105F00D) in there anyway.
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-Exactly. The pci-amba.c driver just says "here's an amba thing at
-my BAR0 address", and then it is idenfitied automatically. There is
-also automatic modalias support in place.
+Child should wake up parent from vfork() only after finishing all operations with
+shared mm. There is no sense to use CLONE_CHILD_CLEARTID together with CLONE_VFORK,
+but it looks more accurate now.
 
-So I'll resubmit in the right way (-M, include/linux/platform_data)
-as soon as I have information for ftd fixup.
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/fork.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Thanks
-/alessandro
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 47b4e4f..ba0c0de 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -787,9 +787,6 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+ 	/* Get rid of any cached register state */
+ 	deactivate_mm(tsk, mm);
+ 
+-	if (tsk->vfork_done)
+-		complete_vfork_done(tsk);
+-
+ 	/*
+ 	 * If we're exiting normally, clear a user-space tid field if
+ 	 * requested.  We leave this alone when dying by signal, to leave
+@@ -810,6 +807,9 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
+ 		}
+ 		tsk->clear_child_tid = NULL;
+ 	}
++
++	if (tsk->vfork_done)
++		complete_vfork_done(tsk);
+ }
+ 
+ /*
+-- 
+1.5.5.1
+
+
