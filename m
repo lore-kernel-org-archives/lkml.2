@@ -1,191 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758337Ab2EaSZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:25:01 -0400
-Received: from fieldses.org ([174.143.236.118]:57804 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758122Ab2EaSY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:24:58 -0400
-Date: Thu, 31 May 2012 14:24:58 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: nfsd changes for 3.5
-Message-ID: <20120531182457.GB25955@fieldses.org>
+	id S1758345Ab2EaScw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:32:52 -0400
+Received: from nm25-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.185]:34617 "HELO
+	nm25-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754714Ab2EaScv convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:32:51 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 90524.78066.bm@omp1037.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=1kxFNqFj5nS4dFg5K6qDdJvYC81rYYxqVvMFk1/AHnRnQGqXOdyPo3pJVoekx/gCxoEKv0LB7gdp2JvoWcRzVzZTyGBwBxbbqpZ2smXiMmLS4f+bgSvQtqApZg28dGfi1UG8tMbp6zndolHiUhFfbAqt46E+DO6eZnZylk0YXZw=;
+X-YMail-OSG: mGlkH04VM1kMFHLtVRLEhpAA51GCvnUdgNIlnkTdtv.N18g
+ Nwg6cs.iBofPdplW.7jaQCJNuDQQs2SJKyEY7wDpuCtE_VkeiEJcgzNzuC0I
+ SOXhb1D4n9PWrSU4rOeP8WPLW18RGj1tN9OGxIEHm8DaIX6_kgLjTMgOfQPy
+ 1m48KACxdFr6YTBb9S9nsbz.PwLRv8kvR01vs7MFOav8jYVjLx7uPliugTJa
+ fQ8gKy3xAK9LOqZ8EoaNjkcw_mGPJ6DGrzezUnf8Ne3Qq0Ybihv8i12tzwFL
+ B3kYl9rGxWOUNJ54RZ86BHDbPV5F.xmJg0R53hzMqZI0.avH1eI9rl9I9I8s
+ KHNnD3AgV2RCJ0EQz8SaGR3zjhaq3bpzII9hBmvktHusg3T_PlFfkqq9c41q
+ yJV97q0o7o82fW1ENdK5FVTX.BIs-
+X-Mailer: YahooMailWebService/0.8.118.349524
+References: <1337406674.48432.YahooMailNeo@web121303.mail.ne1.yahoo.com> <alpine.LSU.2.00.1205191301430.10539@eggly.anvils> <1337992130.90506.YahooMailNeo@web121305.mail.ne1.yahoo.com> <alpine.LSU.2.00.1205261033500.2033@eggly.anvils>
+Message-ID: <1338489169.41890.YahooMailNeo@web121305.mail.ne1.yahoo.com>
+Date: Thu, 31 May 2012 11:32:49 -0700 (PDT)
+From: Sam Portolla <samportolla@yahoo.com>
+Reply-To: Sam Portolla <samportolla@yahoo.com>
+Subject: Re: exit_mmap BUG_ON in 2.6.23 (and Add qdisc __NET_XMIT_STOLEN)
+To: Hugh Dickins <hughd@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, "kaber@trash.net" <kaber@trash.net>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "samPortolla@yahoo.com" <samPortolla@yahoo.com>
+In-Reply-To: <alpine.LSU.2.00.1205261033500.2033@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following nfsd and file-locking changes from the for-3.5
-branch at:
-
-	git://linux-nfs.org/~bfields/linux.git for-3.5
-
-Sorry this is a bit late.  In fact I still have a review backlog (at a
-minimum some bugfixes), so will send a second pull later.
-
-This includes patches addressing a long-standing problem in our NFSv4
-implementation, which is that read delegations aren't broken on certain
-local operations.  (Hence a diffstat with a few lines in namei.c and
-attr.c).  The problem isn't solved completely in the case of rename,
-where a small race remains; the patches to fix that will come in from Al
-Viro if they pass review.  But there's no regression in nfsd behavior if
-those patches don't make it in.
-
-Other than that:
-
-	- From Stanislav Kinsbursky, a bunch of NFS containerization
-	  work (still in progress).
-	- Fix a failure to process encrypted rpc's from Windows clients
-	  and servers due to our (incorrect) failure to handle gss
-	  tokens with rotated data.
-	- Fix some stuff caught by sparse (actual bugs are fairly
-	  minor); thanks to Al for reminding me to add sparse to my
-	  regular testing.
-	- Fixes for some protocol bugs in the procedures that establish
-	  4.0 and 4.1 clients, and much cleaner code.  (Thanks also to
-	  Chuck for a bugfix here, and Bryan and Trond for finding
-	  another bug.)
-	- Some cleanup and bugfixes from Jeff, Simo, and Dros.
-
---b.
+[please cc samPortolla@yahoo.com on the reply as not a member of this mailer]
 
 
-Chuck Lever (1):
-      NFSD: SETCLIENTID_CONFIRM returns NFS4ERR_CLID_INUSE too often
 
-J. Bruce Fields (44):
-      locks: introduce new FL_DELEG lock flag
-      locks: implement delegations
-      locks: break delegations on unlink
-      locks: break delegations on rename
-      locks: break delegations on link
-      locks: break delegations on any attribute modification
-      nfsd4: minor nfs4_setlease cleanup
-      nfsd4: delay setting current_fh in open
-      nfsd4: close open-deleg/unlink/rename lease
-      nfsd4: break only delegations when appropriate
-      nfsd: state.c should include current_stateid.h
-      nfsd4: fix missing "static"
-      nfsd4: preserve __user annotation on cld downcall msg
-      nfsd4: int/__be32 fixes
-      nfsd4: fix free_stateid return endianness
-      nfsd4: fix change attribute endianness
-      rpc: handle rotated gss data for Windows interoperability
-      svcrpc: fix a comment typo
-      nfsd4: exchange_id has a pointless copy
-      nfsd4: exchange_id error cleanup
-      nfsd4: exchange_id: check creds before killing confirmed client
-      nfsd4: allow an EXCHANGE_ID to kill a 4.0 client
-      nfsd4: exchange_id cleanup: local shorthands for repeated tests
-      nfsd4: exchange_id cleanup: comments
-      nfsd4: rearrange exchange_id logic to simplify
-      nfsd4: allow removing clients not holding state
-      nfsd4: move principal name into svc_cred
-      nfsd4: stricter cred comparison for setclientid/exchange_id
-      nfsd4: move rq_flavor into svc_cred
-      nfsd4: setclientid remove unnecessary terms from a logical expression
-      nfsd4: setclientid/confirm comment cleanup
-      nfsd4: merge last two setclientid cases
-      nfsd4: pull out common code from setclientid cases
-      nfsd4: merge 3 setclientid cases to 2
-      nfsd4: fix setclientid_confirm same_cred check
-      nfsd4: fix error return in non-matching-creds case
-      nfsd4: setclientid: remove pointless assignment
-      nfsd4: simpler ordering of setclientid_confirm checks
-      nfsd4: clarify that renewing expired client is a bug
-      nfsd4: fix exchange_id to return confirm flag
-      nfsd4: return "real" sequence id in confirmed case
-      nfsd4: remove some dprintk's and a comment
-      nfsd4: don't remove rebooted client record until confirmation
-      nfsd4: fix, consolidate client_has_state
+----- Original Message -----
+From: Hugh Dickins <hughd@google.com>
+To: Sam Portolla <samportolla@yahoo.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>; "kaber@trash.net" <kaber@trash.net>; "jarkao2@gmail.com" <jarkao2@gmail.com>; "davem@davemloft.net" <davem@davemloft.net>; "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Sent: Saturday, May 26, 2012 11:06 AM
+Subject: Re: exit_mmap BUG_ON in 2.6.23 (and Add qdisc __NET_XMIT_STOLEN)
 
-Jeff Layton (8):
-      nfsd: trivial: remove unused variable from nfsd4_lock
-      nfsd: don't use locks_in_grace to determine whether to call nfs4_grace_end
-      nfsd: trivial: use SEEK_SET instead of 0 in vfs_llseek
-      sunrpc: do array overrun check in svc_recv before allocating pages
-      nfsd: consolidate set_access and set_deny
-      nfsd: make test_share a bool return
-      nfsd: wrap accesses to st_access_bmap
-      nfsd: wrap all accesses to st_deny_bmap
+On Fri, 25 May 2012, Sam Portolla wrote:
+> 
+> commit 378a2f090f7a478704a372a4869b8a9ac206234e
+> Date:   Mon Aug 4 22:31:03 2008 -0700
+> net_sched: Add qdisc __NET_XMIT_STOLEN flag
+...
+> 
+>  I wonder if the lack of above patch in our code base could explain the
+>  exit_mmap() BUG_ON as well due to memory corruption causing MMU to not
+>  be able to locate the page(s) it had to free. NR_PTES keeps track of
+>  that? Could you explain that more?
 
-Simo Sorce (2):
-      svcauth: remove unused define
-      SUNRPC: split upcall function to extract reusable parts
+I concur with Eric in thinking it unlikely - though (unlike Eric)
+I know far too little about networking to comment with authority.
 
-Stanislav Kinsbursky (26):
-      nfsd: use passed cache_detail pointer expkey_parse()
-      nfsd: add link to owner cache detail to svc_export structure
-      nfsd: use cache detail pointer from svc_export structure on cache put
-      nfsd: use exp_put() for svc_export_cache put
-      nfsd: pass svc_export_cache pointer as private data to "exports" seq file ops
-      nfsd: use hash table from cache detail in nfsd export seq ops
-      nfsd: pass pointer to expkey cache down to stack wherever possible.
-      NFSd: remove hard-coded dereferences to name-to-id and id-to-name caches
-      Lockd: pass network namespace to creation and destruction routines
-      nfsd: pass network context to export caches init/shutdown routines
-      nfsd: pass pointer to export cache down to stack wherever possible.
-      nfsd: make export cache allocated per network namespace context
-      nfsd: make expkey cache allocated per network namespace context
-      nfsd: allocate export and expkey caches in per-net operations.
-      nfsd: pass network context to idmap init/exit functions
-      nfsd: make id-to-name cache allocated per network namespace context
-      nfsd: make name-to-id cache allocated per network namespace context
-      nfsd: allocate id-to-name and name-to-id caches in per-net operations.
-      SUNRPC: new svc_bind() routine introduced
-      SUNRPC: move per-net operations from svc_destroy()
-      LockD: pass service to per-net up and down functions
-      LockD: use existing per-net data function on service creation
-      LockD: service creation function introduced
-      LockD: move global usage counter manipulation from error path
-      LockD: service start function introduced
-      LockD: add debug message to start and stop functions
+I'd guess that there have been literally hundreds of fixes gone into
+the kernel since 2.6.23, each more likely to be the fix to such memory
+corruption than this one.  And I could also be wrong in attributing
+your BUG to memory corruption: perhaps I'm forgetting an mm fix.
 
-Weston Andros Adamson (2):
-      nfsd: add IPv6 addr escaping to fs_location hosts
-      nfsd: return 0 on reads of fault injection files
+You ask me to explain more: mm->nr_ptes keeps track of the number of
+page tables that have been allocated; when we free the mm, we should
+be freeing exactly the number of page tables we allocated earlier,
+but a bug in the code maintaining the vmas or the page tables might
+break that, hence the BUG_ON to test.  But equally, if there has been
+memory corruption of vmas or of higher-level page tables, we may now
+be unable to locate all the page tables we allocated earlier, and so
+hit the BUG_ON for that reason.
 
- fs/attr.c                           |    3 +
- fs/lockd/clntlock.c                 |   13 +-
- fs/lockd/svc.c                      |  148 +++++----
- fs/locks.c                          |   51 ++-
- fs/namei.c                          |   19 +-
- fs/nfs/callback.c                   |   13 +-
- fs/nfsd/auth.c                      |    2 +-
- fs/nfsd/export.c                    |  181 ++++++-----
- fs/nfsd/fault_inject.c              |    1 +
- fs/nfsd/idmap.h                     |    8 +-
- fs/nfsd/netns.h                     |    6 +
- fs/nfsd/nfs4callback.c              |    5 +-
- fs/nfsd/nfs4idmap.c                 |  113 ++++---
- fs/nfsd/nfs4proc.c                  |   36 ++-
- fs/nfsd/nfs4recover.c               |    4 +-
- fs/nfsd/nfs4state.c                 |  599 +++++++++++++++++------------------
- fs/nfsd/nfs4xdr.c                   |   62 ++--
- fs/nfsd/nfsctl.c                    |   67 ++--
- fs/nfsd/nfsfh.c                     |    2 +-
- fs/nfsd/nfssvc.c                    |   31 +-
- fs/nfsd/state.h                     |    1 -
- fs/nfsd/vfs.c                       |   33 +-
- fs/nfsd/xdr4.h                      |    9 +-
- include/linux/fs.h                  |   19 +-
- include/linux/lockd/bind.h          |    4 +-
- include/linux/nfsd/export.h         |   13 +-
- include/linux/sunrpc/svc.h          |    2 +-
- include/linux/sunrpc/svcauth.h      |   13 +-
- include/linux/sunrpc/svcauth_gss.h  |    1 -
- net/sunrpc/auth_gss/gss_krb5_wrap.c |   61 +++-
- net/sunrpc/auth_gss/svcauth_gss.c   |  127 ++++----
- net/sunrpc/rpcb_clnt.c              |   12 +-
- net/sunrpc/svc.c                    |   23 +-
- net/sunrpc/svc_xprt.c               |    4 +-
- net/sunrpc/svcauth_unix.c           |   19 +-
- 35 files changed, 1009 insertions(+), 696 deletions(-)
+Would I be unfair to characterize this as a problem seen once at a
+customer site in the 4.5 years since 2.6.23 was released?
 
---b.
+As I said before, please just change that BUG_ON to WARN_ON, and
+wait to see if more such issues come up: if they do, then you can
+start to look for a pattern.
+
+Hi Hugh, The concern I have with changing BUG_ON to WARN_ON, is one you had mentioned earlier in the thread.
+If there is a memory corruption, BUG_ON causes system reboot and a clean start. WARN_ON won't and we might again end up crashing somewhere totally unrelated, possibly much later, i.e. unknown impact of this change. I know you know this area 100 times or more than me, but this is my concern and I am ready to be corrected, by all means.
+
+Hugh and Eric, 
+
+ Also, I can not get it out of my head that there was 3 instances of kernel crashes on the same system within 1 hour, all of them in different areas of the kernel and all of them just after the ethernet driver printed a transmit timeout message, which would come out if it the network layer saw the transmit Q's stopped. It seems really unlikely that 3 separate root causes exist in such a scenario. Therefore I keep thinking whatever caused the transmit timeout, also caused kernel memory corruption, which then manifested in different ways, namely: crash in the corresponding ethernet driver due to NULL ptr access, this BUG_ON and another NULL ptr access in buffer.c for the 3rd crash. The way I can think of unifying all these is that possibly the QDISC bug caused memory corruption AND also triggered the transmit timeout as it messed up the Tx Q to the device. We know when that QDISC issue happened originally couple of years ago, the same BNX2 driver had a
+ NULL ptr access in its SKB area, because of what I explained in my reply to Eric yesterday. So, we may have a pure coincidence here, but in the absence of reproducibility, core file to analyze, and based on reasons above, I really am interested in this QDISC problem. Eric, could you kindly respond to the email I sent yesterday, with the above background in mind. Regards to both of you. 
+
+
+
+
+
+Hugh 
