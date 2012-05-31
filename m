@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758089Ab2EaR50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:57:26 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:17559 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755972Ab2EaR5Z convert rfc822-to-8bit (ORCPT
+	id S1754927Ab2EaR5y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:57:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46651 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753667Ab2EaR5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:57:25 -0400
-From: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Thu, 31 May 2012 13:57:53 -0400
+Date: Thu, 31 May 2012 18:57:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Anthony Olech <Anthony.Olech@diasemi.com>
-Subject: RE: [PATCH 4/4] regmap: Minor optimisation for _regmap_raw_write().
-Thread-Topic: [PATCH 4/4] regmap: Minor optimisation for _regmap_raw_write().
-Thread-Index: AQHNP0yhMHwI1+aD50OFJd98bGbbQJbkLfyQ
-Date: Thu, 31 May 2012 17:57:17 +0000
-Message-ID: <751C305CD2876B4990194D0512DE8BF2441CA8D6@SW-EX-MBX01.diasemi.com>
-References: <201205311622.q4VGMHGe015484@sw-eng-lt-dc-vm2>
- <20120531164419.GL2666@opensource.wolfsonmicro.com>
-In-Reply-To: <20120531164419.GL2666@opensource.wolfsonmicro.com>
-Accept-Language: pl-PL, en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 1/4] regmap: Reorganise internal read/write functions.
+Message-ID: <20120531175750.GC24139@opensource.wolfsonmicro.com>
+References: <201205311607.q4VG7avr012901@sw-eng-lt-dc-vm2>
+ <20120531164148.GK2666@opensource.wolfsonmicro.com>
+ <751C305CD2876B4990194D0512DE8BF2441CA8CA@SW-EX-MBX01.diasemi.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qlTNgmc+xy1dBmNv"
+Content-Disposition: inline
+In-Reply-To: <751C305CD2876B4990194D0512DE8BF2441CA8CA@SW-EX-MBX01.diasemi.com>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, May 31, 2012 at 05:11:38PM +0200, Krystian Garbaciak wrote:
-> > Just to make things simplier inside the function.
-> 
-> Again, what is this actually doing (ie, please improve your changelogs)?
-> 
-> It looks like it's just factoring constants out (which hopefully the compiler can do
-> but still is OK) - this looks good but should probably be at the start rather than
-> end of the series.
 
-Yes, this is only to make the code a bit simpler. I will put it as a first patch then.
+--qlTNgmc+xy1dBmNv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Legal Disclaimer: This e-mail communication (and any attachment/s) is confidential and contains proprietary information, 
-some or all of which may be legally privileged. It is intended solely for the use of the individual or entity to which it
-is addressed. Access to this email by anyone else is unauthorized. If you are not the intended recipient, any disclosure, 
-copying, distribution or any action taken or omitted to be taken in reliance on it, is prohibited and may be unlawful.
+On Thu, May 31, 2012 at 05:53:16PM +0000, Krystian Garbaciak wrote:
 
-Please consider the environment before printing this e-mail
+> However, on next patch I need to pass *val for reading and writing to
+> the same function. I will put casting there and comment it.
+
+No, let's do something type safe for this.
+
+--qlTNgmc+xy1dBmNv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPx7EYAAoJEBus8iNuMP3drWUP/3OtSwTxw9HEeyjCVuT0gBEf
+Jyr7Wl2kJXGKUdaNd8YKslKVII/S/yX+oDOb6rej14ne75liZ1ahrF76MASBXykk
+AaE7i6fvwU3W5E7eQz8Na5mMlj9e4E2ATb7AaCjJ0UNC9Tw/CIdIZwVJdJ0PpJam
+Rw8o+iIuksB6mZSeXrarsCb7RNk8hurGaUvlI++EhZjvOchUyzK6k+LUBi+gBJwX
+WrsjciUyG66V+T/hqQLzl2YzyT0DWKKXrSCddJKTNqxUOTwG1Px9P7l7vBwGYbGu
+/vm7hWtvQ2Y8loEAznT2TaKKFeNUoj3Vrv97yqsTen7HpnXYfx2KJzV30OJIypQt
+a4I/mTTbnvfQN7YQpj4sTu5Rcizwtg1pKTJynlXPSLmTONikd9vCpHvV9RNjeX7n
+tVyaitDVA7s4ESoRgV58sK+tA7I9FKfCF4Z1WfVhV/9ULpIBvP6zylGBhnC/6mDy
+r9GTfy42NzOKYkeHbXbK0KXSp7o32OySF/XeYkbRg9tDgwSpR13ZOt11iQXRCp2h
+kfqo5BjPIV4tdt4ybmYSCi3OhCqU5uEyg8BiG2qsYKF9p1cwNVxVv0njfN4M1j+U
+CSmLWlSqRaDn0CRorco0uRhi82MRtrUKDi7ed11KXM0ImqBh1amDJqpFN6d0V2ZE
+Y46lc0AtlEwqY3g5bDA+
+=9QOg
+-----END PGP SIGNATURE-----
+
+--qlTNgmc+xy1dBmNv--
