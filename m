@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119Ab2EaSD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:03:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33326 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754138Ab2EaSDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:03:24 -0400
-Date: Thu, 31 May 2012 19:19:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] correctly synchronize rss-counters at exit/exec
-Message-ID: <20120531171942.GA17513@redhat.com>
-References: <20120531171914.GA17505@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531171914.GA17505@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758270Ab2EaSDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:03:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38574 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab2EaSDq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:03:46 -0400
+Message-ID: <1338487413.28384.103.camel@twins>
+Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 20:03:33 +0200
+In-Reply-To: <1338486820.13348.366.camel@gandalf.stny.rr.com>
+References: <20120531012829.160060586@goodmis.org>
+	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
+	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
+	 <1338486029.28384.93.camel@twins>
+	 <1338486820.13348.366.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A simplified version of Konstantin Khlebnikov's patch.
+On Thu, 2012-05-31 at 13:53 -0400, Steven Rostedt wrote:
+> On Thu, 2012-05-31 at 19:40 +0200, Peter Zijlstra wrote:
+> > On Thu, 2012-05-31 at 10:08 -0400, Steven Rostedt wrote:
+> > > > Also, why does this stuff live in ftrace? I always thought you were
+> > > > going to replace text_poke() so everybody that uses cross-modifying code
+> > > > could profit?
+> > > 
+> > > I discussed this with Masami at Collaboration Summit. The two are
+> > > similar but also very different. But we want to start merging the two
+> > > together where it makes sense. 
+> > 
+> > Argh,. I so disagree. You're doing it backwards.
+> > 
+> > First you merge whatever is there, regardless of who came first.
+> 
+> The comment about coming first was more about 're-inventing' then about
+> merging. You can't reinvent something that didn't exist.
+> 
+> That said, I didn't even think about text poke while doing this.
 
-do_exit() and exec_mmap() call sync_mm_rss() before mm_release()
-does put_user(clear_child_tid) which can update task->rss_stat
-and thus make mm->rss_stat inconsistent. This triggers the "BUG:"
-printk in check_mm().
+Well, the fail is before that, how could we grow two pieces of code
+doing similar things in the first place? 
 
-- Move the final sync_mm_rss() from do_exit() to exit_mm(), and
-  change exec_mmap() to call sync_mm_rss() after mm_release() to
-  make check_mm() happy.
+>  I was
+> just simply thinking about removing stop_machine from ftrace, that
+> required this. It was only a after thought that text_poke() could do the
+> same. And this came up at Collab, where I thought, oh yeah! we can
+> incorporate this with text poke.
 
-  Perhaps we should simply move it into mm_release() and call it
-  unconditionally to catch the "task->rss_stat != 0 && !task->mm"
-  bugs.
+But but but but.. the thing far back when Mathieu proposed the int3
+scheme it was text_poke().. how.. did you not think of it this time!?
 
-- Since taskstats_exit() is called before exit_mm(), add another
-  sync_mm_rss() into xacct_add_tsk() who actually uses rss_stat.
+> 
+> > Then, when everybody doing text modification is using the same
+> > interface, do a second implementation using a Kconfig knob. If the scary
+> > new one breaks, no sweat, flip the config. If its proven stable, kill
+> > off the old one.
+> 
+> What do you suggest then? To revert the code and rewrite it so that
+> text_poke() does a similar thing?
 
-  Probably we should also shift acct_update_integrals().
+Too late for that now I guess.. I just wonder why you all thought it was
+a good idea to have two pieces of code doing cross-modifying-code. I
+always assumed ftrace used text_poke().
 
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Tested-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/exec.c       |    2 +-
- kernel/exit.c   |    5 ++---
- kernel/tsacct.c |    1 +
- 3 files changed, 4 insertions(+), 4 deletions(-)
+I hardly ever use dyn-ftrace but I do use some text_poke() through
+jump_labels.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 52c9e2f..e49e3c2 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *mm)
- 	/* Notify parent that we're no longer interested in the old VM */
- 	tsk = current;
- 	old_mm = current->mm;
--	sync_mm_rss(old_mm);
- 	mm_release(tsk, old_mm);
- 
- 	if (old_mm) {
-+		sync_mm_rss(old_mm);
- 		/*
- 		 * Make sure that if there is a core dump in progress
- 		 * for the old mm, we get out and die instead of going
-diff --git a/kernel/exit.c b/kernel/exit.c
-index ab972a7..b3a84b5 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -655,6 +655,8 @@ static void exit_mm(struct task_struct * tsk)
- 	mm_release(tsk, mm);
- 	if (!mm)
- 		return;
-+
-+	sync_mm_rss(mm);
- 	/*
- 	 * Serialize with any possible pending coredump.
- 	 * We must hold mmap_sem around checking core_state
-@@ -965,9 +967,6 @@ void do_exit(long code)
- 				preempt_count());
- 
- 	acct_update_integrals(tsk);
--	/* sync mm's RSS info before statistics gathering */
--	if (tsk->mm)
--		sync_mm_rss(tsk->mm);
- 	group_dead = atomic_dec_and_test(&tsk->signal->live);
- 	if (group_dead) {
- 		hrtimer_cancel(&tsk->signal->real_timer);
-diff --git a/kernel/tsacct.c b/kernel/tsacct.c
-index 23b4d78..a64ee90 100644
---- a/kernel/tsacct.c
-+++ b/kernel/tsacct.c
-@@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
- 	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
- 	mm = get_task_mm(p);
- 	if (mm) {
-+		sync_mm_rss(mm);
- 		/* adjust to KB unit */
- 		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
- 		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
--- 
-1.5.5.1
-
-
+I would still like to end up with one code base doing CMC with two
+implementations depending on a Kconfig knob.
