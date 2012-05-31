@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab2EaLBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 07:01:38 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:34340 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab2EaLBh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 07:01:37 -0400
-Date: Thu, 31 May 2012 16:24:52 +0530
-From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: apw@canonical.com
-Subject: checkpatch: False positive on wrong indentation within block.
-Message-ID: <20120531105452.GI7511@linux.vnet.ibm.com>
-Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+	id S1753982Ab2EaLEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 07:04:30 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:11440 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751799Ab2EaLE3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 07:04:29 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz14ffIzz1202hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ahbe9i)
+X-FB-SS: 0,
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "agraf@suse.de" <agraf@suse.de>
+Subject: memblock_end_of_DRAM()  return end address + 1
+Thread-Topic: memblock_end_of_DRAM()  return end address + 1
+Thread-Index: Ac0/HQWP16L7u7IaTN6gp93aPjbXWA==
+Date: Thu, 31 May 2012 11:03:35 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D03D5AAE2@039-SN2MPN1-022.039d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12053100-9264-0000-0000-0000019E9841
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch does not warns about the wrong indentation within a block.
-When checkpatch is run on following patch, it does not complain about
-the wrong indentation of if block.
+Hi All,
 
-[...]
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index fd019d7..a8d78f3 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -382,7 +382,12 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 		if ((i == cpu) || (has_mc && match_llc(c, o)))
- 			link_mask(llc_shared, cpu, i);
+memblock_end_of_DRAM() defined in mm/memblock.c returns base_address + size;
+So this is not returning the end_of_DRAM, it is basically returning the end_of_DRAM + 1. The name looks to suggest that this returns end address on DRAM.
 
--		if ((i == cpu) || (has_mc && match_mc(c, o))) {
-+	}
-+
-+	for_each_cpu(i, cpu_sibling_setup_mask) {
-+		o = &cpu_data(i);
-+
-+	if ((i == cpu) || (has_mc && match_mc(c, o))) {
- 			link_mask(core, cpu, i);
+IIUC, it looks like that some code assumes this returns the end address while some assumes this returns end address + 1.
 
- 			/*
+Example:
+1. arch/powerpc/platforms/85xx/mpc85xx_ds.c
 
-$ ./scripts/checkpatch.pl Fix-booted_cores-reporting.patch
-total: 0 errors, 0 warnings, 13 lines checked
 
-Fix-booted_cores-reporting.patch has no obvious style problems and is ready for submission.
+<cut>
 
-Thanks,
-Kamalesh.
+#ifdef CONFIG_SWIOTLB
+        if (memblock_end_of_DRAM() > max) {
+                ppc_swiotlb_enable = 1;
+                set_pci_dma_ops(&swiotlb_dma_ops);
+                ppc_md.pci_dma_dev_setup = pci_dma_dev_setup_swiotlb;
+        }
+#endif
+
+<cut>
+<cut>
+
+
+Where  max = 0xffffffff; So we assumes that memblock_end_of_DRAM() actually returns end address.
+
+------
+2.
+
+In arch/powerpc/kernel/dma.c
+
+
+static int dma_direct_dma_supported(struct device *dev, u64 mask)
+{
+#ifdef CONFIG_PPC64
+        /* Could be improved so platforms can set the limit in case
+         * they have limited DMA windows
+         */
+        return mask >= get_dma_offset(dev) + (memblock_end_of_DRAM() - 1);
+
+
+<cut>
+
+It looks to that here we assume base + addr + 1;
+
+-----------
+
+
+Thanks
+-Bharat
+
 
