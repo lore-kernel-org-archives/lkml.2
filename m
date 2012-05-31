@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2EaJ1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:27:46 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:35538 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752066Ab2EaJ1p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:27:45 -0400
-Date: Thu, 31 May 2012 12:26:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Felipe Balbi <balbi@ti.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC PATCH] clk: add extension API
-Message-ID: <20120531092603.GM5377@arwen.pp.htv.fi>
-Reply-To: balbi@ti.com
-References: <1338285540-24407-1-git-send-email-pdeschrijver@nvidia.com>
- <4FC5DFCF.1020606@codeaurora.org>
- <20120531075125.GL8026@tbergstrom-lnx.Nvidia.com>
- <20120531081841.GG5377@arwen.pp.htv.fi>
- <20120531083131.GQ8026@tbergstrom-lnx.Nvidia.com>
- <20120531085432.GK5377@arwen.pp.htv.fi>
- <20120531090518.GR8026@tbergstrom-lnx.Nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="20XocjIeMTCm4X0r"
-Content-Disposition: inline
-In-Reply-To: <20120531090518.GR8026@tbergstrom-lnx.Nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754604Ab2EaJ2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 05:28:48 -0400
+Received: from skyrme.org ([193.175.80.135]:50872 "EHLO skyrme.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753217Ab2EaJ2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 05:28:47 -0400
+Date: 31 May 2012 09:28:43 +0000
+Message-Id: <1338456523-12390-1-git-send-email-oskar@scara.com>
+From: "Oskar Schirmer" <oskar@scara.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Oskar Schirmer" <oskar@scara.com>, "Corey Minyard" <minyard@acm.org>,
+        "Wim Van Sebroeck" <wim@iguana.be>,
+        "Andrew Morton" <akpm@linux-foundation.org>
+Subject: [PATCH] char/ipmi: remove local ioctl defines replaced by generic ones
+X-Mailer: git-send-email 1.6.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This watchdog driver had ioctl defines introduced locally
+for pre timeout handling, marked to be removed as soon as
+a generic replacement would become available.
 
---20XocjIeMTCm4X0r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The latter has actually occurred in 2006, at e05b59fe.
 
-Hi,
+Remove the local duplicates for pre timeout handling.
 
-On Thu, May 31, 2012 at 12:05:18PM +0300, Peter De Schrijver wrote:
-> >=20
-> > What if a module needs two clocks and you drive the reset on both of the
-> > clocks ? What would happen ?
-> >=20
->=20
-> Only 'leave clocks' have this reset method and a module can only have 1 of
-> them.
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/char/ipmi/ipmi_watchdog.c |   13 -------------
+ 1 files changed, 0 insertions(+), 13 deletions(-)
 
-fair enough... got mislead by you "every module has at least one clock"
-statement.
+diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
+index 7ed356e..37b8be7 100644
+--- a/drivers/char/ipmi/ipmi_watchdog.c
++++ b/drivers/char/ipmi/ipmi_watchdog.c
+@@ -141,17 +141,6 @@
+ 
+ #define IPMI_WDOG_TIMER_NOT_INIT_RESP	0x80
+ 
+-/* These are here until the real ones get into the watchdog.h interface. */
+-#ifndef WDIOC_GETTIMEOUT
+-#define	WDIOC_GETTIMEOUT        _IOW(WATCHDOG_IOCTL_BASE, 20, int)
+-#endif
+-#ifndef WDIOC_SET_PRETIMEOUT
+-#define	WDIOC_SET_PRETIMEOUT     _IOW(WATCHDOG_IOCTL_BASE, 21, int)
+-#endif
+-#ifndef WDIOC_GET_PRETIMEOUT
+-#define	WDIOC_GET_PRETIMEOUT     _IOW(WATCHDOG_IOCTL_BASE, 22, int)
+-#endif
+-
+ static DEFINE_MUTEX(ipmi_watchdog_mutex);
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+ 
+@@ -732,7 +721,6 @@ static int ipmi_ioctl(struct file *file,
+ 			return -EFAULT;
+ 		return 0;
+ 
+-	case WDIOC_SET_PRETIMEOUT:
+ 	case WDIOC_SETPRETIMEOUT:
+ 		i = copy_from_user(&val, argp, sizeof(int));
+ 		if (i)
+@@ -740,7 +728,6 @@ static int ipmi_ioctl(struct file *file,
+ 		pretimeout = val;
+ 		return ipmi_set_timeout(IPMI_SET_TIMEOUT_HB_IF_NECESSARY);
+ 
+-	case WDIOC_GET_PRETIMEOUT:
+ 	case WDIOC_GETPRETIMEOUT:
+ 		i = copy_to_user(argp, &pretimeout, sizeof(pretimeout));
+ 		if (i)
+-- 
+1.7.5.4
 
-> > > but then we would have the keep a list of IDs (1 per module) which th=
-e drivers
-> > > can use to call some tegra reset function which would in the end use =
-registers
-> > > in the same memory area to cause a reset. (the registers controlling
-> > > modulereset are interleaved with those controlling the enable/disable=
- of the
-> > > main moduleclock and bitpositions are identical)
-> >=20
-> > Well, under a generic device-level API, you could just call an internal
-> > clk_reset() function because you know which clocks feed into which
-> > devices anyway. It could look something like:
-> >=20
-> > on Tegra:
-> >=20
-> > device_reset(dev)
-> > 	-> dev_pm_domain->reset()
-> > 		-> tegra_periph_reset()
-> >=20
->=20
-> These methods are also needed internally by the powergating code.
-
-so ? Just call them when you need...
-
-> > on OMAP:
-> >=20
-> > device_reset(dev)
-> > 	-> dev_pm_domain->reset()
-> > 		-> omap_hwmod_reset()
-> >=20
-> >=20
-> > btw:
-> >=20
-> > tegra_periph_reset(....)
-> > {
-> > 	tegra_periph_reset_assert(...);
-> > 	udelay(2);
-> > 	tegra_periph_reset_deassert(...);
-> > }
->=20
-> which uses the clockframework currently.
-
-no problems there. The point is that you already know which clock feed
-into which device, so if you have a device-based API for device
-soft-reset, you can figure out which exact clock to toggle, right ?
-
---=20
-balbi
-
---20XocjIeMTCm4X0r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPxzkrAAoJEIaOsuA1yqRELgUP+QEmkIvqVmzCIQHIxIiD53xS
-gbFBg9KDMkXZZdNENSZ371ZQQ1VwyGYCpQVqPGDmaEmEOAaE4LR/SoIB3Vpd6HFf
-wvGtHX29+vCdYKtKqyAdqfcYUPY2I5fJWpcQTVZC97hIph8OpMIB3P0hqJF5hbsP
-u29N63mQomxvONcn8p9tRZQtb0j/XZ7ltUE0Aju9lQRhK63u4omLLPa4VCG7DySv
-7nvpynaP3MgrevigcDJeoCSJrcwHiV/4wYR2qBv3/YusnydZ2hd6+hhRyxK6ZMD3
-CsYKJTOPh8sBcdwbyuwYzQcsvdDi7rCdu/xxirRVt58GVFlBll1FJreSN0+Joh1o
-s0sEPtH0pYnEvexOv+RbpcMX0zuSWK7wx+nj6yw4QxaOB4lBlOt/7fRSQcUmGlAw
-PF7dp0gcdJxKXEwuqvliCq/3qUcIZTTjKZF/0f2kzhWzM5FuAGaEeLo+f6PtFXyc
-hOwNE+xSC8i5TSiDRbbpVmmH5qgQJY6iMZ3xk7ylTloPfNhHLTenEWjszW7ul/CG
-Dg92HPyg+kvLZxCOIHWzsRG6Vn1+6TBSw+Wp4wZxLQ8zlfLEwTFFIcqabc0TTkrN
-b0NYaMKooxncCagBNCPHvgIUqWLnW4+SvIJWmplt5crKDf1e18MSG6464Tly5Eoz
-9zqkbP/wo5isnJaDazbY
-=UnTv
------END PGP SIGNATURE-----
-
---20XocjIeMTCm4X0r--
