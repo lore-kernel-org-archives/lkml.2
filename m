@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab2EaKzO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:55:14 -0400
-Received: from sting.hengli.com.au ([178.18.18.71]:52977 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751518Ab2EaKzM (ORCPT
+	id S1753589Ab2EaK51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:57:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37282 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751518Ab2EaK5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:55:12 -0400
-Date: Thu, 31 May 2012 20:54:53 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: nicolas.ferre@atmel.com, jamie@jamieiles.com, linux-kernel@vger.kernel.org,
-        GPontis@z9.com, stable@vger.kernel.org
-Subject: Re: [PATCH] hw_random: atmel-rng: fix race condition leading to
- repeated bits
-Message-ID: <20120531105453.GA6266@gondor.apana.org.au>
-References: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 31 May 2012 06:57:25 -0400
+Message-ID: <1338461840.3073.15.camel@dabdike.int.hansenpartnership.com>
+Subject: [GIT PULL] parisc updates for the 3.4+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Parisc List <linux-parisc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Thu, 31 May 2012 11:57:20 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 25, 2012 at 11:12:38AM +0200, Peter Korsgaard wrote:
-> Data valid gets cleared by reading the ISR (status register) and NOT from
-> reading ODATA (data register). A new data word can become available between
-> checking ISR and reading ODATA, causing us to reuse the same data word next
-> time atmel_trng_read() gets called, if that happens before the following
-> data word is ready.
+This is a couple of updates to complete our fixes and one to fix a
+compile failure caused during the merge window.  Additionally, we now
+switch to the generic strncopy_from_user.
 
-Patch applied crypto.  Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+The update is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git parisc-misc
+
+The short changelog is:
+
+James Bottomley (3):
+      [PARISC] update parisc to use generic strncpy_from_user()
+      [PARISC] Fix parisc compile failure after smp: Add task_struct argument to __cpu_up()
+      [PARISC] fix TLB fault path on PA2.0 narrow systems
+
+John David Anglin (1):
+      [PARISC] fix boot failure on 32-bit systems caused by branch stubs placed before .text
+
+And the diffstat:
+
+ arch/parisc/Kconfig               |    1 +
+ arch/parisc/include/asm/smp.h     |    2 --
+ arch/parisc/include/asm/uaccess.h |    5 ++---
+ arch/parisc/kernel/entry.S        |   30 +++++++++++++++------------
+ arch/parisc/kernel/parisc_ksyms.c |    1 -
+ arch/parisc/kernel/vmlinux.lds.S  |    6 ++++--
+ arch/parisc/lib/lusercopy.S       |   41 -------------------------------------
+ 7 files changed, 24 insertions(+), 62 deletions(-)
+
+James
+
+
