@@ -1,94 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758278Ab2EaSES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:04:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58011 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab2EaSEQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:04:16 -0400
-Date: Thu, 31 May 2012 20:04:08 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Visstrim M10: fix gpio handling.
-Message-ID: <20120531180408.GV30400@pengutronix.de>
-References: <1338376389-32256-1-git-send-email-javier.martin@vista-silicon.com>
+	id S1758207Ab2EaSFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:05:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46095 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880Ab2EaSFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:05:13 -0400
+Message-ID: <4FC7B2C7.80504@redhat.com>
+Date: Thu, 31 May 2012 15:04:55 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338376389-32256-1-git-send-email-javier.martin@vista-silicon.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 20:02:19 up 201 days,  1:49, 23 users,  load average: 0.02, 0.02,
- 0.12
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Borislav Petkov <bp@amd64.org>
+CC: "Luck, Tony" <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+References: <20120531100005.GC14074@aftab.osrc.amd.com> <4FC748F5.9070709@redhat.com> <20120531121741.GB14515@aftab.osrc.amd.com> <4FC7788C.1070405@redhat.com> <20120531142229.GF14515@aftab.osrc.amd.com> <4FC783EA.80704@redhat.com> <20120531145416.GI14515@aftab.osrc.amd.com> <4FC787BF.3020006@redhat.com> <20120531151408.GJ14515@aftab.osrc.amd.com> <4FC798E2.4000402@redhat.com> <20120531171337.GN14515@aftab.osrc.amd.com>
+In-Reply-To: <20120531171337.GN14515@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 01:13:09PM +0200, Javier Martin wrote:
-> Some GPIOs in Visstrim M10 are used without being registered.
-> This leads to USB and video malfunctions. This patch registers
-> those GPIOs to solve the issue.
+Em 31-05-2012 14:13, Borislav Petkov escreveu:
+> On Thu, May 31, 2012 at 01:14:26PM -0300, Mauro Carvalho Chehab wrote:
+>>> 5 amd76x_edac.c     amd76x_init_csrows          214 dimm->grain = dimm->nr_pages << PAGE_SHIFT;
+>>> 6 cpc925_edac.c     cpc925_init_csrows          367 dimm->grain = 32;
+>>> 7 cpc925_edac.c     cpc925_init_csrows          371 dimm->grain = 64;
+>>> 8 e752x_edac.c      e752x_init_csrows          1119 dimm->grain = 1 << 12;
+>>> 9 e7xxx_edac.c      e7xxx_init_csrows           399 dimm->grain = 1 << 12;
+>>> k i3000_edac.c      i3000_probe1                416 dimm->grain = I3000_DEAP_GRAIN;
+>>> l i3200_edac.c      i3200_probe1                395 dimm->grain = nr_pages << PAGE_SHIFT;
+>>> m i5000_edac.c      i5000_init_csrows          1286 dimm->grain = 8;
+>>> n i5100_edac.c      i5100_init_csrows           852 dimm->grain = 32;
+>>> o i5400_edac.c      i5400_init_dimms           1212 dimm->grain = 8;
+>>> p i7300_edac.c      decode_mtr                  662 dimm->grain = 8;
+>>> q i7core_edac.c     get_dimm_config             637 dimm->grain = 8;
+>>> r i82443bxgx_edac.c i82443bxgx_init_csrows      225 dimm->grain = 1 << 12;
+>>> s i82860_edac.c     i82860_init_csrows          180 dimm->grain = 1 << 12;
+>>> t i82875p_edac.c    i82875p_init_csrows         388 dimm->grain = 1 << 12;
+>>> v i82975x_edac.c    i82975x_init_csrows         430 dimm->grain = 1 << 7;
+>>> w mpc85xx_edac.c    mpc85xx_init_csrows         956 dimm->grain = 8;
+>>> x mv64x60_edac.c    mv64x60_init_csrows         677 dimm->grain = 8;
+>>> y pasemi_edac.c     pasemi_edac_init_csrows     183 dimm->grain = PASEMI_EDAC_ERROR_GRAIN;
+>>> z ppc4xx_edac.c     ppc4xx_edac_init_csrows     983 dimm->grain = 1;
+>>> A r82600_edac.c     r82600_init_csrows          259 dimm->grain = 1 << 14;
+>>> B sb_edac.c         get_dimm_config             597 dimm->grain = 32;
+>>> C tile_edac.c       tile_edac_init_csrows       117 dimm->grain = TILE_EDAC_ERROR_GRAIN;
+>>> D x38_edac.c        x38_probe1                  394 dimm->grain = nr_pages << PAGE_SHIFT;
+>>
+>> The grains among the drivers are different; userspace needs to know, so an
+>> API is needed.
 > 
-> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
-> ---
->  arch/arm/mach-imx/mach-imx27_visstrim_m10.c |   13 ++++++++-----
->  1 files changed, 8 insertions(+), 5 deletions(-)
+> Sure, that's why I'm preaching about sysfs or dmesg for so long.
 > 
-> diff --git a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-> index e8741f9..db4aa6f 100644
-> --- a/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-> +++ b/arch/arm/mach-imx/mach-imx27_visstrim_m10.c
-> @@ -116,6 +116,8 @@ static const int visstrim_m10_pins[] __initconst = {
->  	PB23_PF_USB_PWR,
->  	PB24_PF_USB_OC,
->  	/* CSI */
-> +	TVP5150_RSTN | GPIO_GPIO | GPIO_OUT,
-> +	TVP5150_PWDN | GPIO_GPIO | GPIO_OUT,
->  	PB10_PF_CSI_D0,
->  	PB11_PF_CSI_D1,
->  	PB12_PF_CSI_D2,
-> @@ -182,10 +184,10 @@ static void __init visstrim_camera_init(void)
->  	int dma;
->  
->  	/* Initialize tvp5150 gpios */
-> -	mxc_gpio_mode(TVP5150_RSTN | GPIO_GPIO | GPIO_OUT);
-> -	mxc_gpio_mode(TVP5150_PWDN | GPIO_GPIO | GPIO_OUT);
-> -	gpio_set_value(TVP5150_RSTN, 1);
-> -	gpio_set_value(TVP5150_PWDN, 0);
-> +	gpio_request_one(TVP5150_RSTN, GPIOF_DIR_OUT | GPIOF_INIT_HIGH,
-> +			 "tvp5150_rstn");
-> +	gpio_request_one(TVP5150_PWDN, GPIOF_DIR_OUT | GPIOF_INIT_LOW,
-> +			 "tvp5150_pwdn");
->  	ndelay(1);
->  
->  	gpio_set_value(TVP5150_PWDN, 1);
-> @@ -414,7 +416,8 @@ static struct i2c_board_info visstrim_m10_i2c_devices[] = {
->  /* USB OTG */
->  static int otg_phy_init(struct platform_device *pdev)
->  {
-> -	gpio_set_value(OTG_PHY_CS_GPIO, 0);
-> +	gpio_request_one(OTG_PHY_CS_GPIO, GPIOF_DIR_OUT | GPIOF_INIT_LOW,
-> +			 "usbotg_cs");
+> [ … ]
+> 
+>>> Don't create a bloated API just to fit your purpose because you're
+>>> staring at the world through your glasses.
+>>
+>> It is not a bloated API. The error grain should be reported to userspace,
+>> as:
+>> 	- Not all drivers have the same address granularity, as you've shown
+>> 	  above;
+> 
+> Yes.
+> 
+>> 	- No other userspace API provides it;
+> 
+> Yes, it should.
+> 
+>> 	- The granularity is a property of the per-error address;
+> 
+> Not necessarily, as it is shown above.
+> 
+>> 	- There are well-known cases where the address grain changes are
+>> 	  dynamically filled by the error registers (MCA arch on Intel).
+> 
+> Ok.
+> 
+>> So, the memory error tracepoint is the proper place to store it, as it is
+>> the place where the address and the other memory error information is
+>> reported to userspace.
+> 
+> Yes, but not as a separate field but in driver_detail _only_ on those
+> drivers where grain is dynamic. The remaining ones simply don't output
+> it all because they have done so in dmesg or sysfs.
 
-Could you please combine all gpios for your board into a single
-gpio_request_array? Then you can add proper error checking aswell
-without much overhead.
+The tracepoint approach is proposed as a way to replace dmesg, so, dmesg is
+not an option.
 
-Sascha
+Sysfs nodes for address grain won't work, as, on MCA, the grain is only 
+known when an error is generated, and it is valid only together with an
+error report.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+The same issue with MCA is also probably true for memory scrubbing on other
+drivers, e. g. errors generated via scrubbing logic likely have a different
+grain.
+
+Having the _same_ field exported either in sysfs or via the trace, depending if
+the grain is dynamic or if it is global-wide is a very crappy API, as the same
+information would be provided to userspace via different API's, with is
+insane.
+
+>> Also, converting the grain to a string, as you proposed would require
+>> at least 26 bytes to store "grain: 0xdeadbeef:deadbeef", while putting
+>> it as a u64 will consume only 8 bytes.
+> 
+> Again, only on those drivers which have dynamic grain. Other drivers
+> which keep outputting 'x' (and 'x' doesn't change) on every tracepoint
+> invocation don't need to output it all in the tracepoint.
+
+So what? If only one type of granularity applies to all addresses, the
+information provided to userspace won't be wrong.
+
+This is about the same as network masks: on the majority of Linux usecases,
+the network mask for the local network is /24, but that doesn't mean that
+the network stack would require a different API to be used if the mask
+is not /24.
+
+Regards,
+Mauro
+
+
+
+
+
+
+
+
