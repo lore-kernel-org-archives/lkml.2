@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab2EaOpc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:45:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34310 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab2EaOpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:45:30 -0400
-Message-ID: <4FC783EA.80704@redhat.com>
-Date: Thu, 31 May 2012 11:44:58 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1756224Ab2EaOrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:47:13 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37810 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751799Ab2EaOrM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:47:12 -0400
+Date: Thu, 31 May 2012 10:31:58 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Ingo Molnar <mingo@redhat.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Use of high-res timers
+In-Reply-To: <alpine.LFD.2.02.1205310932240.3231@ionos>
+Message-ID: <Pine.LNX.4.44L0.1205311004050.1580-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-References: <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com> <4FC4D6E2.9060501@redhat.com> <20120529145245.GG29157@aftab.osrc.amd.com> <4FC4E9EB.5030801@redhat.com> <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com> <20120531100005.GC14074@aftab.osrc.amd.com> <4FC748F5.9070709@redhat.com> <20120531121741.GB14515@aftab.osrc.amd.com> <4FC7788C.1070405@redhat.com> <20120531142229.GF14515@aftab.osrc.amd.com>
-In-Reply-To: <20120531142229.GF14515@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-05-2012 11:22, Borislav Petkov escreveu:
-> On Thu, May 31, 2012 at 10:56:28AM -0300, Mauro Carvalho Chehab wrote:
->> Em 31-05-2012 09:17, Borislav Petkov escreveu:
->>> On Thu, May 31, 2012 at 07:33:25AM -0300, Mauro Carvalho Chehab wrote:
->>>> Huh? Tony said that some errors report at 4K granularity while, others
->>>> are at cache line size.
->>>
->>> Cacheline size is from MCE. This tracepoint is for memory controller
->>> errors where granularity should be pretty stable.
->>
->> Both sb_edac and i7core_edac get errors via MCE. They're currently providing
->> a fake granularity, but I'm planning to add proper grain support on them,
->> by retrieving such information from the MCE registers.
+On Thu, 31 May 2012, Thomas Gleixner wrote:
+
+> > 	I need timed intervals with reliable lower bounds.  Let's say
+> > 	I call ktime_get twice, maybe once in an interrupt handler and
+> > 	once in an hrtimer callback (not necessarily on the same CPU).
+> > 	Some action has to be taken no earlier than 1 ms after the 
+> > 	first call.  If the second call returns a value that is at 
+> > 	least 1 ms larger than the first call, is that enough of a 
+> > 	guarantee?  If not, how much larger does it have to be?
 > 
-> Those are only 2 drivers and not _all_ edac drivers. For the remaining
-> ones grain is a pretty stable, seldomly changing value. Which means it
-> should be part of const char driver_detail only on those two drivers and
-> not a driver-global field in the tracepoint.
+> ktime_get() is precise. Can you explain what you are trying to solve ?
 
-Grain is a global property: all drivers have it; userspace tools need it.
+Here's an example.  A hardware device accesses a software data
+structure via DMA, and the driver needs to change the data structure.  
+However, the data can't be updated safely while the device is using it.
+Furthermore, we know that the device may continue to access the data
+for as long as 1 ms after being told to stop (because of internal
+caches and such).
 
-It doesn't matter if some drivers use statically-defined grain, while others
-are dynamic: at the reported event, the grain should be there for both types
-of drivers.
+It's okay to wait longer than 1 ms, but we'd like to minimize the wait 
+time in order to avoid delaying I/O unnecessarily.  Therefore:
 
-Regards,
-Mauro
+    (1) The driver removes the pointer to the data structure from
+	the device's DMA list, then calls ktime_get, adds 1 ms, and
+	stores the result.
 
+    (2) The driver waits for while (details are unimportant).
+
+    (3) Some time later, the driver calls ktime_get again and compares 
+	the stored value to the new value.  If the new value is 
+	smaller, go back to step (2).
+
+    (4) Now the driver knows that at least 1 ms has passed since (1),
+	and therefore any ongoing DMA has finished and the pointer has
+	been dropped from the device's cache.  Thus the device cannot
+	be doing DMA to the data structure any more, so the data can be
+	updated safely.
+
+The key here is the assumption in step (4): If the new value from
+ktime_get exceeds the stored value then one millisecond of time really
+has elapsed.  I can imagine this might not hold true if the two calls
+to ktime_get were made on different CPUs, or possibly for other
+reasons.
+
+So my question is: What value should be stored in step (1) to guarantee 
+that the assumption is value?
+
+More or less equivalently, what is the relative error between two calls 
+of ktime_get?
+
+Alan Stern
 
