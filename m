@@ -1,233 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab2EaFnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:43:49 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:36157 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab2EaFns (ORCPT
+	id S1753233Ab2EaFqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:46:08 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51948 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752209Ab2EaFqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:43:48 -0400
-Date: Thu, 31 May 2012 11:13:16 +0530
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH -V7 10/14] hugetlbfs: Add new HugeTLB cgroup
-Message-ID: <20120531054316.GD24855@skywalker.linux.vnet.ibm.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1338388739-22919-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120531011953.GE401@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531011953.GE401@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12053019-7014-0000-0000-000001459450
+	Thu, 31 May 2012 01:46:06 -0400
+X-AuditID: 9c930197-b7be2ae000000ebb-71-4fc7059afc1d
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Sunjin Yang <fan4326@gmail.com>
+Subject: [PATCH 1/2] perf callchain: Make callchain cursors TLS
+Date: Thu, 31 May 2012 14:43:26 +0900
+Message-Id: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 09:19:54PM -0400, Konrad Rzeszutek Wilk wrote:
-> > +static inline bool hugetlb_cgroup_have_usage(struct cgroup *cg)
-> > +{
-> > +	int idx;
-> > +	struct hugetlb_cgroup *h_cg = hugetlb_cgroup_from_cgroup(cg);
-> > +
-> > +	for (idx = 0; idx < HUGE_MAX_HSTATE; idx++) {
-> > +		if ((res_counter_read_u64(&h_cg->hugepage[idx], RES_USAGE)) > 0)
-> > +			return 1;
-> 
-> return true;
-> > +	}
-> > +	return 0;
-> 
-> And return false here
-> > +}
-> > +
-> > +static struct cgroup_subsys_state *hugetlb_cgroup_create(struct cgroup *cgroup)
-> > +{
-> > +	int idx;
-> > +	struct cgroup *parent_cgroup;
-> > +	struct hugetlb_cgroup *h_cgroup, *parent_h_cgroup;
-> > +
-> > +	h_cgroup = kzalloc(sizeof(*h_cgroup), GFP_KERNEL);
-> > +	if (!h_cgroup)
-> > +		return ERR_PTR(-ENOMEM);
-> > +
-> 
-> No need to check cgroup for NULL?
+perf top -G has a race on callchain cursor between main
+thread and display thread. Since the callchain cursors
+are used locally make them thread-local data would solve
+the problem.
 
-Other cgroups (memcg) doesn't do that. Can we really get NULL cgroup tere ?
+Reported-by: Sunjin Yang <fan4326@gmail.com>
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ tools/perf/builtin-report.c |    2 +-
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/callchain.c |    2 ++
+ tools/perf/util/callchain.h |    2 ++
+ tools/perf/util/hist.c      |    7 ++++---
+ tools/perf/util/hist.h      |    2 --
+ tools/perf/util/session.c   |   14 +++++++-------
+ 7 files changed, 17 insertions(+), 14 deletions(-)
 
-
-> 
-> > +	parent_cgroup = cgroup->parent;
-> > +	if (parent_cgroup) {
-> > +		parent_h_cgroup = hugetlb_cgroup_from_cgroup(parent_cgroup);
-> > +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
-> > +			res_counter_init(&h_cgroup->hugepage[idx],
-> > +					 &parent_h_cgroup->hugepage[idx]);
-> > +	} else {
-> > +		root_h_cgroup = h_cgroup;
-> > +		for (idx = 0; idx < HUGE_MAX_HSTATE; idx++)
-> > +			res_counter_init(&h_cgroup->hugepage[idx], NULL);
-> > +	}
-> > +	return &h_cgroup->css;
-> > +}
-> > +
-> > +static int hugetlb_cgroup_move_parent(int idx, struct cgroup *cgroup,
-> > +				      struct page *page)
-> > +{
-> > +	int csize,  ret = 0;
-> > +	struct page_cgroup *pc;
-> > +	struct res_counter *counter;
-> > +	struct res_counter *fail_res;
-> > +	struct hugetlb_cgroup *h_cg   = hugetlb_cgroup_from_cgroup(cgroup);
-> > +	struct hugetlb_cgroup *parent = parent_hugetlb_cgroup(cgroup);
-> > +
-> > +	if (!get_page_unless_zero(page))
-> > +		goto out;
-> 
-> Hmm, so it goes to out, and does return ret. ret is zero. Is
-> that correct? Should ret be set to -EBUSY or such?
-> 
-
-Fixed
-
-> > +
-> > +	pc = lookup_page_cgroup(page);
-> 
-> What if pc is NULL? Or is it guaranteed that it will
-> never happen so?
-> 
-> > +	lock_page_cgroup(pc);
-> > +	if (!PageCgroupUsed(pc) || pc->cgroup != cgroup)
-> > +		goto err_out;
-> 
-> err is still set to zero. Is that OK? Should it be -EINVAL
-> or such?
-> 
-
-Fixed
-
-> > +
-> > +	csize = PAGE_SIZE << compound_order(page);
-> > +	/* If use_hierarchy == 0, we need to charge root */
-> > +	if (!parent) {
-> > +		parent = root_h_cgroup;
-> > +		/* root has no limit */
-> > +		res_counter_charge_nofail(&parent->hugepage[idx],
-> > +					  csize, &fail_res);
-> > +	}
-> > +	counter = &h_cg->hugepage[idx];
-> > +	res_counter_uncharge_until(counter, counter->parent, csize);
-> > +
-> > +	pc->cgroup = cgroup->parent;
-> > +err_out:
-> > +	unlock_page_cgroup(pc);
-> > +	put_page(page);
-> > +out:
-> > +	return ret;
-> > +}
-> > +
-> > +/*
-> > + * Force the hugetlb cgroup to empty the hugetlb resources by moving them to
-> > + * the parent cgroup.
-> > + */
-> > +static int hugetlb_cgroup_pre_destroy(struct cgroup *cgroup)
-> > +{
-> > +	struct hstate *h;
-> > +	struct page *page;
-> > +	int ret = 0, idx = 0;
-> > +
-> > +	do {
-> > +		if (cgroup_task_count(cgroup) ||
-> > +		    !list_empty(&cgroup->children)) {
-> > +			ret = -EBUSY;
-> > +			goto out;
-> > +		}
-> > +		/*
-> > +		 * If the task doing the cgroup_rmdir got a signal
-> > +		 * we don't really need to loop till the hugetlb resource
-> > +		 * usage become zero.
-> 
-> Why don't we need to loop? Is somebody else (and if so can you
-> say who) doing the deletion?
-> 
-
-No we just come out without doing the deletion and handle the signal.
-
-> > +		 */
-> > +		if (signal_pending(current)) {
-> > +			ret = -EINTR;
-> > +			goto out;
-> > +		}
-> > +		for_each_hstate(h) {
-> > +			spin_lock(&hugetlb_lock);
-> > +			list_for_each_entry(page, &h->hugepage_activelist, lru) {
-> > +				ret = hugetlb_cgroup_move_parent(idx, cgroup, page);
-> > +				if (ret) {
-> > +					spin_unlock(&hugetlb_lock);
-> > +					goto out;
-> > +				}
-> > +			}
-> > +			spin_unlock(&hugetlb_lock);
-> > +			idx++;
-> > +		}
-> > +		cond_resched();
-> > +	} while (hugetlb_cgroup_have_usage(cgroup));
-> > +out:
-> > +	return ret;
-> > +}
-> > +
-> > +static void hugetlb_cgroup_destroy(struct cgroup *cgroup)
-> > +{
-> > +	struct hugetlb_cgroup *h_cgroup;
-> > +
-> > +	h_cgroup = hugetlb_cgroup_from_cgroup(cgroup);
-> > +	kfree(h_cgroup);
-> > +}
-> > +
-> > +int hugetlb_cgroup_charge_page(int idx, unsigned long nr_pages,
-> > +			       struct hugetlb_cgroup **ptr)
-> > +{
-> > +	int ret = 0;
-> > +	struct res_counter *fail_res;
-> > +	struct hugetlb_cgroup *h_cg = NULL;
-> > +	unsigned long csize = nr_pages * PAGE_SIZE;
-> > +
-> > +	if (hugetlb_cgroup_disabled())
-> > +		goto done;
-> > +again:
-> > +	rcu_read_lock();
-> > +	h_cg = hugetlb_cgroup_from_task(current);
-> > +	if (!h_cg)
-> > +		h_cg = root_h_cgroup;
-> > +
-> > +	if (!css_tryget(&h_cg->css)) {
-> > +		rcu_read_unlock();
-> > +		goto again;
-> 
-> You don't want some form of limit on how many times you can
-> loop around?
-> 
-
-you mean fail the allocation after some tries. I am not sure memcg doesn't do that.
-
-
-> > +	}
-> > +	rcu_read_unlock();
-> > +
-> > +	ret = res_counter_charge(&h_cg->hugepage[idx], csize, &fail_res);
-> > +	css_put(&h_cg->css);
-> > +done:
-> > +	*ptr = h_cg;
-> > +	return ret;
-> > +}
-> > +
-> 
-
--aneesh
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index d58e41445d0d..159ca6435788 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -152,7 +152,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 
+ 	if (symbol_conf.use_callchain) {
+ 		err = callchain_append(he->callchain,
+-				       &evsel->hists.callchain_cursor,
++				       &callchain_cursor,
+ 				       sample->period);
+ 		if (err)
+ 			return err;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 6031dce0429f..ea7b600dc652 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -787,7 +787,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 		}
+ 
+ 		if (symbol_conf.use_callchain) {
+-			err = callchain_append(he->callchain, &evsel->hists.callchain_cursor,
++			err = callchain_append(he->callchain, &callchain_cursor,
+ 					       sample->period);
+ 			if (err)
+ 				return;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 9f7106a8d9a4..3a6bff47614f 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -18,6 +18,8 @@
+ #include "util.h"
+ #include "callchain.h"
+ 
++__thread struct callchain_cursor callchain_cursor;
++
+ bool ip_callchain__valid(struct ip_callchain *chain,
+ 			 const union perf_event *event)
+ {
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 7f9c0f1ae3a9..3bdb407f9cd9 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -76,6 +76,8 @@ struct callchain_cursor {
+ 	struct callchain_cursor_node	*curr;
+ };
+ 
++extern __thread struct callchain_cursor callchain_cursor;
++
+ static inline void callchain_init(struct callchain_root *root)
+ {
+ 	INIT_LIST_HEAD(&root->node.siblings);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 1293b5ebea4d..514e2a4b367d 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -378,7 +378,7 @@ void hist_entry__free(struct hist_entry *he)
+  * collapse the histogram
+  */
+ 
+-static bool hists__collapse_insert_entry(struct hists *hists,
++static bool hists__collapse_insert_entry(struct hists *hists __used,
+ 					 struct rb_root *root,
+ 					 struct hist_entry *he)
+ {
+@@ -397,8 +397,9 @@ static bool hists__collapse_insert_entry(struct hists *hists,
+ 			iter->period += he->period;
+ 			iter->nr_events += he->nr_events;
+ 			if (symbol_conf.use_callchain) {
+-				callchain_cursor_reset(&hists->callchain_cursor);
+-				callchain_merge(&hists->callchain_cursor, iter->callchain,
++				callchain_cursor_reset(&callchain_cursor);
++				callchain_merge(&callchain_cursor,
++						iter->callchain,
+ 						he->callchain);
+ 			}
+ 			hist_entry__free(he);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index cfc64e293f90..34bb556d6219 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -67,8 +67,6 @@ struct hists {
+ 	struct events_stats	stats;
+ 	u64			event_stream;
+ 	u16			col_len[HISTC_NR_COLS];
+-	/* Best would be to reuse the session callchain cursor */
+-	struct callchain_cursor	callchain_cursor;
+ };
+ 
+ struct hist_entry *__hists__add_entry(struct hists *self,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 93d355d27109..4eed171d275d 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -288,7 +288,8 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
+ 	return bi;
+ }
+ 
+-int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
++int machine__resolve_callchain(struct machine *self,
++			       struct perf_evsel *evsel __used,
+ 			       struct thread *thread,
+ 			       struct ip_callchain *chain,
+ 			       struct symbol **parent)
+@@ -297,7 +298,7 @@ int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
+ 	unsigned int i;
+ 	int err;
+ 
+-	callchain_cursor_reset(&evsel->hists.callchain_cursor);
++	callchain_cursor_reset(&callchain_cursor);
+ 
+ 	for (i = 0; i < chain->nr; i++) {
+ 		u64 ip;
+@@ -333,7 +334,7 @@ int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
+ 				break;
+ 		}
+ 
+-		err = callchain_cursor_append(&evsel->hists.callchain_cursor,
++		err = callchain_cursor_append(&callchain_cursor,
+ 					      ip, al.map, al.sym);
+ 		if (err)
+ 			return err;
+@@ -1428,7 +1429,6 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 			  int print_sym, int print_dso, int print_symoffset)
+ {
+ 	struct addr_location al;
+-	struct callchain_cursor *cursor = &evsel->hists.callchain_cursor;
+ 	struct callchain_cursor_node *node;
+ 
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample,
+@@ -1446,10 +1446,10 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 				error("Failed to resolve callchain. Skipping\n");
+ 			return;
+ 		}
+-		callchain_cursor_commit(cursor);
++		callchain_cursor_commit(&callchain_cursor);
+ 
+ 		while (1) {
+-			node = callchain_cursor_current(cursor);
++			node = callchain_cursor_current(&callchain_cursor);
+ 			if (!node)
+ 				break;
+ 
+@@ -1465,7 +1465,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 			}
+ 			printf("\n");
+ 
+-			callchain_cursor_advance(cursor);
++			callchain_cursor_advance(&callchain_cursor);
+ 		}
+ 
+ 	} else {
+-- 
+1.7.10.2
 
