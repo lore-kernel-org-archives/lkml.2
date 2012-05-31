@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab2EaDfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 23:35:42 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36472 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab2EaDfk (ORCPT
+	id S1756042Ab2EaDrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 23:47:00 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:38564 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab2EaDq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 23:35:40 -0400
-Date: Thu, 31 May 2012 13:35:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: linux-next: fate of the bjdooks-i2c tree
-Message-Id: <20120531133530.006f01bc4cf01b7c24ebc3dd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_13_35_30_+1000_7s2i7hskfrh5CWAk"
+	Wed, 30 May 2012 23:46:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6727"; a="193911145"
+Message-ID: <4FC6E9B1.10605@codeaurora.org>
+Date: Wed, 30 May 2012 20:46:57 -0700
+From: Saravana Kannan <skannan@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@freescale.com>
+CC: "Turquette, Mike" <mturquette@ti.com>, Andrew Lunn <andrew@lunn.ch>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Deepak Saxena <dsaxena@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergman <arnd.bergmann@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Richard Zhao <richard.zhao@linaro.org>, Paul Walmsley <paul@pwsan.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Subject: Re: [PATCH] clk: Fix race conditions between clk_set_parent() and
+ clk_enable()
+References: <1336798797-8724-1-git-send-email-skannan@codeaurora.org> <4FB29E7C.7010606@codeaurora.org> <20120522135813.GL8730@tbergstrom-lnx.Nvidia.com> <CAJOA=zOcEQc70gg+4U2jNaNRTB5YeyOwgsL12YWNoviQ5qFjaQ@mail.gmail.com> <20120523091617.GZ8730@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20120523091617.GZ8730@tbergstrom-lnx.Nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_13_35_30_+1000_7s2i7hskfrh5CWAk
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/23/2012 02:16 AM, Peter De Schrijver wrote:
+> On Tue, May 22, 2012 at 08:06:45PM +0200, Turquette, Mike wrote:
+>> On Tue, May 22, 2012 at 6:58 AM, Peter De Schrijver
+>> <pdeschrijver@nvidia.com>  wrote:
+>>> On Tue, May 15, 2012 at 08:20:44PM +0200, Saravana Kannan wrote:
+>>>> On 05/11/2012 09:59 PM, Saravana Kannan wrote:
+>>>>> Without this patch, the following race conditions are possible.
+>>>>>
+>>>>> Race condition 1:
+>>>>> * clk-A has two parents - clk-X and clk-Y.
+>>>>> * All three are disabled and clk-X is current parent.
+>>>>> * Thread A: clk_set_parent(clk-A, clk-Y).
+>>>>> * Thread A:<snip execution flow>
+>>>>> * Thread A: Grabs enable lock.
+>>>>> * Thread A: Sees enable count of clk-A is 0, so doesn't enable clk-Y.
+>>>>> * Thread A: Releases enable lock.
+>>>>> * Thread B: Calls clk_enable(clk-A), which in turn enables clk-X.
+>>>>> * Thread A: Switches clk-A's parent to clk-Y in hardware.
+>>>>>
+>>>>> clk-A is now enabled in software, but not clocking in hardware.
+>>>>>
+>>>>> Race condition 2:
+>>>>> * clk-A has two parents - clk-X and clk-Y.
+>>>>> * All three are disabled and clk-X is current parent.
+>>>>> * Thread A: clk_set_parent(clk-A, clk-Y).
+>>>>> * Thread A:<snip execution flow>
+>>>>> * Thread A: Switches parent in hardware to clk-Y.
+>>>>> * Thread A: Grabs enable lock.
+>>>>> * Thread A: Sees enable count of clk-A is 0, so doesn't disable clk-X.
+>>>>> * Thread A: Releases enable lock.
+>>>>> * Thread B: Calls clk_enable(clk-A)
+>>>>> * Thread B: Software state still says parent is clk-X.
+>>>>> * Thread B: So, enables clk-X and then itself.
+>>>>> * Thread A: Updates parent in software state to clk-Y.
+>>>>>
+>>>
+>>> This looks correct to me. Is there any usecase where enabling/disabling a
+>>> clock would require sleeping but changing the parent would not?
+>>>
+>>
+>> clk_enable&  clk_disable must never sleep.  clk_prepare and
+>> clk_unprepare may sleep.
+>>
+>
+> In that case the clock is actually enabled in clk_prepare and disabled in
+> clk_unprepare I guess (and clk_enable/clk_disable are dummy functions)?
+>
+> What I'm trying to say is that I don't think there are clocks which can be
+> enabled/disabled using non blocking operations, but where a parent change
+> would require a blocking operation.
+>
+> Cheers,
+>
+> Peter.
 
-Hi Ben,
+Mark, Shawn, Russell,
 
-Just wondering about the fate of the bjdooks-i2c tree.  The
-most recent commit in that tree is dated Jan 7 and seem to have been
-included in Linus' tree as a different commit.  I also still cannot
-access the git trees on git.fluff.org.  This is also true for the samsung
-tree.
+Can you guys please respond? I'm surprised that no one seem to care 
+about fixing race conditions between clk_set_parent/clk_set_rate() and 
+clk_enable() that will result in incorrect enable count propagation and 
+have the SW get out of sync with HW.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+If we absolutely need to support clocks that where the ops->set_parent() 
+is not atomic and can't go with the CLK_SET_PARENT_GATE option, then 
+maybe we can add a "I promise the consumers of this clock won't call 
+clk_set_parent() and clk_enable() in a racy way" clock flag 
+(CLK_IGNORE_PARENT_ENABLE_RACE). Yes, it would be a hack for such 
+clocks, but that's still better than leaving a gaping hole for all the 
+clocks.
 
---Signature=_Thu__31_May_2012_13_35_30_+1000_7s2i7hskfrh5CWAk
-Content-Type: application/pgp-signature
+-Saravana
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPxucDAAoJEECxmPOUX5FEt4kP/ArQPPuwoBOdcv/8/llIH/Cw
-sJvtHXjp1nurvxt2EdFT7T6JZ5LYORV8+yO5G4MgBi4zPZf3B7c2MAVtyBJE03bI
-Co965jJoiz7ZSytomyY8UtDdzujugIj6kyhU+xLCiDKjjBx+DuCWvJbZO39TNZ4T
-32p+HnwUKPBMEReP0MlP7hrF25bQStzz3iDCArFRieaKwLJcPFwclmb/ko3bi3fh
-U+GN5g7zRiZXEZSUTSlpJ6BePT5R7gUykFqHs8tQ+xJA0c0apivNv9bymph/l569
-dDVoNOJFpPOwF1w5OKYwEoZMcFT3OWVHiZc2iw3appYQcLvzOhFula46TZ1TM3sb
-QDeSiQ4PT2YsyO/K0mqtVH2xIFTBS7tJYrpcFufczSzmzemfN80KyGp459VIZ4A9
-N6fPiEAiwcyV7LehkJTlHYpekHzr3JtlJjgpm6/wpryo+pgX+dY58bR/aWud4NBa
-O6bx8wBYTSZoDeveL1J0eWiivFsdu/bBUkALNcpl6wu4ijV5ipZKURWzqI7+xvES
-FXo2NCvwP4JUjC149QQlBVWJlwrPjmBslpPnOarsK7fwglu7RUzcVpdTOgJW5GX+
-fZ2paXQ4x/ShF1foQlZuL86Mv1TDtLFoCgBQr5wK9qDkwFmQZzSY/fiaWOWaYrQ8
-f92EKitP7q8udlHBZ8Ov
-=N7Tz
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_13_35_30_+1000_7s2i7hskfrh5CWAk--
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
