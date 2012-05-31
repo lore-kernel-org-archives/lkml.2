@@ -1,42 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2EaQzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 12:55:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:31962 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752560Ab2EaQzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 12:55:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="150014539"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] One more x86/mce cleanup for 3.5
-Date: Thu, 31 May 2012 09:55:34 -0700
-Message-Id: <4fc7a286168635a9b@agluck-desktop.sc.intel.com>
+	id S1753317Ab2EaQ4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 12:56:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37754 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab2EaQ4b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 12:56:31 -0400
+Message-ID: <1338483372.28384.65.camel@twins>
+Subject: Re: [PATCH 1/3] uprobes/core: Remove redundant lock_page/unlock_page
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>
+Date: Thu, 31 May 2012 18:56:12 +0200
+In-Reply-To: <20120531150756.GC24279@linux.vnet.ibm.com>
+References: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com>
+	 <1338465518.28384.55.camel@twins>
+	 <20120531150756.GC24279@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 37c3459b67dd5a396a968e819cf4a86d24ac9ace:
+On Thu, 2012-05-31 at 20:37 +0530, Srikar Dronamraju wrote:
+> * Peter Zijlstra <peterz@infradead.org> [2012-05-31 13:58:38]:
+> 
+> > On Thu, 2012-05-31 at 17:16 +0530, Srikar Dronamraju wrote:
+> > > From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > > 
+> > > No need to lock the page when copying the opcode in read_opcode().
+> > 
+> > It would be good if the changelog said _why_ this is so :-)
+> 
+> In read_opcode(), we have the reference for the page and we only are reading
+> from the the page. i.e we are neither modifying the page contents, not
+> the page attributes. 
 
-  x86/mce: Add instruction recovery signatures to mce-severity table (2012-05-23 14:24:11 -0700)
+Fair enough, so put that in the changelog. The changelog should explain
+things, not raise questions.
 
-are available in the git repository at:
+> Existing kernel code has enough examples where we read the contents
+> of the page without taking the page lock.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-mce
+Yes, but that doesn't tell us this site is ok, doing it because others
+do isn't an argument.
 
-for you to fetch changes up to 82f7af09e6fb58fb725c850d725d5e8780a9bec2:
+> Further this was discussed here too https://lkml.org/lkml/2012/4/17/361.
 
-  x86/mce: Cleanup timer mess (2012-05-30 14:40:01 -0700)
-
-----------------------------------------------------------------
-One more mce cleanup before the 3.5 merge window closes
-
-----------------------------------------------------------------
-Thomas Gleixner (1):
-      x86/mce: Cleanup timer mess
-
- arch/x86/kernel/cpu/mcheck/mce.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+That wasn't a discussion, that was two people saying they don't know.
