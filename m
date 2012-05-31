@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab2EaOTw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:19:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3909 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab2EaOTv (ORCPT
+	id S1753532Ab2EaOWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:22:09 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42801 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab2EaOWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:19:51 -0400
-X-Authority-Analysis: v=2.0 cv=PqgRnnw3 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=XaGDPJ4YHPcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=v03pRgSSuXigx7qvTCoA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338473989.13348.345.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/5] ftrace: Use breakpoint method to update ftrace
- caller
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Thu, 31 May 2012 10:22:07 -0400
+Date: Thu, 31 May 2012 16:22:29 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Thu, 31 May 2012 10:19:49 -0400
-In-Reply-To: <1338463085.28384.54.camel@twins>
-References: <20120531012829.160060586@goodmis.org>
-	 <20120531020440.839498007@goodmis.org> <1338463085.28384.54.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Message-ID: <20120531142229.GF14515@aftab.osrc.amd.com>
+References: <4FBE7755.2080301@redhat.com>
+ <20120529115851.GB29157@aftab.osrc.amd.com>
+ <4FC4D6E2.9060501@redhat.com>
+ <20120529145245.GG29157@aftab.osrc.amd.com>
+ <4FC4E9EB.5030801@redhat.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
+ <20120531100005.GC14074@aftab.osrc.amd.com>
+ <4FC748F5.9070709@redhat.com>
+ <20120531121741.GB14515@aftab.osrc.amd.com>
+ <4FC7788C.1070405@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC7788C.1070405@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 13:18 +0200, Peter Zijlstra wrote:
-> On Wed, 2012-05-30 at 21:28 -0400, Steven Rostedt wrote:
-> > From: Steven Rostedt <srostedt@redhat.com>
+On Thu, May 31, 2012 at 10:56:28AM -0300, Mauro Carvalho Chehab wrote:
+> Em 31-05-2012 09:17, Borislav Petkov escreveu:
+> > On Thu, May 31, 2012 at 07:33:25AM -0300, Mauro Carvalho Chehab wrote:
+> >> Huh? Tony said that some errors report at 4K granularity while, others
+> >> are at cache line size.
 > > 
-> > On boot up and module load, it is fine to modify the code directly,
-> > without the use of breakpoints. This is because boot up modification
-> > is done before SMP is initialized, thus the modification is serial,
-> > and module load is done before the module executes.
-> > 
-> > But after that we must use a SMP safe method to modify running code.
-> > 
-> > This has been done to change the nops at all the functions, but
-> > the change of the ftrace callback handler itself was still using a
-> > direct modification. If tracing was enabled and the function callback
-> > was changed then another CPU could fault if it was currently calling
-> > the original callback. This modification must use the breakpoint method
-> > too.
-> > 
-> > Note, the direct method is still used for boot up and module load.
+> > Cacheline size is from MCE. This tracepoint is for memory controller
+> > errors where granularity should be pretty stable.
 > 
-> The changelog isn't clear if this is a fix or optimization. I suspect
-> the latter.
+> Both sb_edac and i7core_edac get errors via MCE. They're currently providing
+> a fake granularity, but I'm planning to add proper grain support on them,
+> by retrieving such information from the MCE registers.
 
-It's a bug fix. There's a GPF kernel crash creeping around in the
-current code. I can add to the change log what I put into my cover
-letter:
+Those are only 2 drivers and not _all_ edac drivers. For the remaining
+ones grain is a pretty stable, seldomly changing value. Which means it
+should be part of const char driver_detail only on those two drivers and
+not a driver-global field in the tracepoint.
 
-"The second fixes a bug where we don't do the breakpoint update of
-the function trace callback (the one called in the mcount trampoline).
-This could cause a GPF when tracing is running and the function
-tracer changes."
+-- 
+Regards/Gruss,
+Boris.
 
-
-> 
-> Still, you're now re-inventing text_poke() and text_poke_early().
-
-I explained this in my other email. Also, it wasn't really re-invented,
-as I believe ftrace did this first (back in 2007). text_poke() looks to
-have come into play around 2008. Ftrace was the first to do live updates
-of code while the system was up and running. Before that, the
-alternatives code just changed the system at boot up (or going from SMP
-to UP or vice versa). It never did the change in an SMP environment.
-
-This patchset is not a implementation of text_poke() but a fix to what
-was done earlier. The breakpoint method was something that text_poke()
-tried earlier, but H. Peter, warned that Intel has not said it was safe
-to do so. Thus we waited. When we got the unofficial OK, I added the
-breakpoint method to get rid of stop_machine() from ftrace. That was the
-main motivation for this.
-
-> 
-> Why are you keeping all this inside of ftrace?
-
-I'm not ;-) Well, actually, I wont be. As I explained in my last email,
-I talked to Masami about it, and we are discussing ways to change text
-poke to do basically what ftrace is doing. I'm doing this with ftrace
-first because it removes stop_machine() from it, and it also a greater
-test case. If something is to go wrong, it will more likely go wrong
-with 30,000 changes at once, than just 100.
-
--- Steve
-
-
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
