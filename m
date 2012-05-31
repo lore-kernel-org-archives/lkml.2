@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab2EaPh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:37:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:18688 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932349Ab2EaPh0 (ORCPT
+	id S932630Ab2EaPjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:39:04 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:58571 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932470Ab2EaPjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:37:26 -0400
-Date: Thu, 31 May 2012 11:30:18 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "Liu, Jinsong" <jinsong.liu@intel.com>, "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
-Message-ID: <20120531153018.GD9876@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
- <20120531135009.GC14515@aftab.osrc.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531135009.GC14515@aftab.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 31 May 2012 11:39:02 -0400
+From: "ing. Federico Fuga" <fuga@studiofuga.com>
+Cc: fuga@studiofuga.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] MTD: add JEDEC ID for w25q32wd to chip table
+Date: Thu, 31 May 2012 17:38:52 +0200
+Message-Id: <1338478732-31992-1-git-send-email-fuga@studiofuga.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Identified-User: {2354:box484.bluehost.com:happycac:studiofuga.com} {sentby:smtp auth 95.241.194.105 authed with fuga+studiofuga.com}
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 03:50:09PM +0200, Borislav Petkov wrote:
-> On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
-> > From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00 2001
-> > From: root <root@ljsromley.bj.intel.com>
-> > Date: Fri, 1 Jun 2012 03:12:51 +0800
-> > Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
-> > 
-> > When MCA error occurs, it would be handled by Xen hypervisor first,
-> > and then the error information would be sent to initial domain for logging.
-> > 
-> > This patch gets error information from Xen hypervisor and convert
-> > Xen format error into Linux format mcelog. This logic is basically
-> > self-contained, not touching other kernel components.
-> > 
-> > By using tools like mcelog tool users could read specific error information,
-> > like what they did under native Linux.
-> > 
-> > To test follow directions outlined in Documentation/acpi/apei/einj.txt
-> > 
-> > Signed-off-by: Ke, Liping <liping.ke@intel.com>
-> > Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-> > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> > Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> > ---
-> >  arch/x86/include/asm/xen/hypercall.h |    8 +
-> >  arch/x86/kernel/cpu/mcheck/mce.c     |    4 +-
-> >  arch/x86/xen/enlighten.c             |    5 +-
-> >  drivers/xen/Kconfig                  |    8 +
-> >  drivers/xen/Makefile                 |    1 +
-> >  drivers/xen/mcelog.c                 |  392 ++++++++++++++++++++++++++++++++++
-> >  include/linux/miscdevice.h           |    1 +
-> >  include/xen/interface/xen-mca.h      |  385 +++++++++++++++++++++++++++++++++
-> >  8 files changed, 798 insertions(+), 6 deletions(-)
-> >  create mode 100644 drivers/xen/mcelog.c
-> >  create mode 100644 include/xen/interface/xen-mca.h
-> 
-> For the mce bits:
-> 
-> Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
+From: "ing. Federico Fuga" <fuga@studiofuga.com>
 
-Sweet. Let me test it on a variety of hardware with Xen and without Xen
-with 32/64 variations to double-check.
+Adds JEDEC ID for the 1.8V version of WinBond w25q32
+
+Signed-off-by: Federico Fuga <fuga@studiofuga.com>
+---
+ drivers/mtd/devices/m25p80.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
+index 7c60ddd..93ea3c1 100644
+--- a/drivers/mtd/devices/m25p80.c
++++ b/drivers/mtd/devices/m25p80.c
+@@ -757,6 +757,7 @@ static const struct spi_device_id m25p_ids[] = {
+ 	{ "w25x16", INFO(0xef3015, 0, 64 * 1024,  32, SECT_4K) },
+ 	{ "w25x32", INFO(0xef3016, 0, 64 * 1024,  64, SECT_4K) },
+ 	{ "w25q32", INFO(0xef4016, 0, 64 * 1024,  64, SECT_4K) },
++	{ "w25q32wd", INFO(0xef6016, 0, 64 * 1024,  64, SECT_4K) },
+ 	{ "w25x64", INFO(0xef3017, 0, 64 * 1024, 128, SECT_4K) },
+ 	{ "w25q64", INFO(0xef4017, 0, 64 * 1024, 128, SECT_4K) },
+ 
+-- 
+1.7.9.5
+
