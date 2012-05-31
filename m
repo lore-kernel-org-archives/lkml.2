@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab2EaWLw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:11:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53433 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753627Ab2EaWLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:11:51 -0400
-Date: Fri, 1 Jun 2012 00:11:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
- flexible proportions
-Message-ID: <20120531221146.GA19050@quack.suse.cz>
-References: <1337878751-22942-1-git-send-email-jack@suse.cz>
- <1337878751-22942-3-git-send-email-jack@suse.cz>
- <1338220185.4284.19.camel@lappy>
- <20120529123408.GA23991@quack.suse.cz>
- <1338295111.26856.57.camel@twins>
- <20120529125452.GB23991@quack.suse.cz>
+	id S1756295Ab2EaWPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:15:21 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34400 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754648Ab2EaWPT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 18:15:19 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="zhXaljGHf11kAtnf"
-Content-Disposition: inline
-In-Reply-To: <20120529125452.GB23991@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120531205300.GG25955@fieldses.org>
+References: <20120531182457.GB25955@fieldses.org> <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
+ <20120531200138.GD25955@fieldses.org> <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
+ <20120531205300.GG25955@fieldses.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 31 May 2012 15:14:57 -0700
+X-Google-Sender-Auth: aLS_3vlO5X-_TYiW6Tx7T3OsN4g
+Message-ID: <CA+55aFxY+WJmMu=1Wvdh24kK0JWEuQ1vwcqZdaNDbp1_wUsZ4A@mail.gmail.com>
+Subject: Re: nfsd changes for 3.5
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 31, 2012 at 1:53 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> On Thu, May 31, 2012 at 01:17:26PM -0700, Linus Torvalds wrote:
+>
+> Uh, that means ditching some work in my public git tree.  Which I
+> haven't rebased in years.  So, a stupid process question; would you
+> rather I:
+>
+>        - continue to be strict about rebasing and apply a bunch of
+>          reverts?
+>        - ditch it and start over?
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think in this case rebasing is the right thing to do.
 
-On Tue 29-05-12 14:54:52, Jan Kara wrote:
-> On Tue 29-05-12 14:38:31, Peter Zijlstra wrote:
-> > On Tue, 2012-05-29 at 14:34 +0200, Jan Kara wrote:
-> > 
-> > > The only safe solution seems to be to create a variant of percpu counters
-> > > that can be used from an interrupt. Or do you have other idea Peter?
-> > 
-> > > > [   20.680186]  [<ffffffff8325ac9b>] _raw_spin_lock+0x3b/0x70
-> > > > [   20.680186]  [<ffffffff81993527>] ? __percpu_counter_sum+0x17/0xc0
-> > > > [   20.680186]  [<ffffffff81993527>] __percpu_counter_sum+0x17/0xc0
-> > > > [   20.680186]  [<ffffffff810ebf90>] ? init_timer_deferrable_key+0x20/0x20
-> > > > [   20.680186]  [<ffffffff8195b5c2>] fprop_new_period+0x12/0x60
-> > > > [   20.680186]  [<ffffffff811d929d>] writeout_period+0x3d/0xa0
-> > > > [   20.680186]  [<ffffffff810ec0bf>] call_timer_fn+0x12f/0x260
-> > > > [   20.680186]  [<ffffffff810ebf90>] ? init_timer_deferrable_key+0x20/0x20
-> > 
-> > Yeah, just make sure IRQs are disabled around doing that ;-)
->   Evil ;) But we'd need to have IRQs disabled also in each
-> fprop_fraction_percpu() call, and generally, if we want things clean, we'd
-> need to disable them in all entry points to proportion code (or at least
-> around all percpu calls)...
-  OK, after some thought I was wrong and fixing fprop_new_period() is
-enough. Attached patch should fix the warning (and possible deadlock).
-Fengguang should I resend you fixed patch implementing flexible proportions
-or do you prefer incremental patch against your tree?
+I hate rebasing, but what I hate about it is how people who use it as
+a development model cause problems for anybody else. I don't think it
+will cause problems in this particular case, but if somebody hollers,
+let me know.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>>  Making
+>> it an rwsem might help readdir a tiny amount, but I suspect people
+>> actually depend on the mutex in readdir right now.
+>
+> Al called this all "highly non-trivial":
+>
+>        http://marc.info/?l=linux-fsdevel&m=132726495726326&w=2
+>
+> I don't know who'd have the cycles.
 
---zhXaljGHf11kAtnf
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="flex-proportion-irq-save.diff"
+I agree, it's a rats nest.
 
-From: Jan Kara <jack@suse.cz>
-Subject: lib: Fix possible deadlock in flexible proportion code
+Doing lookups in particular is ridiculously single-threaded for almost
+no good reason, though (and create is just a special case of that). It
+*should* be possible that push the i_mutex down into the filesystem,
+if we just created some fake dentry (with the appropriate support for
+lookup to stall on it) to make sure that lookups of the same *name*
+are serialized.
 
-When percpu counter function in fprop_new_period() is interrupted by an
-interrupt while holding counter lock, it can cause deadlock when the
-interrupt wants to take the lock as well. Fix the problem by disabling
-interrupts when calling percpu counter functions.
+At that point, each filesystem could decide that they don't need the
+i_mutex for the whole thing.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+Maybe.
 
-diff --git a/lib/flex_proportions.c b/lib/flex_proportions.c
-index 530dbc2..fbf6b11 100644
---- a/lib/flex_proportions.c
-+++ b/lib/flex_proportions.c
-@@ -62,8 +62,12 @@ void fprop_global_destroy(struct fprop_global *p)
-  */
- bool fprop_new_period(struct fprop_global *p, int periods)
- {
--	u64 events = percpu_counter_sum(&p->events);
-+	u64 events;
-+	unsigned long flags;
- 
-+	local_irq_save(flags);
-+	events = percpu_counter_sum(&p->events);
-+	local_irq_restore(flags);
- 	/*
- 	 * Don't do anything if there are no events.
- 	 */
-@@ -73,7 +77,9 @@ bool fprop_new_period(struct fprop_global *p, int periods)
- 	if (periods < 64)
- 		events -= events >> periods;
- 	/* Use addition to avoid losing events happening between sum and set */
-+	local_irq_save(flags);
- 	percpu_counter_add(&p->events, -events);
-+	local_irq_restore(flags);
- 	p->period += periods;
- 	write_seqcount_end(&p->sequence);
- 
+And readdir() could be done mostly mechanically by changing i_mutex
+into an rwsem, making all lockers use a write lock, and pushing the
+locking down from the caller into the filesystem for ->readdir().
+Again, at that point, I suspect many filesystems could do with much
+less locking.
 
---zhXaljGHf11kAtnf--
+But yeah, it's all nasty. Even the purely mechanical part of changing
+i_mutex to an rwsem would not only be a *huge* and painful patch, it
+would hit things like lockdep issues too (we don't support the nesting
+thing for rwsem annotations, afaik).
+
+So nobody has really done it, and it's so painful that maybe nobody
+will. There are loads that hit this serialization point, but they are
+*fairly* rare and specialized.
+
+                Linus
