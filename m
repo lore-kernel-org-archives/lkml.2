@@ -1,64 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab2EaNv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:51:29 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757409Ab2EaNv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:51:27 -0400
-Message-ID: <4FC7729C.3000307@nod.at>
-Date: Thu, 31 May 2012 15:31:08 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1758158Ab2EaNx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:53:27 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42565 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757409Ab2EaNx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 09:53:26 -0400
+Date: Thu, 31 May 2012 15:53:53 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] initcall sequence adjust for 3 funcs
+Message-ID: <20120531135353.GD14515@aftab.osrc.amd.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351FEE95@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
-References: <1337771191-95358-1-git-send-email-richard@nod.at> <1337771191-95358-2-git-send-email-richard@nod.at> <4FC74A04.30100@intel.com>
-In-Reply-To: <4FC74A04.30100@intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig8D7BA475F269EFAC6255320E"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FEE95@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig8D7BA475F269EFAC6255320E
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Just minor nitpicks below:
 
-Am 31.05.2012 12:37, schrieb Adrian Hunter:
-> How do you know that this is the current fastmap and not a remnant of a=
-n old
-> fastmap?
+On Thu, May 31, 2012 at 12:59:05PM +0000, Liu, Jinsong wrote:
+> From eb5ff1bef5dd3116fa2624b594b853e9334ccbce Mon Sep 17 00:00:00 2001
+> From: root <root@ljsromley.bj.intel.com>
+> Date: Fri, 1 Jun 2012 03:56:25 +0800
+> Subject: [PATCH 2/2] initcall sequence adjust for 3 funcs
 
-In the current fastmap we delete always the old one upon attaching.
-But I think it would to better to scan all UBI_FM_MAX_START PEBs
-and pick the super block with the highest sequence number.
+Change subject line to
 
-Thanks,
-//richard
+Subject: [PATCH 2/2] x86, MCE, AMD: Adjust initcall sequence for xen
 
+> there are 3 funcs need to be _initcalled in a logic sequence:
+> 1. xen_late_init_mcelog
+> 2. mcheck_init_device
+> 3. threshold_init_device
+> 
+> xen_late_init_mcelog need register xen_mce_chrdev_device before
+> native mce_chrdev_device registeration if running under xen platform;
+> 
+> mcheck_init_device should be inited before threshold_init_device to
+> initialize mce_device, otherwise a NULL pointer would occur and panic.
+> 
+> so we use following _initcalls
+> 1. device_initcall(xen_late_init_mcelog);
+> 2. device_initcall_sync(mcheck_init_device);
+> 3. late_initcall(threshold_init_device);
+> 
+> when running under xen platform, 1,2,3 would take effect;
+> when running under baremetal, 2,3 would take effect;
+> 
+> Reported-by: Borislav Petkov <bp@amd64.org>
+> Suggested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce_amd.c |   22 +++++++++++++++++++++-
+>  1 files changed, 21 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> index f4873a6..6647858 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> @@ -777,4 +777,24 @@ static __init int threshold_init_device(void)
+>  
+>  	return 0;
+>  }
+> -device_initcall(threshold_init_device);
+> +/*
+> + * there are 3 funcs need to be _initcalled in a logic sequence:
 
---------------enig8D7BA475F269EFAC6255320E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+			which need...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+> + * 1. xen_late_init_mcelog
+> + * 2. mcheck_init_device
+> + * 3. threshold_init_device
+> + *
+> + * xen_late_init_mcelog need register xen_mce_chrdev_device before
 
-iQEcBAEBAgAGBQJPx3KhAAoJEN9758yqZn9emCAIAKLqtvG3Yu272VSpCrsyYh70
-VaaCSG9ZOHGTyvZ8x9o3EHLNbRvIDUmX9lhSNbIUNjtcCXKRuCMU0Rbpre5r+Z5p
-rxyM9IIHpgAmcMuK7Jb4o6kFxm/H5YR5dqHIeCVR0dy+nY0u5R1gktAHGvlNLwT+
-dRj2MuSpCsPLqPT2K8iCA+jSlaXz4sKRlsIl4smKcClzPQYFOlrYlHQmfuVAMnUo
-XF9jIULFGBm6rJA5ZziXQ4y8gi5FRrpJIn+HosSBC0VUn001W6JkdBZvdHemWVqZ
-CWeZQ+cnZh/NraIrgZZiJx3GQ8iNkiyWaVb864nsaH8KsWEOV7tG2SwYAaEDBUE=
-=ci0A
------END PGP SIGNATURE-----
+			  s/need/must/
 
---------------enig8D7BA475F269EFAC6255320E--
+> + * native mce_chrdev_device registeration if running under xen platform;
+
+				registration
+
+> + *
+> + * mcheck_init_device should be inited before threshold_init_device to
+> + * initialize mce_device, otherwise a NULL pointer would occur and panic.
+
+					a NULL ptr dereference will cause panic.
+
+> + *
+> + * so we use following _initcalls
+> + * 1. device_initcall(xen_late_init_mcelog);
+> + * 2. device_initcall_sync(mcheck_init_device);
+> + * 3. late_initcall(threshold_init_device);
+> + *
+> + * when running under xen platform, 1,2,3 would take effect;
+> + * when running under baremetal, 2,3 would take effect;
+
+change both lines above to say:
+
+"when running under xen, the initcall order is 1,2,3;
+on baremetal, we skip 1 and we do only 2 and 3."
+
+The rest looks ok and it tests fine here.
+
+Once you've changed the minor stuff above, you can slap my
+
+Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
+
+@Tony: if you have any objections, please scream now! :-)
+
+Thanks Jinsong!
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
