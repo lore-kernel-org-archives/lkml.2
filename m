@@ -1,106 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab2EaNqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:46:05 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:54699 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757948Ab2EaNqD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:46:03 -0400
-Date: Thu, 31 May 2012 10:45:57 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Sunjin Yang <fan4326@gmail.com>
-Subject: Re: [PATCH/RFC 2/2] perf tools: Check callchain is corrupted
-Message-ID: <20120531134557.GB13591@infradead.org>
-References: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
- <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
+	id S1758147Ab2EaNqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:46:34 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:9165 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757948Ab2EaNqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 09:46:32 -0400
+X-IronPort-AV: E=Sophos;i="4.75,692,1330934400"; 
+   d="scan'208";a="652353744"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0+ NFS issues
+Thread-Topic: 3.0+ NFS issues
+Thread-Index: AQHNPy05dzwzDjRQlEai2sHeL9oSEZbkWIgAgAAF9YA=
+Date: Thu, 31 May 2012 13:46:16 +0000
+Message-ID: <1338471975.7732.5.camel@lade.trondhjem.org>
+References: <4FBF2C57.3070203@msgid.tls.msk.ru>
+	  <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru>
+	  <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru>
+	 <1338469169.2420.7.camel@lade.trondhjem.org>
+	 <4FC77128.9090206@msgid.tls.msk.ru>
+In-Reply-To: <4FC77128.9090206@msgid.tls.msk.ru>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <9FECD90FA83178479BEE605AFF8C900E@tahoe.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q4VDkgWO006974
 
-Em Thu, May 31, 2012 at 02:43:27PM +0900, Namhyung Kim escreveu:
-> We faced segmentation fault on perf top -G at very high sampling
-> rate due to a corrupted callchain. While the root cause was not
-> revealed (I failed to figure it out), this patch tries to protect
-> us from the segfault on such cases.
-
-Capping the callchain lenght may even be a feature, not a consistency
-check, but I don't know how long, for consistency checking, we should
-consider too much, as there are cases of loooong callchains.
-
-Ingo? Peter?
-
-- Arnaldo
- 
-> Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
-> ---
->  include/linux/perf_event.h |    4 ++--
->  tools/perf/util/session.c  |   14 +++++++++++++-
->  2 files changed, 15 insertions(+), 3 deletions(-)
+On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
+> On 31.05.2012 16:59, Myklebust, Trond wrote:
+> []
+> > That is tcpdump trying to interpret your NFSv4 trace as NFSv2/v3.
 > 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 8adf70e9e3cc..0430ea6054ef 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -555,6 +555,8 @@ enum perf_event_type {
->  	PERF_RECORD_MAX,			/* non-ABI */
->  };
->  
-> +#define PERF_MAX_STACK_DEPTH		255
-> +
->  enum perf_callchain_context {
->  	PERF_CONTEXT_HV			= (__u64)-32,
->  	PERF_CONTEXT_KERNEL		= (__u64)-128,
-> @@ -609,8 +611,6 @@ struct perf_guest_info_callbacks {
->  #include <linux/sysfs.h>
->  #include <asm/local.h>
->  
-> -#define PERF_MAX_STACK_DEPTH		255
-> -
->  struct perf_callchain_entry {
->  	__u64				nr;
->  	__u64				ip[PERF_MAX_STACK_DEPTH];
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index a7de2acac460..fa14e60ed459 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -300,6 +300,11 @@ int machine__resolve_callchain(struct machine *self,
->  
->  	callchain_cursor_reset(&callchain_cursor);
->  
-> +	if (chain->nr > PERF_MAX_STACK_DEPTH) {
-> +		pr_warning("corrupted callchain. skipping...\n");
-> +		return 0;
-> +	}
-> +
->  	for (i = 0; i < chain->nr; i++) {
->  		u64 ip;
->  		struct addr_location al;
-> @@ -318,7 +323,14 @@ int machine__resolve_callchain(struct machine *self,
->  			case PERF_CONTEXT_USER:
->  				cpumode = PERF_RECORD_MISC_USER;	break;
->  			default:
-> -				break;
-> +				pr_debug("invalid callchain context: "
-> +					 "%"PRId64"\n", (s64) ip);
-> +				/*
-> +				 * It seems the callchain is corrupted.
-> +				 * Discard all.
-> +				 */
-> +				callchain_cursor_reset(&callchain_cursor);
-> +				return 0;
->  			}
->  			continue;
->  		}
-> -- 
-> 1.7.10.1
+> Oh.
+> 
+> > Can you either please use wireshark to provide a full text dump (using
+> > something like 'tshark -V -O nfs,rpc'), or just send us the binary
+> > tcpdump output using 'tcpdump -w /tmp/foo -s 90000'?
+> 
+> I started tcpdump:
+> 
+>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
+> 
+> on the client (192.168.88.2).  Next I mounted a directory on the client,
+> and started reading (tar'ing) a directory into /dev/null.  It captured a
+> few stalls.  Tcpdump shows number of packets it got, the stalls are at
+> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
+> 
+> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
+> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
+> 10 files of 1Gb each, all made by using `truncate' utility, so does not
+> take place on disk at all.  This also makes it obvious that the issue
+> does not depend on the speed of disk on the server (since in this case,
+> the server disk isn't even in use).
+
+OK. So from the above file it looks as if the traffic is mainly READ
+requests.
+
+In 2 places the server stops responding. In both cases, the client seems
+to be sending a single TCP frame containing several COMPOUNDS containing
+READ requests (which should be legal) just prior to the hang. When the
+server doesn't respond, the client pings it with a RENEW, before it ends
+up severing the TCP connection and then retransmitting.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
