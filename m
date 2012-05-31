@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab2EaAmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 20:42:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60204 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab2EaAmS (ORCPT
+	id S1756899Ab2EaAor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 20:44:47 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59516 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754628Ab2EaAop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 20:42:18 -0400
-Message-ID: <4FC6BE64.6030201@linaro.org>
-Date: Thu, 31 May 2012 08:42:12 +0800
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	Wed, 30 May 2012 20:44:45 -0400
+Date: Wed, 30 May 2012 17:44:43 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+In-Reply-To: <4FC6BC3E.5010807@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com>
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com>
+ <4FC6BC3E.5010807@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
- Device Tree
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-9-git-send-email-lee.jones@linaro.org> <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com> <20120530100302.GD9947@opensource.wolfsonmicro.com> <CAF2Aj3gZMF9ev9B46rBM+aY-srwthef09ad2CWfuXXFHmqqAjA@mail.gmail.com> <20120530121547.GJ9947@opensource.wolfsonmicro.com> <4FC63632.4030504@linaro.org> <20120530151119.GN9947@opensource.wolfsonmicro.com> <4FC63B39.6040905@linaro.org> <20120530164152.GP9947@opensource.wolfsonmicro.com>
-In-Reply-To: <20120530164152.GP9947@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/05/12 00:41, Mark Brown wrote:
-> On Wed, May 30, 2012 at 11:22:33PM +0800, Lee Jones wrote:
->> On 30/05/12 23:11, Mark Brown wrote:
->
->>>> 	vin-supply =<&db8500_vape_reg>;
->>>> 	vmmc-supply =<&ab8500_ldo_aux2_reg>;
->
->>> Oh, oops.  This is going to be fun when someone puts down two of the
->>> same PMIC on a system...
->
->> What does that mean sorry?
->
-> Lots of regulators are using this mechanism for identifying child nodes.
-> If the node name is also used as a handle by other things to reference
-> the regulator then if you have two PMICs of the same type DTC isn't
-> going to be able to figure out which node you mean.
+On Thu, 31 May 2012, Kamezawa Hiroyuki wrote:
 
-I haven't looked at the code yet, so I don't know the answer to this 
-question, but; aren't they protected by the compatible string? If not, I 
-think they should be. We shouldn't be parsing other platform's Device Trees.
+> My test with sysfs node's meminfo seems to work...
+> 
+> [root@rx100-1 qqm]# mount --bind /sys/devices/system/node/node0/meminfo
+> /proc/meminfo
+> [root@rx100-1 qqm]# cat /proc/meminfo
+> 
+> Node 0 MemTotal:        8379636 kB
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This doesn't seem like a good idea unless the application supports the 
+"Node 0" prefix in /proc/meminfo.
+
+If any application really cares about the amount of memory available to 
+it, it should be taught to be memcg aware.  Then do something like
+
+cat $(grep memory /proc/mounts | cut -d " " -f 2)/$(grep memory /proc/self/cgroup | cut -d : -f 3)/memory.limit_in_bytes
+
+but since that value can change all the time then it doesn't seem helpful 
+unless we have a userspace notifier.
