@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab2EaJ7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 05:59:40 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:41365 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976Ab2EaJ7i (ORCPT
+	id S1756894Ab2EaKAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:00:47 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:32928 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab2EaKAq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 05:59:38 -0400
-Date: Thu, 31 May 2012 12:00:05 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Message-ID: <20120531100005.GC14074@aftab.osrc.amd.com>
-References: <1337854460-25191-1-git-send-email-mchehab@redhat.com>
- <20120524105604.GC27063@aftab.osrc.amd.com>
- <4FBE5E1D.7070804@redhat.com>
- <20120524164554.GM27063@aftab.osrc.amd.com>
- <4FBE7755.2080301@redhat.com>
- <20120529115851.GB29157@aftab.osrc.amd.com>
- <4FC4D6E2.9060501@redhat.com>
- <20120529145245.GG29157@aftab.osrc.amd.com>
- <4FC4E9EB.5030801@redhat.com>
- <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
+	Thu, 31 May 2012 06:00:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1338282140-11106-1-git-send-email-torne@google.com>
+References: <CAEV-rjeEKMNs2N8KEatCi+guFKihgFok4k4nDnd=vTQ5x7iStg@mail.gmail.com>
+	<1338282140-11106-1-git-send-email-torne@google.com>
+Date: Thu, 31 May 2012 18:00:44 +0800
+Message-ID: <CAPDyKFrpXc7cODie9g-QK_ZhVpmVZPQ36TDF9CWJcVPL_-EU2Q@mail.gmail.com>
+Subject: Re: [PATCH] MMC: core: cap MMC card timeouts at 2 seconds.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Torne (Richard Coles)" <torne@google.com>
+Cc: cjb@laptop.org, linus.walleij@linaro.org, jh80.chung@samsung.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ben@decadent.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 11:24:41PM +0000, Luck, Tony wrote:
-> >         u32 grain;              /* granularity of reported error in bytes */
-> > 				   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 
-> >> 			dimm->grain = nr_pages << PAGE_SHIFT;
-> 
-> I'm not at all sure what we'll see digging into the chipset registers
-> like EDAC does - but we do have different granularity when reporting
-> via machine check banks.  That's why we have this code:
-> 
->                 /*
->                  * Mask the reported address by the reported granularity.
->                  */
->                 if (mce_ser && (m->status & MCI_STATUS_MISCV)) {
->                         u8 shift = MCI_MISC_ADDR_LSB(m->misc);
->                         m->addr >>= shift;
->                         m->addr <<= shift;
+Hi Richard,
 
-That's 64 bytes max, IIRC.
+On 29 May 2012 17:02, Torne (Richard Coles) <torne@google.com> wrote:
+> From: "Torne (Richard Coles)" <torne@google.com>
+>
+> MMC CSD info can specify very large, ridiculous timeouts, big enough to
+> overflow timeout_ns on 32-bit machines. This can result in the card
+> timing out on every operation because the wrapped timeout value is far
+> too small.
+>
+> Fix the overflow by capping the result at 2 seconds.  Cards specifying
+> longer timeouts are almost certainly insane, and host controllers
+> generally cannot support timeouts that long in any case.
+>
+> 2 seconds should be plenty of time for any card to actually function;
+> the timeout calculation code is already using 1 second as a "worst case"
+> timeout for cards running in SPI mode.
+>
+> Signed-off-by: Torne (Richard Coles) <torne@google.com>
+> ---
+>  drivers/mmc/core/core.c |   11 ++++++++++-
+>  1 files changed, 10 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 0b6141d..3b4a9fc 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
+>        if (data->flags & MMC_DATA_WRITE)
+>                mult <<= card->csd.r2w_factor;
+>
+> -       data->timeout_ns = card->csd.tacc_ns * mult;
+> +       /*
+> +        * The timeout in nanoseconds may overflow with some cards. Cap it at
+> +        * two seconds both to avoid the overflow and also because host
+> +        * controllers cannot generally generate timeouts that long anyway.
+> +        */
+> +       if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
+> +               data->timeout_ns = card->csd.tacc_ns * mult;
+> +       else
+> +               data->timeout_ns = 2 * NSEC_PER_SEC;
+> +
 
-> in mce_read_aux().  In practice right now I think that many errors will
-> report with cache line granularity,
+The above looks OK to me, although if doing this for tacc_ns we might
+want to do this for tacc_clks as well. Could we include that is this
+patch as well?
 
-Yep.
+>        data->timeout_clks = card->csd.tacc_clks * mult;
+>
+>        /*
+> --
+> 1.7.7.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> while a few (IIRC patrol scrub) will report with page (4K)
-> granularity. Linux doesn't really care - they all have to get rounded
-> up to page size because we can't take away just one cache line from a
-> process.
-
-I'd like to see that :-)
-
-> > @Tony: Can you ensure us that, on Intel memory controllers, the address
-> > mask remains constant at module's lifetime, or are there any events that
-> > may change it (memory hot-plug, mirror mode changes, interleaving 
-> > reconfiguration, ...)?
-> 
-> I could see different controllers (or even different channels) having
-> different setup if you have a system with different size/speed/#ranks
-> DIMMs ... most systems today allow almost arbitrary mix & match, and the
-> BIOS will decide which interleave modes are possible based on what it
-> finds in the slots.  Mirroring imposes more constraints, so you will
-> see less crazy options. Hot plug for Linux reduces to just the hot add
-> case (as we still don't have a good way to remove DIMM sized chunks of
-> memory) ... so I don't see any clever reconfiguration possibilities
-> there (when you add memory, all the existing memory had better stay
-> where it is, preserving contents).
-
-You're funny :-)
-
-> Perhaps the only option where things might change radically is socket
-> migration ... where the constraint is only that the target of the
-> migration have >= memory of the source. So you might move from some
-> weird configuration with mixed DIMM sizes and thus no interleave, to a
-> homogeneous socket with matched DIMMs and full interleave. But from an
-> EDAC level, this is a new controller on a new socket ... not a changed
-> configuration on an existing socket.
-
-Right, from the frequency of such events happening, it still sounds to
-me like the perfect place for the grain value is in sysfs.
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Kind regards
+Ulf Hansson
