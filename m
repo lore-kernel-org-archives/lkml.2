@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab2EaGRR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 02:17:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55236 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab2EaGRP (ORCPT
+	id S1756987Ab2EaGSC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 02:18:02 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64804 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab2EaGRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 02:17:15 -0400
-Date: Thu, 31 May 2012 06:17:07 +0800
-From: baozich <baozich@gmail.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm/memcg: apply add/del_page to lruvec
-Message-ID: <20120530221707.GA25095@centos-guest>
-References: <alpine.LSU.2.00.1205132152530.6148@eggly.anvils>
- <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
+	Thu, 31 May 2012 02:17:54 -0400
+Date: Wed, 30 May 2012 23:17:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.linux-foundation.org
+Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
+In-Reply-To: <4FC70355.70805@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1205302314190.25774@chino.kir.corp.google.com>
+References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com>
+ <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com>
+ <4FC70355.70805@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1205132201210.6148@eggly.anvils>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hugh,
-On Sun, May 13, 2012 at 10:02:28PM -0700, Hugh Dickins wrote:
-> Take lruvec further: pass it instead of zone to add_page_to_lru_list()
-> and del_page_from_lru_list(); and pagevec_lru_move_fn() pass lruvec
-> down to its target functions.
-> 
-> This cleanup eliminates a swathe of cruft in memcontrol.c,
-> including mem_cgroup_lru_add_list(), mem_cgroup_lru_del_list() and
-> mem_cgroup_lru_move_lists() - which never actually touched the lists.
-> 
-> In their place, mem_cgroup_page_lruvec() to decide the lruvec,
-> previously a side-effect of add, and mem_cgroup_update_lru_size()
-> to maintain the lru_size stats.
-I have a stupid question. I'm not sure whether there is reduplication
-to put both "page" and "zone" parameter in mem_cgroup_page_lruvec(),
-for I noticed that the "struct zone *zone" parameter are usually from 
-page_zone(page) in most cases. I think that the semantics of this function
-is to grab the lruvec the page belongs to. So will it be ok if we pass
-only "page" as the parameter, which I think would be cleaner? Please
-fix me if I missed something.
+On Thu, 31 May 2012, Kamezawa Hiroyuki wrote:
 
-Thanks
+> > The bottomline is that /proc/meminfo is one of many global resource state
+> > interfaces and doesn't imply that every thread has access to the full
+> > resources.  It never has.  It's very simple for another thread to consume
+> > a large amount of memory as soon as your read() of /proc/meminfo completes
+> > and then that information is completely bogus.
+> 
+> Why you need to discuss this here ? We know all information are snapshot.
+> 
 
-Baozi
-> 
-> Whilst these are simplifications in their own right, the goal is to
-> bring the evaluation of lruvec next to the spin_locking of the lrus,
-> in preparation for a future patch.
-> 
-> Signed-off-by: Hugh Dickins <hughd@google.com>
+MemTotal is usually assumed to be static from /proc/meminfo and could now 
+change radically without notification to the application.
+
+> Hmm....maybe need to mount cgroup in the container (again) and get an access
+> to cgroup
+> hierarchy and find the cgroup it belongs to......if it's allowed.
+
+An application should always know the cgroup that its attached to and be 
+able to read its state using the command that I gave earlier.
