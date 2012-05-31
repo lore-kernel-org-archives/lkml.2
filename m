@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab2EaNto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:49:44 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42540 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757496Ab2EaNtm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:49:42 -0400
-Date: Thu, 31 May 2012 15:50:09 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
-Message-ID: <20120531135009.GC14515@aftab.osrc.amd.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
+	id S1758144Ab2EaNvW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:51:22 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:41273 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757409Ab2EaNvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 09:51:21 -0400
+Message-ID: <4FC77755.5060606@msgid.tls.msk.ru>
+Date: Thu, 31 May 2012 17:51:17 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+CC: "J. Bruce Fields" <bfields@fieldses.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: 3.0+ NFS issues
+References: <4FBF2C57.3070203@msgid.tls.msk.ru>   <20120529152416.GC3441@fieldses.org> <4FC5C82E.4020806@msgid.tls.msk.ru>   <20120530132518.GA13794@fieldses.org> <4FC713ED.5040807@msgid.tls.msk.ru>  <1338469169.2420.7.camel@lade.trondhjem.org>  <4FC77128.9090206@msgid.tls.msk.ru> <1338471975.7732.5.camel@lade.trondhjem.org>
+In-Reply-To: <1338471975.7732.5.camel@lade.trondhjem.org>
+X-Enigmail-Version: 1.4.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
-> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00 2001
-> From: root <root@ljsromley.bj.intel.com>
-> Date: Fri, 1 Jun 2012 03:12:51 +0800
-> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
+On 31.05.2012 17:46, Myklebust, Trond wrote:
+> On Thu, 2012-05-31 at 17:24 +0400, Michael Tokarev wrote:
+[]
+>> I started tcpdump:
+>>
+>>  tcpdump -npvi br0 -s 0 host 192.168.88.4 and \( proto ICMP or port 2049 \) -w nfsdump
+>>
+>> on the client (192.168.88.2).  Next I mounted a directory on the client,
+>> and started reading (tar'ing) a directory into /dev/null.  It captured a
+>> few stalls.  Tcpdump shows number of packets it got, the stalls are at
+>> packet counts 58090, 97069 and 97071.  I cancelled the capture after that.
+>>
+>> The resulting file is available at http://www.corpit.ru/mjt/tmp/nfsdump.xz ,
+>> it is 220Mb uncompressed and 1.3Mb compressed.  The source files are
+>> 10 files of 1Gb each, all made by using `truncate' utility, so does not
+>> take place on disk at all.  This also makes it obvious that the issue
+>> does not depend on the speed of disk on the server (since in this case,
+>> the server disk isn't even in use).
 > 
-> When MCA error occurs, it would be handled by Xen hypervisor first,
-> and then the error information would be sent to initial domain for logging.
-> 
-> This patch gets error information from Xen hypervisor and convert
-> Xen format error into Linux format mcelog. This logic is basically
-> self-contained, not touching other kernel components.
-> 
-> By using tools like mcelog tool users could read specific error information,
-> like what they did under native Linux.
-> 
-> To test follow directions outlined in Documentation/acpi/apei/einj.txt
-> 
-> Signed-off-by: Ke, Liping <liping.ke@intel.com>
-> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> ---
->  arch/x86/include/asm/xen/hypercall.h |    8 +
->  arch/x86/kernel/cpu/mcheck/mce.c     |    4 +-
->  arch/x86/xen/enlighten.c             |    5 +-
->  drivers/xen/Kconfig                  |    8 +
->  drivers/xen/Makefile                 |    1 +
->  drivers/xen/mcelog.c                 |  392 ++++++++++++++++++++++++++++++++++
->  include/linux/miscdevice.h           |    1 +
->  include/xen/interface/xen-mca.h      |  385 +++++++++++++++++++++++++++++++++
->  8 files changed, 798 insertions(+), 6 deletions(-)
->  create mode 100644 drivers/xen/mcelog.c
->  create mode 100644 include/xen/interface/xen-mca.h
+> OK. So from the above file it looks as if the traffic is mainly READ
+> requests.
 
-For the mce bits:
+The issue here happens only with reads.
 
-Acked-and-tested-by: Borislav Petkov <borislav.petkov@amd.com>
+> In 2 places the server stops responding. In both cases, the client seems
+> to be sending a single TCP frame containing several COMPOUNDS containing
+> READ requests (which should be legal) just prior to the hang. When the
+> server doesn't respond, the client pings it with a RENEW, before it ends
+> up severing the TCP connection and then retransmitting.
 
--- 
-Regards/Gruss,
-Boris.
+And sometimes -- speaking only from the behavour I've seen, not from the
+actual frames sent -- server does not respond to the RENEW too, in which
+case the client reports "nfs server no responding", and on the next
+renew it may actually respond.  This happens too, but much more rare.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+During these stalls, ie, when there's no network activity at all,
+the server NFSD threads are busy eating all available CPU.
+
+What does it all tell us? :)
+
+Thank you!
+
+/mjt
