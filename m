@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756337Ab2EaSI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:08:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15396 "EHLO mx1.redhat.com"
+	id S1758002Ab2EaSJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:09:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13895 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab2EaSI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:08:26 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 05/11] mtip32xx: Set block queue boundary variables
-References: <4FC57B1B.5010901@micron.com> <4FC7130B.6040506@kernel.dk>
-	<4FC794BD.1000309@micron.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 31 May 2012 13:12:07 -0400
-In-Reply-To: <4FC794BD.1000309@micron.com> (Asai Thambi S. P.'s message of
-	"Thu, 31 May 2012 08:56:45 -0700")
-Message-ID: <x49sjegb7h4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751951Ab2EaSJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:09:19 -0400
+Date: Thu, 31 May 2012 20:08:34 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Petr Holasek <pholasek@redhat.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
+        Dan Smith <danms@us.ibm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: AutoNUMA15
+Message-ID: <20120531180834.GP21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <20120529133627.GA7637@shutemov.name>
+ <20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120529154308.GA10790@dhcp-27-244.brq.redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asai Thambi S P <asamymuthupa@micron.com> writes:
+Hi,
 
-> On 5/30/2012 11:43 PM, Jens Axboe wrote:
->
->> On 05/30/2012 03:42 AM, Asai Thambi S P wrote:
->>>
->>> Set the following block queue boundary variables
->>> 	* max_hw_sectors
->>> 	* max_segment_size
->>> 	* nr_requests
->>>
->>> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
->>> ---
->>>  drivers/block/mtip32xx/mtip32xx.c |    4 ++++
->>>  1 files changed, 4 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
->>> index 9fe897d..801e70c 100644
->>> --- a/drivers/block/mtip32xx/mtip32xx.c
->>> +++ b/drivers/block/mtip32xx/mtip32xx.c
->>> @@ -3631,7 +3631,11 @@ skip_create_disk:
->>>  	set_bit(QUEUE_FLAG_NONROT, &dd->queue->queue_flags);
->>>  	blk_queue_max_segments(dd->queue, MTIP_MAX_SG);
->>>  	blk_queue_physical_block_size(dd->queue, 4096);
->>> +	blk_queue_max_hw_sectors(dd->queue, 0xffff);
->>> +	blk_queue_max_segment_size(dd->queue, 0x400000);
->>>  	blk_queue_io_min(dd->queue, 4096);
->>> +	dd->queue->nr_requests = 255;
->> 
->> ->nr_requests isn't a boundary variable you set for the queue. It's set
->> by the core bits, or by the user via the sysfs interface.
->> 
->> So you should not touch that from the driver.
->> 
->
-> Ok.
->
-> I saw scsi lib module changing it, so thought of changing the value close to
-> device queue depth.
+On Tue, May 29, 2012 at 05:43:09PM +0200, Petr Holasek wrote:
+> Similar problem with __autonuma_migrate_page_remove here. 
+> 
+> [ 1945.516632] ------------[ cut here ]------------
+> [ 1945.516636] WARNING: at lib/list_debug.c:50 __list_del_entry+0x63/0xd0()
+> [ 1945.516642] Hardware name: ProLiant DL585 G5   
+> [ 1945.516651] list_del corruption, ffff88017d68b068->next is LIST_POISON1 (dead000000100100)
+> [ 1945.516682] Modules linked in: ipt_MASQUERADE nf_conntrack_netbios_ns nf_conntrack_broadcast ip6table_mangle lockd ip6t_REJECT sunrpc nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables iptable_nat nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack mperf freq_table kvm_amd kvm pcspkr amd64_edac_mod edac_core serio_raw bnx2 microcode edac_mce_amd shpchp k10temp hpilo ipmi_si ipmi_msghandler hpwdt qla2xxx hpsa ata_generic pata_acpi scsi_transport_fc scsi_tgt cciss pata_amd radeon i2c_algo_bit drm_kms_helper ttm drm i2c_core [last unloaded: scsi_wait_scan]
+> [ 1945.516694] Pid: 150, comm: knuma_migrated0 Tainted: G        W    3.4.0aa_alpha+ #3
+> [ 1945.516701] Call Trace:
+> [ 1945.516710]  [<ffffffff8105788f>] warn_slowpath_common+0x7f/0xc0
+> [ 1945.516717]  [<ffffffff81057986>] warn_slowpath_fmt+0x46/0x50
+> [ 1945.516726]  [<ffffffff812f9713>] __list_del_entry+0x63/0xd0
+> [ 1945.516735]  [<ffffffff812f9791>] list_del+0x11/0x40
+> [ 1945.516743]  [<ffffffff81165b98>] __autonuma_migrate_page_remove+0x48/0x80
+> [ 1945.516746]  [<ffffffff81165e66>] knuma_migrated+0x296/0x8a0
+> [ 1945.516749]  [<ffffffff8107a200>] ? wake_up_bit+0x40/0x40
+> [ 1945.516758]  [<ffffffff81165bd0>] ? __autonuma_migrate_page_remove+0x80/0x80
+> [ 1945.516766]  [<ffffffff81079cc3>] kthread+0x93/0xa0
+> [ 1945.516780]  [<ffffffff81626f24>] kernel_thread_helper+0x4/0x10
+> [ 1945.516791]  [<ffffffff81079c30>] ? flush_kthread_worker+0x80/0x80
+> [ 1945.516798]  [<ffffffff81626f20>] ? gs_change+0x13/0x13
+> [ 1945.516800] ---[ end trace 7cab294af87bd79f ]---
 
-That's actually a fair point.  What is the device queue depth for this
-card?
+I didn't manage to reproduce it on my hardware but it seems this was
+caused by the autonuma_migrate_split_huge_page: the tail page list
+linking wasn't surrounded by the compound lock to make list insertion
+and migrate_nid setting atomic like it happens everywhere else (the
+caller holding the lock on the head page wasn't enough to make the
+tails stable too).
 
-Cheers,
-Jeff
+I released an AutoNUMA15 branch that includes all pending fixes:
+
+git clone --reference linux -b autonuma15 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+
+Thanks,
+Andrea
