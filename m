@@ -1,72 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab2EaPPu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:15:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26560 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483Ab2EaPPs (ORCPT
+	id S932565Ab2EaPQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:16:29 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:42147 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349Ab2EaPQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:15:48 -0400
-X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=oi6mPzrycosA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=nwS0t3WeWGV9GlwFZ-AA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338477346.13348.351.camel@gandalf.stny.rr.com>
-Subject: Re: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe
- optimization
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	Thu, 31 May 2012 11:16:27 -0400
+X-AuditID: b753bd60-922cbba000001453-a2-4fc78b47f715
+X-AuditID: b753bd60-922cbba000001453-a2-4fc78b47f715
+Message-ID: <4FC78B45.9060806@hitachi.com>
+Date: Fri, 01 Jun 2012 00:16:21 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Thu, 31 May 2012 11:15:46 -0400
-In-Reply-To: <4FC787D8.4010904@hitachi.com>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-	  <1338331514.13348.298.camel@gandalf.stny.rr.com>
-	  <4FC5C55E.9000909@hitachi.com>
-	 <1338377978.13348.308.camel@gandalf.stny.rr.com>
-	 <4FC787D8.4010904@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+References: <20120531012829.160060586@goodmis.org>  <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins> <1338473302.13348.336.camel@gandalf.stny.rr.com>
+In-Reply-To: <1338473302.13348.336.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-01 at 00:01 +0900, Masami Hiramatsu wrote:
+(2012/05/31 23:08), Steven Rostedt wrote:
+> Now Masami said he thinks the text_poke should also do the change of
+> kernel protection as well, and not do the FIXMAP mapping. At least for
+> bulk changes. The added breakpoint code that we have can be shared
+> between ftrace and text_poke. That is something we want to do. After we
+> get ftrace working, we'll go ahead and make it work for text_poke as
+> well ;-)
 
-> OK, that's same as what I expected. In that case,
-> all __kprobes functions are already filtered out
-> by kprobes itself. So we don't need to set that anymore.
-> 
-> Hmm, CFLAGS_REMOVE_kprobes.o can also keep kprobes from
-> function tracer. So I'd like to try to use that instead
-> of including notrace into __kprobes.
-> However, in that case, kprobe users must remove -pg from
-> their kernel modules too, and take care that they must
-> call only notrace kernel APIs...
-> 
-> Perhaps, we'd better introduce new kprobe flag which allow
-> kprobe to accept new probe on ftrace, so that user can
-> explicitly understand what he will do.
+Indeed, ftrace can be a better test case for breakpoint-based self-
+modifying. So after we can make sure that is safely work on x86
+widely, it is better to rewrite text_poke with that method.
 
-Please do not make kprobe functions not allow function tracing! I *want*
-to trace these functions! For example, I trace functions in NMIs all the
-time, and I know these are prohibited by kprobes.
+Perhaps, kprobes-*jump*-optimization may be better to handle it
+because the target probe is simultaneously working while
+optimizing (modifying code). This means that if someone hits
+breakpoint of such kprobe, it must be handled by kprobes, not
+only just tweaking IP address.
 
-Why can't we function trace this? If kprobes does not trace functions
-marked with kprobes already, then it should not have any issue. Kprobes
-will only use the function tracer for what its allowed to use.
+Thank you,
 
-Do not remove -pg from anything to satisfy kprobes. It shouldn't need
-it.
-
--- Steve
-
-
-
-
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
