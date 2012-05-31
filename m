@@ -1,91 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab2EaDuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 23:50:23 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47107 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026Ab2EaDuW (ORCPT
+	id S1756904Ab2EaD4A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 23:56:00 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:57441 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab2EaDz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 23:50:22 -0400
-Date: Thu, 31 May 2012 13:50:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: linux-next: manual merge of the akpm tree with the  tree
-Message-Id: <20120531135013.a7ac23ab7cbc5c3e71211be0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Wed, 30 May 2012 23:55:58 -0400
+Message-ID: <1338436524.2659.32.camel@falcor.watson.ibm.com>
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@us.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 30 May 2012 23:55:24 -0400
+In-Reply-To: <20120531005607.GB11775@ZenIV.linux.org.uk>
+References: <20120530163605.GV11775@ZenIV.linux.org.uk>
+	 <1338406967.2257.24.camel@localhost>
+	 <20120530202427.GW11775@ZenIV.linux.org.uk>
+	 <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+	 <20120530205612.GY11775@ZenIV.linux.org.uk>
+	 <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
+	 <20120530213638.GZ11775@ZenIV.linux.org.uk>
+	 <CA+55aFzP8Eo1AX7MS-RRG_Atq3NF0bS1ReZydRtgxxy7TDn57Q@mail.gmail.com>
+	 <20120531002802.GA11775@ZenIV.linux.org.uk>
+	 <CA+55aFzDeZQeFY1i1xLES4ijtDeGBk3EBOh-mA0dhEH2yaGf9A@mail.gmail.com>
+	 <20120531005607.GB11775@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_13_50_13_+1000_QYr4VdZJkCB5J.C+"
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12053103-7282-0000-0000-0000097A700B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_13_50_13_+1000_QYr4VdZJkCB5J.C+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-05-31 at 01:56 +0100, Al Viro wrote:
+> On Wed, May 30, 2012 at 05:40:54PM -0700, Linus Torvalds wrote:
+> > On Wed, May 30, 2012 at 5:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > FWIW, I think it's cleaner to take the whole thing into an inlined helper.
+> > 
+> > Even better.
+> > 
+> > I notice that your inlined helper doesn't do what I did: if PROT_EXEC
+> > is already set, stop all the stupid games. IOW, the first test in that
+> > function could as well be
+> > 
+> >     if (prot & (PROT_READ | PROT_EXEC) != PROT_READ)
+> >         return prot;
+> > 
+> > because if PROT_EXEC is already set, or if PROT_READ wasn't set, none
+> > of the rest of the checks make any sense at all.
+> 
+> Point...  OK, done, pushed and the whole thing thrown into #for-next.
 
-Hi Andrew,
+Patch "split cap_mmap_addr() out of cap_file_mmap()" contains the typo
+'cat_mmap_addr', which is then removed in
+"split ->file_mmap() into ->mmap_addr()/->mmap_file()".
 
-Today's linux-next merge of the akpm tree got a conflict in
-mm/memcontrol.c between commit a0db00fcf5da ("memcg: remove redundant
-parentheses") from Linus' tree and commit "memcg: track resource index in
-cftype private" from the akpm tree.
+> Probably too late for today's linux-next, but tomorrow one should pick
+> that.  BTW, tomorrow there'll be a signal.git pull request as well,
+> with task_work_add() series in it.
+> 
+> Now for the Miklos' stuff...
+> 
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc mm/memcontrol.c
-index ffa9490,4ebe680..0000000
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@@ -404,9 -391,14 +404,14 @@@ enum charge_type=20
-  #define _MEM			(0)
-  #define _MEMSWAP		(1)
-  #define _OOM_TYPE		(2)
-- #define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
-- #define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
-- #define MEMFILE_ATTR(val)	((val) & 0xffff)
-+ #define _MEMHUGETLB		(3)
-+=20
-+ /*  0 ... val ...16.... x...24...idx...32*/
- -#define __MEMFILE_PRIVATE(idx, x, val)	(((idx) << 24) | ((x) << 16) | (va=
-l))
-++#define __MEMFILE_PRIVATE(idx, x, val)	((idx) << 24 | (x) << 16 | (val))
-+ #define MEMFILE_PRIVATE(x, val)		__MEMFILE_PRIVATE(0, x, val)
- -#define MEMFILE_TYPE(val)		(((val) >> 16) & 0xff)
- -#define MEMFILE_IDX(val)		(((val) >> 24) & 0xff)
-++#define MEMFILE_TYPE(val)		((val) >> 16 & 0xff)
-++#define MEMFILE_IDX(val)		((val) >> 24 & 0xff)
-+ #define MEMFILE_ATTR(val)		((val) & 0xffff)
-  /* Used for OOM nofiier */
-  #define OOM_CONTROL		(0)
- =20
-
---Signature=_Thu__31_May_2012_13_50_13_+1000_QYr4VdZJkCB5J.C+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPxup1AAoJEECxmPOUX5FE6R0P/3LacTWq81fUOpo3/fRh6kuU
-XDsBFCIoWKJOxYdEcYYl5/rWTobsctCwAn1YggFyf+38sR+/RjUpUYtVVjujT+Ht
-wp2C5rM231UAXAsyazyUMML1uN3/Gwqt7ic6k9r7EKRlMucK+h9Zky/12ytnOonp
-bnTCj9HqJg+owem6pF8fnJQlxSlhHt6qZ5aw+3/GvBtJokpCzP93ih5ynxYtgInQ
-gtYHWu73qixzPQSPMwRj9/yFTaqe7d9y+CpAI/bD2HQzg3lu/spClJ8CX/knC5Ct
-HvhQjXJEl2A6E55nTNetfZ4VQa1mZEOtP3QmlPc/Ox7p1HKrL2Qv/q5z2KDBiAB2
-x6PTZwvV+JxPp2bHzqLpwHyOxdAcgDKm8uUw4/CnmUMYVoVmivlkHXGT6yvO723t
-qiUctW+qr0C6OrR29IySd9aAZXj6qJR5qLmatMDWhNAJosMKHhN/im6MjTKhDjBj
-2EG4WNDn+V1/xIn4KVpRVbpjKryvjBsbBcL70ZocPMHqar95kY5j71RuyBXWk5/r
-sMFK458dsIa4eW7CHo7aJlhkMqZTDXCvUSgt687lkBMRuWDw9HZSSv0xnRTQfOaf
-dKXCJwC+VQhfZL0Ww7NMRZwSwCiEtZAtFtZX9l8/kIgrk+Ltv5e4zXizN6Af+xvG
-X84xf21o95crTYjyUmm1
-=z3XF
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_13_50_13_+1000_QYr4VdZJkCB5J.C+--
