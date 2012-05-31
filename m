@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757714Ab2EaBrQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:47:16 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:54401 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757661Ab2EaBrO convert rfc822-to-8bit (ORCPT
+	id S1757751Ab2EaBvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:51:48 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42618 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756295Ab2EaBvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:47:14 -0400
+	Wed, 30 May 2012 21:51:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <ca47a47e0a4db31545549ed978e1dc7b3aad4377.1338398567.git.rubini@gnudd.com>
+In-Reply-To: <349645b61d0b28f6e84f7ae1f2c8c28e12a11d92.1338398567.git.rubini@gnudd.com>
 References: <cover.1338398567.git.rubini@gnudd.com>
-	<ca47a47e0a4db31545549ed978e1dc7b3aad4377.1338398567.git.rubini@gnudd.com>
-Date: Thu, 31 May 2012 09:47:12 +0800
-Message-ID: <CACRpkdY_bg5s_eKot8Ywbmb+SmixsJOSJW_jWjjenedjJng4Jg@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/3] i2c-nomadik: move header from <plat/i2c.h> to <linux/i2c-nomadik.h>
+	<349645b61d0b28f6e84f7ae1f2c8c28e12a11d92.1338398567.git.rubini@gnudd.com>
+Date: Thu, 31 May 2012 09:51:14 +0800
+Message-ID: <CACRpkdZ79=B8N7omxYY4UPotg8gYotfLeBRViYMr8hA-Uhie0w@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/3] i2c-nomadik: turn the platform driver to an amba driver
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Alessandro Rubini <rubini@gnudd.com>
+To: Alessandro Rubini <rubini@gnudd.com>, Lee Jones <lee.jones@linaro.org>
 Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
+        Alan Cox <alan@linux.intel.com>,
         Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
         STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jean Delvare <khali@linux-fr.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-i2c@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, May 31, 2012 at 1:45 AM, Alessandro Rubini <rubini@gnudd.com> wrote:
 
-> The header and driver were only used by arm/mach-nomadik and
-> arm/mach-u8500.  The STA2X11 I/O Hub exports on PCIe a number of
-> devices, including i2c-nomadik.  This patch allows compilation of
-> the driver under x86.
+> The i2c-nomadik gateware is really a PrimeCell APB device. By hosting
+> the driver under the amba bus we can access it more easily, for
+> example using the generic pci-amba driver. The patch also fixes the
+> mach-ux500 users to register an AMBA device, not a platform device.
 >
 > Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
 > Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Cc: STEricsson_nomadik_linux@list.st.com
+> Cc: Linus Walleij <linus.walleij@stericsson.com>
 
-The new place to put pure platform data headers is:
-include/linux/platform_data/i2c-nomadik.h so please use this.
+This will affect Lee Jones' device tree bindings for the same device.
 
-Pls use git format-patch -M so we get a nice movement patch
-without all the -/+ lines. (No big deal though.)
+You will need some add-on patch to the db8500 device tree moving this
+over to the AMBA (PrimeCell) bus abstraction.
+
+Lee can you test this and help Alessandro add the proper chunks to
+the device tree as well?
+
+Apart from that this looks good to me, I'll test it on the MOP500
+as soon as I can.
 
 Yours,
 Linus Walleij
