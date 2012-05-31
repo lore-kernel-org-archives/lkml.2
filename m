@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2EaMEW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 08:04:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44213 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755897Ab2EaMEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 08:04:21 -0400
-Date: Thu, 31 May 2012 20:04:11 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        thomas.braunstorfinger@rohde-schwarz.com
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-Message-ID: <20120531120411.GA4859@kroah.com>
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
- <1338454041.6454.67.camel@wall-e>
- <20120531095304.GA3884@kroah.com>
- <201205311217.11692.oneukum@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201205311217.11692.oneukum@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757553Ab2EaMLi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 08:11:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755897Ab2EaMLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 08:11:37 -0400
+Message-ID: <1338466281.19369.44.camel@cr0>
+Subject: Re: [RFC Patch] fs: implement per-file drop caches
+From: Cong Wang <amwang@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Thu, 31 May 2012 20:11:21 +0800
+In-Reply-To: <4FC70FFE.50809@gmail.com>
+References: <1338385120-14519-1-git-send-email-amwang@redhat.com>
+	  <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>
+	 <4FC70FFE.50809@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 12:17:11PM +0200, Oliver Neukum wrote:
-> Am Donnerstag, 31. Mai 2012, 11:53:04 schrieb Greg KH:
-> > > So it is a chicken and egg problem. A lot of software is now out with
-> > > depends on this driver and a lot of embedded development environments
-> > > doesn't provide libudev, libsysfs und libusb. It will also increase the
-> > > size of the image and adds additional dependencies to the application.
-> > 
-> > You don't need any of those libraries to do this.  What's wrong with
-> > using "raw" usbfs interactions?
+On Thu, 2012-05-31 at 02:30 -0400, KOSAKI Motohiro wrote:
+> (5/31/12 2:20 AM), Cong Wang wrote:
+> > On Wed, 2012-05-30 at 16:14 +0100, Pádraig Brady wrote:
+> >> On 05/30/2012 02:38 PM, Cong Wang wrote:
+> >>> This is a draft patch of implementing per-file drop caches.
+> >>>
+> >>> It introduces a new fcntl command  F_DROP_CACHES to drop
+> >>> file caches of a specific file. The reason is that currently
+> >>> we only have a system-wide drop caches interface, it could
+> >>> cause system-wide performance down if we drop all page caches
+> >>> when we actually want to drop the caches of some huge file.
+> >>
+> >> This is useful functionality.
+> >> Though isn't it already provided with POSIX_FADV_DONTNEED?
+> >
+> > Thanks for teaching this!
+> >
+> > However, from the source code of madvise_dontneed() it looks like it is
+> > using a totally different way to drop page caches, that is to invalidate
+> > the page mapping, and trigger a re-mapping of the file pages after a
+> > page fault. So, yeah, this could probably drop the page caches too (I am
+> > not so sure, haven't checked the code in details), but with my patch, it
+> > flushes the page caches directly, what's more, it can also prune
+> > dcache/icache of the file.
 > 
-> SPI is not limited to USB. If we can get a unified subsystem then the
-> drivers need to be in kernel space, as some hardware does not allow
-> a solution in user space.
+> madvise should work. I don't think we need duplicate interface. Moreomover
+> madvise(2) is cleaner than fcntl(2).
+> 
 
-Ok, now that is a valid reason for a kernel driver.
+I think madvise(DONTNEED) attacks the problem in a different approach,
+it munmaps the file mapping and by the way drops the page caches, my
+approach is to drop the page caches directly similar to what sysctl
+drop_caches.
 
-But, I think it should use the IIO interface, as that should handle
-these types of devices.
+What about private file mapping? Could madvise(DONTNEED) drop the page
+caches too even when the other process is doing the same private file
+mapping? At least my patch could do this.
 
-thanks,
+I am not sure if fcntl() is a good interface either, this is why the
+patch is marked as RFC. :-D
 
-greg k-h
+Thanks!
+
