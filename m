@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932659Ab2EaRdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:33:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5447 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755810Ab2EaRdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:33:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208,223";a="106370358"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
+	id S1756333Ab2EaRin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:38:43 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:25120 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755261Ab2EaRim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 13:38:42 -0400
+Date: Thu, 31 May 2012 13:31:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
         "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
+        Borislav Petkov <bp@amd64.org>,
         "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] Register native mce handler as vMCE bounce back point
-Thread-Topic: [PATCH 3/3] Register native mce handler as vMCE bounce back
- point
-Thread-Index: Ac0/U4oGOmcgMxj2Q7+f4qg6RfEkEg==
-Date: Thu, 31 May 2012 17:33:49 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923351FFB7C@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: multipart/mixed;
-	boundary="_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_"
+Subject: Re: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
+ platform
+Message-ID: <20120531173137.GA31735@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
+ <20120531161139.GA13939@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923351FFB11@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FFB11@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 31, 2012 at 05:27:53PM +0000, Liu, Jinsong wrote:
+> Konrad Rzeszutek Wilk wrote:
+> > On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
+> >>> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00
+> >>> 2001 
+> >> From: root <root@ljsromley.bj.intel.com>
+> > 
+> > Also your git author is busted. I fixed it up for you but
+> > you might want to run 'git config --user.name' and such
+> 
+> Ah, I forgot it. Thanks for fix it.
+> 
+> > 
+> >> Date: Fri, 1 Jun 2012 03:12:51 +0800
+> >> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
+> > 
+> > What about the cvt_gate_to_trap? Does that need something similar
+> > to "xen/mce: Register native mce handler as vMCE bounce back point"
+> > ?
+> 
+> That's vMCE injection logic.
 
->From ca1f8a2347eb34acdc7c54b805c78a982a0a590d Mon Sep 17 00:00:00 2001
-From: Liu, Jinsong <jinsong.liu@intel.com>
-Date: Fri, 1 Jun 2012 08:41:00 +0800
-Subject: [PATCH 3/3] Register native mce handler as vMCE bounce back point
+Are you sure about it? The comments in it speak of piggybacking on
+the native MCE handling routines. But since that is not used anymore
+do you need to use a different mechanism?
 
-When xen hypervisor inject vMCE to guest, use native mce handler to handle =
-it
+> anyway, I will present new round of patch according to Boris and your commends, as following
+> [Patch 1/3] xen-mce-Add-mcelog-support-for-Xen-platform.patch
+> [Patch 2/3] X86-MCE-AMD-Adjust-initcall-sequence-for-xen.patch
+> [Patch 3/3] Register-native-mce-handler-as-vMCE-bounce-back-poin.patch
 
-Signed-off-by: Ke, Liping <liping.ke@intel.com>
-Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
----
- arch/x86/xen/enlighten.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+Please look at http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=894c02d298cb638f3ff04bdbf41f646a0223bf05 as it has some of the mistakes fixed (spelling mistakes, wrong title, etc).
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index ff2d00e..0cb12dd 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -618,8 +618,8 @@ static int cvt_gate_to_trap(int vector, const gate_desc=
- *val,
- 	/*
- 	 * Look for known traps using IST, and substitute them
- 	 * appropriately.  The debugger ones are the only ones we care
--	 * about.  Xen will handle faults like double_fault and
--	 * machine_check, so we should never see them.  Warn if
-+	 * about.  Xen will handle faults like double_fault,
-+	 * so we should never see them.  Warn if
- 	 * there's an unexpected IST-using fault handler.
- 	 */
- 	if (addr =3D=3D (unsigned long)debug)
-@@ -634,7 +634,11 @@ static int cvt_gate_to_trap(int vector, const gate_des=
-c *val,
- 		return 0;
- #ifdef CONFIG_X86_MCE
- 	} else if (addr =3D=3D (unsigned long)machine_check) {
--		return 0;
-+		/*
-+		 * when xen hyeprvisor inject vMCE to guest,
-+		 * use native mce handler to handle it
-+		 */
-+		;
- #endif
- 	} else {
- 		/* Some other trap using IST? */
---=20
-1.7.1
+> 
+> Patch 1/3 and 2/3 are for mcelog
+> Patch 3/3 are for vMCE injection
+> 
+> > 
+> > I stuck all these patches on devel/mce.v2 on
+> > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
+> 
+> Hmm, we discussed base-tree problem before, and decided to use linus latest tree.
+> I pull this morning and rebase my patches based on
+> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+> c/s a01ee165a132fadb57659d26246e340d6ac53265
 
---_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_
-Content-Type: application/octet-stream;
-	name="0003-Register-native-mce-handler-as-vMCE-bounce-back-poin.patch"
-Content-Description: 0003-Register-native-mce-handler-as-vMCE-bounce-back-poin.patch
-Content-Disposition: attachment;
-	filename="0003-Register-native-mce-handler-as-vMCE-bounce-back-poin.patch";
-	size=1662; creation-date="Thu, 31 May 2012 17:10:05 GMT";
-	modification-date="Fri, 01 Jun 2012 00:43:22 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbSBjYTFmOGEyMzQ3ZWIzNGFjZGM3YzU0YjgwNWM3OGE5ODJhMGE1OTBkIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBMaXUsIEppbnNvbmcgPGppbnNvbmcubGl1QGludGVsLmNvbT4K
-RGF0ZTogRnJpLCAxIEp1biAyMDEyIDA4OjQxOjAwICswODAwClN1YmplY3Q6IFtQQVRDSCAzLzNd
-IFJlZ2lzdGVyIG5hdGl2ZSBtY2UgaGFuZGxlciBhcyB2TUNFIGJvdW5jZSBiYWNrIHBvaW50CgpX
-aGVuIHhlbiBoeXBlcnZpc29yIGluamVjdCB2TUNFIHRvIGd1ZXN0LCB1c2UgbmF0aXZlIG1jZSBo
-YW5kbGVyIHRvIGhhbmRsZSBpdAoKU2lnbmVkLW9mZi1ieTogS2UsIExpcGluZyA8bGlwaW5nLmtl
-QGludGVsLmNvbT4KU2lnbmVkLW9mZi1ieTogSmlhbmcsIFl1bmhvbmcgPHl1bmhvbmcuamlhbmdA
-aW50ZWwuY29tPgpTaWduZWQtb2ZmLWJ5OiBKZXJlbXkgRml0emhhcmRpbmdlIDxqZXJlbXkuZml0
-emhhcmRpbmdlQGNpdHJpeC5jb20+ClNpZ25lZC1vZmYtYnk6IExpdSwgSmluc29uZyA8amluc29u
-Zy5saXVAaW50ZWwuY29tPgotLS0KIGFyY2gveDg2L3hlbi9lbmxpZ2h0ZW4uYyB8ICAgMTAgKysr
-KysrKy0tLQogMSBmaWxlcyBjaGFuZ2VkLCA3IGluc2VydGlvbnMoKyksIDMgZGVsZXRpb25zKC0p
-CgpkaWZmIC0tZ2l0IGEvYXJjaC94ODYveGVuL2VubGlnaHRlbi5jIGIvYXJjaC94ODYveGVuL2Vu
-bGlnaHRlbi5jCmluZGV4IGZmMmQwMGUuLjBjYjEyZGQgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L3hl
-bi9lbmxpZ2h0ZW4uYworKysgYi9hcmNoL3g4Ni94ZW4vZW5saWdodGVuLmMKQEAgLTYxOCw4ICs2
-MTgsOCBAQCBzdGF0aWMgaW50IGN2dF9nYXRlX3RvX3RyYXAoaW50IHZlY3RvciwgY29uc3QgZ2F0
-ZV9kZXNjICp2YWwsCiAJLyoKIAkgKiBMb29rIGZvciBrbm93biB0cmFwcyB1c2luZyBJU1QsIGFu
-ZCBzdWJzdGl0dXRlIHRoZW0KIAkgKiBhcHByb3ByaWF0ZWx5LiAgVGhlIGRlYnVnZ2VyIG9uZXMg
-YXJlIHRoZSBvbmx5IG9uZXMgd2UgY2FyZQotCSAqIGFib3V0LiAgWGVuIHdpbGwgaGFuZGxlIGZh
-dWx0cyBsaWtlIGRvdWJsZV9mYXVsdCBhbmQKLQkgKiBtYWNoaW5lX2NoZWNrLCBzbyB3ZSBzaG91
-bGQgbmV2ZXIgc2VlIHRoZW0uICBXYXJuIGlmCisJICogYWJvdXQuICBYZW4gd2lsbCBoYW5kbGUg
-ZmF1bHRzIGxpa2UgZG91YmxlX2ZhdWx0LAorCSAqIHNvIHdlIHNob3VsZCBuZXZlciBzZWUgdGhl
-bS4gIFdhcm4gaWYKIAkgKiB0aGVyZSdzIGFuIHVuZXhwZWN0ZWQgSVNULXVzaW5nIGZhdWx0IGhh
-bmRsZXIuCiAJICovCiAJaWYgKGFkZHIgPT0gKHVuc2lnbmVkIGxvbmcpZGVidWcpCkBAIC02MzQs
-NyArNjM0LDExIEBAIHN0YXRpYyBpbnQgY3Z0X2dhdGVfdG9fdHJhcChpbnQgdmVjdG9yLCBjb25z
-dCBnYXRlX2Rlc2MgKnZhbCwKIAkJcmV0dXJuIDA7CiAjaWZkZWYgQ09ORklHX1g4Nl9NQ0UKIAl9
-IGVsc2UgaWYgKGFkZHIgPT0gKHVuc2lnbmVkIGxvbmcpbWFjaGluZV9jaGVjaykgewotCQlyZXR1
-cm4gMDsKKwkJLyoKKwkJICogd2hlbiB4ZW4gaHllcHJ2aXNvciBpbmplY3Qgdk1DRSB0byBndWVz
-dCwKKwkJICogdXNlIG5hdGl2ZSBtY2UgaGFuZGxlciB0byBoYW5kbGUgaXQKKwkJICovCisJCTsK
-ICNlbmRpZgogCX0gZWxzZSB7CiAJCS8qIFNvbWUgb3RoZXIgdHJhcCB1c2luZyBJU1Q/ICovCi0t
-IAoxLjcuMQoK
-
---_002_DE8DF0795D48FD4CA783C40EC82923351FFB7CSHSMSX101ccrcorpi_--
+Which I think the tree is based on too.
