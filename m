@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2EaKQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:16:56 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:38153 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab2EaKQz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:16:55 -0400
+	id S1755714Ab2EaKUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:20:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40889 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab2EaKUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 06:20:30 -0400
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] add new NRP power meter USB device driver
+Date: Thu, 31 May 2012 12:17:11 +0200
+User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
+        thomas.braunstorfinger@rohde-schwarz.com
+References: <1338318858-24144-1-git-send-email-stefani@seibold.net> <1338454041.6454.67.camel@wall-e> <20120531095304.GA3884@kroah.com>
+In-Reply-To: <20120531095304.GA3884@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <4FC72DDF.7080209@codethink.co.uk>
-References: <cover.1338398567.git.rubini@gnudd.com>
-	<349645b61d0b28f6e84f7ae1f2c8c28e12a11d92.1338398567.git.rubini@gnudd.com>
-	<CACRpkdZ79=B8N7omxYY4UPotg8gYotfLeBRViYMr8hA-Uhie0w@mail.gmail.com>
-	<4FC72DDF.7080209@codethink.co.uk>
-Date: Thu, 31 May 2012 18:16:54 +0800
-Message-ID: <CACRpkdZpjn0RBGY+CqqSW3ip0MSQUJSaqN0GD=a4THnPHNM-jg@mail.gmail.com>
-Subject: Re: [PATCH RFC 2/3] i2c-nomadik: turn the platform driver to an amba driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Alessandro Rubini <rubini@gnudd.com>, Lee Jones <lee.jones@linaro.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201205311217.11692.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 4:37 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
-> On 31/05/12 02:51, Linus Walleij wrote:
->>
->> You will need some add-on patch to the db8500 device tree moving this
->> over to the AMBA (PrimeCell) bus abstraction.
->
-> What does AMBA win us over the platform device here?
+Am Donnerstag, 31. Mai 2012, 11:53:04 schrieb Greg KH:
+> > So it is a chicken and egg problem. A lot of software is now out with
+> > depends on this driver and a lot of embedded development environments
+> > doesn't provide libudev, libsysfs und libusb. It will also increase the
+> > size of the image and adds additional dependencies to the application.
+> 
+> You don't need any of those libraries to do this.  What's wrong with
+> using "raw" usbfs interactions?
 
-In Alessandro's case I guess it's that he can use his PCI-to-AMBA wrapper, and
-there is no similar PCI-to platformdevice wrapper. So it saves some work
-on his part.
+SPI is not limited to USB. If we can get a unified subsystem then the
+drivers need to be in kernel space, as some hardware does not allow
+a solution in user space.
 
-But since the device has PrimeCell ID registers, this is really the
-right thing to
-do anyway, since autodetecting from hardware is allways NiceToDo(TM).
-Else ST and us shouldn't have put the magic numbers (0xB105F00D) in there
-anyway.
-
-Yours,
-Linus Walleij
+	Regards
+		Oliver
