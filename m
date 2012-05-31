@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab2EaKiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:38:04 -0400
-Received: from mga03.intel.com ([143.182.124.21]:36941 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751203Ab2EaKiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:38:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="149888045"
-Message-ID: <4FC74A04.30100@intel.com>
-Date: Thu, 31 May 2012 13:37:56 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
-References: <1337771191-95358-1-git-send-email-richard@nod.at> <1337771191-95358-2-git-send-email-richard@nod.at>
-In-Reply-To: <1337771191-95358-2-git-send-email-richard@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752456Ab2EaKid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:38:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47590 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab2EaKib (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 06:38:31 -0400
+Subject: [PATCH] block: avoid infinite loop in get_task_io_context()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1338410107.2760.544.camel@edumazet-glaptop>
+References: <4FC6189B.9080909@fusionio.com>
+	 <1338402812.2760.413.camel@edumazet-glaptop>
+	 <4FC66D3D.6080509@fusionio.com>
+	 <1338404902.2760.451.camel@edumazet-glaptop>
+	 <1338410107.2760.544.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 May 2012 12:38:26 +0200
+Message-ID: <1338460706.2760.1330.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/05/12 14:06, Richard Weinberger wrote:
-> Fastmap (aka checkpointing) allows attaching of an UBI volume in nearly
-> constant time. Only a fixed number of PEBs has to be scanned.
+From: Eric Dumazet <edumazet@google.com>
+
+On Wed, 2012-05-30 at 22:35 +0200, Eric Dumazet wrote:
+> On Wed, 2012-05-30 at 21:08 +0200, Eric Dumazet wrote:
+> > On Wed, 2012-05-30 at 20:55 +0200, Jens Axboe wrote:
+> > > On 05/30/2012 08:33 PM, Eric Dumazet wrote:
+> > > > On Wed, 2012-05-30 at 14:54 +0200, Jens Axboe wrote:
+> > > >> Hi Linus,
+> > > >>
+> > > >> On top of the for-3.5/core pull request, here are the driver related
+> > > >> changes for 3.5. It contains:
+> > > > 
+> > > > Hi Jens
+> > > > 
+> > > > Not sure if this is related, but latest Linus tree cannot boot anymore
+> > > > here...
+> > > > 
+> > > > BUG: soft lockup - CPU#3 stuck for 22s ! [mountall.1603]
+> > > 
+> > > Hrmpf, can you attach your .config?
+> > > 
+> > 
+> > I can do a bisection pretty fast I think
 > 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  drivers/mtd/ubi/Makefile    |    2 +-
->  drivers/mtd/ubi/attach.c    |   34 +-
->  drivers/mtd/ubi/build.c     |   25 +
->  drivers/mtd/ubi/eba.c       |   18 +-
->  drivers/mtd/ubi/fastmap.c   | 1240 +++++++++++++++++++++++++++++++++++++++++++
->  drivers/mtd/ubi/ubi-media.h |  119 +++++
->  drivers/mtd/ubi/ubi.h       |   68 +++-
->  drivers/mtd/ubi/wl.c        |  184 +++++++-
->  8 files changed, 1667 insertions(+), 23 deletions(-)
->  create mode 100644 drivers/mtd/ubi/fastmap.c
-> 
+> Not sure if bisection was good, but result is :
 
-...
+Bisection gave nothing, because its an old bug ?
 
-> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-> new file mode 100644
-> index 0000000..7757e5a
+Following patch cures it.
 
-...
+[PATCH] block: avoid infinite loop in get_task_io_context()
 
-> +/**
-> + * ubi_find_fastmap - searches the first UBI_FM_MAX_START PEBs for the
-> + * fastmap super block.
-> + * @ubi: UBI device object
-> + */
-> +static int ubi_find_fastmap(struct ubi_device *ubi, int *fm_start)
-> +{
-> +	int i, ret;
-> +	struct ubi_vid_hdr *vhdr;
-> +
-> +	vhdr = ubi_zalloc_vid_hdr(ubi, GFP_KERNEL);
-> +	if (!vhdr)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < UBI_FM_MAX_START; i++) {
-> +		ret = ubi_io_read_vid_hdr(ubi, i, vhdr, 0);
-> +		if (ret < 0)
-> +			break;
-> +		else if (ret > 0)
-> +			continue;
-> +
-> +		if (be32_to_cpu(vhdr->vol_id) == UBI_FM_SB_VOLUME_ID) {
-> +			*fm_start = i;
-> +			dbg_bld("Found fastmap super block at PEB %i\n", i);
-> +			ret = 0;
-> +
-> +			break;
+Calling get_task_io_context() on a exiting task which isn't %current can
+loop forever. This triggers at boot time on my dev machine.
 
-How do you know that this is the current fastmap and not a remnant of an old
-fastmap?
+BUG: soft lockup - CPU#3 stuck for 22s ! [mountall.1603]
 
-> +		}
-> +	}
-> +
-> +	ubi_free_vid_hdr(ubi, vhdr);
-> +
-> +	return ret;
-> +}
+Fix this by making create_task_io_context() returns -EBUSY in this case
+to break the loop.
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ block/blk-ioc.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+index 1e2d53b..893b800 100644
+--- a/block/blk-ioc.c
++++ b/block/blk-ioc.c
+@@ -235,6 +235,7 @@ void ioc_clear_queue(struct request_queue *q)
+ int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
+ {
+ 	struct io_context *ioc;
++	int ret;
+ 
+ 	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags | __GFP_ZERO,
+ 				    node);
+@@ -262,9 +263,12 @@ int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
+ 		task->io_context = ioc;
+ 	else
+ 		kmem_cache_free(iocontext_cachep, ioc);
++
++	ret = task->io_context ? 0 : -EBUSY;
++
+ 	task_unlock(task);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ /**
+
 
