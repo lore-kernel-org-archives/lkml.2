@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab2EaAz6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 20:55:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55775 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754583Ab2EaAzz (ORCPT
+	id S1757606Ab2EaA4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 20:56:15 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59751 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757553Ab2EaA4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 20:55:55 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FC6C111.2060108@jp.fujitsu.com>
-Date: Thu, 31 May 2012 09:53:37 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Wed, 30 May 2012 20:56:11 -0400
+Date: Thu, 31 May 2012 01:56:07 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@parisplace.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix IMA lockdep circular locking dependency
+Message-ID: <20120531005607.GB11775@ZenIV.linux.org.uk>
+References: <20120530163605.GV11775@ZenIV.linux.org.uk>
+ <1338406967.2257.24.camel@localhost>
+ <20120530202427.GW11775@ZenIV.linux.org.uk>
+ <CA+55aFxiCksfNdRrm+O-eJSY=qTUQEsZtFbi8wj2_kj1XeNHnQ@mail.gmail.com>
+ <20120530205612.GY11775@ZenIV.linux.org.uk>
+ <CA+55aFwXfD6vCj8sHuB33ctB-D8cfJN45h+iURXA6mR=S0mgwA@mail.gmail.com>
+ <20120530213638.GZ11775@ZenIV.linux.org.uk>
+ <CA+55aFzP8Eo1AX7MS-RRG_Atq3NF0bS1ReZydRtgxxy7TDn57Q@mail.gmail.com>
+ <20120531002802.GA11775@ZenIV.linux.org.uk>
+ <CA+55aFzDeZQeFY1i1xLES4ijtDeGBk3EBOh-mA0dhEH2yaGf9A@mail.gmail.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
-References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com> <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzDeZQeFY1i1xLES4ijtDeGBk3EBOh-mA0dhEH2yaGf9A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/31 9:44), David Rientjes wrote:
-> On Thu, 31 May 2012, Kamezawa Hiroyuki wrote:
->
->> My test with sysfs node's meminfo seems to work...
->>
->> [root@rx100-1 qqm]# mount --bind /sys/devices/system/node/node0/meminfo
->> /proc/meminfo
->> [root@rx100-1 qqm]# cat /proc/meminfo
->>
->> Node 0 MemTotal:        8379636 kB
->
-> This doesn't seem like a good idea unless the application supports the
-> "Node 0" prefix in /proc/meminfo.
->
-Of course, /cgroup/memory/..../memory.meminfo , a new file, will use the same
-format of /proc/meminfo. Above is just an example of bind-mount.
+On Wed, May 30, 2012 at 05:40:54PM -0700, Linus Torvalds wrote:
+> On Wed, May 30, 2012 at 5:28 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > FWIW, I think it's cleaner to take the whole thing into an inlined helper.
+> 
+> Even better.
+> 
+> I notice that your inlined helper doesn't do what I did: if PROT_EXEC
+> is already set, stop all the stupid games. IOW, the first test in that
+> function could as well be
+> 
+>     if (prot & (PROT_READ | PROT_EXEC) != PROT_READ)
+>         return prot;
+> 
+> because if PROT_EXEC is already set, or if PROT_READ wasn't set, none
+> of the rest of the checks make any sense at all.
 
-> If any application really cares about the amount of memory available to
-> it, it should be taught to be memcg aware.  Then do something like
->
+Point...  OK, done, pushed and the whole thing thrown into #for-next.
+Probably too late for today's linux-next, but tomorrow one should pick
+that.  BTW, tomorrow there'll be a signal.git pull request as well,
+with task_work_add() series in it.
 
-Considering the container as a kind of virtualization, Some kind of
-transparent way is required.
-
-Thanks,
--Kame
-
-
+Now for the Miklos' stuff...
