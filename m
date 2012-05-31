@@ -1,53 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab2EaGhc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 02:37:32 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:38007 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab2EaGh2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 02:37:28 -0400
-Message-ID: <4FC711A5.4090003@gmail.com>
-Date: Thu, 31 May 2012 02:37:25 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.linux-foundation.org
-Subject: Re: [PATCH] meminfo: show /proc/meminfo base on container's memcg
-References: <1338260214-21919-1-git-send-email-gaofeng@cn.fujitsu.com> <alpine.DEB.2.00.1205301433490.9716@chino.kir.corp.google.com> <4FC6B68C.2070703@jp.fujitsu.com> <CAHGf_=pFbsy4FO_UNu6O1-KyTd6O=pkmR8=3EGuZB5Reu3Vb9w@mail.gmail.com> <4FC6BC3E.5010807@jp.fujitsu.com> <alpine.DEB.2.00.1205301737530.25774@chino.kir.corp.google.com> <4FC6C111.2060108@jp.fujitsu.com> <alpine.DEB.2.00.1205301831270.25774@chino.kir.corp.google.com> <4FC6D881.4090706@jp.fujitsu.com> <alpine.DEB.2.00.1205302156090.25774@chino.kir.corp.google.com> <4FC70355.70805@jp.fujitsu.com> <alpine.DEB.2.00.1205302314190.25774@chino.kir.corp.google.com> <4FC70E5E.1010003@gmail.com> <alpine.DEB.2.00.1205302325500.25774@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1205302325500.25774@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752856Ab2EaGiJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 02:38:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21118 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059Ab2EaGiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 02:38:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="146503889"
+From: Feng Tang <feng.tang@intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org
+Cc: Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2 1/3] perf script: Add general python handler to process non-tracepoint events
+Date: Thu, 31 May 2012 14:34:30 +0800
+Message-Id: <1338446072-24655-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/31/12 2:28 AM), David Rientjes wrote:
-> On Thu, 31 May 2012, KOSAKI Motohiro wrote:
->
->>> An application should always know the cgroup that its attached to and be
->>> able to read its state using the command that I gave earlier.
->>
->> No. you don't need why userland folks want namespaces. Even though you don't
->> need namespaces. It doesn't good reason to refuse another use case.
->>
->
-> This is tangent to the discussion, we need to revisit why an application
-> other than a daemon managing a set of memcgs would ever need to know the
-> information in /proc/meminfo.  No use-case was ever presented in the
-> changelog and its not clear how this is at all relevant.  So before
-> changing the kernel, please describe how this actually matters in a real-
-> world scenario.
+This patch just follows Robert Richter's idea and the commit 37a058ea0
+	"perf script: Add generic perl handler to process events"
+to similarly add a python handler for general events other than tracepoints.
 
-Huh? Don't you know a meanings of a namespace ISOLATION? isolation mean,
-isolated container shouldn't be able to access global information. If you
-want to lean container/namespace concept, tasting openvz or solaris container
-is a good start.
+For non-tracepoint events, this patch will try to find a function named
+"process_event" in the python script, and pass the event attribute,
+perf_sample, raw_data in format of raw string. And the python script can
+use "struct" module's unpack function to disasemble the needed info and process.
 
-But anyway, I dislike current implementaion. So, I NAK this patch too.
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ .../util/scripting-engines/trace-event-python.c    |   60 +++++++++++++++++++-
+ 1 files changed, 59 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index acb9795..ab441a4 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -31,6 +31,7 @@
+ #include "../event.h"
+ #include "../thread.h"
+ #include "../trace-event.h"
++#include "../evsel.h"
+ 
+ PyMODINIT_FUNC initperf_trace_context(void);
+ 
+@@ -209,7 +210,7 @@ static inline struct event_format *find_cache_event(int type)
+ 	return event;
+ }
+ 
+-static void python_process_event(union perf_event *pevent __unused,
++static void python_process_tracepoint(union perf_event *pevent __unused,
+ 				 struct perf_sample *sample,
+ 				 struct perf_evsel *evsel __unused,
+ 				 struct machine *machine __unused,
+@@ -328,6 +329,63 @@ static void python_process_event(union perf_event *pevent __unused,
+ 	Py_DECREF(t);
+ }
+ 
++static void python_process_general_event(union perf_event *pevent __unused,
++				 struct perf_sample *sample,
++				 struct perf_evsel *evsel,
++				 struct machine *machine __unused,
++				 struct thread *thread __unused)
++{
++	PyObject *handler, *retval, *t;
++	static char handler_name[64];
++	unsigned n = 0;
++	void *data = sample->raw_data;
++
++	t = PyTuple_New(MAX_FIELDS);
++	if (!t)
++		Py_FatalError("couldn't create Python tuple");
++
++	snprintf(handler_name, sizeof(handler_name), "%s", "process_event");
++
++	handler = PyDict_GetItemString(main_dict, handler_name);
++	if (handler && !PyCallable_Check(handler)) {
++		handler = NULL;
++		goto exit;
++	}
++
++	/* Pass 3 parameters: event_attr, perf_sample, raw data */
++	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
++			(const char *)&evsel->attr, sizeof(evsel->attr)));
++	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
++			(const char *)sample, sizeof(*sample)));
++	PyTuple_SetItem(t, n++, PyString_FromStringAndSize(
++			data, sample->raw_size));
++
++	if (_PyTuple_Resize(&t, n) == -1)
++		Py_FatalError("error resizing Python tuple");
++
++	retval = PyObject_CallObject(handler, t);
++	if (retval == NULL)
++		handler_call_die(handler_name);
++exit:
++	Py_DECREF(t);
++}
++
++static void python_process_event(union perf_event *pevent,
++				 struct perf_sample *sample,
++				 struct perf_evsel *evsel,
++				 struct machine *machine,
++				 struct thread *thread)
++{
++	switch (evsel->attr.type) {
++	case PERF_TYPE_TRACEPOINT:
++		python_process_tracepoint(pevent, sample, evsel, machine, thread);
++		break;
++	/* Reserve for future process_hw/sw/raw APIs */
++	default:
++		python_process_general_event(pevent, sample, evsel, machine, thread);
++	}
++}
++
+ static int run_start_sub(void)
+ {
+ 	PyObject *handler, *retval;
+-- 
+1.7.1
+
