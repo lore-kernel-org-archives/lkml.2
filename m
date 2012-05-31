@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2EaBC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:02:27 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57503 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab2EaBC0 (ORCPT
+	id S1757612Ab2EaBDF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:03:05 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65149 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757570Ab2EaBDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:02:26 -0400
-Date: Thu, 31 May 2012 02:02:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the vfs tree
-Message-ID: <20120531010224.GC11775@ZenIV.linux.org.uk>
-References: <20120531105108.1bdae885e23a49429d9b3b07@canb.auug.org.au>
+	Wed, 30 May 2012 21:03:01 -0400
+Date: Wed, 30 May 2012 18:02:59 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH -V7 02/14] hugetlbfs: don't use ERR_PTR with VM_FAULT*
+ values
+In-Reply-To: <1338388739-22919-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1205301801060.25774@chino.kir.corp.google.com>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531105108.1bdae885e23a49429d9b3b07@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 10:51:08AM +1000, Stephen Rothwell wrote:
-> Hi Al,
-> 
-> After merging the vfs tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> In file included from include/linux/stat.h:6:0,
->                  from include/linux/module.h:10,
->                  from init/main.c:13:
-> arch/powerpc/include/asm/stat.h:33:2: error: expected specifier-qualifier-list before 'unisgned'
-> 
-> and many, many more. :-(
-> 
-> Caused by commit 9f240ea8060e ("powerpc: get rid of nlink_t uses, switch
-> to explicitly-sized type").
-> 
-> I have used the vfs tree from next-20120529 for today.
+On Wed, 30 May 2012, Aneesh Kumar K.V wrote:
 
-Grr...  s/unisgned/unsigned/, of course - in two lines in there.  With that
-it seems to build...
+> From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> 
+> The current use of VM_FAULT_* codes with ERR_PTR requires us to ensure
+> VM_FAULT_* values will not exceed MAX_ERRNO value.  Decouple the
+> VM_FAULT_* values from MAX_ERRNO.
+> 
+
+Yeah, but is there a reason for using VM_FAULT_HWPOISON_LARGE_MASK since 
+that's the only VM_FAULT_* value that is greater than MAX_ERRNO?  The rest 
+of your patch set doesn't require this, so I think this change should just 
+be dropped.  (And PTR_ERR() still returns long, this wasn't fixed from my 
+original review.)
