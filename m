@@ -1,62 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab2EaUf6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 16:35:58 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43496 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab2EaUf4 (ORCPT
+	id S964890Ab2EaUgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 16:36:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8380 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab2EaUf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 16:35:56 -0400
-Message-ID: <4FC7D629.3090801@gmail.com>
-Date: Thu, 31 May 2012 16:35:53 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Nathan Zimmer <nzimmer@sgi.com>, hughd@google.com, npiggin@gmail.com,
-        cl@linux.com, lee.schermerhorn@hp.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, stable@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH v2] tmpfs not interleaving properly
-References: <20120531143916.GA16162@gulag1.americas.sgi.com> <4FC7CFEB.5040009@gmail.com> <20120531132515.6af60152.akpm@linux-foundation.org>
-In-Reply-To: <20120531132515.6af60152.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 31 May 2012 16:35:58 -0400
+X-Authority-Analysis: v=2.0 cv=ae7jbGUt c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=6I2XFdsDAPIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=xDSAQ_2pYmEkZUIePVQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338496555.13348.429.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 4/5] x86: Allow nesting of the debug stack IDT setting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Dave Jones <davej@redhat.com>, Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 16:35:55 -0400
+In-Reply-To: <4FC7D1F7.8090405@zytor.com>
+References: <20120531012829.160060586@goodmis.org>
+	   <20120531020441.500105258@goodmis.org> <4FC7BF59.3070906@zytor.com>
+	  <1338492300.13348.384.camel@gandalf.stny.rr.com>
+	  <4FC7C62C.1020807@zytor.com>
+	 <1338494431.13348.410.camel@gandalf.stny.rr.com>
+	 <4FC7D1F7.8090405@zytor.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(5/31/12 4:25 PM), Andrew Morton wrote:
-> On Thu, 31 May 2012 16:09:15 -0400
-> KOSAKI Motohiro<kosaki.motohiro@gmail.com>  wrote:
->
->>> --- a/mm/shmem.c
->>> +++ b/mm/shmem.c
->>> @@ -929,7 +929,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->>>    	/*
->>>    	 * alloc_page_vma() will drop the shared policy reference
->>>    	 */
->>> -	return alloc_page_vma(gfp,&pvma, 0);
->>> +	return alloc_page_vma(gfp,&pvma, info->node_offset<<   PAGE_SHIFT );
->>
->> 3rd argument of alloc_page_vma() is an address. This is type error.
->
-> Well, it's an unsigned long...
->
-> But yes, it is conceptually wrong and *looks* weird.  I think we can
-> address that by overcoming our peculair aversion to documenting our
-> code, sigh.  This?
+On Thu, 2012-05-31 at 13:17 -0700, H. Peter Anvin wrote:
 
-Sorry, no.
+> Ouch.  This is really way more complex than it has any excuse for being,
+> and it's the complexity that concerns me, not the performance.
 
-addr agrument of alloc_pages_vma() have two meanings.
+Complexity is my Sun, and I am the planet that orbits around it.
 
-1) interleave node seed
-2) look-up key of shmem policy
+> 
+> I'd like a chart, or list, of the alternate stack environments we can be
+> in and what can transfer to what.  I think there might be an easier
+> solution that is more robust.
 
-I think this patch break (2). shmem_get_policy(pol, addr) assume caller honor to
-pass correct address.
+Well, it's not as bad as one might think:
 
-Oh, yes. *NOW*, we are discussing shmem policy removing. but it haven't be removed.
-Please don't break.
+#define STACKFAULT_STACK 1
+#define DOUBLEFAULT_STACK 2
+#define NMI_STACK 3
+#define DEBUG_STACK 4
+#define MCE_STACK 5
+#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
+
+These are the exceptions that have their own stacks.
+
+arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_DB, &debug, DEBUG_STACK);
+arch/x86/kernel/traps.c:        set_system_intr_gate_ist(X86_TRAP_BP, &int3, DEBUG_STACK);
+arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_NMI, &nmi, NMI_STACK);
+arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_DF, &double_fault, DOUBLEFAULT_STACK);
+arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
+arch/x86/kernel/traps.c:        set_intr_gate_ist(X86_TRAP_MC, &machine_check, MCE_STACK);
+
+We only have two IDT tables that are fixed and are switched via the NMI
+handler (debug_stack_set_zero), as well as this patch set.
+
+head_64.S:
+
+ENTRY(idt_table)
+	.skip IDT_ENTRIES * 16
+
+	.align L1_CACHE_BYTES
+ENTRY(nmi_idt_table)
+	.skip IDT_ENTRIES * 16
+
+
+Only the DEBUG stack has a double size:
+
+arch/x89/kernel/cpu/common.c:
+
+static const unsigned int exception_stack_sizes[N_EXCEPTION_STACKS] = {
+	  [0 ... N_EXCEPTION_STACKS - 1]	= EXCEPTION_STKSZ,
+	  [DEBUG_STACK - 1]			= DEBUG_STKSZ
+};
+
+
+Thus only the debug stack does the stack TSS trick.
+
+Is this what you were looking for? (God, it just shows how much time
+I've been spending on this crap, as I was able to find all this by
+memory and not grepping for it :-p )
+
+-- Steve
+
 
