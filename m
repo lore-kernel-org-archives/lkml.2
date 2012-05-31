@@ -1,113 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab2EaBK1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:10:27 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64838 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756318Ab2EaBKZ (ORCPT
+	id S1757630Ab2EaBRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:17:40 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37155 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab2EaBRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:10:25 -0400
-Date: Wed, 30 May 2012 18:08:45 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] battery-2.6.git
-Message-ID: <20120531010844.GA23101@lizard>
-Reply-To: cbouatmailru@gmail.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 30 May 2012 21:17:39 -0400
+Date: Thu, 31 May 2012 11:17:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: cbouatmailru@gmail.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] battery-2.6.git
+Message-Id: <20120531111730.f9b4bc12cdbeae7a3952f602@canb.auug.org.au>
+In-Reply-To: <20120531010844.GA23101@lizard>
+References: <20120531010844.GA23101@lizard>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+--Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I guess my pull requests have a distinct style already: they are somewhat
-boring (in sense that it's just a pile of fixes), late, and my gpg key is
-not signed by anyone. :-)
+Hi Anton,
 
-So here it is:
+On Wed, 30 May 2012 18:08:45 -0700 Anton Vorontsov <cbouatmailru@gmail.com>=
+ wrote:
+>
+> I guess my pull requests have a distinct style already: they are somewhat
+> boring (in sense that it's just a pile of fixes), late, and my gpg key is
+> not signed by anyone. :-)
 
-The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
+At least you get points for it all being in linux-next since before the
+merge window opened. ;-)
 
-  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-are available in the git repository at:
+--Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb
+Content-Type: application/pgp-signature
 
-  git://git.infradead.org/battery-2.6.git tags/for-v3.5
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-for you to fetch changes up to 96facd23e45e6d5020be135c8ab392ba9e044fa4:
+iQIcBAEBCAAGBQJPxsaqAAoJEECxmPOUX5FELUwP/Ano2MrpZqAXuXkd6yxvESu5
++2jZ5K+Nh4XdxKlNB9NFQjTOZ0sy2bDJHsHqdq9ubnK6PyQ3Fy2SY/lCJ+AZfx1Y
+5gITGqj3xQYIyFlJfxCmznd7EXnCr5/KzwrBy1WhcaNHgQhzfCtL5TbqNSxp+VGD
+ZABXAn1KpueAqMrAaxJUkw+iWSzsCOIRvEXvn7n2K0mMoBVRmKUcCJPISu3M98dp
+AbGcbA6lxO1oJdmk94AJMUW0iYSUaG5/mWQ4zm0rPExmCjuBcCP0NSMVykJ/IYYI
+mc9IGaODv4t9K6DguFzyHPLlX6tyDY04XnqioszB2mrA9WZYlLtbKoSE/+/bkF4W
+qeUYn6wqjo0Ai2TKMwHfjGV/mNfo6oqHs5S9D2q6y5XCIsT/xST6aY7vQ13dgihm
+jrKnvFtq0xFb6jbcp87QG0Jd4XltHRBJ9QQ5Xs8JKAV0XzZ8lNFAvng84XTbYWS1
+AAAAJrlyo+j0bHj/hFcW1pLYct6OkElBG+urLl/iYyxwsn9ipxatLaSJquC+S4Ow
+WiOqdZckYC8adWcPVtLCVWZCD85kmUGv67B4XpaPqDgpp1ynu+BAnjXiWnOvyRqd
+zHYn7KcTWyqGGjEQiWuBppqfGn6o799h2sWV+eHXRHIIIAcMsz/ADwq0/4nhw7co
+XTmaaja9UGz5Ah8frXbo
+=EQrF
+-----END PGP SIGNATURE-----
 
-  smb347-charger: Include missing <linux/err.h> (2012-05-18 17:15:48 -0700)
-
-----------------------------------------------------------------
-A bunch of fixes for v3.5, nothing extraordinary.
-
-----------------------------------------------------------------
-Anton Vorontsov (3):
-      max17042_battery: Move dev_pm_ops struct under CONFIG_PM
-      power_supply: Make the core a boolean instead of a tristate
-      MAINTAINERS: Fix 'F' entry for the power supply class
-
-Axel Lin (2):
-      power_supply: Fix a typo in BATTERY_DS2781 Kconfig entry
-      ds2781_battery: Use DS2781_PARAM_EEPROM_SIZE and DS2781_USER_EEPROM_SIZE
-
-Chanwoo Choi (2):
-      charger-manager: Poll battery health in normal state
-      charger-manager: Provide cm_notify_event function for in-kernel use
-
-Dan Carpenter (2):
-      max17042_battery: Fix a couple buffer overflows
-      isp1704_charger: Use after free on probe error
-
-Lee Jones (1):
-      ab8500: Clean up probe routines
-
-Linus Walleij (3):
-      ab8500_charger: Harden platform data check
-      ab8500_btemp: Harden platform data check
-      ab8500_fg: Harden platform data check
-
-Mika Westerberg (5):
-      smb347-charger: Convert to use module_i2c_driver()
-      smb347-charger: Rename few functions to match better what they are doing
-      smb347-charger: Move IRQ enabling to the end of probe
-      smb347-charger: Convert to regmap API
-      smb347-charger: Include missing <linux/err.h>
-
-Nikolaus Voss (1):
-      sbs-battery.c: Capacity attr = remaining relative capacity
-
-Ramakrishna Pallala (8):
-      max17042_battery: Fix driver exit function
-      max17042_battery: Add suspend/resume hooks
-      power_supply: Add voltage_ocv property and use it for max17042 driver
-      max17042_battery: Fix power supply and irq registration ordering
-      max17042_battery: Handle irq request failure case
-      smb347_charger: Cleanup power supply registration code in probe
-      max17042_battery: Add support for max17047/50 chip
-      smb347-charger: Clean up battery attributes
-
- Documentation/power/charger-manager.txt    |   41 +-
- Documentation/power/power_supply_class.txt |    2 +
- MAINTAINERS                                |    2 +-
- drivers/power/Kconfig                      |   10 +-
- drivers/power/ab8500_btemp.c               |   12 +-
- drivers/power/ab8500_charger.c             |   13 +-
- drivers/power/ab8500_fg.c                  |   12 +-
- drivers/power/charger-manager.c            |  392 +++++++++++++++
- drivers/power/ds2781_battery.c             |   20 +-
- drivers/power/isp1704_charger.c            |    2 +-
- drivers/power/max17042_battery.c           |  148 +++++-
- drivers/power/power_supply_sysfs.c         |    1 +
- drivers/power/sbs-battery.c                |    2 +-
- drivers/power/smb347-charger.c             |  712 +++++++++++-----------------
- include/linux/power/charger-manager.h      |   50 +-
- include/linux/power/max17042_battery.h     |   17 +
- include/linux/power_supply.h               |    4 +-
- 17 files changed, 943 insertions(+), 497 deletions(-)
+--Signature=_Thu__31_May_2012_11_17_30_+1000_kBQkYVnNC0o7TsSb--
