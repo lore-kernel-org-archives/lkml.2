@@ -1,37 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2EaGKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 02:10:05 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56595 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2EaGKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 02:10:03 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-16-4fc70b38d04d
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/22] perf tools: Backport of latest changes on trace-cmd's libparseevent
-References: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
-Date: Thu, 31 May 2012 15:07:26 +0900
-In-Reply-To: <1337740619-27925-1-git-send-email-namhyung.kim@lge.com>
-	(Namhyung Kim's message of "Wed, 23 May 2012 11:36:37 +0900")
-Message-ID: <87hauwnash.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.95 (gnu/linux)
+	id S1754446Ab2EaGKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 02:10:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53783 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753897Ab2EaGKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 02:10:20 -0400
+Message-ID: <4FC70BA8.5060200@redhat.com>
+Date: Thu, 31 May 2012 14:11:52 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] net: sock: validate data_len before allocating skb in
+ sock_alloc_send_pskb()
+References: <20120530054702.6146.8503.stgit@amd-6168-8-1.englab.nay.redhat.com> <1338360383.2760.84.camel@edumazet-glaptop> <20120530.030205.1337682162603770949.davem@davemloft.net> <4FC708EE.2020908@redhat.com> <20120531060201.GA13158@redhat.com>
+In-Reply-To: <20120531060201.GA13158@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Arnaldo
+On 05/31/2012 02:02 PM, Michael S. Tsirkin wrote:
+> On Thu, May 31, 2012 at 02:00:14PM +0800, Jason Wang wrote:
+>> On 05/30/2012 03:02 PM, David Miller wrote:
+>>> From: Eric Dumazet<eric.dumazet@gmail.com>
+>>> Date: Wed, 30 May 2012 08:46:23 +0200
+>>>
+>>>> Why doing this test in the while (1) block, it should be done before the
+>>>> loop...
+>>>>
+>>>> Or even in the caller, note net/unix/af_unix.c does this right.
+>>>>
+>>>>          if (len>   SKB_MAX_ALLOC)
+>>>>                  data_len = min_t(size_t,
+>>>>                                   len - SKB_MAX_ALLOC,
+>>>>                                   MAX_SKB_FRAGS * PAGE_SIZE);
+>>>>
+>>>>          skb = sock_alloc_send_pskb(sk, len - data_len, data_len,
+>>>>                                     msg->msg_flags&   MSG_DONTWAIT,&err);
+>>> My impression is that the callers should be fixed to.  It makes no sense
+>>> to penalize the call sites that get this right.
+>>>
+>>> And yes, if we do check it in sock_alloc_send_pskb() it should be done
+>>> at function entry, not inside the loop.
+>> Sure, so is it ok for me to send a V2 that just do the fixing in
+>> sock_alloc_sned_pskb() as it's simple and easy to be accepted by
+>> stable version?
+>>
+>> For the fix of callers, I want to post fixes on top as I find
+>> there's some code duplication of {tun|macvtap|packet}_alloc_skb()
+>> and I want to unify them to a common helper in sock.c. Then I can
+>> fix this issue in the new helper.
+> Are packet sockets really affected?
+> If yes the only call site that gets this right is unix sockets?
 
-It'd be great if you set up a branch for this so that I can continue to
-work on it until fully-merged.
+Not affected, only code duplication. It's no harm the check the data_len 
+again for packet sockets, so better to unify the code and fix the issue 
+in one place?
+>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks,
-Namhyung
