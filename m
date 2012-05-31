@@ -1,136 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab2EaO7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:59:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41139 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752132Ab2EaO7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:59:15 -0400
-Message-ID: <4FC78672.6040805@ti.com>
-Date: Thu, 31 May 2012 09:55:46 -0500
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932319Ab2EaPAe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:00:34 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43022 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab2EaPAc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 11:00:32 -0400
 MIME-Version: 1.0
-To: Xiao Jiang <jgq516@gmail.com>
-CC: <b-cousson@ti.com>, <linux@arm.linux.org.uk>, <rob.herring@calxeda.com>,
-        <grant.likely@secretlab.ca>, <rnayak@ti.com>, <tony@atomide.com>,
-        <wim@iguana.be>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-watchdog@vger.kernel.org>
-Subject: Re: [PATCH 1/3] arm/dts: add wdt node for omap3 and omap4
-References: <1337942552-28218-1-git-send-email-jgq516@gmail.com> <1337942552-28218-2-git-send-email-jgq516@gmail.com> <4FC50CCD.7090404@ti.com> <4FC591C9.2050004@gmail.com> <4FC631E5.9080000@ti.com> <4FC706D7.2010801@gmail.com>
-In-Reply-To: <4FC706D7.2010801@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
+In-Reply-To: <CAEV-rjd1zymsZwsJjzJtF-9fvgYLz00r+K4K4xD2aeLwi76mPw@mail.gmail.com>
+References: <CAEV-rjeEKMNs2N8KEatCi+guFKihgFok4k4nDnd=vTQ5x7iStg@mail.gmail.com>
+	<1338282140-11106-1-git-send-email-torne@google.com>
+	<CAPDyKFrpXc7cODie9g-QK_ZhVpmVZPQ36TDF9CWJcVPL_-EU2Q@mail.gmail.com>
+	<CAEV-rjd1zymsZwsJjzJtF-9fvgYLz00r+K4K4xD2aeLwi76mPw@mail.gmail.com>
+Date: Thu, 31 May 2012 23:00:31 +0800
+Message-ID: <CAPDyKFrtdFn-t43r03m630gScYz6Cz+asfruSa=sGcxP0+C+tQ@mail.gmail.com>
+Subject: Re: [PATCH] MMC: core: cap MMC card timeouts at 2 seconds.
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: "Torne (Richard Coles)" <torne@google.com>
+Cc: cjb@laptop.org, linus.walleij@linaro.org, jh80.chung@samsung.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ben@decadent.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Richard,
 
-On 05/31/2012 12:51 AM, Xiao Jiang wrote:
-> Hi Jon and Benoit,
->>> Thanks for reminding, how about below patch?
+On 31 May 2012 18:15, Torne (Richard Coles) <torne@google.com> wrote:
+> On 31 May 2012 11:00, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> Hi Richard,
+>>
+>> On 29 May 2012 17:02, Torne (Richard Coles) <torne@google.com> wrote:
+>>> From: "Torne (Richard Coles)" <torne@google.com>
 >>>
->>> diff --git a/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
->>> b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
->>> new file mode 100644
->>> index 0000000..4272d06
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
->>> @@ -0,0 +1,15 @@
->>> +TI Watchdog Timer (WDT) Controller for OMAP
+>>> MMC CSD info can specify very large, ridiculous timeouts, big enough to
+>>> overflow timeout_ns on 32-bit machines. This can result in the card
+>>> timing out on every operation because the wrapped timeout value is far
+>>> too small.
+>>>
+>>> Fix the overflow by capping the result at 2 seconds.  Cards specifying
+>>> longer timeouts are almost certainly insane, and host controllers
+>>> generally cannot support timeouts that long in any case.
+>>>
+>>> 2 seconds should be plenty of time for any card to actually function;
+>>> the timeout calculation code is already using 1 second as a "worst case"
+>>> timeout for cards running in SPI mode.
+>>>
+>>> Signed-off-by: Torne (Richard Coles) <torne@google.com>
+>>> ---
+>>>  drivers/mmc/core/core.c |   11 ++++++++++-
+>>>  1 files changed, 10 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>>> index 0b6141d..3b4a9fc 100644
+>>> --- a/drivers/mmc/core/core.c
+>>> +++ b/drivers/mmc/core/core.c
+>>> @@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
+>>>        if (data->flags & MMC_DATA_WRITE)
+>>>                mult <<= card->csd.r2w_factor;
+>>>
+>>> -       data->timeout_ns = card->csd.tacc_ns * mult;
+>>> +       /*
+>>> +        * The timeout in nanoseconds may overflow with some cards. Cap it at
+>>> +        * two seconds both to avoid the overflow and also because host
+>>> +        * controllers cannot generally generate timeouts that long anyway.
+>>> +        */
+>>> +       if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
+>>> +               data->timeout_ns = card->csd.tacc_ns * mult;
+>>> +       else
+>>> +               data->timeout_ns = 2 * NSEC_PER_SEC;
 >>> +
->>> +Required properties:
->>> +- compatible:
->>> +  - "ti,omap2-wdt" for OMAP2
->>> +  - "ti,omap3-wdt" for OMAP3
->>> +  - "ti,omap4-wdt" for OMAP4
->>> +- ti,hwmods: Name of the hwmod associated to the WDT
->>> +
->>> +Examples:
->>> +
->>> +wdt2: wdt@73f98000 {
->>> +       compatible = "ti,omap4-wdt";
->>> +       ti,hwmods = "wd_timer2";
->>> +};
->>>     
 >>
->> Yes looks good. Thanks! Minor nit-pick in the example I would just copy
->> the omap4 node completely with the actual omap4 address :-)
->>
->>   
-> Oops, wrong addr, :). Perhaps we can drop address as you said, since the
-> right addresses are defined
-> in wd_timer2 hwmod (see [1]), and wdt also works without the address as
-> follows.
-> 
-> diff --git a/arch/arm/boot/dts/omap2.dtsi b/arch/arm/boot/dts/omap2.dtsi
-> index f2ab4ea..0017bd8 100644
-> --- a/arch/arm/boot/dts/omap2.dtsi
-> +++ b/arch/arm/boot/dts/omap2.dtsi
-> @@ -63,5 +63,10 @@
->                        ti,hwmods = "uart3";
->                        clock-frequency = <48000000>;
->                };
-> +
-> +               wdt2: wdt {
-> +                       compatible = "ti,omap2-wdt";
-> +                       ti,hwmods = "wd_timer2";
-> +               };
->        };
-> };
-> diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-> index 99474fa..dbf8a5b 100644
-> --- a/arch/arm/boot/dts/omap3.dtsi
-> +++ b/arch/arm/boot/dts/omap3.dtsi
-> @@ -215,5 +215,10 @@
->                        compatible = "ti,omap3-hsmmc";
->                        ti,hwmods = "mmc3";
->                };
-> +
-> +               wdt2: wdt {
-> +                       compatible = "ti,omap3-wdt", "ti,omap2-wdt";
-> +                       ti,hwmods = "wd_timer2";
-> +               };
->        };
-> };
-> diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-> index 359c497..ce74e87 100644
-> --- a/arch/arm/boot/dts/omap4.dtsi
-> +++ b/arch/arm/boot/dts/omap4.dtsi
-> @@ -272,5 +272,10 @@
->                        ti,hwmods = "mmc5";
->                        ti,needs-special-reset;
->                };
-> +
-> +               wdt2: wdt {
-> +                       compatible = "ti,omap4-wdt", "ti,omap2-wdt";
-> +                       ti,hwmods = "wd_timer2";
-> +               };
->        };
-> };
-> 
-> Infos for omap3:
-> # dmesg|grep Machine
-> <6>[    0.000000] Machine: Generic OMAP3 (Flattened Device Tree), model:
-> TI OMAP3 EVM (OMAP3530, AM/DM37x)
-> # dmesg|grep omap_wdt_probe
-> <4>[    2.552825] in omap_wdt_probe: 299, res->start = 0x48314000
-> 
-> Infos for omap4:
-> root@localhost:/root> dmesg|grep Machine
-> [    0.000000] Machine: Generic OMAP4 (Flattened Device Tree), model: TI
-> OMAP4 SDP board
-> root@localhost:/root> dmesg|grep omap_wdt_probe
-> [    1.687896] in omap_wdt_probe: 299, res->start = 0x4a314000
-> 
-> So can I drop the wdt addr from dts file? otherwise it is not feasible
-> to add omap2 wdt node in omap2.dtsi
-> due to different addrs for omap2420 and omap2430.
+>> The above looks OK to me, although if doing this for tacc_ns we might
+>> want to do this for tacc_clks as well. Could we include that is this
+>> patch as well?
+>
+> timeout_clks can't overflow, that I can see: the highest possible
+> value for tacc_clks is 25500 (it's an 8 bit field specified in
+> 100-clock increments) and the highest mult is 12800 (r2w_factor only
+> goes up to 128). This only makes 0x13747800 :)
+>
 
-Benoit, what is your preference here?
+Thanks for sorting this out and sorry for me being too lazy to read
+the spec. :-)
 
-Cheers
-Jon
+Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+
+Kind regards
+Ulf Hansson
