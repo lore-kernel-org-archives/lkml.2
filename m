@@ -1,76 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab2EaOrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:47:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37810 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751799Ab2EaOrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:47:12 -0400
-Date: Thu, 31 May 2012 10:31:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Ingo Molnar <mingo@redhat.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Use of high-res timers
-In-Reply-To: <alpine.LFD.2.02.1205310932240.3231@ionos>
-Message-ID: <Pine.LNX.4.44L0.1205311004050.1580-100000@iolanthe.rowland.org>
+	id S1755217Ab2EaOvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:51:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751799Ab2EaOvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:51:03 -0400
+Date: Thu, 31 May 2012 11:50:42 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Feng Tang <feng.tang@intel.com>
+Cc: David Ahern <dsahern@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] perf script: Replace "struct thread" with "struct
+ addr_location" as a parameter for "process_event()"
+Message-ID: <20120531145042.GA28571@infradead.org>
+References: <1338446072-24655-1-git-send-email-feng.tang@intel.com>
+ <1338446072-24655-2-git-send-email-feng.tang@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338446072-24655-2-git-send-email-feng.tang@intel.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012, Thomas Gleixner wrote:
+Em Thu, May 31, 2012 at 02:34:31PM +0800, Feng Tang escreveu:
+> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+> index 8e395a5..282e206 100644
+> --- a/tools/perf/builtin-script.c
+> +++ b/tools/perf/builtin-script.c
+> @@ -405,9 +405,10 @@ static void process_event(union perf_event *event __unused,
+>  			  struct perf_sample *sample,
+>  			  struct perf_evsel *evsel,
+>  			  struct machine *machine,
+> -			  struct thread *thread)
+> +			  struct addr_location *al __unused)
 
-> > 	I need timed intervals with reliable lower bounds.  Let's say
-> > 	I call ktime_get twice, maybe once in an interrupt handler and
-> > 	once in an hrtimer callback (not necessarily on the same CPU).
-> > 	Some action has to be taken no earlier than 1 ms after the 
-> > 	first call.  If the second call returns a value that is at 
-> > 	least 1 ms larger than the first call, is that enough of a 
-> > 	guarantee?  If not, how much larger does it have to be?
-> 
-> ktime_get() is precise. Can you explain what you are trying to solve ?
+Why the __unused modifier, since you...
 
-Here's an example.  A hardware device accesses a software data
-structure via DMA, and the driver needs to change the data structure.  
-However, the data can't be updated safely while the device is using it.
-Furthermore, we know that the device may continue to access the data
-for as long as 1 ms after being told to stop (because of internal
-caches and such).
+>  {
+>  	struct perf_event_attr *attr = &evsel->attr;
+> +	struct thread *thread = al->thread;
 
-It's okay to wait longer than 1 ms, but we'd like to minimize the wait 
-time in order to avoid delaying I/O unnecessarily.  Therefore:
+... are using al?
+  
+>  	if (output[attr->type].fields == 0)
+>  		return;
+> @@ -520,7 +521,7 @@ static int process_sample_event(struct perf_tool *tool __used,
+>  	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+>  		return 0;
+>  
+> -	scripting_ops->process_event(event, sample, evsel, machine, thread);
+> +	scripting_ops->process_event(event, sample, evsel, machine, &al);
+>  
+>  	evsel->hists.stats.total_period += sample->period;
+>  	return 0;
+> diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+> index 4c1b3d7..af9a6a4 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-perl.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+> @@ -256,7 +256,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+>  				    struct perf_sample *sample,
+>  				    struct perf_evsel *evsel,
+>  				    struct machine *machine __unused,
+> -				    struct thread *thread)
+> +				    struct addr_location *al __unused)
 
-    (1) The driver removes the pointer to the data structure from
-	the device's DMA list, then calls ktime_get, adds 1 ms, and
-	stores the result.
+Ditto
 
-    (2) The driver waits for while (details are unimportant).
+>  {
+>  	struct format_field *field;
+>  	static char handler[256];
+> @@ -268,6 +268,7 @@ static void perl_process_tracepoint(union perf_event *pevent __unused,
+>  	int cpu = sample->cpu;
+>  	void *data = sample->raw_data;
+>  	unsigned long long nsecs = sample->time;
+> +	struct thread *thread = al->thread;
+>  	char *comm = thread->comm;
+>  
+>  	dSP;
+> @@ -346,7 +347,7 @@ static void perl_process_event_generic(union perf_event *pevent __unused,
+>  				       struct perf_sample *sample,
+>  				       struct perf_evsel *evsel __unused,
+>  				       struct machine *machine __unused,
+> -				       struct thread *thread __unused)
+> +				       struct addr_location *al __unused)
 
-    (3) Some time later, the driver calls ktime_get again and compares 
-	the stored value to the new value.  If the new value is 
-	smaller, go back to step (2).
+Here it seems ok
 
-    (4) Now the driver knows that at least 1 ms has passed since (1),
-	and therefore any ongoing DMA has finished and the pointer has
-	been dropped from the device's cache.  Thus the device cannot
-	be doing DMA to the data structure any more, so the data can be
-	updated safely.
+>  {
+>  	dSP;
+>  
+> @@ -372,10 +373,10 @@ static void perl_process_event(union perf_event *pevent,
+>  			       struct perf_sample *sample,
+>  			       struct perf_evsel *evsel,
+>  			       struct machine *machine,
+> -			       struct thread *thread)
+> +			       struct addr_location *al)
 
-The key here is the assumption in step (4): If the new value from
-ktime_get exceeds the stored value then one millisecond of time really
-has elapsed.  I can imagine this might not hold true if the two calls
-to ktime_get were made on different CPUs, or possibly for other
-reasons.
+And here it is correctly without the __unused marker
 
-So my question is: What value should be stored in step (1) to guarantee 
-that the assumption is value?
-
-More or less equivalently, what is the relative error between two calls 
-of ktime_get?
-
-Alan Stern
-
+Check the others please
