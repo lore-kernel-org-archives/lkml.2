@@ -1,128 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758287Ab2EaST7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:19:59 -0400
-Received: from na3sys010aog101.obsmtp.com ([74.125.245.70]:47600 "HELO
-	na3sys010aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758091Ab2EaST5 (ORCPT
+	id S1758279Ab2EaSYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:24:18 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:43020 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757174Ab2EaSYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:19:57 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sb_edac: Only register mce_decode_chain once
-Date: Thu, 31 May 2012 11:19:51 -0700
-Message-Id: <1338488391-20755-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 31 May 2012 14:24:16 -0400
+Date: Thu, 31 May 2012 14:17:12 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        "axboe@kernel.dk" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 2/2] xen/blkfront: Add BUG_ON to deal with
+ misbehaving backends.
+Message-ID: <20120531181712.GA19700@phenom.dumpdata.com>
+References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com>
+ <1337982603-15692-3-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1205281111460.26786@kaball-desktop>
+ <4FC4A10F0200007800086842@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC4A10F0200007800086842@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roland Dreier <roland@purestorage.com>
+> >> @@ -145,6 +145,7 @@ static void add_id_to_freelist(struct blkfront_info 
+> > *info,
+> >>  			       unsigned long id)
+> >>  {
+> >>  	info->shadow[id].req.u.rw.id  = info->shadow_free;
+> >> +	BUG_ON(info->shadow[id].request == NULL);
+> 
+> This only catches a small sub-portion of possible bad backend
+> behavior. Checking (as the very first thing in the function) e.g.
+> 
+> info->shadow[id].req.u.rw.id == id
+> 
+> would seem to cover a broader set (based on my recent looking
+> at similar mismatches apparently resulting from the qdisk
+> backend occasionally sending bad/duplicate responses).
+> 
+> But take this with the below applied here too.
+> 
+> >>  	info->shadow[id].request = NULL;
+> >>  	info->shadow_free = id;
+> >>  }
+> >> @@ -746,6 +747,12 @@ static irqreturn_t blkif_interrupt(int irq, void 
+> > *dev_id)
+> >>  
+> >>  		bret = RING_GET_RESPONSE(&info->ring, i);
+> >>  		id   = bret->id;
+> >> +		/*
+> >> +		 * The backend has messed up and given us an id that we would
+> >> +		 * never have given to it (we stamp it up to BLK_RING_SIZE -
+> >> +		 * look in get_id_from_freelist.
+> >> +		 */
+> >> +		BUG_ON(id >= BLK_RING_SIZE);
+> >>  		req  = info->shadow[id].request;
+> >>  
+> >>  		if (bret->operation != BLKIF_OP_DISCARD)
+> > 
+> > While we should certainly check whether bret->id is valid before
+> > using it, is it actually correct that the frontend BUGs in response of a
+> > backend bug?
 
-I was lucky enough to get a 4-socket Sandy Bridge system.
-Unfortunately it hangs on boot when loading the sb_edac module, with
-the NMI watchdog giving the following trace:
+The 'id' is used to get the 'struct request' and to do do the grant unmaps.
+Since it would be outside the shadow structure it would fetch garbage as
+'struct request'.
 
-    EDAC MC0: Giving out device to 'sbridge_edac.c' 'Sandy Bridge Socket#0': DEV 0000:3f:0e.0
-    EDAC MC1: Giving out device to 'sbridge_edac.c' 'Sandy Bridge Socket#1': DEV 0000:7f:0e.0
-    EDAC MC2: Giving out device to 'sbridge_edac.c' 'Sandy Bridge Socket#2': DEV 0000:bf:0e.0
-    ------------[ cut here ]------------
-    WARNING: at /home/roland/linux-2.6/kernel/watchdog.c:242 watchdog_overflow_callback+0x9a/0xc0()
-    Hardware name:
-    Watchdog detected hard LOCKUP on cpu 11
-    Modules linked in: sb_edac(+) edac_core kvm_intel coretemp kvm mei acpi_pad joydev ghash_clmulni_intel hid_generic aesni_intel cryptd aes_x86_64 acpi_power_meter lpc_ich shpchp microcode usbhid hid ses enclosure bnx2x libcrc32c megaraid_sas mdio
-    Pid: 2408, comm: modprobe Tainted: G        W    3.4.0+ #1
-    Call Trace:
-     <NMI>  [<ffffffff810515ff>] warn_slowpath_common+0x7f/0xc0
-     [<ffffffff810516f6>] warn_slowpath_fmt+0x46/0x50
-     [<ffffffff810db3da>] watchdog_overflow_callback+0x9a/0xc0
-     [<ffffffff81115ffc>] __perf_event_overflow+0x9c/0x220
-     [<ffffffff81024faa>] ? x86_perf_event_set_period+0xda/0x150
-     [<ffffffff81116ad4>] perf_event_overflow+0x14/0x20
-     [<ffffffff8102a190>] intel_pmu_handle_irq+0x180/0x300
-     [<ffffffff813a0ed0>] ? ghes_read_estatus+0x90/0x180
-     [<ffffffff816550d1>] perf_event_nmi_handler+0x21/0x30
-     [<ffffffff81654851>] nmi_handle.isra.0+0x51/0x80
-     [<ffffffff81654a21>] do_nmi+0x1a1/0x380
-     [<ffffffff81653e7c>] end_repeat_nmi+0x1a/0x1e
-     [<ffffffff8107aa05>] ? atomic_notifier_chain_register+0x35/0x60
-     [<ffffffff8107aa05>] ? atomic_notifier_chain_register+0x35/0x60
-     [<ffffffff8107aa05>] ? atomic_notifier_chain_register+0x35/0x60
-     <<EOE>>  [<ffffffff8102b5dd>] mce_register_decode_chain+0x2d/0x120
-     [<ffffffffa00fdbdb>] sbridge_probe+0xa86/0xbab [sb_edac]
-     [<ffffffff811eaf05>] ? sysfs_link_sibling+0xa5/0xe0
-     [<ffffffff81339c1c>] local_pci_probe+0x5c/0xd0
-     [<ffffffff8133b551>] pci_device_probe+0x101/0x120
-     [<ffffffff813fbf3e>] driver_probe_device+0x7e/0x220
-     [<ffffffff813fc18b>] __driver_attach+0xab/0xb0
-     [<ffffffff813fc0e0>] ? driver_probe_device+0x220/0x220
-     [<ffffffff813fa376>] bus_for_each_dev+0x56/0x90
-     [<ffffffff813fba5e>] driver_attach+0x1e/0x20
-     [<ffffffff813fb610>] bus_add_driver+0x1a0/0x270
-     [<ffffffffa000a000>] ? 0xffffffffa0009fff
-     [<ffffffffa000a000>] ? 0xffffffffa0009fff
-     [<ffffffff813fc6e6>] driver_register+0x76/0x130
-     [<ffffffffa000a000>] ? 0xffffffffa0009fff
-     [<ffffffff8133b225>] __pci_register_driver+0x55/0xd0
-     [<ffffffffa000a033>] sbridge_init+0x33/0x1000 [sb_edac]
-     [<ffffffff8100203f>] do_one_initcall+0x3f/0x170
-     [<ffffffff810b2c0e>] sys_init_module+0xbe/0x230
-     [<ffffffff8165b7a9>] system_call_fastpath+0x16/0x1b
-    ---[ end trace a7919e7f17c0a727 ]---
+> > 
+> > If the IO doesn't involve the root disk, the guest might be able to
+> > function correctly without communicating with the backend at all.
+> > I think we should WARN and return error. Maybe also call blkfront_remove
+> > if we can.
+> 
+> I very much agree to this.
 
-The problem is that the system has multiple memory controllers but
-registers the same static notifier_block multiple times.  Fix this by
-moving the registration/unregistration to the module init/exit function.
+The blkfront_remove part is .. that is going to take some surgery to do
+and I don't think I am going to be able to attempt that within the next couple
+of weeks. So lets put that on the TODO list and just do this one?
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+>From 4aabb5b44778fc0c0b8d4f5a2e2cd8e8490064d7 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Fri, 25 May 2012 17:34:51 -0400
+Subject: [PATCH] xen/blkfront: Add WARN to deal with misbehaving backends.
+
+Part of the ring structure is the 'id' field which is under
+control of the frontend. The frontend stamps it with "some"
+value (this some in this implementation being a value less
+than BLK_RING_SIZE), and when it gets a response expects
+said value to be in the response structure. We have a check
+for the id field when spolling new requests but not when
+de-spolling responses.
+
+We also add an extra check in add_id_to_freelist to make
+sure that the 'struct request' was not NULL - as we cannot
+pass a NULL to __blk_end_request_all, otherwise that crashes
+(and all the operations that the response is dealing with
+end up with __blk_end_request_all).
+
+Lastly we also print the name of the operation that failed.
+
+[v1: s/BUG/WARN/ suggested by Stefano]
+[v2: Add extra check in add_id_to_freelist]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/edac/sb_edac.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/block/xen-blkfront.c |   39 +++++++++++++++++++++++++++++----------
+ 1 files changed, 29 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
-index 4adaf4b..a21ace0 100644
---- a/drivers/edac/sb_edac.c
-+++ b/drivers/edac/sb_edac.c
-@@ -1604,8 +1604,6 @@ static void sbridge_unregister_mci(struct sbridge_dev *sbridge_dev)
- 	debugf0("MC: " __FILE__ ": %s(): mci = %p, dev = %p\n",
- 		__func__, mci, &sbridge_dev->pdev[0]->dev);
- 
--	mce_unregister_decode_chain(&sbridge_mce_dec);
--
- 	/* Remove MC sysfs nodes */
- 	edac_mc_del_mc(mci->dev);
- 
-@@ -1682,7 +1680,6 @@ static int sbridge_register_mci(struct sbridge_dev *sbridge_dev)
- 		goto fail0;
- 	}
- 
--	mce_register_decode_chain(&sbridge_mce_dec);
- 	return 0;
- 
- fail0:
-@@ -1811,8 +1808,10 @@ static int __init sbridge_init(void)
- 
- 	pci_rc = pci_register_driver(&sbridge_driver);
- 
--	if (pci_rc >= 0)
-+	if (pci_rc >= 0) {
-+		mce_register_decode_chain(&sbridge_mce_dec);
- 		return 0;
-+	}
- 
- 	sbridge_printk(KERN_ERR, "Failed to register device with error %d.\n",
- 		      pci_rc);
-@@ -1828,6 +1827,7 @@ static void __exit sbridge_exit(void)
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 60eed4b..c7ef8a4 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -144,11 +144,22 @@ static int get_id_from_freelist(struct blkfront_info *info)
+ static void add_id_to_freelist(struct blkfront_info *info,
+ 			       unsigned long id)
  {
- 	debugf2("MC: " __FILE__ ": %s()\n", __func__);
- 	pci_unregister_driver(&sbridge_driver);
-+	mce_unregister_decode_chain(&sbridge_mce_dec);
++	BUG_ON(info->shadow[id].req.u.rw.id != id);
+ 	info->shadow[id].req.u.rw.id  = info->shadow_free;
++	BUG_ON(info->shadow[id].request == NULL);
+ 	info->shadow[id].request = NULL;
+ 	info->shadow_free = id;
  }
  
- module_init(sbridge_init);
++static const char *op_name(int op)
++{
++	const char *names[BLKIF_OP_DISCARD+1] = {
++		"read" , "write", "barrier", "flush", "reserved", "discard"};
++
++	if (op > BLKIF_OP_DISCARD)
++		return "unknown";
++	return names[op];
++}
+ static int xlbd_reserve_minors(unsigned int minor, unsigned int nr)
+ {
+ 	unsigned int end = minor + nr;
+@@ -746,6 +757,18 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+ 
+ 		bret = RING_GET_RESPONSE(&info->ring, i);
+ 		id   = bret->id;
++		/*
++		 * The backend has messed up and given us an id that we would
++		 * never have given to it (we stamp it up to BLK_RING_SIZE -
++		 * look in get_id_from_freelist.
++		 */
++		if (id >= BLK_RING_SIZE) {
++			/* We can't safely get the 'struct request' as
++			 * the id is busted. So limp along. */
++			WARN(1, "%s: response to %s has incorrect id (%d)!\n",
++			     info->gd->disk_name, op_name(bret->operation), id);
++			continue;
++		}
+ 		req  = info->shadow[id].request;
+ 
+ 		if (bret->operation != BLKIF_OP_DISCARD)
+@@ -758,8 +781,8 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+ 		case BLKIF_OP_DISCARD:
+ 			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
+ 				struct request_queue *rq = info->rq;
+-				printk(KERN_WARNING "blkfront: %s: discard op failed\n",
+-					   info->gd->disk_name);
++				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
++					   info->gd->disk_name, op_name(bret->operation));
+ 				error = -EOPNOTSUPP;
+ 				info->feature_discard = 0;
+ 				info->feature_secdiscard = 0;
+@@ -771,18 +794,14 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
+ 		case BLKIF_OP_FLUSH_DISKCACHE:
+ 		case BLKIF_OP_WRITE_BARRIER:
+ 			if (unlikely(bret->status == BLKIF_RSP_EOPNOTSUPP)) {
+-				printk(KERN_WARNING "blkfront: %s: write %s op failed\n",
+-				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+-				       "barrier" :  "flush disk cache",
+-				       info->gd->disk_name);
++				printk(KERN_WARNING "blkfront: %s: %s op failed\n",
++				       info->gd->disk_name, op_name(bret->operation));
+ 				error = -EOPNOTSUPP;
+ 			}
+ 			if (unlikely(bret->status == BLKIF_RSP_ERROR &&
+ 				     info->shadow[id].req.u.rw.nr_segments == 0)) {
+-				printk(KERN_WARNING "blkfront: %s: empty write %s op failed\n",
+-				       info->flush_op == BLKIF_OP_WRITE_BARRIER ?
+-				       "barrier" :  "flush disk cache",
+-				       info->gd->disk_name);
++				printk(KERN_WARNING "blkfront: %s: empty %s op failed\n",
++				       info->gd->disk_name, op_name(bret->operation));
+ 				error = -EOPNOTSUPP;
+ 			}
+ 			if (unlikely(error)) {
 -- 
-1.7.9.5
+1.7.7.6
 
