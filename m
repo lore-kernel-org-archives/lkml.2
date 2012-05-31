@@ -1,55 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786Ab2EaBzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 30 May 2012 21:55:39 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:38078 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757708Ab2EaBzh convert rfc822-to-8bit (ORCPT
+	id S1757790Ab2EaB4l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 30 May 2012 21:56:41 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57543 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757718Ab2EaB4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 30 May 2012 21:55:37 -0400
+	Wed, 30 May 2012 21:56:38 -0400
+Date: Wed, 30 May 2012 18:56:36 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        dhillf@gmail.com, mhocko@suse.cz,
+        Andrew Morton <akpm@linux-foundation.org>, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH -V7 04/14] hugetlb: use mmu_gather instead of a temporary
+ linked list for accumulating pages
+In-Reply-To: <1338388739-22919-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1205301844010.25774@chino.kir.corp.google.com>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <cover.1338398567.git.rubini@gnudd.com>
-References: <cover.1338398567.git.rubini@gnudd.com>
-Date: Thu, 31 May 2012 09:55:33 +0800
-Message-ID: <CACRpkdZqD0_5oRwBg2J7ZyCK9=ynGOZnSWrQmtCyph9C3W3jDA@mail.gmail.com>
-Subject: Re: [PATCH RFC 0/3] i2c-nomadik changes
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org, Alan Cox <alan@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 1:45 AM, Alessandro Rubini <rubini@gnudd.com> wrote:
+On Wed, 30 May 2012, Aneesh Kumar K.V wrote:
 
-> In the STA2X11 I/O hub we are exporting a number of AMBA peripherals
-> to the PCI world. Using a generic pci-amba driver there is no further
-> code for each device, provided they are already registered under the
-> AMBA bus.  I already submitted the generic bridge
-> (https://lkml.org/lkml/2012/5/28/194).
+> diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+> index cc9281b..ff233e4 100644
+> --- a/fs/hugetlbfs/inode.c
+> +++ b/fs/hugetlbfs/inode.c
+> @@ -416,8 +416,8 @@ hugetlb_vmtruncate_list(struct prio_tree_root *root, pgoff_t pgoff)
+>  		else
+>  			v_offset = 0;
+>  
+> -		__unmap_hugepage_range(vma,
+> -				vma->vm_start + v_offset, vma->vm_end, NULL);
+> +		unmap_hugepage_range(vma, vma->vm_start + v_offset,
+> +				     vma->vm_end, NULL);
+>  	}
+>  }
+>  
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 217f528..c21e136 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -7,6 +7,7 @@
+>  
+>  struct ctl_table;
+>  struct user_struct;
+> +struct mmu_gather;
+>  
+>  #ifdef CONFIG_HUGETLB_PAGE
+>  
+> @@ -40,9 +41,10 @@ int follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
+>  			struct page **, struct vm_area_struct **,
+>  			unsigned long *, int *, int, unsigned int flags);
+>  void unmap_hugepage_range(struct vm_area_struct *,
+> -			unsigned long, unsigned long, struct page *);
+> -void __unmap_hugepage_range(struct vm_area_struct *,
+> -			unsigned long, unsigned long, struct page *);
+> +			  unsigned long, unsigned long, struct page *);
+> +void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vms,
 
-Yeah I buy this concept, it's a good way to share this code.
+s/vms/vma/
 
-> The cell-id I used in the table are the one for ux500 (only as far as
-> I know from the stn-8815 manuals) and the one for STA2X11.
+> +				unsigned long start, unsigned long end,
+> +				struct page *ref_page);
+>  int hugetlb_prefault(struct address_space *, struct vm_area_struct *);
+>  void hugetlb_report_meminfo(struct seq_file *);
+>  int hugetlb_report_node_meminfo(int, char *);
+> @@ -98,7 +100,6 @@ static inline unsigned long hugetlb_total_pages(void)
+>  #define follow_huge_addr(mm, addr, write)	ERR_PTR(-EINVAL)
+>  #define copy_hugetlb_page_range(src, dst, vma)	({ BUG(); 0; })
+>  #define hugetlb_prefault(mapping, vma)		({ BUG(); 0; })
+> -#define unmap_hugepage_range(vma, start, end, page)	BUG()
+>  static inline void hugetlb_report_meminfo(struct seq_file *m)
+>  {
+>  }
 
-I've tried a few times to get this driver working on the S8815 Calao
-dongle version of Nomadik 8815, but failed miserably (I managed
-to get DMA and MMC working, which I will likely try to merge.)
-I'm still trying to figure out why sometimes now and then.
+Why?
 
-So this doesn't make anything worse anyway.
+> @@ -112,13 +113,24 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
+>  #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
+>  #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
+>  #define huge_pte_offset(mm, address)	0
+> -#define dequeue_hwpoisoned_huge_page(page)	0
+> +static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+> +{
+> +	return 0;
+> +}
+> +
 
-Thanks for this nice patch set!
+Unrelated from this patchset.
 
-Yours,
-Linus Walleij
+>  static inline void copy_huge_page(struct page *dst, struct page *src)
+>  {
+>  }
+>  
+>  #define hugetlb_change_protection(vma, address, end, newprot)
+>  
+> +static inline void __unmap_hugepage_range(struct mmu_gather *tlb,
+> +			struct vm_area_struct *vma, unsigned long start,
+> +			unsigned long end, struct page *ref_page)
+> +{
+> +	BUG();
+> +}
+> +
+
+I think this should be done under the unmap_hugepage_range() definition 
+you removed (and change it to be a static inline function as well).
+
+>  #endif /* !CONFIG_HUGETLB_PAGE */
+>  
+>  #define HUGETLB_ANON_FILE "anon_hugepage"
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 9b97a5c..704a269 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -24,8 +24,9 @@
+>  
+>  #include <asm/page.h>
+>  #include <asm/pgtable.h>
+> -#include <linux/io.h>
+> +#include <asm/tlb.h>
+>  
+> +#include <linux/io.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/node.h>
+>  #include "internal.h"
+> @@ -2310,30 +2311,26 @@ static int is_hugetlb_entry_hwpoisoned(pte_t pte)
+>  		return 0;
+>  }
+>  
+> -void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+> -			    unsigned long end, struct page *ref_page)
+> +void __unmap_hugepage_range(struct mmu_gather *tlb, struct vm_area_struct *vma,
+> +			    unsigned long start, unsigned long end,
+> +			    struct page *ref_page)
+>  {
+> +	int force_flush = 0;
+
+Can this be bool?
+
+>  	struct mm_struct *mm = vma->vm_mm;
+>  	unsigned long address;
+>  	pte_t *ptep;
+>  	pte_t pte;
+>  	struct page *page;
+> -	struct page *tmp;
+>  	struct hstate *h = hstate_vma(vma);
+>  	unsigned long sz = huge_page_size(h);
+>  
+> -	/*
+> -	 * A page gathering list, protected by per file i_mmap_mutex. The
+> -	 * lock is used to avoid list corruption from multiple unmapping
+> -	 * of the same page since we are using page->lru.
+> -	 */
+> -	LIST_HEAD(page_list);
+> -
+>  	WARN_ON(!is_vm_hugetlb_page(vma));
+>  	BUG_ON(start & ~huge_page_mask(h));
+>  	BUG_ON(end & ~huge_page_mask(h));
+>  
+> +	tlb_start_vma(tlb, vma);
+>  	mmu_notifier_invalidate_range_start(mm, start, end);
+> +again:
+>  	spin_lock(&mm->page_table_lock);
+>  	for (address = start; address < end; address += sz) {
+>  		ptep = huge_pte_offset(mm, address);
+> @@ -2372,30 +2369,45 @@ void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+>  		}
+>  
+>  		pte = huge_ptep_get_and_clear(mm, address, ptep);
+> +		tlb_remove_tlb_entry(tlb, ptep, address);
+>  		if (pte_dirty(pte))
+>  			set_page_dirty(page);
+> -		list_add(&page->lru, &page_list);
+>  
+> +		page_remove_rmap(page);
+> +		force_flush = !__tlb_remove_page(tlb, page);
+> +		if (force_flush)
+> +			break;
+>  		/* Bail out after unmapping reference page if supplied */
+>  		if (ref_page)
+>  			break;
+>  	}
+> -	flush_tlb_range(vma, start, end);
+>  	spin_unlock(&mm->page_table_lock);
+> -	mmu_notifier_invalidate_range_end(mm, start, end);
+> -	list_for_each_entry_safe(page, tmp, &page_list, lru) {
+> -		page_remove_rmap(page);
+> -		list_del(&page->lru);
+> -		put_page(page);
+> +	/*
+> +	 * mmu_gather ran out of room to batch pages, we break out of
+> +	 * the PTE lock to avoid doing the potential expensive TLB invalidate
+> +	 * and page-free while holding it.
+> +	 */
+> +	if (force_flush) {
+> +		force_flush = 0;
+> +		tlb_flush_mmu(tlb);
+> +		if (address < end && !ref_page)
+> +			goto again;
+
+Shouldn't be copying "start" at the beginning of this function and then 
+updating that copy now and use it as the loop initialization?
+
+>  	}
+> +	mmu_notifier_invalidate_range_end(mm, start, end);
+> +	tlb_end_vma(tlb, vma);
+>  }
+>  
+>  void unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
+>  			  unsigned long end, struct page *ref_page)
+>  {
+> -	mutex_lock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> -	__unmap_hugepage_range(vma, start, end, ref_page);
+> -	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+> +	struct mm_struct *mm;
+> +	struct mmu_gather tlb;
+> +
+> +	mm = vma->vm_mm;
+> +
+> +	tlb_gather_mmu(&tlb, mm, 0);
+> +	__unmap_hugepage_range(&tlb, vma, start, end, ref_page);
+> +	tlb_finish_mmu(&tlb, start, end);
+>  }
+>  
+>  /*
