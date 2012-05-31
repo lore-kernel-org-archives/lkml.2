@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758116Ab2EaQkh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 12:40:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49444 "EHLO
+	id S1758148Ab2EaQlv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 12:41:51 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60327 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754755Ab2EaQkg (ORCPT
+	by vger.kernel.org with ESMTP id S1752132Ab2EaQlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 12:40:36 -0400
-Date: Thu, 31 May 2012 17:40:33 +0100
+	Thu, 31 May 2012 12:41:50 -0400
+Date: Thu, 31 May 2012 17:41:49 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org,
         Anthony Olech <Anthony.Olech@diasemi.com>
-Subject: Re: [PATCH 2/4] regmap: Make internal read/write functions reentrant
- from themselves.
-Message-ID: <20120531164033.GJ2666@opensource.wolfsonmicro.com>
-References: <201205311616.q4VGGZjR014516@sw-eng-lt-dc-vm2>
+Subject: Re: [PATCH 1/4] regmap: Reorganise internal read/write functions.
+Message-ID: <20120531164148.GK2666@opensource.wolfsonmicro.com>
+References: <201205311607.q4VG7avr012901@sw-eng-lt-dc-vm2>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5cSRzy0VGBWAML+b"
+	protocol="application/pgp-signature"; boundary="pWJxWxNlJUNgDlXi"
 Content-Disposition: inline
-In-Reply-To: <201205311616.q4VGGZjR014516@sw-eng-lt-dc-vm2>
+In-Reply-To: <201205311607.q4VG7avr012901@sw-eng-lt-dc-vm2>
 X-Cookie: You are fairminded, just and loving.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,66 +28,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---5cSRzy0VGBWAML+b
+--pWJxWxNlJUNgDlXi
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, May 31, 2012 at 04:19:36PM +0200, Krystian Garbaciak wrote:
+On Thu, May 31, 2012 at 04:11:12PM +0200, Krystian Garbaciak wrote:
 
-> Functions _regmap_update_bits() and _regmap_write() are modified
-> so they can be recurrently entered from the inside.
+> +static int _regmap_raw_write(struct regmap *map, unsigned int reg,
+> +			     const void *val, size_t val_len)
+> +{
+> +	void *_val = (void *)val;
 
-You should describe what you're doing here in more detail...
+This is scary...  why are we casting away const here?
 
-> The internal reading functions need no modification for current implementation
-> of indirect access.
-
-So the subject should really be "Make internal write functions
-reentrant"?
-
-> -		map->format.format_val(map->work_buf + map->format.reg_bytes
-> -				       + map->format.pad_bytes, val);
-> -		return _regmap_raw_write(map, reg,
-> -					 map->work_buf +
-> -					 map->format.reg_bytes +
-> -					 map->format.pad_bytes,
-> +		/* Using stack for value data, to make function reentrant */
-> +		map->format.format_val(&val, val);
-> +		return _regmap_raw_write(map, reg, &val,
-
-We can't safely do this for all buses, some want to DMA and you can't
-DMA from stack.  This also means that we'll no longer be able to send a
-single buffer to the device as we'll never have the value immediately
-following the register address and padding any more.  That'll increase
-overhead on many systems, you can often see the handover on gathers on a
-scope.
-
-I don't understand why we can't take the decision to write the page
-register before we start using the buffer?
-
-Also, it seems like your mailing setup is a bit broken - these messages
-aren't being threaded with each other.
-
---5cSRzy0VGBWAML+b
+--pWJxWxNlJUNgDlXi
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPx576AAoJEBus8iNuMP3d8mMP/1q2ajQuCAMiHnWD+06Wz75G
-+awxqlqptb+jkkxrbZfA8vvQEDfpb0vLiaDK0MmnsA0+Q92aN7ckpXdAZGNR93rl
-bSC4RpBaXddQ/2OnjPXMmjlnsxRGdmkvO4pf59Lgvs+2/uxw40rl7E5UICZk1RzE
-SizXVJUhS9Gbkr8NOIbSo2m6A+n3jtzVzNlSzWUGFZuZDHr+wlrTMjQwsvGiOQUi
-H2WnFKyCNEQEBsKcxU5XUq4ZZLr6CiOfRw9jidRV32xt/US/5whltIpdwuvCd6T4
-7XeaEXS8yAKn5U0S2CGszSg7tYrCs61Jxksnm0FNPR5dYCYlzlBMXxM6qhDGey7o
-26GsYaAjzKRPCAXEHzUMxpog2zWs+3u1eDwzm3iEB1Wm6MEYC9MiLP1a/zeWt2wn
-9FyXGgs3KCvsFSWfSp2jeX2HAeuDxjCP998BbD04MePcBp94i3GwfUhRBuU7RV7o
-L+DKVHpGJBHdsdklZBjA0DnnjOCzz7LBOVsyDVs1HTNrxAJzLJGgTxUItlKP/pE/
-qZIz7zzUqrmgmS2C0jPvEW2pVA3uYqhw0F1Rs1NaxaFfYzRYQ+20rf60V9uhiQaT
-puDs55UW/Ah6GPUkOxLNfPpzLEPhIesP/jTPkfmzrmQkdMwZtOHHmUV0B4bWOoRG
-f+5n7XrycXuNxxv81Te1
-=0akM
+iQIcBAEBAgAGBQJPx59GAAoJEBus8iNuMP3d+NUP/0prqnMCWBJnFtuc9aq4zLDk
+H6RvDSpGemTxWRw2q39KsTGq2K1ToE/1CnQmfWmRujZTd1Q2UHh4aZSXL880IVmf
+Ho/1lgEb9cjeoBVlhpHfv94omV2ebnKCJKQ6RLl4Vp8OdWcfxa4oJSu5XWuK+En5
+VsvPFNV5rcTNzvx1zt+AlaaQRrs8xqKe7RVeI68qKNAAF0eIdq+lNBYdP5TjxgNK
+7T27mYpHb0/7hl7wch/LFQ+dLL8dI8qxa+1MjoOZ4wXhnTMrO3dFzW6kPnE7ps+J
++XyXR0pzpp1DnWDJ+V6CpsHKWCty3W09CP3WMuXHbZPgG9OfpQ8l3JaiXwxR+AWw
+ax6NDt8jh6gU4avZlwZLjHXNYITyxx4mPjEvym5J1O1qi3pJw5r49kAk0S4a5Kgw
+wRrVpDcQZotUJL/RqsxcaqAiXM3NhXKZ2wfSlL0JkBbHCOAqfRDG7rGrxPuHehW/
+KCrOHbzwdws1IZ9MgSlbp5kN7MRS8hOVj3p8EsjOgfmwJ2lanDOvH+H5wrbFR5S9
+yy/mRAbNlZY3Xjz816doXuPpUQMIAFtl5spEIxi0abYqB6wnLa+XJkZHFY8OszsJ
+xVeib5lOJSBwjwOD1bl4UU3RscTEkuHZGKY940dLWfloNATC6vrlS1PCS+REefNk
+Fb2AEW18OGgs3tDvTuow
+=doz2
 -----END PGP SIGNATURE-----
 
---5cSRzy0VGBWAML+b--
+--pWJxWxNlJUNgDlXi--
