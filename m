@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab2EaSI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:08:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64460 "EHLO mga14.intel.com"
+	id S1756337Ab2EaSI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:08:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15396 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab2EaSIZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:08:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="106383508"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        Borislav Petkov <bp@amd64.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
- platform
-Thread-Topic: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
- platform
-Thread-Index: AQHNP1RDM9HNPWGJrkGbs3SSikmUqJbkLqPQ
-Date: Thu, 31 May 2012 18:08:21 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923352000E2@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
- <20120531161139.GA13939@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351FFB11@SHSMSX101.ccr.corp.intel.com>
- <20120531173137.GA31735@phenom.dumpdata.com>
-In-Reply-To: <20120531173137.GA31735@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752994Ab2EaSI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:08:26 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 05/11] mtip32xx: Set block queue boundary variables
+References: <4FC57B1B.5010901@micron.com> <4FC7130B.6040506@kernel.dk>
+	<4FC794BD.1000309@micron.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 31 May 2012 13:12:07 -0400
+In-Reply-To: <4FC794BD.1000309@micron.com> (Asai Thambi S. P.'s message of
+	"Thu, 31 May 2012 08:56:45 -0700")
+Message-ID: <x49sjegb7h4.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Thu, May 31, 2012 at 05:27:53PM +0000, Liu, Jinsong wrote:
->> Konrad Rzeszutek Wilk wrote:
->>> On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
->>>>> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00
->>>>> 2001
->>>> From: root <root@ljsromley.bj.intel.com>
->>> 
->>> Also your git author is busted. I fixed it up for you but
->>> you might want to run 'git config --user.name' and such
+Asai Thambi S P <asamymuthupa@micron.com> writes:
+
+> On 5/30/2012 11:43 PM, Jens Axboe wrote:
+>
+>> On 05/30/2012 03:42 AM, Asai Thambi S P wrote:
+>>>
+>>> Set the following block queue boundary variables
+>>> 	* max_hw_sectors
+>>> 	* max_segment_size
+>>> 	* nr_requests
+>>>
+>>> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+>>> ---
+>>>  drivers/block/mtip32xx/mtip32xx.c |    4 ++++
+>>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+>>> index 9fe897d..801e70c 100644
+>>> --- a/drivers/block/mtip32xx/mtip32xx.c
+>>> +++ b/drivers/block/mtip32xx/mtip32xx.c
+>>> @@ -3631,7 +3631,11 @@ skip_create_disk:
+>>>  	set_bit(QUEUE_FLAG_NONROT, &dd->queue->queue_flags);
+>>>  	blk_queue_max_segments(dd->queue, MTIP_MAX_SG);
+>>>  	blk_queue_physical_block_size(dd->queue, 4096);
+>>> +	blk_queue_max_hw_sectors(dd->queue, 0xffff);
+>>> +	blk_queue_max_segment_size(dd->queue, 0x400000);
+>>>  	blk_queue_io_min(dd->queue, 4096);
+>>> +	dd->queue->nr_requests = 255;
 >> 
->> Ah, I forgot it. Thanks for fix it.
+>> ->nr_requests isn't a boundary variable you set for the queue. It's set
+>> by the core bits, or by the user via the sysfs interface.
 >> 
->>> 
->>>> Date: Fri, 1 Jun 2012 03:12:51 +0800
->>>> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
->>> 
->>> What about the cvt_gate_to_trap? Does that need something similar
->>> to "xen/mce: Register native mce handler as vMCE bounce back point"
->>> ?
+>> So you should not touch that from the driver.
 >> 
->> That's vMCE injection logic.
-> 
-> Are you sure about it? The comments in it speak of piggybacking on
-> the native MCE handling routines. But since that is not used anymore
-> do you need to use a different mechanism?
+>
+> Ok.
+>
+> I saw scsi lib module changing it, so thought of changing the value close to
+> device queue depth.
 
-What is not used anymore? what's your concern about cvt_gate_to_trap? I really confused here.
-Could you elaborate more?
+That's actually a fair point.  What is the device queue depth for this
+card?
 
-> 
->> anyway, I will present new round of patch according to Boris and
->> your commends, as following [Patch 1/3]
->> xen-mce-Add-mcelog-support-for-Xen-platform.patch [Patch 2/3]
->> X86-MCE-AMD-Adjust-initcall-sequence-for-xen.patch [Patch 3/3]
->> Register-native-mce-handler-as-vMCE-bounce-back-poin.patch 
-> 
-> Please look at
-> http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=894c02d298cb638f3ff04bdbf41f646a0223bf05
-> as it has some of the mistakes fixed (spelling mistakes, wrong title,
-> etc).   
-
-Seems you have checkin my patch for vMCE injection to your tree.
-If yes, I quit my [Patch 3/3] sent out half hour ago.
-
->>> 
->>> I stuck all these patches on devel/mce.v2 on
->>> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
->> 
->> Hmm, we discussed base-tree problem before, and decided to use linus
->> latest tree. 
->> I pull this morning and rebase my patches based on
->> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
->> c/s a01ee165a132fadb57659d26246e340d6ac53265
-> 
-> Which I think the tree is based on too.
-
-So it would not be stuck?
-
-Thanks,
-Jinsong
+Cheers,
+Jeff
