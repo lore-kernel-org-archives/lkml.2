@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab2EaFsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:48:40 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:41131 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab2EaFsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:48:39 -0400
-Date: Thu, 31 May 2012 11:17:03 +0530
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
-        rientjes@google.com, mhocko@suse.cz, akpm@linux-foundation.org,
-        hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH -V7 01/14] hugetlb: rename max_hstate to
- hugetlb_max_hstate
-Message-ID: <20120531054703.GF24855@skywalker.linux.vnet.ibm.com>
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1338388739-22919-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20120531004838.GC401@localhost.localdomain>
+	id S1753408Ab2EaFvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:51:15 -0400
+Received: from verein.lst.de ([213.95.11.211]:40702 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751865Ab2EaFvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 01:51:14 -0400
+X-Greylist: delayed 505 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 01:51:14 EDT
+Date: Thu, 31 May 2012 07:42:47 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH] target/file: Drop O_SYNC in favor of implict
+	vfs_fsync_range for writes
+Message-ID: <20120531054247.GB29553@lst.de>
+References: <1338422263-19874-1-git-send-email-nab@linux-iscsi.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120531004838.GC401@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12053020-3568-0000-0000-000001E74252
+In-Reply-To: <1338422263-19874-1-git-send-email-nab@linux-iscsi.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 08:48:40PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, May 30, 2012 at 08:08:46PM +0530, Aneesh Kumar K.V wrote:
-> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-> > 
-> > Rename max_hstate to hugetlb_max_hstate.  We will be using this from other
-> > subsystems like hugetlb controller in later patches.
-> > 
-> > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> > Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Acked-by: Hillf Danton <dhillf@gmail.com>
-> > Acked-by: Michal Hocko <mhocko@suse.cz>
-> > Cc: Andrea Arcangeli <aarcange@redhat.com>
-> > Cc: Johannes Weiner <hannes@cmpxchg.org>
+On Wed, May 30, 2012 at 11:57:43PM +0000, Nicholas A. Bellinger wrote:
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
 > 
-> Your SOB needs to be the last thing.
+> This patch converts fd_execute_cmd() code to drop O_SYNC usage
+> (the original default) in favor of always preforming an implict
+> SCSI forced unit access (FUA) operation using vfs_fsync_range()
+> based on LBA + SectorCount after each completed FILEIO backend write.
+> 
+> This conversion was inspired by Linus's thoughts on O_SYNC usage in
+> the thread: http://www.spinics.net/lists/linux-fsdevel/msg55681.html
+> 
+>   "O_SYNC is the absolutely anti-thesis of that kind of "multiple levels
+>    of overlapping IO". Because it requires that the IO is _done_ by the
+>    time you start more, which is against the whole point."
+> 
+> This patch also drops the now unnecessary fd_buffered_io= token usage
+> at createvirtdev time.  Tested with lio-core code using fio writeverify
+> to local tcm_loop + FILEIO <-> scsi_debug backed LUNs.
 
-I started with patches in -next, because Andrew had few fixup on top of last
-patch series. So I ended up with this format. I have fixed them locally now
+If you look at the implementation O_SYNC really just means an implicit
+vfs_fsync_range after each write, thus I can't see how this patch makes any
+difference.
 
--aneesh
-
+For target use with WCE=0 semantics you could at least switch to O_DSYNC, though.
