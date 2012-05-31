@@ -1,48 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab2EaOF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:05:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758035Ab2EaOFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:05:55 -0400
-Message-ID: <4FC7788C.1070405@redhat.com>
-Date: Thu, 31 May 2012 10:56:28 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+	id S1758202Ab2EaOI0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:08:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23145 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948Ab2EaOIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:08:25 -0400
+X-Authority-Analysis: v=2.0 cv=cssZYiEi c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=nA43mK65oyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=20KFwNOVAAAA:8 a=WH_RFyxd9rVzhVcxWoEA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338473302.13348.336.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-References: <4FBE5E1D.7070804@redhat.com> <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com> <4FC4D6E2.9060501@redhat.com> <20120529145245.GG29157@aftab.osrc.amd.com> <4FC4E9EB.5030801@redhat.com> <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com> <20120531100005.GC14074@aftab.osrc.amd.com> <4FC748F5.9070709@redhat.com> <20120531121741.GB14515@aftab.osrc.amd.com>
-In-Reply-To: <20120531121741.GB14515@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>
+Date: Thu, 31 May 2012 10:08:22 -0400
+In-Reply-To: <1338462398.28384.52.camel@twins>
+References: <20120531012829.160060586@goodmis.org>
+	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-05-2012 09:17, Borislav Petkov escreveu:
-> On Thu, May 31, 2012 at 07:33:25AM -0300, Mauro Carvalho Chehab wrote:
->> Huh? Tony said that some errors report at 4K granularity while, others
->> are at cache line size.
+On Thu, 2012-05-31 at 13:06 +0200, Peter Zijlstra wrote:
+> On Wed, 2012-05-30 at 21:28 -0400, Steven Rostedt wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > When the function tracer starts modifying the code via breakpoints
+> > it sets a variable (modifying_ftrace_code) to inform the breakpoint
+> > handler to call the ftrace int3 code.
+> > 
+> > But there's no synchronization between setting this code and the
+> > handler, thus it is possible for the handler to be called on another
+> > CPU before it sees the variable. This will cause a kernel crash as
+> > the int3 handler will not know what to do with it.
+> > 
+> > I originally added smp_mb()'s to force the visibility of the variable
+> > but H. Peter Anvin suggested that I just make it atomic.
 > 
-> Cacheline size is from MCE. This tracepoint is for memory controller
-> errors where granularity should be pretty stable.
+> Uhm,. maybe. atomic_{inc,dec}() implies a full memory barrier on x86,
 
-Both sb_edac and i7core_edac get errors via MCE. They're currently providing
-a fake granularity, but I'm planning to add proper grain support on them,
-by retrieving such information from the MCE registers.
+Yeah, I believe (and H. Peter can correct me) that this is all that's
+required for x86.
 
-Regards,
-Mauro
+> but atomic_read() never has the smp_rmb() required.
+> 
+> Now smp_rmb() is mostly a nop on x86, except for CONFIG_X86_PPRO_FENCE.
+
+No rmb() is required, as that's supplied by the breakpoint itself.
+Basically, rmb() is used for ordering:
+
+	load(A);
+	rmb();
+	loab(B);
+
+To keep the machine from actually doing:
+
+	load(B);
+	load(A);
+
+But what this is:
+
+	<breakpoint>
+	     |
+	     +---------> <handler>
+			    |
+			load(A);
+
+We need the load(A) to be after the breakpoint. Is it possible for the
+machine to do it before?:
+
+		     load(A)
+	      |
+	      |
+	<breakpoint>
+	      +----------> test(A)
+
+??
+
+If another breakpoint is hit (one other than one put in by ftrace) then
+we don't care. It wont crash the system whether or not A is 1 or 0. We
+just need to make sure that a ftrace breakpoint that is hit knows that
+it was a ftrace breakpoint (calls the ftrace handler). No other
+breakpoint should be on a ftrace nop anyway.
+
+
+> 
+> So this should mostly work, but yuck.
+
+It should work, not just mostly.
+
+> 
+> 
+> Also, why does this stuff live in ftrace? I always thought you were
+> going to replace text_poke() so everybody that uses cross-modifying code
+> could profit?
+
+I discussed this with Masami at Collaboration Summit. The two are
+similar but also very different. But we want to start merging the two
+together where it makes sense.
+
+Currently text_poke maps 2 pages into a FIXMAP area to make the
+modification so that it does not need to change the protection of the
+kernel (from ro to rw). Ftrace changes the text protection while it
+makes the update then reverts it back when done. The reason for the
+difference is that text_poke only handles 1 change at a time. There is a
+batch mode, but it does the mapping 1 at a time even for that.
+
+Now ftrace must change 30,000 locations at once!
+
+# cat /debug/tracing/available_filter_functions | wc -l
+29467
+
+Could you imagine ftrace mapping 30,000 pages one at a time to do the
+update?
+
+Also, the text_poke() batch mode requires allocation of an array. This
+could cause failures to start function tracing to allocate 30,000
+structures. Ftrace has its own tight structure that's done in blocks
+(the struct dyn_ftrace), that is (on x86_64) 16 byte items. This is
+allocated at boot up, and module load, and is persistent throughout the
+life of the system uptime (or module loaded). You can see it in the
+dmesg:
+
+ftrace: allocating 20503 entries in 81 pages
+
+ - note this is just core code, before modules are added
+
+The dyn_ftrace has a pointer to the mcount location, and a flags field.
+The flags tells the update code what to change.
+
+Now Masami said he thinks the text_poke should also do the change of
+kernel protection as well, and not do the FIXMAP mapping. At least for
+bulk changes. The added breakpoint code that we have can be shared
+between ftrace and text_poke. That is something we want to do. After we
+get ftrace working, we'll go ahead and make it work for text_poke as
+well ;-)
+
+-- Steve
 
 
