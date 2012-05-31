@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab2EaSD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:03:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13759 "EHLO mx1.redhat.com"
+	id S1758119Ab2EaSD0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:03:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33326 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757352Ab2EaSDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754138Ab2EaSDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 31 May 2012 14:03:24 -0400
-Date: Thu, 31 May 2012 19:20:01 +0200
+Date: Thu, 31 May 2012 19:19:42 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Hugh Dickins <hughd@google.com>,
@@ -15,9 +15,8 @@ Cc: Hugh Dickins <hughd@google.com>,
         Markus Trippelsdorf <markus@trippelsdorf.de>,
         Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] call complete_vfork_done() after
-	put_user(clear_child_tid)
-Message-ID: <20120531172001.GB17513@redhat.com>
+Subject: [PATCH 1/2] correctly synchronize rss-counters at exit/exec
+Message-ID: <20120531171942.GA17513@redhat.com>
 References: <20120531171914.GA17505@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -28,42 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+A simplified version of Konstantin Khlebnikov's patch.
 
-Child should wake up parent from vfork() only after finishing all operations with
-shared mm. There is no sense to use CLONE_CHILD_CLEARTID together with CLONE_VFORK,
-but it looks more accurate now.
+do_exit() and exec_mmap() call sync_mm_rss() before mm_release()
+does put_user(clear_child_tid) which can update task->rss_stat
+and thus make mm->rss_stat inconsistent. This triggers the "BUG:"
+printk in check_mm().
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+- Move the final sync_mm_rss() from do_exit() to exit_mm(), and
+  change exec_mmap() to call sync_mm_rss() after mm_release() to
+  make check_mm() happy.
+
+  Perhaps we should simply move it into mm_release() and call it
+  unconditionally to catch the "task->rss_stat != 0 && !task->mm"
+  bugs.
+
+- Since taskstats_exit() is called before exit_mm(), add another
+  sync_mm_rss() into xacct_add_tsk() who actually uses rss_stat.
+
+  Probably we should also shift acct_update_integrals().
+
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Tested-by: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- kernel/fork.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ fs/exec.c       |    2 +-
+ kernel/exit.c   |    5 ++---
+ kernel/tsacct.c |    1 +
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 47b4e4f..ba0c0de 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -787,9 +787,6 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
- 	/* Get rid of any cached register state */
- 	deactivate_mm(tsk, mm);
+diff --git a/fs/exec.c b/fs/exec.c
+index 52c9e2f..e49e3c2 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -823,10 +823,10 @@ static int exec_mmap(struct mm_struct *mm)
+ 	/* Notify parent that we're no longer interested in the old VM */
+ 	tsk = current;
+ 	old_mm = current->mm;
+-	sync_mm_rss(old_mm);
+ 	mm_release(tsk, old_mm);
  
--	if (tsk->vfork_done)
--		complete_vfork_done(tsk);
--
- 	/*
- 	 * If we're exiting normally, clear a user-space tid field if
- 	 * requested.  We leave this alone when dying by signal, to leave
-@@ -810,6 +807,9 @@ void mm_release(struct task_struct *tsk, struct mm_struct *mm)
- 		}
- 		tsk->clear_child_tid = NULL;
- 	}
+ 	if (old_mm) {
++		sync_mm_rss(old_mm);
+ 		/*
+ 		 * Make sure that if there is a core dump in progress
+ 		 * for the old mm, we get out and die instead of going
+diff --git a/kernel/exit.c b/kernel/exit.c
+index ab972a7..b3a84b5 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -655,6 +655,8 @@ static void exit_mm(struct task_struct * tsk)
+ 	mm_release(tsk, mm);
+ 	if (!mm)
+ 		return;
 +
-+	if (tsk->vfork_done)
-+		complete_vfork_done(tsk);
- }
++	sync_mm_rss(mm);
+ 	/*
+ 	 * Serialize with any possible pending coredump.
+ 	 * We must hold mmap_sem around checking core_state
+@@ -965,9 +967,6 @@ void do_exit(long code)
+ 				preempt_count());
  
- /*
+ 	acct_update_integrals(tsk);
+-	/* sync mm's RSS info before statistics gathering */
+-	if (tsk->mm)
+-		sync_mm_rss(tsk->mm);
+ 	group_dead = atomic_dec_and_test(&tsk->signal->live);
+ 	if (group_dead) {
+ 		hrtimer_cancel(&tsk->signal->real_timer);
+diff --git a/kernel/tsacct.c b/kernel/tsacct.c
+index 23b4d78..a64ee90 100644
+--- a/kernel/tsacct.c
++++ b/kernel/tsacct.c
+@@ -91,6 +91,7 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
+ 	stats->virtmem = p->acct_vm_mem1 * PAGE_SIZE / MB;
+ 	mm = get_task_mm(p);
+ 	if (mm) {
++		sync_mm_rss(mm);
+ 		/* adjust to KB unit */
+ 		stats->hiwater_rss   = get_mm_hiwater_rss(mm) * PAGE_SIZE / KB;
+ 		stats->hiwater_vm    = get_mm_hiwater_vm(mm)  * PAGE_SIZE / KB;
 -- 
 1.5.5.1
 
