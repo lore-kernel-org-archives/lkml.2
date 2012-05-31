@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab2EaENj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 00:13:39 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49608 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750742Ab2EaENi (ORCPT
+	id S1751599Ab2EaEO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 00:14:29 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29616 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751446Ab2EaEOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 00:13:38 -0400
-Date: Thu, 31 May 2012 14:13:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20120531141329.6f82889bcfaa30ca83a30937@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__31_May_2012_14_13_29_+1000_N2T9wMkkJD.QaJRD"
+	Thu, 31 May 2012 00:14:03 -0400
+From: Junxiao Bi <junxiao.bi@oracle.com>
+To: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org
+Cc: mfasheh@suse.com, jlbec@evilplan.org, bcrl@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        joe.jin@oracle.com, Junxiao Bi <junxiao.bi@oracle.com>
+Subject: [PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+Date: Thu, 31 May 2012 12:12:29 +0800
+Message-Id: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__31_May_2012_14_13_29_+1000_N2T9wMkkJD.QaJRD
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+io flag is involved in it to serialize the unaligned aio. As
+*private is not initialized in init_sync_kiocb() of do_sync_write(),
+this unaligned io flag may be unexpectly set in an aligned dio.
+And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+will hang forever at ocfs2_aiodio_wait() in ocfs2_file_write_iter().
 
-Hi Andrew,
+We can't initialized this flag in ocfs2_file_write_iter() since
+it may be invoked several times by do_sync_write(). So we initialize
+it in init_sync_kiocb(), it's also useful for other similiar use of
+it in the future.
 
-Today's linux-next merge of the akpm tree got a conflict in
-mm/memcontrol.c between commit 78ccf5b5ab83 ("mm: memcg: print statistics
-directly to seq_file") and others from Linus' tree and commit "memcg: add
-mlock statistic in memory.stat" from the akpm tree.
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+---
+ include/linux/aio.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-I just dropped the akpm patch for now.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 2314ad8..b1a520e 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -140,6 +140,7 @@ struct kiocb {
+ 		(x)->ki_dtor = NULL;			\
+ 		(x)->ki_obj.tsk = tsk;			\
+ 		(x)->ki_user_data = 0;                  \
++		(x)->private = NULL;			\
+ 	} while (0)
+ 
+ #define AIO_RING_MAGIC			0xa10a10a1
+-- 
+1.7.9.5
 
---Signature=_Thu__31_May_2012_14_13_29_+1000_N2T9wMkkJD.QaJRD
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPxu/pAAoJEECxmPOUX5FEOl0P/1enCMBmn17UrdGWK+fpd1Do
-A3g/8YZiaOQRYRvgvQSfM1KiQWpOcXDCYB7CacAuE4BVZ779kh/uy3sdblygXivu
-CcLb+woKrbLoEURD9mndWk8+RA6/2eZlFKHq/sfC5aLmBaw+sEuHOdHFn65sSUEa
-+sswaLg6Y37QPf6oI52NRR7cqebia5OhiiqohOSUsGWCyvG+JiWHr9LbuYoXVfyi
-q9mSz/mofs4rb9BLDN0oXPbTKfef8YQczkhvzS0v6rkiJn/H9K9L/eG3CwbSVPx9
-XGjgQ+3Ju8CrdXClJntkxAd0LloN+GSQy0Ye/dnrW6L3HSVTU/TSDtE3kyVl0Yp+
-tPgHmVzRcXMFBjDclYvIpGS3usH5teEsVf9tVbfrkpolYNnshfATZ2N4Xo6Kqfsx
-j3HUPCvdLPllrS4UsTTuNA/3VUk3M/Z/UYnN4EZVkWklLyG+2C/2ZBfmm/dZOMZ3
-QzL1NosJvBxU+NqLW+/hzsrNpEXeuvscYlVL4alh+9dnSUnaP55Uz+Gn4t4yuhz/
-HSOb8/xjr8g1cfKyW6Vp/d1pvZMW+Sy7WcTkqtrRhE3J4Aj1wbGfDkX9fBsmDyLt
-tZ1cpiGTB5ujx7Yss2StqLeAFD2ww64A4Tx0kzt6eqhO0XCfe2m1D88429hm8LIZ
-/LK3+BtqjSNSVZzftgbG
-=uXsA
------END PGP SIGNATURE-----
-
---Signature=_Thu__31_May_2012_14_13_29_+1000_N2T9wMkkJD.QaJRD--
