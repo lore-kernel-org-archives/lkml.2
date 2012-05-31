@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab2EaKwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 06:52:04 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65033 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab2EaKwB (ORCPT
+	id S1753521Ab2EaKzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 06:55:14 -0400
+Received: from sting.hengli.com.au ([178.18.18.71]:52977 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751518Ab2EaKzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 06:52:01 -0400
-Subject: Re: [PATCH] block: avoid infinite loop in get_task_io_context()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4FC74C59.2030100@fusionio.com>
-References: <4FC6189B.9080909@fusionio.com>
-	 <1338402812.2760.413.camel@edumazet-glaptop>
-	 <4FC66D3D.6080509@fusionio.com>
-	 <1338404902.2760.451.camel@edumazet-glaptop>
-	 <1338410107.2760.544.camel@edumazet-glaptop>
-	 <1338460706.2760.1330.camel@edumazet-glaptop>
-	 <4FC74C59.2030100@fusionio.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 31 May 2012 12:51:56 +0200
-Message-ID: <1338461516.2760.1333.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 31 May 2012 06:55:12 -0400
+Date: Thu, 31 May 2012 20:54:53 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: nicolas.ferre@atmel.com, jamie@jamieiles.com, linux-kernel@vger.kernel.org,
+        GPontis@z9.com, stable@vger.kernel.org
+Subject: Re: [PATCH] hw_random: atmel-rng: fix race condition leading to
+ repeated bits
+Message-ID: <20120531105453.GA6266@gondor.apana.org.au>
+References: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1337937158-9710-1-git-send-email-jacmet@sunsite.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 12:47 +0200, Jens Axboe wrote:
->  BUG: soft lockup - CPU#3 stuck for 22s ! [mountall.1603]
-> 
-> Eric, do you have a task trace to go with this lockup, where task !=
-> current?
-> 
-> In any case, it is a legit bug fix. I have applied it.
-> 
+On Fri, May 25, 2012 at 11:12:38AM +0200, Peter Korsgaard wrote:
+> Data valid gets cleared by reading the ISR (status register) and NOT from
+> reading ODATA (data register). A new data word can become available between
+> checking ISR and reading ODATA, causing us to reuse the same data word next
+> time atmel_trng_read() gets called, if that happens before the following
+> data word is ready.
 
-Unfortunately I couldn't get netconsole working at this stage...
-
-syscall was sys_ioprio_set()
-
-
-
+Patch applied crypto.  Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
