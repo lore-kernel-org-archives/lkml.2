@@ -1,80 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758076Ab2EaQYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 12:24:32 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:34287 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab2EaQYb (ORCPT
+	id S1758116Ab2EaQkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 12:40:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49444 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754755Ab2EaQkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 12:24:31 -0400
-Date: Thu, 31 May 2012 12:17:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andre Przywara <andre.przywara@amd.com>
-Cc: jeremy@goop.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org.#.v3.0+
-Subject: Re: [PATCH] xen: filter APERFMPERF feature for kernel usage
-Message-ID: <20120531161732.GA14197@phenom.dumpdata.com>
-References: <1338289651-15843-1-git-send-email-andre.przywara@amd.com>
+	Thu, 31 May 2012 12:40:36 -0400
+Date: Thu, 31 May 2012 17:40:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org,
+        Anthony Olech <Anthony.Olech@diasemi.com>
+Subject: Re: [PATCH 2/4] regmap: Make internal read/write functions reentrant
+ from themselves.
+Message-ID: <20120531164033.GJ2666@opensource.wolfsonmicro.com>
+References: <201205311616.q4VGGZjR014516@sw-eng-lt-dc-vm2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5cSRzy0VGBWAML+b"
 Content-Disposition: inline
-In-Reply-To: <1338289651-15843-1-git-send-email-andre.przywara@amd.com>
+In-Reply-To: <201205311616.q4VGGZjR014516@sw-eng-lt-dc-vm2>
+X-Cookie: You are fairminded, just and loving.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 01:07:31PM +0200, Andre Przywara wrote:
-> Xen PV kernels allow access to the APERF/MPERF registers to read the
-> effective frequency. Access to the MSRs is however redirected to the
-> currently scheduled physical CPU, making consecutive read and
-> compares unreliable. In addition each rdmsr traps into the hypervisor.
-> So to avoid bogus readouts and expensive traps, disable the kernel
-> internal feature flag for APERF/MPERF if running under Xen.
-> This will
-> a) remove the aperfmperf flag from /proc/cpuinfo
-> b) not mislead the power scheduler (arch/x86/kernel/cpu/sched.c) to
->    use the feature to improve scheduling (by default disabled)
-> c) not mislead the cpufreq driver to use the MSRs
-> 
-> This does not cover userland programs which access the MSRs via the
-> device file interface, but this will be addressed separately.
-> 
-> Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-> Cc: stable@vger.kernel.org # v3.0+
 
-applied.
-> ---
->  arch/x86/xen/enlighten.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 95dccce..dfbe1af 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -207,6 +207,9 @@ static void __init xen_banner(void)
->  	       xen_feature(XENFEAT_mmu_pt_update_preserve_ad) ? " (preserve-AD)" : "");
->  }
->  
-> +#define CPUID_THERM_POWER_LEAF 6
-> +#define APERFMPERF_PRESENT 0
-> +
->  static __read_mostly unsigned int cpuid_leaf1_edx_mask = ~0;
->  static __read_mostly unsigned int cpuid_leaf1_ecx_mask = ~0;
->  
-> @@ -240,6 +243,11 @@ static void xen_cpuid(unsigned int *ax, unsigned int *bx,
->  		*dx = cpuid_leaf5_edx_val;
->  		return;
->  
-> +	case CPUID_THERM_POWER_LEAF:
-> +		/* Disabling APERFMPERF for kernel usage */
-> +		maskecx = ~(1 << APERFMPERF_PRESENT);
-> +		break;
-> +
->  	case 0xb:
->  		/* Suppress extended topology stuff */
->  		maskebx = 0;
-> -- 
-> 1.7.4.4
-> 
+--5cSRzy0VGBWAML+b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, May 31, 2012 at 04:19:36PM +0200, Krystian Garbaciak wrote:
+
+> Functions _regmap_update_bits() and _regmap_write() are modified
+> so they can be recurrently entered from the inside.
+
+You should describe what you're doing here in more detail...
+
+> The internal reading functions need no modification for current implementation
+> of indirect access.
+
+So the subject should really be "Make internal write functions
+reentrant"?
+
+> -		map->format.format_val(map->work_buf + map->format.reg_bytes
+> -				       + map->format.pad_bytes, val);
+> -		return _regmap_raw_write(map, reg,
+> -					 map->work_buf +
+> -					 map->format.reg_bytes +
+> -					 map->format.pad_bytes,
+> +		/* Using stack for value data, to make function reentrant */
+> +		map->format.format_val(&val, val);
+> +		return _regmap_raw_write(map, reg, &val,
+
+We can't safely do this for all buses, some want to DMA and you can't
+DMA from stack.  This also means that we'll no longer be able to send a
+single buffer to the device as we'll never have the value immediately
+following the register address and padding any more.  That'll increase
+overhead on many systems, you can often see the handover on gathers on a
+scope.
+
+I don't understand why we can't take the decision to write the page
+register before we start using the buffer?
+
+Also, it seems like your mailing setup is a bit broken - these messages
+aren't being threaded with each other.
+
+--5cSRzy0VGBWAML+b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPx576AAoJEBus8iNuMP3d8mMP/1q2ajQuCAMiHnWD+06Wz75G
++awxqlqptb+jkkxrbZfA8vvQEDfpb0vLiaDK0MmnsA0+Q92aN7ckpXdAZGNR93rl
+bSC4RpBaXddQ/2OnjPXMmjlnsxRGdmkvO4pf59Lgvs+2/uxw40rl7E5UICZk1RzE
+SizXVJUhS9Gbkr8NOIbSo2m6A+n3jtzVzNlSzWUGFZuZDHr+wlrTMjQwsvGiOQUi
+H2WnFKyCNEQEBsKcxU5XUq4ZZLr6CiOfRw9jidRV32xt/US/5whltIpdwuvCd6T4
+7XeaEXS8yAKn5U0S2CGszSg7tYrCs61Jxksnm0FNPR5dYCYlzlBMXxM6qhDGey7o
+26GsYaAjzKRPCAXEHzUMxpog2zWs+3u1eDwzm3iEB1Wm6MEYC9MiLP1a/zeWt2wn
+9FyXGgs3KCvsFSWfSp2jeX2HAeuDxjCP998BbD04MePcBp94i3GwfUhRBuU7RV7o
+L+DKVHpGJBHdsdklZBjA0DnnjOCzz7LBOVsyDVs1HTNrxAJzLJGgTxUItlKP/pE/
+qZIz7zzUqrmgmS2C0jPvEW2pVA3uYqhw0F1Rs1NaxaFfYzRYQ+20rf60V9uhiQaT
+puDs55UW/Ah6GPUkOxLNfPpzLEPhIesP/jTPkfmzrmQkdMwZtOHHmUV0B4bWOoRG
+f+5n7XrycXuNxxv81Te1
+=0akM
+-----END PGP SIGNATURE-----
+
+--5cSRzy0VGBWAML+b--
