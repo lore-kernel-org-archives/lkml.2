@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758239Ab2EaWVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:21:54 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52341 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757291Ab2EaWVw (ORCPT
+	id S1758259Ab2EaW0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:26:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42632 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757545Ab2EaW0Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:21:52 -0400
-Date: Thu, 31 May 2012 18:21:45 -0400 (EDT)
-Message-Id: <20120531.182145.119572313886189417.davem@davemloft.net>
-To: jasowang@redhat.com
-Cc: netdev@vger.kernel.org, edumazet@google.com, mst@redhat.com,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [V2 PATCH] net: sock: validate data_len before allocating skb
- in sock_alloc_send_pskb()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120531071809.6392.26677.stgit@amd-6168-8-1.englab.nay.redhat.com>
-References: <20120531071809.6392.26677.stgit@amd-6168-8-1.englab.nay.redhat.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 31 May 2012 18:26:16 -0400
+Message-ID: <1338503165.28384.134.camel@twins>
+Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
+ flexible proportions
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Jun 2012 00:26:05 +0200
+In-Reply-To: <20120531221146.GA19050@quack.suse.cz>
+References: <1337878751-22942-1-git-send-email-jack@suse.cz>
+	 <1337878751-22942-3-git-send-email-jack@suse.cz>
+	 <1338220185.4284.19.camel@lappy> <20120529123408.GA23991@quack.suse.cz>
+	 <1338295111.26856.57.camel@twins> <20120529125452.GB23991@quack.suse.cz>
+	 <20120531221146.GA19050@quack.suse.cz>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 31 May 2012 15:21:50 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wang <jasowang@redhat.com>
-Date: Thu, 31 May 2012 15:18:10 +0800
+On Fri, 2012-06-01 at 00:11 +0200, Jan Kara wrote:
+>  bool fprop_new_period(struct fprop_global *p, int periods)
+>  {
+> -       u64 events = percpu_counter_sum(&p->events);
+> +       u64 events;
+> +       unsigned long flags;
+>  
+> +       local_irq_save(flags);
+> +       events = percpu_counter_sum(&p->events);
+> +       local_irq_restore(flags);
+>         /*
+>          * Don't do anything if there are no events.
+>          */
+> @@ -73,7 +77,9 @@ bool fprop_new_period(struct fprop_global *p, int periods)
+>         if (periods < 64)
+>                 events -= events >> periods;
+>         /* Use addition to avoid losing events happening between sum and set */
+> +       local_irq_save(flags);
+>         percpu_counter_add(&p->events, -events);
+> +       local_irq_restore(flags);
+>         p->period += periods;
+>         write_seqcount_end(&p->sequence); 
 
-> We need to validate the number of pages consumed by data_len, otherwise frags
-> array could be overflowed by userspace. So this patch validate data_len and
-> return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
-> 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-Applied and queued up for -stable.
-
-Please do not add explicit stable CC:'s to networking patches, I queue
-appropriate changes up myself, and submit them only when I feel that
-the change has had sufficient exposure and testing in Linus's tree.
+Uhm, why bother enabling it in between? Just wrap the whole function in
+a single IRQ disable.
