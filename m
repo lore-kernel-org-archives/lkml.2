@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab2EaQoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 12:44:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60339 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758031Ab2EaQoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 12:44:20 -0400
-Date: Thu, 31 May 2012 17:44:19 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Anthony Olech <Anthony.Olech@diasemi.com>
-Subject: Re: [PATCH 4/4] regmap: Minor optimisation for _regmap_raw_write().
-Message-ID: <20120531164419.GL2666@opensource.wolfsonmicro.com>
-References: <201205311622.q4VGMHGe015484@sw-eng-lt-dc-vm2>
+	id S1752298Ab2EaQz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 12:55:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36439 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064Ab2EaQz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 12:55:28 -0400
+Date: Thu, 31 May 2012 18:55:23 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Andre Przywara <andre.przywara@amd.com>, Jacob Shin <jacob.shin@amd.com>,
+        mingo@elte.hu, jeremy@goop.org, tglx@linutronix.de,
+        xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [Xen-devel] [PATCH] x86/amd: fix crash as Xen Dom0 on AMD
+ Trinity systems
+Message-ID: <20120531165522.GA3834@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jan Beulich <JBeulich@suse.com>,
+	Andre Przywara <andre.przywara@amd.com>,
+	Jacob Shin <jacob.shin@amd.com>, mingo@elte.hu, jeremy@goop.org,
+	tglx@linutronix.de, xen-devel@lists.xensource.com,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+	Yinghai Lu <yinghai@kernel.org>
+References: <20120530144851.GA12184@jshin-Toonie>
+ <20120530145005.GI3207@phenom.dumpdata.com>
+ <20120530150334.GA13349@jshin-Toonie>
+ <20120530171754.GA5115@phenom.dumpdata.com>
+ <20120530173247.GC15635@x1.osrc.amd.com>
+ <4FC65D34.1060803@zytor.com>
+ <20120530175150.GE15438@x1.osrc.amd.com>
+ <4FC66037.6020506@zytor.com>
+ <20120530181722.GF15438@x1.osrc.amd.com>
+ <4FC73C430200007800087137@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1X+6QtwRodzgDPAC"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201205311622.q4VGMHGe015484@sw-eng-lt-dc-vm2>
-X-Cookie: You are fairminded, just and loving.
+In-Reply-To: <4FC73C430200007800087137@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 31, 2012 at 08:39:15AM +0100, Jan Beulich wrote:
+> >>> On 30.05.12 at 20:17, Borislav Petkov <bp@alien8.de> wrote:
+> > On Wed, May 30, 2012 at 11:00:23AM -0700, H. Peter Anvin wrote:
+> > The other place where we use the amd_safe variants is an obscure K8,
+> > revC and earlier fix for _some_ BIOSen and this hasn't bitten us yet
+> > so I'm assuming people haven't run xen on such boxes yet. Does it need
+> > fixing? Probably, if we really really have to.
+> 
+> This again is something that shouldn't even be attempted under
+> Xen. The hypervisor, unless really old, does this (and wouldn't
+> allow the write by any domain - privileged or not - anyway).
+> 
+> There's one more user though - the code triggered by the
+> "show_msr=" command line option. This one indeed requires
+> rdmsr_safe_regs to be functional (albeit under Xen, once
+> again, this won't work currently anyway for those MRS on
+> old CPUs where the special key in %edi is required, which the
+> emulation code in Xen doesn't support).
 
---1X+6QtwRodzgDPAC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This doesn't look right. Yinghai, why does generic x86 code use
+rdmsrl_amd_safe - it should simply use rdmsrl_safe.
 
-On Thu, May 31, 2012 at 05:11:38PM +0200, Krystian Garbaciak wrote:
-> Just to make things simplier inside the function.
-
-Again, what is this actually doing (ie, please improve your changelogs)?
-
-It looks like it's just factoring constants out (which hopefully the
-compiler can do but still is OK) - this looks good but should probably
-be at the start rather than end of the series.
-
---1X+6QtwRodzgDPAC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPx5/cAAoJEBus8iNuMP3dD/0P/2D+upE8S94mjEg6+BX5yiOR
-gGgoLT9Qf9xBAcB6rhCzVweLuww9+PW0EStDnw3j6gtfTAs6TAB7SSDoNuFU+Lcs
-xO3EK0nSbbAkSYlCaNiqVRtENkZ7jj4kp9v1WpkKHSTq+tomTgGHs4K0NCj9iYab
-n/v6YNSjP2GtxEI6oMIu1kLNo5VtLEzTjnyVYVHQjfy41vVTw+yL+3MJ13K3Y6np
-9nSP8UG7zUwHTM+wl/bJrGr3NEHE4FY4Pe0XyKIUMprRvxqAmVWUw/SuxGkGj01z
-jy4dx7uOFZ24qpB/Sq0MKEKoEic1sGQzQuPKRA7fa4NJFtN2QszSWGKxCxhplJhv
-stcyt3OeHTVUzVvag5Hyvn56E/P/0WG4tM52Bi/JTT/L6miTO/+0VMfUOCHh/ErZ
-UbzpZ244PkMyKZee3ZcGpw2wv4t/zGutQt+pDt4ft3jjbzanFB9R/e+VTbC2ljFM
-kG592Cp4R+vBsJrqRCQuMuyGvdb0xAnJT99oabp9BQJj/rk1bAq9pgbzkfwfsbPm
-LRTOnc5Dfk313lnruK0nXh3R3KMXZOxPfPxYO3y6gUGm6RJVuAxGYSv5tG5gsxus
-9WcmossGsOXgIEf3vGES/UumhW6AXCvxOfrEgaQId1ov24TLi5XAmRWgPUikDchu
-zXyFz8tShYQp2X9NocRu
-=yd60
------END PGP SIGNATURE-----
-
---1X+6QtwRodzgDPAC--
+-- 
+Regards/Gruss,
+Boris.
