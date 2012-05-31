@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab2EaRin (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 13:38:43 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:25120 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261Ab2EaRim (ORCPT
+	id S1756133Ab2EaRjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 13:39:49 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22587 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385Ab2EaRjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 13:38:42 -0400
-Date: Thu, 31 May 2012 13:31:37 -0400
+	Thu, 31 May 2012 13:39:48 -0400
+Date: Thu, 31 May 2012 13:32:43 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
+Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
         "'xen-devel@lists.xensource.com'" <xen-devel@lists.xensource.com>,
-        Borislav Petkov <bp@amd64.org>,
         "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 1/2] xen/mce: Add mcelog support for Xen
- platform
-Message-ID: <20120531173137.GA31735@phenom.dumpdata.com>
-References: <DE8DF0795D48FD4CA783C40EC82923351FEE7C@SHSMSX101.ccr.corp.intel.com>
- <20120531161139.GA13939@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC82923351FFB11@SHSMSX101.ccr.corp.intel.com>
+Subject: Re: [PATCH 3/3] Register native mce handler as vMCE bounce back point
+Message-ID: <20120531173243.GB31735@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923351FFB7C@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FFB11@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923351FFB7C@SHSMSX101.ccr.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 05:27:53PM +0000, Liu, Jinsong wrote:
-> Konrad Rzeszutek Wilk wrote:
-> > On Thu, May 31, 2012 at 12:57:44PM +0000, Liu, Jinsong wrote:
-> >>> From 1a7951d6ca01d7f2c9dd2bdb6de5f8e7fdcb8bbd Mon Sep 17 00:00:00
-> >>> 2001 
-> >> From: root <root@ljsromley.bj.intel.com>
-> > 
-> > Also your git author is busted. I fixed it up for you but
-> > you might want to run 'git config --user.name' and such
-> 
-> Ah, I forgot it. Thanks for fix it.
-> 
-> > 
-> >> Date: Fri, 1 Jun 2012 03:12:51 +0800
-> >> Subject: [PATCH 1/2] xen/mce: Add mcelog support for Xen platform
-> > 
-> > What about the cvt_gate_to_trap? Does that need something similar
-> > to "xen/mce: Register native mce handler as vMCE bounce back point"
-> > ?
-> 
-> That's vMCE injection logic.
+On Thu, May 31, 2012 at 05:33:49PM +0000, Liu, Jinsong wrote:
+> >From ca1f8a2347eb34acdc7c54b805c78a982a0a590d Mon Sep 17 00:00:00 2001
+> From: Liu, Jinsong <jinsong.liu@intel.com>
+> Date: Fri, 1 Jun 2012 08:41:00 +0800
+> Subject: [PATCH 3/3] Register native mce handler as vMCE bounce back point
 
-Are you sure about it? The comments in it speak of piggybacking on
-the native MCE handling routines. But since that is not used anymore
-do you need to use a different mechanism?
-
-> anyway, I will present new round of patch according to Boris and your commends, as following
-> [Patch 1/3] xen-mce-Add-mcelog-support-for-Xen-platform.patch
-> [Patch 2/3] X86-MCE-AMD-Adjust-initcall-sequence-for-xen.patch
-> [Patch 3/3] Register-native-mce-handler-as-vMCE-bounce-back-poin.patch
-
-Please look at http://git.kernel.org/?p=linux/kernel/git/konrad/xen.git;a=commit;h=894c02d298cb638f3ff04bdbf41f646a0223bf05 as it has some of the mistakes fixed (spelling mistakes, wrong title, etc).
-
+You need to have 'xen:' in front of 'register'
 > 
-> Patch 1/3 and 2/3 are for mcelog
-> Patch 3/3 are for vMCE injection
-> 
-> > 
-> > I stuck all these patches on devel/mce.v2 on
-> > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
-> 
-> Hmm, we discussed base-tree problem before, and decided to use linus latest tree.
-> I pull this morning and rebase my patches based on
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-> c/s a01ee165a132fadb57659d26246e340d6ac53265
+> When xen hypervisor inject vMCE to guest, use native mce handler to handle it
 
-Which I think the tree is based on too.
+And is that still OK?
+> 
+> Signed-off-by: Ke, Liping <liping.ke@intel.com>
+> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
+> ---
+>  arch/x86/xen/enlighten.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index ff2d00e..0cb12dd 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -618,8 +618,8 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
+>  	/*
+>  	 * Look for known traps using IST, and substitute them
+>  	 * appropriately.  The debugger ones are the only ones we care
+> -	 * about.  Xen will handle faults like double_fault and
+> -	 * machine_check, so we should never see them.  Warn if
+> +	 * about.  Xen will handle faults like double_fault,
+> +	 * so we should never see them.  Warn if
+>  	 * there's an unexpected IST-using fault handler.
+>  	 */
+>  	if (addr == (unsigned long)debug)
+> @@ -634,7 +634,11 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
+>  		return 0;
+>  #ifdef CONFIG_X86_MCE
+>  	} else if (addr == (unsigned long)machine_check) {
+> -		return 0;
+> +		/*
+> +		 * when xen hyeprvisor inject vMCE to guest,
+
+<sigh> Pls run a spell checker.
+
+> +		 * use native mce handler to handle it
+> +		 */
+> +		;
+>  #endif
+>  	} else {
+>  		/* Some other trap using IST? */
+> -- 
+> 1.7.1
+
+
