@@ -1,91 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab2EaWkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:40:32 -0400
-Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:53659 "EHLO
-	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752964Ab2EaWkb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:40:31 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "J\, KEERTHY" <j-keerthy@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, greg@kroah.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        j-pihet@ti.com
-Subject: Re: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-Organization: Texas Instruments, Inc.
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<87397by2h9.fsf@ti.com>
-	<CAJ6a13aJwesHw0frCV+EfvYaep09cZGcu_PopuHzye1HS2tgvg@mail.gmail.com>
-	<CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
-	<87obpdv6f4.fsf@ti.com>
-Date: Thu, 31 May 2012 15:40:30 -0700
-In-Reply-To: <87obpdv6f4.fsf@ti.com> (Kevin Hilman's message of "Thu, 24 May
-	2012 10:24:15 -0700")
-Message-ID: <874nqwynxd.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1755671Ab2EaWmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:42:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54620 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753055Ab2EaWmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 18:42:08 -0400
+Date: Fri, 1 Jun 2012 00:42:06 +0200
+From: Jan Kara <jack@suse.cz>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Sasha Levin <levinsasha928@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
+ flexible proportions
+Message-ID: <20120531224206.GC19050@quack.suse.cz>
+References: <1337878751-22942-1-git-send-email-jack@suse.cz>
+ <1337878751-22942-3-git-send-email-jack@suse.cz>
+ <1338220185.4284.19.camel@lappy>
+ <20120529123408.GA23991@quack.suse.cz>
+ <1338295111.26856.57.camel@twins>
+ <20120529125452.GB23991@quack.suse.cz>
+ <20120531221146.GA19050@quack.suse.cz>
+ <1338503165.28384.134.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed; boundary="IiVenqGWf+H9Y6IX"
+Content-Disposition: inline
+In-Reply-To: <1338503165.28384.134.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Hilman <khilman@ti.com> writes:
 
-> "J, KEERTHY" <j-keerthy@ti.com> writes:
->
->> On Tue, May 15, 2012 at 11:16 AM, J, KEERTHY <j-keerthy@ti.com> wrote:
->>> On Tue, May 8, 2012 at 5:21 AM, Kevin Hilman <khilman@ti.com> wrote:
->>>> Rafael,
->>>>
->>>> Keerthy <j-keerthy@ti.com> writes:
->>>>
->>>>> From: J Keerthy <j-keerthy@ti.com>
->>>>>
->>>>> AVS(Adaptive Voltage Scaling) is a power management technique which
->>>>> controls the operating voltage of a device in order to optimize (i.e. reduce)
->>>>> its power consumption. The voltage is adapted depending on static factors
->>>>> (chip manufacturing process) and dynamic factors (temperature
->>>>> depending performance).
->>>>> The TI AVS solution is named Smartreflex.
->>>>>
->>>>> To that end, create the AVS driver in drivers/power/avs and
->>>>> move the OMAP SmartReflex code to the new directory. The
->>>>> class driver is still retained in the mach-omap2 directory.
->>>>
->>>> How should we handle this for upstream?
->>>>
->>>> It does a bunch of cleanup under arch/arm then does the move to
->>>> drivers/power the end.  To avoid conflicts with other OMAP core changes,
->>>> I would suggest we take this through the OMAP tree.
->>>>
->>>> With your ack, I'd be glad to take it.
->>>
->>> Hello Rafael,
->>>
->>> A gentle ping on this series.
->>
->> Hi Greg,
->>
->> This series has Kevin's comments incorporated.
->>
->> Kevin,
->>
->> Can i have your Ack for this series?
->>
->
-> Well, as mentioned above, I'm waiting for Rafael's ack, then I will
-> merge it.
->
-> Because of all the arch/arm/mach-omap2/* changes, I would like to merge
-> this via the OMAP tree to avoid conflicts with other stuff we have
-> changing in arch/arm/mach-omap2/*
+--IiVenqGWf+H9Y6IX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-OK, I had an off-line discussion with Rafael and he's OK that I take
-these.  I will add an ack from Rafael and queue this series up for v3.6.
+On Fri 01-06-12 00:26:05, Peter Zijlstra wrote:
+> On Fri, 2012-06-01 at 00:11 +0200, Jan Kara wrote:
+> >  bool fprop_new_period(struct fprop_global *p, int periods)
+> >  {
+> > -       u64 events = percpu_counter_sum(&p->events);
+> > +       u64 events;
+> > +       unsigned long flags;
+> >  
+> > +       local_irq_save(flags);
+> > +       events = percpu_counter_sum(&p->events);
+> > +       local_irq_restore(flags);
+> >         /*
+> >          * Don't do anything if there are no events.
+> >          */
+> > @@ -73,7 +77,9 @@ bool fprop_new_period(struct fprop_global *p, int periods)
+> >         if (periods < 64)
+> >                 events -= events >> periods;
+> >         /* Use addition to avoid losing events happening between sum and set */
+> > +       local_irq_save(flags);
+> >         percpu_counter_add(&p->events, -events);
+> > +       local_irq_restore(flags);
+> >         p->period += periods;
+> >         write_seqcount_end(&p->sequence); 
+> 
+> Uhm, why bother enabling it in between? Just wrap the whole function in
+> a single IRQ disable.
+  I wanted to have interrupts disabled for as short as possible but if you
+think it doesn't matter, I'll take your advice. The result is attached.
 
-Thanks,
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-Kevin
+--IiVenqGWf+H9Y6IX
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="flex-proportion-irq-save.diff"
+
+From: Jan Kara <jack@suse.cz>
+Subject: lib: Fix possible deadlock in flexible proportion code
+
+When percpu counter function in fprop_new_period() is interrupted by an
+interrupt while holding counter lock, it can cause deadlock when the
+interrupt wants to take the lock as well. Fix the problem by disabling
+interrupts when calling percpu counter functions.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+
+diff -u b/lib/flex_proportions.c b/lib/flex_proportions.c
+--- b/lib/flex_proportions.c
++++ b/lib/flex_proportions.c
+@@ -62,13 +62,18 @@
+  */
+ bool fprop_new_period(struct fprop_global *p, int periods)
+ {
+-	u64 events = percpu_counter_sum(&p->events);
++	u64 events;
++	unsigned long flags;
+ 
++	local_irq_save(flags);
++	events = percpu_counter_sum(&p->events);
+ 	/*
+ 	 * Don't do anything if there are no events.
+ 	 */
+-	if (events <= 1)
++	if (events <= 1) {
++		local_irq_restore(flags);
+ 		return false;
++	}
+ 	write_seqcount_begin(&p->sequence);
+ 	if (periods < 64)
+ 		events -= events >> periods;
+@@ -76,6 +81,7 @@
+ 	percpu_counter_add(&p->events, -events);
+ 	p->period += periods;
+ 	write_seqcount_end(&p->sequence);
++	local_irq_restore(flags);
+ 
+ 	return true;
+ }
+
+--IiVenqGWf+H9Y6IX--
