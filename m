@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758199Ab2EaOEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:04:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757496Ab2EaOEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:04:39 -0400
-Date: Thu, 31 May 2012 10:04:32 -0400
-From: Dave Jones <davej@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: NOHZ: local_softirq_pending 08
-Message-ID: <20120531140432.GC1749@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120530214809.GA19223@redhat.com>
- <alpine.LFD.2.02.1205310938080.3231@ionos>
- <1338450985.2760.1270.camel@edumazet-glaptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338450985.2760.1270.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758218Ab2EaOFG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:05:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50055 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758187Ab2EaOFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:05:03 -0400
+Subject: Re: [PATCH/RFC 2/2] perf tools: Check callchain is corrupted
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Namhyung Kim <namhyung.kim@lge.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, Sunjin Yang <fan4326@gmail.com>,
+        Arun Sharma <asharma@fb.com>
+In-Reply-To: <20120531134557.GB13591@infradead.org>
+References: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
+	 <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
+	 <20120531134557.GB13591@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 31 May 2012 23:04:37 +0900
+Message-ID: <1338473077.1484.8.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 09:56:25AM +0200, Eric Dumazet wrote:
- > On Thu, 2012-05-31 at 09:52 +0200, Thomas Gleixner wrote:
- > > Dave,
- > > 
- > > On Wed, 30 May 2012, Dave Jones wrote:
- > > 
- > > > May 30 17:43:04 [ 1095.335659] NOHZ: local_softirq_pending 08
- > > > 
- > > > According to git, you ratelimited this back in 2007 with the message
- > > > "until we found the root cause of that problem."
- > > > 
- > > > Is this an old problem that has returned ?
- > > 
- > > Looks like.
- > >  
- > > > Maybe interesting note: Both machines I see this on regularly are Atom cpus,
- > > > and it's always '08'.
- > > 
- > > So it goes idle with NET_RX softirq pending. That really should not
- > > happen. I fear you need to fire up the tracer :)
- > 
- > It might be a bug in the network driver, a race with NAPI completion.
- > 
- > Dave, which net drivers run on these machines ?
+Hi,
 
-r8169.
+2012-05-31 (목), 10:45 -0300, Arnaldo Carvalho de Melo:
+> Em Thu, May 31, 2012 at 02:43:27PM +0900, Namhyung Kim escreveu:
+> > We faced segmentation fault on perf top -G at very high sampling
+> > rate due to a corrupted callchain. While the root cause was not
+> > revealed (I failed to figure it out), this patch tries to protect
+> > us from the segfault on such cases.
+> 
+> Capping the callchain lenght may even be a feature, not a consistency
+> check, but I don't know how long, for consistency checking, we should
+> consider too much, as there are cases of loooong callchains.
+> 
 
-I got an email from someone else asking if I used Realtek drivers, which I thought
-was an uncanny guess.
+Maybe we should consider applying (a part of, at least) Arun's multiple
+stack patchset. Also note that Linus complained about the current stack
+depth (255) is too long.
 
-	Dave
+  https://lkml.org/lkml/2012/4/20/497
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
