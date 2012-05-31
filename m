@@ -1,125 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2EaSuV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:50:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21107 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab2EaSuU (ORCPT
+	id S1757591Ab2EaSzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:55:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49510 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754916Ab2EaSzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:50:20 -0400
-X-Authority-Analysis: v=2.0 cv=PqgRnnw3 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=nA43mK65oyIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=3fDLGaNrAO2W2NZQ5RsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338490218.13348.379.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
- breakpoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Date: Thu, 31 May 2012 14:50:18 -0400
-In-Reply-To: <1338487413.28384.103.camel@twins>
-References: <20120531012829.160060586@goodmis.org>
-	 <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
-	 <1338473302.13348.336.camel@gandalf.stny.rr.com>
-	 <1338486029.28384.93.camel@twins>
-	 <1338486820.13348.366.camel@gandalf.stny.rr.com>
-	 <1338487413.28384.103.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 31 May 2012 14:55:21 -0400
+Date: Thu, 31 May 2012 19:55:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Krystian Garbaciak <Krystian.Garbaciak@diasemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anthony Olech <Anthony.Olech@diasemi.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Javier Martin <javier.martin@vista-silicon.com>
+Subject: Re: [PATCH 3/4] regmap: Add support for register indirect addressing.
+Message-ID: <20120531185517.GD24139@opensource.wolfsonmicro.com>
+References: <201205311619.q4VGJ8S2014801@sw-eng-lt-dc-vm2>
+ <20120531172541.GM2666@opensource.wolfsonmicro.com>
+ <751C305CD2876B4990194D0512DE8BF2441CA8F3@SW-EX-MBX01.diasemi.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Clx92ZfkiYIKRjnr"
+Content-Disposition: inline
+In-Reply-To: <751C305CD2876B4990194D0512DE8BF2441CA8F3@SW-EX-MBX01.diasemi.com>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 20:03 +0200, Peter Zijlstra wrote:
-> On Thu, 2012-05-31 at 13:53 -0400, Steven Rostedt wrote:
-> > On Thu, 2012-05-31 at 19:40 +0200, Peter Zijlstra wrote:
-> > > On Thu, 2012-05-31 at 10:08 -0400, Steven Rostedt wrote:
-> > > > > Also, why does this stuff live in ftrace? I always thought you were
-> > > > > going to replace text_poke() so everybody that uses cross-modifying code
-> > > > > could profit?
-> > > > 
-> > > > I discussed this with Masami at Collaboration Summit. The two are
-> > > > similar but also very different. But we want to start merging the two
-> > > > together where it makes sense. 
-> > > 
-> > > Argh,. I so disagree. You're doing it backwards.
-> > > 
-> > > First you merge whatever is there, regardless of who came first.
-> > 
-> > The comment about coming first was more about 're-inventing' then about
-> > merging. You can't reinvent something that didn't exist.
-> > 
-> > That said, I didn't even think about text poke while doing this.
-> 
-> Well, the fail is before that, how could we grow two pieces of code
-> doing similar things in the first place? 
 
-Again, ftrace is slightly different as it does 30,000 changes at once,
-on top of known nops. This was done through stop_machine(), thus any
-slowdown was a large hit to system performance. text_poke() took the way
-of mapping a page to do the change, and Mathieu didn't want to change
-that (IIRC). But now we want the two to be similar.
+--Clx92ZfkiYIKRjnr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, May 31, 2012 at 06:37:00PM +0000, Krystian Garbaciak wrote:
 
-> 
-> >  I was
-> > just simply thinking about removing stop_machine from ftrace, that
-> > required this. It was only a after thought that text_poke() could do the
-> > same. And this came up at Collab, where I thought, oh yeah! we can
-> > incorporate this with text poke.
-> 
-> But but but but.. the thing far back when Mathieu proposed the int3
-> scheme it was text_poke().. how.. did you not think of it this time!?
+Fix your mailer to word wrap between paragraphs, your mails are not easy
+to read.
 
-Right, but we disagreed on its implementation, and yes, the idea came
-from that, but I thought text_poke() was so different that it wouldn't
-apply. It wasn't until Masami suggested changing text_poke() to be more
-like what ftrace does, that I really took thought into it.
+> > Wouldn't something naturally sorted like a rbtree be a more direct way =
+of doing
+> > this?
 
-> 
-> > 
-> > > Then, when everybody doing text modification is using the same
-> > > interface, do a second implementation using a Kconfig knob. If the scary
-> > > new one breaks, no sweat, flip the config. If its proven stable, kill
-> > > off the old one.
-> > 
-> > What do you suggest then? To revert the code and rewrite it so that
-> > text_poke() does a similar thing?
-> 
-> Too late for that now I guess.. I just wonder why you all thought it was
-> a good idea to have two pieces of code doing cross-modifying-code. I
-> always assumed ftrace used text_poke().
+> I expect here to have one or two ranges registered. Do you think,
+> rbtree will be more efficient?
 
-Well, it was more of two different people working on two different
-things. We really didn't look too closely at each others work. It was
-more a social failure than a technical one.
+It might make the code rather more obvious, right now it's not exactly
+clear.
 
-> 
-> I hardly ever use dyn-ftrace but I do use some text_poke() through
-> jump_labels.
+> > > +		range_cfg =3D NULL;
+> > > +		for (n =3D 0, min_base =3D UINT_MAX; n < config->n_ranges; n++)
+> > > +			if (range_base <=3D config->ranges[n].base_reg &&
+> > > +			    config->ranges[n].base_reg <=3D min_base)
+> > > +				range_cfg =3D &config->ranges[n];
+> > > +
 
-You don't use function tracer? That's dyn-ftrace.
+> > I've stared at this for a little while and I'm really not sure what it'=
+s supposed to
+> > do.  The whole thing with min_base is just a bit odd, we're doing compa=
+risons
+> > against it but we never update it so why aren't we using a constant, an=
+d in fact
+> > the comparison is always going to be true since we're comparing against
+> > UINT_MAX.
 
-But still, we need to keep the record as small as possible because it is
-persistent throughout the life of the system running. Every location
-must be recorded, and maintain a state (flags).
+> > I suspect it's supposed to pick the range with the lowest base but I'm =
+not
+> > convinced it does that.
 
-Text_poke() mostly grew out of the jump-label work. But yes, there's
-still a lot that can be shared. The actual code modification may be.
+> I  am searching for a range configuration with the lowest address
+> range, that was not added yet.  I use range_base as a pointer to mark
+> the position of base address for the next range to be added.
 
-> 
-> I would still like to end up with one code base doing CMC with two
-> implementations depending on a Kconfig knob.
+None of which really addresses what I'm saying at all - the code is very
+obscure, especially whatever you're doing with min_base which works out
+as an always true comparison with a constant as far as I can tell.
 
-You mean keep stop_machine around?
+> > > +		if (!range_cfg || range_cfg->base_reg > range_base) {
+> > > +			/* Range of registers for direct access */
 
--- Steve
+> > This is making my head hurt too, possibly because of the lack of clarit=
+y in the
+> > above.
 
+> Any empty space before configured virtual range is filled with range
+> used for direct access. Empty address space, after all defined ranges,
+> is used for direct access too (If that makes sense?). To mark such
+> range (translate_reg=3D=3DNULL).
 
+I got what it's supposed to do, it's just not at all obvious how it
+accomplishes this.  Like I say the fact that the immediately preceeding
+code upon which it relies is as clear as mud isn't helping here.
+
+> > > +			/* Update page register (may use caching) */
+> > > +			ret =3D _regmap_update_bits(map, range-
+> > >page_sel_reg,
+> > > +						range->page_sel_mask,
+> > > +						_page << range-
+> > >page_sel_shift,
+> > > +						&change);
+> > > +			if (ret < 0)
+> > > +				return ret;
+
+> > Why the comment about the cache - why would this go wrong?
+
+> Nothing. _regmap_update_bits() is used, so the cache can be hit here
+> and speed up paging.
+
+So why is this so surprising that we need a comment?  The comment seems
+like it's flagging something that might be broken but fortunately isn't.
+
+> Legal Disclaimer: This e-mail communication (and any attachment/s) is con=
+fidential and contains proprietary information,=20
+> some or all of which may be legally privileged. It is intended solely for=
+ the use of the individual or entity to which it
+> is addressed. Access to this email by anyone else is unauthorized. If you=
+ are not the intended recipient, any disclosure,=20
+> copying, distribution or any action taken or omitted to be taken in relia=
+nce on it, is prohibited and may be unlawful.
+>=20
+> Please consider the environment before printing this e-mail
+
+You might want to see about removing this...  clearly you can do so
+since your patches don't have it?
+
+--Clx92ZfkiYIKRjnr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPx74TAAoJEBus8iNuMP3dTTsP/3dx0kdzXk534hffAaxa2jLE
+I6VvCO4SnysnyCkLhGAXFLfo67IqsbsHt1kYAk0U1Y9KngXamLLfQiN9njFXSMoo
+m0UmiaCvZQHiVwS4+hjSHNTUpeiOMpGUQ3ybSd7HnJrw+kI9zlFaty4gSGHo+lPl
+7rHCqbpEWwflUTTLz+rnDYO9iIY1miJv3cjiYWgnIgdMZfw4/wKbxetBfQNnavE4
+yVonr/IbkInuANIufghNwVkwLbVoKML7sGelg8Odm59bjOOrQ9k+RjcaJ0ZosRar
+x1iA1lwcaOQbhGnj7h7X9DXH4899KgwsAJW1RvDu7745Azi/5KPWHT2rH5xGLWvl
+2szjQzSKA+/iVDPFXpFPAdFFw66vGUwviil5xjucPQ0SuMNDZe5Rl7GEmnRtbgu9
+4RBZbZO7HNYfeCYvohjG2bg1s97mFBjR/WFHIM+889y79MjcTkVFRssTWrhAZ/kQ
+y+rFJxDKpG7tpXuN07ZtVkXbF/zm1KoPdpaggDMcGXa2GO2jPyHa2lEIpVIQ254o
+sZhLjtwU13nRQlFWbEKcYdgMVdXezo3UP1BhF+f+X3U2zmmlctQQZfD+12WqM1vk
+bZ7BiYTwAM1KHFApgwXMWMWpKKYnXZtHZo13XLBzBfvHKTJKSN0vVE9fUAtjMkhd
+xMAGehSSJ/ACTE1S/RUf
+=lfJV
+-----END PGP SIGNATURE-----
+
+--Clx92ZfkiYIKRjnr--
