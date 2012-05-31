@@ -1,41 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab2EaOJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 10:09:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34600 "EHLO mx1.redhat.com"
+	id S1758249Ab2EaOLW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 10:11:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758036Ab2EaOJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 10:09:18 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Junxiao Bi <junxiao.bi@oracle.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
-        jlbec@evilplan.org, bcrl@kvack.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, joe.jin@oracle.com
-Subject: Re: [PATCH 2/2] ocfs2: clear unaligned io flag when dio fails
-References: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com>
-	<1338437550-24499-2-git-send-email-junxiao.bi@oracle.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 31 May 2012 10:09:09 -0400
-In-Reply-To: <1338437550-24499-2-git-send-email-junxiao.bi@oracle.com>
-	(Junxiao Bi's message of "Thu, 31 May 2012 12:12:30 +0800")
-Message-ID: <x49fwagcuii.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758091Ab2EaOLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 10:11:19 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+In-Reply-To: <87r4u6w58c.fsf@rustcorp.com.au>
+References: <87r4u6w58c.fsf@rustcorp.com.au> <8762blyedn.fsf@rustcorp.com.au> <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <7474.1337782847@redhat.com> <5107.1337868051@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, kyle@mcmartin.ca, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+Date: Thu, 31 May 2012 15:11:02 +0100
+Message-ID: <17249.1338473462@redhat.com>
+From: David Howells <dhowells@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junxiao Bi <junxiao.bi@oracle.com> writes:
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-> The unaligned io flag is set in the kiocb when an unaligned
-> dio is issued, it should be cleared even when the dio fails,
-> or it may affect the following io which are using the same
-> kiocb.
+> > That then adds 5 bytes to the magic string.  Is that really so bad?
+> 
+> Yes, because it's unnecessary.
 
-What code is re-using kiocbs, much less re-using them without
-re-initializing them?
+I'm sorry Rusty, but this argument is disingenuous.
 
--Jeff
+Yes, a length field in the file is unnecessary - BUT SO TOO is scanning!  By
+this argument, your idea is really so bad too.  It's all about the trade off
+one chooses to make.  I do not accept your chosen trade off[*] as being the
+best one.
+
+David
+
+[*] And, yes, it *is* a trade off: you are trading CPU time and permanently
+    resident kernel code space in order to save a tiny amount of disk
+    space[**].
+
+[**] Assuming 512 byte blocks and a 5 byte size field, probably fewer than 1%
+     of modules will expand sufficiently to consume an extra block.  Further,
+     making it a 2-byte binary field would make it even less intrusive, both
+     in the file and in the module verifier.
