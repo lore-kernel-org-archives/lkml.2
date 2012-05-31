@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330Ab2EaSze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:55:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29641 "EHLO mx1.redhat.com"
+	id S932460Ab2EaS4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:56:11 -0400
+Received: from david.siemens.de ([192.35.17.14]:27005 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757647Ab2EaSzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:55:32 -0400
-Date: Thu, 31 May 2012 20:53:39 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
-	is_swbp_insn() == T
-Message-ID: <20120531185339.GA28057@redhat.com>
-References: <20120530165757.GA8077@redhat.com> <20120530165816.GA8085@redhat.com> <1338398931.28384.7.camel@twins> <20120530173717.GM15587@linux.vnet.ibm.com> <1338400142.28384.12.camel@twins> <1338400450.28384.16.camel@twins>
+	id S1752189Ab2EaS4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:56:08 -0400
+Message-ID: <4FC7BEB2.8000207@siemens.com>
+Date: Thu, 31 May 2012 20:55:46 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338400450.28384.16.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Rob Landley <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>, KVM <kvm@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+References: <20120531080116.24838.15692.sendpatchset@codeblue.in.ibm.com> <4FC7AE15.9040807@xenotime.net>
+In-Reply-To: <4FC7AE15.9040807@xenotime.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30, Peter Zijlstra wrote:
->
-> register's vma
-> iteration is very careful not to have the same vma twice,
+On 2012-05-31 19:44, Randy Dunlap wrote:
+> On 05/31/2012 01:01 AM, Raghavendra K T wrote:
+> 
+>> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com> 
+>>
+>> Thanks Alex for KVM_HC_FEATURES inputs and Jan for VAPIC_POLL_IRQ 
+>>
+>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>> ---
+>> diff --git a/Documentation/virtual/kvm/hypercalls.txt b/Documentation/virtual/kvm/hypercalls.txt
+>> new file mode 100644
+>> index 0000000..c79335a
+>> --- /dev/null
+>> +++ b/Documentation/virtual/kvm/hypercalls.txt
+>> @@ -0,0 +1,46 @@
+>> +KVM Hypercalls Documentation
+>> +===========================
+>> +The template for each hypercall is:
+>> +1. Hypercall name, value.
+>> +2. Architecture(s)
+>> +3. Status (deprecated, obsolete, active)
+>> +4. Purpose
+>> +
+>> +1. KVM_HC_VAPIC_POLL_IRQ
+>> +------------------------
+>> +Value: 1
+>> +Architecture: x86
+> 
+> 
+> No "Status", does that imply "Active" ?
 
-Hmm. I am wondering if it is careful enough...
+It should actually state that this call is in use.
 
-Just in case, I think your patch is great. But it seems to me
-there is another problem.
+Jan
 
-__find_next_vma_info() checks tmpvi->mm == vma->vm_mm to detect the
-already visited mm/vma. However, afaics this can be false positive?
-
-The caller, register_for_each_vma(), does mmput() and after that
-this memory can be freed and re-used as another mm_struct.
-
-I'll recheck this, but perhaps we need something like below?
-
-Oleg.
-
---- x/kernel/events/uprobes.c
-+++ x/kernel/events/uprobes.c
-@@ -851,7 +851,6 @@ static int register_for_each_vma(struct 
- 			list_del(&vi->probe_list);
- 			kfree(vi);
- 			up_write(&mm->mmap_sem);
--			mmput(mm);
- 			continue;
- 		}
- 		vaddr = vma_address(vma, uprobe->offset);
-@@ -860,7 +859,6 @@ static int register_for_each_vma(struct 
- 			list_del(&vi->probe_list);
- 			kfree(vi);
- 			up_write(&mm->mmap_sem);
--			mmput(mm);
- 			continue;
- 		}
- 
-@@ -870,7 +868,6 @@ static int register_for_each_vma(struct 
- 			remove_breakpoint(uprobe, mm, vi->vaddr);
- 
- 		up_write(&mm->mmap_sem);
--		mmput(mm);
- 		if (is_register) {
- 			if (ret && ret == -EEXIST)
- 				ret = 0;
-@@ -881,6 +878,7 @@ static int register_for_each_vma(struct 
- 
- 	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
- 		list_del(&vi->probe_list);
-+		mmput(vi->mm)
- 		kfree(vi);
- 	}
- 
-
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
