@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab2EaS67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:58:59 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38845 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932576Ab2EaS64 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:58:56 -0400
+	id S1757881Ab2EaS7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:59:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56607 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752732Ab2EaS7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:59:39 -0400
+Message-ID: <4FC7BF8B.60201@zytor.com>
+Date: Thu, 31 May 2012 11:59:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20120531182457.GB25955@fieldses.org>
-References: <20120531182457.GB25955@fieldses.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 31 May 2012 11:58:34 -0700
-X-Google-Sender-Auth: 0_9OxF0sLude_z10LRSQQDcWiYk
-Message-ID: <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
-Subject: Re: nfsd changes for 3.5
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jan Kiszka <jan.kiszka@siemens.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Rob Landley <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>, KVM <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+References: <20120531080116.24838.15692.sendpatchset@codeblue.in.ibm.com> <4FC7AE15.9040807@xenotime.net> <4FC7BEB2.8000207@siemens.com>
+In-Reply-To: <4FC7BEB2.8000207@siemens.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 11:24 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
->
-> Sorry this is a bit late.  In fact I still have a review backlog (at a
-> minimum some bugfixes), so will send a second pull later.
+On 05/31/2012 11:55 AM, Jan Kiszka wrote:
+>>
+>> No "Status", does that imply "Active" ?
+> 
+> It should actually state that this call is in use.
+> 
 
-Quite frankly, I'm not going to pull this without lots of explanations.
+It might be nice to point out when a call was introduced, and for
+deprecated calls, when it was deprecated.
 
-The VFS-level changes have no acks or sign-offs from anybody else, and
-quite frankly, if I understand them correctly they look f*cking
-disgusting. If I read them right, they break delegations of a file
-(which can involve long waits for clients - no?) while holding on to
-the directory inode lock (both directories for cross-inode renames).
-Which seems to be a singularly idiotic thing to do and sounds to me
-like a fundamental design mistake.
+	-hpa
 
-We simply don't do these kinds of VFS changes without having
-discussions and acks from people, notably Al.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-As to "second pull later" - if you haven't reviewed the code already,
-it's damn well much too late in the merge window to do it now.
-
-So quite frankly, this *all* looks like 3.6 material to me, and that's
-assuming you can convince people that file-delegation breaking really
-should happen with all lookups on the directory the file is in blocked
-by the directory inode mutex in the first place. Or tell me I'm a
-moron and I misread the patches and don't know what I'm talking about.
-
-          Linus
