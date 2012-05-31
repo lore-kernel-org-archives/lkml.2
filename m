@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab2EaP00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:26:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:40779 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab2EaP0Z (ORCPT
+	id S932590Ab2EaP1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:27:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37830 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752132Ab2EaP1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:26:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1205311650130.3231@ionos>
-References: <Pine.LNX.4.44L0.1205311004050.1580-100000@iolanthe.rowland.org>
-	<alpine.LFD.2.02.1205311650130.3231@ionos>
-Date: Thu, 31 May 2012 23:26:24 +0800
-Message-ID: <CAJRGBZwEq-fHObm03qHhVhFc13kJmG+-aDnuKAKsxbmaX=NjCA@mail.gmail.com>
-Subject: Re: Use of high-res timers
-From: Luming Yu <luming.yu@gmail.com>
+	Thu, 31 May 2012 11:27:45 -0400
+Date: Thu, 31 May 2012 11:27:44 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@redhat.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, jcm@jonmasters.org
-Content-Type: text/plain; charset=UTF-8
+cc: Ingo Molnar <mingo@redhat.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Use of high-res timers
+In-Reply-To: <alpine.LFD.2.02.1205311650130.3231@ionos>
+Message-ID: <Pine.LNX.4.44L0.1205311120370.1174-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> No. ktime_get() is guaranteed to be monotonic across CPUs.
->
+On Thu, 31 May 2012, Thomas Gleixner wrote:
 
-Hi,
+> > Here's an example.  A hardware device accesses a software data
+> > structure via DMA, and the driver needs to change the data structure.  
+> > However, the data can't be updated safely while the device is using it.
+> > Furthermore, we know that the device may continue to access the data
+> > for as long as 1 ms after being told to stop (because of internal
+> > caches and such).
+> 
+> And of course the hardware designers decided that there is no need for
+> a reliable way to detect that....
 
-We probably need a tool to enable people to test it out. I'd like to
-know if you would be interested in queuing up a tool
-(https://lkml.org/lkml/2012/4/10/282) for 3.5.
-I've pinged someone, but not sure they have extra bandwidth or still
-have interests in it.
+Well, it's not quite that bad.  In fact the hardware design does call
+for a counter that increments at 8000 Hz; it could be used for this 
+purpose.
 
-TIA.
+Except...  In some implementations, the counter stops at unpredictable
+times!  It's not reliable; hence this workaround.
+
+> It just depends on the resolution of the underlying clocksource and NTP
+> adjustments.
+> 
+> So the only case where you can run into trouble is when the
+> clocksource is coarse grained, e.g. pure jiffies, where two
+> consecutive calls can show a 1/HZ delta.
+> 
+> But you really should not worry much about that, except you are aiming
+> for some stoneage platform. Anything up to date is going to have at
+> least a 32kHz counter based clocksource. At 32kHz the per clock tick
+> increment is ~30us, so that's your expected error.
+
+Just what I needed to know!  Thanks.
+
+Alan Stern
+
