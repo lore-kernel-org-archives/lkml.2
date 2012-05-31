@@ -1,95 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab2EaFqW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:46:22 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51948 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab2EaFqH (ORCPT
+	id S1753214Ab2EaFrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:47:45 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38687 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2EaFro (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:46:07 -0400
-X-AuditID: 9c930197-b7be2ae000000ebb-74-4fc7059a9b3c
-From: Namhyung Kim <namhyung.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Sunjin Yang <fan4326@gmail.com>
-Subject: [PATCH/RFC 2/2] perf tools: Check callchain is corrupted
-Date: Thu, 31 May 2012 14:43:27 +0900
-Message-Id: <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
-References: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 31 May 2012 01:47:44 -0400
+Date: Thu, 31 May 2012 11:15:33 +0530
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, dhillf@gmail.com,
+        mhocko@suse.cz, akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH -V7 02/14] hugetlbfs: don't use ERR_PTR with VM_FAULT*
+ values
+Message-ID: <20120531054533.GE24855@skywalker.linux.vnet.ibm.com>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1338388739-22919-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1205301801060.25774@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1205301801060.25774@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12053019-0260-0000-0000-0000014344FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We faced segmentation fault on perf top -G at very high sampling
-rate due to a corrupted callchain. While the root cause was not
-revealed (I failed to figure it out), this patch tries to protect
-us from the segfault on such cases.
+On Wed, May 30, 2012 at 06:02:59PM -0700, David Rientjes wrote:
+> On Wed, 30 May 2012, Aneesh Kumar K.V wrote:
+> 
+> > From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+> > 
+> > The current use of VM_FAULT_* codes with ERR_PTR requires us to ensure
+> > VM_FAULT_* values will not exceed MAX_ERRNO value.  Decouple the
+> > VM_FAULT_* values from MAX_ERRNO.
+> > 
+> 
+> Yeah, but is there a reason for using VM_FAULT_HWPOISON_LARGE_MASK since 
+> that's the only VM_FAULT_* value that is greater than MAX_ERRNO?  The rest 
+> of your patch set doesn't require this, so I think this change should just 
+> be dropped.  (And PTR_ERR() still returns long, this wasn't fixed from my 
+> original review.)
+> 
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
----
- include/linux/perf_event.h |    4 ++--
- tools/perf/util/session.c  |   14 +++++++++++++-
- 2 files changed, 15 insertions(+), 3 deletions(-)
+The changes was done as per Andrew's request so that we don't have such hidden
+dependencies on the values of VM_FAULT_*. Yes it can be a seperate patch from
+the patchset. I have changed int to long as per your review.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8adf70e9e3cc..0430ea6054ef 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -555,6 +555,8 @@ enum perf_event_type {
- 	PERF_RECORD_MAX,			/* non-ABI */
- };
- 
-+#define PERF_MAX_STACK_DEPTH		255
-+
- enum perf_callchain_context {
- 	PERF_CONTEXT_HV			= (__u64)-32,
- 	PERF_CONTEXT_KERNEL		= (__u64)-128,
-@@ -609,8 +611,6 @@ struct perf_guest_info_callbacks {
- #include <linux/sysfs.h>
- #include <asm/local.h>
- 
--#define PERF_MAX_STACK_DEPTH		255
--
- struct perf_callchain_entry {
- 	__u64				nr;
- 	__u64				ip[PERF_MAX_STACK_DEPTH];
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index a7de2acac460..fa14e60ed459 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -300,6 +300,11 @@ int machine__resolve_callchain(struct machine *self,
- 
- 	callchain_cursor_reset(&callchain_cursor);
- 
-+	if (chain->nr > PERF_MAX_STACK_DEPTH) {
-+		pr_warning("corrupted callchain. skipping...\n");
-+		return 0;
-+	}
-+
- 	for (i = 0; i < chain->nr; i++) {
- 		u64 ip;
- 		struct addr_location al;
-@@ -318,7 +323,14 @@ int machine__resolve_callchain(struct machine *self,
- 			case PERF_CONTEXT_USER:
- 				cpumode = PERF_RECORD_MISC_USER;	break;
- 			default:
--				break;
-+				pr_debug("invalid callchain context: "
-+					 "%"PRId64"\n", (s64) ip);
-+				/*
-+				 * It seems the callchain is corrupted.
-+				 * Discard all.
-+				 */
-+				callchain_cursor_reset(&callchain_cursor);
-+				return 0;
- 			}
- 			continue;
- 		}
--- 
-1.7.10.1
+-aneesh
 
