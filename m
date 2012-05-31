@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab2EaFvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 01:51:15 -0400
-Received: from verein.lst.de ([213.95.11.211]:40702 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab2EaFvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 01:51:14 -0400
-X-Greylist: delayed 505 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 01:51:14 EDT
-Date: Thu, 31 May 2012 07:42:47 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] target/file: Drop O_SYNC in favor of implict
-	vfs_fsync_range for writes
-Message-ID: <20120531054247.GB29553@lst.de>
-References: <1338422263-19874-1-git-send-email-nab@linux-iscsi.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338422263-19874-1-git-send-email-nab@linux-iscsi.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753486Ab2EaFyY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 01:54:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54050 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456Ab2EaFyW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 01:54:22 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-02-4fc7078c0d15
+From: Namhyung Kim <namhyung.kim@lge.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] perf: Remove duplicate invocation on perf_event_for_each
+Date: Thu, 31 May 2012 14:51:44 +0900
+Message-Id: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
+X-Mailer: git-send-email 1.7.10.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 11:57:43PM +0000, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> This patch converts fd_execute_cmd() code to drop O_SYNC usage
-> (the original default) in favor of always preforming an implict
-> SCSI forced unit access (FUA) operation using vfs_fsync_range()
-> based on LBA + SectorCount after each completed FILEIO backend write.
-> 
-> This conversion was inspired by Linus's thoughts on O_SYNC usage in
-> the thread: http://www.spinics.net/lists/linux-fsdevel/msg55681.html
-> 
->   "O_SYNC is the absolutely anti-thesis of that kind of "multiple levels
->    of overlapping IO". Because it requires that the IO is _done_ by the
->    time you start more, which is against the whole point."
-> 
-> This patch also drops the now unnecessary fd_buffered_io= token usage
-> at createvirtdev time.  Tested with lio-core code using fio writeverify
-> to local tcm_loop + FILEIO <-> scsi_debug backed LUNs.
+The @func callback was invoked twice for group leader
+when perf_event_for_each() called. It seems the commit
+75f937f24bd9 ("perf_counter: Fix ctx->mutex vs counter
+->mutex inversion") made the mistake during the change.
 
-If you look at the implementation O_SYNC really just means an implicit
-vfs_fsync_range after each write, thus I can't see how this patch makes any
-difference.
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+---
+ kernel/events/core.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-For target use with WCE=0 semantics you could at least switch to O_DSYNC, though.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5b06cbbf6931..f85c0154b333 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3181,7 +3181,6 @@ static void perf_event_for_each(struct perf_event *event,
+ 	event = event->group_leader;
+ 
+ 	perf_event_for_each_child(event, func);
+-	func(event);
+ 	list_for_each_entry(sibling, &event->sibling_list, group_entry)
+ 		perf_event_for_each_child(sibling, func);
+ 	mutex_unlock(&ctx->mutex);
+-- 
+1.7.10.2
+
