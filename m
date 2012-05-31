@@ -1,115 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab2EaNlk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 09:41:40 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:26000
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757948Ab2EaNlj convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 09:41:39 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I14ffI542M1432Nzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ahbe9i)
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Bhushan Bharat-R65777 <R65777@freescale.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>
-CC: "agraf@suse.de" <agraf@suse.de>
-Subject: RE: memblock_end_of_DRAM()  return end address + 1
-Thread-Topic: memblock_end_of_DRAM()  return end address + 1
-Thread-Index: Ac0/HQWP16L7u7IaTN6gp93aPjbXWAAFYbxQ
-Date: Thu, 31 May 2012 13:41:34 +0000
-Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D03D5B033@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <6A3DF150A5B70D4F9B66A25E3F7C888D03D5AAE2@039-SN2MPN1-022.039d.mgd.msft.net>
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D03D5AAE2@039-SN2MPN1-022.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.249.67]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758167Ab2EaNqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 09:46:05 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54699 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948Ab2EaNqD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 09:46:03 -0400
+Date: Thu, 31 May 2012 10:45:57 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Sunjin Yang <fan4326@gmail.com>
+Subject: Re: [PATCH/RFC 2/2] perf tools: Check callchain is corrupted
+Message-ID: <20120531134557.GB13591@infradead.org>
+References: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
+ <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338443007-24857-2-git-send-email-namhyung.kim@lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding some more gentlemen's.	
+Em Thu, May 31, 2012 at 02:43:27PM +0900, Namhyung Kim escreveu:
+> We faced segmentation fault on perf top -G at very high sampling
+> rate due to a corrupted callchain. While the root cause was not
+> revealed (I failed to figure it out), this patch tries to protect
+> us from the segfault on such cases.
 
+Capping the callchain lenght may even be a feature, not a consistency
+check, but I don't know how long, for consistency checking, we should
+consider too much, as there are cases of loooong callchains.
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Bhushan Bharat-R65777
-> Sent: Thursday, May 31, 2012 4:34 PM
-> To: linux-mm@kvack.org; linux-kernel@vger.kernel.org
-> Cc: agraf@suse.de
-> Subject: memblock_end_of_DRAM() return end address + 1
-> 
-> Hi All,
-> 
-> memblock_end_of_DRAM() defined in mm/memblock.c returns base_address + size; So
-> this is not returning the end_of_DRAM, it is basically returning the end_of_DRAM
-> + 1. The name looks to suggest that this returns end address on DRAM.
-> 
-> IIUC, it looks like that some code assumes this returns the end address while
-> some assumes this returns end address + 1.
-> 
-> Example:
-> 1. arch/powerpc/platforms/85xx/mpc85xx_ds.c
-> 
-> 
-> <cut>
-> 
-> #ifdef CONFIG_SWIOTLB
->         if (memblock_end_of_DRAM() > max) {
->                 ppc_swiotlb_enable = 1;
->                 set_pci_dma_ops(&swiotlb_dma_ops);
->                 ppc_md.pci_dma_dev_setup = pci_dma_dev_setup_swiotlb;
->         }
-> #endif
-> 
-> <cut>
-> <cut>
-> 
-> 
-> Where  max = 0xffffffff; So we assumes that memblock_end_of_DRAM() actually
-> returns end address.
-> 
-> ------
-> 2.
-> 
-> In arch/powerpc/kernel/dma.c
-> 
-> 
-> static int dma_direct_dma_supported(struct device *dev, u64 mask) { #ifdef
-> CONFIG_PPC64
->         /* Could be improved so platforms can set the limit in case
->          * they have limited DMA windows
->          */
->         return mask >= get_dma_offset(dev) + (memblock_end_of_DRAM() - 1);
-> 
-> 
-> <cut>
-> 
-> It looks to that here we assume base + addr + 1;
-> 
-> -----------
-> 
-> 
-> Thanks
-> -Bharat
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the
-> body of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ingo? Peter?
 
-
+- Arnaldo
+ 
+> Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+> ---
+>  include/linux/perf_event.h |    4 ++--
+>  tools/perf/util/session.c  |   14 +++++++++++++-
+>  2 files changed, 15 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 8adf70e9e3cc..0430ea6054ef 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -555,6 +555,8 @@ enum perf_event_type {
+>  	PERF_RECORD_MAX,			/* non-ABI */
+>  };
+>  
+> +#define PERF_MAX_STACK_DEPTH		255
+> +
+>  enum perf_callchain_context {
+>  	PERF_CONTEXT_HV			= (__u64)-32,
+>  	PERF_CONTEXT_KERNEL		= (__u64)-128,
+> @@ -609,8 +611,6 @@ struct perf_guest_info_callbacks {
+>  #include <linux/sysfs.h>
+>  #include <asm/local.h>
+>  
+> -#define PERF_MAX_STACK_DEPTH		255
+> -
+>  struct perf_callchain_entry {
+>  	__u64				nr;
+>  	__u64				ip[PERF_MAX_STACK_DEPTH];
+> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+> index a7de2acac460..fa14e60ed459 100644
+> --- a/tools/perf/util/session.c
+> +++ b/tools/perf/util/session.c
+> @@ -300,6 +300,11 @@ int machine__resolve_callchain(struct machine *self,
+>  
+>  	callchain_cursor_reset(&callchain_cursor);
+>  
+> +	if (chain->nr > PERF_MAX_STACK_DEPTH) {
+> +		pr_warning("corrupted callchain. skipping...\n");
+> +		return 0;
+> +	}
+> +
+>  	for (i = 0; i < chain->nr; i++) {
+>  		u64 ip;
+>  		struct addr_location al;
+> @@ -318,7 +323,14 @@ int machine__resolve_callchain(struct machine *self,
+>  			case PERF_CONTEXT_USER:
+>  				cpumode = PERF_RECORD_MISC_USER;	break;
+>  			default:
+> -				break;
+> +				pr_debug("invalid callchain context: "
+> +					 "%"PRId64"\n", (s64) ip);
+> +				/*
+> +				 * It seems the callchain is corrupted.
+> +				 * Discard all.
+> +				 */
+> +				callchain_cursor_reset(&callchain_cursor);
+> +				return 0;
+>  			}
+>  			continue;
+>  		}
+> -- 
+> 1.7.10.1
