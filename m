@@ -1,86 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758315Ab2EaSYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 14:24:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15710 "EHLO mx1.redhat.com"
+	id S1758337Ab2EaSZB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 14:25:01 -0400
+Received: from fieldses.org ([174.143.236.118]:57804 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752009Ab2EaSYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 14:24:37 -0400
-Message-ID: <4FC7B754.5040209@redhat.com>
-Date: Thu, 31 May 2012 15:24:20 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1758122Ab2EaSY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 14:24:58 -0400
+Date: Thu, 31 May 2012 14:24:58 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: nfsd changes for 3.5
+Message-ID: <20120531182457.GB25955@fieldses.org>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "Luck, Tony" <tony.luck@intel.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-References: <4FBE5E1D.7070804@redhat.com> <20120524164554.GM27063@aftab.osrc.amd.com> <4FBE7755.2080301@redhat.com> <20120529115851.GB29157@aftab.osrc.amd.com> <4FC4D6E2.9060501@redhat.com> <20120529145245.GG29157@aftab.osrc.amd.com> <4FC4E9EB.5030801@redhat.com> <3908561D78D1C84285E8C5FCA982C28F192F6672@ORSMSX104.amr.corp.intel.com> <20120531100005.GC14074@aftab.osrc.amd.com> <3908561D78D1C84285E8C5FCA982C28F192F6C61@ORSMSX104.amr.corp.intel.com> <20120531172018.GO14515@aftab.osrc.amd.com>
-In-Reply-To: <20120531172018.GO14515@aftab.osrc.amd.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-05-2012 14:20, Borislav Petkov escreveu:
-> On Thu, May 31, 2012 at 04:51:27PM +0000, Luck, Tony wrote:
->> No, it's a 6-bit field used as a shift ... so if it has value "6", it
->> means cache line granularity. Value "12" would mean 4K granularity.
->> Architecturally it could say "30" to mean gigabyte, or even "63" to
->> mean "everything is gone".
-> 
-> Right, 0x3f are 6 bits, correct, doh!
-> 
->>>> while a few (IIRC patrol scrub) will report with page (4K)
->>>> granularity. Linux doesn't really care - they all have to get rounded
->>>> up to page size because we can't take away just one cache line from a
->>>> process.
->>>
->>> I'd like to see that :-)
->>
->> Patrol scrub works inside the depths of the memory controller on rank/row
->> addresses, not on system physical addresses. When it finds a problem, a
->> reverse translation is needed to be able to report a system physical
->> address in MCi_ADDR. Getting all the bits right is apparently a hard thing
->> to do, so the MCI_MISC_ADDR_LSB bits are used to indicate that some low
->> order bits are not valid.
-> 
-> Ok, thus the dynamic granularity. But we're going to end up reporting
-> rank and row too so that it can be matched to the DIMM. I consider
-> physical address a bonus in such cases and it is only of importance to
-> those who like to replace single DRAM chips or single MOSFET transistors
-> :-) :-) :-).
-> 
+Please pull the following nfsd and file-locking changes from the for-3.5
+branch at:
 
-A single corrected error doesn't mean you need to replace anything. The need
-for a replacement is due to a joint probability of several independent
-events:
-	- a random noise;
-	- a failure on a MOSFET transistor;
-	- a failure at the DIMM contacts.
+	git://linux-nfs.org/~bfields/linux.git for-3.5
 
-In order to distinguish between them, you need to know the statistics of
-each of the above stochastic process and use some correlation functions
-to detect to each group of event a series of error belongs.
+Sorry this is a bit late.  In fact I still have a review backlog (at a
+minimum some bugfixes), so will send a second pull later.
 
-For example, the error address at the DIMM contacts can be given by a
-constant random variable, affecting a group of bits at the syndrome,
-while a failure at a group of MOSFET transistors will be given by a
-(series) of degenerate distribution function.
+This includes patches addressing a long-standing problem in our NFSv4
+implementation, which is that read delegations aren't broken on certain
+local operations.  (Hence a diffstat with a few lines in namei.c and
+attr.c).  The problem isn't solved completely in the case of rename,
+where a small race remains; the patches to fix that will come in from Al
+Viro if they pass review.  But there's no regression in nfsd behavior if
+those patches don't make it in.
 
-By properly exporting the address/grain/syndrome, an userspace program
-can filter random noise failures from a defect at a DRAM or a bad contact
-issue at the DIMM, and use different error count limits for each type of
-error, when telling userspace when a memory should be replaced or not.
+Other than that:
 
-Regards,
-Mauro
+	- From Stanislav Kinsbursky, a bunch of NFS containerization
+	  work (still in progress).
+	- Fix a failure to process encrypted rpc's from Windows clients
+	  and servers due to our (incorrect) failure to handle gss
+	  tokens with rotated data.
+	- Fix some stuff caught by sparse (actual bugs are fairly
+	  minor); thanks to Al for reminding me to add sparse to my
+	  regular testing.
+	- Fixes for some protocol bugs in the procedures that establish
+	  4.0 and 4.1 clients, and much cleaner code.  (Thanks also to
+	  Chuck for a bugfix here, and Bryan and Trond for finding
+	  another bug.)
+	- Some cleanup and bugfixes from Jeff, Simo, and Dros.
 
+--b.
+
+
+Chuck Lever (1):
+      NFSD: SETCLIENTID_CONFIRM returns NFS4ERR_CLID_INUSE too often
+
+J. Bruce Fields (44):
+      locks: introduce new FL_DELEG lock flag
+      locks: implement delegations
+      locks: break delegations on unlink
+      locks: break delegations on rename
+      locks: break delegations on link
+      locks: break delegations on any attribute modification
+      nfsd4: minor nfs4_setlease cleanup
+      nfsd4: delay setting current_fh in open
+      nfsd4: close open-deleg/unlink/rename lease
+      nfsd4: break only delegations when appropriate
+      nfsd: state.c should include current_stateid.h
+      nfsd4: fix missing "static"
+      nfsd4: preserve __user annotation on cld downcall msg
+      nfsd4: int/__be32 fixes
+      nfsd4: fix free_stateid return endianness
+      nfsd4: fix change attribute endianness
+      rpc: handle rotated gss data for Windows interoperability
+      svcrpc: fix a comment typo
+      nfsd4: exchange_id has a pointless copy
+      nfsd4: exchange_id error cleanup
+      nfsd4: exchange_id: check creds before killing confirmed client
+      nfsd4: allow an EXCHANGE_ID to kill a 4.0 client
+      nfsd4: exchange_id cleanup: local shorthands for repeated tests
+      nfsd4: exchange_id cleanup: comments
+      nfsd4: rearrange exchange_id logic to simplify
+      nfsd4: allow removing clients not holding state
+      nfsd4: move principal name into svc_cred
+      nfsd4: stricter cred comparison for setclientid/exchange_id
+      nfsd4: move rq_flavor into svc_cred
+      nfsd4: setclientid remove unnecessary terms from a logical expression
+      nfsd4: setclientid/confirm comment cleanup
+      nfsd4: merge last two setclientid cases
+      nfsd4: pull out common code from setclientid cases
+      nfsd4: merge 3 setclientid cases to 2
+      nfsd4: fix setclientid_confirm same_cred check
+      nfsd4: fix error return in non-matching-creds case
+      nfsd4: setclientid: remove pointless assignment
+      nfsd4: simpler ordering of setclientid_confirm checks
+      nfsd4: clarify that renewing expired client is a bug
+      nfsd4: fix exchange_id to return confirm flag
+      nfsd4: return "real" sequence id in confirmed case
+      nfsd4: remove some dprintk's and a comment
+      nfsd4: don't remove rebooted client record until confirmation
+      nfsd4: fix, consolidate client_has_state
+
+Jeff Layton (8):
+      nfsd: trivial: remove unused variable from nfsd4_lock
+      nfsd: don't use locks_in_grace to determine whether to call nfs4_grace_end
+      nfsd: trivial: use SEEK_SET instead of 0 in vfs_llseek
+      sunrpc: do array overrun check in svc_recv before allocating pages
+      nfsd: consolidate set_access and set_deny
+      nfsd: make test_share a bool return
+      nfsd: wrap accesses to st_access_bmap
+      nfsd: wrap all accesses to st_deny_bmap
+
+Simo Sorce (2):
+      svcauth: remove unused define
+      SUNRPC: split upcall function to extract reusable parts
+
+Stanislav Kinsbursky (26):
+      nfsd: use passed cache_detail pointer expkey_parse()
+      nfsd: add link to owner cache detail to svc_export structure
+      nfsd: use cache detail pointer from svc_export structure on cache put
+      nfsd: use exp_put() for svc_export_cache put
+      nfsd: pass svc_export_cache pointer as private data to "exports" seq file ops
+      nfsd: use hash table from cache detail in nfsd export seq ops
+      nfsd: pass pointer to expkey cache down to stack wherever possible.
+      NFSd: remove hard-coded dereferences to name-to-id and id-to-name caches
+      Lockd: pass network namespace to creation and destruction routines
+      nfsd: pass network context to export caches init/shutdown routines
+      nfsd: pass pointer to export cache down to stack wherever possible.
+      nfsd: make export cache allocated per network namespace context
+      nfsd: make expkey cache allocated per network namespace context
+      nfsd: allocate export and expkey caches in per-net operations.
+      nfsd: pass network context to idmap init/exit functions
+      nfsd: make id-to-name cache allocated per network namespace context
+      nfsd: make name-to-id cache allocated per network namespace context
+      nfsd: allocate id-to-name and name-to-id caches in per-net operations.
+      SUNRPC: new svc_bind() routine introduced
+      SUNRPC: move per-net operations from svc_destroy()
+      LockD: pass service to per-net up and down functions
+      LockD: use existing per-net data function on service creation
+      LockD: service creation function introduced
+      LockD: move global usage counter manipulation from error path
+      LockD: service start function introduced
+      LockD: add debug message to start and stop functions
+
+Weston Andros Adamson (2):
+      nfsd: add IPv6 addr escaping to fs_location hosts
+      nfsd: return 0 on reads of fault injection files
+
+ fs/attr.c                           |    3 +
+ fs/lockd/clntlock.c                 |   13 +-
+ fs/lockd/svc.c                      |  148 +++++----
+ fs/locks.c                          |   51 ++-
+ fs/namei.c                          |   19 +-
+ fs/nfs/callback.c                   |   13 +-
+ fs/nfsd/auth.c                      |    2 +-
+ fs/nfsd/export.c                    |  181 ++++++-----
+ fs/nfsd/fault_inject.c              |    1 +
+ fs/nfsd/idmap.h                     |    8 +-
+ fs/nfsd/netns.h                     |    6 +
+ fs/nfsd/nfs4callback.c              |    5 +-
+ fs/nfsd/nfs4idmap.c                 |  113 ++++---
+ fs/nfsd/nfs4proc.c                  |   36 ++-
+ fs/nfsd/nfs4recover.c               |    4 +-
+ fs/nfsd/nfs4state.c                 |  599 +++++++++++++++++------------------
+ fs/nfsd/nfs4xdr.c                   |   62 ++--
+ fs/nfsd/nfsctl.c                    |   67 ++--
+ fs/nfsd/nfsfh.c                     |    2 +-
+ fs/nfsd/nfssvc.c                    |   31 +-
+ fs/nfsd/state.h                     |    1 -
+ fs/nfsd/vfs.c                       |   33 +-
+ fs/nfsd/xdr4.h                      |    9 +-
+ include/linux/fs.h                  |   19 +-
+ include/linux/lockd/bind.h          |    4 +-
+ include/linux/nfsd/export.h         |   13 +-
+ include/linux/sunrpc/svc.h          |    2 +-
+ include/linux/sunrpc/svcauth.h      |   13 +-
+ include/linux/sunrpc/svcauth_gss.h  |    1 -
+ net/sunrpc/auth_gss/gss_krb5_wrap.c |   61 +++-
+ net/sunrpc/auth_gss/svcauth_gss.c   |  127 ++++----
+ net/sunrpc/rpcb_clnt.c              |   12 +-
+ net/sunrpc/svc.c                    |   23 +-
+ net/sunrpc/svc_xprt.c               |    4 +-
+ net/sunrpc/svcauth_unix.c           |   19 +-
+ 35 files changed, 1009 insertions(+), 696 deletions(-)
+
+--b.
