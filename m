@@ -1,174 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417Ab2EaWb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 18:31:57 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38104 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab2EaWbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 18:31:55 -0400
-Date: Thu, 31 May 2012 15:31:27 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Christoph Hellwig <hch@infradead.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Stephane Marchesin <marcheu@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>, Rob Clark <rob.clark@linaro.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-mm@kvack.org,
-        linux-fsdevel@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] shmem: replace_page must flush_dcache and others
-Message-ID: <alpine.LSU.2.00.1205311524160.4512@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1758570Ab2EaWgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 18:36:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54403 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758456Ab2EaWgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 18:36:07 -0400
+Date: Fri, 1 Jun 2012 00:35:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>
+Subject: Re: [PATCH 2/4] [RFC] Range tree implementation
+Message-ID: <20120531223559.GB19050@quack.suse.cz>
+References: <1337973456-19533-1-git-send-email-john.stultz@linaro.org>
+ <1337973456-19533-3-git-send-email-john.stultz@linaro.org>
+ <20120531204806.GB16338@quack.suse.cz>
+ <4FC7DCD7.6020800@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC7DCD7.6020800@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit bde05d1ccd51 ("shmem: replace page if mapping excludes its zone")
-is not at all likely to break for anyone, but it was an earlier version
-from before review feedback was incorporated.  Fix that up now.
+On Thu 31-05-12 14:04:23, John Stultz wrote:
+> On 05/31/2012 01:48 PM, Jan Kara wrote:
+> >On Fri 25-05-12 12:17:34, John Stultz wrote:
+> >>I suspect range-tree isn't a totally accurate name, but I
+> >>couldn't quite make out the difference between range trees
+> >>and interval trees, so I just picked one to call it. Do
+> >>let me know if you have a better name.
+> >   Well, interval tree is a data structure for tracking a set of
+> >possibly overlapping intervals. Range tree is a data structure tracking
+> >points allowing for fast queries on a set of points contained in a given
+> >range (gets useful and interesting when dimension>  1). Your data structure
+> >is neither so it would be good to have a different name. OTOH there are so
+> >many data structures that it's hard to find a reasonable unused name ;)
+> 
+> Although I'm not sure your interval tree description doesn't match
+> what I'm trying to provide. Could you clarify why that doesn't
+> match?
+  Wikipedia has a good description of Interval trees:
+  http://en.wikipedia.org/wiki/Interval_tree
 
-* shmem_replace_page must flush_dcache_page after copy_highpage [akpm]
-* Expand comment on why shmem_unuse_inode needs page_swapcount [akpm]
-* Remove excess of VM_BUG_ONs from shmem_replace_page [wangcong]
-* Check page_private matches swap before calling shmem_replace_page [hughd]
-* shmem_replace_page allow for unexpected race in radix_tree lookup [hughd]
+  For example they are tertiary trees.
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephane Marchesin <marcheu@chromium.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Dave Airlie <airlied@gmail.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>
-Cc: Rob Clark <rob.clark@linaro.org>
----
+> >>+ * @root: range_tree root
+> >>+ * @start: range start
+> >>+ * @end: range end
+> >>+ *
+> >>+ */
+> >>+struct range_tree_node *range_tree_next_in_range(struct range_tree_node *node,
+> >>+							u64 start, u64 end)
+> >>+{
+> >>+	struct rb_node *next;
+> >>+	struct range_tree_node *candidate;
+> >>+	if (!node)
+> >>+		return NULL;
+> >>+	next = rb_next(&node->rb);
+> >>+	if (!next)
+> >>+		return NULL;
+> >>+
+> >>+	candidate = container_of(next, struct range_tree_node, rb);
+> >>+
+> >>+	if ((candidate->start>  end) || (candidate->end<  start))
+> >>+		return NULL;
+> >>+
+> >>+	return candidate;
+> >>+}
+> >>+
+> >>+/**
+> >>+ * range_tree_add - Add a node to a range tree
+> >>+ * @root: range tree to be added to
+> >>+ * @node: range_tree_node to be added
+> >>+ *
+> >>+ * Adds a node to the range tree.
+> >   I think you should document here that the added range must not intersect
+> >with any other range in the tree.
+> 
+> So for my usage in the volatile range code, I don't want
+> intersecting or overlapping ranges added, but I didn't feel it was
+> necessary to add this restriction to my rangetree code as well,
+> since someone might want to store overlapping ranges.
+  Ok, but then you should define where an interval that is intersecting
+other intervals ends up sorted...
 
-Andrew, many thanks for sending those patches in for v3.5.  You'll find
-a [PATCH v2 1/10] languishing in your mailbox from 18 May.  Since that
-didn't make it to Linus, please delete it, and send this incremental
-instead.  I don't see much point in renaming shmem_replace_page now,
-but if you still feel that shmem_substitute_page is preferable, we
-can send another patch to make that change.  Thanks - Hugh
-
- mm/shmem.c |   57 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 37 insertions(+), 20 deletions(-)
-
---- 3.4.0+/mm/shmem.c	2012-05-30 08:17:19.404008281 -0700
-+++ linux/mm/shmem.c	2012-05-31 12:26:28.920160948 -0700
-@@ -683,10 +683,21 @@ static int shmem_unuse_inode(struct shme
- 		mutex_lock(&shmem_swaplist_mutex);
- 		/*
- 		 * We needed to drop mutex to make that restrictive page
--		 * allocation; but the inode might already be freed by now,
--		 * and we cannot refer to inode or mapping or info to check.
--		 * However, we do hold page lock on the PageSwapCache page,
--		 * so can check if that still has our reference remaining.
-+		 * allocation, but the inode might have been freed while we
-+		 * dropped it: although a racing shmem_evict_inode() cannot
-+		 * complete without emptying the radix_tree, our page lock
-+		 * on this swapcache page is not enough to prevent that -
-+		 * free_swap_and_cache() of our swap entry will only
-+		 * trylock_page(), removing swap from radix_tree whatever.
-+		 *
-+		 * We must not proceed to shmem_add_to_page_cache() if the
-+		 * inode has been freed, but of course we cannot rely on
-+		 * inode or mapping or info to check that.  However, we can
-+		 * safely check if our swap entry is still in use (and here
-+		 * it can't have got reused for another page): if it's still
-+		 * in use, then the inode cannot have been freed yet, and we
-+		 * can safely proceed (if it's no longer in use, that tells
-+		 * nothing about the inode, but we don't need to unuse swap).
- 		 */
- 		if (!page_swapcount(*pagep))
- 			error = -ENOENT;
-@@ -730,9 +741,9 @@ int shmem_unuse(swp_entry_t swap, struct
- 
- 	/*
- 	 * There's a faint possibility that swap page was replaced before
--	 * caller locked it: it will come back later with the right page.
-+	 * caller locked it: caller will come back later with the right page.
- 	 */
--	if (unlikely(!PageSwapCache(page)))
-+	if (unlikely(!PageSwapCache(page) || page_private(page) != swap.val))
- 		goto out;
- 
- 	/*
-@@ -995,21 +1006,15 @@ static int shmem_replace_page(struct pag
- 	newpage = shmem_alloc_page(gfp, info, index);
- 	if (!newpage)
- 		return -ENOMEM;
--	VM_BUG_ON(shmem_should_replace_page(newpage, gfp));
- 
--	*pagep = newpage;
- 	page_cache_get(newpage);
- 	copy_highpage(newpage, oldpage);
-+	flush_dcache_page(newpage);
- 
--	VM_BUG_ON(!PageLocked(oldpage));
- 	__set_page_locked(newpage);
--	VM_BUG_ON(!PageUptodate(oldpage));
- 	SetPageUptodate(newpage);
--	VM_BUG_ON(!PageSwapBacked(oldpage));
- 	SetPageSwapBacked(newpage);
--	VM_BUG_ON(!swap_index);
- 	set_page_private(newpage, swap_index);
--	VM_BUG_ON(!PageSwapCache(oldpage));
- 	SetPageSwapCache(newpage);
- 
- 	/*
-@@ -1019,13 +1024,24 @@ static int shmem_replace_page(struct pag
- 	spin_lock_irq(&swap_mapping->tree_lock);
- 	error = shmem_radix_tree_replace(swap_mapping, swap_index, oldpage,
- 								   newpage);
--	__inc_zone_page_state(newpage, NR_FILE_PAGES);
--	__dec_zone_page_state(oldpage, NR_FILE_PAGES);
-+	if (!error) {
-+		__inc_zone_page_state(newpage, NR_FILE_PAGES);
-+		__dec_zone_page_state(oldpage, NR_FILE_PAGES);
-+	}
- 	spin_unlock_irq(&swap_mapping->tree_lock);
--	BUG_ON(error);
- 
--	mem_cgroup_replace_page_cache(oldpage, newpage);
--	lru_cache_add_anon(newpage);
-+	if (unlikely(error)) {
-+		/*
-+		 * Is this possible?  I think not, now that our callers check
-+		 * both PageSwapCache and page_private after getting page lock;
-+		 * but be defensive.  Reverse old to newpage for clear and free.
-+		 */
-+		oldpage = newpage;
-+	} else {
-+		mem_cgroup_replace_page_cache(oldpage, newpage);
-+		lru_cache_add_anon(newpage);
-+		*pagep = newpage;
-+	}
- 
- 	ClearPageSwapCache(oldpage);
- 	set_page_private(oldpage, 0);
-@@ -1033,7 +1049,7 @@ static int shmem_replace_page(struct pag
- 	unlock_page(oldpage);
- 	page_cache_release(oldpage);
- 	page_cache_release(oldpage);
--	return 0;
-+	return error;
- }
- 
- /*
-@@ -1107,7 +1123,8 @@ repeat:
- 
- 		/* We have to do this with page locked to prevent races */
- 		lock_page(page);
--		if (!PageSwapCache(page) || page->mapping) {
-+		if (!PageSwapCache(page) || page_private(page) != swap.val ||
-+		    page->mapping) {
- 			error = -EEXIST;	/* try again */
- 			goto failed;
- 		}
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
