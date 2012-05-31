@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590Ab2EaP1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 11:27:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37830 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752132Ab2EaP1p (ORCPT
+	id S932593Ab2EaP2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 11:28:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57248 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab2EaP2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 11:27:45 -0400
-Date: Thu, 31 May 2012 11:27:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Ingo Molnar <mingo@redhat.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Use of high-res timers
-In-Reply-To: <alpine.LFD.2.02.1205311650130.3231@ionos>
-Message-ID: <Pine.LNX.4.44L0.1205311120370.1174-100000@iolanthe.rowland.org>
+	Thu, 31 May 2012 11:28:35 -0400
+X-AuditID: b753bd60-a1c87ba000000655-74-4fc78e1d2775
+X-AuditID: b753bd60-a1c87ba000000655-74-4fc78e1d2775
+Message-ID: <4FC78E1A.90907@hitachi.com>
+Date: Fri, 01 Jun 2012 00:28:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe optimization
+References: <20120529124833.9191.23007.stgit@localhost.localdomain>   <1338331514.13348.298.camel@gandalf.stny.rr.com>   <4FC5C55E.9000909@hitachi.com>  <1338377978.13348.308.camel@gandalf.stny.rr.com>  <4FC787D8.4010904@hitachi.com> <1338477346.13348.351.camel@gandalf.stny.rr.com>
+In-Reply-To: <1338477346.13348.351.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012, Thomas Gleixner wrote:
-
-> > Here's an example.  A hardware device accesses a software data
-> > structure via DMA, and the driver needs to change the data structure.  
-> > However, the data can't be updated safely while the device is using it.
-> > Furthermore, we know that the device may continue to access the data
-> > for as long as 1 ms after being told to stop (because of internal
-> > caches and such).
+(2012/06/01 0:15), Steven Rostedt wrote:
+> On Fri, 2012-06-01 at 00:01 +0900, Masami Hiramatsu wrote:
 > 
-> And of course the hardware designers decided that there is no need for
-> a reliable way to detect that....
-
-Well, it's not quite that bad.  In fact the hardware design does call
-for a counter that increments at 8000 Hz; it could be used for this 
-purpose.
-
-Except...  In some implementations, the counter stops at unpredictable
-times!  It's not reliable; hence this workaround.
-
-> It just depends on the resolution of the underlying clocksource and NTP
-> adjustments.
+>> OK, that's same as what I expected. In that case,
+>> all __kprobes functions are already filtered out
+>> by kprobes itself. So we don't need to set that anymore.
+>>
+>> Hmm, CFLAGS_REMOVE_kprobes.o can also keep kprobes from
+>> function tracer. So I'd like to try to use that instead
+>> of including notrace into __kprobes.
+>> However, in that case, kprobe users must remove -pg from
+>> their kernel modules too, and take care that they must
+>> call only notrace kernel APIs...
+>>
+>> Perhaps, we'd better introduce new kprobe flag which allow
+>> kprobe to accept new probe on ftrace, so that user can
+>> explicitly understand what he will do.
 > 
-> So the only case where you can run into trouble is when the
-> clocksource is coarse grained, e.g. pure jiffies, where two
-> consecutive calls can show a 1/HZ delta.
+> Please do not make kprobe functions not allow function tracing! I *want*
+> to trace these functions! For example, I trace functions in NMIs all the
+> time, and I know these are prohibited by kprobes.
 > 
-> But you really should not worry much about that, except you are aiming
-> for some stoneage platform. Anything up to date is going to have at
-> least a 32kHz counter based clocksource. At 32kHz the per clock tick
-> increment is ~30us, so that's your expected error.
+> Why can't we function trace this? If kprobes does not trace functions
+> marked with kprobes already, then it should not have any issue. Kprobes
+> will only use the function tracer for what its allowed to use.
 
-Just what I needed to know!  Thanks.
+Because when I removed notrace from the __kprobes, the kernel caused
+triple fault and didn't boot, even kprobes was not used.
+I guess that it is because some recursive call of function tracer
+has happened. So, I've added notrace to __kprobes (but it was too
+widely applied).
 
-Alan Stern
+> Do not remove -pg from anything to satisfy kprobes. It shouldn't need
+> it.
 
+But some kprobes functions will/must be called from kprobes handlers.
+Those should be marked as notrace, shouldn't it?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
