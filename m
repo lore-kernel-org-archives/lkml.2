@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965115Ab2FAP4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:56:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49168 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965085Ab2FAP4B (ORCPT
+	id S965129Ab2FAP4O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:56:14 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:60199 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965114Ab2FAP4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:56:01 -0400
-Date: Fri, 1 Jun 2012 15:05:07 +0800
+	Fri, 1 Jun 2012 11:56:07 -0400
+Date: Fri, 1 Jun 2012 15:06:35 +0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [ 71/94] spi/spi-fsl-spi: reference correct pdata in
- fsl_spi_cs_control
-Message-ID: <20120601070507.GD13229@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Joshua Roys <Joshua.Roys@gtri.gatech.edu>,
+        Neptune Ning <frostyplanet@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 89/94] rtlwifi: fix for race condition when firmware is cached
+Message-ID: <20120601070635.GE13229@kroah.com>
 References: <20120527010332.GA11170@kroah.com>
- <20120527010433.768465216@linuxfoundation.org>
- <20120528194437.GC2915@herton-Z68MA-D2H-B3>
+ <20120527010436.309233153@linuxfoundation.org>
+ <20120528202113.GD2915@herton-Z68MA-D2H-B3>
+ <4FC3F530.6070906@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120528194437.GC2915@herton-Z68MA-D2H-B3>
+In-Reply-To: <4FC3F530.6070906@lwfinger.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 28, 2012 at 04:44:38PM -0300, Herton Ronaldo Krzesinski wrote:
-> On Sun, May 27, 2012 at 10:05:34AM +0900, Greg KH wrote:
-> > 3.3-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
+On Mon, May 28, 2012 at 04:59:12PM -0500, Larry Finger wrote:
+> On 05/28/2012 03:21 PM, Herton Ronaldo Krzesinski wrote:
+> >On Sun, May 27, 2012 at 10:05:52AM +0900, Greg KH wrote:
+> >>3.3-stable review patch.  If anyone has any objections, please let me know.
+> >>
+> >>------------------
+> >>
+> >>From: Larry Finger<Larry.Finger@lwfinger.net>
+> >>
+> >>commit 574e02abaf816b582685805f0c1150ca9f1f18ee upstream.
+> >>
+> >>In commit b0302ab, the rtlwifi family of drivers was converted to use
+> >>asynchronous firmware loading. Unfortumately, the implementation was
+> >>racy, and the ieee80211 routines could be started before rtl_init_core()
+> >>was called to setup the data.
+> >
+> >Shouldn't also 3.3 have another fix after b0302ab was applied to it,
+> >that is commit 0298dc9 ("rtlwifi: rtl8192de: Fix firmware initialization") ?
+> >I noted it is missing, cherry-picks cleanly here on 3.3
 > 
-> In addition to this fix, please also cherry-pick into 3.3 series commit
-> 5039a86973cd35bdb2f64d28ee12f13fe2bb5a4c, "spi/mpc83xx: fix NULL pdata
-> dereference bug". I noted now that 3.3 stable is missing it. It
-> was the first part addressing the issue introduced by commit 178db7d3 in
-> spi-fsl-spi, that is included in 3.3.
+> Yes, that patch could be applied to 3.3. I chose not to mark it as
+> Cc Stable as that card is not widely available, thus I did not
+> expect the problem to harm many users. On reflection, I think I made
+> the wrong choice.
+> 
+> Greg, could you please apply mainline commit 0298dc9 to 3.3-stable?
 
 Now applied, thanks.
 
