@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966096Ab2FAXj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 19:39:56 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:58163 "EHLO
+	id S966080Ab2FAXjy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 19:39:54 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:58135 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966065Ab2FAXjd (ORCPT
+	with ESMTP id S966064Ab2FAXjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Jun 2012 19:39:33 -0400
 From: John Stultz <john.stultz@linaro.org>
@@ -21,51 +21,62 @@ Cc: John Stultz <john.stultz@linaro.org>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
         Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE handlers
-Date: Fri,  1 Jun 2012 16:38:46 -0700
-Message-Id: <1338593926-17344-4-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 1/3] [RFC] Interval tree implementation
+Date: Fri,  1 Jun 2012 16:38:44 -0700
+Message-Id: <1338593926-17344-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
 In-Reply-To: <1338593926-17344-1-git-send-email-john.stultz@linaro.org>
 References: <1338593926-17344-1-git-send-email-john.stultz@linaro.org>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060123-2398-0000-0000-00000721F3E1
+x-cbid: 12060123-2398-0000-0000-00000721F3DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
-functionality for tmpfs making use of the volatile range
-management code.
+After Andrew suggested something like his mumbletree idea
+to better store a list of intervals, I worked on a few different
+approaches, and this is what I've finally managed to get working.
 
-Conceptually, FALLOC_FL_MARK_VOLATILE is like a delayed
-FALLOC_FL_PUNCH_HOLE.  This allows applications that have
-data caches that can be re-created to tell the kernel that
-some memory contains data that is useful in the future, but
-can be recreated if needed, so if the kernel needs, it can
-zap the memory without having to swap it out.
+The idea of storing intervals in a tree is nice, but has a number
+of complications. When adding an interval, its possible that a
+large interval will consume and merge a number of smaller intervals.
+When removing a interval, its possible you may end up splitting an
+existing interval, causing one interval to become two. This makes it
+very difficult to provide generic list_head like behavior, as
+the parent structures would need to be duplicated and removed,
+and that has lots of memory ownership issues.
 
-In use, applications use FALLOC_FL_MARK_VOLATILE to mark
-page ranges as volatile when they are not in use. Then later
-if they wants to reuse the data, they use
-FALLOC_FL_UNMARK_VOLATILE, which will return an error if the
-data has been purged.
+So, this is a much simplified and more list_head like
+implementation. You can add a node to a tree, or remove a node
+to a tree, but the generic implementation doesn't do the
+merging or splitting for you. But it does provide helpers to
+find overlapping and adjacent intervals.
 
-This is very much influenced by the Android Ashmem interface by
-Robert Love so credits to him and the Android developers.
-In many cases the code & logic come directly from the ashmem patch.
-The intent of this patch is to allow for ashmem-like behavior, but
-embeds the idea a little deeper into the VM code.
+Andrew also really wanted this interval-tree implementation to be
+resuable so we don't duplicate the file locking logic. I'm not
+totally convinced that the requirements between the volatile
+intervals and file locking are really equivelent, but this reduced
+impelementation may make it possible.
 
-This is a reworked version of the fadvise volatile idea submitted
-earlier to the list. Thanks to Dave Chinner for suggesting to
-rework the idea in this fashion. Also thanks to Dmitry Adamushko
-for continued review and bug reporting, and Dave Hansen for
-help with the original design and mentoring me in the VM code.
+Changelog:
+v2:
+* Reworked code to use an rbtree instead of splaying
 
 v3:
-* Fix off by one issue when truncating page ranges
-* Use Dave Hansesn's suggestion to use shmem_writepage to trigger
-  range purging instead of using a shrinker.
+* Added range_tree_next_in_range() to avoid having to start
+  lookups from the root every time.
+* Fixed some comments and return NULL instead of 0, as suggested
+  by Aneesh Kumar K.V
+
+v6:
+* Fixed range_tree_in_range() so that it finds the earliest range,
+  rather then the first. This allows the next_in_range() function
+  to properly cover all the ranges in the tree.
+* Minor clenaups to simplify some of the functions
+
+v7:
+* Changed terminology from rangetree to intervaltree as suggested
+  by Jan Kara
 
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Android Kernel Team <kernel-team@android.com>
@@ -85,171 +96,212 @@ CC: Jan Kara <jack@suse.cz>
 CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- fs/open.c              |    3 +-
- include/linux/falloc.h |    7 ++--
- mm/shmem.c             |   84 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 90 insertions(+), 4 deletions(-)
+ include/linux/intervaltree.h |   55 +++++++++++++++++++
+ lib/Makefile                 |    2 +-
+ lib/intervaltree.c           |  119 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 175 insertions(+), 1 deletions(-)
+ create mode 100644 include/linux/intervaltree.h
+ create mode 100644 lib/intervaltree.c
 
-diff --git a/fs/open.c b/fs/open.c
-index d543012..448ed5a 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -223,7 +223,8 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 		return -EINVAL;
- 
- 	/* Return error if mode is not supported */
--	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-+	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE |
-+			FALLOC_FL_MARK_VOLATILE | FALLOC_FL_UNMARK_VOLATILE))
- 		return -EOPNOTSUPP;
- 
- 	/* Punch hole must have keep size set */
-diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-index 73e0b62..3e47ad5 100644
---- a/include/linux/falloc.h
-+++ b/include/linux/falloc.h
-@@ -1,9 +1,10 @@
- #ifndef _FALLOC_H_
- #define _FALLOC_H_
- 
--#define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
--#define FALLOC_FL_PUNCH_HOLE	0x02 /* de-allocates range */
--
-+#define FALLOC_FL_KEEP_SIZE		0x01 /* default is extend size */
-+#define FALLOC_FL_PUNCH_HOLE		0x02 /* de-allocates range */
-+#define FALLOC_FL_MARK_VOLATILE		0x04 /* mark range volatile */
-+#define FALLOC_FL_UNMARK_VOLATILE	0x08 /* mark range non-volatile */
- #ifdef __KERNEL__
- 
- /*
-diff --git a/mm/shmem.c b/mm/shmem.c
-index d576b84..0cc33a4 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -64,6 +64,7 @@ static struct vfsmount *shm_mnt;
- #include <linux/highmem.h>
- #include <linux/seq_file.h>
- #include <linux/magic.h>
-+#include <linux/volatile.h>
- 
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
-@@ -624,11 +625,79 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
- 	return error;
- }
- 
-+static DEFINE_VOLATILE_FS_HEAD(shmem_volatile_head);
+diff --git a/include/linux/intervaltree.h b/include/linux/intervaltree.h
+new file mode 100644
+index 0000000..cfaa174
+--- /dev/null
++++ b/include/linux/intervaltree.h
+@@ -0,0 +1,55 @@
++#ifndef _LINUX_INTERVALTREE_H
++#define _LINUX_INTERVALTREE_H
 +
-+static int shmem_mark_volatile(struct inode *inode, loff_t offset, loff_t len)
++#include <linux/types.h>
++#include <linux/rbtree.h>
++
++struct interval_tree_node {
++	struct rb_node rb;
++	u64 start;
++	u64 end;
++};
++
++struct interval_tree_root {
++	struct rb_root head;
++};
++
++static inline void interval_tree_init(struct interval_tree_root *root)
 +{
-+	loff_t lstart, lend;
-+	int ret;
++	root->head = RB_ROOT;
++}
 +
-+	lstart = offset >> PAGE_CACHE_SHIFT;
-+	lend = (offset+len) >> PAGE_CACHE_SHIFT;
++static inline void interval_tree_node_init(struct interval_tree_node *node)
++{
++	rb_init_node(&node->rb);
++	node->start = 0;
++	node->end = 0;
++}
 +
-+	volatile_range_lock(&shmem_volatile_head);
-+	ret = volatile_range_add(&shmem_volatile_head, &inode->i_data,
-+					lstart, lend);
-+	if (ret > 0) { /* immdiately purge */
-+		shmem_truncate_range(inode, lstart<<PAGE_CACHE_SHIFT,
-+				((lend+1)<<PAGE_CACHE_SHIFT)-1);
-+		ret = 0;
++static inline int interval_tree_empty(struct interval_tree_root *root)
++{
++	return RB_EMPTY_ROOT(&root->head);
++}
++
++static inline
++struct interval_tree_node *interval_tree_root_node(
++						struct interval_tree_root *root)
++{
++	struct interval_tree_node *ret;
++	ret = container_of(root->head.rb_node, struct interval_tree_node, rb);
++	return ret;
++}
++
++extern struct interval_tree_node *interval_tree_in_interval(
++						struct interval_tree_root *root,
++						 u64 start, u64 end);
++extern struct interval_tree_node *interval_tree_next_in_interval(
++						struct interval_tree_node *node,
++						u64 start, u64 end);
++extern void interval_tree_add(struct interval_tree_root *root,
++					struct interval_tree_node *node);
++extern void interval_tree_remove(struct interval_tree_root *root,
++					struct interval_tree_node *node);
++#endif
++
++
+diff --git a/lib/Makefile b/lib/Makefile
+index 8c31a0c..2bbad25 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
+ 	 idr.o int_sqrt.o extable.o prio_tree.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+ 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
+-	 is_single_threaded.o plist.o decompress.o
++	 is_single_threaded.o plist.o decompress.o intervaltree.o
+ 
+ lib-$(CONFIG_MMU) += ioremap.o
+ lib-$(CONFIG_SMP) += cpumask.o
+diff --git a/lib/intervaltree.c b/lib/intervaltree.c
+new file mode 100644
+index 0000000..47c52e0
+--- /dev/null
++++ b/lib/intervaltree.c
+@@ -0,0 +1,119 @@
++#include <linux/intervaltree.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++
++/* This code implements a naive interval tree, which stores a series of
++ * non-intersecting intervals.
++ * More complex interval trees can be read about here:
++ *		http://en.wikipedia.org/wiki/Interval_tree
++ */
++
++
++/**
++ * interval_tree_in_interval - Returns the first node that intersects with the
++ *                             given interval
++ * @root: interval_tree root
++ * @start: interval start
++ * @end: interval end
++ *
++ */
++struct interval_tree_node *interval_tree_in_interval(
++						struct interval_tree_root *root,
++						u64 start, u64 end)
++{
++	struct rb_node *p = root->head.rb_node;
++	struct interval_tree_node *candidate, *match = NULL;
++
++	while (p) {
++		candidate = rb_entry(p, struct interval_tree_node, rb);
++		if (end < candidate->start)
++			p = p->rb_left;
++		else if (start > candidate->end)
++			p = p->rb_right;
++		else {
++			/* We found one, but try to find an earlier match */
++			match = candidate;
++			p = p->rb_left;
++		}
 +	}
-+	volatile_range_unlock(&shmem_volatile_head);
 +
-+	return ret;
++	return match;
 +}
 +
-+static int shmem_unmark_volatile(struct inode *inode, loff_t offset, loff_t len)
++
++/**
++ * interval_tree_next_in_interval - Return the next interval in a intervaltree
++ *                                  thatintersects with a specified interval.
++ * @root: interval_tree root
++ * @start: interval start
++ * @end: interval end
++ *
++ */
++struct interval_tree_node *interval_tree_next_in_interval(
++						struct interval_tree_node *node,
++						u64 start, u64 end)
 +{
-+	loff_t lstart, lend;
-+	int ret;
++	struct rb_node *next;
++	struct interval_tree_node *candidate;
++	if (!node)
++		return NULL;
++	next = rb_next(&node->rb);
++	if (!next)
++		return NULL;
 +
-+	lstart = offset >> PAGE_CACHE_SHIFT;
-+	lend = (offset+len) >> PAGE_CACHE_SHIFT;
++	candidate = container_of(next, struct interval_tree_node, rb);
 +
-+	volatile_range_lock(&shmem_volatile_head);
-+	ret = volatile_range_remove(&shmem_volatile_head,
-+					&inode->i_data,
-+					lstart, lend);
-+	volatile_range_unlock(&shmem_volatile_head);
++	if ((candidate->start > end) || (candidate->end < start))
++		return NULL;
 +
-+	return ret;
++	return candidate;
 +}
 +
-+static void shmem_clear_volatile(struct inode *inode)
++/**
++ * interval_tree_add - Add a node to a interval tree
++ * @root: interval tree to be added to
++ * @node: interval_tree_node to be added
++ *
++ * Adds a node to the interval tree. Added interval should not intersect with
++ * existing intervals in the tree.
++ */
++void interval_tree_add(struct interval_tree_root *root,
++					struct interval_tree_node *node)
 +{
-+	volatile_range_lock(&shmem_volatile_head);
-+	volatile_range_clear(&shmem_volatile_head, &inode->i_data);
-+	volatile_range_unlock(&shmem_volatile_head);
++	struct rb_node **p = &root->head.rb_node;
++	struct rb_node *parent = NULL;
++	struct interval_tree_node *ptr;
++
++	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
++
++	/* XXX might want to conditionalize this on debugging checks */
++	WARN_ON_ONCE(!!interval_tree_in_interval(root, node->start, node->end));
++
++	while (*p) {
++		parent = *p;
++		ptr = rb_entry(parent, struct interval_tree_node, rb);
++		if (node->start < ptr->start)
++			p = &(*p)->rb_left;
++		else
++			p = &(*p)->rb_right;
++	}
++	rb_link_node(&node->rb, parent, p);
++	rb_insert_color(&node->rb, &root->head);
 +}
 +
 +
-+
-+static int shmem_purge_one_volatile_range(void)
++/**
++ * interval_tree_remove: Removes a given node from the tree
++ * @root: root of tree
++ * @node: Node to be removed
++ *
++ * Removes a node and splays the tree
++ */
++void interval_tree_remove(struct interval_tree_root *root,
++					struct interval_tree_node *node)
 +{
-+	struct address_space *mapping;
-+	loff_t start, end;
-+	int ret;
++	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
 +
-+	volatile_range_lock(&shmem_volatile_head);
-+	ret = volatile_ranges_pluck_lru(&shmem_volatile_head, &mapping,
-+								&start, &end);
-+	if (ret)
-+		shmem_truncate_range(mapping->host, start<<PAGE_CACHE_SHIFT,
-+						(end<<PAGE_CACHE_SHIFT)-1);
-+	volatile_range_unlock(&shmem_volatile_head);
-+	return ret;
++	rb_erase(&node->rb, &root->head);
++	RB_CLEAR_NODE(&node->rb);
 +}
-+
-+
- static void shmem_evict_inode(struct inode *inode)
- {
- 	struct shmem_inode_info *info = SHMEM_I(inode);
- 	struct shmem_xattr *xattr, *nxattr;
- 
-+	shmem_clear_volatile(inode);
-+
- 	if (inode->i_mapping->a_ops == &shmem_aops) {
- 		shmem_unacct_size(info->flags, inode->i_size);
- 		inode->i_size = 0;
-@@ -776,6 +845,7 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
- 	struct inode *inode;
- 	swp_entry_t swap;
- 	pgoff_t index;
-+	int purged;
- 
- 	BUG_ON(!PageLocked(page));
- 	mapping = page->mapping;
-@@ -830,6 +900,12 @@ static int shmem_writepage(struct page *page, struct writeback_control *wbc)
- 		SetPageUptodate(page);
- 	}
- 
-+
-+	/* If we have volatile pages, try purging them first */
-+	purged = shmem_purge_one_volatile_range();
-+	if (purged)
-+		goto redirty;
-+
- 	swap = get_swap_page();
- 	if (!swap.val)
- 		goto redirty;
-@@ -1789,6 +1865,14 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
- 		/* No need to unmap again: hole-punching leaves COWed pages */
- 		error = 0;
- 		goto out;
-+	} else if (mode & FALLOC_FL_MARK_VOLATILE) {
-+		/* Mark pages volatile, sort of delayed hole punching */
-+		error = shmem_mark_volatile(inode, offset, len);
-+		goto out;
-+	} else if (mode & FALLOC_FL_UNMARK_VOLATILE) {
-+		/* Mark pages non-volatile, return error if pages were purged */
-+		error = shmem_unmark_volatile(inode, offset, len);
-+		goto out;
- 	}
- 
- 	/* We need to check rlimit even when FALLOC_FL_KEEP_SIZE */
 -- 
 1.7.3.2.146.gca209
 
