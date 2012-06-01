@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab2FAGj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 02:39:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55994 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757748Ab2FAGjZ (ORCPT
+	id S1757955Ab2FAGlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 02:41:53 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46059 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757784Ab2FAGlw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 02:39:25 -0400
-Date: Fri, 1 Jun 2012 09:39:20 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: David Rientjes <rientjes@google.com>
-cc: Joonsoo Kim <js1304@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] slub: change cmpxchg_double_slab in get_freelist() to
- __cmpxchg_double_slab
-In-Reply-To: <alpine.DEB.2.00.1205311351540.2764@chino.kir.corp.google.com>
-Message-ID: <alpine.LFD.2.02.1206010934460.2163@tux.localdomain>
-References: <1336665378-2967-1-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1205142332060.19403@chino.kir.corp.google.com> <alpine.DEB.2.00.1205311351540.2764@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 1 Jun 2012 02:41:52 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1205311342320.2764@chino.kir.corp.google.com>
+References: <1338438844-5022-1-git-send-email-andi@firstfloor.org>
+	<alpine.DEB.2.00.1205311342320.2764@chino.kir.corp.google.com>
+Date: Fri, 1 Jun 2012 09:41:51 +0300
+X-Google-Sender-Auth: 2K1XtElIjg2APZiVXKz3eE8Wh2I
+Message-ID: <CAOJsxLHz7sJytDdDsjXCP4VaR2AFu_dDJchHQuceB11wMGN+Yg@mail.gmail.com>
+Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
+ context v3
+From: Pekka Enberg <penberg@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, cl@linux.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 May 2012, David Rientjes wrote:
-> > On Fri, 11 May 2012, Joonsoo Kim wrote:
-> > 
-> > > get_freelist() is only called by __slab_alloc with interrupt disabled,
-> > > so __cmpxchg_double_slab is suitable.
-> > > 
-> > > Signed-off-by: Joonsoo Kim <js1304@gmail.com>
-> > 
-> > Acked-by: David Rientjes <rientjes@google.com>
+On Thu, May 31, 2012 at 11:45 PM, David Rientjes <rientjes@google.com> wrote:
+> On Wed, 30 May 2012, Andi Kleen wrote:
+>
+>> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+>> index cfb6c86..b65eb06 100644
+>> --- a/mm/mempolicy.c
+>> +++ b/mm/mempolicy.c
+>> @@ -1586,9 +1586,11 @@ static unsigned interleave_nodes(struct mempolicy *policy)
+>>   * task can change it's policy.  The system default policy requires no
+>>   * such protection.
+>>   */
+>> -unsigned slab_node(struct mempolicy *policy)
+>> +unsigned slab_node(void)
+>>  {
+>> -     if (!policy || policy->flags & MPOL_F_LOCAL)
+>> +     struct mempolicy *policy = current->mempolicy;
+>> +
+>> +     if (in_interrupt() || !policy || policy->flags & MPOL_F_LOCAL)
+>>               return numa_node_id();
+>>
+>>       switch (policy->mode) {
+>
+> I think the version proposed by David Mackey is more clear, it makes it
+> obvious that we don't want to dereference current in interrupt context
+> whereas that relies on short-circuiting your conditional in your approach.
 
-On Thu, 31 May 2012, David Rientjes wrote:
-> Pekka, did you want to pick this up so it can get into linux-next?
-
-We now made get_freelist() *require* interrupts to be disabled which 
-deserves a comment, no?
-
-Also, what do we gain from patches like this? It's somewhat 
-counterintuitive that we have a function with "cmpxchg" in it which is not 
-always atomic (i.e. you need to have interrupts disabled).
-
-IIRC, there was even a long rant about this by Linus but I'm unable to 
-find it in my email archives.
-
-			Pekka
+I like it better also. Christoph, Andi?
