@@ -1,103 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab2FAFVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 01:21:30 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:47110 "EHLO
+	id S1753182Ab2FAFW5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 01:22:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64051 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab2FAFV3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752470Ab2FAFW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 01:21:29 -0400
+	Fri, 1 Jun 2012 01:22:56 -0400
+Message-ID: <4FC851AB.2090905@gmail.com>
+Date: Thu, 31 May 2012 23:22:51 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1338524234-12165-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1338524234-12165-1-git-send-email-jonghwa3.lee@samsung.com>
-Date: Fri, 1 Jun 2012 10:51:29 +0530
-Message-ID: <CAKew6eWfPyC5ExJmEsgnRdsLsjAqc+zXCnVMzyyiqbEp1RUerw@mail.gmail.com>
-Subject: Re: [PATCH] regulator: MAX77686: Add Maxim 77686 regulator driver
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chiwoong Byun <woong.byun@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: acme@ghostprotocols.net
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de
+Subject: Re: [PATCH] perf tool: build fix, remove duplicate declarations
+References: <1338352913-60483-1-git-send-email-dsahern@gmail.com>
+In-Reply-To: <1338352913-60483-1-git-send-email-dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +static __devinit int max77686_pmic_probe(struct platform_device *pdev)
-> +{
-> +       struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-> +       struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
-> +       struct regulator_dev **rdev;
-> +       struct max77686_data *max77686;
-> +       int i,  size;
-> +       int ret = 0;
-> +       struct regulator_config config;
-> +
-> +       dev_dbg(&pdev->dev, "%s\n", __func__);
-> +
-> +       max77686 = devm_kzalloc(&pdev->dev, sizeof(struct max77686_data),
-> +                               GFP_KERNEL);
-> +       if (!max77686)
-> +               return -ENOMEM;
-> +
-> +       size = sizeof(struct regulator_dev *) * MAX77686_REGULATORS;
-> +       max77686->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
-> +       if (!max77686->rdev)
-> +               return -ENOMEM;
-> +
-> +       rdev = max77686->rdev;
-> +       max77686->dev = &pdev->dev;
-> +       max77686->iodev = iodev;
-> +       if (pdata)
-> +               max77686->num_regulators = pdata->num_regulators;
-> +       platform_set_drvdata(pdev, max77686);
-> +
-> +       max77686->ramp_delay = RAMP_RATE_NO_CTRL; /* Set 0x3 for RAMP */
-> +       regmap_update_bits(max77686->iodev->regmap,
-> +                       MAX77686_REG_BUCK2CTRL1, MAX77686_RAMP_RATE_MASK,
-> +                       max77686->ramp_delay << 6);
-> +       regmap_update_bits(max77686->iodev->regmap,
-> +                       MAX77686_REG_BUCK3CTRL1, MAX77686_RAMP_RATE_MASK,
-> +                       max77686->ramp_delay << 6);
-> +       regmap_update_bits(max77686->iodev->regmap,
-> +                       MAX77686_REG_BUCK4CTRL1, MAX77686_RAMP_RATE_MASK,
-> +                       max77686->ramp_delay << 6);
-> +
-> +       if (pdata->num_regulators == MAX77686_REGULATORS) {
+Arnaldo:
 
-I was expecting this check inside the if(pdata) { ... } earlier at
-starting of probe
-because it looks more appropriate(good)  their :).
-Anyways, this can also work.
+On 5/29/12 10:41 PM, David Ahern wrote:
+> I'm sure I have some gremlins running around today, but I am
+> consistently hitting this compile failure on Fedora 14 and 16:
+>
+> In file included from util/sort.h:12:0,
+>                   from builtin-diff.c:15:
+> util/string.h:7:5: error: redundant redeclaration of â€˜hex2u64â€™ [-Werror=redundant-decls]
+> util/symbol.h:32:5: note: previous declaration of â€˜hex2u64â€™ was here
+> util/string.h:8:7: error: redundant redeclaration of â€˜strxfrcharâ€™ [-Werror=redundant-decls]
+> util/symbol.h:33:7: note: previous declaration of â€˜strxfrcharâ€™ was here
+> util/string.h:9:5: error: redundant redeclaration of â€˜perf_atollâ€™ [-Werror=redundant-decls]
+> util/util.h:238:5: note: previous declaration of â€˜perf_atollâ€™ was here
+> util/string.h:10:8: error: redundant redeclaration of â€˜argv_splitâ€™ [-Werror=redundant-decls]
+> util/util.h:239:8: note: previous declaration of â€˜argv_splitâ€™ was here
+> util/string.h:11:6: error: redundant redeclaration of â€˜argv_freeâ€™ [-Werror=redundant-decls]
+> util/util.h:240:6: note: previous declaration of â€˜argv_freeâ€™ was here
+> util/string.h:12:6: error: redundant redeclaration of â€˜strglobmatchâ€™ [-Werror=redundant-decls]
+> util/util.h:241:6: note: previous declaration of â€˜strglobmatchâ€™ was here
+> util/string.h:13:6: error: redundant redeclaration of â€˜strlazymatchâ€™ [-Werror=redundant-decls]
+> util/util.h:242:6: note: previous declaration of â€˜strlazymatchâ€™ was here
+> cc1: all warnings being treated as errors
+> make: *** [/tmp/pbuild/builtin-diff.o] Error 1
+> make: *** Waiting for unfinished jobs....
+> make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
 
-> +               for (i = 0; i < MAX77686_REGULATORS; i++) {
-> +                       config.dev = max77686->dev;
-> +                       config.regmap = iodev->regmap;
-> +                       config.driver_data = max77686;
-> +                       config.init_data = pdata->regulators[i].initdata;
-> +
-> +                       rdev[i] = regulator_register(&regulators[i], &config);
-> +
-> +                       if (IS_ERR(rdev[i])) {
-> +                               ret = PTR_ERR(rdev[i]);
-> +                               dev_err(max77686->dev,
-> +                               "regulator init failed for %d\n", i);
-> +                               rdev[i] = NULL;
-> +                               goto err;
-> +                       }
-> +               }
-> +       } else {
-> +               dev_err(max77686->dev,
-> +                        "Lack of initial data for regulator's initialiation\n");
-> +               return -EINVAL;
-> +       }
-> +       return 0;
+You are probably not hitting this compile problem, and I have no idea 
+why I am suddenly hitting it on F14 and F16 (my usual test servers; i 
+have always hit this on older systems), but nonetheless there are 
+duplicate declarations between util.h and symbol.h which should be fixed.
+
+David
 
 
-Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+>
+> Fix it by removing duplicates.
+>
+> Signed-off-by: David Ahern<dsahern@gmail.com>
+> ---
+>   tools/perf/util/symbol.h |    4 +---
+>   tools/perf/util/util.h   |    6 +-----
+>   2 files changed, 2 insertions(+), 8 deletions(-)
+>
+> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+> index 1f00388..4ba5206 100644
+> --- a/tools/perf/util/symbol.h
+> +++ b/tools/perf/util/symbol.h
+> @@ -9,6 +9,7 @@
+>   #include<linux/list.h>
+>   #include<linux/rbtree.h>
+>   #include<stdio.h>
+> +#include "string.h"
+>
+>   #ifdef HAVE_CPLUS_DEMANGLE
+>   extern char *cplus_demangle(const char *, int);
+> @@ -29,9 +30,6 @@ static inline char *bfd_demangle(void __used *v, const char __used *c,
+>   #endif
+>   #endif
+>
+> -int hex2u64(const char *ptr, u64 *val);
+> -char *strxfrchar(char *s, char from, char to);
+> -
+>   /*
+>    * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+>    * for newer versions we can use mmap to reduce memory usage:
+> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+> index 2daaedb..5152592 100644
+> --- a/tools/perf/util/util.h
+> +++ b/tools/perf/util/util.h
+> @@ -78,6 +78,7 @@
+>   #include "../../../include/linux/magic.h"
+>   #include "types.h"
+>   #include<sys/ttydefaults.h>
+> +#include "string.h"
+>
+>   extern const char *graph_line;
+>   extern const char *graph_dotted_line;
+> @@ -235,11 +236,6 @@ static inline int sane_case(int x, int high)
+>   int mkdir_p(char *path, mode_t mode);
+>   int copyfile(const char *from, const char *to);
+>
+> -s64 perf_atoll(const char *str);
+> -char **argv_split(const char *str, int *argcp);
+> -void argv_free(char **argv);
+> -bool strglobmatch(const char *str, const char *pat);
+> -bool strlazymatch(const char *str, const char *pat);
+>   int strtailcmp(const char *s1, const char *s2);
+>   unsigned long convert_unit(unsigned long value, char *unit);
+>   int readn(int fd, void *buf, size_t size);
 
-Regards,
-Yadwinder.
