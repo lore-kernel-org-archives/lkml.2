@@ -1,119 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab2FADdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 23:33:01 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:11851 "EHLO mx2.netapp.com"
+	id S1758910Ab2FADkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 23:40:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60794 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758863Ab2FADcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 23:32:18 -0400
-X-IronPort-AV: E=Sophos;i="4.75,695,1330934400"; 
-   d="scan'208";a="652543240"
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: [PATCH 2/2] Define ENONAMESERVICE and ENAMEUNKNOWN to indicate name service errors
-Date: Thu, 31 May 2012 23:32:08 -0400
-Message-Id: <1338521528-2490-2-git-send-email-Trond.Myklebust@netapp.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1338521528-2490-1-git-send-email-Trond.Myklebust@netapp.com>
-References: <1338521528-2490-1-git-send-email-Trond.Myklebust@netapp.com>
+	id S1758887Ab2FADkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 23:40:04 -0400
+Message-ID: <4FC83940.9010708@zytor.com>
+Date: Thu, 31 May 2012 20:38:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Thavatchai Makphaibulcboke <thavatchai.makpahibulchoke@hp.com>
+CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "kaloz@openwrt.org" <kaloz@openwrt.org>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "lasse.collin@tukaani.org" <lasse.collin@tukaani.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "linux390@de.ibm.com" <linux390@de.ibm.com>
+Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper functions
+References: <1337875436-27640-1-git-send-email-tmac@hp.com> <20120528070336.GM3377@game.jcrosoft.org> <4FC82D89.1040108@hp.com>
+In-Reply-To: <4FC82D89.1040108@hp.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
+On 05/31/2012 07:48 PM, Thavatchai Makphaibulcboke wrote:
+> On 05/28/2012 01:03 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> 
+>> can we do not duplicate those functions?
+>>
+>> Best Regards,
+>> J.
+> 
+> Thanks J for the comment.  Unfortunately, there is no easy way to share
+> files among different architectures' preboot environment.  We have the
+> choices either to have each architecture define its own copies or the
+> decompressor defines them.  I believe the former is preferable.  As
+> Lasse also pointed out, this way any specific architecture could provide
+> an architectural dependent optimized version, if it chooses to.
+> 
 
-Now that the kernel has filesystems (and possibly other services) that want to
-look up internet addresses corresponding to arbitrary hostnames retrieved from
-the server, it would seem useful to provide a couple of error codes to indicate
-problems with the look up, rather than overloading some other error code.
+We could always make a source code library, like we already in effect
+have for the compression functions themselves.
 
-Define ENONAMESERVICE to indicate "Network name service unavailable".  This can
-be used to indicate, for example, that an attempt was made by dns_query() to
-make a query, but the name server (e.g. a DNS server) it is supposed to contact
-didn't answer or that it couldn't determine the location of a suitable server.
-
-Define ENAMEUNKNOWN to indicate "Network name unknown".  This can be used to
-indicate, for example, that an attempt was made by dns_query() to make a query,
-but the name server (e.g. a DNS server) replied indicating that it had no
-matching records.
-
-The DNS query upcall program can report these to keyctl_reject() so that cached
-failed queries will respond with these errors until they expire.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- arch/alpha/include/asm/errno.h  |    2 ++
- arch/mips/include/asm/errno.h   |    2 ++
- arch/parisc/include/asm/errno.h |    2 ++
- arch/sparc/include/asm/errno.h  |    2 ++
- include/asm-generic/errno.h     |    2 ++
- 5 files changed, 10 insertions(+)
-
-diff --git a/arch/alpha/include/asm/errno.h b/arch/alpha/include/asm/errno.h
-index dce5fc9..a4fc77e 100644
---- a/arch/alpha/include/asm/errno.h
-+++ b/arch/alpha/include/asm/errno.h
-@@ -125,5 +125,7 @@
- #define EHWPOISON	139	/* Memory page has hardware error */
- 
- #define	ENOAUTHSERVICE	140	/* Authentication service not available */
-+#define	ENONAMESERVICE	141	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	142	/* Network name unknown */
- 
- #endif
-diff --git a/arch/mips/include/asm/errno.h b/arch/mips/include/asm/errno.h
-index 67c46bd..ac95669 100644
---- a/arch/mips/include/asm/errno.h
-+++ b/arch/mips/include/asm/errno.h
-@@ -123,6 +123,8 @@
- 
- #define EHWPOISON	168	/* Memory page has hardware error */
- #define	ENOAUTHSERVICE	169	/* Authentication service not available */
-+#define	ENONAMESERVICE	170	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	171	/* Network name unknown */
- 
- #define EDQUOT		1133	/* Quota exceeded */
- 
-diff --git a/arch/parisc/include/asm/errno.h b/arch/parisc/include/asm/errno.h
-index 3a6ffcd..753cc5c 100644
---- a/arch/parisc/include/asm/errno.h
-+++ b/arch/parisc/include/asm/errno.h
-@@ -124,5 +124,7 @@
- 
- #define EHWPOISON	257	/* Memory page has hardware error */
- #define	ENOAUTHSERVICE	258	/* Authentication service not available */
-+#define	ENONAMESERVICE	259	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	260	/* Network name unknown */
- 
- #endif
-diff --git a/arch/sparc/include/asm/errno.h b/arch/sparc/include/asm/errno.h
-index 94a878f..01c9769 100644
---- a/arch/sparc/include/asm/errno.h
-+++ b/arch/sparc/include/asm/errno.h
-@@ -114,5 +114,7 @@
- 
- #define EHWPOISON	135	/* Memory page has hardware error */
- #define	ENOAUTHSERVICE	136	/* Authentication service not available */
-+#define	ENONAMESERVICE	137	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	138	/* Network name unknown */
- 
- #endif
-diff --git a/include/asm-generic/errno.h b/include/asm-generic/errno.h
-index 5e2b296..5d012c1 100644
---- a/include/asm-generic/errno.h
-+++ b/include/asm-generic/errno.h
-@@ -110,5 +110,7 @@
- 
- #define EHWPOISON	133	/* Memory page has hardware error */
- #define	ENOAUTHSERVICE	134	/* Authentication service not available */
-+#define	ENONAMESERVICE	135	/* Network name service unavailable */
-+#define	ENAMEUNKNOWN	136	/* Network name unknown */
- 
- #endif
--- 
-1.7.10.2
+	-hpa
 
