@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760133Ab2FAROZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:14:25 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:16419 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759148Ab2FAROY (ORCPT
+	id S1760139Ab2FART5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:19:57 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59106 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759212Ab2FARTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:14:24 -0400
-Message-ID: <4FC8F867.7080103@siemens.com>
-Date: Fri, 01 Jun 2012 19:14:15 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	Fri, 1 Jun 2012 13:19:55 -0400
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yongjie.ren@intel.com" <yongjie.ren@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
-References: <20120601161521.26935.25606.stgit@bling.home>  <4FC8F042.5050600@siemens.com> <1338570192.23475.25.camel@bling.home>
-In-Reply-To: <1338570192.23475.25.camel@bling.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CA+55aFwk8oYx8EKWdT=5cMTLK7RDz8GQdGmHk2KXwcCq+Bb8PA@mail.gmail.com>
+References: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com> <CA+55aFwk8oYx8EKWdT=5cMTLK7RDz8GQdGmHk2KXwcCq+Bb8PA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Jun 2012 10:19:33 -0700
+X-Google-Sender-Auth: vHBs6fw-Cray9fN5zs9-hx31KIA
+Message-ID: <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com>
+Subject: Re: GIT PULL] ext4 updates for 3.5
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-01 19:03, Alex Williamson wrote:
-> On Fri, 2012-06-01 at 18:39 +0200, Jan Kiszka wrote:
->> On 2012-06-01 18:16, Alex Williamson wrote:
->>> The kernel no longer allows us to pass NULL for a hard interrupt
->>> handler without IRQF_ONESHOT.  Should have been using this flag
->>> anyway.
->>
->> This make the IRQ handling tail a bit slower (due to
->> irq_finalize_oneshot). MSIs are edge-triggered, so there was no need for
->> masking in theory.
-> 
-> Aren't these asynchronous since we can theoretically do
-> irq_finalize_oneshot while the guest is servicing the device?
+On Fri, Jun 1, 2012 at 8:44 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Is there perhaps a tag I should pull instead?
 
-If it runs on a different CPU. But usually it's more efficient to have
-handler and user on the same CPU. And this work has to be processed
-somewhere.
+Never mind, I see it. It's 'ext4_for_linus'.
 
-> 
->>  Hmm, can't we trust the information that an IRQ
->> grabbed here is really a MSI type?
-> 
-> 
-> Apparently not, comment added with this check (1c6c6952):
-> 
->        * The interrupt was requested with handler = NULL, so
->        * we use the default primary handler for it. But it
->        * does not have the oneshot flag set. In combination
->        * with level interrupts this is deadly, because the
->        * default primary handler just wakes the thread, then
->        * the irq lines is reenabled, but the device still
->        * has the level irq asserted. Rinse and repeat....
->        *
->        * While this works for edge type interrupts, we play
->        * it safe and reject unconditionally because we can't
->        * say for sure which type this interrupt really
->        * has. The type flags are unreliable as the
->        * underlying chip implementation can override them.
+So here's the odd 'git' trick of the day.  Do
 
-I was talking about KVM here: Can't the KVM device assignment code
-ensure that only MSIs are registered as such so that the above concerns
-no longer apply?
+   git ls-remote
+git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 | less -S
 
-Jan
+to see all the branches and tags. In there, we see the branch you
+asked me to pull:
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+  5e44f8c374.. refs/heads/dev
+
+and then we can see if perhaps any of the tags have that same commit
+when peeled. So search for 5e44f8c374, and sure enough:
+
+  ..
+  4e4d525149..  refs/tags/ext4_for_linus
+  5e44f8c374..  refs/tags/ext4_for_linus^{}
+  ..
+
+so that 'ext4_for_linus' tag (which obviously has a different SHA1
+than the commit it points to) points to the same commit (the "^{}" is
+just the git SHA1 expression for "commit pointed to by object").
+
+So pulling 'ext4_for_linus' instead of 'dev' will get me the same
+commits you asked me to pull, with the added tag information that your
+pull request containes.
+
+Now I just wonder why your pull request said 'dev' at all.
+
+            Linus
