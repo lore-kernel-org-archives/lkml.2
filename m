@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760201Ab2FARzf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:55:35 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4911 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759979Ab2FARzc (ORCPT
+	id S965484Ab2FAR5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:57:08 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:58287 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758809Ab2FAR5G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:55:32 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6729"; a="196873068"
-Date: Fri, 1 Jun 2012 12:55:30 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [PATCH 17/20] hexagon: Do not call try_to_freeze() in
- do_signal()
-Message-ID: <20120601175530.GB23541@codeaurora.org>
-References: <1337983476-22081-1-git-send-email-richard@nod.at>
- <1337983476-22081-17-git-send-email-richard@nod.at>
+	Fri, 1 Jun 2012 13:57:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1337983476-22081-17-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120601174336.GA15778@thunk.org>
+References: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com>
+ <CA+55aFwk8oYx8EKWdT=5cMTLK7RDz8GQdGmHk2KXwcCq+Bb8PA@mail.gmail.com>
+ <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com> <20120601174336.GA15778@thunk.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Jun 2012 10:56:43 -0700
+X-Google-Sender-Auth: 5b5jYqZKTZRXTifI-P41RjpAp9Q
+Message-ID: <CA+55aFxgZupkAotfjUuWcfwTzHDYg0Afezme62P17=EX2KN+UQ@mail.gmail.com>
+Subject: Re: GIT PULL] ext4 updates for 3.5
+To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Junio C Hamano <gitster@pobox.com>,
+        Git Mailing List <git@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 26, 2012 at 12:04:33AM +0200, Richard Weinberger wrote:
-> get_signal_to_deliver() already calls try_to_freeze(), there is no
-> need to call it directly.
-> 
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> Cc: linux-hexagon@vger.kernel.org
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/hexagon/kernel/signal.c |    5 -----
->  1 files changed, 0 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/hexagon/kernel/signal.c b/arch/hexagon/kernel/signal.c
-> index 8403bfd..9783cfa 100644
-> --- a/arch/hexagon/kernel/signal.c
-> +++ b/arch/hexagon/kernel/signal.c
-> @@ -20,7 +20,6 @@
->  
->  #include <linux/linkage.h>
->  #include <linux/syscalls.h>
-> -#include <linux/freezer.h>
->  #include <linux/tracehook.h>
->  #include <linux/irqflags.h>
->  #include <asm/registers.h>
-> @@ -210,9 +209,6 @@ static void do_signal(struct pt_regs *regs)
->  	if (!user_mode(regs))
->  		return;
->  
-> -	if (try_to_freeze())
-> -		goto no_signal;
-> -
->  	signo = get_signal_to_deliver(&info, &sigact, regs, NULL);
->  
->  	if (signo > 0) {
-> @@ -237,7 +233,6 @@ static void do_signal(struct pt_regs *regs)
->  		return;
->  	}
->  
-> -no_signal:
->  	/*
->  	 * If we came from a system call, handle the restart.
->  	 */
-> -- 
-> 1.7.7.3
-> 
+On Fri, Jun 1, 2012 at 10:43 AM, Ted Ts'o <tytso@mit.edu> wrote:
+>
+> So I should do "git request-pull origin git://... ext4_for_linus" next
+> time, right?
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Right.
 
+> Sorry about that.  I thought it had included the reference to tag
+> automatically since the text of the tag showed in the request-pull
+> text.
 
--- 
+Apparently git request-pull is too damn smart for its own good, and
+will find the tags even when they aren't mentioned, making you think
+it made it to me. Bot it doesn't - so then I have to go search for
+them by hand.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Added Junio and git to the cc: if git finds the tag and uses that for
+the request-pull message text, then it should use the tagname for the
+pull request line too. Or, alternatively, don't be smart at all, and
+force users to name the tag explicitly. The current "both smart and
+dumb" combination seems to be the worst of both world.
+
+              Linus
