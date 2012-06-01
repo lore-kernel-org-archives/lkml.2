@@ -1,95 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965097Ab2FAP4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:56:00 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:47825 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965085Ab2FAPz5 (ORCPT
+	id S965115Ab2FAP4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:56:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49168 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965085Ab2FAP4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:55:57 -0400
-Date: Fri, 1 Jun 2012 15:03:06 +0800
+	Fri, 1 Jun 2012 11:56:01 -0400
+Date: Fri, 1 Jun 2012 15:05:07 +0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 05/91] iwlwifi: use 6000G2B for 6030 device series
-Message-ID: <20120601070306.GC13229@kroah.com>
-References: <20120527002508.028566430@linuxfoundation.org>
- <1338125678.20487.69.camel@deadeye>
+        alan@lxorguk.ukuu.org.uk,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [ 71/94] spi/spi-fsl-spi: reference correct pdata in
+ fsl_spi_cs_control
+Message-ID: <20120601070507.GD13229@kroah.com>
+References: <20120527010332.GA11170@kroah.com>
+ <20120527010433.768465216@linuxfoundation.org>
+ <20120528194437.GC2915@herton-Z68MA-D2H-B3>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338125678.20487.69.camel@deadeye>
+In-Reply-To: <20120528194437.GC2915@herton-Z68MA-D2H-B3>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 27, 2012 at 02:34:38PM +0100, Ben Hutchings wrote:
-> On Sun, 2012-05-27 at 09:25 +0900, Greg KH wrote:
-> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, May 28, 2012 at 04:44:38PM -0300, Herton Ronaldo Krzesinski wrote:
+> On Sun, May 27, 2012 at 10:05:34AM +0900, Greg KH wrote:
+> > 3.3-stable review patch.  If anyone has any objections, please let me know.
 > > 
 > > ------------------
-> > 
-> > From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> > 
-> > commit 35e7adaaf6932c5ffb22c6ec521734434c65adc5 upstream.
-> > 
-> > "iwlwifi: use correct released ucode version" change
-> > the ucode api ok from 6000G2 to 6000G2B, but it shall belong
-> > to 6030 device series, not the 6005 device series. Fix it
 > 
-> The relevant changes are:
-> 
-> (a)
-> commit e377a4fc768d7d477e58888bdbddd0103d6238bf
-> Author: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-> Date:   Sun Apr 22 07:55:27 2012 -0700
-> 
->     iwlwifi: use correct released ucode version
-> 
-> - changed IWL_DEVICE_6005 to use IWL6000G2B_UCODE_API_OK
-> - upstream in this merge window; not cc'd to stable; redundant with next change
-> 
-> (b)
-> commit 78cbcf2b9dbe0565820dc7721316f9c401000a68
-> Author: Meenakshi Venkataraman <meenakshi.venkataraman@intel.com>
-> Date:   Sun Apr 22 07:55:27 2012 -0700
-> 
->     iwlwifi: use correct released ucode version
-> 
-> - changed IWL_DEVICE_6005 to use IWL6000G2B_UCODE_API_OK (among many other changes)
-> - upstream in 3.4; cc'd to stable; applied in 3.2.17 and 3.3.5
-> 
-> (c)
-> commit 35e7adaaf6932c5ffb22c6ec521734434c65adc5
-> Author: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> Date:   Wed Apr 25 08:10:08 2012 -0700
-> 
->     iwlwifi: use 6000G2B for 6030 device series
-> 
-> - changed IWL_DEVICE_6005 back to IWL6000G2_UCODE_API_OK
-> - upstream in this merge window; cc'd to stable; redundant with next change
-> 
-> (d)
-> commit 1ed2ec37b44e86eaa8e0a03b908a39c80f65ee45
-> Author: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> Date:   Wed Apr 25 08:10:08 2012 -0700
-> 
->     iwlwifi: use 6000G2B for 6030 device series
-> 
-> - changed IWL_DEVICE_6005 back to IWL6000G2_UCODE_API_OK and IWL_DEVICE_6030 to IWL6000G2B_UCODE_API_OK
-> - upstream in 3.4; cc'd to stable; applied in 3.2.17 and 3.3.5
-> 
-> We have applied (b) and (d); (a) and (c) are thus redundant.
-> 
-> This is (a) but applied in the wrong place; the next patch (06/91) is
-> (c) but applied in the wrong place; together they are reverting the
-> effect of (d)).
+> In addition to this fix, please also cherry-pick into 3.3 series commit
+> 5039a86973cd35bdb2f64d28ee12f13fe2bb5a4c, "spi/mpc83xx: fix NULL pdata
+> dereference bug". I noted now that 3.3 stable is missing it. It
+> was the first part addressing the issue introduced by commit 178db7d3 in
+> spi-fsl-spi, that is included in 3.3.
 
-Ugh, messy.  I've now removed both of these from the 3.4 stable queue,
-thanks.
+Now applied, thanks.
 
 greg k-h
