@@ -1,88 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965216Ab2FAV5p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 17:57:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57535 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933280Ab2FAV5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 17:57:43 -0400
-Date: Fri, 1 Jun 2012 14:57:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Vladimir =?UTF-8?Q?'=CF=86-coder/phcoder'?= Serbinenko" 
-	<phcoder@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] Add Apple NLS
-Message-Id: <20120601145741.c6289ea9.akpm@linux-foundation.org>
-In-Reply-To: <CAE9FiQVqPCRQbg8PShxbUeT5Z0gm88vm76QNT=btGCNRwGP2oA@mail.gmail.com>
-References: <4FAFBE24.7000307@gmail.com>
-	<20120517154707.c3dc2795.akpm@linux-foundation.org>
-	<4FB5D1C8.7020305@gmail.com>
-	<CAE9FiQVqPCRQbg8PShxbUeT5Z0gm88vm76QNT=btGCNRwGP2oA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S965462Ab2FAV6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 17:58:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18407 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933280Ab2FAV6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 17:58:54 -0400
+Message-ID: <4FC93B1A.6030800@redhat.com>
+Date: Fri, 01 Jun 2012 17:58:50 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Myron Stowe <myron.stowe@redhat.com>
+CC: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xudong.hao@linux.intel.com,
+        yu.zhao@intel.com
+Subject: Re: [PATCH 3/4] PCI: Add pci_pcie_cap2() check for PCIe feature	capabilities
+ >= v2
+References: <20120601211619.20328.36769.stgit@amt.stowe> <20120601211637.20328.108.stgit@amt.stowe>
+In-Reply-To: <20120601211637.20328.108.stgit@amt.stowe>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012 12:36:11 -0700
-Yinghai Lu <yinghai@kernel.org> wrote:
+On 06/01/2012 05:16 PM, Myron Stowe wrote:
+> This patch resolves potential issues when accessing PCI Express
+> capability structures.  The makeup of Express' capability structure
+> varies substantially between v1 and v2:
+>
+>      PCI Express 1.0 and 1.1 base neither requires the endpoint to
+>      implement the entire PCIe capability structure nor specifies
+>      default values of registers that are not implemented by the
+>      device.  Its capability version is 1.
+>
+>      PCIe 1.1 Capability Structure Expansion ECN, PCIe 2.0, 2.1, and
+>      3.0 added additional registers to the structure and require all
+>      registers to be either implemented or hardwired to 0.  Their PCIe
+>      capability version is 2.
+>
+> Due to the differences in the capability structures, code dealing with
+> capability features must be careful not to access the additional
+> registers introduced with v2 unless the device is specifically known to
+> be a v2 capable device.  Otherwise, attempts to access non-existant
+> registers will occur.  This is a subtle issue that is hard to track down
+> when it occurs (and it has - see commit 864d296cf94).
+>
+> To try and help mitigate such occurrances, this patch introduces
+> pci_pcie_cap2() which is similar to pci_pcie_cap() but also checks
+> that the PCIe capability version is>= 2.  pci_pcie_cap2() should be
+> used for qualifying PCIe capability features introduced after v1.
+>
+> Suggested by Don Dutile.
+>
+Acked by him too!
+... except one nit...
 
-> On Thu, May 17, 2012 at 9:36 PM, Vladimir '__-coder/phcoder' Serbinenko
-> <phcoder@gmail.com> wrote:
-> >> Also, I note that the unicode files have
-> >>
-> >> __ __ __ MODULE_LICENSE("Dual BSD/GPL");
-> >>
-> >> Where did this come from? __Is this a thing you decided upon or is it
-> >> unicode.org's license requirement?
-> >>
-> 
-> looks like Makefile change is not right... it has hard code =m for new modules.
-> 
-> those line should be removed.
+I would change the comment "is a PCIe v2 feature" to "is a PCIe cap v2 list feature"
+so no one confuses spec version with a specific cap-struct version.
 
-Yup.  This?
+but I wouldn't hold up this patch for this nit.
 
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: fs/nls/Makefile: remove bogus CONFIG_ assignments
-
-I assume these were debug things whcih snuck through.
-
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Vladimir Serbinenko <phcoder@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/nls/Makefile |   12 ------------
- 1 file changed, 12 deletions(-)
-
-diff -puN fs/nls/Makefile~fs-nls-makefile-remove-bogus-config_-assignemnts fs/nls/Makefile
---- a/fs/nls/Makefile~fs-nls-makefile-remove-bogus-config_-assignemnts
-+++ a/fs/nls/Makefile
-@@ -2,18 +2,6 @@
- # Makefile for native language support
- #
- 
--CONFIG_NLS_MACCELTIC=m
--CONFIG_NLS_MACCENTEURO=m
--CONFIG_NLS_MACCROATIAN=m
--CONFIG_NLS_MACCYRILLIC=m
--CONFIG_NLS_MACGAELIC=m
--CONFIG_NLS_MACGREEK=m
--CONFIG_NLS_MACICELAND=m
--CONFIG_NLS_MACINUIT=m
--CONFIG_NLS_MACROMANIAN=m
--CONFIG_NLS_MACROMAN=m
--CONFIG_NLS_MACTURKISH=m
--
- obj-$(CONFIG_NLS)		+= nls_base.o
- 
- obj-$(CONFIG_NLS_CODEPAGE_437)	+= nls_cp437.o
-_
+> Signed-off-by: Myron Stowe<myron.stowe@redhat.com>
+> ---
+>
+>   drivers/pci/pci.c        |   65 +++++++++++++++++++++++++++++++++++-----------
+>   include/linux/pci_regs.h |    7 +++++
+>   2 files changed, 57 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index ff0beb0..26933ff 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -279,6 +279,38 @@ int pci_bus_find_capability(struct pci_bus *bus, unsigned int devfn, int cap)
+>   }
+>
+>   /**
+> + * pci_pcie_cap2 - query for devices' PCI_CAP_ID_EXP v2 capability structure
+> + * @dev: PCI device to check
+> + *
+> + * Like pci_pcie_cap() but also checks that the PCIe capability version is
+> + *>= 2.  Note that v1 capability structures could be sparse in that not
+> + * all register fields were required.  v2 requires the entire structure to
+> + * be present size wise, while still allowing for non-implemented registers
+> + * to exist but they must be hardwired to 0.
+> + *
+> + * Due to the differences in the versions of capability structures, one
+> + * must be careful not to try and access non-existant registers that may
+> + * exist in early versions - v1 - of Express devices.
+> + *
+> + * Returns the offset of the PCIe capability structure as long as the
+> + * capability version is>= 2; otherwise 0 is returned.
+> + */
+> +static int pci_pcie_cap2(struct pci_dev *dev)
+> +{
+> +	u16 flags;
+> +	int pos;
+> +
+> +	pos = pci_pcie_cap(dev);
+> +	if (pos) {
+> +		pci_read_config_word(dev, pos + PCI_EXP_FLAGS,&flags);
+> +		if ((flags&  PCI_EXP_FLAGS_VERS)<  2)
+> +			pos = 0;
+> +	}
+> +
+> +	return pos;
+> +}
+> +
+> +/**
+>    * pci_find_ext_capability - Find an extended capability
+>    * @dev: PCI device to query
+>    * @cap: capability code
+> @@ -1984,7 +2016,7 @@ void pci_enable_ari(struct pci_dev *dev)
+>   {
+>   	int pos;
+>   	u32 cap;
+> -	u16 flags, ctrl;
+> +	u16 ctrl;
+>   	struct pci_dev *bridge;
+>
+>   	if (pcie_ari_disabled || !pci_is_pcie(dev) || dev->devfn)
+> @@ -1998,13 +2030,9 @@ void pci_enable_ari(struct pci_dev *dev)
+>   	if (!bridge)
+>   		return;
+>
+> -	pos = pci_pcie_cap(bridge);
+> -	if (!pos)
+> -		return;
+> -
+>   	/* ARI is a PCIe v2 feature */
+> -	pci_read_config_word(bridge, pos + PCI_EXP_FLAGS,&flags);
+> -	if ((flags&  PCI_EXP_FLAGS_VERS)<  2)
+> +	pos = pci_pcie_cap2(bridge);
+> +	if (!pos)
+>   		return;
+>
+>   	pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2,&cap);
+> @@ -2019,7 +2047,7 @@ void pci_enable_ari(struct pci_dev *dev)
+>   }
+>
+>   /**
+> - * pci_enable_ido - enable ID-based ordering on a device
+> + * pci_enable_ido - enable ID-based Ordering on a device
+>    * @dev: the PCI device
+>    * @type: which types of IDO to enable
+>    *
+> @@ -2032,7 +2060,8 @@ void pci_enable_ido(struct pci_dev *dev, unsigned long type)
+>   	int pos;
+>   	u16 ctrl;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* ID-based Ordering is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return;
+>
+> @@ -2055,7 +2084,8 @@ void pci_disable_ido(struct pci_dev *dev, unsigned long type)
+>   	int pos;
+>   	u16 ctrl;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* ID-based Ordering is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return;
+>
+> @@ -2094,7 +2124,8 @@ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
+>   	u16 ctrl;
+>   	int ret;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* OBFF is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return -ENOTSUPP;
+>
+> @@ -2144,7 +2175,8 @@ void pci_disable_obff(struct pci_dev *dev)
+>   	int pos;
+>   	u16 ctrl;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* OBFF is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return;
+>
+> @@ -2166,7 +2198,8 @@ static bool pci_ltr_supported(struct pci_dev *dev)
+>   	int pos;
+>   	u32 cap;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* LTR is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return false;
+>
+> @@ -2194,7 +2227,8 @@ int pci_enable_ltr(struct pci_dev *dev)
+>   	if (!pci_ltr_supported(dev))
+>   		return -ENOTSUPP;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* LTR is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return -ENOTSUPP;
+>
+> @@ -2229,7 +2263,8 @@ void pci_disable_ltr(struct pci_dev *dev)
+>   	if (!pci_ltr_supported(dev))
+>   		return;
+>
+> -	pos = pci_pcie_cap(dev);
+> +	/* LTR is a PCIe v2 feature */
+> +	pos = pci_pcie_cap2(dev);
+>   	if (!pos)
+>   		return;
+>
+> diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
+> index 4b608f5..bc1b54d 100644
+> --- a/include/linux/pci_regs.h
+> +++ b/include/linux/pci_regs.h
+> @@ -507,6 +507,13 @@
+>   #define PCI_EXP_RTSTA		32	/* Root Status */
+>   #define PCI_EXP_RTSTA_PME	0x10000 /* PME status */
+>   #define PCI_EXP_RTSTA_PENDING	0x20000 /* PME pending */
+> +/*
+> + * Note that the following PCI Express 'Capability Structure' registers
+> + * were introduced with 'Capability Version' 0x2 (v2).  These registers
+> + * do not exist, and thus should not be attempted to be accesses, by
+> + * PCI Express v1 devices (see pci_pcie_cap2() for use in qualifying
+> + * PCI Express v2 capability related features).
+> + */
+>   #define PCI_EXP_DEVCAP2		36	/* Device Capabilities 2 */
+>   #define  PCI_EXP_DEVCAP2_ARI	0x20	/* Alternative Routing-ID */
+>   #define  PCI_EXP_DEVCAP2_LTR	0x800	/* Latency tolerance reporting */
+>
 
