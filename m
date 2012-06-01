@@ -1,130 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759428Ab2FALFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 07:05:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48963 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758945Ab2FALFH (ORCPT
+	id S1759445Ab2FALIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 07:08:21 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54483 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758963Ab2FALIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 07:05:07 -0400
-Date: Fri, 1 Jun 2012 12:04:15 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
-        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nikunj@linux.vnet.ibm.com, Marc Zyngier <marc.zyngier@arm.com>,
-        Will Deacon <will.deacon@arm.com>, David Brown <davidb@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 26/27] arm, smpboot: Use generic SMP booting
-	infrastructure
-Message-ID: <20120601110415.GG21245@n2100.arm.linux.org.uk>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091614.31979.39272.stgit@srivatsabhat.in.ibm.com>
+	Fri, 1 Jun 2012 07:08:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4FC8A2AA.5090003@jp.fujitsu.com>
+Date: Fri, 01 Jun 2012 20:08:26 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601091614.31979.39272.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, rientjes@google.com
+Subject: Re: [Patch] x86 : set numa_nodes_parsed at acpi_numa_memory_affinity_init
+References: <4FC47E88.2000403@jp.fujitsu.com> <4FC75525.8010508@gmail.com>
+In-Reply-To: <4FC75525.8010508@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you're expecting an ack from me, you're not going to get it because
-this patch is useless on its own.  It can't be reviewed and it can't be
-tested without the rest of the series.
+Hi Kosaki-san,
 
-On Fri, Jun 01, 2012 at 02:46:20PM +0530, Srivatsa S. Bhat wrote:
-> Convert arm to use the generic framework to boot secondary CPUs.
+2012/05/31 20:25, KOSAKI Motohiro wrote:
+> Hi Ishimatsu-san,
 > 
-> Notes:
-> The calls to local_irq_enable() and local_fiq_enable() which were there
-> in secondary_start_kernel() originally, are retained in __cpu_post_online()
-> since the generic code only calls local_irq_enable().
-> Also, we were anyway going to enable interrupts in the generic code
-> immediately after __cpu_post_online(), so its not like we enabled interrupts
-> way too early.
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Marc Zyngier <marc.zyngier@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: David Brown <davidb@codeaurora.org>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
+> (5/29/12 3:45 AM), Yasuaki Ishimatsu wrote:
+>> When hot-adding a CPU into my system, the system showed following message
+>> since node_to_cpumask_map[2] was not allocated memory.
+>>
+>> Booting Node 2 Processor 32 APIC 0xc0
+>> node_to_cpumask_map[2] NULL
+>> Pid: 0, comm: swapper/32 Tainted: G       A     3.3.5-acd #21
+>> Call Trace:
+>>    [<ffffffff81048845>] debug_cpumask_set_cpu+0x155/0x160
+>>    [<ffffffff8105e28a>] ? add_timer_on+0xaa/0x120
+>>    [<ffffffff8150665f>] numa_add_cpu+0x1e/0x22
+>>    [<ffffffff815020bb>] identify_cpu+0x1df/0x1e4
+>>    [<ffffffff815020d6>] identify_econdary_cpu+0x16/0x1d
+>>    [<ffffffff81504614>] smp_store_cpu_info+0x3c/0x3e
+>>    [<ffffffff81505263>] smp_callin+0x139/0x1be
+>>    [<ffffffff815052fb>] start_secondary+0x13/0xeb
+>>
+>> In my investigation, the root cause is that the bit of node 2 was not set at
+>> numa_nodes_parsed since hot-added cpu was not written in ACPI SRAT Table.
+>> But hot-added memory which is same PXM as the cpu is written in here.
 > 
->  arch/arm/kernel/smp.c |   26 +++++++++++++-------------
->  1 files changed, 13 insertions(+), 13 deletions(-)
+> I don't understand this explanation. If cpu is not written in srat table,
+> it is firmware bug. isn't it? srat table should describe all possible cpus.
+> Why doesn't your system describe cpu info in acpi table?
+
+As jiang answered, hot-added CPU need not be written in SRAT Table.
+So I don't think it is firmware bug.
+
+Thanks,
+Yasuaki Ishimatsu
+
 > 
-> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> index b735521..460b7e7 100644
-> --- a/arch/arm/kernel/smp.c
-> +++ b/arch/arm/kernel/smp.c
-> @@ -25,6 +25,7 @@
->  #include <linux/percpu.h>
->  #include <linux/clockchips.h>
->  #include <linux/completion.h>
-> +#include <linux/smpboot.h>
->  
->  #include <linux/atomic.h>
->  #include <asm/cacheflush.h>
-> @@ -227,6 +228,11 @@ static void percpu_timer_setup(void);
->   */
->  asmlinkage void __cpuinit secondary_start_kernel(void)
->  {
-> +	smpboot_start_secondary(NULL);
-> +}
-> +
-> +void __cpuinit __cpu_pre_starting(void *unused)
-> +{
->  	struct mm_struct *mm = &init_mm;
->  	unsigned int cpu = smp_processor_id();
->  
-> @@ -244,26 +250,25 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
->  	printk("CPU%u: Booted secondary processor\n", cpu);
->  
->  	cpu_init();
-> -	preempt_disable();
->  	trace_hardirqs_off();
->  
->  	/*
->  	 * Give the platform a chance to do its own initialisation.
->  	 */
->  	platform_secondary_init(cpu);
-> +}
->  
-> -	notify_cpu_starting(cpu);
-> +void __cpuinit __cpu_pre_online(void *unused)
-> +{
-> +	unsigned int cpu = smp_processor_id();
->  
->  	calibrate_delay();
->  
->  	smp_store_cpu_info(cpu);
-> +}
->  
-> -	/*
-> -	 * OK, now it's safe to let the boot CPU continue.  Wait for
-> -	 * the CPU migration code to notice that the CPU is online
-> -	 * before we continue - which happens after __cpu_up returns.
-> -	 */
-> -	set_cpu_online(cpu, true);
-> +void __cpuinit __cpu_post_online(void *unused)
-> +{
->  	complete(&cpu_running);
->  
->  	/*
-> @@ -273,11 +278,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
->  
->  	local_irq_enable();
->  	local_fiq_enable();
-> -
-> -	/*
-> -	 * OK, it's off to the idle thread for us
-> -	 */
-> -	cpu_idle();
->  }
->  
->  void __init smp_cpus_done(unsigned int max_cpus)
+>>
+>> ACPI Spec Rev 5.0 says about ACPI SRAT talbe as follows:
+>> This optional table provides information that allows OSPM to associate
+>> processors and memory ranges, including ranges of memory provided by
+>> hot-added memory devices, with system localities / proximity domains
+>> and clock domains.
+>>
+>> So I think the ACPI SRAT Table is not wrong. Thus numa_nodes_parsed should be set
+>> by not only acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init
+>> but also acpi_numa_memory_affinity_init for the case.
+>>
+>> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+>>    arch/x86/mm/srat.c |    2 ++
+>>    1 file changed, 2 insertions(+)
+>>
+>> Index: linux-3.4/arch/x86/mm/srat.c
+>> ===================================================================
+>> --- linux-3.4.orig/arch/x86/mm/srat.c	2012-05-21 07:29:13.000000000 +0900
+>> +++ linux-3.4/arch/x86/mm/srat.c	2012-05-29 05:28:27.353916902 +0900
+>> @@ -176,6 +176,8 @@  acpi_numa_memory_affinity_init(struct ac
+>>    		return;
+>>    	}
+>>
+>> +	node_set(node, numa_nodes_parsed);
+>> +
 > 
+> But...
+> I think this patch itself is correct. If a system have cpuless memory node,
+> acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init can't
+> find any cpu description. but we need memory node allocation.
+> 
+> 
+>>    	printk(KERN_INFO "SRAT: Node %u PXM %u %Lx-%Lx\n", node, pxm,
+>>    	       start, end);
+>>    }
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+
