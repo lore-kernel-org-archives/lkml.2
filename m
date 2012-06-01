@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab2FANmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 09:42:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34395 "EHLO mx2.suse.de"
+	id S1759872Ab2FANnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 09:43:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61484 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab2FANmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 09:42:04 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-Date: Fri, 1 Jun 2012 15:38:41 +0200
-User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        thomas.braunstorfinger@rohde-schwarz.com
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net> <201205311622.31537.oneukum@suse.de> <20120531143255.GA7069@kroah.com>
-In-Reply-To: <20120531143255.GA7069@kroah.com>
+	id S1758209Ab2FANnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 09:43:32 -0400
+Date: Fri, 1 Jun 2012 09:43:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Cong Wang <amwang@redhat.com>
+Subject: Re: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+Message-ID: <20120601134323.GA5214@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Hugh Dickins <hughd@google.com>, Cong Wang <amwang@redhat.com>
+References: <20120530163317.GA13189@redhat.com>
+ <20120531005739.GA4532@redhat.com>
+ <20120601023107.GA19445@redhat.com>
+ <CA+55aFyNSUbTfY4YdH4OcrrRnwkw-sHy3aT18ynf-YXRXSJQ8Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206011538.41910.oneukum@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyNSUbTfY4YdH4OcrrRnwkw-sHy3aT18ynf-YXRXSJQ8Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 31. Mai 2012, 16:32:55 schrieb Greg KH:
-> On Thu, May 31, 2012 at 04:22:31PM +0200, Oliver Neukum wrote:
+On Thu, May 31, 2012 at 07:43:25PM -0700, Linus Torvalds wrote:
+ > On Thu, May 31, 2012 at 7:31 PM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > So I bisected it anyway, and it led to ...
+ > 
+ > Ok, that doesn't sound entirely unlikely, but considering that you're
+ > nervous about the bisection, please just try to revert it and see if
+ > that fixes your testcase.
+ > 
+ > You'll obviously need to revert the commit that removes
+ > vmtruncate_range() too, since reverting 3f31d07571ee will re-introduce
+ > the use of it (it's the next one:
+ > 17cf28afea2a1112f240a3a2da8af883be024811), but it looks like those two
+ > commits revert cleanly and the end result seems to compile ok.
 
-> > It seems to specialised for this kind of IO. SPI over USB is closer to a generic
-> > thing rather like sg or even a bus rather than an IIO device. Kernel space drivers
-> > that use SPI might belong into IIO. The infrastructure itself not so much.
-> 
-> Wait, are you talking about the SPI we already support in the kernel?
+crap, so much for that theory.  I ran latest with those two reverted
+overnight, and woke up to a dead box.  Over serial console, I see
+a bunch of those same compaction oopses (Via sys_mmap_pgoff),
+and then kernel BUG at include/linux/mm.h:448! was the last thing
+it said before it choked.
 
-Damn, one should watch one's spelling. SPI != SCPI
-In the kernel we have SPI. This proposed driver is for SCPI.
-The only relation they have is phonetic.
+I'll redo the bisect. It's possible that one of the 'good' paths just
+didn't run for long enough.
 
-> Or something else?  This driver really looks like it wants to send to
-> userspace "measurements" of something, which IIO is for.
+	Dave
 
-As far as I can tell, it works by messages over a bus, rather like SCSI.
-> 
-> Anyway, as-is, this isn't acceptable, I'm sure we can all agree on that
-> :)
-
-Well, apart from the only ioctl I've seen far worse drivers.
-The issue is not the driver as such, but whether and it what form it should exist.
-
-	Regards
-		Oliver
