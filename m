@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964904Ab2FAPdG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:33:06 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:34640 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752861Ab2FAPdE (ORCPT
+	id S964920Ab2FAPdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:33:37 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38863 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756067Ab2FAPdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:33:04 -0400
-Date: Fri, 1 Jun 2012 08:33:02 -0700 (PDT)
-From: Andy King <acking@vmware.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, dtor@vmware.com, dsouders@vmware.com,
-        cschamp@vmware.com, akpm@linux-foundation.org,
-        virtualization@lists.linux-foundation.org,
-        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
-Message-ID: <552579991.43606.1338564781979.JavaMail.root@vmware.com>
-In-Reply-To: <20120515235024.GB1758@kroah.com>
-Subject: Re: [vmw_vmci RFC 00/11] VMCI for Linux
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [108.68.97.87]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC19 (Mac)/7.2.0_GA_2669)
+	Fri, 1 Jun 2012 11:33:36 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chris Rattray <crattray@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: wm8994: Support for user defined irq flags
+Date: Fri,  1 Jun 2012 16:33:19 +0100
+Message-Id: <1338564800-20936-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+Signed-off-by: Chris Rattray <crattray@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8994-irq.c         |   10 +++++++++-
+ include/linux/mfd/wm8994/pdata.h |    1 +
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-Thanks so much for the comments and apologies for the delayed response.
+diff --git a/drivers/mfd/wm8994-irq.c b/drivers/mfd/wm8994-irq.c
+index f1837f6..0aac4af 100644
+--- a/drivers/mfd/wm8994-irq.c
++++ b/drivers/mfd/wm8994-irq.c
+@@ -21,6 +21,7 @@
+ #include <linux/regmap.h>
+ 
+ #include <linux/mfd/wm8994/core.h>
++#include <linux/mfd/wm8994/pdata.h>
+ #include <linux/mfd/wm8994/registers.h>
+ 
+ #include <linux/delay.h>
+@@ -139,6 +140,8 @@ static struct regmap_irq_chip wm8994_irq_chip = {
+ int wm8994_irq_init(struct wm8994 *wm8994)
+ {
+ 	int ret;
++	unsigned long irqflags;
++	struct wm8994_pdata *pdata = wm8994->dev->platform_data;
+ 
+ 	if (!wm8994->irq) {
+ 		dev_warn(wm8994->dev,
+@@ -147,8 +150,13 @@ int wm8994_irq_init(struct wm8994 *wm8994)
+ 		return 0;
+ 	}
+ 
++	/* select user or default irq flags */
++	irqflags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT;
++	if (pdata->irq_flags)
++		irqflags = pdata->irq_flags;
++
+ 	ret = regmap_add_irq_chip(wm8994->regmap, wm8994->irq,
+-				  IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++				  irqflags,
+ 				  wm8994->irq_base, &wm8994_irq_chip,
+ 				  &wm8994->irq_data);
+ 	if (ret != 0) {
+diff --git a/include/linux/mfd/wm8994/pdata.h b/include/linux/mfd/wm8994/pdata.h
+index 893267b..f0361c0 100644
+--- a/include/linux/mfd/wm8994/pdata.h
++++ b/include/linux/mfd/wm8994/pdata.h
+@@ -141,6 +141,7 @@ struct wm8994_pdata {
+ 	struct wm8994_ldo_pdata ldo[WM8994_NUM_LDO];
+ 
+ 	int irq_base;  /** Base IRQ number for WM8994, required for IRQs */
++	unsigned long irq_flags; /** user irq flags */
+ 
+         int num_drc_cfgs;
+         struct wm8994_drc_cfg *drc_cfgs;
+-- 
+1.7.10
 
-> Don't we have something like this already for KVM and maybe Xen?
-> virtio?  Can't you use that code instead of a new block of code that
-> is only used by vmware users?  It has virtual pci devices which
-> should give you what you want/need here, right?
->
-> If not, why doesn't that work for you?  Would it be easier to just
-> extend it?
-
-The VMCI virtual device for which this driver is intended has been
-around a lot longer than this submission might suggest.  The virtual
-hardware was released in a product before Rusty sent his RFC and
-quite a bit before it made it to mainline; there was, regrettably,
-no virtio then.
-
-As such, it was designed to be its own transport, and it's something
-that is now very much fixed at the hardware level (enhancements
-not withstanding), and which we have to support all the way back.
-
-In addition to that, our hypervisor endpoints are written using
-the existing device backend; virtio doesn't currently make a lot of
-sense for them, and would require a lot of additional work.
-
-All of this is unfortunate.  While I agree that virtio is certainly
-the right approach, and we need to avoid this proliferation, I think
-at this point we'd really like to try and upstream this in its current
-form.  There's certainly the possibility going forwards that we could
-add a glue layer, such that other clients could use virtio if they're
-willing to write their own hypervisor endpoints.
-
-Does that sound reasonable?
-
-Again, many thanks for taking the time to review this.
-
-Kind regards,
-- Andy King
