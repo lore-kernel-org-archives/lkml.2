@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab2FAQp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:45:28 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:13767 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758164Ab2FAQp0 (ORCPT
+	id S965525Ab2FAQp6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:45:58 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50413 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759270Ab2FAQp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:45:26 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6729"; a="196842289"
-Message-ID: <f1ad97e8655631c46afd7084ef6266fd.squirrel@www.codeaurora.org>
-In-Reply-To: <000201cd3fba$942df840$bc89e8c0$%jun@samsung.com>
-References: <7155413ec18f57c1151a29992be32b1f.squirrel@www.codeaurora.org>
-    <000201cd3fba$942df840$bc89e8c0$%jun@samsung.com>
-Date: Fri, 1 Jun 2012 09:45:26 -0700 (PDT)
-Subject: RE: [PATCH v6 2/3] mmc: core: Support packed write command for 
-     eMMC4.5 device
-From: merez@codeaurora.org
-To: "Seungwon Jeon" <tgih.jun@samsung.com>
-Cc: merez@codeaurora.org, linux-mmc@vger.kernel.org,
-        "'Chris Ball'" <cjb@laptop.org>, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Fri, 1 Jun 2012 12:45:57 -0400
+Date: Fri, 1 Jun 2012 17:45:18 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Philipp Riemer <ruderphilipp@gmail.com>
+Cc: Joe Perches <joe@perches.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Paul Mundt <lethal@linux-sh.org>,
+        Michael B?sch <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
+Message-ID: <20120601164518.GI30000@ZenIV.linux.org.uk>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+ <20120516143830.GA483@kroah.com>
+ <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
+ <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
+ <20120516150813.GA3293@kroah.com>
+ <CAFU-uVvzyN0asmReOVJcAEiAtbQ=styfGxRRbnrJKgNFDS5X_g@mail.gmail.com>
+ <CAFU-uVsStG0KoiQm95-uC8ZPXWAq=8Q8vXircxOuUCHhk+r9uw@mail.gmail.com>
+ <1338492342.5861.23.camel@joe2Laptop>
+ <20120531201502.GA30000@ZenIV.linux.org.uk>
+ <CAFU-uVupiK5O-LC=wA3Tte78hjzwSJSwUGLb2-58VJSs5z0_hQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFU-uVupiK5O-LC=wA3Tte78hjzwSJSwUGLb2-58VJSs5z0_hQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 01, 2012 at 10:41:06AM +0200, Philipp Riemer wrote:
+> Does your comment in parentheses mean that your "ftp.linux.org.uk" and
+> "www.linux.org.uk" addresses
+> (c|sh)ould be mapped onto "zeniv.linux.org.uk"?
 
-> Maya Erez <merez@codeaurora.org> wrote:
->> > @@ -1313,10 +1609,17 @@ static int mmc_blk_issue_rw_rq(struct
->> mmc_queue
->> *mq, struct request *rqc)
->> >  			 * A block was successfully transferred.
->> >  			 */
->> >  			mmc_blk_reset_success(md, type);
->> > -			spin_lock_irq(&md->lock);
->> > -			ret = __blk_end_request(req, 0,
->> > +
->> > +			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
->> > +				ret = mmc_blk_end_packed_req(mq, mq_rq);
->> If a specific request in the packed request consistantly fails, there is
->> nothing to stop us from sending the same packed request in an endless
->> loop.
-> There is various error case. This patch reused the existing error
-> handling.
-> What is that case we need to consider?
->
-> Best regards,
-> Seungwon Jeon
+ftp.linux.org.uk and zeniv.linux.org.uk are the same box; both variants
+will work, but I prefer to use the latter in signoffs, etc.
+www.linux.org.uk is an unrelated system and I have no idea if it'll
+forward the mail sent to viro@... over to zeniv.  No reason for it
+to do so...
 
-This is different from unpacked requests handling since in the packed err
-check function you don't always return the error returned from
-mmc_blk_err_check. In case the EXT_CSD_PACKED_INDEXED_ERROR is set you
-return MMC_BLK_PARTIAL which is handled differently in the
-mmc_blk_issue_rw_rd.
-In our tests we set to 1 the packed bit in CMD23 arg of the first req (in
-the header). As a result, mmc_blk_err_check returned MMC_BLK_CMD_ERR.
-However, mmc_blk_packed_err_check returned MMC_BLK_PARTIAL (since the card
-indicated the index of the first request as the failed request).
-mmc_blk_issue_rw_rd handles MMC_BLK_PARTIAL by sending the packed command
-from the failed index and on, but since the packed bit was still set, the
-same error occurred and was handled the same way and we ended up with an
-endless loop.
-I hope my description is clear, let me know if you have further questions.
+> If no-one would care about correct name mappings, why does the
+> .mailmap file in Git exist at all?
 
-Thanks,
-Maya Erez
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+No idea.
 
+> Or websites like Linux Kernel Patch
+> Statistic
+> <http://www.remword.com/kps_result/>?
+
+Because people are prone to masturbation?  "Nation by line", my arse...
+What next?  Number and ages of children[1]?  What a sad bunch of wankers...
+
+[1] which probably _is_ a significant factor, unlike citizenship/nationality/
+whatever the hell they meant there.
