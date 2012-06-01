@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964804Ab2FAV1i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 17:27:38 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:45269
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932538Ab2FAV1g (ORCPT
+	id S933642Ab2FAVhW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 17:37:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35217 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932925Ab2FAVhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 17:27:36 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI9371I98dKzz1202hzzz2dh2a8h668h839h93fhd25he5bhf0ah)
-Message-ID: <4FC933BF.1020901@freescale.com>
-Date: Fri, 1 Jun 2012 16:27:27 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 1 Jun 2012 17:37:21 -0400
+Message-ID: <4FC9360B.4020401@gmail.com>
+Date: Fri, 01 Jun 2012 17:37:15 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com>
-In-Reply-To: <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
+To: John Stultz <john.stultz@linaro.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+ handlers
+References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com> <4FC92E30.4000906@linaro.org>
+In-Reply-To: <4FC92E30.4000906@linaro.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
-\> +#if defined(CONFIG_FSL_BOOKE) || defined(CONFIG_6xx)
-> +extern void __flush_disable_L1(void);
-> +#endif
+(6/1/12 5:03 PM), John Stultz wrote:
+> On 06/01/2012 01:17 PM, KOSAKI Motohiro wrote:
+>> Hi John,
+>>
+>> (6/1/12 2:29 PM), John Stultz wrote:
+>>> This patch enables FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
+>>> functionality for tmpfs making use of the volatile range
+>>> management code.
+>>>
+>>> Conceptually, FALLOC_FL_MARK_VOLATILE is like a delayed
+>>> FALLOC_FL_PUNCH_HOLE.  This allows applications that have
+>>> data caches that can be re-created to tell the kernel that
+>>> some memory contains data that is useful in the future, but
+>>> can be recreated if needed, so if the kernel needs, it can
+>>> zap the memory without having to swap it out.
+>>>
+>>> In use, applications use FALLOC_FL_MARK_VOLATILE to mark
+>>> page ranges as volatile when they are not in use. Then later
+>>> if they wants to reuse the data, they use
+>>> FALLOC_FL_UNMARK_VOLATILE, which will return an error if the
+>>> data has been purged.
+>>>
+>>> This is very much influenced by the Android Ashmem interface by
+>>> Robert Love so credits to him and the Android developers.
+>>> In many cases the code&   logic come directly from the ashmem patch.
+>>> The intent of this patch is to allow for ashmem-like behavior, but
+>>> embeds the idea a little deeper into the VM code.
+>>>
+>>> This is a reworked version of the fadvise volatile idea submitted
+>>> earlier to the list. Thanks to Dave Chinner for suggesting to
+>>> rework the idea in this fashion. Also thanks to Dmitry Adamushko
+>>> for continued review and bug reporting, and Dave Hansen for
+>>> help with the original design and mentoring me in the VM code.
+>> I like this patch concept. This is cleaner than userland
+>> notification quirk. But I don't like you use shrinker. Because of,
+>> after applying this patch, normal page reclaim path can still make
+>> swap out. this is undesirable.
+> Any recommendations for alternative approaches? What should I be hooking
+> into in order to get notified that tmpfs should drop volatile pages?
 
-Prototypes aren't normally guarded by ifdefs.
+I thought to modify shmem_write_page(). But other way is also ok to me.
 
-> +static void __cpuinit smp_85xx_mach_cpu_die(void)
-> +{
-> +	unsigned int cpu = smp_processor_id();
-> +	u32 tmp;
-> +
-> +	local_irq_disable();
-> +	idle_task_exit();
-> +	generic_set_cpu_dead(cpu);
-> +	mb();
-> +
-> +	mtspr(SPRN_TCR, 0);
-> +
-> +	__flush_disable_L1();
-> +	tmp = (mfspr(SPRN_HID0) & ~(HID0_DOZE|HID0_SLEEP)) | HID0_NAP;
-> +	mtspr(SPRN_HID0, tmp);
-> +
-> +	/* Enter NAP mode. */
-> +	tmp = mfmsr();
-> +	tmp |= MSR_WE;
-> +	mb();
-> +	mtmsr(tmp);
-> +	isync();
 
-Need isync after writing to HID0.
+>>> +static
+>>> +int shmem_volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
+>>> +{
+>>> +	s64 nr_to_scan = sc->nr_to_scan;
+>>> +	const gfp_t gfp_mask = sc->gfp_mask;
+>>> +	struct address_space *mapping;
+>>> +	loff_t start, end;
+>>> +	int ret;
+>>> +	s64 page_count;
+>>> +
+>>> +	if (nr_to_scan&&   !(gfp_mask&   __GFP_FS))
+>>> +		return -1;
+>>> +
+>>> +	volatile_range_lock(&shmem_volatile_head);
+>>> +	page_count = volatile_range_lru_size(&shmem_volatile_head);
+>>> +	if (!nr_to_scan)
+>>> +		goto out;
+>>> +
+>>> +	do {
+>>> +		ret = volatile_ranges_get_last_used(&shmem_volatile_head,
+>>> +							&mapping,&start,&end);
+>> Why drop last used region? Not recently used region is better?
+>>
+> Sorry, that function name isn't very good. It does return the
+> least-recently-used range, or more specifically: the
+> least-recently-marked-volatile-range.
 
-> +		/*
-> +		 * We don't set the BPTR register here upon it points
-> +		 * to the boot page properly.
-> +		 */
-> +		mpic_reset_core(hw_cpu);
+Ah, I misunderstood. thanks for correction.
 
-That comment's wording is hard to follow -- maybe s/upon it points/since
-it already points/
 
-> +		/* wait until core is ready... */
-> +		if (!spin_event_timeout(in_be32(&spin_table->addr_l) == 1,
-> +						10000, 100)) {
-> +			pr_err("%s: timeout waiting for core %d to reset\n",
-> +							__func__, hw_cpu);
-> +			ret = -ENOENT;
-> +			goto out;
-> +		}
+> I'll improve that function name, but if I misunderstood you and you have
+> a different suggestion for the purging order, let me know.
 
-We need to fix U-Boot to write addr_l last (with an msync beforehand).
-
-> -#ifdef CONFIG_KEXEC
-> +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
-
-Let's not grow lists like this.  Is there any harm in building it
-unconditionally?
-
--Scott
+No, please just rename.
 
