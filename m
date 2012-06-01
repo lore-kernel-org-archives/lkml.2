@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab2FAN5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 09:57:39 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:48981 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab2FAN5i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 09:57:38 -0400
-Date: Fri, 1 Jun 2012 19:26:28 +0530
-From: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: ryanh@linux.vnet.ibm.com
-Subject: perf kvm segfaults while reporting events
-Message-ID: <20120601135627.GA3004@linux.vnet.ibm.com>
-Reply-To: Pradeep Kumar Surisetty <psuriset@linux.vnet.ibm.com>
+	id S1759947Ab2FAOFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:05:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754623Ab2FAOFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 10:05:08 -0400
+Date: Fri, 1 Jun 2012 10:04:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: vma_resv_map bug.
+Message-ID: <20120601140444.GA1732@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Fengguang Wu <fengguang.wu@intel.com>,
+	Dave Hansen <dave@linux.vnet.ibm.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120530052716.GA12771@redhat.com>
+ <20120601091332.GA14623@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120601091332.GA14623@localhost>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060113-2398-0000-0000-0000071E115F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello 
+On Fri, Jun 01, 2012 at 05:13:32PM +0800, Fengguang Wu wrote:
+ 
+ > The same error here. Here is my dmesg. Hope it helps.
+ > 
+ > [  497.674360] trinity-child0 (31412): Using mlock ulimits for SHM_HUGETLB is deprecated
+ > [  502.461866] warning: process `trinity-child0' used the deprecated sysctl system call with 
+ > [  502.576500] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+ > [  502.577028] IP: [<ffffffff81135bed>] vma_resv_map+0x9/0x2b
 
-perf kvm generats segfaults while reporting events. 
 
-host & guest:  3.4.0-rc4
+This should be fixed a few days ago by 4523e1458566a0e8ecfaff90f380dd23acc44d27 
 
-1) Copied kallsyms, modules from guest to host. 
-
-2) recorded  events on host and guest & report it using below commands. 
-
-
-[root@host]# ./perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms --guestmodules=/tmp/guest-modules record -a -o perf.data
-^C[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.381 MB perf.data (~16659 samples) ]
-
-[root@host]# ./perf kvm --host --guest --guestkallsyms=/tmp/guest-kallsyms --guestmodules=/tmp/guest-modules report -i perf.data --force
-perf: Segmentation fault
-[root@host]# 
-
---Pradeep
-
+	Dave
