@@ -1,117 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab2FALIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 07:08:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54483 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758963Ab2FALIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 07:08:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4FC8A2AA.5090003@jp.fujitsu.com>
-Date: Fri, 01 Jun 2012 20:08:26 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1759463Ab2FALRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 07:17:35 -0400
+Received: from fieldses.org ([174.143.236.118]:55731 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759437Ab2FALRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 07:17:33 -0400
+Date: Fri, 1 Jun 2012 07:17:32 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: nfsd changes for 3.5
+Message-ID: <20120601111732.GB31104@fieldses.org>
+References: <20120531182457.GB25955@fieldses.org>
+ <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
+ <20120531200138.GD25955@fieldses.org>
+ <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
+ <20120531205300.GG25955@fieldses.org>
+ <CA+55aFxY+WJmMu=1Wvdh24kK0JWEuQ1vwcqZdaNDbp1_wUsZ4A@mail.gmail.com>
+ <20120601005603.GA28542@fieldses.org>
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org, rientjes@google.com
-Subject: Re: [Patch] x86 : set numa_nodes_parsed at acpi_numa_memory_affinity_init
-References: <4FC47E88.2000403@jp.fujitsu.com> <4FC75525.8010508@gmail.com>
-In-Reply-To: <4FC75525.8010508@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601005603.GA28542@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki-san,
-
-2012/05/31 20:25, KOSAKI Motohiro wrote:
-> Hi Ishimatsu-san,
+On Thu, May 31, 2012 at 08:56:03PM -0400, J. Bruce Fields wrote:
+> For now, would you mind pulling this?:
 > 
+> 	git://linux-nfs.org/~bfields/linux.git for-3.5-take-2
 > 
-> (5/29/12 3:45 AM), Yasuaki Ishimatsu wrote:
->> When hot-adding a CPU into my system, the system showed following message
->> since node_to_cpumask_map[2] was not allocated memory.
->>
->> Booting Node 2 Processor 32 APIC 0xc0
->> node_to_cpumask_map[2] NULL
->> Pid: 0, comm: swapper/32 Tainted: G       A     3.3.5-acd #21
->> Call Trace:
->>    [<ffffffff81048845>] debug_cpumask_set_cpu+0x155/0x160
->>    [<ffffffff8105e28a>] ? add_timer_on+0xaa/0x120
->>    [<ffffffff8150665f>] numa_add_cpu+0x1e/0x22
->>    [<ffffffff815020bb>] identify_cpu+0x1df/0x1e4
->>    [<ffffffff815020d6>] identify_econdary_cpu+0x16/0x1d
->>    [<ffffffff81504614>] smp_store_cpu_info+0x3c/0x3e
->>    [<ffffffff81505263>] smp_callin+0x139/0x1be
->>    [<ffffffff815052fb>] start_secondary+0x13/0xeb
->>
->> In my investigation, the root cause is that the bit of node 2 was not set at
->> numa_nodes_parsed since hot-added cpu was not written in ACPI SRAT Table.
->> But hot-added memory which is same PXM as the cpu is written in here.
-> 
-> I don't understand this explanation. If cpu is not written in srat table,
-> it is firmware bug. isn't it? srat table should describe all possible cpus.
-> Why doesn't your system describe cpu info in acpi table?
-
-As jiang answered, hot-added CPU need not be written in SRAT Table.
-So I don't think it is firmware bug.
-
-Thanks,
-Yasuaki Ishimatsu
-
-> 
->>
->> ACPI Spec Rev 5.0 says about ACPI SRAT talbe as follows:
->> This optional table provides information that allows OSPM to associate
->> processors and memory ranges, including ranges of memory provided by
->> hot-added memory devices, with system localities / proximity domains
->> and clock domains.
->>
->> So I think the ACPI SRAT Table is not wrong. Thus numa_nodes_parsed should be set
->> by not only acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init
->> but also acpi_numa_memory_affinity_init for the case.
->>
->> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
->> ---
->>    arch/x86/mm/srat.c |    2 ++
->>    1 file changed, 2 insertions(+)
->>
->> Index: linux-3.4/arch/x86/mm/srat.c
->> ===================================================================
->> --- linux-3.4.orig/arch/x86/mm/srat.c	2012-05-21 07:29:13.000000000 +0900
->> +++ linux-3.4/arch/x86/mm/srat.c	2012-05-29 05:28:27.353916902 +0900
->> @@ -176,6 +176,8 @@  acpi_numa_memory_affinity_init(struct ac
->>    		return;
->>    	}
->>
->> +	node_set(node, numa_nodes_parsed);
->> +
-> 
-> But...
-> I think this patch itself is correct. If a system have cpuless memory node,
-> acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init can't
-> find any cpu description. but we need memory node allocation.
-> 
-> 
->>    	printk(KERN_INFO "SRAT: Node %u PXM %u %Lx-%Lx\n", node, pxm,
->>    	       start, end);
->>    }
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+> It's literally just the previous tree cut off before the delegation
+> stuff--so it's been in -next for a month, etc.
 
 
+... and then I cherry-picked the remainder of the patches from the head
+of my previous branch to:
+
+  git://linux-nfs.org/~bfields/linux.git for-3.5
+
+and ran some tests overnight--no surprises, as they're all quite
+independent from the delegation stuff.  But if they've missed 3.5 it's
+not a tragedy.
+
+--b.
+
+Chuck Lever (1):
+      NFSD: SETCLIENTID_CONFIRM returns NFS4ERR_CLID_INUSE too often
+
+J. Bruce Fields (34):
+      nfsd: state.c should include current_stateid.h
+      nfsd4: fix missing "static"
+      nfsd4: preserve __user annotation on cld downcall msg
+      nfsd4: int/__be32 fixes
+      nfsd4: fix free_stateid return endianness
+      nfsd4: fix change attribute endianness
+      rpc: handle rotated gss data for Windows interoperability
+      svcrpc: fix a comment typo
+      nfsd4: exchange_id has a pointless copy
+      nfsd4: exchange_id error cleanup
+      nfsd4: exchange_id: check creds before killing confirmed client
+      nfsd4: allow an EXCHANGE_ID to kill a 4.0 client
+      nfsd4: exchange_id cleanup: local shorthands for repeated tests
+      nfsd4: exchange_id cleanup: comments
+      nfsd4: rearrange exchange_id logic to simplify
+      nfsd4: allow removing clients not holding state
+      nfsd4: move principal name into svc_cred
+      nfsd4: stricter cred comparison for setclientid/exchange_id
+      nfsd4: move rq_flavor into svc_cred
+      nfsd4: setclientid remove unnecessary terms from a logical expression
+      nfsd4: setclientid/confirm comment cleanup
+      nfsd4: merge last two setclientid cases
+      nfsd4: pull out common code from setclientid cases
+      nfsd4: merge 3 setclientid cases to 2
+      nfsd4: fix setclientid_confirm same_cred check
+      nfsd4: fix error return in non-matching-creds case
+      nfsd4: setclientid: remove pointless assignment
+      nfsd4: simpler ordering of setclientid_confirm checks
+      nfsd4: clarify that renewing expired client is a bug
+      nfsd4: fix exchange_id to return confirm flag
+      nfsd4: return "real" sequence id in confirmed case
+      nfsd4: remove some dprintk's and a comment
+      nfsd4: don't remove rebooted client record until confirmation
+      nfsd4: fix, consolidate client_has_state
+
+Jeff Layton (5):
+      sunrpc: do array overrun check in svc_recv before allocating pages
+      nfsd: consolidate set_access and set_deny
+      nfsd: make test_share a bool return
+      nfsd: wrap accesses to st_access_bmap
+      nfsd: wrap all accesses to st_deny_bmap
+
+Stanislav Kinsbursky (8):
+      SUNRPC: new svc_bind() routine introduced
+      SUNRPC: move per-net operations from svc_destroy()
+      LockD: pass service to per-net up and down functions
+      LockD: use existing per-net data function on service creation
+      LockD: service creation function introduced
+      LockD: move global usage counter manipulation from error path
+      LockD: service start function introduced
+      LockD: add debug message to start and stop functions
+
+Weston Andros Adamson (2):
+      nfsd: add IPv6 addr escaping to fs_location hosts
+      nfsd: return 0 on reads of fault injection files
+
+ fs/lockd/svc.c                      |  145 ++++++----
+ fs/nfs/callback.c                   |   13 +-
+ fs/nfsd/auth.c                      |    2 +-
+ fs/nfsd/export.c                    |    8 +-
+ fs/nfsd/fault_inject.c              |    1 +
+ fs/nfsd/nfs4callback.c              |    5 +-
+ fs/nfsd/nfs4idmap.c                 |    4 +-
+ fs/nfsd/nfs4recover.c               |    4 +-
+ fs/nfsd/nfs4state.c                 |  525 ++++++++++++++++-------------------
+ fs/nfsd/nfs4xdr.c                   |   62 +++--
+ fs/nfsd/nfsctl.c                    |   12 +-
+ fs/nfsd/nfssvc.c                    |   23 ++
+ fs/nfsd/state.h                     |    1 -
+ fs/nfsd/xdr4.h                      |    6 +-
+ include/linux/sunrpc/svc.h          |    2 +-
+ include/linux/sunrpc/svcauth.h      |   10 +
+ include/linux/sunrpc/svcauth_gss.h  |    1 -
+ net/sunrpc/auth_gss/gss_krb5_wrap.c |   61 ++--
+ net/sunrpc/auth_gss/svcauth_gss.c   |   27 +-
+ net/sunrpc/rpcb_clnt.c              |   12 +-
+ net/sunrpc/svc.c                    |   23 +-
+ net/sunrpc/svc_xprt.c               |    4 +-
+ net/sunrpc/svcauth_unix.c           |    6 +-
+ 23 files changed, 522 insertions(+), 435 deletions(-)
