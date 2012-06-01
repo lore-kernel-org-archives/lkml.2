@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936Ab2FAAqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 20:46:08 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44294 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932917Ab2FAAp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 20:45:59 -0400
-Date: Thu, 31 May 2012 21:45:51 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/5] ftrace: Synchronize variable setting with breakpoints
-Message-ID: <20120601004551.GA16429@infradead.org>
-References: <1338462398.28384.52.camel@twins>
- <1338473302.13348.336.camel@gandalf.stny.rr.com>
- <1338486029.28384.93.camel@twins>
- <1338486820.13348.366.camel@gandalf.stny.rr.com>
- <1338487413.28384.103.camel@twins>
- <1338490218.13348.379.camel@gandalf.stny.rr.com>
- <1338491176.28384.114.camel@twins>
- <20120531195529.GA22976@Krystal>
- <1338495006.13348.418.camel@gandalf.stny.rr.com>
- <1338495969.28384.119.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338495969.28384.119.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932938Ab2FAAtZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 20:49:25 -0400
+Received: from ozlabs.org ([203.10.76.45]:59208 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932870Ab2FAAtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 20:49:24 -0400
+Date: Fri, 1 Jun 2012 10:49:25 +1000
+From: Anton Blanchard <anton@samba.org>
+To: akinobu.mita@gmail.com, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] fault-inject: Avoid call to random32() if fault injection
+ is disabled
+Message-ID: <20120601104925.5135263c@kryten>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 31, 2012 at 10:26:09PM +0200, Peter Zijlstra escreveu:
-> > Hmm, this brings up another question. By default, perf does not allow
-> > users to profile trace_events correct? IOW, perf does not let
-> > unprivileged users call text_poke()? I just tried it and got the:
-> > 
-> > $ ~/bin/perf record -e sched:sched_switch sleep 1
-> > Permission error - are you root?
-> > Consider tweaking /proc/sys/kernel/perf_event_paranoid:
-> >  -1 - Not paranoid at all
-> >   0 - Disallow raw tracepoint access for unpriv
-> >   1 - Disallow cpu events for unpriv
-> >   2 - Disallow kernel profiling for unpriv
-> 
-> It would, except tools/perf does stupid, its unconditionally adding
-> PERF_SAMPLE_RAW (even for non-sampling events), which is the bit that
-> requires privs.
 
-Looserland, bah, I'll check that, thanks.
+After enabling CONFIG_FAILSLAB I noticed random32 in profiles even
+if slub fault injection wasn't enabled at runtime.
 
-- Arnaldo
+should_fail forces a comparison against random32() even if
+probability is 0:
+
+        if (attr->probability <= random32() % 100)
+                return false;
+
+Add a check up front for probability == 0 and avoid all of the more
+complicated checks.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+---
+
+Index: linux-build/lib/fault-inject.c
+===================================================================
+--- linux-build.orig/lib/fault-inject.c	2012-02-11 21:22:32.303459860 +1100
++++ linux-build/lib/fault-inject.c	2012-02-11 22:38:10.470977505 +1100
+@@ -101,6 +101,10 @@ static inline bool fail_stacktrace(struc
+ 
+ bool should_fail(struct fault_attr *attr, ssize_t size)
+ {
++	/* No need to check any other properties if the probability is 0 */
++	if (attr->probability == 0)
++		return false;
++
+ 	if (attr->task_filter && !fail_task(attr, current))
+ 		return false;
+ 
