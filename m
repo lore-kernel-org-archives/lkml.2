@@ -1,339 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759595Ab2FAM0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 08:26:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49009 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759544Ab2FAM0S (ORCPT
+	id S1759626Ab2FAM0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 08:26:33 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46509 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759545Ab2FAM0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 08:26:18 -0400
-Date: Fri, 1 Jun 2012 13:25:54 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Richard Kuo <rkuo@codeaurora.org>, David Howells <dhowells@redhat.com>,
-        Bob Liu <lliubbo@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        Richard Weinberger <richard@nod.at>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Matt Turner <mattst88@gmail.com>, nikunj@linux.vnet.ibm.com
-Subject: Re: [PATCH 03/27] smpboot: Define and use cpu_state per-cpu
-	variable in generic code
-Message-ID: <20120601122554.GA25595@n2100.arm.linux.org.uk>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091038.31979.67878.stgit@srivatsabhat.in.ibm.com> <4FC8B342.9070309@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC8B342.9070309@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 1 Jun 2012 08:26:30 -0400
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: [PATCH 2/5] vmevent: Convert from deferred timer to deferred work
+Date: Fri,  1 Jun 2012 05:24:03 -0700
+Message-Id: <1338553446-22292-2-git-send-email-anton.vorontsov@linaro.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <20120601122118.GA6128@lizard>
+References: <20120601122118.GA6128@lizard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 05:49:14PM +0530, Srivatsa S. Bhat wrote:
-> Adding arch maintainers to Cc, which I had missed earlier. No changes to the 
-> patch.
+We'll need to use smp_function_call() in the sampling routines, and the
+call is not supposed to be called from the bottom halves. So, let's
+convert vmevent to dffered workqueues.
 
-Could someone explain what this variable does - afaics this patch adds
-this per-cpu variable to all SMP architectures where its required or
-not, and (so far) the generic code just writes one value to it.
+As a side effect, we also fix the swap reporting (we cannot call
+si_swapinfo from the interrupt context), i.e. the following oops should
+be fixed now:
 
-Are there plans to make use of this in other generic code?
+ =================================
+ [ INFO: inconsistent lock state ]
+ 3.4.0-rc1+ #37 Not tainted
+ ---------------------------------
+ inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+ swapper/0/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
+  (swap_lock){+.?...}, at: [<ffffffff8110449d>] si_swapinfo+0x1d/0x90
+ {SOFTIRQ-ON-W} state was registered at:
+   [<ffffffff8107ca7f>] mark_irqflags+0x15f/0x1b0
+   [<ffffffff8107e5e3>] __lock_acquire+0x493/0x9d0
+   [<ffffffff8107f20e>] lock_acquire+0x9e/0x200
+   [<ffffffff813e9071>] _raw_spin_lock+0x41/0x50
+   [<ffffffff8110449d>] si_swapinfo+0x1d/0x90
+   [<ffffffff8117e7c8>] meminfo_proc_show+0x38/0x3f0
+   [<ffffffff81141209>] seq_read+0x139/0x3f0
+   [<ffffffff81174cc6>] proc_reg_read+0x86/0xc0
+   [<ffffffff8111c19c>] vfs_read+0xac/0x160
+   [<ffffffff8111c29a>] sys_read+0x4a/0x90
+   [<ffffffff813ea652>] system_call_fastpath+0x16/0x1b
 
-> 
-> =====
-> 
-> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> Subject: [PATCH 03/27] smpboot: Define and use cpu_state per-cpu variable in generic code
-> 
-> The per-cpu variable cpu_state is used in x86 and also used in other
-> architectures, to track the state of the cpu during bringup and hotplug.
-> Pull it out into generic code.
-> 
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mike Frysinger <vapier@gentoo.org>
-> Cc: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Venkatesh Pallipadi <venki@google.com>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Cc: linux-ia64@vger.kernel.org
-> Cc: linux-mips@linux-mips.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-sh@vger.kernel.org
-> Cc: xen-devel@lists.xensource.com
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: Hirokazu Takata <takata@linux-m32r.org>
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Bob Liu <lliubbo@gmail.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-> Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Matt Turner <mattst88@gmail.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  arch/ia64/include/asm/cpu.h   |    2 --
->  arch/ia64/kernel/process.c    |    1 +
->  arch/ia64/kernel/smpboot.c    |    6 +-----
->  arch/mips/cavium-octeon/smp.c |    4 +---
->  arch/powerpc/kernel/smp.c     |    6 +-----
->  arch/sh/include/asm/smp.h     |    2 --
->  arch/sh/kernel/smp.c          |    4 +---
->  arch/tile/kernel/smpboot.c    |    4 +---
->  arch/x86/include/asm/cpu.h    |    2 --
->  arch/x86/kernel/smpboot.c     |    4 +---
->  arch/x86/xen/smp.c            |    1 +
->  include/linux/smpboot.h       |    1 +
->  kernel/smpboot.c              |    4 ++++
->  13 files changed, 13 insertions(+), 28 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/cpu.h b/arch/ia64/include/asm/cpu.h
-> index fcca30b..1c3acac 100644
-> --- a/arch/ia64/include/asm/cpu.h
-> +++ b/arch/ia64/include/asm/cpu.h
-> @@ -12,8 +12,6 @@ struct ia64_cpu {
->  
->  DECLARE_PER_CPU(struct ia64_cpu, cpu_devices);
->  
-> -DECLARE_PER_CPU(int, cpu_state);
-> -
->  #ifdef CONFIG_HOTPLUG_CPU
->  extern int arch_register_cpu(int num);
->  extern void arch_unregister_cpu(int);
-> diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
-> index 5e0e86d..32566c7 100644
-> --- a/arch/ia64/kernel/process.c
-> +++ b/arch/ia64/kernel/process.c
-> @@ -29,6 +29,7 @@
->  #include <linux/kdebug.h>
->  #include <linux/utsname.h>
->  #include <linux/tracehook.h>
-> +#include <linux/smpboot.h>
->  
->  #include <asm/cpu.h>
->  #include <asm/delay.h>
-> diff --git a/arch/ia64/kernel/smpboot.c b/arch/ia64/kernel/smpboot.c
-> index 963d2db..df00a3c 100644
-> --- a/arch/ia64/kernel/smpboot.c
-> +++ b/arch/ia64/kernel/smpboot.c
-> @@ -39,6 +39,7 @@
->  #include <linux/efi.h>
->  #include <linux/percpu.h>
->  #include <linux/bitops.h>
-> +#include <linux/smpboot.h>
->  
->  #include <linux/atomic.h>
->  #include <asm/cache.h>
-> @@ -111,11 +112,6 @@ extern unsigned long ia64_iobase;
->  
->  struct task_struct *task_for_booting_cpu;
->  
-> -/*
-> - * State for each CPU
-> - */
-> -DEFINE_PER_CPU(int, cpu_state);
-> -
->  cpumask_t cpu_core_map[NR_CPUS] __cacheline_aligned;
->  EXPORT_SYMBOL(cpu_core_map);
->  DEFINE_PER_CPU_SHARED_ALIGNED(cpumask_t, cpu_sibling_map);
-> diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
-> index 97e7ce9..93cd4b0 100644
-> --- a/arch/mips/cavium-octeon/smp.c
-> +++ b/arch/mips/cavium-octeon/smp.c
-> @@ -13,6 +13,7 @@
->  #include <linux/kernel_stat.h>
->  #include <linux/sched.h>
->  #include <linux/module.h>
-> +#include <linux/smpboot.h>
->  
->  #include <asm/mmu_context.h>
->  #include <asm/time.h>
-> @@ -252,9 +253,6 @@ static void octeon_cpus_done(void)
->  
->  #ifdef CONFIG_HOTPLUG_CPU
->  
-> -/* State of each CPU. */
-> -DEFINE_PER_CPU(int, cpu_state);
-> -
->  extern void fixup_irqs(void);
->  
->  static DEFINE_SPINLOCK(smp_reserve_lock);
-> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-> index e1417c4..1928058a 100644
-> --- a/arch/powerpc/kernel/smp.c
-> +++ b/arch/powerpc/kernel/smp.c
-> @@ -31,6 +31,7 @@
->  #include <linux/cpu.h>
->  #include <linux/notifier.h>
->  #include <linux/topology.h>
-> +#include <linux/smpboot.h>
->  
->  #include <asm/ptrace.h>
->  #include <linux/atomic.h>
-> @@ -57,11 +58,6 @@
->  #define DBG(fmt...)
->  #endif
->  
-> -#ifdef CONFIG_HOTPLUG_CPU
-> -/* State of each CPU during hotplug phases */
-> -static DEFINE_PER_CPU(int, cpu_state) = { 0 };
-> -#endif
-> -
->  struct thread_info *secondary_ti;
->  
->  DEFINE_PER_CPU(cpumask_var_t, cpu_sibling_map);
-> diff --git a/arch/sh/include/asm/smp.h b/arch/sh/include/asm/smp.h
-> index 78b0d0f4..bda041e 100644
-> --- a/arch/sh/include/asm/smp.h
-> +++ b/arch/sh/include/asm/smp.h
-> @@ -31,8 +31,6 @@ enum {
->  	SMP_MSG_NR,	/* must be last */
->  };
->  
-> -DECLARE_PER_CPU(int, cpu_state);
-> -
->  void smp_message_recv(unsigned int msg);
->  void smp_timer_broadcast(const struct cpumask *mask);
->  
-> diff --git a/arch/sh/kernel/smp.c b/arch/sh/kernel/smp.c
-> index b86e9ca..8e0fde0 100644
-> --- a/arch/sh/kernel/smp.c
-> +++ b/arch/sh/kernel/smp.c
-> @@ -22,6 +22,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/sched.h>
->  #include <linux/atomic.h>
-> +#include <linux/smpboot.h>
->  #include <asm/processor.h>
->  #include <asm/mmu_context.h>
->  #include <asm/smp.h>
-> @@ -34,9 +35,6 @@ int __cpu_logical_map[NR_CPUS];		/* Map logical to physical */
->  
->  struct plat_smp_ops *mp_ops = NULL;
->  
-> -/* State of each CPU */
-> -DEFINE_PER_CPU(int, cpu_state) = { 0 };
-> -
->  void __cpuinit register_smp_ops(struct plat_smp_ops *ops)
->  {
->  	if (mp_ops)
-> diff --git a/arch/tile/kernel/smpboot.c b/arch/tile/kernel/smpboot.c
-> index e686c5a..24a9c06 100644
-> --- a/arch/tile/kernel/smpboot.c
-> +++ b/arch/tile/kernel/smpboot.c
-> @@ -25,13 +25,11 @@
->  #include <linux/delay.h>
->  #include <linux/err.h>
->  #include <linux/irq.h>
-> +#include <linux/smpboot.h>
->  #include <asm/mmu_context.h>
->  #include <asm/tlbflush.h>
->  #include <asm/sections.h>
->  
-> -/* State of each CPU. */
-> -static DEFINE_PER_CPU(int, cpu_state) = { 0 };
-> -
->  /* The messaging code jumps to this pointer during boot-up */
->  unsigned long start_cpu_function_addr;
->  
-> diff --git a/arch/x86/include/asm/cpu.h b/arch/x86/include/asm/cpu.h
-> index 4564c8e..2d0b239 100644
-> --- a/arch/x86/include/asm/cpu.h
-> +++ b/arch/x86/include/asm/cpu.h
-> @@ -30,8 +30,6 @@ extern int arch_register_cpu(int num);
->  extern void arch_unregister_cpu(int);
->  #endif
->  
-> -DECLARE_PER_CPU(int, cpu_state);
-> -
->  int mwait_usable(const struct cpuinfo_x86 *);
->  
->  #endif /* _ASM_X86_CPU_H */
-> diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> index bfbe30e..269bc1f 100644
-> --- a/arch/x86/kernel/smpboot.c
-> +++ b/arch/x86/kernel/smpboot.c
-> @@ -51,6 +51,7 @@
->  #include <linux/stackprotector.h>
->  #include <linux/gfp.h>
->  #include <linux/cpuidle.h>
-> +#include <linux/smpboot.h>
->  
->  #include <asm/acpi.h>
->  #include <asm/desc.h>
-> @@ -73,9 +74,6 @@
->  #include <asm/smpboot_hooks.h>
->  #include <asm/i8259.h>
->  
-> -/* State of each CPU */
-> -DEFINE_PER_CPU(int, cpu_state) = { 0 };
-> -
->  #ifdef CONFIG_HOTPLUG_CPU
->  /*
->   * We need this for trampoline_base protection from concurrent accesses when
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index 2ef5948..09a7199 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -16,6 +16,7 @@
->  #include <linux/err.h>
->  #include <linux/slab.h>
->  #include <linux/smp.h>
-> +#include <linux/smpboot.h>
->  
->  #include <asm/paravirt.h>
->  #include <asm/desc.h>
-> diff --git a/include/linux/smpboot.h b/include/linux/smpboot.h
-> index 63bbedd..834d90c 100644
-> --- a/include/linux/smpboot.h
-> +++ b/include/linux/smpboot.h
-> @@ -5,6 +5,7 @@
->  #ifndef SMPBOOT_H
->  #define SMPBOOT_H
->  
-> +DECLARE_PER_CPU(int, cpu_state);
->  extern void smpboot_start_secondary(void *arg);
->  
->  #endif
-> diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-> index 5ae1805..0df43b0 100644
-> --- a/kernel/smpboot.c
-> +++ b/kernel/smpboot.c
-> @@ -67,6 +67,8 @@ void __init idle_threads_init(void)
->  }
->  #endif
->  
-> +/* State of each CPU during bringup/teardown */
-> +DEFINE_PER_CPU(int, cpu_state) = { 0 };
->  
->  /* Implement the following functions in your architecture, as appropriate. */
->  
-> @@ -141,6 +143,8 @@ void __cpuinit smpboot_start_secondary(void *arg)
->  	set_cpu_online(cpu, true);
->  	arch_vector_unlock();
->  
-> +	per_cpu(cpu_state, cpu) = CPU_ONLINE;
-> +
->  	__cpu_post_online(arg);
->  
->  	/* Enable local interrupts now */
-> 
-> 
+Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+---
+ mm/vmevent.c |   49 ++++++++++++++++++++++++++++---------------------
+ 1 file changed, 28 insertions(+), 21 deletions(-)
+
+diff --git a/mm/vmevent.c b/mm/vmevent.c
+index 381e9d1..4ca2a04 100644
+--- a/mm/vmevent.c
++++ b/mm/vmevent.c
+@@ -3,7 +3,7 @@
+ #include <linux/compiler.h>
+ #include <linux/vmevent.h>
+ #include <linux/syscalls.h>
+-#include <linux/timer.h>
++#include <linux/workqueue.h>
+ #include <linux/file.h>
+ #include <linux/list.h>
+ #include <linux/poll.h>
+@@ -34,7 +34,7 @@ struct vmevent_watch {
+ 	struct vmevent_attr		*config_attrs[VMEVENT_CONFIG_MAX_ATTRS];
+ 
+ 	/* sampling */
+-	struct timer_list		timer;
++	struct delayed_work		work;
+ 
+ 	/* poll */
+ 	wait_queue_head_t		waitq;
+@@ -146,15 +146,13 @@ static bool vmevent_match(struct vmevent_watch *watch)
+ }
+ 
+ /*
+- * This function is called from the timer context, which has the same
+- * guaranties as an interrupt handler: it can have only one execution
+- * thread (unlike bare softirq handler), so we don't need to worry
+- * about racing w/ ourselves.
++ * This function is called from a workqueue, which can have only one
++ * execution thread, so we don't need to worry about racing w/ ourselves.
+  *
+- * We also don't need to worry about several instances of timers
+- * accessing the same vmevent_watch, as we allocate vmevent_watch
+- * together w/ the timer instance in vmevent_fd(), so there is always
+- * one timer per vmevent_watch.
++ * We also don't need to worry about several instances of us accessing
++ * the same vmevent_watch, as we allocate vmevent_watch together w/ the
++ * work instance in vmevent_fd(), so there is always one work per
++ * vmevent_watch.
+  *
+  * All the above makes it possible to implement the lock-free logic,
+  * using just the atomic watch->pending variable.
+@@ -178,26 +176,35 @@ static void vmevent_sample(struct vmevent_watch *watch)
+ 	atomic_set(&watch->pending, 1);
+ }
+ 
+-static void vmevent_timer_fn(unsigned long data)
++static void vmevent_schedule_watch(struct vmevent_watch *watch)
+ {
+-	struct vmevent_watch *watch = (struct vmevent_watch *)data;
++	schedule_delayed_work(&watch->work,
++		nsecs_to_jiffies64(watch->config.sample_period_ns));
++}
++
++static struct vmevent_watch *work_to_vmevent_watch(struct work_struct *work)
++{
++	struct delayed_work *wk = to_delayed_work(work);
++
++	return container_of(wk, struct vmevent_watch, work);
++}
++
++static void vmevent_timer_fn(struct work_struct *work)
++{
++	struct vmevent_watch *watch = work_to_vmevent_watch(work);
+ 
+ 	vmevent_sample(watch);
+ 
+ 	if (atomic_read(&watch->pending))
+ 		wake_up(&watch->waitq);
+-	mod_timer(&watch->timer, jiffies +
+-			nsecs_to_jiffies64(watch->config.sample_period_ns));
++
++	vmevent_schedule_watch(watch);
+ }
+ 
+ static void vmevent_start_timer(struct vmevent_watch *watch)
+ {
+-	init_timer_deferrable(&watch->timer);
+-	watch->timer.data = (unsigned long)watch;
+-	watch->timer.function = vmevent_timer_fn;
+-	watch->timer.expires = jiffies +
+-			nsecs_to_jiffies64(watch->config.sample_period_ns);
+-	add_timer(&watch->timer);
++	INIT_DELAYED_WORK_DEFERRABLE(&watch->work, vmevent_timer_fn);
++	vmevent_schedule_watch(watch);
+ }
+ 
+ static unsigned int vmevent_poll(struct file *file, poll_table *wait)
+@@ -259,7 +266,7 @@ static int vmevent_release(struct inode *inode, struct file *file)
+ {
+ 	struct vmevent_watch *watch = file->private_data;
+ 
+-	del_timer_sync(&watch->timer);
++	cancel_delayed_work_sync(&watch->work);
+ 
+ 	kfree(watch);
+ 
+-- 
+1.7.9.2
+
