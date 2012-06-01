@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759985Ab2FAOcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 10:32:13 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40711 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab2FAOcM (ORCPT
+	id S933355Ab2FAOcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:32:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38992 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758182Ab2FAOci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 10:32:12 -0400
-Date: Fri, 1 Jun 2012 15:34:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Stefani Seibold <stefani@seibold.net>, linux-kernel@vger.kernel.org,
-        greg@kroah.com, gregkh@linuxfoundation.org,
-        thomas.braunstorfinger@rohde-schwarz.com
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-Message-ID: <20120601153454.6f9830a0@pyramind.ukuu.org.uk>
-In-Reply-To: <201206011616.36284.oneukum@suse.de>
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
-	<201205311020.50076.oneukum@suse.de>
-	<1338456100.6454.82.camel@wall-e>
-	<201206011616.36284.oneukum@suse.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jun 2012 10:32:38 -0400
+Date: Fri, 1 Jun 2012 15:32:35 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
+        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
+        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
+ Device Tree
+Message-ID: <20120601143235.GT24139@opensource.wolfsonmicro.com>
+References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
+ <1338353260-10097-9-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mvzZjokS1nTZS3h1"
+Content-Disposition: inline
+In-Reply-To: <1338353260-10097-9-git-send-email-lee.jones@linaro.org>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012 16:16:36 +0200
-Oliver Neukum <oneukum@suse.de> wrote:
 
-> Am Donnerstag, 31. Mai 2012, 11:21:40 schrieb Stefani Seibold:
-> > On Thu, 2012-05-31 at 10:20 +0200, Oliver Neukum wrote:
-> > 
-> > > > > 
-> > > > > > +		if (arg) {
-> > > > > > +			ret = wait_event_interruptible_timeout(
-> > > > > > +				dev->out_running.wait,
-> > > > > > +				list_empty(&dev->out_running.urb_list),
-> > > > > > +				msecs_to_jiffies(arg));
-> > > > > > +			if (!ret)
-> > > > > > +				return -ETIMEDOUT;
-> > > > > > +			if (ret < 0)
-> > > > > > +				return ret;
-> > > > > > +			return 0;
-> > > > > > +		} else {
-> > > > > > +			return wait_event_interruptible(
-> > > > > > +				dev->out_running.wait,
-> > > > > > +				list_empty(&dev->out_running.urb_list));
-> > > > > > +		}
-> > > > > > +		break;
-> > > > > 
-> > > > > This is very ugly. If you need fsync(), then implement it.
-> > > > > 
-> > > > 
-> > > > fsync() did not meat the requirements, since i need in some case a
-> > > > timeout for the device. poll() will also not help, since it signals only
-> > > > that there is space to write.
-> > > 
-> > > Well, then implement fsync() with interruptible sleep and use a timer
-> > > in user space.
-> > > 
-> > 
-> > But this will not solve the problem of older software which is still
-> > depending on this ioctl.
-> 
-> Yes. I guess it might be included in a depreated form. However
-> a sane alternative must be provided.
+--mvzZjokS1nTZS3h1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It's a new kernel driver it's not bound to any existing API and we
-regularly enforce a sane API on drivers being merged so I think the
-legacy stuff is just "tough" - the out of tree driver will work fine with
-any legacy code.
+On Wed, May 30, 2012 at 12:47:26PM +0800, Lee Jones wrote:
+> The 'name' field in 'struct of_regulator_match' expects to match with
+> its corresponding regulator device node in the Device Tree. This patch
+> renames each of the regulators in the ab8500 regulator driver so this
+> is true.
 
-Alan
+Applied both, thanks.
+
+> Cc: linux-kernel@vger.kernel.org
+
+It's helpful to avoid inclding things like this (I mostly point this out
+as you've got a much wider CC list so you clearly have some other system
+that you're using to track where to send things).
+
+--mvzZjokS1nTZS3h1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPyNJ6AAoJEBus8iNuMP3dnbAP/3kmfnL4JEyok2mQd3yIdAqT
+lubVFMktrwLLrjdZmDxBeZeUp6/OkpgFZCmTV3+YRAb41jdIYJJFKVUsgrt6hKZV
+UtRMq6iAwMY0OUsHlCcndUF6bBLdTN+u/lPxokLt5w4k84CGba0V2XQgz3+bWklD
+L6r0zHAtRWCYdwl/ehj3uI3KSgIx9TNuP6q7ybCuZAQ9KuEv3TKd+iPYyHeHS7xh
+EbT7vz7hAdQRfH1phoXNJpRZ/RZV/QpSaRLm6xKU7hLjnRn6EJdjq+ILsHGzSmsG
+ouhaxVZFyWbvwNMN4BHjB4oOfdpwR1jzN7g4k6YaBCh2V70gCQUsXjABqJUTDb3q
+5F4nACmoAJe+8D8w7ERZhLxPGcswF2tgiWSIpLhrKzA5sXEfBG19vN3PGt+Xi81O
+996v3vWbHs0TILkyhdIbB9sdeWAuHEe7rrsQ0xaopELm7G7ndwhsiUSwdA7uzfbw
+vM6+ZzsSv+GZziQU5CJ/c5nQwFpR833V2onNLwWXvTTsN2Pg/DIPcOwp3doJJNiU
+WAKM1NsGbqy1wjoCv0e31o2MBis+cxPSjjIbd4X6kEBgMpe3uxAaISE3hu8J3CiA
+jtFQV7QOs4B86FMNYFDKzYxZ6nWuxYlb4Tgsz5BCGJ8xllOI4lM+rYbPUHH9T/fg
+QwFjaB80A3NXs6QrClqS
+=muh/
+-----END PGP SIGNATURE-----
+
+--mvzZjokS1nTZS3h1--
