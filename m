@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965701Ab2FASrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:47:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42919 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965617Ab2FASrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:47:31 -0400
-Message-ID: <4FC90E00.7010100@zytor.com>
-Date: Fri, 01 Jun 2012 11:46:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Thavatchai Makphaibulcboke <thavatchai.makpahibulchoke@hp.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kaloz@openwrt.org" <kaloz@openwrt.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "lasse.collin@tukaani.org" <lasse.collin@tukaani.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>
-Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper functions
-References: <1337875436-27640-1-git-send-email-tmac@hp.com> <20120528070336.GM3377@game.jcrosoft.org> <4FC82D89.1040108@hp.com> <4FC83940.9010708@zytor.com> <4FC90C01.2060005@hp.com>
-In-Reply-To: <4FC90C01.2060005@hp.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+	id S965709Ab2FASsI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:48:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55641 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965617Ab2FASsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 14:48:06 -0400
+Date: Fri, 1 Jun 2012 11:48:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Vladimir =?UTF-8?Q?'=CF=86-coder/phcoder'?= Serbinenko" 
+	<phcoder@gmail.com>,
+        Emmanuel Benisty <benisty.e@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: 71ca97da9d overrides user's kernel config
+Message-Id: <20120601114804.7bd6c2b9.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFyK_m8aO57gC4Q1PJXmY3e1-uRXQ3E6PRgdBVixJSa2gQ@mail.gmail.com>
+References: <CA+i8gKK5VJU_0YbBkeav6wTP+5YGp-rd52dTNqyoprz_YZrepA@mail.gmail.com>
+	<4FC8E00E.60600@gmail.com>
+	<CA+55aFyK_m8aO57gC4Q1PJXmY3e1-uRXQ3E6PRgdBVixJSa2gQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2012 11:37 AM, Thavatchai Makphaibulcboke wrote:
-> On 05/31/2012 09:38 PM, H. Peter Anvin wrote:
->> We could always make a source code library, like we already in effect
->> have for the compression functions themselves.
->>
->> 	-hpa
->>
-> 
-> Thanks for the suggestion and comment.  I guess we could add a new
-> directory with a new file under arch, such as arch/lib/mem.c and use the
-> source include similar to the compression.
-> 
+On Fri, 1 Jun 2012 10:53:20 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Well, the decompression stuff is under lib/ ... maybe lib/boot/ or
-something like that...
+> Andrew, who would be in charge of "fs/nls"? Almost nobody has really
+> touched that area in several years now, and it doesn't have any
+> maintainership.
 
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+I cc'ed various people on that patch who have had fingers in there in
+recent years but no, it doesn't have a maintainer.
