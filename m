@@ -1,227 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758986Ab2FAJNe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:13:34 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4394 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758402Ab2FAJNa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:13:30 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 01 Jun 2012 02:13:25 -0700
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-To: <swarren@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <olof@lixom.net>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Colin Cross <ccross@android.com>
-Subject: [PATCH 1/9] ARM: tegra: add clk_prepare/clk_unprepare
-Date: Fri, 1 Jun 2012 14:42:40 +0530
-Message-ID: <1338541968-7961-2-git-send-email-pgaikwad@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1338541968-7961-1-git-send-email-pgaikwad@nvidia.com>
-References: <1338541968-7961-1-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
+	id S1759285Ab2FAJQW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:16:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9863 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758402Ab2FAJNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 05:13:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="151267048"
+Date: Fri, 1 Jun 2012 17:13:32 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Dave Jones <davej@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: vma_resv_map bug.
+Message-ID: <20120601091332.GA14623@localhost>
+References: <20120530052716.GA12771@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120530052716.GA12771@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use clk_prepare/clk_unprepare as required by the generic clk framework.
+On Wed, May 30, 2012 at 01:27:17AM -0400, Dave Jones wrote:
+> Since c50ac050811d6485616a193eb0f37bfbd191cc89, I can trigger this fairly easily
+> using my syscall fuzzer.
+> 
+> 	Dave
 
-This patch should go through Tegra tree since other patches to port Tegra
-to generic clock framework are dependent on it. Posting here to get ack from
-the maintainers.
+The same error here. Here is my dmesg. Hope it helps.
 
-Tested on Ventana and Cardhu.
+[  497.674360] trinity-child0 (31412): Using mlock ulimits for SHM_HUGETLB is deprecated
+[  502.461866] warning: process `trinity-child0' used the deprecated sysctl system call with 
+[  502.576500] BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+[  502.577028] IP: [<ffffffff81135bed>] vma_resv_map+0x9/0x2b
+[  502.577028] PGD a012067 PUD a86b067 PMD 0 
+[  502.577028] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+[  502.577028] CPU 0 
+[  502.577028] Modules linked in:
+[  502.577028] 
+[  502.577028] Pid: 31442, comm: trinity-child0 Not tainted 3.4.0+ #7 Bochs Bochs
+[  502.577028] RIP: 0010:[<ffffffff81135bed>]  [<ffffffff81135bed>] vma_resv_map+0x9/0x2b
+[  502.577028] RSP: 0018:ffff88000a80bd58  EFLAGS: 00010246
+[  502.577028] RAX: 00000000fffffff4 RBX: 0000000000000000 RCX: 0000007503e4bb9c
+[  502.577028] RDX: 000000000002bdc0 RSI: 0000000000000001 RDI: 0000000000000000
+[  502.577028] RBP: ffff88000a80bd58 R08: 0000000000000000 R09: 0000000000000000
+[  502.577028] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+[  502.577028] R13: 0000000000000001 R14: fffffffffffffff4 R15: ffff88000e3d8498
+[  502.577028] FS:  00007feb4db7d700(0000) GS:ffff88000f400000(0000) knlGS:0000000000000000
+[  502.577028] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  502.577028] CR2: 0000000000000030 CR3: 0000000006d09000 CR4: 00000000000006f0
+[  502.577028] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  502.577028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  502.577028] Process trinity-child0 (pid: 31442, threadinfo ffff88000a80a000, task ffff8800055ba2a0)
+[  502.577028] Stack:
+[  502.577028]  ffff88000a80bd68 ffffffff81135c1d ffff88000a80bdc8 ffffffff811385b0
+[  502.577028]  0000000000000000 ffffffff82a96ec0 0000000000000001 0000000000000000
+[  502.577028]  ffff88000e3b2520 0000000000001001 ffff88000aa8cec0 ffff88000e3d8498
+[  502.577028] Call Trace:
+[  502.577028]  [<ffffffff81135c1d>] resv_map_put+0xe/0x28
+[  502.577028]  [<ffffffff811385b0>] hugetlb_reserve_pages+0x18c/0x1a5
+[  502.577028]  [<ffffffff812355a4>] hugetlb_file_setup+0x181/0x255
+[  502.577028]  [<ffffffff813bedc0>] newseg+0xe2/0x25a
+[  502.577028]  [<ffffffff813bb1fb>] ? ipcget+0xad/0x1fd
+[  502.577028]  [<ffffffff813bb297>] ipcget+0x149/0x1fd
+[  502.577028]  [<ffffffff813bf09a>] sys_shmget+0x5a/0x5e
+[  502.577028]  [<ffffffff813becde>] ? shm_try_destroy_orphaned+0x72/0x72
+[  502.577028]  [<ffffffff813be645>] ? shm_get_unmapped_area+0x20/0x20
+[  502.577028]  [<ffffffff813be652>] ? shm_security+0xd/0xd
+[  502.577028]  [<ffffffff819cbee9>] system_call_fastpath+0x16/0x1b
+[  502.577028] Code: 40 74 02 0f 0b 48 89 f8 66 66 66 90 48 d1 e8 83 e0 1f 83 f8 1c 76 da 83 f8 1d 0f 94 c0 0f b6 c0 5d c3 55 48 89 e5 66 66 66 66 90 <48> 8b 47 30 a9 00 00 40 00 75 02 0f 0b a8 80 75 0d 48 8b 87 a0 
+[  502.577028] RIP  [<ffffffff81135bed>] vma_resv_map+0x9/0x2b
+[  502.577028]  RSP <ffff88000a80bd58>
+[  502.577028] CR2: 0000000000000030
+[  502.638645] ---[ end trace 61d67b4c1e7a2c5d ]---
 
-Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
----
-
-
- arch/arm/mach-tegra/cpu-tegra.c |    6 +++---
- arch/arm/mach-tegra/dma.c       |    2 +-
- arch/arm/mach-tegra/pcie.c      |    6 +++---
- arch/arm/mach-tegra/powergate.c |    4 ++--
- arch/arm/mach-tegra/timer.c     |    4 ++--
- arch/arm/mach-tegra/usb_phy.c   |   16 ++++++++--------
- 6 files changed, 19 insertions(+), 19 deletions(-)
-
-diff --git a/arch/arm/mach-tegra/cpu-tegra.c b/arch/arm/mach-tegra/cpu-tegra.c
-index 7a065f0..ceb52db 100644
---- a/arch/arm/mach-tegra/cpu-tegra.c
-+++ b/arch/arm/mach-tegra/cpu-tegra.c
-@@ -189,8 +189,8 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- 		return PTR_ERR(emc_clk);
- 	}
- 
--	clk_enable(emc_clk);
--	clk_enable(cpu_clk);
-+	clk_prepare_enable(emc_clk);
-+	clk_prepare_enable(cpu_clk);
- 
- 	cpufreq_frequency_table_cpuinfo(policy, freq_table);
- 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
-@@ -212,7 +212,7 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
- static int tegra_cpu_exit(struct cpufreq_policy *policy)
- {
- 	cpufreq_frequency_table_cpuinfo(policy, freq_table);
--	clk_disable(emc_clk);
-+	clk_disable_unprepare(emc_clk);
- 	clk_put(emc_clk);
- 	clk_put(cpu_clk);
- 	return 0;
-diff --git a/arch/arm/mach-tegra/dma.c b/arch/arm/mach-tegra/dma.c
-index abea4f6..2698d7d 100644
---- a/arch/arm/mach-tegra/dma.c
-+++ b/arch/arm/mach-tegra/dma.c
-@@ -720,7 +720,7 @@ int __init tegra_dma_init(void)
- 		ret = PTR_ERR(c);
- 		goto fail;
- 	}
--	ret = clk_enable(c);
-+	ret = clk_prepare_enable(c);
- 	if (ret != 0) {
- 		pr_err("Unable to enable clock for APB DMA\n");
- 		goto fail;
-diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
-index 0e09137..d3ad515 100644
---- a/arch/arm/mach-tegra/pcie.c
-+++ b/arch/arm/mach-tegra/pcie.c
-@@ -723,9 +723,9 @@ static int tegra_pcie_power_regate(void)
- 
- 	tegra_pcie_xclk_clamp(false);
- 
--	clk_enable(tegra_pcie.afi_clk);
--	clk_enable(tegra_pcie.pex_clk);
--	return clk_enable(tegra_pcie.pll_e);
-+	clk_prepare_enable(tegra_pcie.afi_clk);
-+	clk_prepare_enable(tegra_pcie.pex_clk);
-+	return clk_prepare_enable(tegra_pcie.pll_e);
- }
- 
- static int tegra_pcie_clocks_get(void)
-diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
-index f5b12fb..15d5065 100644
---- a/arch/arm/mach-tegra/powergate.c
-+++ b/arch/arm/mach-tegra/powergate.c
-@@ -146,7 +146,7 @@ int tegra_powergate_sequence_power_up(int id, struct clk *clk)
- 	if (ret)
- 		goto err_power;
- 
--	ret = clk_enable(clk);
-+	ret = clk_prepare_enable(clk);
- 	if (ret)
- 		goto err_clk;
- 
-@@ -162,7 +162,7 @@ int tegra_powergate_sequence_power_up(int id, struct clk *clk)
- 	return 0;
- 
- err_clamp:
--	clk_disable(clk);
-+	clk_disable_unprepare(clk);
- err_clk:
- 	tegra_powergate_power_off(id);
- err_power:
-diff --git a/arch/arm/mach-tegra/timer.c b/arch/arm/mach-tegra/timer.c
-index 315672c..57b5bdc 100644
---- a/arch/arm/mach-tegra/timer.c
-+++ b/arch/arm/mach-tegra/timer.c
-@@ -189,7 +189,7 @@ static void __init tegra_init_timer(void)
- 			" Assuming 12Mhz input clock.\n");
- 		rate = 12000000;
- 	} else {
--		clk_enable(clk);
-+		clk_prepare_enable(clk);
- 		rate = clk_get_rate(clk);
- 	}
- 
-@@ -201,7 +201,7 @@ static void __init tegra_init_timer(void)
- 	if (IS_ERR(clk))
- 		pr_warn("Unable to get rtc-tegra clock\n");
- 	else
--		clk_enable(clk);
-+		clk_prepare_enable(clk);
- 
- 	switch (rate) {
- 	case 12000000:
-diff --git a/arch/arm/mach-tegra/usb_phy.c b/arch/arm/mach-tegra/usb_phy.c
-index 54e353c..022b33a 100644
---- a/arch/arm/mach-tegra/usb_phy.c
-+++ b/arch/arm/mach-tegra/usb_phy.c
-@@ -247,7 +247,7 @@ static void utmip_pad_power_on(struct tegra_usb_phy *phy)
- 	unsigned long val, flags;
- 	void __iomem *base = phy->pad_regs;
- 
--	clk_enable(phy->pad_clk);
-+	clk_prepare_enable(phy->pad_clk);
- 
- 	spin_lock_irqsave(&utmip_pad_lock, flags);
- 
-@@ -259,7 +259,7 @@ static void utmip_pad_power_on(struct tegra_usb_phy *phy)
- 
- 	spin_unlock_irqrestore(&utmip_pad_lock, flags);
- 
--	clk_disable(phy->pad_clk);
-+	clk_disable_unprepare(phy->pad_clk);
- }
- 
- static int utmip_pad_power_off(struct tegra_usb_phy *phy)
-@@ -272,7 +272,7 @@ static int utmip_pad_power_off(struct tegra_usb_phy *phy)
- 		return -EINVAL;
- 	}
- 
--	clk_enable(phy->pad_clk);
-+	clk_prepare_enable(phy->pad_clk);
- 
- 	spin_lock_irqsave(&utmip_pad_lock, flags);
- 
-@@ -284,7 +284,7 @@ static int utmip_pad_power_off(struct tegra_usb_phy *phy)
- 
- 	spin_unlock_irqrestore(&utmip_pad_lock, flags);
- 
--	clk_disable(phy->pad_clk);
-+	clk_disable_unprepare(phy->pad_clk);
- 
- 	return 0;
- }
-@@ -580,7 +580,7 @@ static int ulpi_phy_power_on(struct tegra_usb_phy *phy)
- 	msleep(5);
- 	gpio_direction_output(config->reset_gpio, 1);
- 
--	clk_enable(phy->clk);
-+	clk_prepare_enable(phy->clk);
- 	msleep(1);
- 
- 	val = readl(base + USB_SUSP_CTRL);
-@@ -689,7 +689,7 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
- 		err = PTR_ERR(phy->pll_u);
- 		goto err0;
- 	}
--	clk_enable(phy->pll_u);
-+	clk_prepare_enable(phy->pll_u);
- 
- 	parent_rate = clk_get_rate(clk_get_parent(phy->pll_u));
- 	for (i = 0; i < ARRAY_SIZE(tegra_freq_table); i++) {
-@@ -735,7 +735,7 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev, int instance,
- 	return phy;
- 
- err1:
--	clk_disable(phy->pll_u);
-+	clk_disable_unprepare(phy->pll_u);
- 	clk_put(phy->pll_u);
- err0:
- 	kfree(phy);
-@@ -810,7 +810,7 @@ void tegra_usb_phy_close(struct tegra_usb_phy *phy)
- 		clk_put(phy->clk);
- 	else
- 		utmip_pad_close(phy);
--	clk_disable(phy->pll_u);
-+	clk_disable_unprepare(phy->pll_u);
- 	clk_put(phy->pll_u);
- 	kfree(phy);
- }
--- 
-1.7.4.1
-
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+> IP: [<ffffffff81182959>] vma_resv_map+0x9/0x30
+> PGD 141453067 PUD 1421e1067 PMD 0 
+> Oops: 0000 [#1] PREEMPT SMP 
+> CPU 6 
+> Modules linked in: binfmt_misc caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode serio_raw pcspkr i2c_i801 lpc_ich mfd_core e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> 
+> Pid: 14006, comm: trinity-child6 Not tainted 3.4.0+ #36
+> RIP: 0010:[<ffffffff81182959>]  [<ffffffff81182959>] vma_resv_map+0x9/0x30
+> RSP: 0018:ffff8801414e1d48  EFLAGS: 00010246
+> RAX: 00000000fffffff4 RBX: 0000000000000000 RCX: 000000000000b990
+> RDX: 00000000fffffff4 RSI: 0000000000000001 RDI: 0000000000000000
+> RBP: ffff8801414e1d48 R08: 0000000000000000 R09: 0000000000000000
+> R10: 0000000000000001 R11: 0000000000000002 R12: 0000000000000000
+> R13: 0000000000000001 R14: 0000000000000001 R15: ffff88013febf0d0
+> FS:  00007fc3866f5740(0000) GS:ffff880148800000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000030 CR3: 00000001437b1000 CR4: 00000000001407e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process trinity-child6 (pid: 14006, threadinfo ffff8801414e0000, task ffff8801414f26b0)
+> Stack:
+>  ffff8801414e1d58 ffffffff81182cde ffff8801414e1db8 ffffffff81185fe6
+>  0000000000008000 00000000fffffff4 ffffffff82a24ce0 0000000000000000
+>  ffff8801414e1db8 ffff88013febf0d0 0000000000000001 ffff880137b05c20
+> Call Trace:
+>  [<ffffffff81182cde>] resv_map_put+0xe/0x40
+>  [<ffffffff81185fe6>] hugetlb_reserve_pages+0xa6/0x1d0
+>  [<ffffffff8128c312>] hugetlb_file_setup+0x102/0x2c0
+>  [<ffffffff812a1a25>] newseg+0x115/0x360
+>  [<ffffffff8129bcfe>] ipcget+0x1ce/0x310
+>  [<ffffffff812a1e6a>] sys_shmget+0x5a/0x60
+>  [<ffffffff812a1910>] ? shmctl_down.constprop.14+0x180/0x180
+>  [<ffffffff812a0f90>] ? shm_release+0x50/0x50
+>  [<ffffffff812a0f20>] ? shm_get_unmapped_area+0x20/0x20
+>  [<ffffffff816613d2>] system_call_fastpath+0x16/0x1b
+> Code: 40 30 48 8b 40 28 48 8b 80 b0 05 00 00 48 8b 40 58 8b 48 08 b8 01 00 00 00 83 c1 0c 48 d3 e0 c3 66 90 55 48 89 e5 66 66 66 66 90 <48> 8b 47 30 a9 00 00 40 00 74 18 a8 80 75 10 48 8b 87 a0 00 00 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
