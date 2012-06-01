@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab2FATgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 15:36:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:44644 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933395Ab2FATgM convert rfc822-to-8bit (ORCPT
+	id S1759246Ab2FATiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 15:38:00 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43324 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758729Ab2FATh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 15:36:12 -0400
+	Fri, 1 Jun 2012 15:37:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FB5D1C8.7020305@gmail.com>
-References: <4FAFBE24.7000307@gmail.com>
-	<20120517154707.c3dc2795.akpm@linux-foundation.org>
-	<4FB5D1C8.7020305@gmail.com>
-Date: Fri, 1 Jun 2012 12:36:11 -0700
-X-Google-Sender-Auth: NtHM8F5NVwtzHnL8PjhgAIb9Spg
-Message-ID: <CAE9FiQVqPCRQbg8PShxbUeT5Z0gm88vm76QNT=btGCNRwGP2oA@mail.gmail.com>
-Subject: Re: [PATCH] Add Apple NLS
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?ISO-8859-7?Q?Vladimir_=27=F6=2Dcoder=2Fphcoder=27_Serbinenko?= 
-	<phcoder@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <alpine.DEB.2.02.1206011230170.17976@asgard.lang.hm>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
+ <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com>
+ <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org>
+ <alpine.DEB.2.00.1205301349230.31768@router.home> <20120530193234.GV27374@one.firstfloor.org>
+ <alpine.DEB.2.00.1205301441350.31768@router.home> <CAHGf_=ooVunBpSdBRCnO1uOoswqxcSy7Xf8xVcgEUGA2fXdcTA@mail.gmail.com>
+ <20120530201042.GY27374@one.firstfloor.org> <CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com>
+ <alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm> <alpine.DEB.2.00.1206010850430.6302@router.home>
+ <alpine.DEB.2.02.1206011230170.17976@asgard.lang.hm>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Fri, 1 Jun 2012 15:37:37 -0400
+Message-ID: <CAHGf_=qDy79cvHX3ym7RvkX7q9+2TDKhgtBHVj6+XHORczj94A@mail.gmail.com>
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+To: david@lang.hm
+Cc: Christoph Lameter <cl@linux.com>, Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
+        sivanich@sgi.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 17, 2012 at 9:36 PM, Vladimir 'ö-coder/phcoder' Serbinenko
-<phcoder@gmail.com> wrote:
->> Also, I note that the unicode files have
+>>>>>> Yes, that's right direction, I think. Currently, shmem_set_policy()
+>>>>>> can't handle
+>>>>>> nonlinear mapping.
+>>>>>
+>>>>> I've been mulling for some time to just remove non linear mappings.
+>>>>> AFAIK they were only useful on 32bit and are obsolete and could be
+>>>>> emulated with VMAs instead.
+>>>>
+>>>>
+>>>> I agree. It is only userful on 32bit and current enterprise users don't
+>>>> use
+>>>> 32bit anymore. So, I don't think emulated by vmas cause user visible
+>>>> issue.
+>>>
+>>>
+>>> I wish this was true, there are a lot of systems out there still running
+>>> 32
+>>> bit linux, even on 64 bit capible hardware. This is especially true in
+>>> enterprises where they have either homegrown or proprietary software that
+>>> isn't 64 bit clean.
 >>
->>       MODULE_LICENSE("Dual BSD/GPL");
->>
->> Where did this come from?  Is this a thing you decided upon or is it
->> unicode.org's license requirement?
->>
+>> 32 bit binaries (and entire distros) run fine under 64 bit kernels.
+>
+> unfortunantly, not quite 100% of the time. It's very good, but the automount
+> bug a month or so ago is an example of how you can run into rare problems.
+> Many "enterprise" systems are not willing to risk it.
 
-looks like Makefile change is not right... it has hard code =m for new modules.
-
-those line should be removed.
-
-Thanks
-
-Yinghai
-
-
-diff --git a/fs/nls/Makefile b/fs/nls/Makefile
-index f499dd7..b6b0550 100644
---- a/fs/nls/Makefile
-+++ b/fs/nls/Makefile
-@@ -2,6 +2,18 @@
- # Makefile for native language support
- #
-
-+CONFIG_NLS_MACCELTIC=m
-+CONFIG_NLS_MACCENTEURO=m
-+CONFIG_NLS_MACCROATIAN=m
-+CONFIG_NLS_MACCYRILLIC=m
-+CONFIG_NLS_MACGAELIC=m
-+CONFIG_NLS_MACGREEK=m
-+CONFIG_NLS_MACICELAND=m
-+CONFIG_NLS_MACINUIT=m
-+CONFIG_NLS_MACROMANIAN=m
-+CONFIG_NLS_MACROMAN=m
-+CONFIG_NLS_MACTURKISH=m
-+
- obj-$(CONFIG_NLS)		+= nls_base.o
-
- obj-$(CONFIG_NLS_CODEPAGE_437)	+= nls_cp437.o
+Then we can remove a feature safely. Risk not taker continue to uses old distro
+kernel. And some years after, distros discontinue to support 32bit. And then,
+problem will vanish automatically.
