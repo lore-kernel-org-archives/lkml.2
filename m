@@ -1,121 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296Ab2FAUAS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 16:00:18 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:35434 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759142Ab2FAUAQ (ORCPT
+	id S1759339Ab2FAUBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 16:01:09 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:61765 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759240Ab2FAUAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 16:00:16 -0400
-Message-ID: <4FC91F4A.4060706@wwwdotorg.org>
-Date: Fri, 01 Jun 2012 14:00:10 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 1 Jun 2012 16:00:17 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: dan.j.williams@intel.com, vinod.koul@intel.com, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH V4 2/2] dma: tegra: add dmaengine based dma driver
-References: <1337755542-16271-1-git-send-email-ldewangan@nvidia.com> <1337755542-16271-2-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1337755542-16271-2-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.5pre
+In-Reply-To: <20120601190230.GA405@redhat.com>
+References: <1338332348-3469-1-git-send-email-filbranden@gmail.com>
+	<20120601190230.GA405@redhat.com>
+Date: Fri, 1 Jun 2012 16:00:15 -0400
+Message-ID: <CABe66sWwvCq=vWq5=ojbgHZeG764BGvts0cMJExTVrTeHRS+KA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] prctl: pdeath_signal sent when parent thread (instead
+ of parent process) dies
+From: Filipe Brandenburger <filbranden@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2012 12:45 AM, Laxman Dewangan wrote:
-> Adding dmaengine based NVIDIA's Tegra APB DMA driver.
-> This driver support the slave mode of data transfer from
-> peripheral to memory and vice versa.
-> The driver supports for the cyclic and non-cyclic mode
-> of data transfer.
+Hi Oleg,
 
-A few minor/nit-picky comments below. Apart from those,
-Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+On Fri, Jun 1, 2012 at 3:02 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> Filipe, you can't even imagine how much do I like this change
+> personally ;) Although I think that pdeath_signal code should
+> be moved into reparent_leader(). I suggested this many times.
 
-> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+Yes, that would really make sense!
 
-> +config TEGRA20_APB_DMA
-...
-> +	help
-> +	  Support for the NVIDIA Tegra20 APB DMA controller driver. The
-> +	  dma controller is having multiple dma channel which can be
+> But I was told there are users which depend on current behaviour,
+> they really want to know when the parent _thread_ exits.
 
-It would be nice if DMA was correctly capitalized everywhere, but I
-guess I won't hold my ack for that.
+Hmmm... but is it the parent thread inside the same process or the
+thread of the parent process that forked it?
 
-> diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+The former would kind of make sense to me, even though I would
+probably implement it through another "option" parameter such as
+PR_SET_TDEATHSIG or similar... the latter, doesn't really make any
+sense to me...
 
-Some of the register names don't exactly match the names in the TRM.
-But, it's fairly obvious what the mapping is, so I won't hold my ack for
-that.
+> Why? I have no idea. And I agree this is ugly, but we can't
+> break user-space.
 
-> +static struct tegra_dma_desc *tegra_dma_desc_get(
+At the very least, then, I think the man page for prctl(2) needs to be
+updated, since PR_SET_PDEATHSIG and PR_GET_PDEATHSIG both refer
+literally to the parent process.
 
-> +	if (!list_empty(&tdc->free_dma_desc)) {
-> +
-
-Unnecessary blank line.
-
-> +		/* Do not allocate if desc are waiting for ack */
-> +		list_for_each_entry(dma_desc, &tdc->free_dma_desc, node) {
-...
-> +		}
-> +	}
-
-Doesn't list_for_each_entry() handle empty lists correctly? If so, you
-can just remove the outer if(){} here, and in both loops in
-tegra_dma_tx_status().
-
-> +	spin_unlock_irqrestore(&tdc->lock, flags);
-> +
-> +	/* Allocate dma desc */
-> +	dma_desc = kzalloc(sizeof(*dma_desc), GFP_ATOMIC);
-> +	if (!dma_desc) {
-> +		dev_err(tdc2dev(tdc), "dma_desc alloc failed\n");
-> +		return NULL;
-> +	}
-> +
-> +	dma_async_tx_descriptor_init(&dma_desc->txd, &tdc->dma_chan);
-> +	dma_desc->txd.tx_submit = tegra_dma_tx_submit;
-> +	dma_desc->txd.flags = 0;
-> +	return dma_desc;
-> +}
-
-> +static void tegra_dma_gloabl_pause(struct tegra_dma_channel *tdc,
-
-s/gloabl/global/
-
-> +static inline int get_bus_width(enum dma_slave_buswidth slave_bw)
-...
-> +	BUG_ON(!slave_bw);
-...
-> +	default:
-> +		BUG();
-
-Maybe just return errors in those 2 cases?
-
-> +static int __devinit tegra_dma_probe(struct platform_device *pdev)
-...
-> +	tdma->dma_clk = clk_get(&pdev->dev, NULL);
-
-Given this is going into 3.6, there's now devm_clk_get which you could
-use. However, fixing this up can be done in a later patch if you want.
-
-> +	/* Reset DMA controller */
-> +	tegra_periph_reset_assert(tdma->dma_clk);
-> +	tegra_periph_reset_deassert(tdma->dma_clk);
-
-This happens inside clk_enable() the first time it is called, so it may
-not really be necessary. It might negatively impact the conversion to
-common clock which might be more difficult with these APIs being used.
-
-Also, don't you need to sleep between those two calls?
-
-> +err_pm_disable:
-> +	pm_runtime_disable(&pdev->dev);
-
-Don't you also need to cover the case where tegra_dma_runtime_resume()
-was called, and you need to reverse that?
+Cheers,
+Filipe
