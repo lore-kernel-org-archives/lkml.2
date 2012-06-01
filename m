@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759471Ab2FALUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 07:20:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20534 "EHLO relay.sw.ru"
+	id S1759489Ab2FALUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 07:20:09 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:7947 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759448Ab2FALT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 07:19:58 -0400
-Subject: [PATCH 1/2] SUNRPC: new svc_bind() routine introduced
+	id S1759474Ab2FALUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 07:20:04 -0400
+Subject: [PATCH 2/2] SUNRPC: move per-net operations from svc_destroy()
 To: bfields@fieldses.org, Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Fri, 01 Jun 2012 15:17:42 +0400
-Message-ID: <20120601111742.7846.99872.stgit@localhost.localdomain>
+Date: Fri, 01 Jun 2012 15:17:50 +0400
+Message-ID: <20120601111750.7846.23782.stgit@localhost.localdomain>
 In-Reply-To: <20120601111619.7846.95457.stgit@localhost.localdomain>
 References: <20120601111619.7846.95457.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -24,199 +24,282 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch was back-ported from 3.5 kernel.
 
-New routine is responsible for service registration in specified network
-context.
-The idea is to separate service creation from per-net operations.
-Since registering service with svc_bind() can fail, then service will be
-destroyed and during destruction it will try to unregister itself from
-rpcbind. In this case unregister have to be skipped.
+The idea is to separate service destruction and per-net operations, because
+these are two different things and it's mix looks ugly.
+
+Notes:
+1) For NFS server this patch looks ugly (sorry for that). But these place will
+be
+rewritten soon during NFSd containerization.
+2) LockD per-net counter increase int lockd_up() was moved prior to
+make_socks() to make lockd_down_net() call safe in case of error.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/lockd/svc.c             |    6 ++++++
- fs/nfs/callback.c          |   13 ++++++++++---
- fs/nfsd/nfssvc.c           |    9 +++++++++
- include/linux/sunrpc/svc.h |    1 +
- net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
- net/sunrpc/svc.c           |   19 ++++++++++---------
- 6 files changed, 43 insertions(+), 17 deletions(-)
+ fs/lockd/svc.c    |   27 +++++++++++++++------------
+ fs/nfs/callback.c |    3 +++
+ fs/nfsd/nfsctl.c  |   12 +++++++++---
+ fs/nfsd/nfssvc.c  |   14 ++++++++++++++
+ net/sunrpc/svc.c  |    4 ----
+ 5 files changed, 41 insertions(+), 19 deletions(-)
 
 diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
-index f49b9af..b1d0708 100644
+index b1d0708..f1b3cce 100644
 --- a/fs/lockd/svc.c
 +++ b/fs/lockd/svc.c
-@@ -325,6 +325,12 @@ int lockd_up(void)
- 		goto out;
+@@ -257,7 +257,7 @@ static int lockd_up_net(struct net *net)
+ 	struct svc_serv *serv = nlmsvc_rqst->rq_server;
+ 	int error;
+ 
+-	if (ln->nlmsvc_users)
++	if (ln->nlmsvc_users++)
+ 		return 0;
+ 
+ 	error = svc_rpcb_setup(serv, net);
+@@ -272,6 +272,7 @@ static int lockd_up_net(struct net *net)
+ err_socks:
+ 	svc_rpcb_cleanup(serv, net);
+ err_rpcb:
++	ln->nlmsvc_users--;
+ 	return error;
+ }
+ 
+@@ -300,6 +301,7 @@ int lockd_up(void)
+ 	struct svc_serv *serv;
+ 	int		error = 0;
+ 	struct net *net = current->nsproxy->net_ns;
++	struct lockd_net *ln = net_generic(net, lockd_net_id);
+ 
+ 	mutex_lock(&nlmsvc_mutex);
+ 	/*
+@@ -331,9 +333,11 @@ int lockd_up(void)
+ 		goto destroy_and_out;
  	}
  
-+	error = svc_bind(serv, net);
-+	if (error < 0) {
-+		printk(KERN_WARNING "lockd_up: bind service failed\n");
-+		goto destroy_and_out;
-+	}
++	ln->nlmsvc_users++;
 +
  	error = make_socks(serv, net);
  	if (error < 0)
- 		goto destroy_and_out;
+-		goto destroy_and_out;
++		goto err_start;
+ 
+ 	/*
+ 	 * Create the kernel thread and wait for it to start.
+@@ -345,7 +349,7 @@ int lockd_up(void)
+ 		printk(KERN_WARNING
+ 			"lockd_up: svc_rqst allocation failed, error=%d\n",
+ 			error);
+-		goto destroy_and_out;
++		goto err_start;
+ 	}
+ 
+ 	svc_sock_update_bufs(serv);
+@@ -359,7 +363,7 @@ int lockd_up(void)
+ 		nlmsvc_rqst = NULL;
+ 		printk(KERN_WARNING
+ 			"lockd_up: kthread_run failed, error=%d\n", error);
+-		goto destroy_and_out;
++		goto err_start;
+ 	}
+ 
+ 	/*
+@@ -369,14 +373,14 @@ int lockd_up(void)
+ destroy_and_out:
+ 	svc_destroy(serv);
+ out:
+-	if (!error) {
+-		struct lockd_net *ln = net_generic(net, lockd_net_id);
+-
+-		ln->nlmsvc_users++;
++	if (!error)
+ 		nlmsvc_users++;
+-	}
+ 	mutex_unlock(&nlmsvc_mutex);
+ 	return error;
++
++err_start:
++	lockd_down_net(net);
++	goto destroy_and_out;
+ }
+ EXPORT_SYMBOL_GPL(lockd_up);
+ 
+@@ -387,11 +391,10 @@ void
+ lockd_down(void)
+ {
+ 	mutex_lock(&nlmsvc_mutex);
++	lockd_down_net(current->nsproxy->net_ns);
+ 	if (nlmsvc_users) {
+-		if (--nlmsvc_users) {
+-			lockd_down_net(current->nsproxy->net_ns);
++		if (--nlmsvc_users)
+ 			goto out;
+-		}
+ 	} else {
+ 		printk(KERN_ERR "lockd_down: no users! task=%p\n",
+ 			nlmsvc_task);
 diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
-index eb95f50..0563237 100644
+index 0563237..38a44c6 100644
 --- a/fs/nfs/callback.c
 +++ b/fs/nfs/callback.c
-@@ -106,7 +106,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+@@ -313,6 +313,8 @@ out_err:
+ 	dprintk("NFS: Couldn't create callback socket or server thread; "
+ 		"err = %d\n", ret);
+ 	cb_info->users--;
++	if (serv)
++		svc_shutdown_net(serv, net);
+ 	goto out;
+ }
+ 
+@@ -327,6 +329,7 @@ void nfs_callback_down(int minorversion)
+ 	cb_info->users--;
+ 	if (cb_info->users == 0 && cb_info->task != NULL) {
+ 		kthread_stop(cb_info->task);
++		svc_shutdown_net(cb_info->serv, &init_net);
+ 		svc_exit_thread(cb_info->rqst);
+ 		cb_info->serv = NULL;
+ 		cb_info->rqst = NULL;
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 2c53be6..3ab12eb 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -651,6 +651,7 @@ static ssize_t __write_ports_addfd(char *buf)
  {
- 	int ret;
- 
--	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET,
-+	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
- 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
- 	if (ret <= 0)
- 		goto out_err;
-@@ -114,7 +114,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
- 	dprintk("NFS: Callback listener port = %u (af %u)\n",
- 			nfs_callback_tcpport, PF_INET);
- 
--	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET6,
-+	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
- 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
- 	if (ret > 0) {
- 		nfs_callback_tcpport6 = ret;
-@@ -183,7 +183,7 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
- 	 * fore channel connection.
- 	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
- 	 */
--	ret = svc_create_xprt(serv, "tcp-bc", xprt->xprt_net, PF_INET, 0,
-+	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
- 			      SVC_SOCK_ANONYMOUS);
- 	if (ret < 0) {
- 		rqstp = ERR_PTR(ret);
-@@ -253,6 +253,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
- 	char svc_name[12];
- 	int ret = 0;
- 	int minorversion_setup;
+ 	char *mesg = buf;
+ 	int fd, err;
 +	struct net *net = &init_net;
  
- 	mutex_lock(&nfs_callback_mutex);
- 	if (cb_info->users++ || cb_info->task != NULL) {
-@@ -265,6 +266,12 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
- 		goto out_err;
- 	}
+ 	err = get_int(&mesg, &fd);
+ 	if (err != 0 || fd < 0)
+@@ -662,6 +663,8 @@ static ssize_t __write_ports_addfd(char *buf)
  
-+	ret = svc_bind(serv, net);
-+	if (ret < 0) {
-+		printk(KERN_WARNING "NFS: bind callback service failed\n");
-+		goto out_err;
-+	}
-+
- 	minorversion_setup =  nfs_minorversion_callback_svc_setup(minorversion,
- 					serv, xprt, &rqstp, &callback_svc);
- 	if (!minorversion_setup) {
+ 	err = svc_addsock(nfsd_serv, fd, buf, SIMPLE_TRANSACTION_LIMIT);
+ 	if (err < 0) {
++		if (nfsd_serv->sv_nrthreads == 1)
++			svc_shutdown_net(nfsd_serv, net);
+ 		svc_destroy(nfsd_serv);
+ 		return err;
+ 	}
+@@ -699,6 +702,7 @@ static ssize_t __write_ports_addxprt(char *buf)
+ 	char transport[16];
+ 	struct svc_xprt *xprt;
+ 	int port, err;
++	struct net *net = &init_net;
+ 
+ 	if (sscanf(buf, "%15s %4u", transport, &port) != 2)
+ 		return -EINVAL;
+@@ -710,12 +714,12 @@ static ssize_t __write_ports_addxprt(char *buf)
+ 	if (err != 0)
+ 		return err;
+ 
+-	err = svc_create_xprt(nfsd_serv, transport, &init_net,
++	err = svc_create_xprt(nfsd_serv, transport, net,
+ 				PF_INET, port, SVC_SOCK_ANONYMOUS);
+ 	if (err < 0)
+ 		goto out_err;
+ 
+-	err = svc_create_xprt(nfsd_serv, transport, &init_net,
++	err = svc_create_xprt(nfsd_serv, transport, net,
+ 				PF_INET6, port, SVC_SOCK_ANONYMOUS);
+ 	if (err < 0 && err != -EAFNOSUPPORT)
+ 		goto out_close;
+@@ -724,12 +728,14 @@ static ssize_t __write_ports_addxprt(char *buf)
+ 	nfsd_serv->sv_nrthreads--;
+ 	return 0;
+ out_close:
+-	xprt = svc_find_xprt(nfsd_serv, transport, &init_net, PF_INET, port);
++	xprt = svc_find_xprt(nfsd_serv, transport, net, PF_INET, port);
+ 	if (xprt != NULL) {
+ 		svc_close_xprt(xprt);
+ 		svc_xprt_put(xprt);
+ 	}
+ out_err:
++	if (nfsd_serv->sv_nrthreads == 1)
++		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);
+ 	return err;
+ }
 diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 28dfad3..a6461f3 100644
+index a6461f3..da50e1c 100644
 --- a/fs/nfsd/nfssvc.c
 +++ b/fs/nfsd/nfssvc.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/fs_struct.h>
- #include <linux/swap.h>
-+#include <linux/nsproxy.h>
+@@ -382,6 +382,7 @@ int nfsd_set_nrthreads(int n, int *nthreads)
+ 	int i = 0;
+ 	int tot = 0;
+ 	int err = 0;
++	struct net *net = &init_net;
  
- #include <linux/sunrpc/stats.h>
- #include <linux/sunrpc/svcsock.h>
-@@ -330,6 +331,8 @@ static int nfsd_get_default_max_blksize(void)
- 
- int nfsd_create_serv(void)
- {
-+	int error;
-+
  	WARN_ON(!mutex_is_locked(&nfsd_mutex));
- 	if (nfsd_serv) {
- 		svc_get(nfsd_serv);
-@@ -343,6 +346,12 @@ int nfsd_create_serv(void)
- 	if (nfsd_serv == NULL)
- 		return -ENOMEM;
  
-+	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
-+	if (error < 0) {
-+		svc_destroy(nfsd_serv);
-+		return error;
-+	}
-+
- 	set_max_drc();
- 	do_gettimeofday(&nfssvc_boot);		/* record boot time */
- 	return 0;
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 51b29ac..2b43e02 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -416,6 +416,7 @@ struct svc_procedure {
-  */
- int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
- void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
-+int svc_bind(struct svc_serv *serv, struct net *net);
- struct svc_serv *svc_create(struct svc_program *, unsigned int,
- 			    void (*shutdown)(struct svc_serv *, struct net *net));
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index 78ac39f..4c38b33 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
- 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
- 	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
--	int shutdown;
-+	int shutdown = 0;
- 
- 	spin_lock(&sn->rpcb_clnt_lock);
--	if (--sn->rpcb_users == 0) {
--		sn->rpcb_local_clnt = NULL;
--		sn->rpcb_local_clnt4 = NULL;
-+	if (sn->rpcb_users) {
-+		if (--sn->rpcb_users == 0) {
-+			sn->rpcb_local_clnt = NULL;
-+			sn->rpcb_local_clnt4 = NULL;
-+		}
-+		shutdown = !sn->rpcb_users;
+@@ -426,6 +427,9 @@ int nfsd_set_nrthreads(int n, int *nthreads)
+ 		if (err)
+ 			break;
  	}
--	shutdown = !sn->rpcb_users;
- 	spin_unlock(&sn->rpcb_clnt_lock);
++
++	if (nfsd_serv->sv_nrthreads == 1)
++		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);
  
- 	if (shutdown) {
+ 	return err;
+@@ -441,6 +445,7 @@ nfsd_svc(unsigned short port, int nrservs)
+ {
+ 	int	error;
+ 	bool	nfsd_up_before;
++	struct net *net = &init_net;
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	dprintk("nfsd: creating service\n");
+@@ -473,6 +478,8 @@ out_shutdown:
+ 	if (error < 0 && !nfsd_up_before)
+ 		nfsd_shutdown();
+ out_destroy:
++	if (nfsd_serv->sv_nrthreads == 1)
++		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);		/* Release server */
+ out:
+ 	mutex_unlock(&nfsd_mutex);
+@@ -556,6 +563,9 @@ nfsd(void *vrqstp)
+ 	nfsdstats.th_cnt --;
+ 
+ out:
++	if (rqstp->rq_server->sv_nrthreads == 1)
++		svc_shutdown_net(rqstp->rq_server, &init_net);
++
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
+@@ -668,8 +678,12 @@ int nfsd_pool_stats_open(struct inode *inode, struct file *file)
+ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
+ {
+ 	int ret = seq_release(inode, file);
++	struct net *net = &init_net;
++
+ 	mutex_lock(&nfsd_mutex);
+ 	/* this function really, really should have been called svc_put() */
++	if (nfsd_serv->sv_nrthreads == 1)
++		svc_shutdown_net(nfsd_serv, net);
+ 	svc_destroy(nfsd_serv);
+ 	mutex_unlock(&nfsd_mutex);
+ 	return ret;
 diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 4153846..e6d542c 100644
+index e6d542c..b7210f5 100644
 --- a/net/sunrpc/svc.c
 +++ b/net/sunrpc/svc.c
-@@ -407,6 +407,14 @@ static int svc_uses_rpcbind(struct svc_serv *serv)
- 	return 0;
- }
+@@ -537,8 +537,6 @@ EXPORT_SYMBOL_GPL(svc_shutdown_net);
+ void
+ svc_destroy(struct svc_serv *serv)
+ {
+-	struct net *net = current->nsproxy->net_ns;
+-
+ 	dprintk("svc: svc_destroy(%s, %d)\n",
+ 				serv->sv_program->pg_name,
+ 				serv->sv_nrthreads);
+@@ -553,8 +551,6 @@ svc_destroy(struct svc_serv *serv)
  
-+int svc_bind(struct svc_serv *serv, struct net *net)
-+{
-+	if (!svc_uses_rpcbind(serv))
-+		return 0;
-+	return svc_rpcb_setup(serv, net);
-+}
-+EXPORT_SYMBOL_GPL(svc_bind);
-+
- /*
-  * Create an RPC service
-  */
-@@ -471,15 +479,8 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
- 		spin_lock_init(&pool->sp_lock);
- 	}
+ 	del_timer_sync(&serv->sv_temptimer);
  
--	if (svc_uses_rpcbind(serv)) {
--		if (svc_rpcb_setup(serv, current->nsproxy->net_ns) < 0) {
--			kfree(serv->sv_pools);
--			kfree(serv);
--			return NULL;
--		}
--		if (!serv->sv_shutdown)
--			serv->sv_shutdown = svc_rpcb_cleanup;
--	}
-+	if (svc_uses_rpcbind(serv) && (!serv->sv_shutdown))
-+		serv->sv_shutdown = svc_rpcb_cleanup;
- 
- 	return serv;
- }
+-	svc_shutdown_net(serv, net);
+-
+ 	/*
+ 	 * The last user is gone and thus all sockets have to be destroyed to
+ 	 * the point. Check this.
 
