@@ -1,72 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965430Ab2FAQVW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:21:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43239 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965382Ab2FAQVV (ORCPT
+	id S965452Ab2FAQWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:22:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16696 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965301Ab2FAQWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:21:21 -0400
-Date: Fri, 1 Jun 2012 17:21:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        H Hartley Sweeten <hsweetn@visionengravers.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] clock: max77686: Add driver for Maxim 77686 32KHz
- crystal oscillator
-Message-ID: <20120601162118.GA24139@opensource.wolfsonmicro.com>
-References: <1338541736-2978-1-git-send-email-jonghwa3.lee@samsung.com>
- <201206011613.33706.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L+ytD9kXoSFEJYhc"
-Content-Disposition: inline
-In-Reply-To: <201206011613.33706.arnd@arndb.de>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 1 Jun 2012 12:22:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6729"; a="194516774"
+From: David Brown <davidb@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jon Masters <jonathan@jonmasters.org>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Paulo Marques <pmarques@grupopie.com>,
+        Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH variant 1] ARM: Prevent KALLSYM size mismatch on ARM.
+Date: Fri,  1 Jun 2012 09:22:00 -0700
+Message-Id: <1338567721-19514-2-git-send-email-davidb@codeaurora.org>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <1338567721-19514-1-git-send-email-davidb@codeaurora.org>
+References: <1338567721-19514-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ARM builds seem to be plagued by an occasional build error:
 
---L+ytD9kXoSFEJYhc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+    Inconsistent kallsyms data
+    This is a bug - please report about it
+    Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
 
-On Fri, Jun 01, 2012 at 04:13:33PM +0000, Arnd Bergmann wrote:
+The problem has to do with alignment of some sections by the linker.
+The kallsyms data is built in two passes by first linking the kernel
+without it, and then linking the kernel again with the symbols
+included.  Normally, this just shifts the symbols, without changing
+their order, and the compression used by the kallsyms gives the same
+result.
 
-> You should also have an of_device_id table so you can match this driver from
-> device tree definitions.
+On non SMP, the per CPU data is empty.  Depending on the where the
+alignment ends up, it can come out as either:
 
-There has been...  some discussion on the value of doing this for MFD
-cells where the MFD cell has no reuse capability (eg, when the driver
-has very little abstraction from the top level chip binding) since we
-don't really get anything from the abstraction if the driver can't be
-reused and may limit ourselves (and others) in future.
+   +-------------------+
+   | last text segment |
+   +-------------------+
+   /* padding */
+   +-------------------+     <- L1_CACHE_BYTES alignemnt
+   | per cpu (empty)   |
+   +-------------------+
+__per_cpu_end:
+   /* padding */
+__data_loc:
+   +-------------------+     <- THREAD_SIZE alignment
+   | data              |
+   +-------------------+
 
---L+ytD9kXoSFEJYhc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+or
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+   +-------------------+
+   | last text segment |
+   +-------------------+
+   /* padding */
+   +-------------------+     <- L1_CACHE_BYTES alignemnt
+   | per cpu (empty)   |
+   +-------------------+
+__per_cpu_end:
+   /* no padding */
+__data_loc:
+   +-------------------+     <- THREAD_SIZE alignment
+   | data              |
+   +-------------------+
 
-iQIcBAEBAgAGBQJPyOv4AAoJEBus8iNuMP3d4hAP/iNepqdkXzbbbKGOL1OVBsrL
-SyBCpdCpVG04IeMA86g1mWekXYwdxvFwdcBHtA9CBfI8e06XhNfsWL1Ef9u9rTLT
-hWSDNERWomxD0/Lp+ueuRisgCLD1uNueEc9GWbtXmdpWTaiwoiFro1i1RZota4gL
-MtE1AbXekyHQvnB+A9F/wibjbqQFqu0Zt3AwlWXyzJh9jnvTGQeErMSUqailiERQ
-8NheliWMcdFI+mcFrQVo5HSbU2iVrQmqs7OHvnQYMlWp01z/JxOzhUJ2KLZhziUz
-A8FS9Gq8zfR6N6lTJBmERwyrWLy5mGO71Rt7Sz9whyqBgjXkl7wfa9CBzTK6lrkN
-cHHIBFmkBUH+kmQ2FRNPNZOAzc+op2JwVSAeiyQcUBScXcwuRYx+bBj8JpHybk9E
-8LToloKRim5CR6U+NAJCMyU8Hy+vv+EBKxymAb3KCQViN7NhzOMkG5a18hGlQw18
-h8wjseHmtV4SMEeHSxjwpEcpb1c2Ll4vpaAAr7s2TR/TtgAeDJWnj+vW1JUeEn8J
-3Ii9XzYbNz4n9GgQF+WiPJ93oANOMW+SA1hu3gLqVBcu8sm4OjySSdfSP79TlTq4
-st3Z+QrssNgAg4YOjglLUSI8SWZhJc2srGwV6L8C4fCtJVAI6FuaYeFXIUkOXHLu
-EdHUpuPalN18CqOLMVzv
-=LcQ5
------END PGP SIGNATURE-----
+if the alignment satisfies both.  Because symbols that have the same
+address are sorted by 'nm -n', the second case will be in a different
+order than the first case.  This changes the compression, changing the
+size of the kallsym data, causing the build failure.
 
---L+ytD9kXoSFEJYhc--
+The KALLSYMS_EXTRA_PASS=1 workaround usually works, but it is still
+possible to have the alignment change between the second and third
+pass.  It's probably even possible for it to never reach a fixedpoint.
+
+The problem only occurs on non-SMP, when the per-cpu data is empty,
+and when the data segment has alignment (and immediately follows the
+text segments).  In these cases, add the THREAD_SIZE alignment above
+the per-cpu data so that the empty segment will always be adjacent to
+the data segment.
+
+This shouldn't ever change the size of the kernel, and only should
+affect the location of the per_cpu symbols, which contain no data.
+
+Signed-off-by: David Brown <davidb@codeaurora.org>
+---
+ arch/arm/kernel/vmlinux.lds.S |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
+index 43a31fb..f3778c7 100644
+--- a/arch/arm/kernel/vmlinux.lds.S
++++ b/arch/arm/kernel/vmlinux.lds.S
+@@ -183,6 +183,9 @@ SECTIONS
+ 	}
+ #endif
+ 
++#if !defined(CONFIG_SMP) && !defined(CONFIG_XIP_KERNEL)
++	. = ALIGN(THREAD_SIZE);
++#endif
+ 	PERCPU_SECTION(L1_CACHE_BYTES)
+ 
+ #ifdef CONFIG_XIP_KERNEL
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
