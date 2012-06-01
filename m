@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759794Ab2FANXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 09:23:07 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:36925 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab2FANXF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 09:23:05 -0400
+	id S1759810Ab2FANYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 09:24:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:35017 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab2FANYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 09:24:39 -0400
+Message-ID: <4FC8C288.5060200@ti.com>
+Date: Fri, 1 Jun 2012 15:24:24 +0200
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.SOC.1.00.1206011610060.10517@math.ut.ee>
-References: <alpine.SOC.1.00.1206011559370.10517@math.ut.ee>
-	<CAMuHMdXtZg7JJ18Ao+yLJ5s-vHt38Omgp=b4vOOFet870Buuzw@mail.gmail.com>
-	<alpine.SOC.1.00.1206011610060.10517@math.ut.ee>
-Date: Fri, 1 Jun 2012 15:23:04 +0200
-X-Google-Sender-Auth: ATOoZRihiYoAby6sLEkUy9ROvDQ
-Message-ID: <CAMuHMdVLkueZdpjht9kL9s9qKv=YT18AVTCoYDmJyKLD=KQ4dg@mail.gmail.com>
-Subject: Re: f71805f arch dependencies?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Meelis Roos <mroos@linux.ee>
-Cc: Jean Delvare <khali@linux-fr.org>, Dean Nelson <dnelson@redhat.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+CC: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>, <paul@pwsan.com>,
+        <tony@atomide.com>, <linux@arm.linux.org.uk>, <arnd@arndb.de>,
+        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>
+Subject: Re: [RFC PATCH 2/5] arm: omap: remove ocp2scp_usb_phy_ick clock node
+References: <1338375394-16268-1-git-send-email-kishon@ti.com> <1338375394-16268-3-git-send-email-kishon@ti.com> <CAMQu2gxcP8At5j4UOK3bgX+Q+OunXeTxyXEr6hAhGiwjLs-gJg@mail.gmail.com> <4FC63B8D.3070107@ti.com> <CAAe_U6L6b26J4Q3mB6K0BLtwkaL92SFZSQTMCd=Rv3UBynVCBA@mail.gmail.com>
+In-Reply-To: <CAAe_U6L6b26J4Q3mB6K0BLtwkaL92SFZSQTMCd=Rv3UBynVCBA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 3:12 PM, Meelis Roos <mroos@linux.ee> wrote:
->> > Loading f71805f on sparc64 causes hard reboot beacuse on invalid
->> > hardware access. Should this driver be restricted to PC, or some wider
->> > subset of platforms where this LPC SUper-IO chip is present?
+On 6/1/2012 2:52 PM, ABRAHAM, KISHON VIJAY wrote:
+> Hi Benoit,
+>
+> On Wed, May 30, 2012 at 8:53 PM, Cousson, Benoit<b-cousson@ti.com>  wrote:
+>> On 5/30/2012 4:51 PM, Shilimkar, Santosh wrote:
+>>>
+>>> On Wed, May 30, 2012 at 4:26 PM, Kishon Vijay Abraham I<kishon@ti.com>
+>>>   wrote:
+>>>>
+>>>> "ocp2scp_usb_phy_ick" clock node was a fake clock node created
+>>>> to control MODULEMODE of ocp2scp. Since the hwmod for ocp2scp is now
+>>>> added
+>>>> (which can be used to control MODULEMODE) this clock node is removed.
+>>>>
+>>>> Cc: Benoit Cousson<b-cousson@ti.com>
+>>>> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
+>>>> ---
+>>>>   arch/arm/mach-omap2/clock44xx_data.c |   11 -----------
+>>>
+>>>
+>>> Have you patched clock44xx_data.c manually or you have a patch for
+>>> the clock_data autogen script to generate it ?
 >>
->> Which tree is f71805f in? Not in Linus'.
+>>
+>> I have a series that will remove all these clock nodes. I should be able to
+>> post that soon.
+>>
+>> Potentially at that time, Kishon might be able to drop that patch.
 >
-> Running upstream 3.4.0-09547-gfb21aff and it is there as
-> SENSORS_F71805F.
->
-> In fact, there are more LPC hwmon drivers that people can use to "shoot
-> themselves in the leg" - SMSC LPC*, SMSC SCH*, SMSC DME1737 (partly I2C,
-> partly ISA IO), and Fintek F71882FG and compatibles. Maybe more.
+> Will you be sending a patch for *[RFC PATCH 1/5] arm: omap: hwmod:
+> make *phy_48m* as the main_clk of ocp2scp* also or I have to keep that
+> as part of my series?
 
-Sorry, I thought it was a git SHA1 commit ID.
-Didn't know hardware manufacturers christen their chips to the abbreviated
-commit ID in their VHDL repository ;-)
+Good point. In fact, I'm fixing both at the same time to avoid any 
+bisect issue.
 
-Indeed, it seems commit 746cdfbf01c0a30d59f6e1b6942d432658d7c7cd
-("hwmon: Avoid building drivers for powerpc that read/write ISA addresses")
-was a bit too limited...
+Regards,
+Benoit
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
