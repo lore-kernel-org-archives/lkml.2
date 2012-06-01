@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab2FABHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 21:07:09 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:38256 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932956Ab2FABHH (ORCPT
+	id S932993Ab2FABHv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 21:07:51 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:37855 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab2FABHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 21:07:07 -0400
-Date: Fri, 1 Jun 2012 11:06:47 +1000
-From: Christopher Yeoh <cyeoh@au1.ibm.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: CROSS_MEMORY_ATTACH default y?
-Message-ID: <20120601110647.2c446aa7@rockpopper>
-In-Reply-To: <20120531154224.GL14515@aftab.osrc.amd.com>
-References: <20120531153512.GK14515@aftab.osrc.amd.com>
-	<20120531154224.GL14515@aftab.osrc.amd.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12053114-5490-0000-0000-000001839077
+	Thu, 31 May 2012 21:07:50 -0400
+From: Fabio Estevam <festevam@gmail.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: gregkh@linuxfoundation.org, marc@cpdesign.com.au,
+        philippe.retornaz@epfl.ch, linux-kernel@vger.kernel.org,
+        joe@perches.com, Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v2] regmap: Fix the size calculation for map->format.buf_size
+Date: Thu, 31 May 2012 22:07:35 -0300
+Message-Id: <1338512855-26015-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1338509430-24416-1-git-send-email-festevam@gmail.com>
+References: <1338509430-24416-1-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012 17:42:24 +0200
-Borislav Petkov <bp@amd64.org> wrote:
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-> + LKML.
-> 
-> On Thu, May 31, 2012 at 05:35:12PM +0200, Borislav Petkov wrote:
-> > Hi,
-> > 
-> > can you please explain why CROSS_MEMORY_ATTACH is default y? Why
-> > should those process_vm_{readv,writev} syscalls be enabled by
-> > default?
+The word to be transmitted/received via regmap is composed by the following
+parts:
 
-There was a bit of a discussion at the time I submitted the patch:
+config->reg_bits
+config->val_bits
+config->pad_bits
 
-https://lkml.org/lkml/2012/4/23/606
+,so the total size should be calculated by summing up the number of bits of
+each element and using a DIV_ROUND_UP to return the number of bytes.
 
-Basically CMA had been in for a while already in a released kernel
-before I submitted a patch to allow it to be disabled. So the patch
-preserves existing behaviour.
+While at it also use BITS_PER_BYTE annotation.
 
-Regards,
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v1:
+- Use BITS_PER_BYTE annotation
+ drivers/base/regmap/regmap.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Chris
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 2aa076e..9d6b2f8 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -246,12 +246,12 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->lock = regmap_lock_mutex;
+ 		map->unlock = regmap_unlock_mutex;
+ 	}
+-	map->format.buf_size = (config->reg_bits + config->val_bits) / 8;
+-	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, 8);
+-	map->format.pad_bytes = config->pad_bits / 8;
+-	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, 8);
+-	map->format.buf_size += map->format.pad_bytes;
+-	map->reg_shift = config->pad_bits % 8;
++	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, BITS_PER_BYTE);
++	map->format.pad_bytes = config->pad_bits / BITS_PER_BYTE;
++	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, BITS_PER_BYTE);
++	map->format.buf_size = DIV_ROUND_UP(config->reg_bits +
++			config->val_bits + config->pad_bits, BITS_PER_BYTE);
++	map->reg_shift = config->pad_bits % BITS_PER_BYTE;
+ 	if (config->reg_stride)
+ 		map->reg_stride = config->reg_stride;
+ 	else
 -- 
-cyeoh@au1.ibm.com
+1.7.1
 
