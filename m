@@ -1,43 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758928Ab2FADrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 23:47:00 -0400
-Received: from eastrmfepi208.cox.net ([68.230.241.212]:55318 "EHLO
-	eastrmfepi208.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758374Ab2FADq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 23:46:58 -0400
-X-Greylist: delayed 670 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 23:46:58 EDT
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020201.4FC83893.0053,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=s1i2RV+unmn3sLkEA3lf1Tj2LikDbZyRf9iEFo2x6J8=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=whztzYdflP4A:10 a=I86TS7ZET-8A:10
- a=IkcTkHD0fZMA:10 a=xSYkKhQwwG3/4z+rqbU9KQ==:17 a=CjxXgO3LAAAA:8
- a=a1gkrLmVJ3FywdrfCYMA:9 a=QEXdDO2ut3YA:10 a=UHxOlpXEFFYA:10
- a=rC2wZJ5BpNYA:10 a=OBKgW7ILNbUapaiY:21 a=7iVfS64Dgf_ToejP:21
- a=xSYkKhQwwG3/4z+rqbU9KQ==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20120531233547.LZ4T1.1094215.imail@eastrmwml113>
-Date: Thu, 31 May 2012 20:35:47 -0700
-From: "western.Union" <sofha10@cox.net>
-Reply-To: western.u200@gmx.us
-Subject: Dear Friend
+	id S1758941Ab2FADrW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 23:47:22 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:17595 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758466Ab2FADrU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 23:47:20 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.61;KIP:(null);UIP:(null);IPV:NLI;H:avexcashub1.qlogic.com;RD:avexcashub1.qlogic.com;EFVD:NLI
+X-SpamScore: -22
+X-BigFish: VPS-22(zzbb2dI9371I936eK14ffI1432N98dK11f6N4015Izz1202hzz8275dhz2fh2a8h668h839h944he5bhf0ah)
+From: Giridhar Malavali <giridhar.malavali@qlogic.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>, Avik Shau <avik.shau@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>
+Date: Thu, 31 May 2012 20:47:17 -0700
+Subject: Re: [GIT PULL] Final round of SCSI updates for the 3.4+ merge window
+Thread-Topic: [GIT PULL] Final round of SCSI updates for the 3.4+ merge
+ window
+Thread-Index: Ac0/qTtyzWtvcz34QrKWSsphGA4CGA==
+Message-ID: <CBED88EA.47E61%giridhar.malavali@qlogic.com>
+In-Reply-To: <1338494279.30470.461.camel@haakon2.linux-iscsi.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.14.0.111121
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+X-OriginatorOrg: qlogic.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this message is from Western Union to
-inform you that your first payment of $10,000
-has been transferred.To receive your first
-MTCN contact our claims officer  via
-email: wumt.office78@yahoo.com
-with your information
+Nicholas and all others,
+
+I would like to thank you very much on behalf of QLogic Linux FC/FCoE team
+to everyone who worked with us to get QLogic >= 24xx initial target driver
+upstream for 3.5-rc1. You responded quickly to our queries and provided
+the support to get this functionality delivered on time. We would like to
+work further to get other target related functionalities upstream in
+future. 
+
+Thanks,
+Giridhar
+
+
+On 5/31/12 12:57 PM, "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+
+>On Thu, 2012-05-31 at 13:17 +0100, James Bottomley wrote:
+>> This is primarily another round of driver updates (bnx2fc, qla2xxx,
+>> qla4xxx) including the target mode driver for qla2xxx.
+>
+>Hi everyone,
+>
+>With the Qlogic >= 24xx series HW target driver code now upstream for
+>3.5-rc1, I wanted to take this brief moment to thank those who have
+>contributed to reaching this initial milestone:
+>
+>Andrew Vasquez (Qlogic)
+>Arun Easi (Qlogic)
+>Chad Dupuis (Qlogic)
+>Giridhar Malavali (Qlogic)
+>Joern Engel (Pure)
+>John 'Coz' Colgrove (Pure)
+>Marco Sanvido (Pure)
+>Patrick Lee (Pure)
+>Roland Dreier (Pure)
+>Scott Dietzen (Pure)
+>Steve Hodgson (Pure)
+>Jerome Martin (RisingTide)
+>Madhu Iyengar (RisingTide)
+>Marc Fleischmann (RisingTide)
+>Christoph Hellwig (LSF / RTS)
+>Andy Grover (RHAT)
+>Dan Carpenter (Oracle)
+>Hannes Reinecke (Suse.de)
+>James Bottomley (Parallels)
+>Stephen Rothwell (IBM)
+>Vladislav Bolkhovitin (SCST / ID7)
+>
+>Without the help and support of these people the initial merge for
+>v3.5-rc1 would not have been possible.
+>
+>Thank you!
+>
+>--nab
+>
+>
+
+
