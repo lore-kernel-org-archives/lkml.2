@@ -1,122 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759612Ab2FAM0b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 08:26:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41377 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757508Ab2FAM02 (ORCPT
+	id S1759617Ab2FAM3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 08:29:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58313 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759600Ab2FAM3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 08:26:28 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 1/5] vmstat: Implement refresh_vm_stats()
-Date: Fri,  1 Jun 2012 05:24:02 -0700
-Message-Id: <1338553446-22292-1-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20120601122118.GA6128@lizard>
-References: <20120601122118.GA6128@lizard>
+	Fri, 1 Jun 2012 08:29:10 -0400
+Date: Fri, 1 Jun 2012 21:28:52 +0900 (KST)
+From: Joonsoo Kim <js1304@gmail.com>
+X-X-Sender: js1304@js1304-desktop
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 4/4] slub: refactoring unfreeze_partials()
+In-Reply-To: <alpine.DEB.2.00.1205171329440.12366@router.home>
+Message-ID: <alpine.DEB.2.02.1206012125520.3153@js1304-desktop>
+References: <1337269668-4619-1-git-send-email-js1304@gmail.com> <1337269668-4619-5-git-send-email-js1304@gmail.com> <alpine.DEB.2.00.1205171329440.12366@router.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function forcibly flushes per-cpu vmstat diff counters to the
-global counters.
 
-Note that we don't try to flush percpu pagesets, the pcp will be
-still flushed once per 3 seconds.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- include/linux/vmstat.h |    2 ++
- mm/vmstat.c            |   22 +++++++++++++++++++++-
- 2 files changed, 23 insertions(+), 1 deletion(-)
+On Thu, 17 May 2012, Christoph Lameter wrote:
 
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 65efb92..2a53896 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -200,6 +200,7 @@ extern void __inc_zone_state(struct zone *, enum zone_stat_item);
- extern void dec_zone_state(struct zone *, enum zone_stat_item);
- extern void __dec_zone_state(struct zone *, enum zone_stat_item);
- 
-+void refresh_vm_stats(void);
- void refresh_cpu_vm_stats(int);
- void refresh_zone_stat_thresholds(void);
- 
-@@ -253,6 +254,7 @@ static inline void __dec_zone_page_state(struct page *page,
- 
- #define set_pgdat_percpu_threshold(pgdat, callback) { }
- 
-+static inline void refresh_vm_stats(void) { }
- static inline void refresh_cpu_vm_stats(int cpu) { }
- static inline void refresh_zone_stat_thresholds(void) { }
- 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index f600557..4a9d432 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -13,6 +13,7 @@
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/smp.h>
- #include <linux/cpu.h>
- #include <linux/vmstat.h>
- #include <linux/sched.h>
-@@ -434,7 +435,7 @@ EXPORT_SYMBOL(dec_zone_page_state);
-  * with the global counters. These could cause remote node cache line
-  * bouncing and will have to be only done when necessary.
-  */
--void refresh_cpu_vm_stats(int cpu)
-+static void __refresh_cpu_vm_stats(int cpu, bool drain_pcp)
- {
- 	struct zone *zone;
- 	int i;
-@@ -456,11 +457,15 @@ void refresh_cpu_vm_stats(int cpu)
- 				local_irq_restore(flags);
- 				atomic_long_add(v, &zone->vm_stat[i]);
- 				global_diff[i] += v;
-+				if (!drain_pcp)
-+					continue;
- #ifdef CONFIG_NUMA
- 				/* 3 seconds idle till flush */
- 				p->expire = 3;
- #endif
- 			}
-+		if (!drain_pcp)
-+			continue;
- 		cond_resched();
- #ifdef CONFIG_NUMA
- 		/*
-@@ -495,6 +500,21 @@ void refresh_cpu_vm_stats(int cpu)
- 			atomic_long_add(global_diff[i], &vm_stat[i]);
- }
- 
-+void refresh_cpu_vm_stats(int cpu)
-+{
-+	__refresh_cpu_vm_stats(cpu, 1);
-+}
-+
-+static void smp_call_refresh_cpu_vm_stats(void *info)
-+{
-+	__refresh_cpu_vm_stats(smp_processor_id(), 0);
-+}
-+
-+void refresh_vm_stats(void)
-+{
-+	smp_call_function(smp_call_refresh_cpu_vm_stats, NULL, 1);
-+}
-+
- #endif
- 
- #ifdef CONFIG_NUMA
--- 
-1.7.9.2
+> On Fri, 18 May 2012, Joonsoo Kim wrote:
+>
+>> I think that these are disadvantages of current implementation,
+>> so I do refactoring unfreeze_partials().
+>
+> The reason the current implementation is so complex is to avoid races. The
+> state of the list and the state of the partial pages must be consistent at
+> all times.
+>
+>> Minimizing code in do {} while loop introduce a reduced fail rate
+>> of cmpxchg_double_slab. Below is output of 'slabinfo -r kmalloc-256'
+>> when './perf stat -r 33 hackbench 50 process 4000 > /dev/null' is done.
+>
+> Looks good. If I can convince myself that this does not open up any
+> new races then I may ack it.
 
+This is a reminder mail.
+Would u give me some comments for this please?
