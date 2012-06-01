@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab2FABkR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 21:40:17 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60890 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab2FABkP (ORCPT
+	id S1757551Ab2FABmV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 21:42:21 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:32796 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab2FABmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 21:40:15 -0400
+	Thu, 31 May 2012 21:42:19 -0400
+Message-ID: <4FC81DE0.5080403@oracle.com>
+Date: Fri, 01 Jun 2012 09:41:52 +0800
+From: Junxiao Bi <junxiao.bi@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org>
-References: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org>
-Date: Fri, 1 Jun 2012 09:40:14 +0800
-Message-ID: <CACRpkdZ++GiqE55ofuwOssY4RLE5NctiY1rik1PDtm5r+CL4dw@mail.gmail.com>
-Subject: Re: [PATCH 0/3] pinctrl: add support for samsung pinctrl driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com, patches@linaro.org
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+        jlbec@evilplan.org, bcrl@kvack.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, joe.jin@oracle.com
+Subject: Re: [PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+References: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com> <x49k3zscuk2.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49k3zscuk2.fsf@segfault.boston.devel.redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 24, 2012 at 7:47 AM, Thomas Abraham
-<thomas.abraham@linaro.org> wrote:
+On 05/31/2012 10:08 PM, Jeff Moyer wrote:
+> Junxiao Bi <junxiao.bi@oracle.com> writes:
+>
+>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+>> io flag is involved in it to serialize the unaligned aio. As
+>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
+>> this unaligned io flag may be unexpectly set in an aligned dio.
+>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_write_iter().
+>> We can't initialized this flag in ocfs2_file_write_iter() since
+>> it may be invoked several times by do_sync_write(). So we initialize
+>> it in init_sync_kiocb(), it's also useful for other similiar use of
+>> it in the future.
+> I don't see any ocfs2_file_write_iter in the upstream kernel.
+> ocfs2_file_aio_write most certainly could set ->private to 0, it
+> will only be called once for a given kiocb.
+>From sys_io_submit->..->io_submit_one->aio_run_iocb->aio_rw_vect_retry, 
+it seems that aio_write could be called two times. See the following
+scenario.
+1. There is a file opened with direct io flag, in aio_rw_vect_retry,
+aio_write is called first time. If the direct io can
+not be completed, it will fall back into buffer io, see line 2329 in
+aio_write.
+2. If the very buffer io is a partial write, then it will return back
+to  aio_rw_vect_retry and issue the second aio_write.
+>
+> That point aside, I have no issues with setting private to NULL in
+> init_sync_kiocb.  If you fix up the comment to reflect reality
+> w.r.t. the upstream kernel source, I'll ack the patch.
+OK, I will fix the comment.
+>
+> Cheers,
+> Jeff
 
-> Note that, the Samsung pinctrl driver is usable only on device tree enabled
-> Samsung platforms. Legacy platforms would still continue to use the older
-> gpiolib driver and hence updates to device drivers to use the pinctrl api
-> should ensure that support for legacy platforms is maintained.
-
-Is the plan to move also the older platforms over to the DT-based model?
-It'd be really nice to be able to just delete the old drivers at some point...
-
-Yours,
-Linus Walleij
