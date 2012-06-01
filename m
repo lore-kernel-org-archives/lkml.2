@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab2FAJbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:31:18 -0400
-Received: from mail-gh0-f180.google.com ([209.85.160.180]:60678 "EHLO
-	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759275Ab2FAJbN convert rfc822-to-8bit (ORCPT
+	id S1759328Ab2FAJbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:31:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47699 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758794Ab2FAJbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:31:13 -0400
+	Fri, 1 Jun 2012 05:31:49 -0400
+Message-ID: <4FC88BF9.2030807@kernel.dk>
+Date: Fri, 01 Jun 2012 11:31:37 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <4FC87EEA.5010707@intel.com>
-References: <1338226278-13336-1-git-send-email-torne@google.com>
-	<1338258732.20487.171.camel@deadeye>
-	<4FC87EEA.5010707@intel.com>
-Date: Fri, 1 Jun 2012 10:31:11 +0100
-Message-ID: <CAEV-rjcFx_+Zs+1K5rxapx7ngDkArEKSV8tDubbVL+BfYLDU5Q@mail.gmail.com>
-Subject: Re: [PATCH V2] MMC: core: cap MMC card timeouts at 2 seconds.
-From: "Torne (Richard Coles)" <torne@google.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, cjb@laptop.org,
-        linus.walleij@linaro.org, jh80.chung@samsung.com,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Tejun Heo <tj@kernel.org>
+CC: Asias He <asias@redhat.com>, Tim Gardner <rtg.canonical@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        tim.gardner@canonical.com
+Subject: Re: [PATCH V3] block: Mitigate lock unbalance caused by lock switching
+References: <20120528102214.GB15202@dhcp-172-17-108-109.mtv.corp.google.com> <1338255542-22247-1-git-send-email-asias@redhat.com> <4FC4D2F2.2070309@gmail.com> <4FC5BDF5.2040000@redhat.com> <CAOS58YMq1DiWgHGsjpABhaeYs9RjRgkHoifQQUKTKNi876bNgQ@mail.gmail.com>
+In-Reply-To: <CAOS58YMq1DiWgHGsjpABhaeYs9RjRgkHoifQQUKTKNi876bNgQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 June 2012 09:35, Adrian Hunter <adrian.hunter@intel.com> wrote:
-> On 29/05/12 05:32, Ben Hutchings wrote:
->> On Mon, 2012-05-28 at 18:31 +0100, Torne (Richard Coles) wrote:
->>> From: "Torne (Richard Coles)" <torne@google.com>
+On 05/30/2012 08:28 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, May 30, 2012 at 3:28 PM, Asias He <asias@redhat.com> wrote:
+>>> Isn't the 'if' clause superfluous ? You could just do the assignment,
+>>> e.g.,
 >>>
->>> MMC CSD info can specify very large, ridiculous timeouts, big enough to
->>> overflow timeout_ns on 32-bit machines. This can result in the card
->>> timing out on every operation because the wrapped timeout value is far
->>> too small.
->>>
->>> Fix the overflow by capping the result at 2 seconds.  Cards specifying
->>> longer timeouts are almost certainly insane, and host controllers
->>> generally cannot support timeouts that long in any case.
->>>
->>> 2 seconds should be plenty of time for any card to actually function;
->>> the timeout calculation code is already using 1 second as a "worst case"
->>> timeout for cards running in SPI mode.
+>>> +       spin_lock_irq(lock);
+>>> +       q->queue_lock =&q->__queue_lock;
+>>> +       spin_unlock_irq(lock);
 >>
->> Needs a 'Signed-off-by'.
 >>
->>> ---
->>>  drivers/mmc/core/core.c |   11 ++++++++++-
->>>  1 files changed, 10 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->>> index 0b6141d..3b4a9fc 100644
->>> --- a/drivers/mmc/core/core.c
->>> +++ b/drivers/mmc/core/core.c
->>> @@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
->>>      if (data->flags & MMC_DATA_WRITE)
->>>              mult <<= card->csd.r2w_factor;
->>>
->>> -    data->timeout_ns = card->csd.tacc_ns * mult;
->>> +    /*
->>> +     * The timeout in nanoseconds may overflow with some cards. Cap it at
->>> +     * two seconds both to avoid the overflow and also because host
->>> +     * controllers cannot generally generate timeouts that long anyway.
->>> +     */
->>> +    if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
->>> +            data->timeout_ns = card->csd.tacc_ns * mult;
->>> +    else
->>> +            data->timeout_ns = 2 * NSEC_PER_SEC;
->>
->> We clearly need to guard against overflow here, and this is the correct
->> way to clamp the multiplication.  I can't speak as to whether 2 seconds
->> is the right limit.
->
-> The host controllers I have looked at have a limit of around 2.5 seconds.
->
-> But why not just use the size of the type as the limit? e.g.
->
->        if (card->csd.tacc_ns <= UINT_MAX / mult)
->                data->timeout_ns = card->csd.tacc_ns * mult;
->        else
->                data->timeout_ns = UINT_MAX;
+>> Well, this saves a if clause but adds an unnecessary assignment if the lock
+>> is already internal lock.
+> 
+> It's not hot path. Dirtying the cacheline there doesn't mean anything.
+> I don't really care either way but making optimization argument is
+> pretty silly here.
 
-The host controller drivers don't seem to all do a very good job of
-preventing further overflows or handling large values correctly
-(though some do). sdhci takes the especially annoying additional step
-of printk'ing a warning for *every single MMC command* where
-data->timeout_ns is larger than the controller can accommodate.
-Capping it to a value with a sensible order of magnitude seems to make
-it more likely that cards with obviously bogus CSD parameters will
-actually work. I don't object to using a larger number for the limit,
-but UINT_MAX on a 64-bit system obviously doesn't limit this at all
-and will leave you with timeouts up to 17 minutes, which seems
-ridiculous :)
-
-My original motivation for this patch is that I have a device with an
-eMMC that specifies a 25.5 second timeout, attached to a sdhci host
-whose maximum timeout is 2.8 seconds. Originally I proposed a patch to
-just remove the warning in sdhci, but nobody replied, and when I
-realised there was actually an overflow happening I opted to fix that
-instead.
-
-So, yeah, we could use UINT_MAX, but then at minimum I also need to
-kill the warning in sdhci to make my device work, and probably all the
-host controller drivers need to be checked to make sure they don't use
-timeout_ns in a way that can overflow.
-
-I've also just noticed that struct mmc_data's comment for timeout_ns
-says /* data timeout (in ns, max 80ms) */ which is not true (the max
-is 102.4 seconds if my math is correct), which may have contributed to
-the host drivers not being too careful :)
-
-What do you think?
-
->>
->> Ben.
->>
->>>      data->timeout_clks = card->csd.tacc_clks * mult;
->>>
->>>      /*
->>
->
-
-
+And more importantly, dropping the if loses information as well. That's
+a lot more important than any misguided optimization attempts. So I
+agree, the if stays.
 
 -- 
-Torne (Richard Coles)
-torne@google.com
+Jens Axboe
+
