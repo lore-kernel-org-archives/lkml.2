@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab2FACyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 22:54:54 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37260 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758737Ab2FACyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 22:54:52 -0400
-Message-ID: <1338519291.9151.7.camel@joe2Laptop>
-Subject: Re: [PATCH] lib/decompress_unxz.c: removing all memory helper
- functions
-From: Joe Perches <joe@perches.com>
-To: Thavatchai Makphaibulcboke <thavatchai.makpahibulchoke@hp.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kaloz@openwrt.org" <kaloz@openwrt.org>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "lasse.collin@tukaani.org" <lasse.collin@tukaani.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
-        "linux390@de.ibm.com" <linux390@de.ibm.com>
-Date: Thu, 31 May 2012 19:54:51 -0700
-In-Reply-To: <4FC82D89.1040108@hp.com>
-References: <1337875436-27640-1-git-send-email-tmac@hp.com>
-	 <20120528070336.GM3377@game.jcrosoft.org> <4FC82D89.1040108@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1758836Ab2FADIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 23:08:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758799Ab2FADIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 23:08:10 -0400
+Message-ID: <4FC83277.2090301@redhat.com>
+Date: Fri, 01 Jun 2012 11:09:43 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120210 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, edumazet@google.com, mst@redhat.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [V2 PATCH] net: sock: validate data_len before allocating skb
+ in sock_alloc_send_pskb()
+References: <20120531071809.6392.26677.stgit@amd-6168-8-1.englab.nay.redhat.com> <20120531.182145.119572313886189417.davem@davemloft.net>
+In-Reply-To: <20120531.182145.119572313886189417.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 20:48 -0600, Thavatchai Makphaibulcboke wrote:
-> On 05/28/2012 01:03 AM, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> 
-> > can we do not duplicate those functions?
-> 
-> Thanks J for the comment.  Unfortunately, there is no easy way to share
-> files among different architectures' preboot environment.  We have the
-> choices either to have each architecture define its own copies or the
-> decompressor defines them.  I believe the former is preferable.  As
-> Lasse also pointed out, this way any specific architecture could provide
-> an architectural dependent optimized version, if it chooses to.
+On 06/01/2012 06:21 AM, David Miller wrote:
+> From: Jason Wang<jasowang@redhat.com>
+> Date: Thu, 31 May 2012 15:18:10 +0800
+>
+>> We need to validate the number of pages consumed by data_len, otherwise frags
+>> array could be overflowed by userspace. So this patch validate data_len and
+>> return -EMSGSIZE when data_len may occupies more frags than MAX_SKB_FRAGS.
+>>
+>> Signed-off-by: Jason Wang<jasowang@redhat.com>
+> Applied and queued up for -stable.
+>
+> Please do not add explicit stable CC:'s to networking patches, I queue
+> appropriate changes up myself, and submit them only when I feel that
+> the change has had sufficient exposure and testing in Linus's tree.
 
-Maybe provide __weak default functions that
-can be overridden by any arch that could
-or wants to improve on the defaults.
-
+Sure, would pay attention next time.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
