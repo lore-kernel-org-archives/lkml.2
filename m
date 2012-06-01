@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966020Ab2FAXSF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 19:18:05 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:39207 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965987Ab2FAXSA (ORCPT
+	id S966033Ab2FAXTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 19:19:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8233 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965953Ab2FAXTT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 19:18:00 -0400
-Message-ID: <4FC94D74.70208@linux.vnet.ibm.com>
-Date: Sat, 02 Jun 2012 04:47:08 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Fri, 1 Jun 2012 19:19:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="159721094"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Borislav Petkov <bp@amd64.org>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Chen, Gong" <gong.chen@intel.com>
+Subject: RE: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Thread-Topic: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Thread-Index: AQHNOZYGtI1DcNZxtEGCK0mbRpqc+pbZOc0AgABYoYCAAAkdAIAAFPOAgAd2gYCAACJ1AIAADiKAgAAIj4CAAZ5vgIABK+aAgAAJUICAAB0igIAAG5oAgAAHRYCAAAZIAIAAApkAgAAB+ICAAAOVAIAAENkAgAAQiYCAACboAIAAApWAgAAIOQCAAAHrAP//kZqggAFGGgD//+9NkIAAg10A//+uljAAGNEXgAAORO2A
+Date: Fri, 1 Jun 2012 23:19:17 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F76FF@ORSMSX104.amr.corp.intel.com>
+References: <20120531171337.GN14515@aftab.osrc.amd.com>
+ <1338492772.13348.388.camel@gandalf.stny.rr.com>
+ <20120531194207.GC16998@aftab.osrc.amd.com>
+ <1338495092.13348.419.camel@gandalf.stny.rr.com>
+ <20120531201824.GD16998@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6DE2@ORSMSX104.amr.corp.intel.com>
+ <20120601091026.GC20959@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F71DB@ORSMSX104.amr.corp.intel.com>
+ <20120601160050.GE28216@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F74E1@ORSMSX104.amr.corp.intel.com>
+ <20120601230001.GE30418@aftab.osrc.amd.com>
+In-Reply-To: <20120601230001.GE30418@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: sam@ravnborg.org, tglx@linutronix.de, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        yong.zhang0@gmail.com, akpm@linux-foundation.org,
-        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
-        vapier@gentoo.org, konrad@gaisler.com, tkhai@yandex.ru,
-        sparclinux@vger.kernel.org
-Subject: Re: [UPDATED PATCH 21/27] sparc32, smpboot: Use generic SMP booting
- infrastructure
-References: <20120601.135612.699120609738854050.davem@davemloft.net> <20120601185448.GA19148@merkur.ravnborg.org> <4FC94693.5050707@linux.vnet.ibm.com> <20120601.185341.1462375672682064314.davem@davemloft.net>
-In-Reply-To: <20120601.185341.1462375672682064314.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12060123-5564-0000-0000-0000030A28EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2012 04:23 AM, David Miller wrote:
+> Uuh, that doesn't sound good. Can't you guys make the CMCI run on one
+> CPU only? I mean, it is a single CECC, no need to stop all cores on the
+> socket for it, right?
+>
+> Arguably, it'll be best if the core that sees the CECC fires the CMCI
+> too and the others continue on their merry way.
 
-> From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-> Date: Sat, 02 Jun 2012 04:17:47 +0530
-> 
->>
->> Convert sparc32 to use the generic framework to boot secondary CPUs.
->>
->> Notes:
->> While removing the call to cpu_idle(), we can also remove the call to
->> cpu_panic() because we are calling BUG() in the generic code anyway.
->>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> 
-> Almost there, but not quite yet.
-> 
-> You can't get rid of the cpu_panic invocations, those have to be there
-> after the *_callin calls to catch if they accidently return.
-> 
+That would be best ... but life is more complicated. We can get CMCI for
+some processor errors where the error will be logged in a per-core bank,
+but for some reason it is hard to have just the threads on that core see
+the CMCI. So we just use a shotgun to blast everything standing in the
+general direction of the error - so that the one (or two) cpus that can
+actually see the error will get the message.  In the normal case when
+there is a very low rate of errors, this doesn't do much harm. But it makes
+the storm situation when there are many errors a whole lot worse (20x
+worse for Westmere with 10 cores * 2 threads).
 
-
-Oh.. ok..
-
-So can I do something like the following, or do you want me to specifically
-add call cpu_panic and nop after every *_callin?
-
-diff --git a/arch/sparc/kernel/trampoline_32.S b/arch/sparc/kernel/trampoline_32.S
-index 7364ddc..9b2b81d 100644
---- a/arch/sparc/kernel/trampoline_32.S
-+++ b/arch/sparc/kernel/trampoline_32.S
-@@ -82,15 +82,12 @@ cpu3_startup:
-        call    smp4m_callin
-         nop
- 
--       b,a     smp_do_cpu_idle
-+       b,a     do_panic
- 
-        .text
-        .align  4
- 
--smp_do_cpu_idle:
--       call    cpu_idle
--        mov    0, %o0
--
-+do_panic:
-        call    cpu_panic
-         nop
- 
-@@ -147,7 +144,7 @@ sun4d_cpu_startup:
-        call    smp4d_callin
-         nop
- 
--       b,a     smp_do_cpu_idle
-+       b,a     do_panic
- 
- #ifdef CONFIG_SPARC_LEON
- 
-@@ -206,6 +203,6 @@ leon_smp_cpu_startup:
-        call    leon_callin
-         nop
- 
--       b,a     smp_do_cpu_idle
-+       b,a     do_panic
-
+-Tony 
