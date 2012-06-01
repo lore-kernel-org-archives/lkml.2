@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932734Ab2FAAXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 20:23:46 -0400
-Received: from li158-162.members.linode.com ([173.230.148.162]:55295 "EHLO
-	strelka.plastictigers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604Ab2FAAXo (ORCPT
+	id S932755Ab2FAA2O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 20:28:14 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:37298 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932689Ab2FAA2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 20:23:44 -0400
-X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 20:23:44 EDT
-Date: Thu, 31 May 2012 20:16:17 -0400
-From: Marc Butler <marc@plastictigers.com>
-To: Sagar Dharia <sdharia@codeaurora.org>
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org, kheitke@codeaurora.org,
-        gclemson@audience.com, broonie@opensource.wolfsonmicro.com,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rob@landley.net, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        ohad@wizery.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
-        ak@linux.intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20120601001617.GA16311@plastictigers.com>
-Mail-Followup-To: Sagar Dharia <sdharia@codeaurora.org>,
-	davidb@codeaurora.org, bryanh@codeaurora.org,
-	kheitke@codeaurora.org, gclemson@audience.com,
-	broonie@opensource.wolfsonmicro.com, linux-arm-msm@vger.kernel.org,
-	linux-arm-kernel@lists.infradead.org, rob@landley.net,
-	grant.likely@secretlab.ca, rob.herring@calxeda.com, ohad@wizery.com,
-	gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-	rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
-	ak@linux.intel.com, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 31 May 2012 20:28:13 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: Ben Greear <greearb@candelatech.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Anyone successfully booted a custom kernel on Fedora 17?
+In-Reply-To: Your message of "Wed, 30 May 2012 20:15:35 -0700."
+             <4FC6E257.4070608@candelatech.com>
+From: valdis.kletnieks@vt.edu
+References: <4FC6B85C.20201@candelatech.com>
+            <4FC6E257.4070608@candelatech.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1338510488_2076P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 31 May 2012 20:28:08 -0400
+Message-ID: <23353.1338510488@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.213.180 mail-yx0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4FC80C9C.006B,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 07:11:33PM -0600, Sagar Dharia wrote:
-> SLIMbus (Serial Low Power Interchip Media Bus) is a specification
-> developed by MIPI (Mobile Industry Processor Interface) alliance.
+--==_Exmh_1338510488_2076P
+Content-Type: text/plain; charset=us-ascii
 
-These are initial comments. A full review of the patch will take some
-time. While I am posting this email, this is the result of work both
-by myself, and my colleague Greg Clemson (cc'ed).
+On Wed, 30 May 2012 20:15:35 -0700, Ben Greear said:
+> On 05/30/2012 05:16 PM, Ben Greear wrote:
+> > This is probably a Fedora 17 issue..but hoping someone will have mercy on me :)
+>
+> Must be something to do with my kernel config or how I generate
+> the initrd with mkinitrd:
 
-1. enum slim_ch_proto
+For what it's worth, over on the Rawhide side of the fence, dracut-018-74
+builds bad initramfs images for me,while dracut-081-53 works.  Not sure
+what release is in the F17 updates repository.  I'm going to file a bug report
+with Fedora soon as I figure out what -74 is doing wrong.
 
-The enumeration slim_ch_proto is incorrect. It declares 2 transport
-protocols which do not exist in the specification: SLIM_HARD_ISO;
-SLIM_AUTO_ISO.
+--==_Exmh_1338510488_2076P
+Content-Type: application/pgp-signature
 
-This in turn causes the subsequent values for the other protocols such
-as SLIM_PUSH, to be incorrectly coded in the NEXT_DEFINE_CHANNEL
-message generated in slim_reconfigure_now(). That is the push protocol
-is incorrectly encoded as 3 instead of 2 as per the specification
-(Table 47).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-I believe a correct definition would be:
+iQIVAwUBT8gMmAdmEQWDXROgAQKElxAAq0YgxbH/62OP8wEY5RmW1h1FRKtd53Tg
+i32/NRQ7stsCP1tbn1bROvVOz6dXpnZ+vchxhjqEVYJgDBSUy+RJtbc8sdBXT+0N
+mKXkp/t45sNHDnEPrcgiPW+pyA8ZI+6JXszx+GlkpvwlEN1Ew7afQjhVay5RQRI5
+8Tqj8/rkCaxeYFCmbsbYPkjupTUCv7NReZi5sEQ+wFMhUAvkPEtDcIOZYwMV6vEk
+5dDf+htFMQNR+VlTGa1OEWHoNFC6gvPhM4Jtu8dV5igzkmtwZ6WpBfYzLEx2Jr7q
+4Oz/Ty8DuPTzLAenqDNW9n3lwxyM3P9kaFPlarTwwqCeORihegVaaZNSMpMg1Bbh
+zhi2W9TTJ3lPLqxGlCOCqBkm6fLuQg582IRPzKSPfta8al7O2WGQUEh8Yx7nIJaU
+dmpFDp6v3u0VoQX+sxebOmF1kgVJ7eQu+xvqLQ4hfgkpO4fawE9Op0+fVw+OL9cy
+vrHwcOJDLTt9Uhvvl/7V0mXu+GNABHIFv09/nZlP80PCeZiOrdrIVp8vJ9jYTgoY
+cc55kYceZP8P+mFslesm3IMe1kvlzTiYR7mOHIBNwhQ2zO3opnsWWYGneFlL7oGQ
+2CIZESvYTmaq4XJ83AUeDT3D1pI2ZDExZQ6YarPF0di0DJ2WxgSvo2/FNa+JbaNS
+FimNfC6Pg08=
+=6dHj
+-----END PGP SIGNATURE-----
 
-enum slim_ch_proto {
-        SLIM_ISO,
-	SLIM_PUSH,
-	SLIM_PULL,
-	SLIM_LOCKED,
-	SLIM_ASYNC_SMPLX,
-	SLIM_ASYNC_HALF_DUP,
-	SLIM_EXT_SMPLX,
-	SLIM_EXT_HALF_DUP,
-	SLIM_USER_DEF1 = 14,
-	SLIM_USER_DEF2 = 15
-};
-
-However doing so will break the logic in slim_nextdefine_ch().
-
-2. Use of the term elemental address.
-
-Commentary around the use of struct slim_eaddr uses the term
-"elemental address". However, the term used in the specification is
-"enumeration address". There is no elemental address in the
-specification, and using this term may result confusion when referring
-to accessing the information and value elements.
-
-I suggest that term "enumeration address" should be used. 
-
-3. Probing sequence for drivers.
-
-The current probing sequence for drivers appears to make some
-assumptions, that are problematic.
-
-a) The code assumes that when the controller is registered the bus is
-operational (booted). No allowance is made for any problems the active
-framer may have synchronizing the bus. 
-
-The drivers really should not be probed until the bus has at least
-booted. This can be worked around by only registering the controller
-after it has booted the bus. This should be noted in the comments.
-
-b) Similarly to (a) the driver may be probed before the device has
-been given a logical address (LA). This makes sense in the case of
-driver that turns on the device (say via gpio) once the bus has
-booted. However, the driver then needs to sit and poll
-slim_get_logical_addr() until the logical address.
-
-A possible alternate solution would be to add a parameter to probe:
-
-enum slim_dev_status {
-        SLIM_BUS_READY,
-	SLIM_DEV_READY
-};
-
-int (*probe)(struct slim_device *sldev, enum slim_dev_status status);
-
-Where SLIM_BUS_READY == bus has booted, and SLIM_DEV_READY == device
-has been assigned its logical address.
-
-Alternatively you could have 2 separate probe type callbacks. 
-
-This would make the driver logical simpler.
+--==_Exmh_1338510488_2076P--
 
