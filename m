@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759404Ab2FAKpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 06:45:16 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:58174 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759249Ab2FAKpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 06:45:11 -0400
-Date: Fri, 1 Jun 2012 12:45:06 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
-        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nikunj@linux.vnet.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Jan Glauber <jang@linux.vnet.ibm.com>, linux-s390@vger.kernel.org
-Subject: Re: [PATCH 25/27] s390, smpboot: Use generic SMP booting
- infrastructure
-Message-ID: <20120601104506.GB3535@osiris.boeblingen.de.ibm.com>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
- <20120601091604.31979.71351.stgit@srivatsabhat.in.ibm.com>
+	id S1759436Ab2FAK65 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 06:58:57 -0400
+Received: from mail.monisys.ca ([204.225.249.233]:43021 "EHLO monisys.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759417Ab2FAK6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 06:58:25 -0400
+X-Greylist: delayed 17986 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jun 2012 06:58:25 EDT
+Message-ID: <4331.82.128.15.39.1338511827.squirrel@webmail.monisys.ca>
+Date: Thu, 31 May 2012 20:50:27 -0400 (EDT)
+Subject: Ref No: 00B32377H9 / Message From AFF.....
+From: "Asian Finance Firm (AFF)" <asianfinancefirm@monisys.ca>
+Reply-To: asianfinancefirm@cpll.cn
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601091604.31979.71351.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12060110-2966-0000-0000-000004438531
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-monisys-MailScanner-Information: Please contact the ISP for more information
+X-monisys-MailScanner-ID: q510oThJ009265
+X-monisys-MailScanner: Found to be clean
+X-monisys-MailScanner-From: asianfinancefirm@monisys.ca
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 02:46:09PM +0530, Srivatsa S. Bhat wrote:
-> Convert s390 to use the generic framework to boot secondary CPUs.
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: linux390@de.ibm.com (supporter:S390)
-> Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Jan Glauber <jang@linux.vnet.ibm.com>
-> Cc: linux-s390@vger.kernel.org
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  arch/s390/kernel/smp.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
-> 
 
-Looks good to me.
 
-Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+
+Attention:,
+Ref No: 00B32377H9
+Date:  30/05/2012
+
+I am Mr. Lugi Chan an officer in Asian Finance Firm, i have a beneficial 
+business to discuss with you , if you are interested contact me with this
+E-mail (lugichan@asianbank.cn.pn ) for more information.
+
+Your earliest response to this letter will be appreciated.
+
+Most Respectfully,
+Mr. Lugi Chan
+Finance Director
+Email To: lugichan@asianbank.cn.pn
+
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
 
