@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760054Ab2FAPS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:18:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40752 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754446Ab2FAPSZ (ORCPT
+	id S964875Ab2FAPV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:21:26 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49563 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964820Ab2FAPVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:18:25 -0400
-Subject: Re: seq_file: Use larger buffer to reduce time traversing lists
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        Al Viro <viro@zeniv.linux.org.uk>, nstraz@redhat.com
-In-Reply-To: <1338562897.2760.1528.camel@edumazet-glaptop>
-References: <1338547193.2708.16.camel@menhir>
-	 <1338552626.2760.1510.camel@edumazet-glaptop>
-	 <1338553486.2708.25.camel@menhir>
-	 <1338554890.2760.1517.camel@edumazet-glaptop>
-	 <1338556468.2708.41.camel@menhir>
-	 <1338557229.2760.1520.camel@edumazet-glaptop>
-	 <1338560283.2708.59.camel@menhir>
-	 <1338562627.2760.1526.camel@edumazet-glaptop>
-	 <1338562897.2760.1528.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jun 2012 17:18:20 +0200
-Message-ID: <1338563900.2760.1529.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jun 2012 11:21:24 -0400
+Date: Fri, 1 Jun 2012 17:21:51 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v29] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120601152151.GC28216@aftab.osrc.amd.com>
+References: <1338563258-13322-1-git-send-email-mchehab@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338563258-13322-1-git-send-email-mchehab@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-01 at 17:01 +0200, Eric Dumazet wrote:
+On Fri, Jun 01, 2012 at 12:07:38PM -0300, Mauro Carvalho Chehab wrote:
+> + * Default error mechanisms for Memory Controller errors (CE and UE)
+> + */
+> +TRACE_EVENT(mc_event,
+> +
+> +	TP_PROTO(const unsigned int err_type,
+> +		 const char *error_msg,
+> +		 const char *label,
+> +		 const int error_count,
+> +		 const u8 mc_index,
+> +		 const s8 layer0,
+> +		 const s8 layer1,
+> +		 const s8 layer2,
 
-> All unix sockets are linked into a single list, no hash table, so its
-> not very easy right now.
-> 
+Btw, why are the layers still called layer[012] but differently below?
+This is confusing.
 
-Oops, there is a hash table, so patch is coming ;)
+Also, edac_mc_handle_error() should have the top/middle/lower layer arg
+names too.
 
+And also, why are the layers s8? Any reason for the signedness?
 
+> +		 unsigned long address,
+> +		 const int grain_bits,
+
+This is an int here and a u8 below?
+
+I was just about to befriend the idea of grain being u8 and accepting it
+as a compromise.
+
+Make it a u8 and cast it at the call sites of trace_mc_event instead.
+
+> +		 unsigned long syndrome,
+> +		 const char *driver_detail),
+> +
+> +	TP_ARGS(err_type, error_msg, label, error_count, mc_index,
+> +		layer0, layer1, layer2, address, grain_bits, syndrome,
+> +		driver_detail),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	unsigned int,	error_type		)
+> +		__string(	msg,		error_msg		)
+> +		__string(	label,		label			)
+> +		__field(	u16,		error_count		)
+> +		__field(	u8,		mc_index		)
+> +		__field(	s8,		top_layer		)
+> +		__field(	s8,		middle_layer		)
+> +		__field(	s8,		lower_layer		)
+> +		__field(	long,		address			)
+> +		__field(	u8,		grain_bits		)
+> +		__field(	long,		syndrome		)
+> +		__string(	driver_detail,	driver_detail		)
+> +	),
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
