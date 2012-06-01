@@ -1,91 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab2FAOSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 10:18:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39264 "EHLO mga02.intel.com"
+	id S964795Ab2FAOTE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:19:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932989Ab2FAOQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 10:16:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="147036868"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
-        reiserfs-devel@vger.kernel.org
-Subject: [PATCH 1/5] reiserfs: cleanup reiserfs_fill_super a bit
-Date: Fri,  1 Jun 2012 17:18:04 +0300
-Message-Id: <1338560288-10727-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1338560288-10727-1-git-send-email-dedekind1@gmail.com>
-References: <1338560288-10727-1-git-send-email-dedekind1@gmail.com>
+	id S932989Ab2FAOTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 10:19:02 -0400
+Subject: Re: seq_file: Use larger buffer to reduce time traversing lists
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Al Viro <viro@zeniv.linux.org.uk>, nstraz@redhat.com
+In-Reply-To: <1338557229.2760.1520.camel@edumazet-glaptop>
+References: <1338547193.2708.16.camel@menhir>
+	 <1338552626.2760.1510.camel@edumazet-glaptop>
+	 <1338553486.2708.25.camel@menhir>
+	 <1338554890.2760.1517.camel@edumazet-glaptop>
+	 <1338556468.2708.41.camel@menhir>
+	 <1338557229.2760.1520.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 01 Jun 2012 15:18:03 +0100
+Message-ID: <1338560283.2708.59.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Hi,
 
-We have the reiserfs superblock pointer in the 'sbi' variable in this
-function, no need to use the 'REISERFS_SB(s)' macro which is the same.
-This is jut a small clean-up.
+On Fri, 2012-06-01 at 15:27 +0200, Eric Dumazet wrote:
+> On Fri, 2012-06-01 at 14:14 +0100, Steven Whitehouse wrote:
+> 
+> > Here it is (with the patch):
+> > 
+> > [root@chywoon mnt]# time dd if=/sys/kernel/debug/gfs2/unity\:myfs/glocks
+> > of=/dev/null bs=4k
+> > 0+5726 records in
+> > 0+5726 records out
+> > 23107575 bytes (23 MB) copied, 82.3082 s, 281 kB/s
+> > 
+> > real	1m22.311s
+> > user	0m0.013s
+> > sys	1m22.231s
+> > 
+> > So thats slow, as promised :-)
+> > 
+> > > I can't reproduce this slow behavior you have, using /proc/net seq
+> > > files.
+> > > 
+> > > Isn't it a problem with this particular file ?
+> > > 
+> > Well, yes and no. The problem would affect any file with lots of records
+> > in it, but there may not be many with that number of records. Do any of
+> > your net files have numbers of entries in the region of hundreds of
+> > thousands or more?
+> > 
+> > > Does it want to output a single record ( m->op->show(m, p) ) much larger
+> > > than 4KB ?
+> > > 
+> > No. That appears to work ok, so far as I can tell, anyway. What we have
+> > are lots of relatively short records. Here is an example of a few lines.
+> > Each line starting G: is a new record, so this is 5 calls to ->show():
+> > 
+> > G:  s:SH n:5/1da5e f:Iqob t:SH d:EX/0 a:0 v:0 r:2 m:200
+> >  H: s:SH f:EH e:0 p:6577 [(ended)] gfs2_inode_lookup+0x116/0x2d0 [gfs2]
+> > G:  s:SH n:2/a852 f:IqLob t:SH d:EX/0 a:0 v:0 r:2 m:200
+> >  I: n:9712/43090 t:8 f:0x00 d:0x00000000 s:0
+> > G:  s:SH n:2/8bcd f:IqLob t:SH d:EX/0 a:0 v:0 r:2 m:200
+> >  I: n:2584/35789 t:8 f:0x00 d:0x00000000 s:0
+> > G:  s:SH n:2/1eea7 f:IqLob t:SH d:EX/0 a:0 v:0 r:2 m:200
+> >  I: n:58968/126631 t:8 f:0x00 d:0x00000000 s:0
+> > G:  s:SH n:2/12fbd f:IqLob t:SH d:EX/0 a:0 v:0 r:2 m:200
+> >  I: n:11120/77757 t:8 f:0x00 d:0x00000000 s:0
+> > 
+> > 
+> > The key here is that we have a lot of them. My example using just over
+> > 400k records is in fact a fairly modest example - it is not unusual to
+> > see millions of records in this file. We use it for debug purposes only,
+> > and this patch was prompted by people reporting it taking a very long
+> > time to dump the file.
+> > 
+> > The issue is not the time taken to create each record, or to copy the
+> > data, but the time taken each time we have to find our place again in
+> > the list of glocks (actually a hash table, but same thing applies as we
+> > traverse it as a set of lists)
+> > 
+> > I don't think there is really much we can easily do in the case of
+> > readers requesting small reads of the file. At least we can make it much
+> > more efficient when they request larger reads though,
+> 
+> Issue is your seq_file provider has O(N^2) behavior
+> 
+Well that is a slight simplification. The provider has O(N) behaviour
+wrt to the number of entries when streaming data, and O(N) behaviour
+when seeking to a specific file offset. It is the combination of
+repeated calls of the seeking function that results in O(N^2)
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/reiserfs/super.c |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+> We used to have same issues in network land, and we fixed this some time
+> ago, and we only use 4KB as seq_file buffer, not a huge one.
+> 
+> Check commit a8b690f98baf9fb1 ( tcp: Fix slowness in
+> read /proc/net/tcp ) for an example
+> 
+So far as I can tell, you are just caching the last hash bucket, but are
+still seeking down each hash chain. That will only work well when the
+hash buckets are reasonably empty. We can try that in GFS2, however I'm
+not sure that is the whole story.
 
-diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 8b7616e..92db34b 100644
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -1730,19 +1730,19 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 		return -ENOMEM;
- 	s->s_fs_info = sbi;
- 	/* Set default values for options: non-aggressive tails, RO on errors */
--	REISERFS_SB(s)->s_mount_opt |= (1 << REISERFS_SMALLTAIL);
--	REISERFS_SB(s)->s_mount_opt |= (1 << REISERFS_ERROR_RO);
--	REISERFS_SB(s)->s_mount_opt |= (1 << REISERFS_BARRIER_FLUSH);
-+	sbi->s_mount_opt |= (1 << REISERFS_SMALLTAIL);
-+	sbi->s_mount_opt |= (1 << REISERFS_ERROR_RO);
-+	sbi->s_mount_opt |= (1 << REISERFS_BARRIER_FLUSH);
- 	/* no preallocation minimum, be smart in
- 	   reiserfs_file_write instead */
--	REISERFS_SB(s)->s_alloc_options.preallocmin = 0;
-+	sbi->s_alloc_options.preallocmin = 0;
- 	/* Preallocate by 16 blocks (17-1) at once */
--	REISERFS_SB(s)->s_alloc_options.preallocsize = 17;
-+	sbi->s_alloc_options.preallocsize = 17;
- 	/* setup default block allocator options */
- 	reiserfs_init_alloc_options(s);
- 
--	mutex_init(&REISERFS_SB(s)->lock);
--	REISERFS_SB(s)->lock_depth = -1;
-+	mutex_init(&sbi->lock);
-+	sbi->lock_depth = -1;
- 
- 	jdev_name = NULL;
- 	if (reiserfs_parse_options
-@@ -1751,8 +1751,8 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 		goto error_unlocked;
- 	}
- 	if (jdev_name && jdev_name[0]) {
--		REISERFS_SB(s)->s_jdev = kstrdup(jdev_name, GFP_KERNEL);
--		if (!REISERFS_SB(s)->s_jdev) {
-+		sbi->s_jdev = kstrdup(jdev_name, GFP_KERNEL);
-+		if (!sbi->s_jdev) {
- 			SWARN(silent, s, "", "Cannot allocate memory for "
- 				"journal device name");
- 			goto error;
-@@ -1810,7 +1810,7 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
- 	/* make data=ordered the default */
- 	if (!reiserfs_data_log(s) && !reiserfs_data_ordered(s) &&
- 	    !reiserfs_data_writeback(s)) {
--		REISERFS_SB(s)->s_mount_opt |= (1 << REISERFS_DATA_ORDERED);
-+		sbi->s_mount_opt |= (1 << REISERFS_DATA_ORDERED);
- 	}
- 
- 	if (reiserfs_data_log(s)) {
--- 
-1.7.7.6
+It appears that /proc/net/unix still seems to suffer from this O(N^2)
+problem, even if /proc/net/tcp does not. I did a quick test using a
+program to create a bunch of tcp sockets, and using my kernel patch
+landed up with these results:
+
+[root@chywoon mnt]# time dd if=/proc/net/tcp of=/dev/null bs=4k
+0+1046 records in
+0+1046 records out
+4236300 bytes (4.2 MB) copied, 1.20739 s, 3.5 MB/s
+
+real	0m1.310s
+user	0m0.003s
+sys	0m1.220s
+
+[root@chywoon mnt]# time dd if=/proc/net/tcp of=/dev/null bs=1M
+0+5 records in
+0+5 records out
+4236300 bytes (4.2 MB) copied, 0.331139 s, 12.8 MB/s
+
+real	0m0.470s
+user	0m0.001s
+sys	0m0.374s
+
+So even with the current tcp scheme this appears to speed things up by
+nearly 3x. Also that was with only 28000 entries in the file,
+
+Steve.
+
 
