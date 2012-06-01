@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965484Ab2FAR5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:57:08 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:58287 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758809Ab2FAR5G convert rfc822-to-8bit (ORCPT
+	id S933561Ab2FASC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:02:58 -0400
+Received: from nm19.bullet.mail.ac4.yahoo.com ([98.139.52.216]:22588 "HELO
+	nm19.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932394Ab2FASC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:57:06 -0400
+	Fri, 1 Jun 2012 14:02:56 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jun 2012 14:02:56 EDT
+X-Yahoo-Newman-Id: 406543.85795.bm@omp1016.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: FG5tS8MVM1mWDf5tOCNks_NdGJ6r2Nq4kAuw8CnQmXmFbBT
+ jG3U.6ZpynrLMxTJuVQtcbsHMBLWsV0HueAlduvw5L2vcFJ6nl3YpZPcK4Lj
+ _Td5frq5ohwSdj.z_N2iHkWqtrD54LVZaQ7RwR0uC0b7wcOEp3rCFnYVqnuw
+ 7aArKhbhpP0I5D7uN1gOnffDT.mRwqFB.Wws82Y5z_hJ_AaNpxhQpOhCMqPD
+ wxTFSznHq40RB5q3IL3aZKOT6hFQG8nzaxT1Y0nKIaztqn5DV1P46vtmlQqw
+ gK0H25tT8fY_kAWAZ8wOkhClCoPTiGqFgmG2fEgcdXm2Wrg9vI0zkTV5FPRu
+ n8y3E9_C9O_Ti.UJ84AK4Wpu0A_gc0BPNt3HD7SY31Jgy0.heg8o91BEIp2q
+ BUJ0hWg--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <4FC90267.7050102@att.net>
+Date: Fri, 01 Jun 2012 12:56:55 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: daniel.santos@pobox.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <20120601174336.GA15778@thunk.org>
-References: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com>
- <CA+55aFwk8oYx8EKWdT=5cMTLK7RDz8GQdGmHk2KXwcCq+Bb8PA@mail.gmail.com>
- <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com> <20120601174336.GA15778@thunk.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 1 Jun 2012 10:56:43 -0700
-X-Google-Sender-Auth: 5b5jYqZKTZRXTifI-P41RjpAp9Q
-Message-ID: <CA+55aFxgZupkAotfjUuWcfwTzHDYg0Afezme62P17=EX2KN+UQ@mail.gmail.com>
-Subject: Re: GIT PULL] ext4 updates for 3.5
-To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Junio C Hamano <gitster@pobox.com>,
-        Git Mailing List <git@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
+CC: Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, axboe@kernel.dk,
+        paul.gortmaker@windriver.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 1/3] [RFC] Generic Red-Black Trees (performance notes)
+References: <4FC7FD23.6080800@att.net> <4FC81611.9090801@att.net>
+In-Reply-To: <4FC81611.9090801@att.net>
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 10:43 AM, Ted Ts'o <tytso@mit.edu> wrote:
->
-> So I should do "git request-pull origin git://... ext4_for_linus" next
-> time, right?
+I've done a bit more analysis of the generated code of
+kernel/sched/fair.c (patched) under three versions of gcc.
 
-Right.
+gcc-4.5.3
+* 48 bytes larger
+* one instance of a (const_flag & ENUM_VALUE) fails to compile out
+* compare function not inlined
 
-> Sorry about that.  I thought it had included the reference to tag
-> automatically since the text of the tag showed in the request-pull
-> text.
+gcc-4.6.2
+* same size
+* ANDed constants compiled out
+* compare function inlined
 
-Apparently git request-pull is too damn smart for its own good, and
-will find the tags even when they aren't mentioned, making you think
-it made it to me. Bot it doesn't - so then I have to go search for
-them by hand.
+gcc-4.7.0:
+* 64 bytes smaller - __enqueue_entity() reduced by 16 bytes (2 byte
+smaller and saved some padding, so essentially the same), I'm not sure
+where the other 48 bytes came from, I'm guessing just alignment changes
+from using different registers (smaller opcodes).
 
-Added Junio and git to the cc: if git finds the tag and uses that for
-the request-pull message text, then it should use the tagname for the
-pull request line too. Or, alternatively, don't be smart at all, and
-force users to name the tag explicitly. The current "both smart and
-dumb" combination seems to be the worst of both world.
+So in summary, the results on 4.5 are worse, but not "horrible".  The
+problems are fixed in 4.6 and later.
 
-              Linus
+There's still lots of other scenarios to test.
+
+Daniel
+
