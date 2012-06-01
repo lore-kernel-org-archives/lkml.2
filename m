@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964890Ab2FAVph (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 17:45:37 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47890 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932925Ab2FAVp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 17:45:28 -0400
-Message-ID: <4FC937AD.8040201@linaro.org>
-Date: Fri, 01 Jun 2012 14:44:13 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 3/3] [RFC] tmpfs: Add FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
- handlers
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org> <1338575387-26972-4-git-send-email-john.stultz@linaro.org> <4FC9235F.5000402@gmail.com> <4FC92E30.4000906@linaro.org> <4FC9360B.4020401@gmail.com>
-In-Reply-To: <4FC9360B.4020401@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S964966Ab2FAVtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 17:49:49 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43449 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933579Ab2FAVtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 17:49:47 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.4-dev
+To: =?UTF-8?B?wqA=?= <porpen@gmail.com>
+Cc: Ben Greear <greearb@candelatech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Anyone successfully booted a custom kernel on Fedora 17?
+In-Reply-To: Your message of "Fri, 01 Jun 2012 05:49:57 -0400."
+             <CAANzHtSHRXkYJcBRBvCRPj_KR-q3qSUa6xNNmFDLHB-ixDMv9w@mail.gmail.com>
+From: valdis.kletnieks@vt.edu
+References: <4FC6B85C.20201@candelatech.com> <4FC6E257.4070608@candelatech.com> <23353.1338510488@turing-police.cc.vt.edu> <4FC810B3.5040208@candelatech.com>
+            <CAANzHtSHRXkYJcBRBvCRPj_KR-q3qSUa6xNNmFDLHB-ixDMv9w@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1338587383_2041P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060121-9360-0000-0000-000006EA7C16
+Date: Fri, 01 Jun 2012 17:49:43 -0400
+Message-ID: <17788.1338587383@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 209.85.161.180 mail-gg0-f180.google.com valdis@vt.edu 4 softfail
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020205.4FC938FA.0090,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2012 02:37 PM, KOSAKI Motohiro wrote:
-> (6/1/12 5:03 PM), John Stultz wrote:
->> On 06/01/2012 01:17 PM, KOSAKI Motohiro wrote:
->>> Hi John,
->>>
->>> (6/1/12 2:29 PM), John Stultz wrote:
->>>> This patch enables FALLOC_FL_MARK_VOLATILE/UNMARK_VOLATILE
->>>> functionality for tmpfs making use of the volatile range
->>>> management code.
->>>>
->>>> Conceptually, FALLOC_FL_MARK_VOLATILE is like a delayed
->>>> FALLOC_FL_PUNCH_HOLE.  This allows applications that have
->>>> data caches that can be re-created to tell the kernel that
->>>> some memory contains data that is useful in the future, but
->>>> can be recreated if needed, so if the kernel needs, it can
->>>> zap the memory without having to swap it out.
->>>>
->>>> In use, applications use FALLOC_FL_MARK_VOLATILE to mark
->>>> page ranges as volatile when they are not in use. Then later
->>>> if they wants to reuse the data, they use
->>>> FALLOC_FL_UNMARK_VOLATILE, which will return an error if the
->>>> data has been purged.
->>>>
->>>> This is very much influenced by the Android Ashmem interface by
->>>> Robert Love so credits to him and the Android developers.
->>>> In many cases the code&   logic come directly from the ashmem patch.
->>>> The intent of this patch is to allow for ashmem-like behavior, but
->>>> embeds the idea a little deeper into the VM code.
->>>>
->>>> This is a reworked version of the fadvise volatile idea submitted
->>>> earlier to the list. Thanks to Dave Chinner for suggesting to
->>>> rework the idea in this fashion. Also thanks to Dmitry Adamushko
->>>> for continued review and bug reporting, and Dave Hansen for
->>>> help with the original design and mentoring me in the VM code.
->>> I like this patch concept. This is cleaner than userland
->>> notification quirk. But I don't like you use shrinker. Because of,
->>> after applying this patch, normal page reclaim path can still make
->>> swap out. this is undesirable.
->> Any recommendations for alternative approaches? What should I be hooking
->> into in order to get notified that tmpfs should drop volatile pages?
-> I thought to modify shmem_write_page(). But other way is also ok to me.
-So initially the patch used shmem_write_page(), purging ranges if a page
-was to be swapped (and just dropping it instead). The problem there is
-that if there's a large range that is very active, we might purge the
-entire range just because it contains one rarely used page. This is why
-the LRU list for unpurged volatile ranges is useful.
+--==_Exmh_1338587383_2041P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-However, Dave Hansen just suggested to me on irc the idea of if we're
-swapping any pages, we might want to just purge a volatile range
-instead. This allows us to keep the unpurged LRU range list, but just
-uses write_page as the flag for needing to free memory.
+On Fri, 01 Jun 2012 05:49:57 -0400, =A0 said:
 
-I'm taking a shot at implementing this now, but let me know if it sounds
-good to you.
+> This thread might help you folks.
+> http://lkml.org/lkml/2012/5/18/230
+> Urgent: x86-32 and GNU ld 2.22.52.0.1
 
->>>> +static
->>>> +int shmem_volatile_shrink(struct shrinker *ignored, struct shrink_control *sc)
->>>> +{
->>>> +	s64 nr_to_scan = sc->nr_to_scan;
->>>> +	const gfp_t gfp_mask = sc->gfp_mask;
->>>> +	struct address_space *mapping;
->>>> +	loff_t start, end;
->>>> +	int ret;
->>>> +	s64 page_count;
->>>> +
->>>> +	if (nr_to_scan&&   !(gfp_mask&   __GFP_FS))
->>>> +		return -1;
->>>> +
->>>> +	volatile_range_lock(&shmem_volatile_head);
->>>> +	page_count = volatile_range_lru_size(&shmem_volatile_head);
->>>> +	if (!nr_to_scan)
->>>> +		goto out;
->>>> +
->>>> +	do {
->>>> +		ret = volatile_ranges_get_last_used(&shmem_volatile_head,
->>>> +							&mapping,&start,&end);
->>> Why drop last used region? Not recently used region is better?
->>>
->> Sorry, that function name isn't very good. It does return the
->> least-recently-used range, or more specifically: the
->> least-recently-marked-volatile-range.
-> Ah, I misunderstood. thanks for correction.
->
->
->> I'll improve that function name, but if I misunderstood you and you have
->> a different suggestion for the purging order, let me know.
-> No, please just rename.
-Will do.
+x86_64 here, so I doubt that's the problem. That, and both my working and=
 
-Thanks for the feedback!
--john
+broken kernels were build with binutils 2.22.52.0.3 - working with gcc 4.=
+6.2
+and busted with 4.7.0.
+
+--==_Exmh_1338587383_2041P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBT8k49wdmEQWDXROgAQJe7hAAmAZCKqlkQssK2u2Jk9UjrGeJWZUemeY+
+x+FQazHPtJB6imYgr1KBSDi0M7c//3CY3gL1eh4YMPna8XGBt56BRIkj5RmxH1YG
+XEE9aAXcUacNsPVcPSd6bS3pKLhtlphJqLXJTBTmnX7K2I1ib4V/+LwjfW6Bx5At
+Jf+XNswCu8fVV2EdyPtVrxUrczQyZTz+nBE4AeDR5u+oq5l+80L8ZfjO+6yuy28Y
+0zDyfpaO7eygfhKoyoarIVTMwc3va6OFAbFzjwr3Ph9vupfp+jg22d2yGVGDRyTl
+asXSuyLWpHlYSR+RmySBinehUinkLLcJpCcGF9DFyDasUKc7FUb74hf/LfxnO1qF
+jzTApGGGXxESkEzo4indMPKiGR8GWlT293QQ5qgj+oRkBJofx7Vs0S45mHdnrDzz
+jwAdzOCagtQQVwB9Qen0khh02boRfJUXkbk1g18EzMzzbCkeLnuk0w6v7JhTbXT3
+Pza+hkIxikcJ0HZ8hHUr8ee9uBbHz/xa19DTMpi93wskYkMAaFOCl807rZSMTlYu
+TRuqAWtHGsEP+ILskuztf38qeVWEO7Gv9IbvVfAHgLdMl0Zl7FCZTrOUjWUM3jog
+M3N4Jv+UhQjliC0kanJAZ+2Igt/q8E98MSAyLtwjYiSakincnrRNf2eGDM32iivj
+igdoRLCrKb8=
+=Mr7T
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1338587383_2041P--
 
