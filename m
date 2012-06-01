@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933635Ab2FAVQt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 17:16:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932538Ab2FAVQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 17:16:46 -0400
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 4/4] PCI: Remove redundant capabilities checking in pci_{save,
-	restore}_pcie_state
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xudong.hao@linux.intel.com, ddutile@redhat.com, yu.zhao@intel.com
-Date: Fri, 01 Jun 2012 15:16:43 -0600
-Message-ID: <20120601211643.20328.26918.stgit@amt.stowe>
-In-Reply-To: <20120601211619.20328.36769.stgit@amt.stowe>
-References: <20120601211619.20328.36769.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
+	id S965449Ab2FAVRR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 17:17:17 -0400
+Received: from kamaji.grokhost.net ([87.117.218.43]:55007 "EHLO
+	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab2FAVRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 17:17:13 -0400
+Message-ID: <4FC93154.1060906@bootc.net>
+Date: Fri, 01 Jun 2012 22:17:08 +0100
+From: Chris Boot <bootc@bootc.net>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120529 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Chris Boot <bootc@bootc.net>
+CC: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nix@esperi.org.uk,
+        carolyn.wyborny@intel.com, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] e1000e: Disable ASPM L1 on 82574
+References: <1335216578-21542-1-git-send-email-bootc@bootc.net> <1335216578-21542-2-git-send-email-bootc@bootc.net>
+In-Reply-To: <1335216578-21542-2-git-send-email-bootc@bootc.net>
+X-Enigmail-Version: 1.5a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unlike PCI Express v1's Capabilities Structure, v2's requires the entire
-structure to be implemented.  In v2 structures, register fields that are
-not necessarly implemented, are present but hardwired to 0x0.  These may
-include: Link Capabilities, Status, and Control; Slot Capabilities,
-Status, and Control; Root Capabilities, Status, and Control; and all of
-the '2' (Device, Link, and Slot) Capabilities, Status, and Control
-registers.
+On 23/04/2012 22:29, Chris Boot wrote:
+> ASPM on the 82574 causes trouble. Currently the driver disables L0s for
+> this NIC but only disables L1 if the MTU is >1500. This patch simply
+> causes L1 to be disabled regardless of the MTU setting.
+>
+> Signed-off-by: Chris Boot <bootc@bootc.net>
+> Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
+> Cc: Nix <nix@esperi.org.uk>
+> Link: https://lkml.org/lkml/2012/3/19/362
+> ---
+>  drivers/net/ethernet/intel/e1000e/82571.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
+> index b3fdc69..c6d95f2 100644
+> --- a/drivers/net/ethernet/intel/e1000e/82571.c
+> +++ b/drivers/net/ethernet/intel/e1000e/82571.c
+> @@ -2061,8 +2061,9 @@ const struct e1000_info e1000_82574_info = {
+>  				  | FLAG_HAS_SMART_POWER_DOWN
+>  				  | FLAG_HAS_AMT
+>  				  | FLAG_HAS_CTRLEXT_ON_LOAD,
+> -	.flags2			  = FLAG2_CHECK_PHY_HANG
+> +	.flags2			= FLAG2_CHECK_PHY_HANG
+>  				  | FLAG2_DISABLE_ASPM_L0S
+> +				  | FLAG2_DISABLE_ASPM_L1
+>  				  | FLAG2_NO_DISABLE_RX,
+>  	.pba			= 32,
+>  	.max_hw_frame_size	= DEFAULT_JUMBO,
 
-This patch removes the redundant capability checks corresponding to the
-Link 2's and Slot 2's, Capabilities, Status, and Control registers as they
-will be present if Device Capabilities 2's registers are (which explains
-why the macros for each of the three are identical).
+Now that this patch is in master (d4a4206e) and has presumably been
+widely tested, what's the possibility of it making it into stable? I
+really should have included a CC to stable when I sent it...
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
+This patch should probably also be accompanied with 59aed952 (e1000e:
+Remove special case for 82573/82574 ASPM L1 disablement) on top, to
+remove a special case that's no longer required once this is applied.
 
- drivers/pci/pci.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
+Thanks,
+Chris
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 26933ff..f9f8036 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -903,12 +903,11 @@ static int pci_save_pcie_state(struct pci_dev *dev)
- 		pci_read_config_word(dev, pos + PCI_EXP_SLTCTL, &cap[i++]);
- 	if (pcie_cap_has_rtctl(dev->pcie_type, flags))
- 		pci_read_config_word(dev, pos + PCI_EXP_RTCTL, &cap[i++]);
--	if (pcie_cap_has_devctl2(dev->pcie_type, flags))
-+	if (pcie_cap_has_devctl2(dev->pcie_type, flags)) {
- 		pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2, &cap[i++]);
--	if (pcie_cap_has_lnkctl2(dev->pcie_type, flags))
- 		pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2, &cap[i++]);
--	if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
- 		pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2, &cap[i++]);
-+	}
- 
- 	return 0;
- }
-@@ -936,12 +935,11 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
- 		pci_write_config_word(dev, pos + PCI_EXP_SLTCTL, cap[i++]);
- 	if (pcie_cap_has_rtctl(dev->pcie_type, flags))
- 		pci_write_config_word(dev, pos + PCI_EXP_RTCTL, cap[i++]);
--	if (pcie_cap_has_devctl2(dev->pcie_type, flags))
-+	if (pcie_cap_has_devctl2(dev->pcie_type, flags)) {
- 		pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, cap[i++]);
--	if (pcie_cap_has_lnkctl2(dev->pcie_type, flags))
- 		pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
--	if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
- 		pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
-+	}
- }
- 
- 
+-- 
+Chris Boot
+bootc@bootc.net
 
