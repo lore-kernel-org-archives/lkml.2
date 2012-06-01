@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758381Ab2FAUxI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 16:53:08 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41150 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab2FAUxG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 16:53:06 -0400
-Date: Fri, 1 Jun 2012 21:56:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] tty: add lockdep annotations
-Message-ID: <20120601215620.305155c0@pyramind.ukuu.org.uk>
-In-Reply-To: <1338583498.2760.1648.camel@edumazet-glaptop>
-References: <4FC6189B.9080909@fusionio.com>
-	<1338402812.2760.413.camel@edumazet-glaptop>
-	<4FC66D3D.6080509@fusionio.com>
-	<1338404902.2760.451.camel@edumazet-glaptop>
-	<1338410107.2760.544.camel@edumazet-glaptop>
-	<1338456918.2760.1318.camel@edumazet-glaptop>
-	<1338574627.2760.1545.camel@edumazet-glaptop>
-	<CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
-	<1338583498.2760.1648.camel@edumazet-glaptop>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758434Ab2FAUzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 16:55:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14672 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757881Ab2FAUzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 16:55:46 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+        jlbec@evilplan.org, bcrl@kvack.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, joe.jin@oracle.com
+Subject: Re: [PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+References: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com>
+	<x49k3zscuk2.fsf@segfault.boston.devel.redhat.com>
+	<4FC81DE0.5080403@oracle.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 01 Jun 2012 16:55:31 -0400
+In-Reply-To: <4FC81DE0.5080403@oracle.com> (Junxiao Bi's message of "Fri, 01
+	Jun 2012 09:41:52 +0800")
+Message-ID: <x49r4ty69bw.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes, tty->driver deref is ok (tty points to valid memory), but crash is
-> on tty->driver->ops (driver points to freed/illegal memory)
-> 
-> using slub_debug=FZPU, I can indeed see RDI=6b6b6b6b6b6b6b6b
+Junxiao Bi <junxiao.bi@oracle.com> writes:
 
-driver and driver->ops is basically const and it's not what you'd expect
-from a tty refcount bug. The driver side puts shouldn't have changed but
-I'll take a look over that patch and the error paths closely again just
-in case.
+> On 05/31/2012 10:08 PM, Jeff Moyer wrote:
+>> Junxiao Bi <junxiao.bi@oracle.com> writes:
+>>
+>>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+>>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+>>> io flag is involved in it to serialize the unaligned aio. As
+>>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
+>>> this unaligned io flag may be unexpectly set in an aligned dio.
+>>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+>>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+>>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_write_iter().
+>>> We can't initialized this flag in ocfs2_file_write_iter() since
+>>> it may be invoked several times by do_sync_write(). So we initialize
+>>> it in init_sync_kiocb(), it's also useful for other similiar use of
+>>> it in the future.
+>> I don't see any ocfs2_file_write_iter in the upstream kernel.
+>> ocfs2_file_aio_write most certainly could set ->private to 0, it
+>> will only be called once for a given kiocb.
+> From sys_io_submit->..->io_submit_one->aio_run_iocb->aio_rw_vect_retry, 
+> it seems that aio_write could be called two times. See the following
+> scenario.
+> 1. There is a file opened with direct io flag, in aio_rw_vect_retry,
+> aio_write is called first time. If the direct io can
+> not be completed, it will fall back into buffer io, see line 2329 in
+> aio_write.
 
-It could be that tty->driver is pointing at a valid but bogus location
-but again its not something I'd expect.
+Huh?  What's line 2329 in aio_write?
 
-> By the way, release_one_tty() uses the following racy code :
-> 
-> tty_driver_kref_put(driver);
-> module_put(driver->owner);
-> 
-> I would use following patch to make sure bad things cant happen...
+> 2. If the very buffer io is a partial write, then it will return back
+> to  aio_rw_vect_retry and issue the second aio_write.
 
-Agreed. Although we wouldn't be unloading console or pty so it's alas not
-the real cause.
+For the generic case, the fallback to buffered I/O happens in
+__generic_file_aio_write, without bouncing all the way back up the call
+stack to aio_rw_vect_retry.  I see in ocfs2, things are a bit different:
 
+retry->aio_rw_vect_retry->ocfs2_file_aio_write->generic_file_direct_write
+  ->ocfs2_direct_IO->__blockdev_direct_IO
 
-Alan
+That last function can return 0 if not all of the data was written via
+direct I/O.  At that point, you return all of the way up the chain to
+aio_rw_vect_retry, which checks the return value (ret).  If it was 0,
+then it goes ahead and retries the complete I/O.  How does that make any
+progress?!
+
+Cheers,
+Jeff
