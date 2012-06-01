@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965979Ab2FAW4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:56:10 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:45356 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965958Ab2FAW4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:56:08 -0400
-Date: Fri, 1 Jun 2012 17:56:03 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rja@americas.sgi.com
-Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on multi-processor systems
-Message-ID: <20120601225603.GD24318@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20120524144229.GA27713@sgi.com> <20120529175352.GA31524@redhat.com> <20120529191935.GB29726@sgi.com> <20120529223923.GF32472@redhat.com> <20120529231135.GD4592@sgi.com> <20120529235407.GH32472@redhat.com>
-Mime-Version: 1.0
+	id S965993Ab2FAW7g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 18:59:36 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51857 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965935Ab2FAW7e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 18:59:34 -0400
+Date: Sat, 2 Jun 2012 01:00:01 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Chen, Gong" <gong.chen@intel.com>
+Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Message-ID: <20120601230001.GE30418@aftab.osrc.amd.com>
+References: <20120531171337.GN14515@aftab.osrc.amd.com>
+ <1338492772.13348.388.camel@gandalf.stny.rr.com>
+ <20120531194207.GC16998@aftab.osrc.amd.com>
+ <1338495092.13348.419.camel@gandalf.stny.rr.com>
+ <20120531201824.GD16998@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6DE2@ORSMSX104.amr.corp.intel.com>
+ <20120601091026.GC20959@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F71DB@ORSMSX104.amr.corp.intel.com>
+ <20120601160050.GE28216@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F74E1@ORSMSX104.amr.corp.intel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120529235407.GH32472@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F74E1@ORSMSX104.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 07:54:07PM -0400, Don Zickus wrote:
-> On Tue, May 29, 2012 at 06:11:35PM -0500, Russ Anderson wrote:
-> > > > In this case, I am just using the hardware NMI, which sends the NMI
-> > > > signal to each logical cpu.  Since each cpu receives the NMI at nearly
-> > > > the exact same time, they end up in dump_stack() at the same time.
-> > > > Without some form of locking, trace lines from different cpus end
-> > > > up intermixed, making it impossible to tell what any individual 
-> > > > cpu was doing.
-> > > 
-> > > I forgot the original reasons for having the NMI go to each CPU instead of
-> > > just the boot CPU (commit 78c06176), but it seems like if you revert that
-> > > patch and have the nmi handler just call trigger_all_cpu_backtrace()
-> > > instead (which does stack trace locking for pretty output), that would
-> > > solve your problem, no?  That locking is safe because it is only called in
-> > > the NMI context.
-> > 
-> > We want NMI to hit all the cpus at the same time to get a coherent
-> > snapshot of what is happening in the system at one point in time.
-> > Sending an IPI one cpu at a time skews the results, and doesn't 
-> 
-> Oh, I thought it was broadcasting, but I see the apic_uv code serializes
-> it.  Though getting all those hardware locks in the nmi handler has to be
-> time consuming?  But I know you guys did some tricks to speed that up.
-> 
-> > really solve the problem of multiple cpus going into dump_stack()
-> > at the same time.  NMI isn't the only possible caller of dump_stack().
-> 
-> I am curious, your NMI handler has locking wrapped around dump_stack,
-> shouldn't that serialize the output the way you want it?  Why isn't that
-> working?
+On Fri, Jun 01, 2012 at 06:21:29PM +0000, Luck, Tony wrote:
+> But we need to make sure that user space can actually run. That's the
+> motivation behind the CMCI disable patches. Since Intel broadcasts
+> CMCI to all cpus on a socket - a CMCI storm on a single socket machine
+> will stop any user code from running.
 
-Yes, you're right, it does.  It is working.  I'd forgotten that 
-the community kernel has uv_nmi_lock in uv_handle_nmi.  Must 
-be working too much with distro kernels.  :-)  But that doesn't
-help for all the other code paths than call dump_stack.
+Uuh, that doesn't sound good. Can't you guys make the CMCI run on one
+CPU only? I mean, it is a single CECC, no need to stop all cores on the
+socket for it, right?
 
+Arguably, it'll be best if the core that sees the CECC fires the CMCI
+too and the others continue on their merry way.
 
-> > FWIW, "Wait for up to 10 seconds for all CPUs to do the backtrace" on
-> > a 4096 cpu system isn't long enough.  :-)
+> I'd make one small change to what you said:
 > 
-> Good point. :-)
+> The kernel's job is to report enough error information that user space
+> can make an accurate assessment of the source of the error.
 > 
-> > 
-> > > Whereas the lock you are proposing can be called in a mixture of NMI and
-> > > IRQ which could cause deadlocks I believe.
-> > 
-> > Since this is a lock just around the dump_stack printk, would 
-> > checking for forward progress and a timeout to catch any possible
-> > deadlock be sufficient?  In the unlikely case of a deadlock the
-> > lock gets broken and some of the cpu backtraces get intermixed.
-> > That is still a huge improvement over the current case where 
-> > all of the backtraces get intermixed.
-> 
-> I saw your new patch based on Frederick's input.  It seems to take care of
-> deadlock situations though you run into the starving lock problem that
-> ticketed spinlocks solved.  Which is why I am curious why moving the
-> locking one layer up to the NMI handler (which is where it is currently),
-> didn't fix your problem.
+> I.e. "enough" is less than "as many errors as it possibly can".
 
-Locking in dump_stack would remove the need for uv_nmi_lock.
+Ok, I see what you mean.
 
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
