@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965705Ab2FASvf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:51:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44487 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932805Ab2FASve (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:51:34 -0400
+	id S965714Ab2FASyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:54:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932805Ab2FASya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 14:54:30 -0400
+Date: Fri, 1 Jun 2012 20:52:37 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Anton Arapov <anton@redhat.com>
+Subject: Re: [RESEND PATCH 1/3] uprobes: Remove redundant
+	lock_page/unlock_page
+Message-ID: <20120601185237.GC31771@redhat.com>
+References: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com> <1338465518.28384.55.camel@twins> <20120531150756.GC24279@linux.vnet.ibm.com> <1338483372.28384.65.camel@twins> <20120601091950.GF24279@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1338574627.2760.1545.camel@edumazet-glaptop>
-References: <4FC6189B.9080909@fusionio.com> <1338402812.2760.413.camel@edumazet-glaptop>
- <4FC66D3D.6080509@fusionio.com> <1338404902.2760.451.camel@edumazet-glaptop>
- <1338410107.2760.544.camel@edumazet-glaptop> <1338456918.2760.1318.camel@edumazet-glaptop>
- <1338574627.2760.1545.camel@edumazet-glaptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 1 Jun 2012 11:51:13 -0700
-X-Google-Sender-Auth: BWcKaI3rkgwmS11rZhnN1hRBon8
-Message-ID: <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
-Subject: Re: [PATCH] tty: add lockdep annotations
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601091950.GF24279@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 11:17 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On 06/01, Srikar Dronamraju wrote:
 >
-> About 10% of boots on my machine, and this looks like (hand written)
+> @@ -315,12 +315,10 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
+>  	if (ret <= 0)
+>  		return ret;
 >
-> general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-> ...
-> RIP : tty_shutdown+0x15/)x70
+> -	lock_page(page);
+>  	vaddr_new = kmap_atomic(page);
+>  	vaddr &= ~PAGE_MASK;
+>  	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
+>  	kunmap_atomic(vaddr_new);
+> -	unlock_page(page);
 
-Ok, DEBUG_PAGEALLOC and with that offset fairly early in tty_shutdown,
-it's almost certainly one of the accesses in the
+Great, this lock_page() was really confusing.
 
-  tty->driver->ops->remove
+Oleg.
 
-chain when it does the (inlined)
-
-    tty_driver_remove_tty(tty->driver, tty);
-
-you could check which one it is at that offset 0x15, but I think both
-the ops and the driver structures should be statically allocated, so I
-suspect it's the "tty" itself that is already freed.
-
-Odd. But yes, smells very much like a refcount issue, probably due to
-broken locking. Does the problem go away if you revert commits
-d29f3ef39be4 ("tty_lock: Localise the lock") and 3af502b96649
-("tty_lock: undo the old tty_lock use on the ctty")?
-
-                  Linus
