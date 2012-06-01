@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760150Ab2FARWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:22:21 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:37332 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760122Ab2FARWS (ORCPT
+	id S1760162Ab2FARaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:30:14 -0400
+Received: from zose-mta15.web4all.fr ([176.31.217.11]:51049 "EHLO
+	zose-mta15.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759275Ab2FARaM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:22:18 -0400
-Message-ID: <4FC8FA47.70001@gmail.com>
-Date: Fri, 01 Jun 2012 13:22:15 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 1 Jun 2012 13:30:12 -0400
+X-Greylist: delayed 455 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jun 2012 13:30:12 EDT
+Date: Fri, 1 Jun 2012 19:26:51 +0200 (CEST)
+From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>
+To: Pawel Moll <pawel.moll@arm.com>, Rusty Russell <rusty@rustcorp.com.au>
+Cc: benoit thebaudeau <benoit.thebaudeau@advansee.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com>
+In-Reply-To: <1002174455.1843950.1338570468781.JavaMail.root@advansee.com>
+Subject: init: multi param parsing regression since 3.4
 MIME-Version: 1.0
-To: Nathan Zimmer <nzimmer@sgi.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, hughd@google.com,
-        npiggin@gmail.com, cl@linux.com, lee.schermerhorn@hp.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        stable@vger.kernel.org, riel@redhat.com
-Subject: Re: [PATCH v2] tmpfs not interleaving properly
-References: <20120531143916.GA16162@gulag1.americas.sgi.com> <4FC7CFEB.5040009@gmail.com> <20120531132515.6af60152.akpm@linux-foundation.org> <4FC7D629.3090801@gmail.com> <20120601142437.GA13739@gulag1.americas.sgi.com>
-In-Reply-To: <20120601142437.GA13739@gulag1.americas.sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [88.188.188.98]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(6/1/12 10:24 AM), Nathan Zimmer wrote:
-> On Thu, May 31, 2012 at 04:35:53PM -0400, KOSAKI Motohiro wrote:
->> (5/31/12 4:25 PM), Andrew Morton wrote:
->>> On Thu, 31 May 2012 16:09:15 -0400
->>> KOSAKI Motohiro<kosaki.motohiro@gmail.com>   wrote:
->>>
->>>>> --- a/mm/shmem.c
->>>>> +++ b/mm/shmem.c
->>>>> @@ -929,7 +929,7 @@ static struct page *shmem_alloc_page(gfp_t gfp,
->>>>>     	/*
->>>>>     	 * alloc_page_vma() will drop the shared policy reference
->>>>>     	 */
->>>>> -	return alloc_page_vma(gfp,&pvma, 0);
->>>>> +	return alloc_page_vma(gfp,&pvma, info->node_offset<<    PAGE_SHIFT );
->>>>
->>>> 3rd argument of alloc_page_vma() is an address. This is type error.
->>>
->>> Well, it's an unsigned long...
->>>
->>> But yes, it is conceptually wrong and *looks* weird.  I think we can
->>> address that by overcoming our peculair aversion to documenting our
->>> code, sigh.  This?
->>
->> Sorry, no.
->>
->> addr agrument of alloc_pages_vma() have two meanings.
->>
->> 1) interleave node seed
->> 2) look-up key of shmem policy
->>
->> I think this patch break (2). shmem_get_policy(pol, addr) assume caller honor to
->> pass correct address.
->
-> But the pseudo vma we generated in shmem_alloc_page the vm_ops are set to NULL.
-> So get_vma_policy will return the policy provided by the pseudo vma and not reach
-> the shmem_get_policy.
+Hi Pawel, Rusty, all,
 
-yes, and it is bug source. we may need to change soon. I guess the right way is
-to make vm_ops->interleave and interleave_nid uses it if povided.
+Since linux 3.4 (OK with 3.3.6), I get the following regression for UBI (built
+in kernel):
+[    1.327228] UBI: attaching mtd4 to ubi0
+[    1.331082] UBI: physical eraseblock size:   131072 bytes (128 KiB)
+[    1.337388] UBI: logical eraseblock size:    129024 bytes
+[    1.342794] UBI: smallest flash I/O unit:    2048
+[    1.347518] UBI: sub-page size:              512
+[    1.352144] UBI: VID header offset:          512 (aligned 512)
+[    1.357996] UBI: data offset:                2048
+[    1.538686] UBI: max. sequence number:       456
+[    1.551271] UBI: attached mtd4 to ubi0
+[    1.555085] UBI: MTD device name:            "rootfs"
+[    1.560147] UBI: MTD device size:            123 MiB
+[    1.565133] UBI: number of good PEBs:        980
+[    1.569757] UBI: number of bad PEBs:         4
+[    1.574206] UBI: number of corrupted PEBs:   0
+[    1.578669] UBI: max. allowed volumes:       128
+[    1.583293] UBI: wear-leveling threshold:    4096
+[    1.588015] UBI: number of internal volumes: 1
+[    1.592465] UBI: number of user volumes:     1
+[    1.596927] UBI: available PEBs:             0
+[    1.601377] UBI: total number of reserved PEBs: 980
+[    1.606273] UBI: number of PEBs reserved for bad PEB handling: 9
+[    1.612288] UBI: max/mean erase counter: 3/1
+[    1.616576] UBI: image sequence number:  1970526931
+[    1.621483] UBI: background thread "ubi_bgt0d" started, PID 32
+[    1.627362] UBI error: ubi_init: cannot attach mtd4
 
-btw, I don't think node_random() is good idea. it is random(pid + jiffies + cycle).
-current->cpuset_mem_spread_rotor is per-thread value. but you now need per-inode
-interleave offset. maybe, just inode addition is enough. Why do you need randomness?
+After some debugging, I found that this is caused by "ubi.mtd=rootfs" in my
+kernel command line being parsed twice while appearing once in this line.
 
+The root cause is "parse_args(initcall_level_names[level], ..." that you added
+to init/main.c in commit #026cee0086fe1df4cf74691cf273062cc769617d, because
+level 0 is shared by "Booting kernel" and "early parameters".
 
+This may also cause issues for other modules.
+
+Should "parse_args("Booting kernel", ..." have been removed with your commit?
+
+OR
+
+Should do_initcall_level() call parse_args() starting at level 1?
+
+OR
+
+Should the UBI module register to another level?
+
+OR
+
+It doesn't matter and it's up to the modules to be robust to multi param
+parsing?
+
+Regards,
+Benoît (Please keep me Cc'ed)
