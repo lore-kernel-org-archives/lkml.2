@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2FALcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 07:32:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54506 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132Ab2FALca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 07:32:30 -0400
-Message-ID: <1338550337.17012.27.camel@cr0>
-Subject: Re: [RFC Patch] fs: implement per-file drop caches
-From: Cong Wang <amwang@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        linux-kernel@vger.kernel.org,
+	id S1758422Ab2FALhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 07:37:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21677 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab2FALhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 07:37:10 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=A73EdQgzBtYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=7LbZ8pxXUWzXXegPjNQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338550627.13348.462.camel@gandalf.stny.rr.com>
+Subject: Re: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
+ breakpoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Fri, 01 Jun 2012 19:32:17 +0800
-In-Reply-To: <4FC7C1CD.7020701@gmail.com>
-References: <1338385120-14519-1-git-send-email-amwang@redhat.com>
-	   <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>
-	  <4FC70FFE.50809@gmail.com> <1338466281.19369.44.camel@cr0>
-	 <4FC7C1CD.7020701@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, acme <acme@ghostprotocols.net>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Fri, 01 Jun 2012 07:37:07 -0400
+In-Reply-To: <4FC84AC8.3020601@hitachi.com>
+References: <20120531012829.160060586@goodmis.org>
+	  <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>
+	  <1338473302.13348.336.camel@gandalf.stny.rr.com>
+	  <1338486029.28384.93.camel@twins>
+	  <1338486820.13348.366.camel@gandalf.stny.rr.com>
+	  <1338487413.28384.103.camel@twins>
+	  <1338490218.13348.379.camel@gandalf.stny.rr.com>
+	  <1338491176.28384.114.camel@twins> <20120531195529.GA22976@Krystal>
+	  <1338495006.13348.418.camel@gandalf.stny.rr.com>
+	  <1338495969.28384.119.camel@twins>
+	  <1338496676.13348.430.camel@gandalf.stny.rr.com>
+	  <1338496857.28384.124.camel@twins>
+	 <1338497360.13348.438.camel@gandalf.stny.rr.com>
+	 <4FC84AC8.3020601@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 15:09 -0400, KOSAKI Motohiro wrote:
-> (5/31/12 8:11 AM), Cong Wang wrote:
-> > On Thu, 2012-05-31 at 02:30 -0400, KOSAKI Motohiro wrote:
-> >> (5/31/12 2:20 AM), Cong Wang wrote:
-> >>> On Wed, 2012-05-30 at 16:14 +0100, Pádraig Brady wrote:
-> >>>> On 05/30/2012 02:38 PM, Cong Wang wrote:
-> >>>>> This is a draft patch of implementing per-file drop caches.
-> >>>>>
-> >>>>> It introduces a new fcntl command  F_DROP_CACHES to drop
-> >>>>> file caches of a specific file. The reason is that currently
-> >>>>> we only have a system-wide drop caches interface, it could
-> >>>>> cause system-wide performance down if we drop all page caches
-> >>>>> when we actually want to drop the caches of some huge file.
-> >>>>
-> >>>> This is useful functionality.
-> >>>> Though isn't it already provided with POSIX_FADV_DONTNEED?
-> >>>
-> >>> Thanks for teaching this!
-> >>>
-> >>> However, from the source code of madvise_dontneed() it looks like it is
-> >>> using a totally different way to drop page caches, that is to invalidate
-> >>> the page mapping, and trigger a re-mapping of the file pages after a
-> >>> page fault. So, yeah, this could probably drop the page caches too (I am
-> >>> not so sure, haven't checked the code in details), but with my patch, it
-> >>> flushes the page caches directly, what's more, it can also prune
-> >>> dcache/icache of the file.
-> >>
-> >> madvise should work. I don't think we need duplicate interface. Moreomover
-> >> madvise(2) is cleaner than fcntl(2).
-> >>
-> >
-> > I think madvise(DONTNEED) attacks the problem in a different approach,
-> > it munmaps the file mapping and by the way drops the page caches, my
-> > approach is to drop the page caches directly similar to what sysctl
-> > drop_caches.
-> >
-> > What about private file mapping? Could madvise(DONTNEED) drop the page
-> > caches too even when the other process is doing the same private file
-> > mapping? At least my patch could do this.
-> 
-> Right. But a process can makes another mappings if a process have enough
-> permission. and if it doesn't, a process shouldn't be able to drop a shared
-> cache.
+On Fri, 2012-06-01 at 13:53 +0900, Masami Hiramatsu wrote:
+
+> Hmm, why don't we have two text_poke interfaces for single and
+> batch? As like dyn_ftrace, since modifying massive points takes
+> a lot time, so we may have additional kconfig something like
+> CONFIG_QUICK_BATCH_TEXT_POKE which switches text area to rw while
+> batch text_poke.
 > 
 
-Ok, then this patch is not a dup of madvise(DONTNEED).
+I'll be working on patches to consolidate the two after I get everything
+else working :-)  I still need to work on the ftrace kprobe stuff too.
 
-> 
-> > I am not sure if fcntl() is a good interface either, this is why the
-> > patch is marked as RFC. :-D
-> 
-> But, if you can find certain usecase, I'm not against anymore.
-> 
+I hate having a config option to switch between the two, except for
+something that can be there if we find the new approach is buggy (like
+we have with lockdep). That may be a solution for this if we don't agree
+on one now. That is, bring back stop_machine() when LOCKDEP is enabled.
+But that should only be a temporary work around not a true fix.
 
-Yeah, at least John Stoffel expressed his interests on this, as a
-sysadmin. So I believe there are some people need it.
+I have no problem with having most of the modifying code be shared
+between text_poke and ftrace. I guess the question is, do we want to do
+it only with the FIXMAP or do we want text_poke and ftrace to use the rw
+method for large batches. Heck, we can set a limit. If we are going to
+update more that 100 locations, we switch the kernel to rw, otherwise we
+do the FIXMAP update.
 
-Now the problem is that I don't find a proper existing utility to patch,
-maybe Pádraig has any hints on this? Could this feature be merged into
-some core utility? Or I have to write a new utility for this?
+-- Steve
 
-Thanks.
 
