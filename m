@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965556Ab2FAQxH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:53:07 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50723 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965469Ab2FAQxD (ORCPT
+	id S965570Ab2FAQx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:53:26 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:56573 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965518Ab2FAQxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:53:03 -0400
-Message-ID: <4FC8F36C.8080409@kernel.org>
-Date: Fri, 01 Jun 2012 12:53:00 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Fri, 1 Jun 2012 12:53:24 -0400
+Date: Fri, 1 Jun 2012 18:53:22 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nikunj@linux.vnet.ibm.com, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot
+	secondary processors
+Message-ID: <20120601165322.GB18870@merkur.ravnborg.org>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com>
 MIME-Version: 1.0
-To: Feng Tang <feng.tang@intel.com>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        rui.zhang@intel.com, fazerxlo@o2.pl, x86@kernel.org
-Subject: Re: [PATCH] ACPI: Fix the irq0 assigning issue for AMILO PRO V2030
- platform
-References: <1338259418-6167-1-git-send-email-feng.tang@intel.com>
-In-Reply-To: <1338259418-6167-1-git-send-email-feng.tang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Tang-Feng,
-
-This looks good, but especially w/ interrupt patches,
-it is important to take logically independent baby steps.
-So please break this patch into two, and add another small bit
-in a 3 patch series:
-
-1. allow the workaround to apply to non global_irq 2
-2. delete the WARN from dmi_ignore_irq0_timer_override
-	as it causes alarm, but gives no benefit
-3. add the DMI to invoke the workaround for this platform
-
-thanks,
--Len Brown, Intel Open Source Technology Center
-
-On 05/28/2012 10:43 PM, Feng Tang wrote:
-
-> This is to fix the kernel bugzilla 40002: "IRQ 0 assigned to VGA"
->  https://bugzilla.kernel.org/show_bug.cgi?id=40002
-> 
-> The root cause is the buggy FW, whose ACPI tables assign the GSI 16
-> to 2 irqs 0 and 16(VGA), and the VGA is the right owner of GSI 16.
-> So add a quirk to ignore the irq0 overriding GSI 16 for the
-> FUJITSU SIEMENS AMILO PRO V2030 platform will solve this issue.
-> 
-> This also slightly modify the current irq0 override handling, as it
-> only covered the irq0 overriding GSI 2 case.
-> 
-> Reported-and-tested-by: Szymon Kowalczyk <fazerxlo@o2.pl>
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> Cc: x86@kernel.org
-> ---
->  arch/x86/kernel/acpi/boot.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index 4558f0d..06c78c3 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -416,12 +416,14 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
->  		return 0;
->  	}
->  
-> -	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
-> +	if (intsrc->source_irq == 0) {
->  		if (acpi_skip_timer_override) {
-> -			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
-> +			printk(PREFIX "BIOS IRQ0 override ignored.\n");
->  			return 0;
->  		}
-> -		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
 > +
-> +		if ((intsrc->global_irq == 2) && acpi_fix_pin2_polarity
-> +			&& (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
->  			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
->  			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
->  		}
-> @@ -1466,6 +1468,15 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
->  		     DMI_MATCH(DMI_PRODUCT_NAME, "HP Compaq 6715b"),
->  		     },
->  	 },
-> +	{
-> +	 .callback = dmi_ignore_irq0_timer_override,
-> +	 .ident = "FUJITSU SIEMENS",
-> +	 .matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "AMILO PRO V2030"),
-> +		     },
-> +	 },
 > +
->  	{}
->  };
->  
+> +/* Implement the following functions in your architecture, as appropriate. */
+> +
+> +/**
+> + * __cpu_pre_starting()
+> + *
+> + * Implement whatever you need to do before the CPU_STARTING notifiers are
+> + * invoked. Note that the CPU_STARTING callbacks run *on* the cpu that is
+> + * coming up. So that cpu better be prepared! IOW, implement all the early
+> + * boot/init code for the cpu here. And do NOT enable interrupts.
+> + */
+> +#ifndef __cpu_pre_starting
+> +void __weak __cpu_pre_starting(void *arg) {}
+> +#endif
 
+I miss the prototype for this in a header?
+And the comment maybe belong in the header - not in the implementation?
 
+	Sam
