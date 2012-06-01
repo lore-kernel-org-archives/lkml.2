@@ -1,73 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759553Ab2FAWQv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:16:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59490 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab2FAWQu (ORCPT
+	id S965810Ab2FAWQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 18:16:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54304 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965782Ab2FAWQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:16:50 -0400
+	Fri, 1 Jun 2012 18:16:57 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 06/15] perf tools: Make --version show kernel version instead of pull req tag
-Date: Fri,  1 Jun 2012 19:16:30 -0300
-Message-Id: <1338588999-32509-7-git-send-email-acme@infradead.org>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/15] perf symbols: Handle different endians properly during symbol load
+Date: Fri,  1 Jun 2012 19:16:33 -0300
+Message-Id: <1338588999-32509-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1338588999-32509-1-git-send-email-acme@infradead.org>
 References: <1338588999-32509-1-git-send-email-acme@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Before:
+Currently we dont care about the file object's endianness. It's possible
+we read buildid file object from different architecture than we are
+currentlly running on. So we need to care about properly reading such
+object's data - handle different endianness properly.
 
-  $ perf --version
-  perf version perf.urgent.for.mingo.5.g37da28
+Adding:
+	needs_swap DSO field
+	dso__swap_init function to initialize DSO's needs_swap
+	DSO__SWAP to read the data with proper swaps
 
-After:
+Together with other endianity patches, this change fixies perf report
+discrepancies on origin and target systems as described in test 1 below,
+e.g. following perf report diff:
 
-  $ perf --version
-  perf version 3.4.8941.g37da28.dirty
+...
+      0.12%               ps  [kernel.kallsyms]    [k] clear_page
+-     0.12%              awk  bash                 [.] alloc_word_desc
++     0.12%              awk  bash                 [.] yyparse
+      0.11%   beah-rhts-task  libpython2.6.so.1.0  [.] 0x5560e
+      0.10%             perf  libc-2.12.so         [.] __ctype_toupper_loc
+-     0.09%  rhts-test-runne  bash                 [.] maybe_make_export_env
++     0.09%  rhts-test-runne  bash                 [.] 0x385a0
+      0.09%               ps  [kernel.kallsyms]    [k] page_fault
+...
 
+Note, running following to test perf endianity handling:
+test 1)
+  - origin system:
+    # perf record -a -- sleep 10 (any perf record will do)
+    # perf report > report.origin
+    # perf archive perf.data
+
+  - copy the perf.data, report.origin and perf.data.tar.bz2
+    to a target system and run:
+    # tar xjvf perf.data.tar.bz2 -C ~/.debug
+    # perf report > report.target
+    # diff -u report.origin report.target
+
+  - the diff should produce no output
+    (besides some white space stuff and possibly different
+     date/TZ output)
+
+test 1)
+  - origin system:
+    # perf record -ag -fo /tmp/perf.data -- sleep 1
+  - mount origin system root to the target system on /mnt/origin
+  - target system:
+    # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
+     --kallsyms /mnt/origin/proc/kallsyms
+  - complete perf.data header is displayed
+
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-vc9b4e6023iegz9kabr3yvyv@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338380624-7443-2-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/PERF-VERSION-GEN |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
+ tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 62 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-index ad73300..95264f3 100755
---- a/tools/perf/util/PERF-VERSION-GEN
-+++ b/tools/perf/util/PERF-VERSION-GEN
-@@ -12,7 +12,7 @@ LF='
- # First check if there is a .git to get the version from git describe
- # otherwise try to get the version from the kernel makefile
- if test -d ../../.git -o -f ../../.git &&
--	VN=$(git describe --abbrev=4 HEAD 2>/dev/null) &&
-+	VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null) &&
- 	case "$VN" in
- 	*$LF*) (exit 1) ;;
- 	v[0-9]*)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index e2ba885..9d04dcd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
++		dso->needs_swap = DSO_SWAP__UNSET;
+ 		INIT_LIST_HEAD(&dso->node);
+ 	}
+ 
+@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
++static int dso__swap_init(struct dso *dso, unsigned char eidata)
++{
++	static unsigned int const endian = 1;
++
++	dso->needs_swap = DSO_SWAP__NO;
++
++	switch (eidata) {
++	case ELFDATA2LSB:
++		/* We are big endian, DSO is little endian. */
++		if (*(unsigned char const *)&endian != 1)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	case ELFDATA2MSB:
++		/* We are little endian, DSO is big endian. */
++		if (*(unsigned char const *)&endian != 0)
++			dso->needs_swap = DSO_SWAP__YES;
++		break;
++
++	default:
++		pr_err("unrecognized DSO data encoding %d\n", eidata);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
+ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
+ 			 int want_symtab)
+@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		goto out_elf_end;
+ 	}
+ 
++	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
++		goto out_elf_end;
++
+ 	/* Always reject images with a mismatched build-id: */
+ 	if (dso->has_build_id) {
+ 		u8 build_id[BUILD_ID_SIZE];
+@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
+ 		if (opdsec && sym.st_shndx == opdidx) {
+ 			u32 offset = sym.st_value - opdshdr.sh_addr;
+ 			u64 *opd = opddata->d_buf + offset;
+-			sym.st_value = *opd;
++			sym.st_value = DSO__SWAP(dso, u64, *opd);
+ 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
+ 		}
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 5649d63..af0752b 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -9,6 +9,7 @@
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
++#include <byteswap.h>
+ 
+ #ifdef HAVE_CPLUS_DEMANGLE
+ extern char *cplus_demangle(const char *, int);
+@@ -160,11 +161,18 @@ enum dso_kernel_type {
+ 	DSO_TYPE_GUEST_KERNEL
+ };
+ 
++enum dso_swap_type {
++	DSO_SWAP__UNSET,
++	DSO_SWAP__NO,
++	DSO_SWAP__YES,
++};
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_root	 symbols[MAP__NR_TYPES];
+ 	struct rb_root	 symbol_names[MAP__NR_TYPES];
+ 	enum dso_kernel_type	kernel;
++	enum dso_swap_type	needs_swap;
+ 	u8		 adjust_symbols:1;
+ 	u8		 has_build_id:1;
+ 	u8		 hit:1;
+@@ -182,6 +190,28 @@ struct dso {
+ 	char		 name[0];
+ };
+ 
++#define DSO__SWAP(dso, type, val)			\
++({							\
++	type ____r = val;				\
++	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
++	if (dso->needs_swap == DSO_SWAP__YES) {		\
++		switch (sizeof(____r)) {		\
++		case 2:					\
++			____r = bswap_16(val);		\
++			break;				\
++		case 4:					\
++			____r = bswap_32(val);		\
++			break;				\
++		case 8:					\
++			____r = bswap_64(val);		\
++			break;				\
++		default:				\
++			BUG_ON(1);			\
++		}					\
++	}						\
++	____r;						\
++})
++
+ struct dso *dso__new(const char *name);
+ void dso__delete(struct dso *dso);
+ 
 -- 
 1.7.1
 
