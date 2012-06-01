@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965711Ab2FATXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 15:23:36 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:48883
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753265Ab2FATXb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758107Ab2FATXb (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Jun 2012 15:23:31 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -15
-X-BigFish: VS-15(zz9371I542M1432N98dKzz1202hzzz2fh2a8h683h839h944hd25hf0ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>, Victor Miasnikov <vvm@tut.by>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the
- Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore
- detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE
- disks devices ( but not for the ...
-Thread-Topic: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the
- Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore
- detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE
- disks devices ( but not for the ...
-Thread-Index: AQHNQA/ykGE+y/YEIE6E+ePj3G2bhJblpN/xgAABmYCAAC978A==
-Date: Fri, 1 Jun 2012 19:23:00 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF90710C295@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <20120527010903.GA18244@kroah.com>
- <B4A84D892D5742FE83F71F788F6EAF48@local.st.by>
- <20120528203518.GA12623@kroah.com>
- <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by>
- <20120601092017.GE22821@kroah.com>
- <59CBCFF13ABD41B682835DD5E4851BC1@local.st.by>
- <20120601162629.GA11812@kroah.com>
-In-Reply-To: <20120601162629.GA11812@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.174.42]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43960 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753265Ab2FATX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 15:23:29 -0400
+Message-ID: <4FC916AC.4060804@wwwdotorg.org>
+Date: Fri, 01 Jun 2012 13:23:24 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT005.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%TUT.BY$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Laxman Dewangan <ldewangan@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Warren <swarren@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
+References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com>
+In-Reply-To: <4FBBDE06.5080806@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Friday, June 01, 2012 12:26 PM
-> To: Victor Miasnikov
-> Cc: stable@vger.kernel.org; Jonathan Nieder; linux-kernel@vger.kernel.org; KY
-> Srinivasan
-> Subject: Re: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the Hyper-
-> V drivers by default 2) db63a4c8115a libata: add a host flag to ignore detected
-> ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE disks devices
-> ( but not for the ...
+On 05/22/2012 12:42 PM, Laxman Dewangan wrote:
+> On Tuesday 22 May 2012 11:57 PM, Stephen Warren wrote:
+>> On 05/22/2012 11:56 AM, Laxman Dewangan wrote:
+>>> On Tuesday 22 May 2012 10:49 PM, Stephen Warren wrote:
+>>>> On 05/22/2012 11:09 AM, Laxman Dewangan wrote:
+>>>>> On Tuesday 22 May 2012 10:10 PM, Stephen Warren wrote:
+>>>>>> On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
+>>>>>>> Add device info for the PMIC device tps65911 in tegra-cardhu
+>>>>>>> dts file. This device supports the multiple regulator rails,
+>>>>>>> gpio, interrupts.
+>> ...
+>>>>>> Nitpicky, but the labels might be more logical as reg_vdd1 rather
+>>>>>> than
+>>>>>> vdd1_reg, but not a big deal.
+>>>>>>
+>>>>>> So, please replace the line above with:
+>>>>>>
+>>>>>>       reg_vdd1: regulator@0 {
+>>>>>>           reg =<0>;
+>>>>> Why do we really require the reg at all?
+>>>>> I dont think any usage of doing this.
+>> Oh, perhaps you meant the reg property not "reg_" in the label name?
+>>
+>> It is required because the parent node has #address-cells and
+>> #size-cells and because the node name itself has a unit address ("@nnn").
+>>
 > 
-> On Fri, Jun 01, 2012 at 07:17:33PM +0300, Victor Miasnikov wrote:
-> > Hi!
-> >
-> > >> cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default
-> > >>and its prerequisite
-> > >> db63a4c8115a libata: add a host flag to ignore detected ATA devices
-> >
-> > >Sorry, but I don't see how this meets the rules for the stable trees, do you?  If
-> so, please show me how.
-> >
-> > About "how"  -- ask K.Y. Srinivasan
-> >
-> > Hyper-V admins need _worked_ Linux v3.4.X / v3.3.X / v3.2.X
-> >
-> > Please, _fix_ errors related "use hv_storvsc instead of ata_piix to
-> > handle the IDE disks devices ( but not for the CD-ROM)"
+> But we can not put
+>     reg_vdd1:regulator@0 {
+>         ::::::::::::::
+>     }
 > 
-> Ok, I'll wait for KY to explain this.
+> 
+> due to their dt binding with their node names.
 
-Greg,
+I spoke to Olof about this on IRC, and he also tended to agree that the
+regulator node names should not be used directly.
 
-Clearly I cannot tell you anything about this that you don't know! Looking at the 
-rules for stable tree patches, this patch does not satisfy the requirement that
-the patch fix a bug since we are changing the behavior here of the ata driver to
-accommodate Hyper-V. I don't know how much flexibility you have here for
-taking patches that improve the general usability of Linux in different
-environments. All I can say is that It will be nice to have this patch in previous stable 
-releases.
+However, Mark warned that changing this would be a bit painful because
+there are already users of the existing scheme. It looks like that's
+only tps65910 (which we haven't started using yet), db8500, and ab8500,
+so probably not that big a deal.
 
-Regards,
+We could probably amend of_regulator_match() to work in a
+backwards-compatible fashion; to look for some name property in each
+child node first, and then fall back to using the node name if that
+resulted in no matches. That would allow db8500/ab8500 to be converted
+at leisure.
 
-K. Y
+We could either augment struct of_regulator_match with an integer ID
+field for each regulator (which would perhaps make it slightly painful
+to write the nodes and keep the IDs matched up), or add a new property
+to each regulator provider node e.g. regulator-id which contained the
+name that the regulator driver knows the regulator as (which would match
+struct of_regulator_match.name), since the existing regulator-name
+property is used for semantically different purposes.
 
+That would result in:
 
-
+> tps65911: tps65911@2d {
+> 	compatible = "ti,tps65911";
+> 	reg = <0x2d>;
+> 
+> 	#gpio-cells = <2>;
+> 	gpio-controller;
+> 
+> 	regulators {
+> 		#address-cells = <1>;
+> 		#size-cells = <0>;
+> 
+> 		vdd1_reg: regulator@0 {
+> 			reg = <0>;
+> 			regulator-id = "vdd1"; /* Internal name */
+> 			regulator-name = "vdd_1v2_gen"; /* Signal on schematic */
+...
+> 		};
+> 
+> 		vdd2_reg: regulator@1 {
+> 			reg = <1>;
+> 			regulator-id = "vdd2";
+> 			regulator-name = "vdd_1v5_gen";
+...
