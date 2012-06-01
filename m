@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab2FADwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 23:52:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47832 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758873Ab2FADwS (ORCPT
+	id S1758959Ab2FAD51 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 23:57:27 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:37764 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758546Ab2FAD50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 23:52:18 -0400
+	Thu, 31 May 2012 23:57:26 -0400
 From: <jgq516@gmail.com>
 To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
         <linux@arm.linux.org.uk>, <b-cousson@ti.com>, <rnayak@ti.com>,
@@ -14,9 +14,9 @@ To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
 CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, <linux-watchdog@vger.kernel.org>
-Subject: [PATCHv2 1/3] arm/dts: add wdt node for omap3 and omap4
-Date: Fri, 1 Jun 2012 12:44:14 +0800
-Message-ID: <1338525856-4359-2-git-send-email-jgq516@gmail.com>
+Subject: [PATCHv2 3/3] watchdog: omap_wdt: add device tree support
+Date: Fri, 1 Jun 2012 12:44:16 +0800
+Message-ID: <1338525856-4359-4-git-send-email-jgq516@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1338525856-4359-1-git-send-email-jgq516@gmail.com>
 References: <1338525856-4359-1-git-send-email-jgq516@gmail.com>
@@ -28,66 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xiao Jiang <jgq516@gmail.com>
 
-Add wdt node to support dt.
+Add device table for omap_wdt to support dt.
 
 Signed-off-by: Xiao Jiang <jgq516@gmail.com>
 ---
- .../devicetree/bindings/watchdog/omap-wdt.txt      |   14 ++++++++++++++
- arch/arm/boot/dts/omap3.dtsi                       |    5 +++++
- arch/arm/boot/dts/omap4.dtsi                       |    5 +++++
- 3 files changed, 24 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/watchdog/omap-wdt.txt
+ drivers/watchdog/omap_wdt.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/omap-wdt.txt b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
-new file mode 100644
-index 0000000..c227970
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/omap-wdt.txt
-@@ -0,0 +1,14 @@
-+TI Watchdog Timer (WDT) Controller for OMAP
-+
-+Required properties:
-+compatible:
-+- "ti,omap3-wdt" for OMAP3
-+- "ti,omap4-wdt" for OMAP4
-+- ti,hwmods: Name of the hwmod associated to the WDT
-+
-+Examples:
-+
-+wdt2: wdt@4a314000 {
-+	compatible = "ti,omap4-wdt", "ti,omap3-wdt";
-+	ti,hwmods = "wd_timer2";
+diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+index 8285d65..02ebfd5 100644
+--- a/drivers/watchdog/omap_wdt.c
++++ b/drivers/watchdog/omap_wdt.c
+@@ -430,6 +430,12 @@ static int omap_wdt_resume(struct platform_device *pdev)
+ #define	omap_wdt_resume		NULL
+ #endif
+ 
++static const struct of_device_id omap_wdt_of_match[] = {
++	{ .compatible = "ti,omap3-wdt", },
++	{},
 +};
-diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
-index 99474fa..8109471 100644
---- a/arch/arm/boot/dts/omap3.dtsi
-+++ b/arch/arm/boot/dts/omap3.dtsi
-@@ -215,5 +215,10 @@
- 			compatible = "ti,omap3-hsmmc";
- 			ti,hwmods = "mmc3";
- 		};
++MODULE_DEVICE_TABLE(of, omap_wdt_of_match);
 +
-+		wdt2: wdt@48314000 {
-+			compatible = "ti,omap3-wdt";
-+			ti,hwmods = "wd_timer2";
-+		};
- 	};
+ static struct platform_driver omap_wdt_driver = {
+ 	.probe		= omap_wdt_probe,
+ 	.remove		= __devexit_p(omap_wdt_remove),
+@@ -439,6 +445,7 @@ static struct platform_driver omap_wdt_driver = {
+ 	.driver		= {
+ 		.owner	= THIS_MODULE,
+ 		.name	= "omap_wdt",
++		.of_match_table = omap_wdt_of_match,
+ 	},
  };
-diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 359c497..3664641 100644
---- a/arch/arm/boot/dts/omap4.dtsi
-+++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -272,5 +272,10 @@
- 			ti,hwmods = "mmc5";
- 			ti,needs-special-reset;
- 		};
-+
-+		wdt2: wdt@4a314000 {
-+			compatible = "ti,omap4-wdt", "ti,omap3-wdt";
-+			ti,hwmods = "wd_timer2";
-+		};
- 	};
- };
+ 
 -- 
 1.7.3
 
