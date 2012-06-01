@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965709Ab2FASsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:48:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55641 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965617Ab2FASsG (ORCPT
+	id S965705Ab2FASvf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:51:35 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44487 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932805Ab2FASve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:48:06 -0400
-Date: Fri, 1 Jun 2012 11:48:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Vladimir =?UTF-8?Q?'=CF=86-coder/phcoder'?= Serbinenko" 
-	<phcoder@gmail.com>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: 71ca97da9d overrides user's kernel config
-Message-Id: <20120601114804.7bd6c2b9.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFyK_m8aO57gC4Q1PJXmY3e1-uRXQ3E6PRgdBVixJSa2gQ@mail.gmail.com>
-References: <CA+i8gKK5VJU_0YbBkeav6wTP+5YGp-rd52dTNqyoprz_YZrepA@mail.gmail.com>
-	<4FC8E00E.60600@gmail.com>
-	<CA+55aFyK_m8aO57gC4Q1PJXmY3e1-uRXQ3E6PRgdBVixJSa2gQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jun 2012 14:51:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338574627.2760.1545.camel@edumazet-glaptop>
+References: <4FC6189B.9080909@fusionio.com> <1338402812.2760.413.camel@edumazet-glaptop>
+ <4FC66D3D.6080509@fusionio.com> <1338404902.2760.451.camel@edumazet-glaptop>
+ <1338410107.2760.544.camel@edumazet-glaptop> <1338456918.2760.1318.camel@edumazet-glaptop>
+ <1338574627.2760.1545.camel@edumazet-glaptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Jun 2012 11:51:13 -0700
+X-Google-Sender-Auth: BWcKaI3rkgwmS11rZhnN1hRBon8
+Message-ID: <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+Subject: Re: [PATCH] tty: add lockdep annotations
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012 10:53:20 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Fri, Jun 1, 2012 at 11:17 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> About 10% of boots on my machine, and this looks like (hand written)
+>
+> general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> ...
+> RIP : tty_shutdown+0x15/)x70
 
-> Andrew, who would be in charge of "fs/nls"? Almost nobody has really
-> touched that area in several years now, and it doesn't have any
-> maintainership.
+Ok, DEBUG_PAGEALLOC and with that offset fairly early in tty_shutdown,
+it's almost certainly one of the accesses in the
 
-I cc'ed various people on that patch who have had fingers in there in
-recent years but no, it doesn't have a maintainer.
+  tty->driver->ops->remove
+
+chain when it does the (inlined)
+
+    tty_driver_remove_tty(tty->driver, tty);
+
+you could check which one it is at that offset 0x15, but I think both
+the ops and the driver structures should be statically allocated, so I
+suspect it's the "tty" itself that is already freed.
+
+Odd. But yes, smells very much like a refcount issue, probably due to
+broken locking. Does the problem go away if you revert commits
+d29f3ef39be4 ("tty_lock: Localise the lock") and 3af502b96649
+("tty_lock: undo the old tty_lock use on the ctty")?
+
+                  Linus
