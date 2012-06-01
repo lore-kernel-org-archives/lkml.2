@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab2FAGlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 02:41:53 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46059 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757784Ab2FAGlw convert rfc822-to-8bit (ORCPT
+	id S1752504Ab2FAGsX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 02:48:23 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:55960 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370Ab2FAGsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 02:41:52 -0400
+	Fri, 1 Jun 2012 02:48:22 -0400
+Date: Fri, 1 Jun 2012 12:18:15 +0530
+From: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com
+Subject: Re: [PATCH] sched/x86: Calculate booted cores after construction of
+ sibling_mask
+Message-ID: <20120601064815.GJ7511@linux.vnet.ibm.com>
+Reply-To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+References: <20120531073738.GH7511@linux.vnet.ibm.com>
+ <1338496257.28384.121.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1205311342320.2764@chino.kir.corp.google.com>
-References: <1338438844-5022-1-git-send-email-andi@firstfloor.org>
-	<alpine.DEB.2.00.1205311342320.2764@chino.kir.corp.google.com>
-Date: Fri, 1 Jun 2012 09:41:51 +0300
-X-Google-Sender-Auth: 2K1XtElIjg2APZiVXKz3eE8Wh2I
-Message-ID: <CAOJsxLHz7sJytDdDsjXCP4VaR2AFu_dDJchHQuceB11wMGN+Yg@mail.gmail.com>
-Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
- context v3
-From: Pekka Enberg <penberg@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, cl@linux.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1338496257.28384.121.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12060106-8878-0000-0000-000002BD5492
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 11:45 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 30 May 2012, Andi Kleen wrote:
->
->> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
->> index cfb6c86..b65eb06 100644
->> --- a/mm/mempolicy.c
->> +++ b/mm/mempolicy.c
->> @@ -1586,9 +1586,11 @@ static unsigned interleave_nodes(struct mempolicy *policy)
->>   * task can change it's policy.  The system default policy requires no
->>   * such protection.
->>   */
->> -unsigned slab_node(struct mempolicy *policy)
->> +unsigned slab_node(void)
->>  {
->> -     if (!policy || policy->flags & MPOL_F_LOCAL)
->> +     struct mempolicy *policy = current->mempolicy;
->> +
->> +     if (in_interrupt() || !policy || policy->flags & MPOL_F_LOCAL)
->>               return numa_node_id();
->>
->>       switch (policy->mode) {
->
-> I think the version proposed by David Mackey is more clear, it makes it
-> obvious that we don't want to dereference current in interrupt context
-> whereas that relies on short-circuiting your conditional in your approach.
+* Peter Zijlstra <peterz@infradead.org> [2012-05-31 22:30:57]:
 
-I like it better also. Christoph, Andi?
+(snip)
+> > 
+> > sched/x86: Calculate booted cores after construction of sibling_mask
+> 
+> Why repeat this subject again?
+> 
+Will take care of it from next posting.
+
+(snip)
+> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+> > index fd019d7..a8d78f3 100644
+> > --- a/arch/x86/kernel/smpboot.c
+> > +++ b/arch/x86/kernel/smpboot.c
+> > @@ -382,7 +382,12 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+> >  		if ((i == cpu) || (has_mc && match_llc(c, o)))
+> >  			link_mask(llc_shared, cpu, i);
+> > 
+> > -		if ((i == cpu) || (has_mc && match_mc(c, o))) {
+> > +	}
+> > +
+> > +	for_each_cpu(i, cpu_sibling_setup_mask) {
+> > +		o = &cpu_data(i);
+> > +
+> > +	if ((i == cpu) || (has_mc && match_mc(c, o))) {
+> >  			link_mask(core, cpu, i);
+> > 
+> >  			/*
+> 
+> This patch actually horribly mangles the indenting. I did the below to
+> it:
+
+Sorry about the indentation. Thanks for fixing it.
+
+
