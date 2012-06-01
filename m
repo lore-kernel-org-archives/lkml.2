@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932993Ab2FABHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 21:07:51 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37855 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab2FABHu (ORCPT
+	id S933003Ab2FABIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 21:08:36 -0400
+Received: from nm11-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.240]:48705 "HELO
+	nm11-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932977Ab2FABIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 21:07:50 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: gregkh@linuxfoundation.org, marc@cpdesign.com.au,
-        philippe.retornaz@epfl.ch, linux-kernel@vger.kernel.org,
-        joe@perches.com, Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v2] regmap: Fix the size calculation for map->format.buf_size
-Date: Thu, 31 May 2012 22:07:35 -0300
-Message-Id: <1338512855-26015-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1338509430-24416-1-git-send-email-festevam@gmail.com>
-References: <1338509430-24416-1-git-send-email-festevam@gmail.com>
+	Thu, 31 May 2012 21:08:35 -0400
+X-Yahoo-Newman-Id: 995292.39282.bm@omp1015.access.mail.mud.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: xK8RBMcVM1nu.s054bjL485scpgtNIBN1s.rCih0glbn7Dp
+ YVIRB4N_J5MYn7xH3FXMT3af7UcoPtLNtt0P5ZxJy.LtUuGaLlvaI3COYvEE
+ EeiOvonPpe_cXHcIRXyXaZ8.LWUHZEUdO0zVWwNfTEIrI7Qe034S6aLhduTh
+ 2YmXRBrYem0EomOeC6zKOLn95Aaol5e.9Vti2C89g6UtGgAobwcT8vXSMqDd
+ ijcIbnqIuL.xlx7EkssBshyaZ8OUr9xHFYL9NEitKlq2P7Z3.779Zcq7vNav
+ tkhB_IZEZJdqcTIxGnXxo65Sr328kto4.DDEanwp3TaLqTNokzR7Eb4JA62l
+ LHp6yDT2CVswrKb50hT5I2wiO12YqhfOk.tAx5TsUkODoPOU68iv5Au8Tyzf
+ 7hz37SA--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <4FC81611.9090801@att.net>
+Date: Thu, 31 May 2012 20:08:33 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: daniel.santos@pobox.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Kent Overstreet <koverstreet@google.com>, tj@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, axboe@kernel.dk,
+        paul.gortmaker@windriver.com, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 1/3] [RFC] Generic Red-Black Trees
+References: <4FC7FD23.6080800@att.net>
+In-Reply-To: <4FC7FD23.6080800@att.net>
+X-Enigmail-Version: 1.3.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+Oh yeah, so the patch set I sent boots & runs fine.  I've also noticed
+that I have a few outdated doc-comments and a mistake in the
+doc-comments for
+the BUILD_BUG_ON_NON_CONST2() macro, under the "Normal Variables"
+section, the text "global non-static const broken until 4.2 (-O1 broken
+until 4.4)" contradicts the earlier statement that all const values
+should never fail. This only applies to floats (but not doubles), which
+we don't have to worry about in the kernel anyway. (incidentally, their
+behavior under __builtin_constant_p() varies quite a bit until gcc 4.4,
+where it's fine)
 
-The word to be transmitted/received via regmap is composed by the following
-parts:
+It was important for me to figure out what was and wasn't working with
+__builtin_constant_p(), and in what versions of gcc because this
+implementation relies heavily on the compiler optimizing out code based
+upon values pass to it via a const struct pointer.  Also, I was looking
+for other possibilities, as I continued discovered broken (improperly
+optimized) scenarios.
 
-config->reg_bits
-config->val_bits
-config->pad_bits
-
-,so the total size should be calculated by summing up the number of bits of
-each element and using a DIV_ROUND_UP to return the number of bytes.
-
-While at it also use BITS_PER_BYTE annotation.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-Changes since v1:
-- Use BITS_PER_BYTE annotation
- drivers/base/regmap/regmap.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 2aa076e..9d6b2f8 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -246,12 +246,12 @@ struct regmap *regmap_init(struct device *dev,
- 		map->lock = regmap_lock_mutex;
- 		map->unlock = regmap_unlock_mutex;
- 	}
--	map->format.buf_size = (config->reg_bits + config->val_bits) / 8;
--	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, 8);
--	map->format.pad_bytes = config->pad_bits / 8;
--	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, 8);
--	map->format.buf_size += map->format.pad_bytes;
--	map->reg_shift = config->pad_bits % 8;
-+	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, BITS_PER_BYTE);
-+	map->format.pad_bytes = config->pad_bits / BITS_PER_BYTE;
-+	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, BITS_PER_BYTE);
-+	map->format.buf_size = DIV_ROUND_UP(config->reg_bits +
-+			config->val_bits + config->pad_bits, BITS_PER_BYTE);
-+	map->reg_shift = config->pad_bits % BITS_PER_BYTE;
- 	if (config->reg_stride)
- 		map->reg_stride = config->reg_stride;
- 	else
--- 
-1.7.1
-
+Daniel
