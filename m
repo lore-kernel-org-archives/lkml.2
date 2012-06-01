@@ -1,56 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514Ab2FAGU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 02:20:58 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:51102 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757308Ab2FAGU5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 02:20:57 -0400
-Date: Fri, 1 Jun 2012 09:20:49 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SLAB changes for v3.5-rc0
-Message-ID: <alpine.LFD.2.02.1206010920340.2163@tux.localdomain>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1757604Ab2FAGYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 02:24:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27101 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757361Ab2FAGYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 02:24:04 -0400
+Date: Fri, 1 Jun 2012 14:21:25 +0800
+From: Dave Young <dyoung@redhat.com>
+To: keithp@keithp.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: WARNING: at drivers/gpu/drm/i915/i915_drv.c:440
+Message-ID: <20120601062125.GA23223@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Today I got a lot i915 warnings on a thinkpad t400, here is the something copied from syslog:
+[Known issue?]
 
-Please pull the latest SLAB tree from:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-
-It contains bunch of SLUB fixes from Joonsoo Kim.
-
-			Pekka
-
------------------->
-The following changes since commit 731a7378b81c2f5fa88ca1ae20b83d548d5613dc:
-
-  Merge branch 'x86-trampoline-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2012-05-29 20:14:53 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/for-linus
-
-Joonsoo Kim (5):
-      slub: fix incorrect return type of get_any_partial()
-      slub: fix a possible memory leak
-      slub: remove unused argument of init_kmem_cache_node()
-      slub: fix a memory leak in get_partial_node()
-      slub: use __SetPageSlab function to set PG_slab flag
-
-majianpeng (1):
-      Documentations: Fix slabinfo.c directory in vm/slub.txt
-
- Documentation/vm/slub.txt |    2 +-
- mm/slub.c                 |   23 +++++++++++++----------
- 2 files changed, 14 insertions(+), 11 deletions(-)
+Jun  1 13:31:13 localhost kernel: [15935.915986] ------------[ cut here ]------------
+Jun  1 13:31:13 localhost kernel: [15935.916009] WARNING: at drivers/gpu/drm/i915/i915_drv.c:440 __gen6_gt_wait_for_fifo+0x74/0x89()
+Jun  1 13:31:13 localhost kernel: [15935.916017] Hardware name: 4236NUC
+Jun  1 13:31:13 localhost kernel: [15935.916022] Modules linked in: fuse rfcomm bnep sunrpc vhost_net macvtap macvlan tun kvm_intel kvm btusb bluetooth uvcvideo videobuf2_core videodev media videobuf2_vmalloc videobuf2_memops pcspkr iwlwifi mac80211 cfg80211 e1000e wmi thinkpad_acpi rfkill firewire_ohci firewire_core crc_itu_t sdhci_pci [last unloaded: scsi_wait_scan]
+Jun  1 13:31:13 localhost kernel: [15935.916125] Pid: 8026, comm: Xorg Not tainted 3.4.0 #284
+Jun  1 13:31:13 localhost kernel: [15935.916131] Call Trace:
+Jun  1 13:31:13 localhost kernel: [15935.916146]  [<ffffffff810333a7>] warn_slowpath_common+0x80/0x98
+Jun  1 13:31:13 localhost kernel: [15935.916157]  [<ffffffff810333d4>] warn_slowpath_null+0x15/0x17
+Jun  1 13:31:13 localhost kernel: [15935.916168]  [<ffffffff81358163>] __gen6_gt_wait_for_fifo+0x74/0x89
+Jun  1 13:31:13 localhost kernel: [15935.916178]  [<ffffffff8135852b>] i915_write32+0x4c/0x70
+Jun  1 13:31:13 localhost kernel: [15935.916189]  [<ffffffff8138b506>] ? gen6_ring_put_irq+0x31/0x8a
+Jun  1 13:31:13 localhost kernel: [15935.916199]  [<ffffffff8138b538>] gen6_ring_put_irq+0x63/0x8a
+Jun  1 13:31:13 localhost kernel: [15935.916209]  [<ffffffff8138b59c>] gen6_render_ring_put_irq+0x13/0x15
+Jun  1 13:31:13 localhost kernel: [15935.916222]  [<ffffffff81367214>] i915_wait_request+0x2fd/0x3b3
+Jun  1 13:31:13 localhost kernel: [15935.916235]  [<ffffffff81051c59>] ? wake_up_bit+0x25/0x25
+Jun  1 13:31:13 localhost kernel: [15935.916248]  [<ffffffff81367368>] ? i915_gem_flush_ring+0x6b/0x139
+Jun  1 13:31:13 localhost kernel: [15935.916260]  [<ffffffff813672fb>] i915_gem_object_wait_rendering+0x31/0x33
+Jun  1 13:31:13 localhost kernel: [15935.916271]  [<ffffffff8136c81f>] i915_gem_do_execbuffer.clone.6+0xce7/0x129f
+Jun  1 13:31:13 localhost kernel: [15935.916284]  [<ffffffff8107ab6b>] ? __lock_acquire+0xe32/0xe41
+Jun  1 13:31:13 localhost kernel: [15935.916294]  [<ffffffff8107ac1a>] ? lock_release_non_nested+0xa0/0x24f
+Jun  1 13:31:13 localhost kernel: [15935.916306]  [<ffffffff8136d155>] i915_gem_execbuffer2+0x114/0x183
+Jun  1 13:31:13 localhost kernel: [15935.916321]  [<ffffffff810e7ec4>] ? might_fault+0x89/0x90
+Jun  1 13:31:13 localhost kernel: [15935.916334]  [<ffffffff81343623>] drm_ioctl+0x2f1/0x3d3
+Jun  1 13:31:13 localhost kernel: [15935.916345]  [<ffffffff810e7e7b>] ? might_fault+0x40/0x90
+Jun  1 13:31:13 localhost kernel: [15935.916355]  [<ffffffff8136d041>] ? i915_gem_execbuffer+0x26a/0x26a
+Jun  1 13:31:13 localhost kernel: [15935.916366]  [<ffffffff810e7e7b>] ? might_fault+0x40/0x90
+Jun  1 13:31:13 localhost kernel: [15935.916378]  [<ffffffff8100add4>] ? check_for_xstate+0x2f/0x8a
+Jun  1 13:31:13 localhost kernel: [15935.916391]  [<ffffffff8111c5cc>] do_vfs_ioctl+0x47d/0x4bc
+Jun  1 13:31:13 localhost kernel: [15935.916405]  [<ffffffff81044a98>] ? do_sigaltstack+0xaf/0x14e
+Jun  1 13:31:13 localhost kernel: [15935.916417]  [<ffffffff815e0255>] ? retint_swapgs+0x13/0x1b
+Jun  1 13:31:13 localhost kernel: [15935.916430]  [<ffffffff8110f313>] ? fget_light+0x3d/0x9c
+Jun  1 13:31:13 localhost kernel: [15935.916441]  [<ffffffff8111c65c>] sys_ioctl+0x51/0x75
+Jun  1 13:31:13 localhost kernel: [15935.916452]  [<ffffffff815e677d>] system_call_fastpath+0x1a/0x1f
+Jun  1 13:31:13 localhost kernel: [15935.916460] ---[ end trace 93dc2a59f9772003 ]---
+Jun  1 13:31:13 localhost kernel: [15935.921817] ------------[ cut here ]------------
+Jun  1 13:31:13 localhost kernel: [15935.921829] WARNING: at drivers/gpu/drm/i915/i915_drv.c:440 __gen6_gt_wait_for_fifo+0x74/0x89()
+Jun  1 13:31:13 localhost kernel: [15935.921836] Hardware name: 4236NUC
+Jun  1 13:31:13 localhost kernel: [15935.921840] Modules linked in: fuse rfcomm bnep sunrpc vhost_net macvtap macvlan tun kvm_intel kvm btusb bluetooth uvcvideo videobuf2_core videodev media videobuf2_vmalloc videobuf2_memops pcspkr iwlwifi mac80211 cfg80211 e1000e wmi thinkpad_acpi rfkill firewire_ohci firewire_core crc_itu_t sdhci_pci [last unloaded: scsi_wait_scan]
+Jun  1 13:31:13 localhost kernel: [15935.921931] Pid: 8026, comm: Xorg Tainted: G        W    3.4.0 #284
+Jun  1 13:31:13 localhost kernel: [15935.921937] Call Trace:
+Jun  1 13:31:13 localhost kernel: [15935.921947]  [<ffffffff810333a7>] warn_slowpath_common+0x80/0x98
+Jun  1 13:31:13 localhost kernel: [15935.921956]  [<ffffffff810333d4>] warn_slowpath_null+0x15/0x17
+Jun  1 13:31:13 localhost kernel: [15935.921966]  [<ffffffff81358163>] __gen6_gt_wait_for_fifo+0x74/0x89
+Jun  1 13:31:13 localhost kernel: [15935.921975]  [<ffffffff8135852b>] i915_write32+0x4c/0x70
+Jun  1 13:31:13 localhost kernel: [15935.921984]  [<ffffffff8138b1c3>] ring_write_tail+0x1c/0x1e
+Jun  1 13:31:13 localhost kernel: [15935.921994]  [<ffffffff8138c446>] intel_ring_advance+0x18/0x1a
+Jun  1 13:31:13 localhost kernel: [15935.922003]  [<ffffffff8138c5a2>] blt_ring_flush+0x66/0x70
+Jun  1 13:31:13 localhost kernel: [15935.922015]  [<ffffffff81367368>] i915_gem_flush_ring+0x6b/0x139
+Jun  1 13:31:13 localhost kernel: [15935.922026]  [<ffffffff8136c716>] i915_gem_do_execbuffer.clone.6+0xbde/0x129f
+Jun  1 13:31:13 localhost kernel: [15935.922037]  [<ffffffff8107ab6b>] ? __lock_acquire+0xe32/0xe41
+Jun  1 13:31:13 localhost kernel: [15935.922047]  [<ffffffff8107ac1a>] ? lock_release_non_nested+0xa0/0x24f
+Jun  1 13:31:13 localhost kernel: [15935.922058]  [<ffffffff8136d155>] i915_gem_execbuffer2+0x114/0x183
+Jun  1 13:31:13 localhost kernel: [15935.922070]  [<ffffffff810e7ec4>] ? might_fault+0x89/0x90
+Jun  1 13:31:13 localhost kernel: [15935.922080]  [<ffffffff81343623>] drm_ioctl+0x2f1/0x3d3
+Jun  1 13:31:13 localhost kernel: [15935.922091]  [<ffffffff810e7e7b>] ? might_fault+0x40/0x90
+Jun  1 13:31:13 localhost kernel: [15935.922100]  [<ffffffff8136d041>] ? i915_gem_execbuffer+0x26a/0x26a
+Jun  1 13:31:13 localhost kernel: [15935.922112]  [<ffffffff810e7e7b>] ? might_fault+0x40/0x90
+Jun  1 13:31:13 localhost kernel: [15935.922121]  [<ffffffff8100add4>] ? check_for_xstate+0x2f/0x8a
+Jun  1 13:31:13 localhost kernel: [15935.922133]  [<ffffffff8111c5cc>] do_vfs_ioctl+0x47d/0x4bc
+Jun  1 13:31:13 localhost kernel: [15935.922145]  [<ffffffff81044a98>] ? do_sigaltstack+0xaf/0x14e
+Jun  1 13:31:13 localhost kernel: [15935.922154]  [<ffffffff815e0255>] ? retint_swapgs+0x13/0x1b
+Jun  1 13:31:13 localhost kernel: [15935.922165]  [<ffffffff8110f313>] ? fget_light+0x3d/0x9c
+Jun  1 13:31:13 localhost kernel: [15935.922176]  [<ffffffff8111c65c>] sys_ioctl+0x51/0x75
+Jun  1 13:31:13 localhost kernel: [15935.922185]  [<ffffffff815e677d>] system_call_fastpath+0x1a/0x1f
+Jun  1 13:31:13 localhost kernel: [15935.922193] ---[ end trace 93dc2a59f9772004 ]---
+Jun  1 13:31:13 localhost kernel: [15935.928465] ------------[ cut here ]------------
+Jun  1 13:31:13 localhost kernel: [15935.928476] WARNING: at drivers/gpu/drm/i915/i915_drv.c:440 __gen6_gt_wait_for_fifo+0x74/0x89()
+Jun  1 13:31:13 localhost kernel: [15935.928482] Hardware name: 4236NUC
+Jun  1 13:31:13 localhost kernel: [15935.928486] Modules linked in: fuse rfcomm bnep sunrpc vhost_net macvtap macvlan tun kvm_intel kvm btusb bluetooth uvcvideo videobuf2_core videodev media videobuf2_vmalloc videobuf2_memops pcspkr iwlwifi mac80211 cfg80211 e1000e wmi thinkpad_acpi rfkill firewire_ohci firewire_core crc_itu_t sdhci_pci [last unloaded: scsi_wait_scan]
+Jun  1 13:31:13 localhost kernel: [15935.928577] Pid: 8026, comm: Xorg Tainted: G        W    3.4.0 #284
+Jun  1 13:31:13 localhost kernel: [15935.928583] Call Trace:
+Jun  1 13:31:13 localhost kernel: [15935.928592]  [<ffffffff810333a7>] warn_slowpath_common+0x80/0x98
+Jun  1 13:31:13 localhost kernel: [15935.928602]  [<ffffffff810333d4>] warn_slowpath_null+0x15/0x17
+Jun  1 13:31:13 localhost kernel: [15935.928612]  [<ffffffff81358163>] __gen6_gt_wait_for_fifo+0x74/0x89
+Jun  1 13:31:13 localhost kernel: [15935.928622]  [<ffffffff8135852b>] i915_write32+0x4c/0x70
+Jun  1 13:31:13 localhost kernel: [15935.928631]  [<ffffffff8138b85a>] ? gen6_ring_get_irq+0x44/0x9a
+Jun  1 13:31:13 localhost kernel: [15935.928641]  [<ffffffff8138b88f>] gen6_ring_get_irq+0x79/0x9a
+Jun  1 13:31:13 localhost kernel: [15935.928651]  [<ffffffff8138b8ed>] gen6_render_ring_get_irq+0x13/0x15
+Jun  1 13:31:13 localhost kernel: [15935.928663]  [<ffffffff813670ac>] i915_wait_request+0x195/0x3b3
+Jun  1 13:31:13 localhost kernel: [15935.928675]  [<ffffffff81367368>] ? i915_gem_flush_ring+0x6b/0x139
+Jun  1 13:31:13 localhost kernel: [15935.928688]  [<ffffffff813672fb>] i915_gem_object_wait_rendering+0x31/0x33
+Jun  1 13:31:13 localhost kernel: [15935.928698]  [<ffffffff8136c81f>] i915_gem_do_execbuffer.clone.6+0xce7/0x129f
+Jun  1 13:31:13 localhost kernel: [15935.928709]  [<ffffffff8107ab6b>] ? __lock_acquire+0xe32/0xe41
+Jun  1 13:31:13 localhost kernel: [15935.928719]  [<ffffffff8107ac1a>] ? lock_release_non_nested+0xa0/0x24f
+Jun  1 13:31:13 localhost kernel: [15935.928731]  [<ffffffff8136d155>] i915_gem_execbuffer2+0x114/0x183
+Jun  1 13:31:13 localhost kernel: [15935.928742]  [<ffffffff810e7ec4>] ? might_fault+0x89/0x90
+Jun  1 13:31:13 localhost kernel: [15935.928752]  [<ffffffff81343623>] drm_ioctl+0x2f1/0x3d3
+Jun  1 13:31:13 localhost kernel: [15935.928764]  [<ffffffff810e7e7b>] ? might_fault+0x40/0x90
+Jun  1 13:31:13 localhost kernel: [15935.928773]  [<ffffffff8136d041>] ? i915_gem_execbuffer+0x26a/0x26a
+Jun  1 13:31:13 localhost kernel: [15935.928785]  [<ffffffff810e7e7b>] ? might_fault+0x40/0x90
+Jun  1 13:31:13 localhost kernel: [15935.928794]  [<ffffffff8100add4>] ? check_for_xstate+0x2f/0x8a
+Jun  1 13:31:13 localhost kernel: [15935.928806]  [<ffffffff8111c5cc>] do_vfs_ioctl+0x47d/0x4bc
+Jun  1 13:31:13 localhost kernel: [15935.928818]  [<ffffffff81044a98>] ? do_sigaltstack+0xaf/0x14e
+Jun  1 13:31:13 localhost kernel: [15935.928828]  [<ffffffff815e0255>] ? retint_swapgs+0x13/0x1b
+Jun  1 13:31:13 localhost kernel: [15935.928838]  [<ffffffff8110f313>] ? fget_light+0x3d/0x9c
+Jun  1 13:31:13 localhost kernel: [15935.928850]  [<ffffffff8111c65c>] sys_ioctl+0x51/0x75
+Jun  1 13:31:13 localhost kernel: [15935.928859]  [<ffffffff815e677d>] system_call_fastpath+0x1a/0x1f
+Jun  1 13:31:13 localhost kernel: [15935.928866] ---[ end trace 93dc2a59f9772005 ]---
