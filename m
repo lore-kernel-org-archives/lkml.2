@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab2FAJxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:53:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:46242 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758790Ab2FAJxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:53:34 -0400
-Date: Fri, 1 Jun 2012 11:53:30 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: John Moser <john.r.moser@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: Is this code right in zram?
-Message-ID: <20120601095330.GC3969@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	John Moser <john.r.moser@gmail.com>, linux-kernel@vger.kernel.org,
-	Nitin Gupta <ngupta@vflare.org>
-References: <4FC7E610.5060207@gmail.com>
+	id S1759376Ab2FAJz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:55:59 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38146 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758807Ab2FAJz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 05:55:58 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 14/27] ia64: Move holding of vector_lock to
+ __setup_vector_irq()
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, linux-ia64@vger.kernel.org
+Date: Fri, 01 Jun 2012 14:43:28 +0530
+Message-ID: <20120601091319.31979.93871.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FC7E610.5060207@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12053123-6102-0000-0000-0000019CE97D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 05:43:44PM -0400, John Moser wrote:
-> before I go stomping all over other peoples' work and sending
-> idiotic patches, I think I'll ask.  Since I have no clue what I'm
-> doing.
-> 
-> in drivers/staging/zram.c out of 3.4
+__setup_vector_irq() expects that its caller holds the vector_lock.
+As of now there is only one caller - smp_callin(); and acquiring the lock
+in smp_callin() around the call to __setup_vector_irq() obstructs the
+conversion of ia64 to generic smp booting code. So move the lock acquisition
+to __setup_vector_irq() itself (mimicking what x86 does).
 
-There's no such file in 3.4 - I get
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-ia64@vger.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-tree v3.4:drivers/staging/zram/
+ arch/ia64/kernel/irq_ia64.c |    5 +++--
+ arch/ia64/kernel/smpboot.c  |    2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
-Kconfig
-Makefile
-zram.txt
-zram_drv.c
-zram_drv.h
-zram_sysfs.c
+diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
+index 5c3e088..6ac99c8 100644
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -241,13 +241,13 @@ reserve_irq_vector (int vector)
+ }
+ 
+ /*
+- * Initialize vector_irq on a new cpu. This function must be called
+- * with vector_lock held.
++ * Initialize vector_irq on a new cpu.
+  */
+ void __setup_vector_irq(int cpu)
+ {
+ 	int irq, vector;
+ 
++	spin_lock(&vector_lock);
+ 	/* Clear vector_irq */
+ 	for (vector = 0; vector < IA64_NUM_VECTORS; ++vector)
+ 		per_cpu(vector_irq, cpu)[vector] = -1;
+@@ -258,6 +258,7 @@ void __setup_vector_irq(int cpu)
+ 		vector = irq_to_vector(irq);
+ 		per_cpu(vector_irq, cpu)[vector] = irq;
+ 	}
++	spin_unlock(&vector_lock);
+ }
+ 
+ #if defined(CONFIG_SMP) && (defined(CONFIG_IA64_GENERIC) || defined(CONFIG_IA64_DIG))
+diff --git a/arch/ia64/kernel/smpboot.c b/arch/ia64/kernel/smpboot.c
+index df00a3c..709ce07 100644
+--- a/arch/ia64/kernel/smpboot.c
++++ b/arch/ia64/kernel/smpboot.c
+@@ -378,10 +378,10 @@ smp_callin (void)
+ 	set_numa_node(cpu_to_node_map[cpuid]);
+ 	set_numa_mem(local_memory_node(cpu_to_node_map[cpuid]));
+ 
+-	spin_lock(&vector_lock);
+ 	/* Setup the per cpu irq handling data structures */
+ 	__setup_vector_irq(cpuid);
+ 	notify_cpu_starting(cpuid);
++	spin_lock(&vector_lock);
+ 	set_cpu_online(cpuid, true);
+ 	per_cpu(cpu_state, cpuid) = CPU_ONLINE;
+ 	spin_unlock(&vector_lock);
 
-I'm guessing you mean zram_drv.c - there's code like that below?
-
-> (I just grabbed the source
-> hours ago), I see this on lines 810-822:
-> 
->        /* Allocate the device array and initialize each one */
->         pr_info("Creating %u devices ...\n", num_devices);
->         zram_devices = kzalloc(num_devices * sizeof(struct zram),
-> GFP_KERNEL);
->         if (!zram_devices) {
->                 ret = -ENOMEM;
->                 goto unregister;
->         }
-> 
->         for (dev_id = 0; dev_id < num_devices; dev_id++) {
->                 ret = create_device(&zram_devices[dev_id], dev_id);
->                 if (ret)
->                         goto free_devices;
->         }
-> 
-> Curiosity got me to here:
-> 
-> http://lwn.net/Articles/147014/
-> 
-> So assuming this, what I see here is:
-> 
->  - kmalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
->  - memset() that to 0
->  - immediately fill in this RAM without reading it
-> 
-> I'm wondering what the immediate need is to fill the area with
-> zeros?
-
-You don't want to use unitialized memory in those zram_devices thingies,
-i.e. touch something in there which you haven't initialized before thus
-the convention to zero out the whole struct.
-
-Right, create_device() does that init later but what do you do if
-create_device changes and forgets one variable, for example? There's
-your bug (and a very subtle one, for that matter).
-
-That's why you can't risk it and have to init the memory to a known good
-value just in case.
-
-> Also curious as to whether the kzalloc() thing should better be
-> kcalloc(num_devices, sizeof(struct zram), GFP_KERNEL) as a matter of
-> convention.
-
-That makes sense, let's ask.
-
--- 
-Regards/Gruss,
-    Boris.
