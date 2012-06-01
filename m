@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759996Ab2FAOKP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 10:10:15 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:48763 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758970Ab2FAOKO (ORCPT
+	id S1759992Ab2FAOLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:11:13 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:34926 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758970Ab2FAOLM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 10:10:14 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: qrY_7ewVM1mt9dro_GzabJOB2caPf9bKWlWQZk2jHCxWd.J
- O_4FhZhdV9sp4Rs8PqaguK_glszXDhUAm4IeDQalzrGcqVSimYGqON8m_tZv
- d.6K3iXnSgDuov5X82.vgoQcaX2NW_aU__zGR.fqIkGtMcShWnkRNEnScA_H
- X8bQn8sXgteaXilCbsask_KRa6mK0rl5mGhl6zvGRp0Pjg7ZH4YPDJdWHJDE
- eKXGPspWZrX71NqsIfxC_4diovVERgq7smXNdoboeRplKLlTclFZV4R4Vip4
- wh9f4Eh8oYfwWQaSrrDSX1LGKjCCTfEhFFMiVHNMM5BaUDO2LxiQxF8VtL3j
- djbwLAZ36b22CFO9qgMQrumSSVG99cJlp8jjKFJlG_uhIIRlIb1x1biuUolp
- H
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 1 Jun 2012 09:10:11 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] slab/mempolicy: always use local policy from interrupt
- context v3
-In-Reply-To: <CAOJsxLHz7sJytDdDsjXCP4VaR2AFu_dDJchHQuceB11wMGN+Yg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1206010905390.6634@router.home>
-References: <1338438844-5022-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.00.1205311342320.2764@chino.kir.corp.google.com> <CAOJsxLHz7sJytDdDsjXCP4VaR2AFu_dDJchHQuceB11wMGN+Yg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 1 Jun 2012 10:11:12 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+Date: Fri, 1 Jun 2012 22:11:11 +0800
+X-Google-Sender-Auth: QTYGM8HDoAe2HCDki7ueSLztmmw
+Message-ID: <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
+From: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012, Pekka Enberg wrote:
+On Fri, Jun 1, 2012 at 5:35 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Fri, Jun 1, 2012 at 5:20 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
+>>
+>> intel_shared_reg_get/put_constraints() can be indirectly called
+>> by validate_group(). In that case, they should avoid modifying
+>> the perf_event date structure because the event can be already
+>> in active state. Otherwise the shared extra msr's reference
+>> count will be left in inconsistent state.
+>>
+> I understand the problem but I am wondering if you actually saw
+> it in real life. The reason I am asking is because  of the way
+> validate_group() collects the events and how they are added
+> to sibling_list. The new event is added at the tail. Thus it will
+> come last, and will get to __intel_shared_reg_get_constraints()
+> last, thus I am wondering if it can really modify the programming
+> on the existing events.
 
-> > I think the version proposed by David Mackey is more clear, it makes it
-> > obvious that we don't want to dereference current in interrupt context
-> > whereas that relies on short-circuiting your conditional in your approach.
+The real problem is from __intel_shared_reg_put_constraints(). it set
+reg->alloc to 0 and decreases fake_cpuc->shared_regs->regs[reg->idx]'s
+reference count. Later when deleting the event,  put_constraints() will find
+reg->alloc is 0 and it won't decrease the shared msr's reference count.
+
+Run 'perf stat --group -a -C 0 -e LLC-loads -e LLC-stores sleep 1" on
+Nehalem can trigger the bug.
+
 >
-> I like it better also. Christoph, Andi?
+> See more comments inline.
+>
+>> Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event_intel.c |   31 +++++++++++++++++++++++--------
+>>  1 files changed, 23 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+>> index 166546e..10840d0 100644
+>> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+>> @@ -1119,11 +1119,21 @@ intel_bts_constraints(struct perf_event *event)
+>>        return NULL;
+>>  }
+>>
+>> -static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
+>> +static bool intel_try_alt_er(struct perf_event *event, int *idx,
+>> +                            int orig_idx, bool fake_cpuc)
+>>  {
+>> -       if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
+>> +       if (!(x86_pmu.er_flags & ERF_HAS_RSP_1) || *idx != orig_idx)
+>>                return false;
+>>
+>> +       /* don't modify the event structure if the cpuc is faked */
+>> +       if (fake_cpuc) {
+>> +               if (*idx == EXTRA_REG_RSP_0)
+>> +                       *idx = EXTRA_REG_RSP_1;
+>> +               else if (*idx == EXTRA_REG_RSP_1)
+>> +                       *idx = EXTRA_REG_RSP_0;
+>> +               return (*idx != orig_idx);
+>> +       }
+>> +
+> I understand that.
+>
+>>        if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
+>>                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+>>                event->hw.config |= 0x01bb;
+>> @@ -1139,6 +1149,7 @@ static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
+>>        if (event->hw.extra_reg.idx == orig_idx)
+>>                return false;
+>>
+>> +       *idx = event->hw.extra_reg.idx;
+>>        return true;
+>>  }
+>>
+>> @@ -1155,16 +1166,18 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+>>                                   struct hw_perf_event_extra *reg)
+>>  {
+>>        struct event_constraint *c = &emptyconstraint;
+>> +       struct intel_shared_regs *shared_regs = cpuc->shared_regs;
+>>        struct er_account *era;
+>>        unsigned long flags;
+>>        int orig_idx = reg->idx;
+>> +       int idx = orig_idx;
+>>
+>> -       /* already allocated shared msr */
+>> -       if (reg->alloc)
+>> +       /* shared msr is already allocated and cpuc is not faked */
+>> +       if (reg->alloc && shared_regs->core_id != -1)
+>>                return NULL; /* call x86_get_event_constraint() */
+>>
+> I don't understand what you need this stuff. Shared_regs is faked as well.
 
-I dont like the conditional in the assignment followed by a test for NULL
-which is also not easy to read.
+The event can be in active state, we should avoid clearing reg->alloc.
 
-Would prefer that the control flow be redesigned.
-
-Something like
-
-	if (in_interrupt())
-		return numa_node_id();
-
-	policy = current->mempolicy
-	if (!policy || ...)
-		return numa_node_id();
-
+Regards
+Yan, Zheng
