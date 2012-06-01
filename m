@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965497Ab2FAQg5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:36:57 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37508 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965419Ab2FAQg4 (ORCPT
+	id S965512Ab2FAQjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:39:23 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:47819 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965403Ab2FAQjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:36:56 -0400
-Date: Fri, 1 Jun 2012 22:03:15 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] uprobes: install_breakpoint() should fail if
- is_swbp_insn() == T
-Message-ID: <20120601163315.GJ24279@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120530165757.GA8077@redhat.com>
- <20120530165816.GA8085@redhat.com>
- <1338398931.28384.7.camel@twins>
- <20120530173717.GM15587@linux.vnet.ibm.com>
- <1338400142.28384.12.camel@twins>
- <1338400450.28384.16.camel@twins>
- <20120531185339.GA28057@redhat.com>
- <20120601155312.GA20265@redhat.com>
+	Fri, 1 Jun 2012 12:39:22 -0400
+Date: Fri, 1 Jun 2012 18:39:18 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+Message-ID: <20120601163918.GB329@x4>
+References: <20120530163317.GA13189@redhat.com>
+ <20120531005739.GA4532@redhat.com>
+ <20120601023107.GA19445@redhat.com>
+ <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+ <20120601161640.GA329@x4>
+ <CA+55aFyrX30_=V=fiOAt8rXOuj=YdbgrzehknSz9-6qNGKFp-Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120601155312.GA20265@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060116-7606-0000-0000-000000C9161E
+In-Reply-To: <CA+55aFyrX30_=V=fiOAt8rXOuj=YdbgrzehknSz9-6qNGKFp-Q@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-06-01 17:53:12]:
-
-> On 05/31, Oleg Nesterov wrote:
+On 2012.06.01 at 09:28 -0700, Linus Torvalds wrote:
+> On Fri, Jun 1, 2012 at 9:16 AM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
 > >
-> > __find_next_vma_info() checks tmpvi->mm == vma->vm_mm to detect the
-> > already visited mm/vma. However, afaics this can be false positive?
+> > I've also hit this warning today:
 > 
-> Yes, but I guess this is harmless, we can rely on uprobe_mmap.
-> 
-> 
-> 
-> But. Doesn't this mean we can greatly simplify register_for_each_vma()
-> and make it O(n) ?
-> 
-> Unless I missed something, we can simply create the list of
-> mm/vaddr structures under ->i_mmap_mutex (vma_prio_tree_foreach), then
-> register_for_each_vma() can process the list and that is all.
+> Can you try the patch by Hugh Dickins earlier in this thread?
 
+I will try. But please notice that the warning just happened per
+accident. I don't know how to reproduce the issue yet.
 
-If I remember correctly, we cannot allocate the list elements under
-i_mmap_mutex. We dont know how many list elements to allocate.
-
-This is what Peter had to say : https://lkml.org/lkml/2011/6/27/72
-
-"Because we try to take i_mmap_mutex during reclaim, trying to unmap
-pages. So suppose we do an allocation while holding i_mmap_mutex, find
-there's no free memory, try and unmap a page in order to free it, and
-we're stuck."
-
-> 
-> If another mapping comes after we drop i_mmap_mutex, uprobe_mmap()
-> should be called and it should install the bp.
-> 
+> Dave is reporting tentative success with it, even though I don't think
+> we really understand this thing fully yet. Getting way more testing
+> would still be good, though.
 
 -- 
-Thanks and Regards
-Srikar
-
+Markus
