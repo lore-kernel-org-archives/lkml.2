@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753Ab2FACGb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 22:06:31 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37475 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757692Ab2FACG3 (ORCPT
+	id S1758772Ab2FACOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 22:14:33 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48447 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758748Ab2FACOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 22:06:29 -0400
+	Thu, 31 May 2012 22:14:32 -0400
+Date: Fri, 1 Jun 2012 03:14:31 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [git pull] signal.git pile 2 (of 3, probably)
+Message-ID: <20120601021430.GG30000@ZenIV.linux.org.uk>
+References: <20120531235748.GE30000@ZenIV.linux.org.uk>
+ <CA+55aFwaOT_jfOxZkG62kU+gkpAm3Q4h39NL-no8D9FhE3httQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZ++GiqE55ofuwOssY4RLE5NctiY1rik1PDtm5r+CL4dw@mail.gmail.com>
-References: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org>
-	<CACRpkdZ++GiqE55ofuwOssY4RLE5NctiY1rik1PDtm5r+CL4dw@mail.gmail.com>
-Date: Fri, 1 Jun 2012 10:06:27 +0800
-Message-ID: <CAJuYYwQWDFx-13_Q5a0dFTjd=KbfkoFg5ciCcD4G4hybsBd6fA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] pinctrl: add support for samsung pinctrl driver
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        kgene.kim@samsung.com, kyungmin.park@samsung.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwaOT_jfOxZkG62kU+gkpAm3Q4h39NL-no8D9FhE3httQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 June 2012 09:40, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, May 24, 2012 at 7:47 AM, Thomas Abraham
-> <thomas.abraham@linaro.org> wrote:
->
->> Note that, the Samsung pinctrl driver is usable only on device tree enabled
->> Samsung platforms. Legacy platforms would still continue to use the older
->> gpiolib driver and hence updates to device drivers to use the pinctrl api
->> should ensure that support for legacy platforms is maintained.
->
-> Is the plan to move also the older platforms over to the DT-based model?
-> It'd be really nice to be able to just delete the old drivers at some point...
+On Thu, May 31, 2012 at 06:49:00PM -0700, Linus Torvalds wrote:
+> On Thu, May 31, 2012 at 4:57 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > There probably will be another pull request from that tree this
+> > cycle - at least for helpers, to get them out of the way for per-arch
+> > fixes remaining in the tree.
+> 
+> I'm likely cutting -rc1 tomorrow, and on Saturday at the latest.
+> Otherwise my travel schedule will get very inconvenient wrt -rc2.
 
-As of now, there is no plan to move the older Samsung platforms to
-DT-based model. Moving to DT-based model requires people with the
-board support upstreamed for older Samsung SoC's to sign up for the dt
-conversion process without which testing will not be possible. So for
-now, we will have to maintain the old drivers also.
+_Ouch_...
 
-Thanks,
-Thomas.
-
->
-> Yours,
-> Linus Walleij
+OK, then tomorrow morning you'll have vfs.git pull request.  Damn...
