@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965252Ab2FAQBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:01:31 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:44304 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965237Ab2FAQB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:01:28 -0400
-Date: Fri, 1 Jun 2012 17:20:17 +0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Victor Miasnikov <vvm@tut.by>
-Cc: stable@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
-        linux-kernel@vger.kernel.org, KY Srinivasan <kys@microsoft.com>
-Subject: Re: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the
- Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore
- detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE
- disks devices ( but not for the CD-ROM)
-Message-ID: <20120601092017.GE22821@kroah.com>
-References: <20120527010903.GA18244@kroah.com>
- <B4A84D892D5742FE83F71F788F6EAF48@local.st.by>
- <20120528203518.GA12623@kroah.com>
- <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by>
+	id S965223Ab2FAQLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:11:01 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56116 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964952Ab2FAQLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 12:11:00 -0400
+Date: Fri, 1 Jun 2012 17:10:58 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1206011708110.16881@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 09:34:23AM +0300, Victor Miasnikov wrote:
-> Hi!
-> 
-> 
-> >And it's too late for 3.4.1, as that is already out for review.
-> 
-> Ok: "Please, backport to 3.4.2"
-> 
-> { P.S.
-> And "to 3.3.x" and "to 3.2.x"  i.e. to all actual version after 3.1
-> 
-> }
-> 
-> >>>use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the CD-ROM)
-> VVM> Please, backport to 3.4.2-stable all related this:
-> >>     ...Ugly MSFT Hyper-V workaround in ata_piix
-> >>     ata_piix: defer disks to the Hyper-V drivers...
-> 
-> >I do not understand, what exactly are the git commit ids that you wish
-> >to see applied to the stable tree?
-> 
-> Sorry:
-> 
-> 1)
-> db63a4c8115a0bb904496e1cdd3e7488e68b0d06
-> 2)
-> cd006086fa5d91414d8ff9ff2b78fbb593878e3c
-> 
-> {
-> Jonathan Nieder think:
-> 
->  cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default
-> 
-> and its prerequisite
-> 
->  db63a4c8115a libata: add a host flag to ignore detected ATA devices
 
-Sorry, but I don't see how this meets the rules for the stable trees, do
-you?  If so, please show me how.
+Hi Linus,
 
-thanks,
+A bunch of fixes:
 
-greg k-h
+vmware memory corruption, ttm spinlock balance,
+cirrus/mgag200, work in the presence of efifb
+and finally Alex and Jerome managed to track down a magic set of bits that 
+on certain rv740 and evergreen cards allow the correct use of the 
+complete set of render backends, this makes the cards operate correctly in 
+a number of scenarios we had issues in before, it also manages to boost 
+speed on benchmarks my large amounts on these specific gpus.
+
+Dave.
+
+The following changes since commit bc42aabc6a01b92b0f961d65671564e0e1cd7592:
+
+  drm/edid/quirks: ViewSonic VA2026w (2012-05-29 16:16:38 +0100)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 47819ba234d41465b76f179ba674ff549255a5d2:
+
+  drm/edid: Make the header fixup threshold tunable (2012-06-01 17:00:23 +0100)
+
+----------------------------------------------------------------
+Adam Jackson (1):
+      drm/edid: Make the header fixup threshold tunable
+
+Alex Deucher (4):
+      drm/radeon: fix bank information in tiling config
+      drm/radeon: properly program gart on rv740, juniper, cypress, barts, hemlock
+      drm/radeon: fixup tiling group size and backendmap on r6xx-r9xx (v4)
+      drm/radeon: fix regression in UMS CS ioctl
+
+Dave Airlie (3):
+      cirrus: avoid crash if driver fails to load
+      drm/cirrus: kick out conflicting framebuffers earlier
+      drm/mgag200: kick off conflicting framebuffers earlier.
+
+Jerome Glisse (1):
+      drm/radeon: fix HD6790, HD6570 backend programming
+
+Thomas Hellstrom (2):
+      drm/ttm: Fix spinlock imbalance
+      drm/vmwgfx: Fix nasty write past alloced memory area
+
+ drivers/gpu/drm/cirrus/cirrus_drv.c   |   19 ++
+ drivers/gpu/drm/cirrus/cirrus_drv.h   |    2 +-
+ drivers/gpu/drm/cirrus/cirrus_ttm.c   |    5 +
+ drivers/gpu/drm/drm_edid.c            |   11 +-
+ drivers/gpu/drm/mgag200/mgag200_drv.c |   19 ++
+ drivers/gpu/drm/radeon/evergreen.c    |  382 +++++----------------------------
+ drivers/gpu/drm/radeon/evergreend.h   |   11 +
+ drivers/gpu/drm/radeon/ni.c           |  360 +++----------------------------
+ drivers/gpu/drm/radeon/nid.h          |   11 +
+ drivers/gpu/drm/radeon/r600.c         |  199 ++++++-----------
+ drivers/gpu/drm/radeon/r600d.h        |    2 +
+ drivers/gpu/drm/radeon/radeon.h       |    5 +
+ drivers/gpu/drm/radeon/radeon_cs.c    |   31 +--
+ drivers/gpu/drm/radeon/rv770.c        |  274 +++++------------------
+ drivers/gpu/drm/radeon/rv770d.h       |    4 +
+ drivers/gpu/drm/ttm/ttm_bo.c          |    1 +
+ drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c   |    2 +-
+ 17 files changed, 321 insertions(+), 1017 deletions(-)
