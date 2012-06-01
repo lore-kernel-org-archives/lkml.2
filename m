@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab2FASZd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:25:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43067 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932496Ab2FASZc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:25:32 -0400
-Date: Fri, 01 Jun 2012 14:25:31 -0400 (EDT)
-Message-Id: <20120601.142531.544977894901194434.davem@davemloft.net>
-To: devendra.aaru@gmail.com
-Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] r8169: call netif_napi_del at errpaths and at driver
- unload
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1338465080-22720-1-git-send-email-devendra.aaru@gmail.com>
-References: <1338465080-22720-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S965638Ab2FAS0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:26:53 -0400
+Received: from david.siemens.de ([192.35.17.14]:33297 "EHLO david.siemens.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758770Ab2FAS0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 14:26:51 -0400
+Message-ID: <4FC90961.8030701@siemens.com>
+Date: Fri, 01 Jun 2012 20:26:41 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yongjie.ren@intel.com" <yongjie.ren@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
+References: <20120601161521.26935.25606.stgit@bling.home>   <4FC8F042.5050600@siemens.com> <1338570192.23475.25.camel@bling.home>  <4FC8F867.7080103@siemens.com> <1338573558.23475.41.camel@bling.home>
+In-Reply-To: <1338573558.23475.41.camel@bling.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Devendra Naga <devendra.aaru@gmail.com>
-Date: Thu, 31 May 2012 17:21:20 +0530
-
-> when register_netdev fails, the init'ed NAPIs by netif_napi_add must be
-> deleted with netif_napi_del, and also when driver unloads, it should
-> delete the NAPI before unregistering netdevice using unregister_netdev.
+On 2012-06-01 19:59, Alex Williamson wrote:
+>>>>  Hmm, can't we trust the information that an IRQ
+>>>> grabbed here is really a MSI type?
+>>>
+>>>
+>>> Apparently not, comment added with this check (1c6c6952):
+>>>
+>>>        * The interrupt was requested with handler = NULL, so
+>>>        * we use the default primary handler for it. But it
+>>>        * does not have the oneshot flag set. In combination
+>>>        * with level interrupts this is deadly, because the
+>>>        * default primary handler just wakes the thread, then
+>>>        * the irq lines is reenabled, but the device still
+>>>        * has the level irq asserted. Rinse and repeat....
+>>>        *
+>>>        * While this works for edge type interrupts, we play
+>>>        * it safe and reject unconditionally because we can't
+>>>        * say for sure which type this interrupt really
+>>>        * has. The type flags are unreliable as the
+>>>        * underlying chip implementation can override them.
+>>
+>> I was talking about KVM here: Can't the KVM device assignment code
+>> ensure that only MSIs are registered as such so that the above concerns
+>> no longer apply?
 > 
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+> Is that making assumptions about how the chipset handles an MSI?  Are
 
-Francois, I'm assuming you will merge this to me after you've
-done some testing.
+I suppose the nature of MSIs removes any need for assumptions about the
+handling.
+
+> you suggesting we need a request_edge_threaded_only_irq() API?  Thanks,
+
+I'm just wondering if that restriction for threaded IRQs is really
+necessary for all use cases we have. Threaded MSIs do not appear to me
+like have to be handled that conservatively, but maybe I'm missing some
+detail.
+
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
