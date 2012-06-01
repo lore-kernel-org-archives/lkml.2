@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965452Ab2FAQWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:22:13 -0400
+	id S965434Ab2FAQWJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:22:09 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:16696 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965301Ab2FAQWJ (ORCPT
+	with ESMTP id S965301Ab2FAQWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:22:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6729"; a="194516774"
+	Fri, 1 Jun 2012 12:22:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6729"; a="194516770"
 From: David Brown <davidb@codeaurora.org>
 To: Russell King <linux@arm.linux.org.uk>
 Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
@@ -21,99 +21,44 @@ Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
         Tomasz Figa <tomasz.figa@gmail.com>,
         Paulo Marques <pmarques@grupopie.com>,
         Eric Miao <eric.y.miao@gmail.com>
-Subject: [PATCH variant 1] ARM: Prevent KALLSYM size mismatch on ARM.
-Date: Fri,  1 Jun 2012 09:22:00 -0700
-Message-Id: <1338567721-19514-2-git-send-email-davidb@codeaurora.org>
+Subject: [PATCH] ARM: two possible fixes for the KALLSYMS build problem
+Date: Fri,  1 Jun 2012 09:21:59 -0700
+Message-Id: <1338567721-19514-1-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.10.3
-In-Reply-To: <1338567721-19514-1-git-send-email-davidb@codeaurora.org>
-References: <1338567721-19514-1-git-send-email-davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ARM builds seem to be plagued by an occasional build error:
+In trying to build numerous targets, I've managed to reproduce the
+problem with KALLSYMS enough to come up with some ideas for a fix.
+Neither of these fixes affects the size of the kernel.  I've compile
+tested all of the defconfigs that are present in the kernel, and
+neither causes any new compilation failures (several don't build).
 
-    Inconsistent kallsyms data
-    This is a bug - please report about it
-    Try "make KALLSYMS_EXTRA_PASS=1" as a workaround
+The first fix adjusts the alignment of the per-cpu section, in the
+cases where it is blank.  If it has the same alignment as the
+following section, there won't be inconsistencies in the position when
+the kallsyms data is inserted.
 
-The problem has to do with alignment of some sections by the linker.
-The kallsyms data is built in two passes by first linking the kernel
-without it, and then linking the kernel again with the symbols
-included.  Normally, this just shifts the symbols, without changing
-their order, and the compression used by the kallsyms gives the same
-result.
+The second fix just eliminates the per_cpu section on non-smp builds.
 
-On non SMP, the per CPU data is empty.  Depending on the where the
-alignment ends up, it can come out as either:
+Either case only affects the position of an empty section, and should
+have no effect on the position or size of anything else.
 
-   +-------------------+
-   | last text segment |
-   +-------------------+
-   /* padding */
-   +-------------------+     <- L1_CACHE_BYTES alignemnt
-   | per cpu (empty)   |
-   +-------------------+
-__per_cpu_end:
-   /* padding */
-__data_loc:
-   +-------------------+     <- THREAD_SIZE alignment
-   | data              |
-   +-------------------+
+I think the second patch (eliminate the per-cpu section) is cleaner,
+but I'm concerned about something I've missed or changed.
 
-or
+The second patch does make the per-cpu section smaller (since some
+symbols are left out).  It also affects the position of init_end, and
+may need a page alignment before it.  But, this would also suggest
+that currently, on SMP, there might be a page that isn't being freed.
 
-   +-------------------+
-   | last text segment |
-   +-------------------+
-   /* padding */
-   +-------------------+     <- L1_CACHE_BYTES alignemnt
-   | per cpu (empty)   |
-   +-------------------+
-__per_cpu_end:
-   /* no padding */
-__data_loc:
-   +-------------------+     <- THREAD_SIZE alignment
-   | data              |
-   +-------------------+
+David Brown (1):
+  ARM: Prevent KALLSYM size mismatch on ARM.
 
-if the alignment satisfies both.  Because symbols that have the same
-address are sorted by 'nm -n', the second case will be in a different
-order than the first case.  This changes the compression, changing the
-size of the kallsym data, causing the build failure.
-
-The KALLSYMS_EXTRA_PASS=1 workaround usually works, but it is still
-possible to have the alignment change between the second and third
-pass.  It's probably even possible for it to never reach a fixedpoint.
-
-The problem only occurs on non-SMP, when the per-cpu data is empty,
-and when the data segment has alignment (and immediately follows the
-text segments).  In these cases, add the THREAD_SIZE alignment above
-the per-cpu data so that the empty segment will always be adjacent to
-the data segment.
-
-This shouldn't ever change the size of the kernel, and only should
-affect the location of the per_cpu symbols, which contain no data.
-
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
  arch/arm/kernel/vmlinux.lds.S |    3 +++
  1 file changed, 3 insertions(+)
 
-diff --git a/arch/arm/kernel/vmlinux.lds.S b/arch/arm/kernel/vmlinux.lds.S
-index 43a31fb..f3778c7 100644
---- a/arch/arm/kernel/vmlinux.lds.S
-+++ b/arch/arm/kernel/vmlinux.lds.S
-@@ -183,6 +183,9 @@ SECTIONS
- 	}
- #endif
- 
-+#if !defined(CONFIG_SMP) && !defined(CONFIG_XIP_KERNEL)
-+	. = ALIGN(THREAD_SIZE);
-+#endif
- 	PERCPU_SECTION(L1_CACHE_BYTES)
- 
- #ifdef CONFIG_XIP_KERNEL
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
