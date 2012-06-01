@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965488Ab2FAQX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:23:27 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:45387 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965393Ab2FAQXX (ORCPT
+	id S965447Ab2FAQYU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:24:20 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:43867 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758316Ab2FAQYT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:23:23 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jun 2012 12:23:23 EDT
-Date: Fri, 1 Jun 2012 18:16:40 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: WARNING: at mm/page-writeback.c:1990
- __set_page_dirty_nobuffers+0x13a/0x170()
-Message-ID: <20120601161640.GA329@x4>
-References: <20120530163317.GA13189@redhat.com>
- <20120531005739.GA4532@redhat.com>
- <20120601023107.GA19445@redhat.com>
- <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+	Fri, 1 Jun 2012 12:24:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+In-Reply-To: <CAFU-uVs2y8jdVUZzFu7WGTEivosUPZXREXxsRrwFdCY3X7eQtg@mail.gmail.com>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+ <20120516143830.GA483@kroah.com> <alpine.LNX.2.00.1205161640520.8796@pobox.suse.cz>
+ <CAFU-uVt94sgzq7DgsgKL2OJ0e7DazvNpFunx7BNEz88LHJOg+g@mail.gmail.com>
+ <20120516150813.GA3293@kroah.com> <CAFU-uVvzyN0asmReOVJcAEiAtbQ=styfGxRRbnrJKgNFDS5X_g@mail.gmail.com>
+ <CAFU-uVsStG0KoiQm95-uC8ZPXWAq=8Q8vXircxOuUCHhk+r9uw@mail.gmail.com>
+ <20120601075848.GB9920@kroah.com> <CAFU-uVs2y8jdVUZzFu7WGTEivosUPZXREXxsRrwFdCY3X7eQtg@mail.gmail.com>
+From: Philipp Riemer <ruderphilipp@gmail.com>
+Date: Fri, 1 Jun 2012 18:23:58 +0200
+Message-ID: <CAFU-uVtwXc7gUWtrV5GdWCNV5m+92fRWDm7Y+2Bbb2stxeuSow@mail.gmail.com>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git repository
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Paul Mundt <lethal@linux-sh.org>,
+        =?ISO-8859-1?Q?Michael_B=FCsc?= =?ISO-8859-1?Q?h?= <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.06.01 at 01:44 -0700, Hugh Dickins wrote:
-> On Thu, 31 May 2012, Dave Jones wrote:
-> > On Wed, May 30, 2012 at 08:57:40PM -0400, Dave Jones wrote:
-> >  > On Wed, May 30, 2012 at 12:33:17PM -0400, Dave Jones wrote:
-> >  >  > Just saw this on Linus tree as of 731a7378b81c2f5fa88ca1ae20b83d548d5613dc
-> >  >  > 
-> >  >  > WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0x13a/0x170()
-
-I've also hit this warning today:
-
-------------[ cut here ]------------
-WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0xea/0x120()
-Hardware name: System Product Name
-Pid: 4385, comm: firefox Not tainted 3.4.0-09547-gfb21aff-dirty #46
-Call Trace:
- [<ffffffff8105c6c0>] ? warn_slowpath_common+0x60/0xa0
- [<ffffffff810ba44a>] ? __set_page_dirty_nobuffers+0xea/0x120
- [<ffffffff810e4db0>] ? migrate_page_copy+0x150/0x160
- [<ffffffff810e4e2d>] ? migrate_page+0x4d/0x80
- [<ffffffff810e4edd>] ? move_to_new_page+0x7d/0x220
- [<ffffffff810c9e40>] ? suitable_migration_target.isra.12+0x1a0/0x1a0
- [<ffffffff810e55a8>] ? migrate_pages+0x3c8/0x460
- [<ffffffff810caa44>] ? compact_zone+0x1c4/0x2c0
- [<ffffffff810cad42>] ? compact_zone_order+0x82/0xc0
- [<ffffffff810cae4a>] ? try_to_compact_pages+0xca/0x140
- [<ffffffff81551f11>] ? __alloc_pages_direct_compact+0xa7/0x18f
- [<ffffffff810b8a30>] ? __alloc_pages_nodemask+0x3b0/0x7a0
- [<ffffffff810e884d>] ? do_huge_pmd_anonymous_page+0x10d/0x2a0
- [<ffffffff8105301b>] ? do_page_fault+0xfb/0x400
- [<ffffffff810d46bd>] ? mmap_region+0x1dd/0x540
- [<ffffffff81559f2f>] ? page_fault+0x1f/0x30
----[ end trace 7d7c821044142576 ]---
-
--- 
-Markus
+2012/6/1 Philipp Riemer <ruderphilipp@gmail.com>:
+> 2012/6/1 Greg KH <gregkh@linuxfoundation.org>:
+>> On Thu, May 31, 2012 at 06:08:48PM +0200, Philipp Riemer wrote:
+>>> updated mailmap file for LK repository
+>>>
+>>> The current version of the .mailmap file does only capture a fraction of errors
+>>> and ambiguity when looking at developers emails and names. Hence, this revised
+>>> version tries to address many more names and, as a result, to clarify maintainer
+>>> information. Issues addressed:
+>>>  - Typos in names
+>>>  - Typos in mails
+>>>  - Mapping of ambiguous mail adresses (e.g. {aa@bb.cc, aa@home.(none),
+>>>    aa@laptop.bb.cc,...} becomes {aa@bb.cc}) but keeping LKML specific ones
+>>>  - Mapping of names to entries with only email information
+>>>  - Correct usage of special character (e.g. German umlauts)
+>>>  - Harmonization of position and style of last name (no more all-caps names
+>>>    like "First LAST" or those of "Last, First")
+>>>  - No initials in names if not necessary
+>>>  - Conversion of email addresses to lower case
+>>>
+>>> Signed-off-by: Philipp Riemer <ruderphilipp@gmail.com>
+>>> ---
+>>> Finally I am back from my trip through Germany and after attending
+>>> LinuxTag in Berlin last week, reading Documentation/SubmittingPatches,
+>>> and checking other patch submissions, I give this topic finally a new
+>>> try...  Hopefully my submission confirms to the LK standards this
+>>> time. I can certify that this contribution was conscientiously created
+>>> in whole by me and therefore added the sign-off message.
+>>>
+>>> Please pull from
+>>>
+>>>               git://github.com/ruderphilipp/linux.git mailmap-changes
+>>>
+>>> to get the changes in the attached patch file (since even the
+>>> web-interface of GMail wraps lines) -- or simply inspect/apply that
+>>> file directly.
+>>>
+>>> $ git diffstat upstream/master..origin/mailmap-changes .mailmap
+>>>  .mailmap | 2482 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>>>  1 file changed, 2444 insertions(+), 38 deletions(-)
+>>
+>> Where did you get some of these email addresses from?  My "kroah.org"
+>> entries never showed up in the kernel commit logs, nor are they valid email
+>> addresses, so why did you add them to the file?
+>>
+>> greg k-h
+>
+> Hi Greg,
+> I re-checked that with the current linux git repository from Linux and
+should actually be "current linux git repository from Linus at kernel.org"...
