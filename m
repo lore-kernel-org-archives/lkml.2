@@ -1,112 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab2FATXb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 15:23:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43960 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab2FATX3 (ORCPT
+	id S1758246Ab2FAT2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 15:28:00 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:42073
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755085Ab2FAT16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 15:23:29 -0400
-Message-ID: <4FC916AC.4060804@wwwdotorg.org>
-Date: Fri, 01 Jun 2012 13:23:24 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 1 Jun 2012 15:27:58 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275bh8275dhz2fh2a8h683h839h93fhd25hf0ah)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] Tools: hv: verify origin of netlink connector message
+Thread-Topic: [PATCH] Tools: hv: verify origin of netlink connector message
+Thread-Index: AQHNPztaRH65TdyUHkiuG8hBEnFgg5bl2c1Q
+Date: Fri, 1 Jun 2012 19:26:44 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF90710C2A7@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <20120531144006.GA24592@aepfle.de>
+In-Reply-To: <20120531144006.GA24592@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.174.42]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
-References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com>
-In-Reply-To: <4FBBDE06.5080806@nvidia.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC105.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q51JS5P7015549
 
-On 05/22/2012 12:42 PM, Laxman Dewangan wrote:
-> On Tuesday 22 May 2012 11:57 PM, Stephen Warren wrote:
->> On 05/22/2012 11:56 AM, Laxman Dewangan wrote:
->>> On Tuesday 22 May 2012 10:49 PM, Stephen Warren wrote:
->>>> On 05/22/2012 11:09 AM, Laxman Dewangan wrote:
->>>>> On Tuesday 22 May 2012 10:10 PM, Stephen Warren wrote:
->>>>>> On 05/22/2012 07:05 AM, Laxman Dewangan wrote:
->>>>>>> Add device info for the PMIC device tps65911 in tegra-cardhu
->>>>>>> dts file. This device supports the multiple regulator rails,
->>>>>>> gpio, interrupts.
->> ...
->>>>>> Nitpicky, but the labels might be more logical as reg_vdd1 rather
->>>>>> than
->>>>>> vdd1_reg, but not a big deal.
->>>>>>
->>>>>> So, please replace the line above with:
->>>>>>
->>>>>>       reg_vdd1: regulator@0 {
->>>>>>           reg =<0>;
->>>>> Why do we really require the reg at all?
->>>>> I dont think any usage of doing this.
->> Oh, perhaps you meant the reg property not "reg_" in the label name?
->>
->> It is required because the parent node has #address-cells and
->> #size-cells and because the node name itself has a unit address ("@nnn").
->>
-> 
-> But we can not put
->     reg_vdd1:regulator@0 {
->         ::::::::::::::
->     }
-> 
-> 
-> due to their dt binding with their node names.
 
-I spoke to Olof about this on IRC, and he also tended to agree that the
-regulator node names should not be used directly.
 
-However, Mark warned that changing this would be a bit painful because
-there are already users of the existing scheme. It looks like that's
-only tps65910 (which we haven't started using yet), db8500, and ab8500,
-so probably not that big a deal.
-
-We could probably amend of_regulator_match() to work in a
-backwards-compatible fashion; to look for some name property in each
-child node first, and then fall back to using the node name if that
-resulted in no matches. That would allow db8500/ab8500 to be converted
-at leisure.
-
-We could either augment struct of_regulator_match with an integer ID
-field for each regulator (which would perhaps make it slightly painful
-to write the nodes and keep the IDs matched up), or add a new property
-to each regulator provider node e.g. regulator-id which contained the
-name that the regulator driver knows the regulator as (which would match
-struct of_regulator_match.name), since the existing regulator-name
-property is used for semantically different purposes.
-
-That would result in:
-
-> tps65911: tps65911@2d {
-> 	compatible = "ti,tps65911";
-> 	reg = <0x2d>;
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Thursday, May 31, 2012 10:40 AM
+> To: KY Srinivasan; Greg Kroah-Hartman
+> Cc: linux-kernel@vger.kernel.org
+> Subject: [PATCH] Tools: hv: verify origin of netlink connector message
 > 
-> 	#gpio-cells = <2>;
-> 	gpio-controller;
+> The SuSE security team suggested to use recvfrom instead of recv to be
+> certain that the connector message is originated from kernel.
+
+Thanks Olaf.
+
 > 
-> 	regulators {
-> 		#address-cells = <1>;
-> 		#size-cells = <0>;
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+
+Signed-off-by:  K. Y. Srinivasan <kys@microsoft.com>
+
 > 
-> 		vdd1_reg: regulator@0 {
-> 			reg = <0>;
-> 			regulator-id = "vdd1"; /* Internal name */
-> 			regulator-name = "vdd_1v2_gen"; /* Signal on schematic */
-...
-> 		};
+> ---
+>  tools/hv/hv_kvp_daemon.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
 > 
-> 		vdd2_reg: regulator@1 {
-> 			reg = <1>;
-> 			regulator-id = "vdd2";
-> 			regulator-name = "vdd_1v5_gen";
-...
+> Index: linux-3.4/tools/hv/hv_kvp_daemon.c
+> ==============================================================
+> =====
+> --- linux-3.4.orig/tools/hv/hv_kvp_daemon.c
+> +++ linux-3.4/tools/hv/hv_kvp_daemon.c
+> @@ -701,14 +701,18 @@ int main(void)
+>  	pfd.fd = fd;
+> 
+>  	while (1) {
+> +		struct sockaddr *addr_p = (struct sockaddr *) &addr;
+> +		socklen_t addr_l = sizeof(addr);
+>  		pfd.events = POLLIN;
+>  		pfd.revents = 0;
+>  		poll(&pfd, 1, -1);
+> 
+> -		len = recv(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0);
+> +		len = recvfrom(fd, kvp_recv_buffer, sizeof(kvp_recv_buffer), 0,
+> +				addr_p, &addr_l);
+> 
+> -		if (len < 0) {
+> -			syslog(LOG_ERR, "recv failed; error:%d", len);
+> +		if (len < 0 || addr.nl_pid) {
+> +			syslog(LOG_ERR, "recvfrom failed; pid:%u error:%d %s",
+> +					addr.nl_pid, errno, strerror(errno));
+>  			close(fd);
+>  			return -1;
+>  		}
+> 
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
