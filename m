@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760118Ab2FAPBp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:01:45 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45556 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759104Ab2FAPBm (ORCPT
+	id S964827Ab2FAPBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:01:51 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59837 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759104Ab2FAPBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:01:42 -0400
-Subject: Re: seq_file: Use larger buffer to reduce time traversing lists
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        Al Viro <viro@zeniv.linux.org.uk>, nstraz@redhat.com
-In-Reply-To: <1338562627.2760.1526.camel@edumazet-glaptop>
-References: <1338547193.2708.16.camel@menhir>
-	 <1338552626.2760.1510.camel@edumazet-glaptop>
-	 <1338553486.2708.25.camel@menhir>
-	 <1338554890.2760.1517.camel@edumazet-glaptop>
-	 <1338556468.2708.41.camel@menhir>
-	 <1338557229.2760.1520.camel@edumazet-glaptop>
-	 <1338560283.2708.59.camel@menhir>
-	 <1338562627.2760.1526.camel@edumazet-glaptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jun 2012 17:01:37 +0200
-Message-ID: <1338562897.2760.1528.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jun 2012 11:01:49 -0400
+Date: Fri, 1 Jun 2012 16:01:46 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: linux-next: build rebase of the drivers-x86 tree
+Message-ID: <20120601150145.GA8079@srcf.ucam.org>
+References: <20120601080404.64da2644d5b26c7101e1e274@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601080404.64da2644d5b26c7101e1e274@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-01 at 16:57 +0200, Eric Dumazet wrote:
-
-> And If someones need 100.000 active unix sockets and fast /proc/net/udp
-
-	I meant /proc/net/unix here, of course...
-
-> file as well, patch is welcome. If I have time I can do it eventually.
+On Fri, Jun 01, 2012 at 08:04:04AM +1000, Stephen Rothwell wrote:
+> Hi Matthew,
 > 
+> Looking through the drivers-x86 tree rebase today, I noticed in commit
+> 62cce7526629 ("toshiba_acpi: Only register backlight device when
+> interface is read/write") that a memset has been added in the wrong place
+> - about line 1100 in function toshiba_acpi_setup_backlight().
 
-All unix sockets are linked into a single list, no hash table, so its
-not very easy right now.
+That was me mis-merging - three commits all touched the backlight code 
+and I screwed it up. My fault.
 
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
