@@ -1,122 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606Ab2FAJ4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:56:36 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42568 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410Ab2FAJ4f (ORCPT
+	id S932701Ab2FAJ5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:57:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55310 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab2FAJ5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:56:35 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 12/27] tile, smpboot: Use generic SMP booting infrastructure
-To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
-Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
-        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Yong Zhang <yong.zhang0@gmail.com>
-Date: Fri, 01 Jun 2012 14:42:56 +0530
-Message-ID: <20120601091248.31979.59256.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Fri, 1 Jun 2012 05:57:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] ARM: ux500: fixes for mismerge
+Date: Fri, 1 Jun 2012 09:56:47 +0000
+User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        arm@kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060100-3568-0000-0000-000001E9143C
+Message-Id: <201206010956.47658.arnd@arndb.de>
+X-Provags-ID: V02:K0:rkCFKm2MIfZKMuaDLveOBUxO7kP0qe0+Jo9MOvMQqZ5
+ HBTqiL62COs9hamuAOfD/BY2DzvdEsTnF8N0NyeIq1czddsuO+
+ 1j2wFfDCoblJ+G/bbiV1+XFHpRlOqtqYzrWZNLzOnK893r380O
+ uz5PAmicj92v96OFU7Gj6yNNVsNKsRhF0y99GxSXTLdtOvolTt
+ cdwaDE7hybrMQK4GPtUt7a6hUWIyaFIarTF9zjKgMuf8y2C69U
+ P8NzRh6N3IZEg8sL0E+8a7Zy85+dl4/xS9h8BihyCaNDYxK9jR
+ e8Bnm6fGpZq7+qj3C5j9FSAEpWlcpaZMWopGHm80r8hqQaICkx
+ GA+6JET7Kd2+QhMLzcvY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert tile to use the generic framework to boot secondary CPUs.
+The following changes since commit 76f901eb4659779ecacd0e4eba49f55442daef53:                                                                                                                                       
 
-Notes:
-1. Don't enable interrupts in start_secondary().
-2. Remove the unnecessary calls to local_irq_enable() in __cpu_up().
-3. cpu_idle() was being called after doing a preempt_enable() instead
-of a preempt_disable()! Fix it.
+  Merge tag 'for-v3.5' of git://git.infradead.org/battery-2.6 (2012-05-31 12:10:15 -0700)
 
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+are available in the git repository at:
 
- arch/tile/kernel/smpboot.c |   22 ++++++++--------------
- 1 files changed, 8 insertions(+), 14 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git ux500/hickup
 
-diff --git a/arch/tile/kernel/smpboot.c b/arch/tile/kernel/smpboot.c
-index 24a9c06..8558824 100644
---- a/arch/tile/kernel/smpboot.c
-+++ b/arch/tile/kernel/smpboot.c
-@@ -145,8 +145,6 @@ static void __cpuinit start_secondary(void)
- 	/* Set our thread pointer appropriately. */
- 	set_my_cpu_offset(__per_cpu_offset[cpuid]);
- 
--	preempt_disable();
--
- 	/*
- 	 * In large machines even this will slow us down, since we
- 	 * will be contending for for the printk spinlock.
-@@ -165,7 +163,6 @@ static void __cpuinit start_secondary(void)
- 
- 	/* Allow hypervisor messages to be received */
- 	init_messaging();
--	local_irq_enable();
- 
- 	/* Indicate that we're ready to come up. */
- 	/* Must not do this before we're ready to receive messages */
-@@ -183,6 +180,11 @@ static void __cpuinit start_secondary(void)
-  */
- void __cpuinit online_secondary(void)
- {
-+	smpboot_start_secondary(NULL);
-+}
-+
-+void __cpuinit __cpu_pre_starting(void *unused)
-+{
- 	/*
- 	 * low-memory mappings have been cleared, flush them from
- 	 * the local TLBs too.
-@@ -193,21 +195,15 @@ void __cpuinit online_secondary(void)
- 
- 	/* This must be done before setting cpu_online_mask */
- 	wmb();
-+}
- 
--	notify_cpu_starting(smp_processor_id());
--
--	set_cpu_online(smp_processor_id(), 1);
--	__get_cpu_var(cpu_state) = CPU_ONLINE;
--
-+void __cpuinit __cpu_post_online(void *unused)
-+{
- 	/* Set up tile-specific state for this cpu. */
- 	setup_cpu(0);
- 
- 	/* Set up tile-timer clock-event device on this cpu */
- 	setup_tile_timer();
--
--	preempt_enable();
--
--	cpu_idle();
- }
- 
- int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
-@@ -217,13 +213,11 @@ int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *tidle)
- 	for (; !cpumask_test_cpu(cpu, &cpu_started); timeout++) {
- 		if (timeout >= 50000) {
- 			pr_info("skipping unresponsive cpu%d\n", cpu);
--			local_irq_enable();
- 			return -EIO;
- 		}
- 		udelay(100);
- 	}
- 
--	local_irq_enable();
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
- 	/* Unleash the CPU! */
+for you to fetch changes up to 5910de9e2de453956c3a18816f4838d96ac86988:
 
+  ARM: ux500: Enable probing of pinctrl through Device Tree (2012-06-01 02:04:53 +0200)
+
+----------------------------------------------------------------
+ARM: ux500: fixes for mismerge
+
+The device tree conversion for arm/ux500 in 3.5 turns out to be
+incomplete because of a mismerge done by Linus Walleij that
+I failed to notice early enough and that Lee Jones as the original
+author of those patches did not manage to fix during the -next
+cycle. While we originally to get a much larger set of ux500
+device tree enablement patches merged, this did not happen in time.
+
+After some discussion at Linaro Connect conference this week,
+Lee has been able to do damage control and provide a series to put
+the broken platform back into usable shape for both DT and non-DT
+based booting.
+
+This series has not been part of linux-next and is based on top
+of the current state of the upstream kernel rather than an -rc,
+but this is the best we could manage given the earlier breakage.
+
+----------------------------------------------------------------
+Lee Jones (15):
+      pinctrl-nomadik: Allow Device Tree driver probing
+      ARM: ux500: New DT:ed snowball_platform_devs for one-by-one device enablement
+      ARM: ux500: New DT:ed u8500_init_devices for one-by-one device enablement
+      ARM: ux500: Disable SMSC911x platform code registration when DT is enabled
+      ARM: ux500: Remove DB8500 PRCMU platform registration when DT is enabled
+      ARM: ux500: PRCMU related configuration and layout corrections for Device Tree
+      ARM: ux500: Re-enable SMSC911x platform code registration during non-DT boots
+      ARM: ux500: Use correct format for dynamic IRQ assignment
+      ARM: ux500: Disable platform setup of the ab8500 when DT is enabled
+      ARM: ux500: Only initialise STE's UIBs on boards which support them
+      ARM: ux500: Apply db8500-prcmu regulator information to db8500 Device Tree
+      ARM: ux500: Allow PRCMU regulator to be probed during a DT enabled boot
+      ARM: ux500: Provide regulator support for SMSC911x via Device Tree
+      ARM: ux500: Add support for ab8500 regulators into the Device Tree
+      ARM: ux500: Enable probing of pinctrl through Device Tree
+
+ arch/arm/boot/dts/db8500.dtsi          |  204 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/snowball.dts         |   32 ++++++++++++++++++--------
+ arch/arm/configs/u8500_defconfig       |    1 +
+ arch/arm/mach-ux500/board-mop500-uib.c |    4 +---
+ arch/arm/mach-ux500/board-mop500.c     |   32 ++++++++++++++++++++++----
+ arch/arm/mach-ux500/board-mop500.h     |    4 ++++
+ arch/arm/mach-ux500/cpu-db8500.c       |   25 ++++++++++++++++++--
+ drivers/mfd/db8500-prcmu.c             |    1 +
+ drivers/pinctrl/pinctrl-nomadik.c      |   20 +++++++++++++++-
+ 9 files changed, 301 insertions(+), 22 deletions(-)
