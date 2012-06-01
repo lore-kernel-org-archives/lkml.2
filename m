@@ -1,94 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875Ab2FAPV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:21:26 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:49563 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964820Ab2FAPVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:21:24 -0400
-Date: Fri, 1 Jun 2012 17:21:51 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v29] RAS: Add a tracepoint for reporting memory
- controller events
-Message-ID: <20120601152151.GC28216@aftab.osrc.amd.com>
-References: <1338563258-13322-1-git-send-email-mchehab@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338563258-13322-1-git-send-email-mchehab@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S964895Ab2FAP3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:29:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752861Ab2FAP3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 11:29:20 -0400
+Subject: Re: seq_file: Use larger buffer to reduce time traversing lists
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Al Viro <viro@zeniv.linux.org.uk>, nstraz@redhat.com
+In-Reply-To: <1338562627.2760.1526.camel@edumazet-glaptop>
+References: <1338547193.2708.16.camel@menhir>
+	 <1338552626.2760.1510.camel@edumazet-glaptop>
+	 <1338553486.2708.25.camel@menhir>
+	 <1338554890.2760.1517.camel@edumazet-glaptop>
+	 <1338556468.2708.41.camel@menhir>
+	 <1338557229.2760.1520.camel@edumazet-glaptop>
+	 <1338560283.2708.59.camel@menhir>
+	 <1338562627.2760.1526.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 01 Jun 2012 16:28:20 +0100
+Message-ID: <1338564500.2708.73.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 12:07:38PM -0300, Mauro Carvalho Chehab wrote:
-> + * Default error mechanisms for Memory Controller errors (CE and UE)
-> + */
-> +TRACE_EVENT(mc_event,
-> +
-> +	TP_PROTO(const unsigned int err_type,
-> +		 const char *error_msg,
-> +		 const char *label,
-> +		 const int error_count,
-> +		 const u8 mc_index,
-> +		 const s8 layer0,
-> +		 const s8 layer1,
-> +		 const s8 layer2,
+Hi,
 
-Btw, why are the layers still called layer[012] but differently below?
-This is confusing.
+On Fri, 2012-06-01 at 16:57 +0200, Eric Dumazet wrote:
+> On Fri, 2012-06-01 at 15:18 +0100, Steven Whitehouse wrote:
+> > 	0m0.374s
+> > 
+> > So even with the current tcp scheme this appears to speed things up by
+> > nearly 3x. Also that was with only 28000 entries in the file,
+> 
+> Initial speedup was 100x, not 3x.
+> 
+According to the patch description, that 100x was with 182k entries.
+That is not comparing like with like, although I accept that that did
+provide a really good improvement. I'm not suggesting that we should
+have one approach or the other, but that both are worth considering.
+I'll certainly have a look at the hash table based approach too.
 
-Also, edac_mc_handle_error() should have the top/middle/lower layer arg
-names too.
+> Of course using a 32KB buffer instead of 4KB will help.
+> 
+> And If someones need 100.000 active unix sockets and fast /proc/net/udp
+> file as well, patch is welcome. If I have time I can do it eventually.
+> 
+> Really, kmalloc(2 MB) is not going to happen, even using __GFP_NOWARN
+> 
+It is designed so that if this allocation fails, then we just fall back
+to the old slow way, so I'm not sure that this is an issue. It will not
+fail to work just because the initial kmalloc fails, so we would be no
+worse off than with the current code, and we could also trim down the
+top size limit to something a bit smaller than KMALLOC_MAX_SIZE and
+still get most of the benefit. I just chose that as a convenient upper
+limit to show the principle.
 
-And also, why are the layers s8? Any reason for the signedness?
+Also, I think it wouldn't be unreasonable to argue that if the
+probability of a KMALLOC_MAX_SIZE allocation failing is so high that it
+is very unlikely to ever succeed, then perhaps KMALLOC_MAX_SIZE is too
+large.
 
-> +		 unsigned long address,
-> +		 const int grain_bits,
+So I know that I might have not convinced you :-) but I still think that
+perhaps something along these lines is worth considering. I had looked
+at various other possible ways of achieving a similar effect but all of
+those I rejected in the end, as they fell foul of some of the subtleties
+of the seq_read() code,
 
-This is an int here and a u8 below?
+Steve.
 
-I was just about to befriend the idea of grain being u8 and accepting it
-as a compromise.
 
-Make it a u8 and cast it at the call sites of trace_mc_event instead.
-
-> +		 unsigned long syndrome,
-> +		 const char *driver_detail),
-> +
-> +	TP_ARGS(err_type, error_msg, label, error_count, mc_index,
-> +		layer0, layer1, layer2, address, grain_bits, syndrome,
-> +		driver_detail),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	unsigned int,	error_type		)
-> +		__string(	msg,		error_msg		)
-> +		__string(	label,		label			)
-> +		__field(	u16,		error_count		)
-> +		__field(	u8,		mc_index		)
-> +		__field(	s8,		top_layer		)
-> +		__field(	s8,		middle_layer		)
-> +		__field(	s8,		lower_layer		)
-> +		__field(	long,		address			)
-> +		__field(	u8,		grain_bits		)
-> +		__field(	long,		syndrome		)
-> +		__string(	driver_detail,	driver_detail		)
-> +	),
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
