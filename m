@@ -1,129 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759917Ab2FANvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 09:51:08 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37364 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759863Ab2FANvG (ORCPT
+	id S1759934Ab2FANv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 09:51:28 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:43992 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759876Ab2FANv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 09:51:06 -0400
-Date: Fri, 1 Jun 2012 10:50:58 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        fweisbec@gmail.com, paulus@samba.org, tglx@linutronix.de
-Subject: Re: [PATCH] perf tool: build fix, remove duplicate declarations
-Message-ID: <20120601135058.GC16429@infradead.org>
-References: <1338352913-60483-1-git-send-email-dsahern@gmail.com>
- <4FC851AB.2090905@gmail.com>
+	Fri, 1 Jun 2012 09:51:26 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 0.D_GccVM1kGkvGOE2DghUBir5GFIeJZznMOoVazbld51Rx
+ 8r3ySHGOxsm8pp4d29msTAHQkdDFESVN4AFApSkhqxTFsP4_lmNTNYHDhzn3
+ Rwj75pVFrFUIv_prlOTSXMTabf16KQTygbRBAFQH6UkIwfSd.fEFkkwgSl9s
+ Oy9TLnezi9LwlEhqnGHvEgrIpmGNo1OCsRFptEbFkMNuNYIiUyOfS2V_Prjk
+ HEDUP8elvi9sNmRkeDbb8xKzHoFUFw4I.Z1jDomtXSTX15cN4vg1Chkzru3N
+ lsLU1NN4.WgRkBmTHdE6oJ_IsWI7GVzj7smbv1tRLW_49fFNR_oTpS1DnEUG
+ Izq9LldtWD85_XPEoXqCLwHoSQBtKS1JGQCPc6c2a5KBhJxQsRsM9qDMKUb_
+ 3
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Fri, 1 Jun 2012 08:51:21 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: david@lang.hm
+cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
+        sivanich@sgi.com
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+In-Reply-To: <alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm>
+Message-ID: <alpine.DEB.2.00.1206010850430.6302@router.home>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com> <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org>
+ <alpine.DEB.2.00.1205301349230.31768@router.home> <20120530193234.GV27374@one.firstfloor.org> <alpine.DEB.2.00.1205301441350.31768@router.home> <CAHGf_=ooVunBpSdBRCnO1uOoswqxcSy7Xf8xVcgEUGA2fXdcTA@mail.gmail.com> <20120530201042.GY27374@one.firstfloor.org>
+ <CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com> <alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FC851AB.2090905@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 31, 2012 at 11:22:51PM -0600, David Ahern escreveu:
-> Arnaldo:
-> 
-> On 5/29/12 10:41 PM, David Ahern wrote:
-> >I'm sure I have some gremlins running around today, but I am
-> >consistently hitting this compile failure on Fedora 14 and 16:
-> >
-> >In file included from util/sort.h:12:0,
-> >                  from builtin-diff.c:15:
-> >util/string.h:7:5: error: redundant redeclaration of ‘hex2u64’ [-Werror=redundant-decls]
-> >util/symbol.h:32:5: note: previous declaration of ‘hex2u64’ was here
-> >util/string.h:8:7: error: redundant redeclaration of ‘strxfrchar’ [-Werror=redundant-decls]
-> >util/symbol.h:33:7: note: previous declaration of ‘strxfrchar’ was here
-> >util/string.h:9:5: error: redundant redeclaration of ‘perf_atoll’ [-Werror=redundant-decls]
-> >util/util.h:238:5: note: previous declaration of ‘perf_atoll’ was here
-> >util/string.h:10:8: error: redundant redeclaration of ‘argv_split’ [-Werror=redundant-decls]
-> >util/util.h:239:8: note: previous declaration of ‘argv_split’ was here
-> >util/string.h:11:6: error: redundant redeclaration of ‘argv_free’ [-Werror=redundant-decls]
-> >util/util.h:240:6: note: previous declaration of ‘argv_free’ was here
-> >util/string.h:12:6: error: redundant redeclaration of ‘strglobmatch’ [-Werror=redundant-decls]
-> >util/util.h:241:6: note: previous declaration of ‘strglobmatch’ was here
-> >util/string.h:13:6: error: redundant redeclaration of ‘strlazymatch’ [-Werror=redundant-decls]
-> >util/util.h:242:6: note: previous declaration of ‘strlazymatch’ was here
-> >cc1: all warnings being treated as errors
-> >make: *** [/tmp/pbuild/builtin-diff.o] Error 1
-> >make: *** Waiting for unfinished jobs....
-> >make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
-> 
-> You are probably not hitting this compile problem, and I have no
+On Thu, 31 May 2012, david@lang.hm wrote:
 
-Strange, I just tested on f14 x86_64 and i386, in addition to RHEL6.2,
-no problems :-\
+> On Wed, 30 May 2012, KOSAKI Motohiro wrote:
+>
+> > On Wed, May 30, 2012 at 4:10 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> > > > Yes, that's right direction, I think. Currently, shmem_set_policy()
+> > > > can't handle
+> > > > nonlinear mapping.
+> > >
+> > > I've been mulling for some time to just remove non linear mappings.
+> > > AFAIK they were only useful on 32bit and are obsolete and could be
+> > > emulated with VMAs instead.
+> >
+> > I agree. It is only userful on 32bit and current enterprise users don't use
+> > 32bit anymore. So, I don't think emulated by vmas cause user visible issue.
+>
+> I wish this was true, there are a lot of systems out there still running 32
+> bit linux, even on 64 bit capible hardware. This is especially true in
+> enterprises where they have either homegrown or proprietary software that
+> isn't 64 bit clean.
 
-> idea why I am suddenly hitting it on F14 and F16 (my usual test
-> servers; i have always hit this on older systems), but nonetheless
-> there are duplicate declarations between util.h and symbol.h which
-> should be fixed.
+32 bit binaries (and entire distros) run fine under 64 bit kernels.
 
-Yeah, but the patch is not applying on my perf/urgent branch, can you
-take a look?
-
- 
-> David
-> 
-> 
-> >
-> >Fix it by removing duplicates.
-> >
-> >Signed-off-by: David Ahern<dsahern@gmail.com>
-> >---
-> >  tools/perf/util/symbol.h |    4 +---
-> >  tools/perf/util/util.h   |    6 +-----
-> >  2 files changed, 2 insertions(+), 8 deletions(-)
-> >
-> >diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> >index 1f00388..4ba5206 100644
-> >--- a/tools/perf/util/symbol.h
-> >+++ b/tools/perf/util/symbol.h
-> >@@ -9,6 +9,7 @@
-> >  #include<linux/list.h>
-> >  #include<linux/rbtree.h>
-> >  #include<stdio.h>
-> >+#include "string.h"
-> >
-> >  #ifdef HAVE_CPLUS_DEMANGLE
-> >  extern char *cplus_demangle(const char *, int);
-> >@@ -29,9 +30,6 @@ static inline char *bfd_demangle(void __used *v, const char __used *c,
-> >  #endif
-> >  #endif
-> >
-> >-int hex2u64(const char *ptr, u64 *val);
-> >-char *strxfrchar(char *s, char from, char to);
-> >-
-> >  /*
-> >   * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
-> >   * for newer versions we can use mmap to reduce memory usage:
-> >diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> >index 2daaedb..5152592 100644
-> >--- a/tools/perf/util/util.h
-> >+++ b/tools/perf/util/util.h
-> >@@ -78,6 +78,7 @@
-> >  #include "../../../include/linux/magic.h"
-> >  #include "types.h"
-> >  #include<sys/ttydefaults.h>
-> >+#include "string.h"
-> >
-> >  extern const char *graph_line;
-> >  extern const char *graph_dotted_line;
-> >@@ -235,11 +236,6 @@ static inline int sane_case(int x, int high)
-> >  int mkdir_p(char *path, mode_t mode);
-> >  int copyfile(const char *from, const char *to);
-> >
-> >-s64 perf_atoll(const char *str);
-> >-char **argv_split(const char *str, int *argcp);
-> >-void argv_free(char **argv);
-> >-bool strglobmatch(const char *str, const char *pat);
-> >-bool strlazymatch(const char *str, const char *pat);
-> >  int strtailcmp(const char *s1, const char *s2);
-> >  unsigned long convert_unit(unsigned long value, char *unit);
-> >  int readn(int fd, void *buf, size_t size);
