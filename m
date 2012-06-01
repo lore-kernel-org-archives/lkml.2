@@ -1,257 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932996Ab2FAKSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 06:18:31 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33020 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932787Ab2FAKSa (ORCPT
+	id S933032Ab2FAKUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 06:20:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59334 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932899Ab2FAKUK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 06:18:30 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 21/27] sparc32, smpboot: Use generic SMP booting infrastructure
-To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
-Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
-        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Frysinger <vapier@gentoo.org>, Konrad Eisele <konrad@gaisler.com>,
-        Tkhai Kirill <tkhai@yandex.ru>, Thomas Gleixner <tglx@linutronix.de>,
-        sparclinux@vger.kernel.org
-Date: Fri, 01 Jun 2012 14:45:09 +0530
-Message-ID: <20120601091503.31979.52537.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Fri, 1 Jun 2012 06:20:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12053123-7014-0000-0000-0000014D5362
+In-Reply-To: <4FC894E6.7090000@intel.com>
+References: <1338226278-13336-1-git-send-email-torne@google.com>
+	<1338258732.20487.171.camel@deadeye>
+	<4FC87EEA.5010707@intel.com>
+	<CAEV-rjcFx_+Zs+1K5rxapx7ngDkArEKSV8tDubbVL+BfYLDU5Q@mail.gmail.com>
+	<CAEV-rjfkcoEc-4VmMS-wQburo5tZZVDemzHk8LyKGhuLfFnSng@mail.gmail.com>
+	<4FC894E6.7090000@intel.com>
+Date: Fri, 1 Jun 2012 11:20:09 +0100
+Message-ID: <CAEV-rjc0i5i3nU+VgkY3-mF_ndtSzzp8vk7622C9WCNsfcRP+A@mail.gmail.com>
+Subject: Re: [PATCH V2] MMC: core: cap MMC card timeouts at 2 seconds.
+From: "Torne (Richard Coles)" <torne@google.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, cjb@laptop.org,
+        linus.walleij@linaro.org, jh80.chung@samsung.com,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert sparc32 to use the generic framework to boot secondary CPUs.
+On 1 June 2012 11:09, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> On 01/06/12 12:32, Torne (Richard Coles) wrote:
+>> On 1 June 2012 10:31, Torne (Richard Coles) <torne@google.com> wrote:
+>>> On 1 June 2012 09:35, Adrian Hunter <adrian.hunter@intel.com> wrote:
+>>>> On 29/05/12 05:32, Ben Hutchings wrote:
+>>>>> On Mon, 2012-05-28 at 18:31 +0100, Torne (Richard Coles) wrote:
+>>>>>> From: "Torne (Richard Coles)" <torne@google.com>
+>>>>>>
+>>>>>> MMC CSD info can specify very large, ridiculous timeouts, big enough to
+>>>>>> overflow timeout_ns on 32-bit machines. This can result in the card
+>>>>>> timing out on every operation because the wrapped timeout value is far
+>>>>>> too small.
+>>>>>>
+>>>>>> Fix the overflow by capping the result at 2 seconds.  Cards specifying
+>>>>>> longer timeouts are almost certainly insane, and host controllers
+>>>>>> generally cannot support timeouts that long in any case.
+>>>>>>
+>>>>>> 2 seconds should be plenty of time for any card to actually function;
+>>>>>> the timeout calculation code is already using 1 second as a "worst case"
+>>>>>> timeout for cards running in SPI mode.
+>>>>>
+>>>>> Needs a 'Signed-off-by'.
+>>>>>
+>>>>>> ---
+>>>>>>  drivers/mmc/core/core.c |   11 ++++++++++-
+>>>>>>  1 files changed, 10 insertions(+), 1 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>>>>>> index 0b6141d..3b4a9fc 100644
+>>>>>> --- a/drivers/mmc/core/core.c
+>>>>>> +++ b/drivers/mmc/core/core.c
+>>>>>> @@ -512,7 +512,16 @@ void mmc_set_data_timeout(struct mmc_data *data, const struct mmc_card *card)
+>>>>>>      if (data->flags & MMC_DATA_WRITE)
+>>>>>>              mult <<= card->csd.r2w_factor;
+>>>>>>
+>>>>>> -    data->timeout_ns = card->csd.tacc_ns * mult;
+>>>>>> +    /*
+>>>>>> +     * The timeout in nanoseconds may overflow with some cards. Cap it at
+>>>>>> +     * two seconds both to avoid the overflow and also because host
+>>>>>> +     * controllers cannot generally generate timeouts that long anyway.
+>>>>>> +     */
+>>>>>> +    if (card->csd.tacc_ns <= (2 * NSEC_PER_SEC) / mult)
+>>>>>> +            data->timeout_ns = card->csd.tacc_ns * mult;
+>>>>>> +    else
+>>>>>> +            data->timeout_ns = 2 * NSEC_PER_SEC;
+>>>>>
+>>>>> We clearly need to guard against overflow here, and this is the correct
+>>>>> way to clamp the multiplication.  I can't speak as to whether 2 seconds
+>>>>> is the right limit.
+>>>>
+>>>> The host controllers I have looked at have a limit of around 2.5 seconds.
+>>>>
+>>>> But why not just use the size of the type as the limit? e.g.
+>>>>
+>>>>        if (card->csd.tacc_ns <= UINT_MAX / mult)
+>>>>                data->timeout_ns = card->csd.tacc_ns * mult;
+>>>>        else
+>>>>                data->timeout_ns = UINT_MAX;
+>>>
+>>> The host controller drivers don't seem to all do a very good job of
+>>> preventing further overflows or handling large values correctly
+>>> (though some do). sdhci takes the especially annoying additional step
+>>> of printk'ing a warning for *every single MMC command* where
+>>> data->timeout_ns is larger than the controller can accommodate.
+>>> Capping it to a value with a sensible order of magnitude seems to make
+>>> it more likely that cards with obviously bogus CSD parameters will
+>>> actually work. I don't object to using a larger number for the limit,
+>>> but UINT_MAX on a 64-bit system obviously doesn't limit this at all
+>>> and will leave you with timeouts up to 17 minutes, which seems
+>>> ridiculous :)
+>>
+>> Er, not 17 minutes; 102.4 seconds as I used later in my mail. SD cards
+>> have their timeouts capped already, so their larger 100x multiplier is
+>> not a problem; 102.4 seconds is the longest for an MMC card.
+>>
+>
+> Linux is LP64. i.e. "int" is always 32-bit in the kernel
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Sam Ravnborg <sam@ravnborg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Konrad Eisele <konrad@gaisler.com>
-Cc: Tkhai Kirill <tkhai@yandex.ru>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Oh, sorry; didn't think that through. So, yeah, that'd be 4.29
+seconds, which is still too long for many hosts :)
 
- arch/sparc/kernel/leon_smp.c      |   25 +++++++++++++++----------
- arch/sparc/kernel/sun4d_smp.c     |   26 +++++++++++++-------------
- arch/sparc/kernel/sun4m_smp.c     |   26 +++++++++++++++-----------
- arch/sparc/kernel/trampoline_32.S |    1 -
- 4 files changed, 43 insertions(+), 35 deletions(-)
+>>> My original motivation for this patch is that I have a device with an
+>>> eMMC that specifies a 25.5 second timeout, attached to a sdhci host
+>>> whose maximum timeout is 2.8 seconds. Originally I proposed a patch to
+>>> just remove the warning in sdhci, but nobody replied, and when I
+>>> realised there was actually an overflow happening I opted to fix that
+>>> instead.
+>>>
+>>> So, yeah, we could use UINT_MAX, but then at minimum I also need to
+>>> kill the warning in sdhci to make my device work, and probably all the
+>>> host controller drivers need to be checked to make sure they don't use
+>>> timeout_ns in a way that can overflow.
+>>>
+>>> I've also just noticed that struct mmc_data's comment for timeout_ns
+>>> says /* data timeout (in ns, max 80ms) */ which is not true (the max
+>>> is 102.4 seconds if my math is correct), which may have contributed to
+>>> the host drivers not being too careful :)
+>>>
+>>> What do you think?
+>
+> If you can identify the card, the you could make a new quirk in a fashion
+> similar to mmc_card_long_read_time().
+>
+> Alternatively you could make use of SDHCI_QUIRK_BROKEN_TIMEOUT_VAL or
+> introduce your own sdhci quirk to suppress the warning.
 
-diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
-index a469090..498ca9b 100644
---- a/arch/sparc/kernel/leon_smp.c
-+++ b/arch/sparc/kernel/leon_smp.c
-@@ -25,6 +25,7 @@
- #include <linux/gfp.h>
- #include <linux/cpu.h>
- #include <linux/clockchips.h>
-+#include <linux/smpboot.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
-@@ -73,13 +74,21 @@ static inline unsigned long do_swap(volatile unsigned long *ptr,
- 
- void __cpuinit leon_callin(void)
- {
--	int cpuid = hard_smp_processor_id();
-+	smpboot_start_secondary(NULL);
-+}
-+
-+void __cpuinit __cpu_pre_starting(void *unused)
-+{
-+	unsigned int cpuid = hard_smp_processor_id();
- 
- 	local_ops->cache_all();
- 	local_ops->tlb_all();
- 	leon_configure_cache_smp();
-+}
- 
--	notify_cpu_starting(cpuid);
-+void __cpuinit __cpu_pre_online(void *unused)
-+{
-+	unsigned int cpuid = hard_smp_processor_id();
- 
- 	/* Get our local ticker going. */
- 	register_percpu_ce(cpuid);
-@@ -91,11 +100,10 @@ void __cpuinit leon_callin(void)
- 	local_ops->tlb_all();
- 
- 	/*
--	 * Unblock the master CPU _only_ when the scheduler state
--	 * of all secondary CPUs will be up-to-date, so after
--	 * the SMP initialization the master will be just allowed
--	 * to call the scheduler code.
--	 * Allow master to continue.
-+	 * Allow master to continue. The master will then give us the
-+	 * go-ahead by setting the smp_commenced_mask and will wait without
-+	 * timeouts until our setup is completed fully (signified by
-+	 * our bit being set in the cpu_online_mask).
- 	 */
- 	do_swap(&cpu_callin_map[cpuid], 1);
- 
-@@ -112,9 +120,6 @@ void __cpuinit leon_callin(void)
- 
- 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
- 		mb();
--
--	local_irq_enable();
--	set_cpu_online(cpuid, true);
- }
- 
- /*
-diff --git a/arch/sparc/kernel/sun4d_smp.c b/arch/sparc/kernel/sun4d_smp.c
-index ddaea31..cd5367a 100644
---- a/arch/sparc/kernel/sun4d_smp.c
-+++ b/arch/sparc/kernel/sun4d_smp.c
-@@ -12,6 +12,7 @@
- #include <linux/delay.h>
- #include <linux/sched.h>
- #include <linux/cpu.h>
-+#include <linux/smpboot.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/switch_to.h>
-@@ -52,8 +53,12 @@ static inline void show_leds(int cpuid)
- 
- void __cpuinit smp4d_callin(void)
- {
--	int cpuid = hard_smp_processor_id();
--	unsigned long flags;
-+	smpboot_start_secondary(NULL);
-+}
-+
-+void __cpuinit __cpu_pre_starting(void *unused)
-+{
-+	unsigned int cpuid = hard_smp_processor_id();
- 
- 	/* Show we are alive */
- 	cpu_leds[cpuid] = 0x6;
-@@ -64,14 +69,13 @@ void __cpuinit smp4d_callin(void)
- 
- 	local_ops->cache_all();
- 	local_ops->tlb_all();
-+}
-+
-+void __cpuinit __cpu_pre_online(void *unused)
-+{
-+	unsigned int cpuid = hard_smp_processor_id();
-+	unsigned long flags;
- 
--	notify_cpu_starting(cpuid);
--	/*
--	 * Unblock the master CPU _only_ when the scheduler state
--	 * of all secondary CPUs will be up-to-date, so after
--	 * the SMP initialization the master will be just allowed
--	 * to call the scheduler code.
--	 */
- 	/* Get our local ticker going. */
- 	register_percpu_ce(cpuid);
- 
-@@ -106,16 +110,12 @@ void __cpuinit smp4d_callin(void)
- 	local_ops->cache_all();
- 	local_ops->tlb_all();
- 
--	local_irq_enable();	/* We don't allow PIL 14 yet */
--
- 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
- 		barrier();
- 
- 	spin_lock_irqsave(&sun4d_imsk_lock, flags);
- 	cc_set_imsk(cc_get_imsk() & ~0x4000); /* Allow PIL 14 as well */
- 	spin_unlock_irqrestore(&sun4d_imsk_lock, flags);
--	set_cpu_online(cpuid, true);
--
- }
- 
- /*
-diff --git a/arch/sparc/kernel/sun4m_smp.c b/arch/sparc/kernel/sun4m_smp.c
-index 128af73..ed05f54 100644
---- a/arch/sparc/kernel/sun4m_smp.c
-+++ b/arch/sparc/kernel/sun4m_smp.c
-@@ -10,6 +10,7 @@
- #include <linux/delay.h>
- #include <linux/sched.h>
- #include <linux/cpu.h>
-+#include <linux/smpboot.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/switch_to.h>
-@@ -36,12 +37,20 @@ swap_ulong(volatile unsigned long *ptr, unsigned long val)
- 
- void __cpuinit smp4m_callin(void)
- {
--	int cpuid = hard_smp_processor_id();
-+	smpboot_start_secondary(NULL);
-+}
-+
-+void __cpuinit __cpu_pre_starting(void *unused)
-+{
-+	unsigned int cpuid = hard_smp_processor_id();
- 
- 	local_ops->cache_all();
- 	local_ops->tlb_all();
-+}
- 
--	notify_cpu_starting(cpuid);
-+void __cpuinit __cpu_pre_online(void *unused)
-+{
-+	unsigned int cpuid = hard_smp_processor_id();
- 
- 	register_percpu_ce(cpuid);
- 
-@@ -52,12 +61,11 @@ void __cpuinit smp4m_callin(void)
- 	local_ops->tlb_all();
- 
- 	/*
--	 * Unblock the master CPU _only_ when the scheduler state
--	 * of all secondary CPUs will be up-to-date, so after
--	 * the SMP initialization the master will be just allowed
--	 * to call the scheduler code.
-+	 * Allow master to continue. The master will then give us the
-+	 * go-ahead by setting the smp_commenced_mask and will wait without
-+	 * timeouts until our setup is completed fully (signified by
-+	 * our bit being set in the cpu_online_mask).
- 	 */
--	/* Allow master to continue. */
- 	swap_ulong(&cpu_callin_map[cpuid], 1);
- 
- 	/* XXX: What's up with all the flushes? */
-@@ -75,10 +83,6 @@ void __cpuinit smp4m_callin(void)
- 
- 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
- 		mb();
--
--	local_irq_enable();
--
--	set_cpu_online(cpuid, true);
- }
- 
- /*
-diff --git a/arch/sparc/kernel/trampoline_32.S b/arch/sparc/kernel/trampoline_32.S
-index 7364ddc..20e90ba 100644
---- a/arch/sparc/kernel/trampoline_32.S
-+++ b/arch/sparc/kernel/trampoline_32.S
-@@ -88,7 +88,6 @@ cpu3_startup:
- 	.align	4
- 
- smp_do_cpu_idle:
--	call	cpu_idle
- 	 mov	0, %o0
- 
- 	call	cpu_panic
+Those would work, but it seems silly to me to suppress the warning
+only for some cards, or to cap the timeout only for some cards. The
+best way to identify a card that has a "broken" timeout value is.. if
+the timeout value is a really big number, no? I am very skeptical that
+there is a card out there anywhere that will actually take more than
+two seconds (or 4.29 seconds, if you prefer) to successfully complete
+a command.
 
+The warning itself seems to have extremely limited use; there's
+nothing you can do about it other than suppress it (the driver is
+already capping the timeout for you), and because timeouts are
+calculated per-command the warning is absurdly noisy (in fact, the fun
+part on my system was the warning being logged to klogd, being written
+to logfiles on the eMMC, causing more warnings, causing more log
+messages, etc) :) sdhci is the only host driver that complains about
+this; it seems logical for the warning to apply to all hosts, or to
+none of them...
+
+>>>
+>>>>>
+>>>>> Ben.
+>>>>>
+>>>>>>      data->timeout_clks = card->csd.tacc_clks * mult;
+>>>>>>
+>>>>>>      /*
+>>>>>
+>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> Torne (Richard Coles)
+>>> torne@google.com
+>>
+>>
+>>
+>
+
+
+
+-- 
+Torne (Richard Coles)
+torne@google.com
