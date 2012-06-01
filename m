@@ -1,226 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965810Ab2FAWQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:16:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54304 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965782Ab2FAWQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965784Ab2FAWQ5 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Jun 2012 18:16:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59510 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759561Ab2FAWQw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 18:16:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/15] perf symbols: Handle different endians properly during symbol load
-Date: Fri,  1 Jun 2012 19:16:33 -0300
-Message-Id: <1338588999-32509-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 15/15] perf tool: Build fix, remove duplicate declarations
+Date: Fri,  1 Jun 2012 19:16:39 -0300
+Message-Id: <1338588999-32509-16-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
 In-Reply-To: <1338588999-32509-1-git-send-email-acme@infradead.org>
 References: <1338588999-32509-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-MIME-Error: demime acl condition: double headers (content-type, content-disposition or content-transfer-encoding)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: David Ahern <dsahern@gmail.com>
 
-Currently we dont care about the file object's endianness. It's possible
-we read buildid file object from different architecture than we are
-currentlly running on. So we need to care about properly reading such
-object's data - handle different endianness properly.
+I'm sure I have some gremlins running around today, but I am
+consistently hitting this compile failure on Fedora 14 and 16:
 
-Adding:
-	needs_swap DSO field
-	dso__swap_init function to initialize DSO's needs_swap
-	DSO__SWAP to read the data with proper swaps
+In file included from util/sort.h:12:0,
+                 from builtin-diff.c:15:
+util/string.h:7:5: error: redundant redeclaration of ‘hex2u64’ [-Werror=redundant-decls]
+util/symbol.h:32:5: note: previous declaration of ‘hex2u64’ was here
+util/string.h:8:7: error: redundant redeclaration of ‘strxfrchar’ [-Werror=redundant-decls]
+util/symbol.h:33:7: note: previous declaration of ‘strxfrchar’ was here
+util/string.h:9:5: error: redundant redeclaration of ‘perf_atoll’ [-Werror=redundant-decls]
+util/util.h:238:5: note: previous declaration of ‘perf_atoll’ was here
+util/string.h:10:8: error: redundant redeclaration of ‘argv_split’ [-Werror=redundant-decls]
+util/util.h:239:8: note: previous declaration of ‘argv_split’ was here
+util/string.h:11:6: error: redundant redeclaration of ‘argv_free’ [-Werror=redundant-decls]
+util/util.h:240:6: note: previous declaration of ‘argv_free’ was here
+util/string.h:12:6: error: redundant redeclaration of ‘strglobmatch’ [-Werror=redundant-decls]
+util/util.h:241:6: note: previous declaration of ‘strglobmatch’ was here
+util/string.h:13:6: error: redundant redeclaration of ‘strlazymatch’ [-Werror=redundant-decls]
+util/util.h:242:6: note: previous declaration of ‘strlazymatch’ was here
+cc1: all warnings being treated as errors
+make: *** [/tmp/pbuild/builtin-diff.o] Error 1
+make: *** Waiting for unfinished jobs....
+make: Leaving directory `/opt/sw/ahern/perf.git/tools/perf'
 
-Together with other endianity patches, this change fixies perf report
-discrepancies on origin and target systems as described in test 1 below,
-e.g. following perf report diff:
+Fix it by removing duplicates.
 
-...
-      0.12%               ps  [kernel.kallsyms]    [k] clear_page
--     0.12%              awk  bash                 [.] alloc_word_desc
-+     0.12%              awk  bash                 [.] yyparse
-      0.11%   beah-rhts-task  libpython2.6.so.1.0  [.] 0x5560e
-      0.10%             perf  libc-2.12.so         [.] __ctype_toupper_loc
--     0.09%  rhts-test-runne  bash                 [.] maybe_make_export_env
-+     0.09%  rhts-test-runne  bash                 [.] 0x385a0
-      0.09%               ps  [kernel.kallsyms]    [k] page_fault
-...
-
-Note, running following to test perf endianity handling:
-test 1)
-  - origin system:
-    # perf record -a -- sleep 10 (any perf record will do)
-    # perf report > report.origin
-    # perf archive perf.data
-
-  - copy the perf.data, report.origin and perf.data.tar.bz2
-    to a target system and run:
-    # tar xjvf perf.data.tar.bz2 -C ~/.debug
-    # perf report > report.target
-    # diff -u report.origin report.target
-
-  - the diff should produce no output
-    (besides some white space stuff and possibly different
-     date/TZ output)
-
-test 1)
-  - origin system:
-    # perf record -ag -fo /tmp/perf.data -- sleep 1
-  - mount origin system root to the target system on /mnt/origin
-  - target system:
-    # perf script --symfs /mnt/origin -I -i /mnt/origin/tmp/perf.data \
-     --kallsyms /mnt/origin/proc/kallsyms
-  - complete perf.data header is displayed
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338380624-7443-2-git-send-email-jolsa@redhat.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1338563000-93294-1-git-send-email-dsahern@gmail.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |   33 ++++++++++++++++++++++++++++++++-
- tools/perf/util/symbol.h |   30 ++++++++++++++++++++++++++++++
- 2 files changed, 62 insertions(+), 1 deletions(-)
+ tools/perf/util/symbol.h |    4 +---
+ tools/perf/util/util.h   |    6 +-----
+ 2 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index e2ba885..9d04dcd 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -323,6 +323,7 @@ struct dso *dso__new(const char *name)
- 		dso->sorted_by_name = 0;
- 		dso->has_build_id = 0;
- 		dso->kernel = DSO_TYPE_USER;
-+		dso->needs_swap = DSO_SWAP__UNSET;
- 		INIT_LIST_HEAD(&dso->node);
- 	}
- 
-@@ -1156,6 +1157,33 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
- 	return -1;
- }
- 
-+static int dso__swap_init(struct dso *dso, unsigned char eidata)
-+{
-+	static unsigned int const endian = 1;
-+
-+	dso->needs_swap = DSO_SWAP__NO;
-+
-+	switch (eidata) {
-+	case ELFDATA2LSB:
-+		/* We are big endian, DSO is little endian. */
-+		if (*(unsigned char const *)&endian != 1)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	case ELFDATA2MSB:
-+		/* We are little endian, DSO is big endian. */
-+		if (*(unsigned char const *)&endian != 0)
-+			dso->needs_swap = DSO_SWAP__YES;
-+		break;
-+
-+	default:
-+		pr_err("unrecognized DSO data encoding %d\n", eidata);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 			 int fd, symbol_filter_t filter, int kmodule,
- 			 int want_symtab)
-@@ -1187,6 +1215,9 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		goto out_elf_end;
- 	}
- 
-+	if (dso__swap_init(dso, ehdr.e_ident[EI_DATA]))
-+		goto out_elf_end;
-+
- 	/* Always reject images with a mismatched build-id: */
- 	if (dso->has_build_id) {
- 		u8 build_id[BUILD_ID_SIZE];
-@@ -1272,7 +1303,7 @@ static int dso__load_sym(struct dso *dso, struct map *map, const char *name,
- 		if (opdsec && sym.st_shndx == opdidx) {
- 			u32 offset = sym.st_value - opdshdr.sh_addr;
- 			u64 *opd = opddata->d_buf + offset;
--			sym.st_value = *opd;
-+			sym.st_value = DSO__SWAP(dso, u64, *opd);
- 			sym.st_shndx = elf_addr_to_index(elf, sym.st_value);
- 		}
- 
 diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 5649d63..af0752b 100644
+index af0752b..bf4b679 100644
 --- a/tools/perf/util/symbol.h
 +++ b/tools/perf/util/symbol.h
-@@ -9,6 +9,7 @@
- #include <linux/list.h>
+@@ -10,6 +10,7 @@
  #include <linux/rbtree.h>
  #include <stdio.h>
-+#include <byteswap.h>
+ #include <byteswap.h>
++#include "string.h"
  
  #ifdef HAVE_CPLUS_DEMANGLE
  extern char *cplus_demangle(const char *, int);
-@@ -160,11 +161,18 @@ enum dso_kernel_type {
- 	DSO_TYPE_GUEST_KERNEL
- };
+@@ -30,9 +31,6 @@ static inline char *bfd_demangle(void __used *v, const char __used *c,
+ #endif
+ #endif
  
-+enum dso_swap_type {
-+	DSO_SWAP__UNSET,
-+	DSO_SWAP__NO,
-+	DSO_SWAP__YES,
-+};
-+
- struct dso {
- 	struct list_head node;
- 	struct rb_root	 symbols[MAP__NR_TYPES];
- 	struct rb_root	 symbol_names[MAP__NR_TYPES];
- 	enum dso_kernel_type	kernel;
-+	enum dso_swap_type	needs_swap;
- 	u8		 adjust_symbols:1;
- 	u8		 has_build_id:1;
- 	u8		 hit:1;
-@@ -182,6 +190,28 @@ struct dso {
- 	char		 name[0];
- };
+-int hex2u64(const char *ptr, u64 *val);
+-char *strxfrchar(char *s, char from, char to);
+-
+ /*
+  * libelf 0.8.x and earlier do not support ELF_C_READ_MMAP;
+  * for newer versions we can use mmap to reduce memory usage:
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 2daaedb..5152592 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -78,6 +78,7 @@
+ #include "../../../include/linux/magic.h"
+ #include "types.h"
+ #include <sys/ttydefaults.h>
++#include "string.h"
  
-+#define DSO__SWAP(dso, type, val)			\
-+({							\
-+	type ____r = val;				\
-+	BUG_ON(dso->needs_swap == DSO_SWAP__UNSET);	\
-+	if (dso->needs_swap == DSO_SWAP__YES) {		\
-+		switch (sizeof(____r)) {		\
-+		case 2:					\
-+			____r = bswap_16(val);		\
-+			break;				\
-+		case 4:					\
-+			____r = bswap_32(val);		\
-+			break;				\
-+		case 8:					\
-+			____r = bswap_64(val);		\
-+			break;				\
-+		default:				\
-+			BUG_ON(1);			\
-+		}					\
-+	}						\
-+	____r;						\
-+})
-+
- struct dso *dso__new(const char *name);
- void dso__delete(struct dso *dso);
+ extern const char *graph_line;
+ extern const char *graph_dotted_line;
+@@ -235,11 +236,6 @@ static inline int sane_case(int x, int high)
+ int mkdir_p(char *path, mode_t mode);
+ int copyfile(const char *from, const char *to);
  
+-s64 perf_atoll(const char *str);
+-char **argv_split(const char *str, int *argcp);
+-void argv_free(char **argv);
+-bool strglobmatch(const char *str, const char *pat);
+-bool strlazymatch(const char *str, const char *pat);
+ int strtailcmp(const char *s1, const char *s2);
+ unsigned long convert_unit(unsigned long value, char *unit);
+ int readn(int fd, void *buf, size_t size);
 -- 
 1.7.1
 
