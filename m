@@ -1,305 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab2FASdr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:33:47 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:38609 "EHLO e6.ny.us.ibm.com"
+	id S965671Ab2FASgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:36:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50537 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932722Ab2FASdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:33:45 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>, Neil Brown <neilb@suse.de>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tgek@mozilla.com>, Mike Hommey <mh@glandium.org>,
-        Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/3] [RFC] Interval tree implementation
-Date: Fri,  1 Jun 2012 11:29:45 -0700
-Message-Id: <1338575387-26972-2-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1338575387-26972-1-git-send-email-john.stultz@linaro.org>
-References: <1338575387-26972-1-git-send-email-john.stultz@linaro.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060118-1976-0000-0000-00000DBD3EB8
+	id S932760Ab2FASgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 14:36:08 -0400
+Date: Fri, 1 Jun 2012 20:36:03 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: 3.3.7 lockdep report from jbd.
+Message-ID: <20120601183603.GA1646@quack.suse.cz>
+References: <20120530023747.GA1845@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120530023747.GA1845@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After Andrew suggested something like his mumbletree idea
-to better store a list of intervals, I worked on a few different
-approaches, and this is what I've finally managed to get working.
+On Tue 29-05-12 22:37:47, Dave Jones wrote:
+> Just saw this on my backup server during an rsync.
+> I'll see if I can reproduce it in 3.4 later.
+> 
+> 	Dave
+> 
+> 
+> =========================================================
+> [ INFO: possible irq lock inversion dependency detected ]
+> 3.3.7-1.fc16.x86_64.debug #1 Not tainted
+> ---------------------------------------------------------
+> kswapd0/37 just changed the state of lock:
+>  (jbd2_handle){+.+.-.}, at: [<ffffffff8128b457>] start_this_handle+0x507/0x700
+> but this lock took another, RECLAIM_FS-unsafe lock in the past:
+>  (&isec->lock){+.+.+.}
+> 
+> and interrupts could create inverse lock ordering between them.
+> 
+> 
+> other info that might help us debug this:
+>  Possible interrupt unsafe locking scenario:
+> 
+>        CPU0                    CPU1
+>        ----                    ----
+>   lock(&isec->lock);
+>                                local_irq_disable();
+>                                lock(jbd2_handle);
+>                                lock(&isec->lock);
+>   <Interrupt>
+>     lock(jbd2_handle);
 
-The idea of storing intervals in a tree is nice, but has a number
-of complications. When adding an interval, its possible that a
-large interval will consume and merge a number of smaller intervals.
-When removing a interval, its possible you may end up splitting an
-existing interval, causing one interval to become two. This makes it
-very difficult to provide generic list_head like behavior, as
-the parent structures would need to be duplicated and removed,
-and that has lots of memory ownership issues.
+Frankly, this looks like a false positive and I have a hard time
+understanding how lockdep even came to the above conclusion.
 
-So, this is a much simplified and more list_head like
-implementation. You can add a node to a tree, or remove a node
-to a tree, but the generic implementation doesn't do the
-merging or splitting for you. But it does provide helpers to
-find overlapping and adjacent intervals.
+Certainly we never take jbd2_handle in an interrupt. Lockdep is correct
+jbd2_handle is taken in reclaim, although I'm reasonably sure we never end
+up taking isec->lock under jbd2_handle in reclaim.
 
-Andrew also really wanted this interval-tree implementation to be
-resuable so we don't duplicate the file locking logic. I'm not
-totally convinced that the requirements between the volatile
-intervals and file locking are really equivelent, but this reduced
-impelementation may make it possible.
+I'm not sure how to silence this warning though...
 
-Changelog:
-v2:
-* Reworked code to use an rbtree instead of splaying
-
-v3:
-* Added range_tree_next_in_range() to avoid having to start
-  lookups from the root every time.
-* Fixed some comments and return NULL instead of 0, as suggested
-  by Aneesh Kumar K.V
-
-v6:
-* Fixed range_tree_in_range() so that it finds the earliest range,
-  rather then the first. This allows the next_in_range() function
-  to properly cover all the ranges in the tree.
-* Minor clenaups to simplify some of the functions
-
-v7:
-* Changed terminology from rangetree to intervaltree as suggested
-  by Jan Kara
-
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Android Kernel Team <kernel-team@android.com>
-CC: Robert Love <rlove@google.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Hugh Dickins <hughd@google.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Neil Brown <neilb@suse.de>
-CC: Andrea Righi <andrea@betterlinux.com>
-CC: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-CC: Taras Glek <tgek@mozilla.com>
-CC: Mike Hommey <mh@glandium.org>
-CC: Jan Kara <jack@suse.cz>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/intervaltree.h |   55 +++++++++++++++++++
- lib/Makefile                 |    2 +-
- lib/intervaltree.c           |  119 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 175 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/intervaltree.h
- create mode 100644 lib/intervaltree.c
-
-diff --git a/include/linux/intervaltree.h b/include/linux/intervaltree.h
-new file mode 100644
-index 0000000..cfaa174
---- /dev/null
-+++ b/include/linux/intervaltree.h
-@@ -0,0 +1,55 @@
-+#ifndef _LINUX_INTERVALTREE_H
-+#define _LINUX_INTERVALTREE_H
-+
-+#include <linux/types.h>
-+#include <linux/rbtree.h>
-+
-+struct interval_tree_node {
-+	struct rb_node rb;
-+	u64 start;
-+	u64 end;
-+};
-+
-+struct interval_tree_root {
-+	struct rb_root head;
-+};
-+
-+static inline void interval_tree_init(struct interval_tree_root *root)
-+{
-+	root->head = RB_ROOT;
-+}
-+
-+static inline void interval_tree_node_init(struct interval_tree_node *node)
-+{
-+	rb_init_node(&node->rb);
-+	node->start = 0;
-+	node->end = 0;
-+}
-+
-+static inline int interval_tree_empty(struct interval_tree_root *root)
-+{
-+	return RB_EMPTY_ROOT(&root->head);
-+}
-+
-+static inline
-+struct interval_tree_node *interval_tree_root_node(
-+						struct interval_tree_root *root)
-+{
-+	struct interval_tree_node *ret;
-+	ret = container_of(root->head.rb_node, struct interval_tree_node, rb);
-+	return ret;
-+}
-+
-+extern struct interval_tree_node *interval_tree_in_interval(
-+						struct interval_tree_root *root,
-+						 u64 start, u64 end);
-+extern struct interval_tree_node *interval_tree_next_in_interval(
-+						struct interval_tree_node *node,
-+						u64 start, u64 end);
-+extern void interval_tree_add(struct interval_tree_root *root,
-+					struct interval_tree_node *node);
-+extern void interval_tree_remove(struct interval_tree_root *root,
-+					struct interval_tree_node *node);
-+#endif
-+
-+
-diff --git a/lib/Makefile b/lib/Makefile
-index 8c31a0c..2bbad25 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o
-+	 is_single_threaded.o plist.o decompress.o intervaltree.o
- 
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/intervaltree.c b/lib/intervaltree.c
-new file mode 100644
-index 0000000..47c52e0
---- /dev/null
-+++ b/lib/intervaltree.c
-@@ -0,0 +1,119 @@
-+#include <linux/intervaltree.h>
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+
-+/* This code implements a naive interval tree, which stores a series of
-+ * non-intersecting intervals.
-+ * More complex interval trees can be read about here:
-+ *		http://en.wikipedia.org/wiki/Interval_tree
-+ */
-+
-+
-+/**
-+ * interval_tree_in_interval - Returns the first node that intersects with the
-+ *                             given interval
-+ * @root: interval_tree root
-+ * @start: interval start
-+ * @end: interval end
-+ *
-+ */
-+struct interval_tree_node *interval_tree_in_interval(
-+						struct interval_tree_root *root,
-+						u64 start, u64 end)
-+{
-+	struct rb_node *p = root->head.rb_node;
-+	struct interval_tree_node *candidate, *match = NULL;
-+
-+	while (p) {
-+		candidate = rb_entry(p, struct interval_tree_node, rb);
-+		if (end < candidate->start)
-+			p = p->rb_left;
-+		else if (start > candidate->end)
-+			p = p->rb_right;
-+		else {
-+			/* We found one, but try to find an earlier match */
-+			match = candidate;
-+			p = p->rb_left;
-+		}
-+	}
-+
-+	return match;
-+}
-+
-+
-+/**
-+ * interval_tree_next_in_interval - Return the next interval in a intervaltree
-+ *                                  thatintersects with a specified interval.
-+ * @root: interval_tree root
-+ * @start: interval start
-+ * @end: interval end
-+ *
-+ */
-+struct interval_tree_node *interval_tree_next_in_interval(
-+						struct interval_tree_node *node,
-+						u64 start, u64 end)
-+{
-+	struct rb_node *next;
-+	struct interval_tree_node *candidate;
-+	if (!node)
-+		return NULL;
-+	next = rb_next(&node->rb);
-+	if (!next)
-+		return NULL;
-+
-+	candidate = container_of(next, struct interval_tree_node, rb);
-+
-+	if ((candidate->start > end) || (candidate->end < start))
-+		return NULL;
-+
-+	return candidate;
-+}
-+
-+/**
-+ * interval_tree_add - Add a node to a interval tree
-+ * @root: interval tree to be added to
-+ * @node: interval_tree_node to be added
-+ *
-+ * Adds a node to the interval tree. Added interval should not intersect with
-+ * existing intervals in the tree.
-+ */
-+void interval_tree_add(struct interval_tree_root *root,
-+					struct interval_tree_node *node)
-+{
-+	struct rb_node **p = &root->head.rb_node;
-+	struct rb_node *parent = NULL;
-+	struct interval_tree_node *ptr;
-+
-+	WARN_ON_ONCE(!RB_EMPTY_NODE(&node->rb));
-+
-+	/* XXX might want to conditionalize this on debugging checks */
-+	WARN_ON_ONCE(!!interval_tree_in_interval(root, node->start, node->end));
-+
-+	while (*p) {
-+		parent = *p;
-+		ptr = rb_entry(parent, struct interval_tree_node, rb);
-+		if (node->start < ptr->start)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&node->rb, parent, p);
-+	rb_insert_color(&node->rb, &root->head);
-+}
-+
-+
-+/**
-+ * interval_tree_remove: Removes a given node from the tree
-+ * @root: root of tree
-+ * @node: Node to be removed
-+ *
-+ * Removes a node and splays the tree
-+ */
-+void interval_tree_remove(struct interval_tree_root *root,
-+					struct interval_tree_node *node)
-+{
-+	WARN_ON_ONCE(RB_EMPTY_NODE(&node->rb));
-+
-+	rb_erase(&node->rb, &root->head);
-+	RB_CLEAR_NODE(&node->rb);
-+}
+								Honza
+> 
+>  *** DEADLOCK ***
+> 
+> 2 locks held by kswapd0/37:
+>  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff8116304c>] shrink_slab+0x3c/0x4b0
+>  #1:  (&type->s_umount_key#20){++++..}, at: [<ffffffff811bf654>] grab_super_passive+0x44/0x90
+> 
+> the shortest dependencies between 2nd lock and 1st lock:
+>  -> (&isec->lock){+.+.+.} ops: 582449 {
+>     HARDIRQ-ON-W at:
+>                                          [<ffffffff810cbf69>] __lock_acquire+0x619/0x1c20
+>                                          [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                          [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
+>                                          [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
+>                                          [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
+>                                          [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
+>                                          [<ffffffff811d4081>] d_instantiate+0x61/0x80
+>                                          [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
+>                                          [<ffffffff81237f62>] sysfs_mount+0x182/0x220
+>                                          [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
+>                                          [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
+>                                          [<ffffffff811dd899>] kern_mount_data+0x19/0x30
+>                                          [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
+>                                          [<ffffffff81ef1862>] mnt_init+0xa1/0x181
+>                                          [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
+>                                          [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
+>                                          [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
+>                                          [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
+>     SOFTIRQ-ON-W at:
+>                                          [<ffffffff810cbf98>] __lock_acquire+0x648/0x1c20
+>                                          [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                          [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
+>                                          [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
+>                                          [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
+>                                          [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
+>                                          [<ffffffff811d4081>] d_instantiate+0x61/0x80
+>                                          [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
+>                                          [<ffffffff81237f62>] sysfs_mount+0x182/0x220
+>                                          [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
+>                                          [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
+>                                          [<ffffffff811dd899>] kern_mount_data+0x19/0x30
+>                                          [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
+>                                          [<ffffffff81ef1862>] mnt_init+0xa1/0x181
+>                                          [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
+>                                          [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
+>                                          [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
+>                                          [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
+>     RECLAIM_FS-ON-W at:
+>                                             [<ffffffff810ce626>] mark_held_locks+0x86/0x150
+>                                             [<ffffffff810cedb1>] lockdep_trace_alloc+0x71/0xd0
+>                                             [<ffffffff811591d6>] __alloc_pages_nodemask+0x86/0xa90
+>                                             [<ffffffff81194063>] alloc_pages_current+0xa3/0x110
+>                                             [<ffffffff81154b94>] __get_free_pages+0x14/0x50
+>                                             [<ffffffff812c6b4b>] inode_doinit_with_dentry+0x32b/0x650
+>                                             [<ffffffff812c6f56>] sb_finish_set_opts+0xc6/0x260
+>                                             [<ffffffff812c753c>] selinux_set_mnt_opts+0x32c/0x540
+>                                             [<ffffffff812c77b0>] superblock_doinit+0x60/0xc0
+>                                             [<ffffffff812c78f0>] delayed_superblock_init+0x10/0x20
+>                                             [<ffffffff811bfa41>] iterate_supers+0xf1/0x100
+>                                             [<ffffffff812cae13>] selinux_complete_init+0x33/0x40
+>                                             [<ffffffff812da95b>] security_load_policy+0x35b/0x4e0
+>                                             [<ffffffff812ccb6f>] sel_write_load+0x9f/0x790
+>                                             [<ffffffff811bb506>] vfs_write+0xb6/0x180
+>                                             [<ffffffff811bb82d>] sys_write+0x4d/0x90
+>                                             [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
+>     INITIAL USE at:
+>                                         [<ffffffff810cbc70>] __lock_acquire+0x320/0x1c20
+>                                         [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                         [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
+>                                         [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
+>                                         [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
+>                                         [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
+>                                         [<ffffffff811d4081>] d_instantiate+0x61/0x80
+>                                         [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
+>                                         [<ffffffff81237f62>] sysfs_mount+0x182/0x220
+>                                         [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
+>                                         [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
+>                                         [<ffffffff811dd899>] kern_mount_data+0x19/0x30
+>                                         [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
+>                                         [<ffffffff81ef1862>] mnt_init+0xa1/0x181
+>                                         [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
+>                                         [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
+>                                         [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
+>                                         [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
+>   }
+>   ... key      at: [<ffffffff829db510>] __key.51824+0x0/0x8
+>   ... acquired at:
+>    [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>    [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
+>    [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
+>    [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
+>    [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
+>    [<ffffffff811d4081>] d_instantiate+0x61/0x80
+>    [<ffffffff812510b6>] ext4_add_nondir+0x76/0x80
+>    [<ffffffff812531b6>] ext4_symlink+0x1a6/0x330
+>    [<ffffffff811ca2d9>] vfs_symlink+0x99/0x100
+>    [<ffffffff811cdb73>] sys_symlinkat+0xb3/0xd0
+>    [<ffffffff811cdba6>] sys_symlink+0x16/0x20
+>    [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
+> 
+> -> (jbd2_handle){+.+.-.} ops: 20071115 {
+>    HARDIRQ-ON-W at:
+>                                        [<ffffffff810cbf69>] __lock_acquire+0x619/0x1c20
+>                                        [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                        [<ffffffff8128b486>] start_this_handle+0x536/0x700
+>                                        [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
+>                                        [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
+>                                        [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
+>                                        [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
+>                                        [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
+>                                        [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
+>                                        [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
+>                                        [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
+>    SOFTIRQ-ON-W at:
+>                                        [<ffffffff810cbf98>] __lock_acquire+0x648/0x1c20
+>                                        [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                        [<ffffffff8128b486>] start_this_handle+0x536/0x700
+>                                        [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
+>                                        [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
+>                                        [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
+>                                        [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
+>                                        [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
+>                                        [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
+>                                        [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
+>                                        [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
+>    IN-RECLAIM_FS-W at:
+>                                           [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
+>                                           [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                           [<ffffffff8128b486>] start_this_handle+0x536/0x700
+>                                           [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
+>                                           [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
+>                                           [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
+>                                           [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
+>                                           [<ffffffff811d91d3>] evict+0xa3/0x1b0
+>                                           [<ffffffff811d93e5>] iput+0x105/0x200
+>                                           [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
+>                                           [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
+>                                           [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
+>                                           [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
+>                                           [<ffffffff81163185>] shrink_slab+0x175/0x4b0
+>                                           [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
+>                                           [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
+>                                           [<ffffffff8108b927>] kthread+0xb7/0xc0
+>                                           [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
+>    INITIAL USE at:
+>                                       [<ffffffff810cbc70>] __lock_acquire+0x320/0x1c20
+>                                       [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>                                       [<ffffffff8128b486>] start_this_handle+0x536/0x700
+>                                       [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
+>                                       [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
+>                                       [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
+>                                       [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
+>                                       [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
+>                                       [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
+>                                       [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
+>                                       [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
+>  }
+>  ... key      at: [<ffffffff829cff00>] jbd2_handle_key+0x0/0x8
+>  ... acquired at:
+>    [<ffffffff810cae1b>] check_usage_forwards+0x11b/0x150
+>    [<ffffffff810cb7f8>] mark_lock+0x198/0x2f0
+>    [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
+>    [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>    [<ffffffff8128b486>] start_this_handle+0x536/0x700
+>    [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
+>    [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
+>    [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
+>    [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
+>    [<ffffffff811d91d3>] evict+0xa3/0x1b0
+>    [<ffffffff811d93e5>] iput+0x105/0x200
+>    [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
+>    [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
+>    [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
+>    [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
+>    [<ffffffff81163185>] shrink_slab+0x175/0x4b0
+>    [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
+>    [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
+>    [<ffffffff8108b927>] kthread+0xb7/0xc0
+>    [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
+> 
+> 
+> stack backtrace:
+> Pid: 37, comm: kswapd0 Not tainted 3.3.7-1.fc16.x86_64.debug #1
+> Call Trace:
+>  [<ffffffff810cacf8>] print_irq_inversion_bug.part.19+0x1e8/0x1f0
+>  [<ffffffff810cae1b>] check_usage_forwards+0x11b/0x150
+>  [<ffffffff810cb7f8>] mark_lock+0x198/0x2f0
+>  [<ffffffff810cad00>] ? print_irq_inversion_bug.part.19+0x1f0/0x1f0
+>  [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
+>  [<ffffffff8128b6d9>] ? jbd2__journal_start+0x89/0x1a0
+>  [<ffffffff81022023>] ? native_sched_clock+0x13/0x80
+>  [<ffffffff810a3dc5>] ? sched_clock_local+0x25/0x90
+>  [<ffffffff810a3f58>] ? sched_clock_cpu+0xa8/0x110
+>  [<ffffffff810c815d>] ? trace_hardirqs_off+0xd/0x10
+>  [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
+>  [<ffffffff8128b457>] ? start_this_handle+0x507/0x700
+>  [<ffffffff8128b486>] start_this_handle+0x536/0x700
+>  [<ffffffff8128b457>] ? start_this_handle+0x507/0x700
+>  [<ffffffff811a1c2b>] ? kmem_cache_alloc+0x19b/0x280
+>  [<ffffffff8128b6d9>] ? jbd2__journal_start+0x89/0x1a0
+>  [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
+>  [<ffffffff8124bfb9>] ? ext4_evict_inode+0x1a9/0x620
+>  [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
+>  [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
+>  [<ffffffff8121ec90>] ? __dquot_initialize+0x30/0x180
+>  [<ffffffff811d91c1>] ? evict+0x91/0x1b0
+>  [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
+>  [<ffffffff811d91d3>] evict+0xa3/0x1b0
+>  [<ffffffff811d93e5>] iput+0x105/0x200
+>  [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
+>  [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
+>  [<ffffffff811d53d0>] ? shrink_dentry_list+0x2b0/0x4c0
+>  [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
+>  [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
+>  [<ffffffff81163185>] shrink_slab+0x175/0x4b0
+>  [<ffffffff811ae776>] ? mem_cgroup_iter+0xf6/0x340
+>  [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
+>  [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
+>  [<ffffffff8108c580>] ? __init_waitqueue_head+0x60/0x60
+>  [<ffffffff81167820>] ? balance_pgdat+0x720/0x720
+>  [<ffffffff8108b927>] kthread+0xb7/0xc0
+>  [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff816a3374>] ? retint_restore_args+0x13/0x13
+>  [<ffffffff8108b870>] ? __init_kthread_worker+0x70/0x70
+>  [<ffffffff816ad070>] ? gs_change+0x13/0x13
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-1.7.3.2.146.gca209
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
