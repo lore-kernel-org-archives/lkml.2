@@ -1,125 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971Ab2FAKR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 06:17:27 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:38011 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759379Ab2FAKR0 (ORCPT
+	id S932996Ab2FAKSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 06:18:31 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33020 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932787Ab2FAKSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 06:17:26 -0400
-X-IronPort-AV: E=Sophos;i="4.75,698,1330905600"; 
-   d="scan'208";a="12783130"
-Date: Fri, 1 Jun 2012 11:16:29 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 2/2] xen/blkfront: Add BUG_ON to deal with
- misbehaving backends.
-In-Reply-To: <20120531181712.GA19700@phenom.dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1206011111590.26786@kaball-desktop>
-References: <1337982603-15692-1-git-send-email-konrad.wilk@oracle.com> <1337982603-15692-3-git-send-email-konrad.wilk@oracle.com> <alpine.DEB.2.00.1205281111460.26786@kaball-desktop> <4FC4A10F0200007800086842@nat28.tlf.novell.com>
- <20120531181712.GA19700@phenom.dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 1 Jun 2012 06:18:30 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 21/27] sparc32, smpboot: Use generic SMP booting infrastructure
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Frysinger <vapier@gentoo.org>, Konrad Eisele <konrad@gaisler.com>,
+        Tkhai Kirill <tkhai@yandex.ru>, Thomas Gleixner <tglx@linutronix.de>,
+        sparclinux@vger.kernel.org
+Date: Fri, 01 Jun 2012 14:45:09 +0530
+Message-ID: <20120601091503.31979.52537.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12053123-7014-0000-0000-0000014D5362
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 31 May 2012, Konrad Rzeszutek Wilk wrote:
-> The blkfront_remove part is .. that is going to take some surgery to do
-> and I don't think I am going to be able to attempt that within the next couple
-> of weeks. So lets put that on the TODO list and just do this one?
+Convert sparc32 to use the generic framework to boot secondary CPUs.
 
-OK
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Konrad Eisele <konrad@gaisler.com>
+Cc: Tkhai Kirill <tkhai@yandex.ru>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-> >From 4aabb5b44778fc0c0b8d4f5a2e2cd8e8490064d7 Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Fri, 25 May 2012 17:34:51 -0400
-> Subject: [PATCH] xen/blkfront: Add WARN to deal with misbehaving backends.
-> 
-> Part of the ring structure is the 'id' field which is under
-> control of the frontend. The frontend stamps it with "some"
-> value (this some in this implementation being a value less
-> than BLK_RING_SIZE), and when it gets a response expects
-> said value to be in the response structure. We have a check
-> for the id field when spolling new requests but not when
-> de-spolling responses.
-> 
-> We also add an extra check in add_id_to_freelist to make
-> sure that the 'struct request' was not NULL - as we cannot
-> pass a NULL to __blk_end_request_all, otherwise that crashes
-> (and all the operations that the response is dealing with
-> end up with __blk_end_request_all).
-> 
-> Lastly we also print the name of the operation that failed.
-> 
-> [v1: s/BUG/WARN/ suggested by Stefano]
-> [v2: Add extra check in add_id_to_freelist]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/block/xen-blkfront.c |   39 +++++++++++++++++++++++++++++----------
->  1 files changed, 29 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 60eed4b..c7ef8a4 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -144,11 +144,22 @@ static int get_id_from_freelist(struct blkfront_info *info)
->  static void add_id_to_freelist(struct blkfront_info *info,
->  			       unsigned long id)
->  {
-> +	BUG_ON(info->shadow[id].req.u.rw.id != id);
->  	info->shadow[id].req.u.rw.id  = info->shadow_free;
-> +	BUG_ON(info->shadow[id].request == NULL);
->  	info->shadow[id].request = NULL;
->  	info->shadow_free = id;
->  }
+ arch/sparc/kernel/leon_smp.c      |   25 +++++++++++++++----------
+ arch/sparc/kernel/sun4d_smp.c     |   26 +++++++++++++-------------
+ arch/sparc/kernel/sun4m_smp.c     |   26 +++++++++++++++-----------
+ arch/sparc/kernel/trampoline_32.S |    1 -
+ 4 files changed, 43 insertions(+), 35 deletions(-)
 
-Like Jan said, it would be best to change the two BUG_ON into WARN_ON
-and return an error.
+diff --git a/arch/sparc/kernel/leon_smp.c b/arch/sparc/kernel/leon_smp.c
+index a469090..498ca9b 100644
+--- a/arch/sparc/kernel/leon_smp.c
++++ b/arch/sparc/kernel/leon_smp.c
+@@ -25,6 +25,7 @@
+ #include <linux/gfp.h>
+ #include <linux/cpu.h>
+ #include <linux/clockchips.h>
++#include <linux/smpboot.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+@@ -73,13 +74,21 @@ static inline unsigned long do_swap(volatile unsigned long *ptr,
+ 
+ void __cpuinit leon_callin(void)
+ {
+-	int cpuid = hard_smp_processor_id();
++	smpboot_start_secondary(NULL);
++}
++
++void __cpuinit __cpu_pre_starting(void *unused)
++{
++	unsigned int cpuid = hard_smp_processor_id();
+ 
+ 	local_ops->cache_all();
+ 	local_ops->tlb_all();
+ 	leon_configure_cache_smp();
++}
+ 
+-	notify_cpu_starting(cpuid);
++void __cpuinit __cpu_pre_online(void *unused)
++{
++	unsigned int cpuid = hard_smp_processor_id();
+ 
+ 	/* Get our local ticker going. */
+ 	register_percpu_ce(cpuid);
+@@ -91,11 +100,10 @@ void __cpuinit leon_callin(void)
+ 	local_ops->tlb_all();
+ 
+ 	/*
+-	 * Unblock the master CPU _only_ when the scheduler state
+-	 * of all secondary CPUs will be up-to-date, so after
+-	 * the SMP initialization the master will be just allowed
+-	 * to call the scheduler code.
+-	 * Allow master to continue.
++	 * Allow master to continue. The master will then give us the
++	 * go-ahead by setting the smp_commenced_mask and will wait without
++	 * timeouts until our setup is completed fully (signified by
++	 * our bit being set in the cpu_online_mask).
+ 	 */
+ 	do_swap(&cpu_callin_map[cpuid], 1);
+ 
+@@ -112,9 +120,6 @@ void __cpuinit leon_callin(void)
+ 
+ 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+ 		mb();
+-
+-	local_irq_enable();
+-	set_cpu_online(cpuid, true);
+ }
+ 
+ /*
+diff --git a/arch/sparc/kernel/sun4d_smp.c b/arch/sparc/kernel/sun4d_smp.c
+index ddaea31..cd5367a 100644
+--- a/arch/sparc/kernel/sun4d_smp.c
++++ b/arch/sparc/kernel/sun4d_smp.c
+@@ -12,6 +12,7 @@
+ #include <linux/delay.h>
+ #include <linux/sched.h>
+ #include <linux/cpu.h>
++#include <linux/smpboot.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/switch_to.h>
+@@ -52,8 +53,12 @@ static inline void show_leds(int cpuid)
+ 
+ void __cpuinit smp4d_callin(void)
+ {
+-	int cpuid = hard_smp_processor_id();
+-	unsigned long flags;
++	smpboot_start_secondary(NULL);
++}
++
++void __cpuinit __cpu_pre_starting(void *unused)
++{
++	unsigned int cpuid = hard_smp_processor_id();
+ 
+ 	/* Show we are alive */
+ 	cpu_leds[cpuid] = 0x6;
+@@ -64,14 +69,13 @@ void __cpuinit smp4d_callin(void)
+ 
+ 	local_ops->cache_all();
+ 	local_ops->tlb_all();
++}
++
++void __cpuinit __cpu_pre_online(void *unused)
++{
++	unsigned int cpuid = hard_smp_processor_id();
++	unsigned long flags;
+ 
+-	notify_cpu_starting(cpuid);
+-	/*
+-	 * Unblock the master CPU _only_ when the scheduler state
+-	 * of all secondary CPUs will be up-to-date, so after
+-	 * the SMP initialization the master will be just allowed
+-	 * to call the scheduler code.
+-	 */
+ 	/* Get our local ticker going. */
+ 	register_percpu_ce(cpuid);
+ 
+@@ -106,16 +110,12 @@ void __cpuinit smp4d_callin(void)
+ 	local_ops->cache_all();
+ 	local_ops->tlb_all();
+ 
+-	local_irq_enable();	/* We don't allow PIL 14 yet */
+-
+ 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+ 		barrier();
+ 
+ 	spin_lock_irqsave(&sun4d_imsk_lock, flags);
+ 	cc_set_imsk(cc_get_imsk() & ~0x4000); /* Allow PIL 14 as well */
+ 	spin_unlock_irqrestore(&sun4d_imsk_lock, flags);
+-	set_cpu_online(cpuid, true);
+-
+ }
+ 
+ /*
+diff --git a/arch/sparc/kernel/sun4m_smp.c b/arch/sparc/kernel/sun4m_smp.c
+index 128af73..ed05f54 100644
+--- a/arch/sparc/kernel/sun4m_smp.c
++++ b/arch/sparc/kernel/sun4m_smp.c
+@@ -10,6 +10,7 @@
+ #include <linux/delay.h>
+ #include <linux/sched.h>
+ #include <linux/cpu.h>
++#include <linux/smpboot.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/switch_to.h>
+@@ -36,12 +37,20 @@ swap_ulong(volatile unsigned long *ptr, unsigned long val)
+ 
+ void __cpuinit smp4m_callin(void)
+ {
+-	int cpuid = hard_smp_processor_id();
++	smpboot_start_secondary(NULL);
++}
++
++void __cpuinit __cpu_pre_starting(void *unused)
++{
++	unsigned int cpuid = hard_smp_processor_id();
+ 
+ 	local_ops->cache_all();
+ 	local_ops->tlb_all();
++}
+ 
+-	notify_cpu_starting(cpuid);
++void __cpuinit __cpu_pre_online(void *unused)
++{
++	unsigned int cpuid = hard_smp_processor_id();
+ 
+ 	register_percpu_ce(cpuid);
+ 
+@@ -52,12 +61,11 @@ void __cpuinit smp4m_callin(void)
+ 	local_ops->tlb_all();
+ 
+ 	/*
+-	 * Unblock the master CPU _only_ when the scheduler state
+-	 * of all secondary CPUs will be up-to-date, so after
+-	 * the SMP initialization the master will be just allowed
+-	 * to call the scheduler code.
++	 * Allow master to continue. The master will then give us the
++	 * go-ahead by setting the smp_commenced_mask and will wait without
++	 * timeouts until our setup is completed fully (signified by
++	 * our bit being set in the cpu_online_mask).
+ 	 */
+-	/* Allow master to continue. */
+ 	swap_ulong(&cpu_callin_map[cpuid], 1);
+ 
+ 	/* XXX: What's up with all the flushes? */
+@@ -75,10 +83,6 @@ void __cpuinit smp4m_callin(void)
+ 
+ 	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+ 		mb();
+-
+-	local_irq_enable();
+-
+-	set_cpu_online(cpuid, true);
+ }
+ 
+ /*
+diff --git a/arch/sparc/kernel/trampoline_32.S b/arch/sparc/kernel/trampoline_32.S
+index 7364ddc..20e90ba 100644
+--- a/arch/sparc/kernel/trampoline_32.S
++++ b/arch/sparc/kernel/trampoline_32.S
+@@ -88,7 +88,6 @@ cpu3_startup:
+ 	.align	4
+ 
+ smp_do_cpu_idle:
+-	call	cpu_idle
+ 	 mov	0, %o0
+ 
+ 	call	cpu_panic
 
-
-> +static const char *op_name(int op)
-> +{
-> +	const char *names[BLKIF_OP_DISCARD+1] = {
-> +		"read" , "write", "barrier", "flush", "reserved", "discard"};
-> +
-> +	if (op > BLKIF_OP_DISCARD)
-> +		return "unknown";
-> +	return names[op];
-> +}
-
-Considering that op is an int, shoudn't we check for negative values
-too?
-
-
->  static int xlbd_reserve_minors(unsigned int minor, unsigned int nr)
->  {
->  	unsigned int end = minor + nr;
-> @@ -746,6 +757,18 @@ static irqreturn_t blkif_interrupt(int irq, void *dev_id)
->  
->  		bret = RING_GET_RESPONSE(&info->ring, i);
->  		id   = bret->id;
-> +		/*
-> +		 * The backend has messed up and given us an id that we would
-> +		 * never have given to it (we stamp it up to BLK_RING_SIZE -
-> +		 * look in get_id_from_freelist.
-> +		 */
-> +		if (id >= BLK_RING_SIZE) {
-> +			/* We can't safely get the 'struct request' as
-> +			 * the id is busted. So limp along. */
-> +			WARN(1, "%s: response to %s has incorrect id (%d)!\n",
-> +			     info->gd->disk_name, op_name(bret->operation), id);
-> +			continue;
-> +		}
->  		req  = info->shadow[id].request;
-
-Do you think it would be better to goto error_out, instead of continue?
-I guess that depends on whether we expect the other requests to be in a
-good shape or not...
