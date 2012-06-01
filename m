@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759405Ab2FAUXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 16:23:06 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29519 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759247Ab2FAUXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 16:23:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="173797059"
-Date: Fri, 1 Jun 2012 21:38:44 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] tty: add lockdep annotations
-Message-ID: <20120601213844.3abdae5e@bob.linux.org.uk>
-In-Reply-To: <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
-References: <4FC6189B.9080909@fusionio.com>
-	<1338402812.2760.413.camel@edumazet-glaptop>
-	<4FC66D3D.6080509@fusionio.com>
-	<1338404902.2760.451.camel@edumazet-glaptop>
-	<1338410107.2760.544.camel@edumazet-glaptop>
-	<1338456918.2760.1318.camel@edumazet-glaptop>
-	<1338574627.2760.1545.camel@edumazet-glaptop>
-	<CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759419Ab2FAU3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 16:29:36 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:52564 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759247Ab2FAU3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 16:29:35 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Andreas Mohr <andi@lisas.de>
+Subject: [PATCH] mcs7830: Implement link state detection
+Date: Fri, 1 Jun 2012 22:29:08 +0200
+User-Agent: KMail/1.9.10
+Cc: netdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201206012229.11530.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012 11:51:13 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Add .status callback that detects link state changes.
+Tested with MCS7832CV-AA chip (9710:7830, identified as rev.C by the driver).
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=28532
 
-> On Fri, Jun 1, 2012 at 11:17 AM, Eric Dumazet
-> <eric.dumazet@gmail.com> wrote:
-> >
-> > About 10% of boots on my machine, and this looks like (hand written)
-> >
-> > general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
-> > ...
-> > RIP : tty_shutdown+0x15/)x70
-> 
-> Ok, DEBUG_PAGEALLOC and with that offset fairly early in tty_shutdown,
-> it's almost certainly one of the accesses in the
-> 
->   tty->driver->ops->remove
-> 
-> chain when it does the (inlined)
-> 
->     tty_driver_remove_tty(tty->driver, tty);
-> 
-> you could check which one it is at that offset 0x15, but I think both
-> the ops and the driver structures should be statically allocated, so I
-> suspect it's the "tty" itself that is already freed.
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-Might be worth checking tty->magic in queue_release_one_tty and the
-entry to release_one_tty
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -629,11 +629,31 @@ static int mcs7830_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+ 	return skb->len > 0;
+ }
+ 
++static void mcs7830_status(struct usbnet *dev, struct urb *urb)
++{
++	u8 *buf = urb->transfer_buffer;
++	bool link;
++
++	if (urb->actual_length < 16)
++		return;
++
++	link = !(buf[1] & 0x20);
++	if (netif_carrier_ok(dev->net) != link) {
++		if (link) {
++			netif_carrier_on(dev->net);
++			usbnet_defer_kevent(dev, EVENT_LINK_RESET);
++		} else
++			netif_carrier_off(dev->net);
++		netdev_dbg(dev->net, "Link Status is: %d\n", link);
++	}
++}
++
+ static const struct driver_info moschip_info = {
+ 	.description	= "MOSCHIP 7830/7832/7730 usb-NET adapter",
+ 	.bind		= mcs7830_bind,
+ 	.rx_fixup	= mcs7830_rx_fixup,
+-	.flags		= FLAG_ETHER,
++	.flags		= FLAG_ETHER | FLAG_LINK_INTR,
++	.status		= mcs7830_status,
+ 	.in		= 1,
+ 	.out		= 2,
+ };
+@@ -642,7 +662,8 @@ static const struct driver_info sitecom_info = {
+ 	.description    = "Sitecom LN-30 usb-NET adapter",
+ 	.bind		= mcs7830_bind,
+ 	.rx_fixup	= mcs7830_rx_fixup,
+-	.flags		= FLAG_ETHER,
++	.flags		= FLAG_ETHER | FLAG_LINK_INTR,
++	.status		= mcs7830_status,
+ 	.in		= 1,
+ 	.out		= 2,
+ };
 
-You can also turn on TTY_PARANOIA_CHECK defines which may show more but
-can also be mistriggered in a few cases.
-
-What distro setup is this and is it booting to run level 3 or 5. I'm
-just wondering which paths you hit. Some of the distros do weird stuff
-(notably Fedora is totally broken on the console management) and that
-might be hiding a race or two in saner cases where you get more console
-hangups.
-
-Alan
+-- 
+Ondrej Zary
