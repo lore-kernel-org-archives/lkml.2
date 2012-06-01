@@ -1,128 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab2FAJxD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:53:03 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41702 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759051Ab2FAJxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:53:01 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 19/27] blackfin,
- smpboot: Use generic SMP booting infrastructure
-To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
-Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
-        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Mike Frysinger <vapier@gentoo.org>, Bob Liu <lliubbo@gmail.com>,
-        Steven Miao <realmz6@gmail.com>, Yong Zhang <yong.zhang0@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Date: Fri, 01 Jun 2012 14:44:40 +0530
-Message-ID: <20120601091433.31979.19214.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	id S932528Ab2FAJxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:53:35 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:46242 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758790Ab2FAJxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 05:53:34 -0400
+Date: Fri, 1 Jun 2012 11:53:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: John Moser <john.r.moser@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
+Subject: Re: Is this code right in zram?
+Message-ID: <20120601095330.GC3969@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	John Moser <john.r.moser@gmail.com>, linux-kernel@vger.kernel.org,
+	Nitin Gupta <ngupta@vflare.org>
+References: <4FC7E610.5060207@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12053123-1396-0000-0000-00000154A4C8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FC7E610.5060207@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+On Thu, May 31, 2012 at 05:43:44PM -0400, John Moser wrote:
+> before I go stomping all over other peoples' work and sending
+> idiotic patches, I think I'll ask.  Since I have no clue what I'm
+> doing.
+> 
+> in drivers/staging/zram.c out of 3.4
 
-Convert blackfin to use the generic framework to boot secondary CPUs.
+There's no such file in 3.4 - I get
 
-Notes:
-The call to set_cpu_online() is removed from platform_secondary_init(), since
-it will now be done by generic SMP booting code.
+tree v3.4:drivers/staging/zram/
 
-Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
-Cc: Mike Frysinger <vapier@gentoo.org>
-Cc: Bob Liu <lliubbo@gmail.com>
-Cc: Steven Miao <realmz6@gmail.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: uclinux-dist-devel@blackfin.uclinux.org
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Kconfig
+Makefile
+zram.txt
+zram_drv.c
+zram_drv.h
+zram_sysfs.c
 
- arch/blackfin/mach-bf561/smp.c  |    1 -
- arch/blackfin/mach-common/smp.c |   16 +++++++++-------
- 2 files changed, 9 insertions(+), 8 deletions(-)
+I'm guessing you mean zram_drv.c - there's code like that below?
 
-diff --git a/arch/blackfin/mach-bf561/smp.c b/arch/blackfin/mach-bf561/smp.c
-index ab1c617..e7e2e50 100644
---- a/arch/blackfin/mach-bf561/smp.c
-+++ b/arch/blackfin/mach-bf561/smp.c
-@@ -69,7 +69,6 @@ void __cpuinit platform_secondary_init(unsigned int cpu)
- 	SSYNC();
- 
- 	/* We are done with local CPU inits, unblock the boot CPU. */
--	set_cpu_online(cpu, true);
- 	spin_lock(&boot_lock);
- 	spin_unlock(&boot_lock);
- }
-diff --git a/arch/blackfin/mach-common/smp.c b/arch/blackfin/mach-common/smp.c
-index 00bbe67..9ee6f2f 100644
---- a/arch/blackfin/mach-common/smp.c
-+++ b/arch/blackfin/mach-common/smp.c
-@@ -25,6 +25,7 @@
- #include <linux/irq.h>
- #include <linux/slab.h>
- #include <linux/atomic.h>
-+#include <linux/smpboot.h>
- #include <asm/cacheflush.h>
- #include <asm/irq_handler.h>
- #include <asm/mmu_context.h>
-@@ -373,6 +374,11 @@ static void __cpuinit setup_secondary(unsigned int cpu)
- 
- void __cpuinit secondary_start_kernel(void)
- {
-+	smpboot_start_secondary(NULL);
-+}
-+
-+void __cpuinit __cpu_pre_starting(void *unused)
-+{
- 	unsigned int cpu = smp_processor_id();
- 	struct mm_struct *mm = &init_mm;
- 
-@@ -405,8 +411,6 @@ void __cpuinit secondary_start_kernel(void)
- 	atomic_inc(&mm->mm_count);
- 	current->active_mm = mm;
- 
--	preempt_disable();
--
- 	setup_secondary(cpu);
- 
- 	platform_secondary_init(cpu);
-@@ -414,19 +418,17 @@ void __cpuinit secondary_start_kernel(void)
- 	/* setup local core timer */
- 	bfin_local_timer_setup();
- 
--	local_irq_enable();
--
- 	bfin_setup_caches(cpu);
-+}
- 
--	notify_cpu_starting(cpu);
-+void __cpuinit __cpu_pre_online(void *unused)
-+{
- 	/*
- 	 * Calibrate loops per jiffy value.
- 	 * IRQs need to be enabled here - D-cache can be invalidated
- 	 * in timer irq handler, so core B can read correct jiffies.
- 	 */
- 	calibrate_delay();
--
--	cpu_idle();
- }
- 
- void __init smp_prepare_boot_cpu(void)
+> (I just grabbed the source
+> hours ago), I see this on lines 810-822:
+> 
+>        /* Allocate the device array and initialize each one */
+>         pr_info("Creating %u devices ...\n", num_devices);
+>         zram_devices = kzalloc(num_devices * sizeof(struct zram),
+> GFP_KERNEL);
+>         if (!zram_devices) {
+>                 ret = -ENOMEM;
+>                 goto unregister;
+>         }
+> 
+>         for (dev_id = 0; dev_id < num_devices; dev_id++) {
+>                 ret = create_device(&zram_devices[dev_id], dev_id);
+>                 if (ret)
+>                         goto free_devices;
+>         }
+> 
+> Curiosity got me to here:
+> 
+> http://lwn.net/Articles/147014/
+> 
+> So assuming this, what I see here is:
+> 
+>  - kmalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
+>  - memset() that to 0
+>  - immediately fill in this RAM without reading it
+> 
+> I'm wondering what the immediate need is to fill the area with
+> zeros?
 
+You don't want to use unitialized memory in those zram_devices thingies,
+i.e. touch something in there which you haven't initialized before thus
+the convention to zero out the whole struct.
+
+Right, create_device() does that init later but what do you do if
+create_device changes and forgets one variable, for example? There's
+your bug (and a very subtle one, for that matter).
+
+That's why you can't risk it and have to init the memory to a known good
+value just in case.
+
+> Also curious as to whether the kzalloc() thing should better be
+> kcalloc(num_devices, sizeof(struct zram), GFP_KERNEL) as a matter of
+> convention.
+
+That makes sense, let's ask.
+
+-- 
+Regards/Gruss,
+    Boris.
