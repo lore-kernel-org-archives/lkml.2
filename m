@@ -1,99 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab2FADpr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 23:45:47 -0400
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:34598 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758521Ab2FADpq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 23:45:46 -0400
+	id S1758928Ab2FADrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 23:47:00 -0400
+Received: from eastrmfepi208.cox.net ([68.230.241.212]:55318 "EHLO
+	eastrmfepi208.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758374Ab2FADq6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 23:46:58 -0400
+X-Greylist: delayed 670 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 23:46:58 EDT
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020201.4FC83893.0053,ss=1,re=0.000,fgs=0
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=s1i2RV+unmn3sLkEA3lf1Tj2LikDbZyRf9iEFo2x6J8=
+ c=1 sm=1 a=G8Uczd0VNMoA:10 a=whztzYdflP4A:10 a=I86TS7ZET-8A:10
+ a=IkcTkHD0fZMA:10 a=xSYkKhQwwG3/4z+rqbU9KQ==:17 a=CjxXgO3LAAAA:8
+ a=a1gkrLmVJ3FywdrfCYMA:9 a=QEXdDO2ut3YA:10 a=UHxOlpXEFFYA:10
+ a=rC2wZJ5BpNYA:10 a=OBKgW7ILNbUapaiY:21 a=7iVfS64Dgf_ToejP:21
+ a=xSYkKhQwwG3/4z+rqbU9KQ==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20120531233547.LZ4T1.1094215.imail@eastrmwml113>
+Date: Thu, 31 May 2012 20:35:47 -0700
+From: "western.Union" <sofha10@cox.net>
+Reply-To: western.u200@gmx.us
+Subject: Dear Friend
 MIME-Version: 1.0
-In-Reply-To: <874nqwynxd.fsf@ti.com>
-References: <1335462041-4949-1-git-send-email-j-keerthy@ti.com>
-	<87397by2h9.fsf@ti.com>
-	<CAJ6a13aJwesHw0frCV+EfvYaep09cZGcu_PopuHzye1HS2tgvg@mail.gmail.com>
-	<CAJ6a13YLogA7M=rzSJAW6fHZOujFY0Crfdz9Sc5qL0mt8kX9CA@mail.gmail.com>
-	<87obpdv6f4.fsf@ti.com>
-	<874nqwynxd.fsf@ti.com>
-Date: Fri, 1 Jun 2012 09:15:45 +0530
-Message-ID: <CAJ6a13YzgxK1QJVLd+ZKRM=w4mM3P3YXicwdazpBaRDqdUDHqA@mail.gmail.com>
-Subject: Re: [PATCH V3 00/10] PM: Create the AVS(Adaptive Voltage Scaling)
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, greg@kroah.com,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        j-pihet@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 4:10 AM, Kevin Hilman <khilman@ti.com> wrote:
-> Kevin Hilman <khilman@ti.com> writes:
->
->> "J, KEERTHY" <j-keerthy@ti.com> writes:
->>
->>> On Tue, May 15, 2012 at 11:16 AM, J, KEERTHY <j-keerthy@ti.com> wrote:
->>>> On Tue, May 8, 2012 at 5:21 AM, Kevin Hilman <khilman@ti.com> wrote:
->>>>> Rafael,
->>>>>
->>>>> Keerthy <j-keerthy@ti.com> writes:
->>>>>
->>>>>> From: J Keerthy <j-keerthy@ti.com>
->>>>>>
->>>>>> AVS(Adaptive Voltage Scaling) is a power management technique which
->>>>>> controls the operating voltage of a device in order to optimize (i.e. reduce)
->>>>>> its power consumption. The voltage is adapted depending on static factors
->>>>>> (chip manufacturing process) and dynamic factors (temperature
->>>>>> depending performance).
->>>>>> The TI AVS solution is named Smartreflex.
->>>>>>
->>>>>> To that end, create the AVS driver in drivers/power/avs and
->>>>>> move the OMAP SmartReflex code to the new directory. The
->>>>>> class driver is still retained in the mach-omap2 directory.
->>>>>
->>>>> How should we handle this for upstream?
->>>>>
->>>>> It does a bunch of cleanup under arch/arm then does the move to
->>>>> drivers/power the end.  To avoid conflicts with other OMAP core changes,
->>>>> I would suggest we take this through the OMAP tree.
->>>>>
->>>>> With your ack, I'd be glad to take it.
->>>>
->>>> Hello Rafael,
->>>>
->>>> A gentle ping on this series.
->>>
->>> Hi Greg,
->>>
->>> This series has Kevin's comments incorporated.
->>>
->>> Kevin,
->>>
->>> Can i have your Ack for this series?
->>>
->>
->> Well, as mentioned above, I'm waiting for Rafael's ack, then I will
->> merge it.
->>
->> Because of all the arch/arm/mach-omap2/* changes, I would like to merge
->> this via the OMAP tree to avoid conflicts with other stuff we have
->> changing in arch/arm/mach-omap2/*
->
-> OK, I had an off-line discussion with Rafael and he's OK that I take
-> these.  I will add an ack from Rafael and queue this series up for v3.6.
-
-Thanks Kevin.
-
->
-> Thanks,
->
-> Kevin
-
-
-
--- 
-Regards and Thanks,
-Keerthy
+this message is from Western Union to
+inform you that your first payment of $10,000
+has been transferred.To receive your first
+MTCN contact our claims officer  via
+email: wumt.office78@yahoo.com
+with your information
