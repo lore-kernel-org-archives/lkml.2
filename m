@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932961Ab2FABAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 21:00:36 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40453 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932929Ab2FABAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 21:00:35 -0400
-Message-ID: <4FC81424.9050502@gmail.com>
-Date: Fri, 01 Jun 2012 03:00:20 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	id S932970Ab2FABBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 21:01:34 -0400
+Received: from mail.lang.hm ([64.81.33.126]:56159 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932942Ab2FABBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 21:01:33 -0400
+X-Greylist: delayed 891 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 21:01:33 EDT
+Date: Thu, 31 May 2012 17:45:31 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
+        sivanich@sgi.com
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+In-Reply-To: <CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com> <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com> <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org>
+ <alpine.DEB.2.00.1205301349230.31768@router.home> <20120530193234.GV27374@one.firstfloor.org> <alpine.DEB.2.00.1205301441350.31768@router.home> <CAHGf_=ooVunBpSdBRCnO1uOoswqxcSy7Xf8xVcgEUGA2fXdcTA@mail.gmail.com> <20120530201042.GY27374@one.firstfloor.org>
+ <CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@tuxera.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] Support HFS+ not filling its device completely
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enigDE98A7D9E91B2FABAEC42C03"
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigDE98A7D9E91B2FABAEC42C03
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, 30 May 2012, KOSAKI Motohiro wrote:
 
-Hello, all. My HFS+ previously was on slightly smaller partition
-and was subsequently dd'ed to its current location. Mac OS X doesn't
-mind and I don't mind losing a little space. However Linux fails to
-locate second superblock and hence to mount it. This patch uses
-the size field from the first superblock to locate the second.
+> On Wed, May 30, 2012 at 4:10 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>>> Yes, that's right direction, I think. Currently, shmem_set_policy() can't handle
+>>> nonlinear mapping.
+>>
+>> I've been mulling for some time to just remove non linear mappings.
+>> AFAIK they were only useful on 32bit and are obsolete and could be
+>> emulated with VMAs instead.
+>
+> I agree. It is only userful on 32bit and current enterprise users don't use
+> 32bit anymore. So, I don't think emulated by vmas cause user visible issue.
 
+I wish this was true, there are a lot of systems out there still running 
+32 bit linux, even on 64 bit capible hardware. This is especially true in 
+enterprises where they have either homegrown or proprietary software that 
+isn't 64 bit clean.
 
-Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
----
- fs/hfsplus/wrapper.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
-index 7daf4b8..a7e1268 100644
---- a/fs/hfsplus/wrapper.c
-+++ b/fs/hfsplus/wrapper.c
-@@ -206,6 +206,9 @@ reread:
- 		set_bit(HFSPLUS_SB_HFSX, &sbi->flags);
- 		/*FALLTHRU*/
- 	case cpu_to_be16(HFSPLUS_VOLHEAD_SIG):
-+		part_size =3D (((u64) be32_to_cpu(sbi->s_vhdr->blocksize)
-+			      * (u64) be32_to_cpu(sbi->s_vhdr->total_blocks))
-+			     >> HFSPLUS_SECTOR_SHIFT);
- 		break;
- 	case cpu_to_be16(HFSP_WRAP_MAGIC):
- 		if (!hfsplus_read_mdb(sbi->s_vhdr, &wd))
---=20
-1.7.10
-
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
-
-
---------------enigDE98A7D9E91B2FABAEC42C03
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAk/IFC8ACgkQNak7dOguQgn9DAEAl6lii0aSySdu5Ja0DWjEANWi
-a2MYXBAaAcLtxlJlJCwA/1id0XINOLHFoQJAKxfZy94Pic5c7aWTyqTp5HPWr2J+
-=AALT
------END PGP SIGNATURE-----
-
---------------enigDE98A7D9E91B2FABAEC42C03--
+David Lang
