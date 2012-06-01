@@ -1,298 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965671Ab2FASgK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:36:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50537 "EHLO mx2.suse.de"
+	id S965673Ab2FAShf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:37:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61689 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932760Ab2FASgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:36:08 -0400
-Date: Fri, 1 Jun 2012 20:36:03 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: 3.3.7 lockdep report from jbd.
-Message-ID: <20120601183603.GA1646@quack.suse.cz>
-References: <20120530023747.GA1845@redhat.com>
+	id S932756Ab2FAShd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 14:37:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="173767908"
+Message-ID: <4FC90BAD.3080606@linux.intel.com>
+Date: Fri, 01 Jun 2012 11:36:29 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530023747.GA1845@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [RFC PATCH] pch_uart: Add eg20t_port lock field, avoid recursive
+ spinlocks
+References: <8854635ac5471f8671b93c65e3663eb1cb204c9d.1338454156.git.dvhart@linux.intel.com> <CANKRQnhZErpvcsRW3ukNzY0_zv4x=5OzQ-sr+aeuxL63=tQ=4A@mail.gmail.com>
+In-Reply-To: <CANKRQnhZErpvcsRW3ukNzY0_zv4x=5OzQ-sr+aeuxL63=tQ=4A@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 29-05-12 22:37:47, Dave Jones wrote:
-> Just saw this on my backup server during an rsync.
-> I'll see if I can reproduce it in 3.4 later.
-> 
-> 	Dave
-> 
-> 
-> =========================================================
-> [ INFO: possible irq lock inversion dependency detected ]
-> 3.3.7-1.fc16.x86_64.debug #1 Not tainted
-> ---------------------------------------------------------
-> kswapd0/37 just changed the state of lock:
->  (jbd2_handle){+.+.-.}, at: [<ffffffff8128b457>] start_this_handle+0x507/0x700
-> but this lock took another, RECLAIM_FS-unsafe lock in the past:
->  (&isec->lock){+.+.+.}
-> 
-> and interrupts could create inverse lock ordering between them.
-> 
-> 
-> other info that might help us debug this:
->  Possible interrupt unsafe locking scenario:
-> 
->        CPU0                    CPU1
->        ----                    ----
->   lock(&isec->lock);
->                                local_irq_disable();
->                                lock(jbd2_handle);
->                                lock(&isec->lock);
->   <Interrupt>
->     lock(jbd2_handle);
 
-Frankly, this looks like a false positive and I have a hard time
-understanding how lockdep even came to the above conclusion.
 
-Certainly we never take jbd2_handle in an interrupt. Lockdep is correct
-jbd2_handle is taken in reclaim, although I'm reasonably sure we never end
-up taking isec->lock under jbd2_handle in reclaim.
+On 06/01/2012 01:30 AM, Tomoya MORINAGA wrote:
+> On Thu, May 31, 2012 at 5:54 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+>> @@ -1376,7 +1379,8 @@ static void pch_uart_set_termios(struct uart_port *port,
+>>
+>>        baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
+>>
+>> -       spin_lock_irqsave(&port->lock, flags);
+>> +       spin_lock_irqsave(&priv->lock, flags);
+>> +       spin_lock(&port->lock);
+>>
+>>        uart_update_timeout(port, termios->c_cflag, baud);
+>>        rtn = pch_uart_hal_set_line(priv, baud, parity, bits, stb);
+>> @@ -1389,7 +1393,8 @@ static void pch_uart_set_termios(struct uart_port *port,
+>>                tty_termios_encode_baud_rate(termios, baud, baud);
+>>
+>>  out:
+>> -       spin_unlock_irqrestore(&port->lock, flags);
+>> +       spin_unlock(&port->lock);
+>> +       spin_unlock_irqrestore(&priv->lock, flags);
+>>  }
+> 
+> Are both port->lock and priv->lock really necessary ?
 
-I'm not sure how to silence this warning though...
+The priv lock protects the pch_uart_hal* calls and the io access.
 
-								Honza
-> 
->  *** DEADLOCK ***
-> 
-> 2 locks held by kswapd0/37:
->  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff8116304c>] shrink_slab+0x3c/0x4b0
->  #1:  (&type->s_umount_key#20){++++..}, at: [<ffffffff811bf654>] grab_super_passive+0x44/0x90
-> 
-> the shortest dependencies between 2nd lock and 1st lock:
->  -> (&isec->lock){+.+.+.} ops: 582449 {
->     HARDIRQ-ON-W at:
->                                          [<ffffffff810cbf69>] __lock_acquire+0x619/0x1c20
->                                          [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                          [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
->                                          [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
->                                          [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
->                                          [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
->                                          [<ffffffff811d4081>] d_instantiate+0x61/0x80
->                                          [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
->                                          [<ffffffff81237f62>] sysfs_mount+0x182/0x220
->                                          [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
->                                          [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
->                                          [<ffffffff811dd899>] kern_mount_data+0x19/0x30
->                                          [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
->                                          [<ffffffff81ef1862>] mnt_init+0xa1/0x181
->                                          [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
->                                          [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
->                                          [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
->                                          [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
->     SOFTIRQ-ON-W at:
->                                          [<ffffffff810cbf98>] __lock_acquire+0x648/0x1c20
->                                          [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                          [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
->                                          [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
->                                          [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
->                                          [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
->                                          [<ffffffff811d4081>] d_instantiate+0x61/0x80
->                                          [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
->                                          [<ffffffff81237f62>] sysfs_mount+0x182/0x220
->                                          [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
->                                          [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
->                                          [<ffffffff811dd899>] kern_mount_data+0x19/0x30
->                                          [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
->                                          [<ffffffff81ef1862>] mnt_init+0xa1/0x181
->                                          [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
->                                          [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
->                                          [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
->                                          [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
->     RECLAIM_FS-ON-W at:
->                                             [<ffffffff810ce626>] mark_held_locks+0x86/0x150
->                                             [<ffffffff810cedb1>] lockdep_trace_alloc+0x71/0xd0
->                                             [<ffffffff811591d6>] __alloc_pages_nodemask+0x86/0xa90
->                                             [<ffffffff81194063>] alloc_pages_current+0xa3/0x110
->                                             [<ffffffff81154b94>] __get_free_pages+0x14/0x50
->                                             [<ffffffff812c6b4b>] inode_doinit_with_dentry+0x32b/0x650
->                                             [<ffffffff812c6f56>] sb_finish_set_opts+0xc6/0x260
->                                             [<ffffffff812c753c>] selinux_set_mnt_opts+0x32c/0x540
->                                             [<ffffffff812c77b0>] superblock_doinit+0x60/0xc0
->                                             [<ffffffff812c78f0>] delayed_superblock_init+0x10/0x20
->                                             [<ffffffff811bfa41>] iterate_supers+0xf1/0x100
->                                             [<ffffffff812cae13>] selinux_complete_init+0x33/0x40
->                                             [<ffffffff812da95b>] security_load_policy+0x35b/0x4e0
->                                             [<ffffffff812ccb6f>] sel_write_load+0x9f/0x790
->                                             [<ffffffff811bb506>] vfs_write+0xb6/0x180
->                                             [<ffffffff811bb82d>] sys_write+0x4d/0x90
->                                             [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
->     INITIAL USE at:
->                                         [<ffffffff810cbc70>] __lock_acquire+0x320/0x1c20
->                                         [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                         [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
->                                         [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
->                                         [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
->                                         [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
->                                         [<ffffffff811d4081>] d_instantiate+0x61/0x80
->                                         [<ffffffff811d69d3>] d_alloc_root+0x43/0x50
->                                         [<ffffffff81237f62>] sysfs_mount+0x182/0x220
->                                         [<ffffffff811bffe3>] mount_fs+0x43/0x1b0
->                                         [<ffffffff811dd7f2>] vfs_kern_mount+0x72/0x100
->                                         [<ffffffff811dd899>] kern_mount_data+0x19/0x30
->                                         [<ffffffff81ef30b2>] sysfs_init+0x5a/0xb5
->                                         [<ffffffff81ef1862>] mnt_init+0xa1/0x181
->                                         [<ffffffff81ef14fc>] vfs_caches_init+0xfb/0x10c
->                                         [<ffffffff81ecebf3>] start_kernel+0x3b5/0x3fc
->                                         [<ffffffff81ece346>] x86_64_start_reservations+0x131/0x135
->                                         [<ffffffff81ece44c>] x86_64_start_kernel+0x102/0x111
->   }
->   ... key      at: [<ffffffff829db510>] __key.51824+0x0/0x8
->   ... acquired at:
->    [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->    [<ffffffff8169ef94>] mutex_lock_nested+0x74/0x3a0
->    [<ffffffff812c68e2>] inode_doinit_with_dentry+0xc2/0x650
->    [<ffffffff812c6e8c>] selinux_d_instantiate+0x1c/0x20
->    [<ffffffff812bd75b>] security_d_instantiate+0x1b/0x30
->    [<ffffffff811d4081>] d_instantiate+0x61/0x80
->    [<ffffffff812510b6>] ext4_add_nondir+0x76/0x80
->    [<ffffffff812531b6>] ext4_symlink+0x1a6/0x330
->    [<ffffffff811ca2d9>] vfs_symlink+0x99/0x100
->    [<ffffffff811cdb73>] sys_symlinkat+0xb3/0xd0
->    [<ffffffff811cdba6>] sys_symlink+0x16/0x20
->    [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
-> 
-> -> (jbd2_handle){+.+.-.} ops: 20071115 {
->    HARDIRQ-ON-W at:
->                                        [<ffffffff810cbf69>] __lock_acquire+0x619/0x1c20
->                                        [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                        [<ffffffff8128b486>] start_this_handle+0x536/0x700
->                                        [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
->                                        [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
->                                        [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
->                                        [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
->                                        [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
->                                        [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
->                                        [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
->                                        [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
->    SOFTIRQ-ON-W at:
->                                        [<ffffffff810cbf98>] __lock_acquire+0x648/0x1c20
->                                        [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                        [<ffffffff8128b486>] start_this_handle+0x536/0x700
->                                        [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
->                                        [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
->                                        [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
->                                        [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
->                                        [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
->                                        [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
->                                        [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
->                                        [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
->    IN-RECLAIM_FS-W at:
->                                           [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
->                                           [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                           [<ffffffff8128b486>] start_this_handle+0x536/0x700
->                                           [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
->                                           [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
->                                           [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
->                                           [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
->                                           [<ffffffff811d91d3>] evict+0xa3/0x1b0
->                                           [<ffffffff811d93e5>] iput+0x105/0x200
->                                           [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
->                                           [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
->                                           [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
->                                           [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
->                                           [<ffffffff81163185>] shrink_slab+0x175/0x4b0
->                                           [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
->                                           [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
->                                           [<ffffffff8108b927>] kthread+0xb7/0xc0
->                                           [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
->    INITIAL USE at:
->                                       [<ffffffff810cbc70>] __lock_acquire+0x320/0x1c20
->                                       [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->                                       [<ffffffff8128b486>] start_this_handle+0x536/0x700
->                                       [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
->                                       [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
->                                       [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
->                                       [<ffffffff81252907>] ext4_unlink+0x67/0x4b0
->                                       [<ffffffff811c9bdf>] vfs_unlink+0x9f/0x110
->                                       [<ffffffff811ccf43>] do_unlinkat+0x183/0x1c0
->                                       [<ffffffff811cda82>] sys_unlinkat+0x22/0x40
->                                       [<ffffffff816abc29>] system_call_fastpath+0x16/0x1b
->  }
->  ... key      at: [<ffffffff829cff00>] jbd2_handle_key+0x0/0x8
->  ... acquired at:
->    [<ffffffff810cae1b>] check_usage_forwards+0x11b/0x150
->    [<ffffffff810cb7f8>] mark_lock+0x198/0x2f0
->    [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
->    [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->    [<ffffffff8128b486>] start_this_handle+0x536/0x700
->    [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
->    [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
->    [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
->    [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
->    [<ffffffff811d91d3>] evict+0xa3/0x1b0
->    [<ffffffff811d93e5>] iput+0x105/0x200
->    [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
->    [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
->    [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
->    [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
->    [<ffffffff81163185>] shrink_slab+0x175/0x4b0
->    [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
->    [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
->    [<ffffffff8108b927>] kthread+0xb7/0xc0
->    [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
+The port lock protects the uart_update_timeout call. I'm assuming the
+8250.c driver is correct in holding the port lock before making this
+call and making other modifcations to the port struct.
+
+So yes, I believe both are required. The port->lock was used as the lock
+to protect the private data in the interrupt handler,
+pch_uart_interrupt. If we could avoid holding that lock across the
+entire function, limiting it to just around the pch_uart_hal calls
+(perhaps by adding it to the hal calls and adding lockless __pch_uart*
+calls) we could avoid the recursive lock that occurs with handle_rx. I
+still think a priv-lock is a good idea though, even if just to clarify
+what is being protected.
+
+Thoughts?
+
 > 
 > 
-> stack backtrace:
-> Pid: 37, comm: kswapd0 Not tainted 3.3.7-1.fc16.x86_64.debug #1
-> Call Trace:
->  [<ffffffff810cacf8>] print_irq_inversion_bug.part.19+0x1e8/0x1f0
->  [<ffffffff810cae1b>] check_usage_forwards+0x11b/0x150
->  [<ffffffff810cb7f8>] mark_lock+0x198/0x2f0
->  [<ffffffff810cad00>] ? print_irq_inversion_bug.part.19+0x1f0/0x1f0
->  [<ffffffff810cbee0>] __lock_acquire+0x590/0x1c20
->  [<ffffffff8128b6d9>] ? jbd2__journal_start+0x89/0x1a0
->  [<ffffffff81022023>] ? native_sched_clock+0x13/0x80
->  [<ffffffff810a3dc5>] ? sched_clock_local+0x25/0x90
->  [<ffffffff810a3f58>] ? sched_clock_cpu+0xa8/0x110
->  [<ffffffff810c815d>] ? trace_hardirqs_off+0xd/0x10
->  [<ffffffff810cdc5d>] lock_acquire+0x9d/0x200
->  [<ffffffff8128b457>] ? start_this_handle+0x507/0x700
->  [<ffffffff8128b486>] start_this_handle+0x536/0x700
->  [<ffffffff8128b457>] ? start_this_handle+0x507/0x700
->  [<ffffffff811a1c2b>] ? kmem_cache_alloc+0x19b/0x280
->  [<ffffffff8128b6d9>] ? jbd2__journal_start+0x89/0x1a0
->  [<ffffffff8128b77a>] jbd2__journal_start+0x12a/0x1a0
->  [<ffffffff8124bfb9>] ? ext4_evict_inode+0x1a9/0x620
->  [<ffffffff8128b803>] jbd2_journal_start+0x13/0x20
->  [<ffffffff81266cde>] ext4_journal_start_sb+0x7e/0x2a0
->  [<ffffffff8121ec90>] ? __dquot_initialize+0x30/0x180
->  [<ffffffff811d91c1>] ? evict+0x91/0x1b0
->  [<ffffffff8124bfb9>] ext4_evict_inode+0x1a9/0x620
->  [<ffffffff811d91d3>] evict+0xa3/0x1b0
->  [<ffffffff811d93e5>] iput+0x105/0x200
->  [<ffffffff811d3bb8>] dentry_iput+0xa8/0x100
->  [<ffffffff811d53a0>] shrink_dentry_list+0x280/0x4c0
->  [<ffffffff811d53d0>] ? shrink_dentry_list+0x2b0/0x4c0
->  [<ffffffff811d64eb>] prune_dcache_sb+0x15b/0x190
->  [<ffffffff811bf7d0>] prune_super+0x130/0x1a0
->  [<ffffffff81163185>] shrink_slab+0x175/0x4b0
->  [<ffffffff811ae776>] ? mem_cgroup_iter+0xf6/0x340
->  [<ffffffff8116762a>] balance_pgdat+0x52a/0x720
->  [<ffffffff811679c1>] kswapd+0x1a1/0x5b0
->  [<ffffffff8108c580>] ? __init_waitqueue_head+0x60/0x60
->  [<ffffffff81167820>] ? balance_pgdat+0x720/0x720
->  [<ffffffff8108b927>] kthread+0xb7/0xc0
->  [<ffffffff816ad074>] kernel_thread_helper+0x4/0x10
->  [<ffffffff816a3374>] ? retint_restore_args+0x13/0x13
->  [<ffffffff8108b870>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff816ad070>] ? gs_change+0x13/0x13
+>> @@ -1572,7 +1578,9 @@ pch_console_write(struct console *co, const char *s, unsigned int count)
+>>
+>>        if (locked)
+>>                spin_unlock(&priv->port.lock);
+>> +       spin_unlock(&priv->lock);
+>>        local_irq_restore(flags);
+>> +
+>>  }
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Looks spare blank line.
+
+Thanks, will fix for V2 after this discussion wraps up.
+
+> 
+> thanks.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
