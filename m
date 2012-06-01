@@ -1,146 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760081Ab2FAPIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:08:05 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47018 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab2FAPIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:08:01 -0400
-Date: Fri, 01 Jun 2012 11:07:58 -0400
-Message-Id: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: GIT PULL] ext4 updates for 3.5
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S964849Ab2FAPOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:14:32 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:59363 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932649Ab2FAPO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 11:14:29 -0400
+Message-ID: <4FC8DC19.4000007@linux.vnet.ibm.com>
+Date: Fri, 01 Jun 2012 20:43:29 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@suse.com>
+CC: yong.zhang0@gmail.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+        peterz@infradead.org, mingo@kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
+        nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@redhat.com>, rusty@rustcorp.com.au, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Keir Fraser <keir@xen.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [Xen-devel] [PATCH 05/27] xen, cpu hotplug: Don't call cpu_bringup()
+ in xen_play_dead()
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091124.31979.91984.stgit@srivatsabhat.in.ibm.com> <4FC8D8E30200007800087D2B@nat28.tlf.novell.com>
+In-Reply-To: <4FC8D8E30200007800087D2B@nat28.tlf.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060115-5816-0000-0000-000002F73D67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/01/2012 06:29 PM, Jan Beulich wrote:
 
-Sorry this is so late... it's been a crazily busy May...
+>>>> On 01.06.12 at 11:11, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> wrote:
+>> xen_play_dead calls cpu_bringup() which looks weird, because xen_play_dead()
+>> is invoked in the cpu down path, whereas cpu_bringup() (as the name 
+>> suggests) is useful in the cpu bringup path.
+> 
+> This might not be correct - the code as it is without this change is
+> safe even when the vCPU gets onlined back later by an external
+> entity (e.g. the Xen tool stack), and it would in that case resume
+> at the return point of the VCPUOP_down hypercall. That might
+> be a heritage from the original XenoLinux tree though, and be
+> meaningless in pv-ops context - Jeremy, Konrad?
+> 
+> Possibly it was bogus/unused even in that original tree - Keir?
+>
 
-	      	 	      	   - Ted
 
+Thanks for your comments Jan!
 
-The following changes since commit 69964ea4c7b68c9399f7977aa5b9aa6539a6a98a:
+In case this change is wrong, the other method I had in mind was to call
+cpu_bringup_and_idle() in xen_play_dead(). (Even ARM does something similar,
+in the sense that it runs the cpu bringup code including cpu_idle(), in the
+cpu offline path, namely the cpu_die() function). Would that approach work
+for xen as well? If yes, then we wouldn't have any issues to convert xen to
+generic code.
 
-  Linux 3.4-rc5 (2012-04-29 15:19:10 -0700)
+Regards,
+Srivatsa S. Bhat
 
-are available in the git repository at:
+> 
+>> Getting rid of xen_play_dead()'s dependency on cpu_bringup() helps in 
+>> hooking on to the generic SMP booting framework.
+>>
+>> Also remove the extra call to preempt_enable() added by commit 41bd956
+>> (xen/smp: Fix CPU online/offline bug triggering a BUG: scheduling while
+>> atomic) because it becomes unnecessary after this change.
+>>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Cc: Ingo Molnar <mingo@redhat.com>
+>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> Cc: x86@kernel.org 
+>> Cc: xen-devel@lists.xensource.com 
+>> Cc: virtualization@lists.linux-foundation.org 
+>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>> ---
+>>
+>>  arch/x86/xen/smp.c |    8 --------
+>>  1 files changed, 0 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+>> index 09a7199..602d6b7 100644
+>> --- a/arch/x86/xen/smp.c
+>> +++ b/arch/x86/xen/smp.c
+>> @@ -417,14 +417,6 @@ static void __cpuinit xen_play_dead(void) /* used only 
+>> with HOTPLUG_CPU */
+>>  {
+>>  	play_dead_common();
+>>  	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
+>> -	cpu_bringup();
+>> -	/*
+>> -	 * Balance out the preempt calls - as we are running in cpu_idle
+>> -	 * loop which has been called at bootup from cpu_bringup_and_idle.
+>> -	 * The cpucpu_bringup_and_idle called cpu_bringup which made a
+>> -	 * preempt_disable() So this preempt_enable will balance it out.
+>> -	 */
+>> -	preempt_enable();
+>>  }
+>>  
+>>  #else /* !CONFIG_HOTPLUG_CPU */
+>>
+>>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git dev
-
-for you to fetch changes up to 5e44f8c374dc4f8eadf61cd18b2c0d46bc87c1b7:
-
-  ext4: hole-punch use truncate_pagecache_range (2012-06-01 00:15:28 -0400)
-
-----------------------------------------------------------------
-Ext4 updates for 3.5
-
-The major new feature added in this update is Darrick J. Wong's
-metadata checksum feature, which adds crc32 checksums to ext4's
-metadata fields.  There is also the usual set of cleanups and bug
-fixes.
-
-----------------------------------------------------------------
-Akira Fujita (1):
-      ext4: remove needs_recovery in ext4_mb_init()
-
-Andreas Dilger (1):
-      ext4: disallow hard-linked directory in ext4_lookup
-
-Dan Carpenter (1):
-      ext4: fix potential NULL dereference in ext4_free_inodes_counts()
-
-Darrick J. Wong (23):
-      ext4: create a new BH_Verified flag to avoid unnecessary metadata validation
-      ext4: change on-disk layout to support extended metadata checksumming
-      ext4: record the checksum algorithm in use in the superblock
-      ext4: load the crc32c driver if necessary
-      ext4: calculate and verify superblock checksum
-      ext4: calculate and verify inode checksums
-      ext4: calculate and verify checksums for inode bitmaps
-      ext4: calculate and verify block bitmap checksum
-      ext4: verify and calculate checksums for extent tree  blocks
-      ext4: Calculate and verify checksums for htree nodes
-      ext4: calculate and verify checksums of directory leaf blocks
-      ext4: Calculate and verify checksums of extended attribute blocks
-      ext4: make block group checksums use metadata_csum algorithm
-      ext4: add checksums to the MMP block
-      jbd2: change disk layout for metadata checksumming
-      jbd2: enable journal clients to enable v2 checksumming
-      jbd2: Grab a reference to the crc32c driver if necessary
-      jbd2: checksum journal superblock
-      jbd2: checksum revocation blocks
-      jbd2: checksum descriptor blocks
-      jbd2: checksum commit blocks
-      jbd2: checksum data blocks that are stored in the journal
-      ext4/jbd2: add metadata checksumming to the list of supported features
-
-Eric Sandeen (1):
-      ext4: force ro mount if ext4_setup_super() fails
-
-Haogang Chen (1):
-      ext4: fix potential integer overflow in alloc_flex_gd()
-
-Hugh Dickins (1):
-      ext4: hole-punch use truncate_pagecache_range
-
-Salman Qazi (2):
-      ext4: add ext4_mb_unload_buddy in the error path
-      ext4: remove mb_groups before tearing down the buddy_cache
-
-Tao Ma (2):
-      ext4: protect group inode free counting with group lock
-      ext4: let getattr report the right blocks in delalloc+bigalloc
-
-Theodore Ts'o (7):
-      ext4: remove unnecessary check in add_dirent_to_buf()
-      ext4: enable the 64-bit jbd2 feature based on the 64-bit ext4 feature
-      ext4: remove redundundant "(char *) bh->b_data" casts
-      ext4: return ENOMEM when mounts fail due to lack of memory
-      ext4: add debugging trigger for ext4_error()
-      ext4: add missing save_error_info() to ext4_error()
-      ext4: don't trash state flags in EXT4_IOC_SETFLAGS
-
-Wanlong Gao (1):
-      jbd2: use kmem_cache_zalloc wrapper instead of flag
-
-Zheng Liu (3):
-      ext4: cleanup in ext4_discard_allocated_blocks()
-      ext4: fix format flag in ext4_ext_binsearch_idx()
-      ext4: use consistent ssize_t type in ext4_file_write()
-
- fs/ext4/Kconfig            |   2 +
- fs/ext4/balloc.c           |  41 ++++-
- fs/ext4/bitmap.c           |  83 +++++++++
- fs/ext4/dir.c              |  12 ++
- fs/ext4/ext4.h             | 130 +++++++++++--
- fs/ext4/ext4_extents.h     |  24 +++
- fs/ext4/ext4_jbd2.c        |   9 +-
- fs/ext4/ext4_jbd2.h        |   7 +-
- fs/ext4/extents.c          |  91 +++++++--
- fs/ext4/file.c             |   2 +-
- fs/ext4/ialloc.c           |  81 +++++++--
- fs/ext4/inode.c            | 119 ++++++++++--
- fs/ext4/ioctl.c            |  19 +-
- fs/ext4/mballoc.c          |  30 +--
- fs/ext4/mmp.c              |  44 ++++-
- fs/ext4/namei.c            | 445 ++++++++++++++++++++++++++++++++++++++++++---
- fs/ext4/resize.c           |  71 +++++++-
- fs/ext4/super.c            | 253 +++++++++++++++++++++-----
- fs/ext4/xattr.c            |  92 ++++++++--
- fs/ext4/xattr.h            |   4 +-
- fs/jbd2/Kconfig            |   2 +
- fs/jbd2/commit.c           |  70 ++++++-
- fs/jbd2/journal.c          | 132 +++++++++++++-
- fs/jbd2/recovery.c         | 126 ++++++++++++-
- fs/jbd2/revoke.c           |  27 ++-
- fs/jbd2/transaction.c      |   4 +-
- include/linux/jbd2.h       |  59 +++++-
- include/linux/jbd_common.h |   2 +
- 28 files changed, 1784 insertions(+), 197 deletions(-)
