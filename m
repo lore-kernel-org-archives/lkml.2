@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab2FAKOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 06:14:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35703 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759379Ab2FAKOJ convert rfc822-to-8bit (ORCPT
+	id S1759402Ab2FAKQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 06:16:17 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:32797 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759379Ab2FAKQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 06:14:09 -0400
-Message-ID: <1338545638.28384.137.camel@twins>
-Subject: Re: [PATCH 2/2] block: Convert BDI proportion calculations to
- flexible proportions
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 01 Jun 2012 12:13:58 +0200
-In-Reply-To: <20120531224206.GC19050@quack.suse.cz>
-References: <1337878751-22942-1-git-send-email-jack@suse.cz>
-	 <1337878751-22942-3-git-send-email-jack@suse.cz>
-	 <1338220185.4284.19.camel@lappy> <20120529123408.GA23991@quack.suse.cz>
-	 <1338295111.26856.57.camel@twins> <20120529125452.GB23991@quack.suse.cz>
-	 <20120531221146.GA19050@quack.suse.cz> <1338503165.28384.134.camel@twins>
-	 <20120531224206.GC19050@quack.suse.cz>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Fri, 1 Jun 2012 06:16:14 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 13/27] hexagon, smpboot: Use generic SMP booting infrastructure
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        David Howells <dhowells@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, linux-hexagon@vger.kernel.org
+Date: Fri, 01 Jun 2012 14:43:10 +0530
+Message-ID: <20120601091304.31979.39256.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12053123-7014-0000-0000-0000014D52BA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-06-01 at 00:42 +0200, Jan Kara wrote:
-> On Fri 01-06-12 00:26:05, Peter Zijlstra wrote:
-> > On Fri, 2012-06-01 at 00:11 +0200, Jan Kara wrote:
-> > >  bool fprop_new_period(struct fprop_global *p, int periods)
-> > >  {
-> > > -       u64 events = percpu_counter_sum(&p->events);
-> > > +       u64 events;
-> > > +       unsigned long flags;
-> > >  
-> > > +       local_irq_save(flags);
-> > > +       events = percpu_counter_sum(&p->events);
-> > > +       local_irq_restore(flags);
-> > >         /*
-> > >          * Don't do anything if there are no events.
-> > >          */
-> > > @@ -73,7 +77,9 @@ bool fprop_new_period(struct fprop_global *p, int periods)
-> > >         if (periods < 64)
-> > >                 events -= events >> periods;
-> > >         /* Use addition to avoid losing events happening between sum and set */
-> > > +       local_irq_save(flags);
-> > >         percpu_counter_add(&p->events, -events);
-> > > +       local_irq_restore(flags);
-> > >         p->period += periods;
-> > >         write_seqcount_end(&p->sequence); 
-> > 
-> > Uhm, why bother enabling it in between? Just wrap the whole function in
-> > a single IRQ disable.
->   I wanted to have interrupts disabled for as short as possible but if you
-> think it doesn't matter, I'll take your advice. The result is attached.
+From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 
-Thing is, disabling interrupts is quite expensive and the extra few
-instructions covered isn't much.
+Convert hexagon to use the generic framework to boot secondary CPUs.
 
+Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+Cc: Richard Kuo <rkuo@codeaurora.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-hexagon@vger.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ arch/hexagon/kernel/smp.c |   18 ++++++++----------
+ 1 files changed, 8 insertions(+), 10 deletions(-)
+
+diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+index 149fbef..0a679a4 100644
+--- a/arch/hexagon/kernel/smp.c
++++ b/arch/hexagon/kernel/smp.c
+@@ -29,6 +29,7 @@
+ #include <linux/smp.h>
+ #include <linux/spinlock.h>
+ #include <linux/cpu.h>
++#include <linux/smpboot.h>
+ 
+ #include <asm/time.h>    /*  timer_interrupt  */
+ #include <asm/hexagon_vm.h>
+@@ -148,7 +149,6 @@ void __init smp_prepare_boot_cpu(void)
+ 
+ void __cpuinit start_secondary(void)
+ {
+-	unsigned int cpu;
+ 	unsigned long thread_ptr;
+ 
+ 	/*  Calculate thread_info pointer from stack pointer  */
+@@ -165,6 +165,13 @@ void __cpuinit start_secondary(void)
+ 		: "r" (thread_ptr)
+ 	);
+ 
++	smpboot_start_secondary(NULL);
++}
++
++void __cpuinit __cpu_pre_starting(void *arg)
++{
++	unsigned int cpu;
++
+ 	/*  Set the memory struct  */
+ 	atomic_inc(&init_mm.mm_count);
+ 	current->active_mm = &init_mm;
+@@ -177,17 +184,8 @@ void __cpuinit start_secondary(void)
+ 	setup_percpu_clockdev();
+ 
+ 	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
+-
+-	notify_cpu_starting(cpu);
+-
+-	set_cpu_online(cpu, true);
+-
+-	local_irq_enable();
+-
+-	cpu_idle();
+ }
+ 
+-
+ /*
+  * called once for each present cpu
+  * apparently starts up the CPU and then
 
