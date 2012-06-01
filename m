@@ -1,182 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965907Ab2FAWl3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:41:29 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:42231 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965856Ab2FAWl1 (ORCPT
+	id S965920Ab2FAWmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 18:42:24 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41333 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965841Ab2FAWmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:41:27 -0400
-Message-ID: <4FC94505.3090506@linux.vnet.ibm.com>
-Date: Fri, 01 Jun 2012 19:41:09 -0300
-From: Mauricio Faria de Oliveira <mauricfo@linux.vnet.ibm.com>
+	Fri, 1 Jun 2012 18:42:20 -0400
+Message-ID: <4FC94518.4010908@linux.vnet.ibm.com>
+Date: Sat, 02 Jun 2012 04:11:28 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>, srikar@linux.vnet.ibm.com,
-        mjw@linux.vnet.ibm.com
-Subject: Re: [PATCH 00/35] AutoNUMA alpha14
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-In-Reply-To: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nikunj@linux.vnet.ibm.com, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot	secondary
+ processors
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com> <20120601165322.GB18870@merkur.ravnborg.org>
+In-Reply-To: <20120601165322.GB18870@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060122-1524-0000-0000-000002981AA1
+x-cbid: 12060122-2000-0000-0000-000007C710EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrea, everyone..
+On 06/01/2012 10:23 PM, Sam Ravnborg wrote:
 
-AA> Changelog from alpha13 to alpha14:
-AA> [...]
-AA> o autonuma_balance only runs along with run_rebalance_domains, to
-AA>    avoid altering the scheduler runtime. [...]
-AA>    [...] This change has not
-AA>    yet been tested on specjbb or more schedule intensive benchmarks,
-AA>    but I don't expect measurable NUMA affinity regressions. [...]
-
-Perhaps I can contribute a bit to the SPECjbb tests.
-
-I got SPECjbb2005 results for 3.4-rc2 mainline, numasched, 
-autonuma-alpha10, and autonuma-alpha13. If you judge the data is OK it 
-may suit a comparison between autonuma-alpha13/14 to verify NUMA 
-affinity regressions.
-
-The system is an Intel 2-socket Blade. Each NUMA node has 6 cores (+6 
-hyperthreads) and 12 GB RAM. Different permutations of THP, KSM, and VM 
-memory size were tested for each kernel.
-
-I'll have to leave the analysis of each variable for you, as I'm not 
-familiar w/ the code and expected impacts; but I'm perfectly fine with 
-providing more details about the tests, environment and procedures, and 
-even some reruns, if needed.
-
-Please CC me on questions and comments.
+>> +
+>> +
+>> +/* Implement the following functions in your architecture, as appropriate. */
+>> +
+>> +/**
+>> + * __cpu_pre_starting()
+>> + *
+>> + * Implement whatever you need to do before the CPU_STARTING notifiers are
+>> + * invoked. Note that the CPU_STARTING callbacks run *on* the cpu that is
+>> + * coming up. So that cpu better be prepared! IOW, implement all the early
+>> + * boot/init code for the cpu here. And do NOT enable interrupts.
+>> + */
+>> +#ifndef __cpu_pre_starting
+>> +void __weak __cpu_pre_starting(void *arg) {}
+>> +#endif
+> 
+> I miss the prototype for this in a header?
 
 
-Environment:
-------------
+Prototype is not really necessary for this. Hence not added.
 
-Host:
-- Enterprise Linux Distro
-- Kernel: 3.4-rc2 (either mainline, or patched w/ numasched, 
-autonuma-alpha10, or autonuma-alpha13)
-- 2 NUMA nodes. 6 cores + 6 hyperthreads/node, 12 GB RAM/node.
-   (total of 24 logical CPUs and 24 GB RAM)
-- Hypervisor: qemu-kvm 1.0.50 (+ memsched patches only for numasched)
-
-VMs:
-- Enterprise Linux Distro
-- Distro Kernel
-
-   1 Main VM (VM1) -- relevant benchmark score.
-   - 12 vCPUs
-   - 12 GB (for '< 1 Node' configuration) or 14 GB (for '> 1 Node' 
-configuration)
-
-   2 Noise VMs (VM2 and VM3)
-   - each noise VM has half of the remaining resources.
-   - 6 vCPUs
-   - 4 GB (for '< 1 Node' configuration) or 3 GB ('> 1 Node' configuration)
-     (to sum 20 GB w/ main VM + 4 GB for host = total 24 GB)
-
-Settings:
-- Swapping disabled on host and VMs.
-- Memory Overcommit enabled on host and VMs.
-- THP on host is a variable. THP disabled on VMs.
-- KSM on host is a variable. KSM disabled on VMs.
+> And the comment maybe belong in the header - not in the implementation?
+> 
 
 
-Results
-=======
+I think having the comment near the implementation itself works better, just
+like how it is done at other places in the kernel.
 
-Reference is mainline kernel with THP disabled (its score is 
-approximately 100%). It performed similarly (less than 2% difference) on 
-the 4 permutations of KSM and Main VM memory size.
-
-For the results of all permutations, see chart [1].
-One interesting permutation seems to be: No THP (disabled); KSM (enabled).
-
-Interpretation:
-- higher is better;
-- main VM should perform better than noise VMs;
-- noise VMs should perform similarly.
-
-
-Main VM < 1 Node
------------------
-
-                 Main VM     Noise VM    Noise VM
-mainline        ~100%       60%         60%
-numasched *     50%/135%    30%/58%     40%/68%
-autonuma-a10    125%        60%         60%
-autonuma-a13    126%        32%         32%
-
-* numasched yielded a wide range of scores. Is this behavior expected?
-
-
-Main VM > 1 Node.
------------------
-
-                 Main VM     Noise VM    Noise VM
-mainline        ~100%       60%         59%
-numasched       60%         48%         48%
-autonuma-a10    62%         37%         38%
-autonuma-a13    125%        61%         63%
-
-
-
-Considerations:
----------------
-
-The 3 VMs ran SPECjbb2005, synchronously starting the benchmark.
-
-For the benchmark run to take about the same time on the 3 VMs, its 
-configuration for the Noise VMs is different than for the Main VM.
-So comparing VM1 scores w/ VM2 or VM3 scores is not reasonable.
-But comparing scores between VM2 and VM3 is perfectly fine (it's 
-evidence of the performed balancing).
-
-Sometimes both autonuma and numasched prioritized one of the Noise VMs 
-over the other Noise VM, or even over the Main VM. In these cases, some 
-reruns would yield scores of 'expected proportion', given the VMs 
-configuration (Main VM w/ the highest score, both Noise VMs with lower 
-scores which are about the same).
-
-The non-expected proportion scores happened less often w/ 
-autonuma-alpha13, followed by autonuma-alpha10, and finally numasched 
-(i.e., numasched had the greatest rate of non-expected proportion scores).
-
-For most permutations, numasched didn't yield scores of expected 
-proportion. I'd like to know how likely this is to happen, before 
-performing additional runs to confirm it. If anyone would provide 
-evidence or thoughts?
-
-
-Links:
-------
-
-[1] http://dl.dropbox.com/u/82832537/kvm-numa-comparison-0.png
-
-
--- 
-Mauricio Faria de Oliveira
-IBM Linux Technology Center
-
+Regards,
+Srivatsa S. Bhat
 
