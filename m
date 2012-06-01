@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749Ab2FAJMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:12:36 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:53028 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab2FAJMd (ORCPT
+	id S1757211Ab2FAJMY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:12:24 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:37805 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756281Ab2FAJMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:12:33 -0400
+	Fri, 1 Jun 2012 05:12:22 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 06/27] xen, smpboot: Use generic SMP booting infrastructure
+Subject: [PATCH 05/27] xen,
+ cpu hotplug: Don't call cpu_bringup() in xen_play_dead()
 To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
 Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
         akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
@@ -19,22 +20,30 @@ Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 01 Jun 2012 14:41:43 +0530
-Message-ID: <20120601091136.31979.36213.stgit@srivatsabhat.in.ibm.com>
+        virtualization@lists.linux-foundation.org
+Date: Fri, 01 Jun 2012 14:41:31 +0530
+Message-ID: <20120601091124.31979.91984.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
 References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060109-8256-0000-0000-000002C1CB1C
+x-cbid: 12060109-8878-0000-0000-000002BDCC04
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert xen to use the generic framework to boot secondary CPUs.
+xen_play_dead calls cpu_bringup() which looks weird, because xen_play_dead()
+is invoked in the cpu down path, whereas cpu_bringup() (as the name suggests)
+is useful in the cpu bringup path.
+
+Getting rid of xen_play_dead()'s dependency on cpu_bringup() helps in hooking
+on to the generic SMP booting framework.
+
+Also remove the extra call to preempt_enable() added by commit 41bd956
+(xen/smp: Fix CPU online/offline bug triggering a BUG: scheduling while
+atomic) because it becomes unnecessary after this change.
 
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>
@@ -44,66 +53,29 @@ Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: x86@kernel.org
 Cc: xen-devel@lists.xensource.com
 Cc: virtualization@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/xen/smp.c |   21 ++++-----------------
- 1 files changed, 4 insertions(+), 17 deletions(-)
+ arch/x86/xen/smp.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 602d6b7..46c96f9 100644
+index 09a7199..602d6b7 100644
 --- a/arch/x86/xen/smp.c
 +++ b/arch/x86/xen/smp.c
-@@ -58,13 +58,12 @@ static irqreturn_t xen_reschedule_interrupt(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static void __cpuinit cpu_bringup(void)
-+void __cpuinit xen_cpu_pre_starting(void *unused)
+@@ -417,14 +417,6 @@ static void __cpuinit xen_play_dead(void) /* used only with HOTPLUG_CPU */
  {
- 	int cpu;
- 
- 	cpu_init();
- 	touch_softlockup_watchdog();
--	preempt_disable();
- 
- 	xen_enable_sysenter();
- 	xen_enable_syscall();
-@@ -75,25 +74,11 @@ static void __cpuinit cpu_bringup(void)
- 	set_cpu_sibling_map(cpu);
- 
- 	xen_setup_cpu_clockevents();
--
--	notify_cpu_starting(cpu);
--
--	set_cpu_online(cpu, true);
--
--	this_cpu_write(cpu_state, CPU_ONLINE);
--
--	wmb();
--
--	/* We can take interrupts now: we're officially "up". */
--	local_irq_enable();
--
--	wmb();			/* make sure everything is out */
- }
- 
- static void __cpuinit cpu_bringup_and_idle(void)
- {
+ 	play_dead_common();
+ 	HYPERVISOR_vcpu_op(VCPUOP_down, smp_processor_id(), NULL);
 -	cpu_bringup();
--	cpu_idle();
-+	smpboot_start_secondary(NULL);
+-	/*
+-	 * Balance out the preempt calls - as we are running in cpu_idle
+-	 * loop which has been called at bootup from cpu_bringup_and_idle.
+-	 * The cpucpu_bringup_and_idle called cpu_bringup which made a
+-	 * preempt_disable() So this preempt_enable will balance it out.
+-	 */
+-	preempt_enable();
  }
  
- static int xen_smp_intr_init(unsigned int cpu)
-@@ -515,6 +500,8 @@ static const struct smp_ops xen_smp_ops __initconst = {
- 	.smp_prepare_cpus = xen_smp_prepare_cpus,
- 	.smp_cpus_done = xen_smp_cpus_done,
- 
-+	.cpu_pre_starting = xen_cpu_pre_starting,
-+
- 	.cpu_up = xen_cpu_up,
- 	.cpu_die = xen_cpu_die,
- 	.cpu_disable = xen_cpu_disable,
+ #else /* !CONFIG_HOTPLUG_CPU */
 
