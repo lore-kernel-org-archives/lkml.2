@@ -1,73 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965993Ab2FAW7g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:59:36 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:51857 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965935Ab2FAW7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:59:34 -0400
-Date: Sat, 2 Jun 2012 01:00:01 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Borislav Petkov <bp@amd64.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, "Chen, Gong" <gong.chen@intel.com>
-Subject: Re: [PATCH] RAS: Add a tracepoint for reporting memory controller
- events
-Message-ID: <20120601230001.GE30418@aftab.osrc.amd.com>
-References: <20120531171337.GN14515@aftab.osrc.amd.com>
- <1338492772.13348.388.camel@gandalf.stny.rr.com>
- <20120531194207.GC16998@aftab.osrc.amd.com>
- <1338495092.13348.419.camel@gandalf.stny.rr.com>
- <20120531201824.GD16998@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F6DE2@ORSMSX104.amr.corp.intel.com>
- <20120601091026.GC20959@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F71DB@ORSMSX104.amr.corp.intel.com>
- <20120601160050.GE28216@aftab.osrc.amd.com>
- <3908561D78D1C84285E8C5FCA982C28F192F74E1@ORSMSX104.amr.corp.intel.com>
+	id S966002Ab2FAXFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 19:05:22 -0400
+Received: from ogre.sisk.pl ([193.178.161.156]:49091 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965935Ab2FAXFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 19:05:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Huang Ying <ying.huang@intel.com>
+Subject: Re: [PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
+Date: Sat, 2 Jun 2012 01:10:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.4.0+; KDE/4.6.0; x86_64; ; )
+Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        Zheng Yan <zheng.z.yan@intel.com>
+References: <1337305725-10482-1-git-send-email-ying.huang@intel.com> <201205312101.39919.rjw@sisk.pl> <1338517542.6824.44.camel@yhuang-dev>
+In-Reply-To: <1338517542.6824.44.camel@yhuang-dev>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F192F74E1@ORSMSX104.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206020110.28487.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 06:21:29PM +0000, Luck, Tony wrote:
-> But we need to make sure that user space can actually run. That's the
-> motivation behind the CMCI disable patches. Since Intel broadcasts
-> CMCI to all cpus on a socket - a CMCI storm on a single socket machine
-> will stop any user code from running.
-
-Uuh, that doesn't sound good. Can't you guys make the CMCI run on one
-CPU only? I mean, it is a single CECC, no need to stop all cores on the
-socket for it, right?
-
-Arguably, it'll be best if the core that sees the CECC fires the CMCI
-too and the others continue on their merry way.
-
-> I'd make one small change to what you said:
+On Friday, June 01, 2012, Huang Ying wrote:
+> On Thu, 2012-05-31 at 21:01 +0200, Rafael J. Wysocki wrote:
+> > On Thursday, May 31, 2012, Huang Ying wrote:
+> > > On Wed, 2012-05-30 at 23:49 +0200, Rafael J. Wysocki wrote:
+> > > > On Tuesday, May 22, 2012, Rafael J. Wysocki wrote:
+> > > > > On Friday, May 18, 2012, Huang Ying wrote:
+> > > > > > This patch adds runtime D3cold support to PCIe bus.  D3cold is the
+> > > > > > deepest power saving state for PCIe devices.  Where the main PCIe link
+> > > > > > will be powered off totally, so before the PCIe main link is powered
+> > > > > > on again, you can not access the device, even the configuration space,
+> > > > > > which is still accessible in D3hot.  Because the main PCIe link is not
+> > > > > > available, the PCI PM registers can not be used to put device into/out
+> > > > > > of D3cold state, that will be done by platform logic such as ACPI
+> > > > > > _PR3.
+> > > > > > 
+> > > > > > To support remote wake up in D3cold, aux power is supplied, and a
+> > > > > > side-band pin: WAKE# is used to notify remote wake up event, the pin
+> > > > > > is usually connected to platform logic such as ACPI GPE.  This is
+> > > > > > quite different with other power saving states, where remote wake up
+> > > > > > is notified via PME message through the PCIe main link.
+> > > > > > 
+> > > > > > PCIe devices in plug-in slot usually has no direct platform logic, for
+> > > > > > example, there is usually no ACPI _PR3 for them.  The D3cold support
+> > > > > > for these devices can be done via the PCIe port connected to it.  When
+> > > > > > power on/off the PCIe port, the corresponding PCIe devices are powered
+> > > > > > on/off too.  And the remote wake up event from PCIe device will be
+> > > > > > notified to the corresponding PCIe port.
+> > > > > > 
+> > > > > > The PCI subsystem D3cold support and corresponding ACPI platform
+> > > > > > support is implemented in the patch.  Including the support for PCIe
+> > > > > > devices in plug-in slot.
+> > > > > > 
+> > > > > > For more information about PCIe D3cold and corresponding ACPI support,
+> > > > > > please refer to:
+> > > > > > 
+> > > > > > - PCI Express Base Specification Revision 2.0
+> > > > > > - Advanced Configuration and Power Interface Specification Revision 5.0
+> > > > > > 
+> > > > > > Originally-by: Zheng Yan <zheng.z.yan@intel.com>
+> > > > > > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > > > > 
+> > > > > Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > 
+> > > > On a second thought ...
+> > > > 
+> > > > > > ---
+> > > > > >  drivers/pci/pci-acpi.c         |   23 +++++++-
+> > > > > >  drivers/pci/pci-driver.c       |    3 +
+> > > > > >  drivers/pci/pci-sysfs.c        |   29 ++++++++++
+> > > > > >  drivers/pci/pci.c              |  110 +++++++++++++++++++++++++++++++++++++----
+> > > > > >  drivers/pci/pci.h              |    1 
+> > > > > >  drivers/pci/pcie/portdrv_pci.c |   44 ++++++++++++++--
+> > > > > >  include/linux/pci.h            |   16 ++++-
+> > > > > >  7 files changed, 205 insertions(+), 21 deletions(-)
+> > > > > > 
+> > > > > > --- a/drivers/pci/pci-acpi.c
+> > > > > > +++ b/drivers/pci/pci-acpi.c
+> > > > > > @@ -48,6 +48,12 @@ static void pci_acpi_wake_dev(acpi_handl
+> > > > > >  	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
+> > > > > >  		return;
+> > > > > >  
+> > > > > > +	if (pci_dev->current_state == PCI_D3cold) {
+> > > > > > +		pci_wakeup_event(pci_dev);
+> > > > > > +		pm_runtime_resume(&pci_dev->dev);
+> > > > > > +		return;
+> > > > > > +	}
+> > > > > > +
+> > > > > >  	if (!pci_dev->pm_cap || !pci_dev->pme_support
+> > > > > >  	     || pci_check_pme_status(pci_dev)) {
+> > > > > >  		if (pci_dev->pme_poll)
+> > > > > > @@ -187,10 +193,13 @@ acpi_status pci_acpi_remove_pm_notifier(
+> > > > > >  
+> > > > > >  static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
+> > > > > >  {
+> > > > > > -	int acpi_state;
+> > > > > > +	int acpi_state, d_max;
+> > > > > >  
+> > > > > > -	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
+> > > > > > -						ACPI_STATE_D3);
+> > > > 
+> > > > I wonder what tree this patch is against?  The code above doesn't seem to
+> > > > be present in the current mainline.
+> > > 
+> > > As stated in [PATCH -v4 0/2], This patchset is based on:
+> > > 
+> > > [PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep
+> > > state
+> > > 
+> > > Which is sent to LKML separately.
+> > 
+> > I see.
+> > 
+> > Can you post the latest version of that patch, please?
+> > 
+> > Besides, this hunk of the $subject patch:
+> > 
+> > > @@ -731,8 +791,8 @@ int pci_set_power_state(struct pci_dev *
+> > >       int error;
+> > >  
+> > >       /* bound the state we're entering */
+> > > -     if (state > PCI_D3hot)
+> > > -             state = PCI_D3hot;
+> > > +     if (state > PCI_D3cold)
+> > > +             state = PCI_D3cold;
+> > >       else if (state < PCI_D0)
+> > >               state = PCI_D0;
+> > >       else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
+> > > @@ -747,10 +807,15 @@ int pci_set_power_state(struct pci_dev *
+> > >  
+> > >       /* This device is quirked not to be put into D3, so
+> > >          don't put it in D3 */
+> > > -     if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
+> > > +     if (state >= PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
+> > >               return 0;
+> > >  
+> > > -     error = pci_raw_set_power_state(dev, state);
+> > > +     /*
+> > > +      * To put device in D3cold, we put device into D3hot in native
+> > > +      * way, then put device into D3cold with platform ops
+> > > +      */
+> > > +     error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
+> > > +                                     PCI_D3hot : state);
+> > >  
+> > >       if (!__pci_complete_power_transition(dev, state))
+> > >               error = 0;
+> > 
+> > should be merged separately, because it will affect suspend/hibernation code
+> > paths.  Namely, it will change the behavior in such a way that some devices
+> > put into D3hot previously will be put into D3cold now during system suspend.
 > 
-> The kernel's job is to report enough error information that user space
-> can make an accurate assessment of the source of the error.
+> Yes.  This patch enables both runtime D3cold and D3cold during system
+> suspend.  How about separate this patch into the following patches?
 > 
-> I.e. "enough" is less than "as many errors as it possibly can".
+> - Add d3cold disable logic, including flags: no_d3cold, d3cold_allowed,
+> runtime_d3cold, and disable runtime d3cold (because part of runtime
+> d3cold support will be enabled by system d3cold support).
+> 
+> - system d3cold support for PCIe port
+> 
+> - system d3cold support in PCI core
+> 
+> - runtime d3cold support for PCIe port
+> 
+> - runtime d3cold support in PCI core
 
-Ok, I see what you mean.
+Sounds good in principle.
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Thanks,
+Rafael
