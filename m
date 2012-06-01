@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965572Ab2FARnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:43:42 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47055 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759261Ab2FARnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:43:40 -0400
-Date: Fri, 1 Jun 2012 13:43:36 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
+	id S933427Ab2FARse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:48:34 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54659 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932288Ab2FARsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 13:48:33 -0400
+Date: Fri, 1 Jun 2012 18:48:31 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: GIT PULL] ext4 updates for 3.5
-Message-ID: <20120601174336.GA15778@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com>
- <CA+55aFwk8oYx8EKWdT=5cMTLK7RDz8GQdGmHk2KXwcCq+Bb8PA@mail.gmail.com>
- <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs.git
+Message-ID: <20120601174831.GK30000@ZenIV.linux.org.uk>
+References: <20120601165614.GJ30000@ZenIV.linux.org.uk>
+ <CA+55aFxcFKxY8f1-mQz68FX3Uax-i-FQ3Wj9=z+bUn0KxTCbHA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CA+55aFxcFKxY8f1-mQz68FX3Uax-i-FQ3Wj9=z+bUn0KxTCbHA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 10:19:33AM -0700, Linus Torvalds wrote:
-> So pulling 'ext4_for_linus' instead of 'dev' will get me the same
-> commits you asked me to pull, with the added tag information that your
-> pull request containes.
+On Fri, Jun 01, 2012 at 10:38:53AM -0700, Linus Torvalds wrote:
+> On Fri, Jun 1, 2012 at 9:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > There's a trivial conflict in Documentation/filesystems/vfs.txt - two
+> > method prototypes added, one in mainline, one here. ?With the obvious
+> > conflict resolution...
+> 
+> Actually, it's one removed in mainline, one added by your pull.
+> 
+> What I'd *really* like to see is a kind of summary of what this pull
+> does, though. Please? That way I can make the merge messages be a
+> whole lot more informative.
 
-So I should do "git request-pull origin git://... ext4_for_linus" next
-time, right?
+Umm...  It's a lot of misc stuff, unfortunately.  The obvious groups:
+	* Miklos' atomic_open series; kills the damn abuse of ->d_revalidate()
+by NFS, which was the major stumbling block for all work in that area.
+	* ripping security_file_mmap() and dealing with deadlocks in the
+area; sanitizing the neighborhood of vm_mmap()/vm_munmap() in general.
+	* ->encode_fh() switched to saner API; insane fake dentry in
+mm/cleancache.c gone.
+	* assorted annotations in fs (endianness, __user)
+	* parts of Artem's ->s_dirty work (jff2 and reiserfs parts)
+	* ->update_time() work from Josef.
+	* other bits and pieces all over the place.
 
-Sorry about that.  I thought it had included the reference to tag
-automatically since the text of the tag showed in the request-pull
-text.
-
-> Now I just wonder why your pull request said 'dev' at all.
-
-Because that was the name of the branch head that I used; sorry about
-that.
-
-							- Ted
+Normally it would've been in two or three pull requests, but signal.git
+stuff had eaten a lot of time during this cycle ;-/
