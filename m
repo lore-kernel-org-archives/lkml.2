@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab2FAIzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 04:55:16 -0400
-Received: from plane.gmane.org ([80.91.229.3]:60620 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759157Ab2FAIzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 04:55:14 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Yi Zhang <zhangyi.hust@gmail.com>
-Subject: Re: [PATCH] regulator: gpio-regulator: Set the smallest voltage/current in the specified range
-Date: Fri, 1 Jun 2012 08:45:33 +0000 (UTC)
-Message-ID: <loom.20120601T103409-573@post.gmane.org>
-References: <1332396484.3842.2.camel@phoenix> <20120322115009.GG3091@opensource.wolfsonmicro.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759174Ab2FAI5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 04:57:24 -0400
+Received: from beauty.rexursive.com ([150.101.121.179]:49020 "EHLO
+	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758642Ab2FAI5X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 04:57:23 -0400
+Message-ID: <1338541040.1634.5.camel@shrek.rexursive.com>
+Subject: Re: [PATCH]: In kernel hibernation, suspend to both
+From: Bojan Smojver <bojan@rexursive.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Date: Fri, 01 Jun 2012 18:57:20 +1000
+In-Reply-To: <20120601084854.GA3969@liondog.tnic>
+References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
+	 <201205211518.39137.rjw@sisk.pl>
+	 <882dce83-b79e-4470-af25-edb8429fb7e5@email.android.com>
+	 <201205212353.42639.rjw@sisk.pl>
+	 <1337637359.1647.67.camel@shrek.rexursive.com>
+	 <20120524145122.GA26743@x1.osrc.amd.com>
+	 <07f1a575-ec44-40b7-bd36-576f883f188d@email.android.com>
+	 <20120531162342.GA3541@x1.osrc.amd.com>
+	 <91027f5c-239f-4b91-b6b4-2fcac6e1bcb7@email.android.com>
+	 <20120601084854.GA3969@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 210.13.71.73 (Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.52 Safari/536.5)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown <broonie <at> opensource.wolfsonmicro.com> writes:
+On Fri, 2012-06-01 at 10:48 +0200, Borislav Petkov wrote:
+> Normal, suspend-to-disk cycle doesn't put that output in dmesg.
 
-> 
-> On Thu, Mar 22, 2012 at 02:08:04PM +0800, Axel Lin wrote:
-> > Do not assume the gpio regulator states map is sorted in any order.
-> > This patch ensures we always set the smallest voltage/current that falls 
-within
-> > the specified range.
-> 
-> Applied, thanks.
-> 
+It does, but that kernel state never gets used again in that case. The
+state before the image writing starts is the one used on thaw, so these
+messages never appear anywhere.
 
- 	struct gpio_regulator_data *data = rdev_get_drvdata(dev);
--	int ptr, target, state;
-+	int ptr, target, state, best_val = INT_MAX;
+But yeah, I do not see why these should ever go to any dmesg output.
+They should just go to the screen.
 
--	target = -1;
- 	for (ptr = 0; ptr < data->nr_states; ptr++)
--		if (data->states[ptr].value >= min &&
-+		if (data->states[ptr].value < best_val &&
-+		    data->states[ptr].value >= min &&
- 		    data->states[ptr].value <= max)
- 			target = data->states[ptr].gpios;
-
--	if (target < 0)
-+	if (best_val == INT_MAX)
-
-Here seems something wrong, for best_val is always INT_MAX. From the discussion 
-above, maybe best_val is should be reassigned in the for loop.
-It may be like as the following:
-
--       for (ptr = 0; ptr < data->nr_states; ptr++)
-+       for (ptr = 0; ptr < data->nr_states; ptr++) {
-                if (data->states[ptr].value < best_val &&
-                    data->states[ptr].value >= min &&
--                   data->states[ptr].value <= max)
-+                   data->states[ptr].value <= max) {
-                        target = data->states[ptr].gpios;
-+                       best_val = target;
-+       }
-
-What do you think? thanks;
-
+-- 
+Bojan
 
