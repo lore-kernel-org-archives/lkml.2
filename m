@@ -1,135 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759463Ab2FALRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 07:17:35 -0400
-Received: from fieldses.org ([174.143.236.118]:55731 "EHLO fieldses.org"
+	id S1759471Ab2FALUA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 07:20:00 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:20534 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759437Ab2FALRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 07:17:33 -0400
-Date: Fri, 1 Jun 2012 07:17:32 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: nfsd changes for 3.5
-Message-ID: <20120601111732.GB31104@fieldses.org>
-References: <20120531182457.GB25955@fieldses.org>
- <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
- <20120531200138.GD25955@fieldses.org>
- <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
- <20120531205300.GG25955@fieldses.org>
- <CA+55aFxY+WJmMu=1Wvdh24kK0JWEuQ1vwcqZdaNDbp1_wUsZ4A@mail.gmail.com>
- <20120601005603.GA28542@fieldses.org>
+	id S1759448Ab2FALT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 07:19:58 -0400
+Subject: [PATCH 1/2] SUNRPC: new svc_bind() routine introduced
+To: bfields@fieldses.org, Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Fri, 01 Jun 2012 15:17:42 +0400
+Message-ID: <20120601111742.7846.99872.stgit@localhost.localdomain>
+In-Reply-To: <20120601111619.7846.95457.stgit@localhost.localdomain>
+References: <20120601111619.7846.95457.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601005603.GA28542@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 08:56:03PM -0400, J. Bruce Fields wrote:
-> For now, would you mind pulling this?:
-> 
-> 	git://linux-nfs.org/~bfields/linux.git for-3.5-take-2
-> 
-> It's literally just the previous tree cut off before the delegation
-> stuff--so it's been in -next for a month, etc.
+This patch was back-ported from 3.5 kernel.
 
+New routine is responsible for service registration in specified network
+context.
+The idea is to separate service creation from per-net operations.
+Since registering service with svc_bind() can fail, then service will be
+destroyed and during destruction it will try to unregister itself from
+rpcbind. In this case unregister have to be skipped.
 
-... and then I cherry-picked the remainder of the patches from the head
-of my previous branch to:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/lockd/svc.c             |    6 ++++++
+ fs/nfs/callback.c          |   13 ++++++++++---
+ fs/nfsd/nfssvc.c           |    9 +++++++++
+ include/linux/sunrpc/svc.h |    1 +
+ net/sunrpc/rpcb_clnt.c     |   12 +++++++-----
+ net/sunrpc/svc.c           |   19 ++++++++++---------
+ 6 files changed, 43 insertions(+), 17 deletions(-)
 
-  git://linux-nfs.org/~bfields/linux.git for-3.5
+diff --git a/fs/lockd/svc.c b/fs/lockd/svc.c
+index f49b9af..b1d0708 100644
+--- a/fs/lockd/svc.c
++++ b/fs/lockd/svc.c
+@@ -325,6 +325,12 @@ int lockd_up(void)
+ 		goto out;
+ 	}
+ 
++	error = svc_bind(serv, net);
++	if (error < 0) {
++		printk(KERN_WARNING "lockd_up: bind service failed\n");
++		goto destroy_and_out;
++	}
++
+ 	error = make_socks(serv, net);
+ 	if (error < 0)
+ 		goto destroy_and_out;
+diff --git a/fs/nfs/callback.c b/fs/nfs/callback.c
+index eb95f50..0563237 100644
+--- a/fs/nfs/callback.c
++++ b/fs/nfs/callback.c
+@@ -106,7 +106,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+ {
+ 	int ret;
+ 
+-	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET,
++	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET,
+ 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+ 	if (ret <= 0)
+ 		goto out_err;
+@@ -114,7 +114,7 @@ nfs4_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+ 	dprintk("NFS: Callback listener port = %u (af %u)\n",
+ 			nfs_callback_tcpport, PF_INET);
+ 
+-	ret = svc_create_xprt(serv, "tcp", xprt->xprt_net, PF_INET6,
++	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
+ 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
+ 	if (ret > 0) {
+ 		nfs_callback_tcpport6 = ret;
+@@ -183,7 +183,7 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
+ 	 * fore channel connection.
+ 	 * Returns the input port (0) and sets the svc_serv bc_xprt on success
+ 	 */
+-	ret = svc_create_xprt(serv, "tcp-bc", xprt->xprt_net, PF_INET, 0,
++	ret = svc_create_xprt(serv, "tcp-bc", &init_net, PF_INET, 0,
+ 			      SVC_SOCK_ANONYMOUS);
+ 	if (ret < 0) {
+ 		rqstp = ERR_PTR(ret);
+@@ -253,6 +253,7 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 	char svc_name[12];
+ 	int ret = 0;
+ 	int minorversion_setup;
++	struct net *net = &init_net;
+ 
+ 	mutex_lock(&nfs_callback_mutex);
+ 	if (cb_info->users++ || cb_info->task != NULL) {
+@@ -265,6 +266,12 @@ int nfs_callback_up(u32 minorversion, struct rpc_xprt *xprt)
+ 		goto out_err;
+ 	}
+ 
++	ret = svc_bind(serv, net);
++	if (ret < 0) {
++		printk(KERN_WARNING "NFS: bind callback service failed\n");
++		goto out_err;
++	}
++
+ 	minorversion_setup =  nfs_minorversion_callback_svc_setup(minorversion,
+ 					serv, xprt, &rqstp, &callback_svc);
+ 	if (!minorversion_setup) {
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 28dfad3..a6461f3 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -11,6 +11,7 @@
+ #include <linux/module.h>
+ #include <linux/fs_struct.h>
+ #include <linux/swap.h>
++#include <linux/nsproxy.h>
+ 
+ #include <linux/sunrpc/stats.h>
+ #include <linux/sunrpc/svcsock.h>
+@@ -330,6 +331,8 @@ static int nfsd_get_default_max_blksize(void)
+ 
+ int nfsd_create_serv(void)
+ {
++	int error;
++
+ 	WARN_ON(!mutex_is_locked(&nfsd_mutex));
+ 	if (nfsd_serv) {
+ 		svc_get(nfsd_serv);
+@@ -343,6 +346,12 @@ int nfsd_create_serv(void)
+ 	if (nfsd_serv == NULL)
+ 		return -ENOMEM;
+ 
++	error = svc_bind(nfsd_serv, current->nsproxy->net_ns);
++	if (error < 0) {
++		svc_destroy(nfsd_serv);
++		return error;
++	}
++
+ 	set_max_drc();
+ 	do_gettimeofday(&nfssvc_boot);		/* record boot time */
+ 	return 0;
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 51b29ac..2b43e02 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -416,6 +416,7 @@ struct svc_procedure {
+  */
+ int svc_rpcb_setup(struct svc_serv *serv, struct net *net);
+ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
++int svc_bind(struct svc_serv *serv, struct net *net);
+ struct svc_serv *svc_create(struct svc_program *, unsigned int,
+ 			    void (*shutdown)(struct svc_serv *, struct net *net));
+ struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
+diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+index 78ac39f..4c38b33 100644
+--- a/net/sunrpc/rpcb_clnt.c
++++ b/net/sunrpc/rpcb_clnt.c
+@@ -180,14 +180,16 @@ void rpcb_put_local(struct net *net)
+ 	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	struct rpc_clnt *clnt = sn->rpcb_local_clnt;
+ 	struct rpc_clnt *clnt4 = sn->rpcb_local_clnt4;
+-	int shutdown;
++	int shutdown = 0;
+ 
+ 	spin_lock(&sn->rpcb_clnt_lock);
+-	if (--sn->rpcb_users == 0) {
+-		sn->rpcb_local_clnt = NULL;
+-		sn->rpcb_local_clnt4 = NULL;
++	if (sn->rpcb_users) {
++		if (--sn->rpcb_users == 0) {
++			sn->rpcb_local_clnt = NULL;
++			sn->rpcb_local_clnt4 = NULL;
++		}
++		shutdown = !sn->rpcb_users;
+ 	}
+-	shutdown = !sn->rpcb_users;
+ 	spin_unlock(&sn->rpcb_clnt_lock);
+ 
+ 	if (shutdown) {
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 4153846..e6d542c 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -407,6 +407,14 @@ static int svc_uses_rpcbind(struct svc_serv *serv)
+ 	return 0;
+ }
+ 
++int svc_bind(struct svc_serv *serv, struct net *net)
++{
++	if (!svc_uses_rpcbind(serv))
++		return 0;
++	return svc_rpcb_setup(serv, net);
++}
++EXPORT_SYMBOL_GPL(svc_bind);
++
+ /*
+  * Create an RPC service
+  */
+@@ -471,15 +479,8 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 		spin_lock_init(&pool->sp_lock);
+ 	}
+ 
+-	if (svc_uses_rpcbind(serv)) {
+-		if (svc_rpcb_setup(serv, current->nsproxy->net_ns) < 0) {
+-			kfree(serv->sv_pools);
+-			kfree(serv);
+-			return NULL;
+-		}
+-		if (!serv->sv_shutdown)
+-			serv->sv_shutdown = svc_rpcb_cleanup;
+-	}
++	if (svc_uses_rpcbind(serv) && (!serv->sv_shutdown))
++		serv->sv_shutdown = svc_rpcb_cleanup;
+ 
+ 	return serv;
+ }
 
-and ran some tests overnight--no surprises, as they're all quite
-independent from the delegation stuff.  But if they've missed 3.5 it's
-not a tragedy.
-
---b.
-
-Chuck Lever (1):
-      NFSD: SETCLIENTID_CONFIRM returns NFS4ERR_CLID_INUSE too often
-
-J. Bruce Fields (34):
-      nfsd: state.c should include current_stateid.h
-      nfsd4: fix missing "static"
-      nfsd4: preserve __user annotation on cld downcall msg
-      nfsd4: int/__be32 fixes
-      nfsd4: fix free_stateid return endianness
-      nfsd4: fix change attribute endianness
-      rpc: handle rotated gss data for Windows interoperability
-      svcrpc: fix a comment typo
-      nfsd4: exchange_id has a pointless copy
-      nfsd4: exchange_id error cleanup
-      nfsd4: exchange_id: check creds before killing confirmed client
-      nfsd4: allow an EXCHANGE_ID to kill a 4.0 client
-      nfsd4: exchange_id cleanup: local shorthands for repeated tests
-      nfsd4: exchange_id cleanup: comments
-      nfsd4: rearrange exchange_id logic to simplify
-      nfsd4: allow removing clients not holding state
-      nfsd4: move principal name into svc_cred
-      nfsd4: stricter cred comparison for setclientid/exchange_id
-      nfsd4: move rq_flavor into svc_cred
-      nfsd4: setclientid remove unnecessary terms from a logical expression
-      nfsd4: setclientid/confirm comment cleanup
-      nfsd4: merge last two setclientid cases
-      nfsd4: pull out common code from setclientid cases
-      nfsd4: merge 3 setclientid cases to 2
-      nfsd4: fix setclientid_confirm same_cred check
-      nfsd4: fix error return in non-matching-creds case
-      nfsd4: setclientid: remove pointless assignment
-      nfsd4: simpler ordering of setclientid_confirm checks
-      nfsd4: clarify that renewing expired client is a bug
-      nfsd4: fix exchange_id to return confirm flag
-      nfsd4: return "real" sequence id in confirmed case
-      nfsd4: remove some dprintk's and a comment
-      nfsd4: don't remove rebooted client record until confirmation
-      nfsd4: fix, consolidate client_has_state
-
-Jeff Layton (5):
-      sunrpc: do array overrun check in svc_recv before allocating pages
-      nfsd: consolidate set_access and set_deny
-      nfsd: make test_share a bool return
-      nfsd: wrap accesses to st_access_bmap
-      nfsd: wrap all accesses to st_deny_bmap
-
-Stanislav Kinsbursky (8):
-      SUNRPC: new svc_bind() routine introduced
-      SUNRPC: move per-net operations from svc_destroy()
-      LockD: pass service to per-net up and down functions
-      LockD: use existing per-net data function on service creation
-      LockD: service creation function introduced
-      LockD: move global usage counter manipulation from error path
-      LockD: service start function introduced
-      LockD: add debug message to start and stop functions
-
-Weston Andros Adamson (2):
-      nfsd: add IPv6 addr escaping to fs_location hosts
-      nfsd: return 0 on reads of fault injection files
-
- fs/lockd/svc.c                      |  145 ++++++----
- fs/nfs/callback.c                   |   13 +-
- fs/nfsd/auth.c                      |    2 +-
- fs/nfsd/export.c                    |    8 +-
- fs/nfsd/fault_inject.c              |    1 +
- fs/nfsd/nfs4callback.c              |    5 +-
- fs/nfsd/nfs4idmap.c                 |    4 +-
- fs/nfsd/nfs4recover.c               |    4 +-
- fs/nfsd/nfs4state.c                 |  525 ++++++++++++++++-------------------
- fs/nfsd/nfs4xdr.c                   |   62 +++--
- fs/nfsd/nfsctl.c                    |   12 +-
- fs/nfsd/nfssvc.c                    |   23 ++
- fs/nfsd/state.h                     |    1 -
- fs/nfsd/xdr4.h                      |    6 +-
- include/linux/sunrpc/svc.h          |    2 +-
- include/linux/sunrpc/svcauth.h      |   10 +
- include/linux/sunrpc/svcauth_gss.h  |    1 -
- net/sunrpc/auth_gss/gss_krb5_wrap.c |   61 ++--
- net/sunrpc/auth_gss/svcauth_gss.c   |   27 +-
- net/sunrpc/rpcb_clnt.c              |   12 +-
- net/sunrpc/svc.c                    |   23 +-
- net/sunrpc/svc_xprt.c               |    4 +-
- net/sunrpc/svcauth_unix.c           |    6 +-
- 23 files changed, 522 insertions(+), 435 deletions(-)
