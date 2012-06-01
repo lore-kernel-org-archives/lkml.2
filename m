@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760162Ab2FARaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:30:14 -0400
-Received: from zose-mta15.web4all.fr ([176.31.217.11]:51049 "EHLO
-	zose-mta15.web4all.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759275Ab2FARaM convert rfc822-to-8bit (ORCPT
+	id S1760165Ab2FARbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:31:53 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:44381 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759275Ab2FARbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:30:12 -0400
-X-Greylist: delayed 455 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jun 2012 13:30:12 EDT
-Date: Fri, 1 Jun 2012 19:26:51 +0200 (CEST)
-From: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>
-To: Pawel Moll <pawel.moll@arm.com>, Rusty Russell <rusty@rustcorp.com.au>
-Cc: benoit thebaudeau <benoit.thebaudeau@advansee.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com>
-In-Reply-To: <1002174455.1843950.1338570468781.JavaMail.root@advansee.com>
-Subject: init: multi param parsing regression since 3.4
+	Fri, 1 Jun 2012 13:31:52 -0400
+X-Authenticated: #9962044
+X-Provags-ID: V01U2FsdGVkX1//AogynRr/9rFdnxirPV4erm15X13J+VDQAPGzug
+	LcIlBVCst0giLT
+From: Marc Dietrich <marvin24@gmx.de>
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+Cc: swarren@nvidia.com, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        olof@lixom.net, jak@jak-linux.org, gregkh@linuxfoundation.org,
+        ac100@lists.launchpad.net, devel@driverdev.osuosl.org
+Subject: Re: [PATCH 7/9] staging: nvec: add clk_prepare/clk_unprepare
+Date: Fri, 01 Jun 2012 19:31:08 +0200
+Message-ID: <1505860.QOgf9duN2r@ax5200p>
+User-Agent: KMail/4.8.3 (Linux/3.2.0-24-generic; KDE/4.8.3; x86_64; ; )
+In-Reply-To: <1338541968-7961-8-git-send-email-pgaikwad@nvidia.com>
+References: <1338541968-7961-1-git-send-email-pgaikwad@nvidia.com> <1338541968-7961-8-git-send-email-pgaikwad@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [88.188.188.98]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Win)/7.2.0_GA_2669)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pawel, Rusty, all,
+On Friday 01 June 2012 14:42:46 Prashant Gaikwad wrote:
+> Use clk_prepare/clk_unprepare as required by the generic clk framework.
+> 
+> This patch should go through Tegra tree since other patches to port Tegra
+> to generic clock framework are dependent on it. Posting here to get ack from
+> the maintainers.
+> 
+> Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 
-Since linux 3.4 (OK with 3.3.6), I get the following regression for UBI (built
-in kernel):
-[    1.327228] UBI: attaching mtd4 to ubi0
-[    1.331082] UBI: physical eraseblock size:   131072 bytes (128 KiB)
-[    1.337388] UBI: logical eraseblock size:    129024 bytes
-[    1.342794] UBI: smallest flash I/O unit:    2048
-[    1.347518] UBI: sub-page size:              512
-[    1.352144] UBI: VID header offset:          512 (aligned 512)
-[    1.357996] UBI: data offset:                2048
-[    1.538686] UBI: max. sequence number:       456
-[    1.551271] UBI: attached mtd4 to ubi0
-[    1.555085] UBI: MTD device name:            "rootfs"
-[    1.560147] UBI: MTD device size:            123 MiB
-[    1.565133] UBI: number of good PEBs:        980
-[    1.569757] UBI: number of bad PEBs:         4
-[    1.574206] UBI: number of corrupted PEBs:   0
-[    1.578669] UBI: max. allowed volumes:       128
-[    1.583293] UBI: wear-leveling threshold:    4096
-[    1.588015] UBI: number of internal volumes: 1
-[    1.592465] UBI: number of user volumes:     1
-[    1.596927] UBI: available PEBs:             0
-[    1.601377] UBI: total number of reserved PEBs: 980
-[    1.606273] UBI: number of PEBs reserved for bad PEB handling: 9
-[    1.612288] UBI: max/mean erase counter: 3/1
-[    1.616576] UBI: image sequence number:  1970526931
-[    1.621483] UBI: background thread "ubi_bgt0d" started, PID 32
-[    1.627362] UBI error: ubi_init: cannot attach mtd4
+tested and ...
 
-After some debugging, I found that this is caused by "ubi.mtd=rootfs" in my
-kernel command line being parsed twice while appearing once in this line.
+Acked-By: Marc Dietrich <marvin24@gmx.de>
 
-The root cause is "parse_args(initcall_level_names[level], ..." that you added
-to init/main.c in commit #026cee0086fe1df4cf74691cf273062cc769617d, because
-level 0 is shared by "Booting kernel" and "early parameters".
-
-This may also cause issues for other modules.
-
-Should "parse_args("Booting kernel", ..." have been removed with your commit?
-
-OR
-
-Should do_initcall_level() call parse_args() starting at level 1?
-
-OR
-
-Should the UBI module register to another level?
-
-OR
-
-It doesn't matter and it's up to the modules to be robust to multi param
-parsing?
-
-Regards,
-Benoît (Please keep me Cc'ed)
+> ---
+>  drivers/staging/nvec/nvec.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+> index 3c60088..9356886 100644
+> --- a/drivers/staging/nvec/nvec.c
+> +++ b/drivers/staging/nvec/nvec.c
+> @@ -675,7 +675,7 @@ static void tegra_init_i2c_slave(struct nvec_chip *nvec)
+> {
+>  	u32 val;
+> 
+> -	clk_enable(nvec->i2c_clk);
+> +	clk_prepare_enable(nvec->i2c_clk);
+> 
+>  	tegra_periph_reset_assert(nvec->i2c_clk);
+>  	udelay(2);
+> @@ -695,14 +695,14 @@ static void tegra_init_i2c_slave(struct nvec_chip
+> *nvec)
+> 
+>  	enable_irq(nvec->irq);
+> 
+> -	clk_disable(nvec->i2c_clk);
+> +	clk_disable_unprepare(nvec->i2c_clk);
+>  }
+> 
+>  static void nvec_disable_i2c_slave(struct nvec_chip *nvec)
+>  {
+>  	disable_irq(nvec->irq);
+>  	writel(I2C_SL_NEWSL | I2C_SL_NACK, nvec->base + I2C_SL_CNFG);
+> -	clk_disable(nvec->i2c_clk);
+> +	clk_disable_unprepare(nvec->i2c_clk);
+>  }
+> 
+>  static void nvec_power_off(void)
+> @@ -812,7 +812,7 @@ static int __devinit tegra_nvec_probe(struct
+> platform_device *pdev)
+> 
+>  	tegra_init_i2c_slave(nvec);
+> 
+> -	clk_enable(i2c_clk);
+> +	clk_prepare_enable(i2c_clk);
+> 
+> 
+>  	/* enable event reporting */
