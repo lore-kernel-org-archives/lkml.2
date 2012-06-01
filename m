@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759497Ab2FALaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 07:30:09 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:53898 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759468Ab2FALaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 07:30:07 -0400
-Date: Fri, 1 Jun 2012 13:29:55 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: WARNING: at block/blk-cgroup.c:867
-Message-ID: <20120601112954.GC3535@osiris.boeblingen.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12060111-6892-0000-0000-00000201E683
+	id S932399Ab2FALcb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 07:32:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54506 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756132Ab2FALca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 07:32:30 -0400
+Message-ID: <1338550337.17012.27.camel@cr0>
+Subject: Re: [RFC Patch] fs: implement per-file drop caches
+From: Cong Wang <amwang@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Fri, 01 Jun 2012 19:32:17 +0800
+In-Reply-To: <4FC7C1CD.7020701@gmail.com>
+References: <1338385120-14519-1-git-send-email-amwang@redhat.com>
+	   <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>
+	  <4FC70FFE.50809@gmail.com> <1338466281.19369.44.camel@cr0>
+	 <4FC7C1CD.7020701@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Thu, 2012-05-31 at 15:09 -0400, KOSAKI Motohiro wrote:
+> (5/31/12 8:11 AM), Cong Wang wrote:
+> > On Thu, 2012-05-31 at 02:30 -0400, KOSAKI Motohiro wrote:
+> >> (5/31/12 2:20 AM), Cong Wang wrote:
+> >>> On Wed, 2012-05-30 at 16:14 +0100, Pádraig Brady wrote:
+> >>>> On 05/30/2012 02:38 PM, Cong Wang wrote:
+> >>>>> This is a draft patch of implementing per-file drop caches.
+> >>>>>
+> >>>>> It introduces a new fcntl command  F_DROP_CACHES to drop
+> >>>>> file caches of a specific file. The reason is that currently
+> >>>>> we only have a system-wide drop caches interface, it could
+> >>>>> cause system-wide performance down if we drop all page caches
+> >>>>> when we actually want to drop the caches of some huge file.
+> >>>>
+> >>>> This is useful functionality.
+> >>>> Though isn't it already provided with POSIX_FADV_DONTNEED?
+> >>>
+> >>> Thanks for teaching this!
+> >>>
+> >>> However, from the source code of madvise_dontneed() it looks like it is
+> >>> using a totally different way to drop page caches, that is to invalidate
+> >>> the page mapping, and trigger a re-mapping of the file pages after a
+> >>> page fault. So, yeah, this could probably drop the page caches too (I am
+> >>> not so sure, haven't checked the code in details), but with my patch, it
+> >>> flushes the page caches directly, what's more, it can also prune
+> >>> dcache/icache of the file.
+> >>
+> >> madvise should work. I don't think we need duplicate interface. Moreomover
+> >> madvise(2) is cleaner than fcntl(2).
+> >>
+> >
+> > I think madvise(DONTNEED) attacks the problem in a different approach,
+> > it munmaps the file mapping and by the way drops the page caches, my
+> > approach is to drop the page caches directly similar to what sysctl
+> > drop_caches.
+> >
+> > What about private file mapping? Could madvise(DONTNEED) drop the page
+> > caches too even when the other process is doing the same private file
+> > mapping? At least my patch could do this.
+> 
+> Right. But a process can makes another mappings if a process have enough
+> permission. and if it doesn't, a process shouldn't be able to drop a shared
+> cache.
+> 
 
-for !CONFIG_CFQ_GROUP_IOSCHED the following warning triggered on s390:
+Ok, then this patch is not a dup of madvise(DONTNEED).
 
-------------[ cut here ]------------
-WARNING: at block/blk-cgroup.c:867
-Modules linked in:
-Modules linked in:
-CPU: 3 Not tainted 3.4.0-09547-gfb21aff #1
-Process swapper/0 (pid: 1, task: 000000003ff80000, ksp: 000000003ff7f8b8)
-Krnl PSW : 0704100180000000 00000000003d76ca (blkcg_policy_register+0xca/0xe0)
-           R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:1 PM:0 EA:3
-Krnl GPRS: 0000000000000000 00000000014b85ec 00000000014b85b0 0000000000000000
-           000000000096fb60 0000000000000000 00000000009a8e78 0000000000000048
-           000000000099c070 0000000000b6f000 0000000000000000 000000000099c0b8
-           00000000014b85b0 0000000000667580 000000003ff7fd98 000000003ff7fd70
-Krnl Code: 00000000003d76be: a7280001           lhi     %r2,1
-           00000000003d76c2: a7f4ffdf           brc     15,3d7680
-          #00000000003d76c6: a7f40001           brc     15,3d76c8
-          >00000000003d76ca: a7c8ffea           lhi     %r12,-22
-           00000000003d76ce: a7f4ffce           brc     15,3d766a
-           00000000003d76d2: a7f40001           brc     15,3d76d4
-           00000000003d76d6: a7c80000           lhi     %r12,0
-           00000000003d76da: a7f4ffc2           brc     15,3d765e
-Call Trace:
-([<0000000000b6f000>] initcall_debug+0x0/0x4)
- [<0000000000989e8a>] cfq_init+0x62/0xd4
- [<00000000001000ba>] do_one_initcall+0x3a/0x170
- [<000000000096fb60>] kernel_init+0x214/0x2bc
- [<0000000000623202>] kernel_thread_starter+0x6/0xc
- [<00000000006231fc>] kernel_thread_starter+0x0/0xc
-no locks held by swapper/0/1.
-Last Breaking-Event-Address:
- [<00000000003d76c6>] blkcg_policy_register+0xc6/0xe0
----[ end trace b8ef4903fcbf9dd3 ]---
+> 
+> > I am not sure if fcntl() is a good interface either, this is why the
+> > patch is marked as RFC. :-D
+> 
+> But, if you can find certain usecase, I'm not against anymore.
+> 
 
-for !CONFIG_CFQ_GROUP_IOSCHED the blkcg_policy_cfq that cfq_init() tries to
-register with blkcg_policy_register() is in the bss section and therefore
-initialized with 0.
+Yeah, at least John Stoffel expressed his interests on this, as a
+sysadmin. So I believe there are some people need it.
 
-So the warning in blkcg_policy_register()
+Now the problem is that I don't find a proper existing utility to patch,
+maybe Pádraig has any hints on this? Could this feature be merged into
+some core utility? Or I have to write a new utility for this?
 
-	if (WARN_ON(pol->pd_size < sizeof(struct blkg_policy_data)))
-		return -EINVAL;
-
-will trigger since pd_size == 0.
+Thanks.
 
