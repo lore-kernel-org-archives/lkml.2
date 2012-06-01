@@ -1,50 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab2FAARi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 20:17:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40201 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932484Ab2FAARh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 20:17:37 -0400
-Message-ID: <1338509855.9151.2.camel@joe2Laptop>
-Subject: Re: [PATCH] regmap: Fix the size calculation for
- map->format.buf_size
-From: Joe Perches <joe@perches.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: broonie@opensource.wolfsonmicro.com, gregkh@linuxfoundation.org,
-        marc@cpdesign.com.au, philippe.retornaz@epfl.ch,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Date: Thu, 31 May 2012 17:17:35 -0700
-In-Reply-To: <1338509430-24416-1-git-send-email-festevam@gmail.com>
-References: <1338509430-24416-1-git-send-email-festevam@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932734Ab2FAAXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 20:23:46 -0400
+Received: from li158-162.members.linode.com ([173.230.148.162]:55295 "EHLO
+	strelka.plastictigers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932604Ab2FAAXo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 20:23:44 -0400
+X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Thu, 31 May 2012 20:23:44 EDT
+Date: Thu, 31 May 2012 20:16:17 -0400
+From: Marc Butler <marc@plastictigers.com>
+To: Sagar Dharia <sdharia@codeaurora.org>
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org, kheitke@codeaurora.org,
+        gclemson@audience.com, broonie@opensource.wolfsonmicro.com,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rob@landley.net, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        ohad@wizery.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
+        ak@linux.intel.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20120601001617.GA16311@plastictigers.com>
+Mail-Followup-To: Sagar Dharia <sdharia@codeaurora.org>,
+	davidb@codeaurora.org, bryanh@codeaurora.org,
+	kheitke@codeaurora.org, gclemson@audience.com,
+	broonie@opensource.wolfsonmicro.com, linux-arm-msm@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org, rob@landley.net,
+	grant.likely@secretlab.ca, rob.herring@calxeda.com, ohad@wizery.com,
+	gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+	rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
+	ak@linux.intel.com, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 21:10 -0300, Fabio Estevam wrote:
-> the total size should be calculated by summing up the number of bits of
-> each element and using a DIV_ROUND_UP to return the number of bytes.
-[]
-> diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-[]
-> @@ -246,11 +246,11 @@ struct regmap *regmap_init(struct device *dev,
->  		map->lock = regmap_lock_mutex;
->  		map->unlock = regmap_unlock_mutex;
->  	}
-> -	map->format.buf_size = (config->reg_bits + config->val_bits) / 8;
->  	map->format.reg_bytes = DIV_ROUND_UP(config->reg_bits, 8);
->  	map->format.pad_bytes = config->pad_bits / 8;
->  	map->format.val_bytes = DIV_ROUND_UP(config->val_bits, 8);
-> -	map->format.buf_size += map->format.pad_bytes;
-> +	map->format.buf_size = DIV_ROUND_UP(config->reg_bits +
-> +			config->val_bits + config->pad_bits, 8);
->  	map->reg_shift = config->pad_bits % 8;
+On Tue, May 29, 2012 at 07:11:33PM -0600, Sagar Dharia wrote:
+> SLIMbus (Serial Low Power Interchip Media Bus) is a specification
+> developed by MIPI (Mobile Industry Processor Interface) alliance.
 
-s/8/BITS_PER_BYTE/ ?
+These are initial comments. A full review of the patch will take some
+time. While I am posting this email, this is the result of work both
+by myself, and my colleague Greg Clemson (cc'ed).
 
+1. enum slim_ch_proto
+
+The enumeration slim_ch_proto is incorrect. It declares 2 transport
+protocols which do not exist in the specification: SLIM_HARD_ISO;
+SLIM_AUTO_ISO.
+
+This in turn causes the subsequent values for the other protocols such
+as SLIM_PUSH, to be incorrectly coded in the NEXT_DEFINE_CHANNEL
+message generated in slim_reconfigure_now(). That is the push protocol
+is incorrectly encoded as 3 instead of 2 as per the specification
+(Table 47).
+
+I believe a correct definition would be:
+
+enum slim_ch_proto {
+        SLIM_ISO,
+	SLIM_PUSH,
+	SLIM_PULL,
+	SLIM_LOCKED,
+	SLIM_ASYNC_SMPLX,
+	SLIM_ASYNC_HALF_DUP,
+	SLIM_EXT_SMPLX,
+	SLIM_EXT_HALF_DUP,
+	SLIM_USER_DEF1 = 14,
+	SLIM_USER_DEF2 = 15
+};
+
+However doing so will break the logic in slim_nextdefine_ch().
+
+2. Use of the term elemental address.
+
+Commentary around the use of struct slim_eaddr uses the term
+"elemental address". However, the term used in the specification is
+"enumeration address". There is no elemental address in the
+specification, and using this term may result confusion when referring
+to accessing the information and value elements.
+
+I suggest that term "enumeration address" should be used. 
+
+3. Probing sequence for drivers.
+
+The current probing sequence for drivers appears to make some
+assumptions, that are problematic.
+
+a) The code assumes that when the controller is registered the bus is
+operational (booted). No allowance is made for any problems the active
+framer may have synchronizing the bus. 
+
+The drivers really should not be probed until the bus has at least
+booted. This can be worked around by only registering the controller
+after it has booted the bus. This should be noted in the comments.
+
+b) Similarly to (a) the driver may be probed before the device has
+been given a logical address (LA). This makes sense in the case of
+driver that turns on the device (say via gpio) once the bus has
+booted. However, the driver then needs to sit and poll
+slim_get_logical_addr() until the logical address.
+
+A possible alternate solution would be to add a parameter to probe:
+
+enum slim_dev_status {
+        SLIM_BUS_READY,
+	SLIM_DEV_READY
+};
+
+int (*probe)(struct slim_device *sldev, enum slim_dev_status status);
+
+Where SLIM_BUS_READY == bus has booted, and SLIM_DEV_READY == device
+has been assigned its logical address.
+
+Alternatively you could have 2 separate probe type callbacks. 
+
+This would make the driver logical simpler.
 
