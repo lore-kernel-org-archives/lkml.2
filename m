@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759122Ab2FAItD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 04:49:03 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40585 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759102Ab2FAIs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 04:48:58 -0400
-Date: Fri, 1 Jun 2012 10:48:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bojan Smojver <bojan@rexursive.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: In kernel hibernation, suspend to both
-Message-ID: <20120601084854.GA3969@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Bojan Smojver <bojan@rexursive.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	"Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Linux PM list <linux-pm@vger.kernel.org>,
-	Kernel development list <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1205132212070.5628-100000@netrider.rowland.org>
- <201205211518.39137.rjw@sisk.pl>
- <882dce83-b79e-4470-af25-edb8429fb7e5@email.android.com>
- <201205212353.42639.rjw@sisk.pl>
- <1337637359.1647.67.camel@shrek.rexursive.com>
- <20120524145122.GA26743@x1.osrc.amd.com>
- <07f1a575-ec44-40b7-bd36-576f883f188d@email.android.com>
- <20120531162342.GA3541@x1.osrc.amd.com>
- <91027f5c-239f-4b91-b6b4-2fcac6e1bcb7@email.android.com>
+	id S932225Ab2FAIvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 04:51:39 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:54482 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab2FAIvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 04:51:38 -0400
+Message-ID: <4FC88299.1040707@gmail.com>
+Date: Fri, 01 Jun 2012 04:51:37 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <91027f5c-239f-4b91-b6b4-2fcac6e1bcb7@email.android.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hugh Dickins <hughd@google.com>
+CC: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, kosaki.motohiro@gmail.com
+Subject: Re: WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0x13a/0x170()
+References: <20120530163317.GA13189@redhat.com> <20120531005739.GA4532@redhat.com> <20120601023107.GA19445@redhat.com> <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 12:03:47PM +1000, Bojan Smojver wrote:
-> >Ok, I finally gave the above a run, here's the dmesg after a successful
-> >suspend-resume cycle. It looks ok except the funny characters after
-> >
-> >"[  380.938864] PM: Compressing and saving image data (75689 pages)
-> >..."
-> >
-> >I'll keep running it the next couple of days/weeks and report any
-> >instabilities.
+>   	mlock_migrate_page(newpage, page);
+> --- 3.4.0+/mm/page-writeback.c	2012-05-29 08:09:58.304806782 -0700
+> +++ linux/mm/page-writeback.c	2012-06-01 00:23:43.984116973 -0700
+> @@ -1987,7 +1987,10 @@ int __set_page_dirty_nobuffers(struct pa
+>   		mapping2 = page_mapping(page);
+>   		if (mapping2) { /* Race with truncate? */
+>   			BUG_ON(mapping2 != mapping);
+> -			WARN_ON_ONCE(!PagePrivate(page)&&  !PageUptodate(page));
+> +			if (WARN_ON(!PagePrivate(page)&&  !PageUptodate(page)))
+> +				print_symbol(KERN_WARNING
+> +				    "mapping->a_ops->writepage: %s\n",
+> +				    (unsigned long)mapping->a_ops->writepage);
 
-> Thanks for testing. The funny characters are backspaces printed by the
-> progress indicator. :-)
+type mismatch? I guess you want %pf or %pF.
 
-I know, this output should probably be turned off if we're both
-suspending to disk and ram so as not to pollute dmesg. Normal,
-suspend-to-disk cycle doesn't put that output in dmesg.
 
--- 
-Regards/Gruss,
-    Boris.
