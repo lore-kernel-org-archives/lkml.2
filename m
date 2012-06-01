@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964964Ab2FAVQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 17:16:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28164 "EHLO mx1.redhat.com"
+	id S933635Ab2FAVQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 17:16:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58966 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932538Ab2FAVQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 17:16:34 -0400
+	id S932538Ab2FAVQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 17:16:46 -0400
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 2/4] PCI: Remove redundant checking in PCI Express capability
-	routines
+Subject: [PATCH 4/4] PCI: Remove redundant capabilities checking in pci_{save,
+	restore}_pcie_state
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         xudong.hao@linux.intel.com, ddutile@redhat.com, yu.zhao@intel.com
-Date: Fri, 01 Jun 2012 15:16:31 -0600
-Message-ID: <20120601211631.20328.53913.stgit@amt.stowe>
+Date: Fri, 01 Jun 2012 15:16:43 -0600
+Message-ID: <20120601211643.20328.26918.stgit@amt.stowe>
 In-Reply-To: <20120601211619.20328.36769.stgit@amt.stowe>
 References: <20120601211619.20328.36769.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -24,85 +24,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a number of redundant pci_is_pcie() checks in various PCI
-Express capabilities related routines like the following:
+Unlike PCI Express v1's Capabilities Structure, v2's requires the entire
+structure to be implemented.  In v2 structures, register fields that are
+not necessarly implemented, are present but hardwired to 0x0.  These may
+include: Link Capabilities, Status, and Control; Slot Capabilities,
+Status, and Control; Root Capabilities, Status, and Control; and all of
+the '2' (Device, Link, and Slot) Capabilities, Status, and Control
+registers.
 
-    if (!pci_is_pcie(dev))
-	return false;
-
-    pos = pci_pcie_cap(dev);
-    if (!pos)
-	return false;
-
-The current pci_is_pcie() implementation is merely:
-
-    static inline bool pci_is_pcie(struct pci_dev *dev)
-    {
-        return !!pci_pcie_cap(dev);
-    }
-
-so we can just drop the pci_is_pcie() test in such cases.
-
-Suggested by Bjorn Helgaas in -
-http://marc.info/?l=linux-pci&m=130463494319762&w=2
+This patch removes the redundant capability checks corresponding to the
+Link 2's and Slot 2's, Capabilities, Status, and Control registers as they
+will be present if Device Capabilities 2's registers are (which explains
+why the macros for each of the three are identical).
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- drivers/pci/pci.c |   14 +-------------
- 1 files changed, 1 insertions(+), 13 deletions(-)
+ drivers/pci/pci.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 64471b1..ff0beb0 100644
+index 26933ff..f9f8036 100644
 --- a/drivers/pci/pci.c
 +++ b/drivers/pci/pci.c
-@@ -1995,7 +1995,7 @@ void pci_enable_ari(struct pci_dev *dev)
- 		return;
+@@ -903,12 +903,11 @@ static int pci_save_pcie_state(struct pci_dev *dev)
+ 		pci_read_config_word(dev, pos + PCI_EXP_SLTCTL, &cap[i++]);
+ 	if (pcie_cap_has_rtctl(dev->pcie_type, flags))
+ 		pci_read_config_word(dev, pos + PCI_EXP_RTCTL, &cap[i++]);
+-	if (pcie_cap_has_devctl2(dev->pcie_type, flags))
++	if (pcie_cap_has_devctl2(dev->pcie_type, flags)) {
+ 		pci_read_config_word(dev, pos + PCI_EXP_DEVCTL2, &cap[i++]);
+-	if (pcie_cap_has_lnkctl2(dev->pcie_type, flags))
+ 		pci_read_config_word(dev, pos + PCI_EXP_LNKCTL2, &cap[i++]);
+-	if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
+ 		pci_read_config_word(dev, pos + PCI_EXP_SLTCTL2, &cap[i++]);
++	}
  
- 	bridge = dev->bus->self;
--	if (!bridge || !pci_is_pcie(bridge))
-+	if (!bridge)
- 		return;
+ 	return 0;
+ }
+@@ -936,12 +935,11 @@ static void pci_restore_pcie_state(struct pci_dev *dev)
+ 		pci_write_config_word(dev, pos + PCI_EXP_SLTCTL, cap[i++]);
+ 	if (pcie_cap_has_rtctl(dev->pcie_type, flags))
+ 		pci_write_config_word(dev, pos + PCI_EXP_RTCTL, cap[i++]);
+-	if (pcie_cap_has_devctl2(dev->pcie_type, flags))
++	if (pcie_cap_has_devctl2(dev->pcie_type, flags)) {
+ 		pci_write_config_word(dev, pos + PCI_EXP_DEVCTL2, cap[i++]);
+-	if (pcie_cap_has_lnkctl2(dev->pcie_type, flags))
+ 		pci_write_config_word(dev, pos + PCI_EXP_LNKCTL2, cap[i++]);
+-	if (pcie_cap_has_sltctl2(dev->pcie_type, flags))
+ 		pci_write_config_word(dev, pos + PCI_EXP_SLTCTL2, cap[i++]);
++	}
+ }
  
- 	pos = pci_pcie_cap(bridge);
-@@ -2055,9 +2055,6 @@ void pci_disable_ido(struct pci_dev *dev, unsigned long type)
- 	int pos;
- 	u16 ctrl;
  
--	if (!pci_is_pcie(dev))
--		return;
--
- 	pos = pci_pcie_cap(dev);
- 	if (!pos)
- 		return;
-@@ -2097,9 +2094,6 @@ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type type)
- 	u16 ctrl;
- 	int ret;
- 
--	if (!pci_is_pcie(dev))
--		return -ENOTSUPP;
--
- 	pos = pci_pcie_cap(dev);
- 	if (!pos)
- 		return -ENOTSUPP;
-@@ -2150,9 +2144,6 @@ void pci_disable_obff(struct pci_dev *dev)
- 	int pos;
- 	u16 ctrl;
- 
--	if (!pci_is_pcie(dev))
--		return;
--
- 	pos = pci_pcie_cap(dev);
- 	if (!pos)
- 		return;
-@@ -2175,9 +2166,6 @@ static bool pci_ltr_supported(struct pci_dev *dev)
- 	int pos;
- 	u32 cap;
- 
--	if (!pci_is_pcie(dev))
--		return false;
--
- 	pos = pci_pcie_cap(dev);
- 	if (!pos)
- 		return false;
 
