@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949Ab2FAA4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 20:56:07 -0400
-Received: from fieldses.org ([174.143.236.118]:55359 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758733Ab2FAA4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 20:56:05 -0400
-Date: Thu, 31 May 2012 20:56:03 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: nfsd changes for 3.5
-Message-ID: <20120601005603.GA28542@fieldses.org>
-References: <20120531182457.GB25955@fieldses.org>
- <CA+55aFwGpVM2Dbe02gL5=cGJZ_t3b4PTAhqwrs5MHjsb5R6BaA@mail.gmail.com>
- <20120531200138.GD25955@fieldses.org>
- <CA+55aFyuHz5Vn8G_kpKgnSStX0s125gwwQij2KXmnhfwaajhkg@mail.gmail.com>
- <20120531205300.GG25955@fieldses.org>
- <CA+55aFxY+WJmMu=1Wvdh24kK0JWEuQ1vwcqZdaNDbp1_wUsZ4A@mail.gmail.com>
+	id S932961Ab2FABAg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 21:00:36 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40453 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932929Ab2FABAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 21:00:35 -0400
+Message-ID: <4FC81424.9050502@gmail.com>
+Date: Fri, 01 Jun 2012 03:00:20 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxY+WJmMu=1Wvdh24kK0JWEuQ1vwcqZdaNDbp1_wUsZ4A@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Hellwig <hch@tuxera.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] Support HFS+ not filling its device completely
+X-Enigmail-Version: 1.4.1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enigDE98A7D9E91B2FABAEC42C03"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 31, 2012 at 03:14:57PM -0700, Linus Torvalds wrote:
-> On Thu, May 31, 2012 at 1:53 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > On Thu, May 31, 2012 at 01:17:26PM -0700, Linus Torvalds wrote:
-> >
-> > Uh, that means ditching some work in my public git tree.  Which I
-> > haven't rebased in years.  So, a stupid process question; would you
-> > rather I:
-> >
-> >        - continue to be strict about rebasing and apply a bunch of
-> >          reverts?
-> >        - ditch it and start over?
-> 
-> I think in this case rebasing is the right thing to do.
-> 
-> I hate rebasing, but what I hate about it is how people who use it as
-> a development model cause problems for anybody else. I don't think it
-> will cause problems in this particular case, but if somebody hollers,
-> let me know.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigDE98A7D9E91B2FABAEC42C03
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-OK, will do.
+Hello, all. My HFS+ previously was on slightly smaller partition
+and was subsequently dd'ed to its current location. Mac OS X doesn't
+mind and I don't mind losing a little space. However Linux fails to
+locate second superblock and hence to mount it. This patch uses
+the size field from the first superblock to locate the second.
 
-For now, would you mind pulling this?:
 
-	git://linux-nfs.org/~bfields/linux.git for-3.5-take-2
+Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+---
+ fs/hfsplus/wrapper.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-It's literally just the previous tree cut off before the delegation
-stuff--so it's been in -next for a month, etc.
+diff --git a/fs/hfsplus/wrapper.c b/fs/hfsplus/wrapper.c
+index 7daf4b8..a7e1268 100644
+--- a/fs/hfsplus/wrapper.c
++++ b/fs/hfsplus/wrapper.c
+@@ -206,6 +206,9 @@ reread:
+ 		set_bit(HFSPLUS_SB_HFSX, &sbi->flags);
+ 		/*FALLTHRU*/
+ 	case cpu_to_be16(HFSPLUS_VOLHEAD_SIG):
++		part_size =3D (((u64) be32_to_cpu(sbi->s_vhdr->blocksize)
++			      * (u64) be32_to_cpu(sbi->s_vhdr->total_blocks))
++			     >> HFSPLUS_SECTOR_SHIFT);
+ 		break;
+ 	case cpu_to_be16(HFSP_WRAP_MAGIC):
+ 		if (!hfsplus_read_mdb(sbi->s_vhdr, &wd))
+--=20
+1.7.10
 
---b.
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
 
-Jeff Layton (3):
-      nfsd: trivial: remove unused variable from nfsd4_lock
-      nfsd: don't use locks_in_grace to determine whether to call nfs4_grace_end
-      nfsd: trivial: use SEEK_SET instead of 0 in vfs_llseek
 
-Simo Sorce (2):
-      svcauth: remove unused define
-      SUNRPC: split upcall function to extract reusable parts
+--------------enigDE98A7D9E91B2FABAEC42C03
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Stanislav Kinsbursky (18):
-      nfsd: use passed cache_detail pointer expkey_parse()
-      nfsd: add link to owner cache detail to svc_export structure
-      nfsd: use cache detail pointer from svc_export structure on cache put
-      nfsd: use exp_put() for svc_export_cache put
-      nfsd: pass svc_export_cache pointer as private data to "exports" seq file ops
-      nfsd: use hash table from cache detail in nfsd export seq ops
-      nfsd: pass pointer to expkey cache down to stack wherever possible.
-      NFSd: remove hard-coded dereferences to name-to-id and id-to-name caches
-      Lockd: pass network namespace to creation and destruction routines
-      nfsd: pass network context to export caches init/shutdown routines
-      nfsd: pass pointer to export cache down to stack wherever possible.
-      nfsd: make export cache allocated per network namespace context
-      nfsd: make expkey cache allocated per network namespace context
-      nfsd: allocate export and expkey caches in per-net operations.
-      nfsd: pass network context to idmap init/exit functions
-      nfsd: make id-to-name cache allocated per network namespace context
-      nfsd: make name-to-id cache allocated per network namespace context
-      nfsd: allocate id-to-name and name-to-id caches in per-net operations.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
- fs/lockd/clntlock.c               |   13 +--
- fs/lockd/svc.c                    |    7 +-
- fs/nfsd/export.c                  |  175 ++++++++++++++++++++++---------------
- fs/nfsd/idmap.h                   |    8 +-
- fs/nfsd/netns.h                   |    6 ++
- fs/nfsd/nfs4idmap.c               |  109 +++++++++++++----------
- fs/nfsd/nfs4state.c               |   13 ++-
- fs/nfsd/nfsctl.c                  |   55 ++++++++----
- fs/nfsd/nfsfh.c                   |    2 +-
- fs/nfsd/nfssvc.c                  |    8 +-
- fs/nfsd/vfs.c                     |    2 +-
- include/linux/lockd/bind.h        |    4 +-
- include/linux/nfsd/export.h       |   13 ++-
- include/linux/sunrpc/svcauth.h    |    3 +-
- net/sunrpc/auth_gss/svcauth_gss.c |  100 +++++++++++++--------
- net/sunrpc/svcauth_unix.c         |   13 +--
- 16 files changed, 322 insertions(+), 209 deletions(-)
+iF4EAREKAAYFAk/IFC8ACgkQNak7dOguQgn9DAEAl6lii0aSySdu5Ja0DWjEANWi
+a2MYXBAaAcLtxlJlJCwA/1id0XINOLHFoQJAKxfZy94Pic5c7aWTyqTp5HPWr2J+
+=AALT
+-----END PGP SIGNATURE-----
+
+--------------enigDE98A7D9E91B2FABAEC42C03--
