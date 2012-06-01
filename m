@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758285Ab2FAUoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 16:44:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43880 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab2FAUoE (ORCPT
+	id S932597Ab2FAUpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 16:45:08 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56675 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756897Ab2FAUpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 16:44:04 -0400
-Message-ID: <4FC92990.5030104@wwwdotorg.org>
-Date: Fri, 01 Jun 2012 14:44:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+	Fri, 1 Jun 2012 16:45:06 -0400
+Subject: Re: [PATCH] tty: add lockdep annotations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
-References: <1337691917-15040-1-git-send-email-ldewangan@nvidia.com> <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com> <4FC916AC.4060804@wwwdotorg.org> <20120601204052.GB4258@opensource.wolfsonmicro.com>
-In-Reply-To: <20120601204052.GB4258@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+References: <4FC6189B.9080909@fusionio.com>
+	 <1338402812.2760.413.camel@edumazet-glaptop>
+	 <4FC66D3D.6080509@fusionio.com>
+	 <1338404902.2760.451.camel@edumazet-glaptop>
+	 <1338410107.2760.544.camel@edumazet-glaptop>
+	 <1338456918.2760.1318.camel@edumazet-glaptop>
+	 <1338574627.2760.1545.camel@edumazet-glaptop>
+	 <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jun 2012 22:44:58 +0200
+Message-ID: <1338583498.2760.1648.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2012 02:40 PM, Mark Brown wrote:
-> On Fri, Jun 01, 2012 at 01:23:24PM -0600, Stephen Warren wrote:
+On Fri, 2012-06-01 at 11:51 -0700, Linus Torvalds wrote:
+> On Fri, Jun 1, 2012 at 11:17 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >
+> > About 10% of boots on my machine, and this looks like (hand written)
+> >
+> > general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+> > ...
+> > RIP : tty_shutdown+0x15/)x70
 > 
->> However, Mark warned that changing this would be a bit painful 
->> because there are already users of the existing scheme. It looks 
->> like that's only tps65910 (which we haven't started using yet), 
->> db8500, and ab8500, so probably not that big a deal.
+> Ok, DEBUG_PAGEALLOC and with that offset fairly early in tty_shutdown,
+> it's almost certainly one of the accesses in the
 > 
-> No, there's a bunch of others - some queued for -next, others open
->  coding the same scheme.  Any device with more than one regulator
-> in a node should be using the same scheme.
+>   tty->driver->ops->remove
 > 
->> We could either augment struct of_regulator_match with an
->> integer ID field for each regulator (which would perhaps make it
->> slightly painful to write the nodes and keep the IDs matched up),
->> or add a new property
-> 
-> No, that's awful.  How's anyone supposed to read stuff like that? 
-> The interrupt bindings are a disaster, not a model.
-> 
->> to each regulator provider node e.g. regulator-id which
->> contained the name that the regulator driver knows the regulator
->> as (which would match struct of_regulator_match.name), since the
->> existing regulator-name property is used for semantically
->> different purposes.
-> 
-> Oh, ick.  This isn't nice.  If anything I'd be more inclined to
-> put a named property in there and have drivers look for its
-> presence. The presence of multiple name properties isn't nice.
 
-Could you expand on "named property" a bit; I'm not quite sure what
-you're getting at - literally a property with name "named" (which
-would be the same as regulator-id under just a different property
-name), or ...?
+Yes, tty->driver deref is ok (tty points to valid memory), but crash is
+on tty->driver->ops (driver points to freed/illegal memory)
 
->>> vdd1_reg: regulator@0 {
+using slub_debug=FZPU, I can indeed see RDI=6b6b6b6b6b6b6b6b
+
+Typical use after free...
+
+> chain when it does the (inlined)
 > 
-> Can't we use the right hand side of this?  It appears to just be 
-> syntactic sugar without any current meaning.
+>     tty_driver_remove_tty(tty->driver, tty);
+> 
+> you could check which one it is at that offset 0x15, but I think both
+> the ops and the driver structures should be statically allocated, so I
+> suspect it's the "tty" itself that is already freed.
+> 
+> Odd. But yes, smells very much like a refcount issue, probably due to
+> broken locking. Does the problem go away if you revert commits
+> d29f3ef39be4 ("tty_lock: Localise the lock") and 3af502b96649
+> ("tty_lock: undo the old tty_lock use on the ctty")?
 
-The stuff to the right of @ is the "unit address" and must match the
-value in the reg property. Using that was the first proposal I had
-above (which I also didn't like as much)
+Tried this but seems not straightforward, and its pretty late here in
+France, week end starting ;)
+
+By the way, release_one_tty() uses the following racy code :
+
+tty_driver_kref_put(driver);
+module_put(driver->owner);
+
+I would use following patch to make sure bad things cant happen...
+
+Thanks
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 9e930c0..b8faf40 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1479,13 +1479,14 @@ static void release_one_tty(struct work_struct *work)
+ 	struct tty_struct *tty =
+ 		container_of(work, struct tty_struct, hangup_work);
+ 	struct tty_driver *driver = tty->driver;
++	struct module *module = driver->owner;
+ 
+ 	if (tty->ops->cleanup)
+ 		tty->ops->cleanup(tty);
+ 
+ 	tty->magic = 0;
+ 	tty_driver_kref_put(driver);
+-	module_put(driver->owner);
++	module_put(module);
+ 
+ 	spin_lock(&tty_files_lock);
+ 	list_del_init(&tty->tty_files);
+
+
