@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab2FAFUF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 01:20:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:55965 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab2FAFUD (ORCPT
+	id S1753029Ab2FAFVa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 01:21:30 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47110 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab2FAFV3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 01:20:03 -0400
+	Fri, 1 Jun 2012 01:21:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.02.1205311834270.3231@ionos>
-References: <CAH3Oq6SHLWvcdVUFsmPvqNedBC_QQhVSxrvCiyAUL3TgPQn3wQ@mail.gmail.com>
-	<alpine.LFD.2.02.1205311834270.3231@ionos>
-Date: Fri, 1 Jun 2012 13:20:02 +0800
-Message-ID: <CAH3Oq6QxFmtTuZSdF=95FPugwu1AzMgHm650qmNUwsdLr9O8Rg@mail.gmail.com>
-Subject: Re: Make kstat_incr_irqs_this_cpu() called when an irq is actually
- being handled
-From: Ning Jiang <ning.n.jiang@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1338524234-12165-1-git-send-email-jonghwa3.lee@samsung.com>
+References: <1338524234-12165-1-git-send-email-jonghwa3.lee@samsung.com>
+Date: Fri, 1 Jun 2012 10:51:29 +0530
+Message-ID: <CAKew6eWfPyC5ExJmEsgnRdsLsjAqc+zXCnVMzyyiqbEp1RUerw@mail.gmail.com>
+Subject: Re: [PATCH] regulator: MAX77686: Add Maxim 77686 regulator driver
+From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Chiwoong Byun <woong.byun@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/1 Thomas Gleixner <tglx@linutronix.de>:
-> On Thu, 31 May 2012, Ning Jiang wrote:
->> kstat_incr_irqs_this_cpu() is supposed to record the irq number
->> that is actually taken by a certain cpu. But it failed to do so
->> in its current form.
->
-> It exactly counts the number of interrupts which are delivered to and
-> handled by a CPU. That includes interrupts which are delivered in a
-> state where the device handler cannot be called. And this is on
-> purpose. We want to see the real number of interruptions not the
-> number of calls to a device handler.
->
->> For level irq, if its disabled or no action available, we'll skip
->> irq handling. When it is enabled later, the irq will be retriggered
->> and kstat_incr_irqs_this_cpu() will be counted twice for this
->> single irq.
->
-> This counts the number of interrupts arrived at the CPU and therefor
-> it counts TWO in this situation. The CPU is interrupted twice, not
-> once.
->
+> +static __devinit int max77686_pmic_probe(struct platform_device *pdev)
+> +{
+> +       struct max77686_dev *iodev = dev_get_drvdata(pdev->dev.parent);
+> +       struct max77686_platform_data *pdata = dev_get_platdata(iodev->dev);
+> +       struct regulator_dev **rdev;
+> +       struct max77686_data *max77686;
+> +       int i,  size;
+> +       int ret = 0;
+> +       struct regulator_config config;
+> +
+> +       dev_dbg(&pdev->dev, "%s\n", __func__);
+> +
+> +       max77686 = devm_kzalloc(&pdev->dev, sizeof(struct max77686_data),
+> +                               GFP_KERNEL);
+> +       if (!max77686)
+> +               return -ENOMEM;
+> +
+> +       size = sizeof(struct regulator_dev *) * MAX77686_REGULATORS;
+> +       max77686->rdev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
+> +       if (!max77686->rdev)
+> +               return -ENOMEM;
+> +
+> +       rdev = max77686->rdev;
+> +       max77686->dev = &pdev->dev;
+> +       max77686->iodev = iodev;
+> +       if (pdata)
+> +               max77686->num_regulators = pdata->num_regulators;
+> +       platform_set_drvdata(pdev, max77686);
+> +
+> +       max77686->ramp_delay = RAMP_RATE_NO_CTRL; /* Set 0x3 for RAMP */
+> +       regmap_update_bits(max77686->iodev->regmap,
+> +                       MAX77686_REG_BUCK2CTRL1, MAX77686_RAMP_RATE_MASK,
+> +                       max77686->ramp_delay << 6);
+> +       regmap_update_bits(max77686->iodev->regmap,
+> +                       MAX77686_REG_BUCK3CTRL1, MAX77686_RAMP_RATE_MASK,
+> +                       max77686->ramp_delay << 6);
+> +       regmap_update_bits(max77686->iodev->regmap,
+> +                       MAX77686_REG_BUCK4CTRL1, MAX77686_RAMP_RATE_MASK,
+> +                       max77686->ramp_delay << 6);
+> +
+> +       if (pdata->num_regulators == MAX77686_REGULATORS) {
 
-I've got your point. For level irq, no problem. But how do you account
-for edge irq in my comments?
+I was expecting this check inside the if(pdata) { ... } earlier at
+starting of probe
+because it looks more appropriate(good)  their :).
+Anyways, this can also work.
 
-For edge irq, we'll not have the same problem as level irq because
-kstat_incr_irqs_this_cpu() is placed after status checking for
-disable or no action. But it has its own problem. Suppose a second
-irq happens when the first is being handled, it will mark itself
-pending and quit, then it will be handled in the same loop after the
-first one has been handled. Thus kstat_incr_irqs_this_cpu() will
-only be counted once for two irqs.
+> +               for (i = 0; i < MAX77686_REGULATORS; i++) {
+> +                       config.dev = max77686->dev;
+> +                       config.regmap = iodev->regmap;
+> +                       config.driver_data = max77686;
+> +                       config.init_data = pdata->regulators[i].initdata;
+> +
+> +                       rdev[i] = regulator_register(&regulators[i], &config);
+> +
+> +                       if (IS_ERR(rdev[i])) {
+> +                               ret = PTR_ERR(rdev[i]);
+> +                               dev_err(max77686->dev,
+> +                               "regulator init failed for %d\n", i);
+> +                               rdev[i] = NULL;
+> +                               goto err;
+> +                       }
+> +               }
+> +       } else {
+> +               dev_err(max77686->dev,
+> +                        "Lack of initial data for regulator's initialiation\n");
+> +               return -EINVAL;
+> +       }
+> +       return 0;
+
+
+Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+
+Regards,
+Yadwinder.
