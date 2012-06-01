@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965449Ab2FAVRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 17:17:17 -0400
-Received: from kamaji.grokhost.net ([87.117.218.43]:55007 "EHLO
-	kamaji.grokhost.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932464Ab2FAVRN (ORCPT
+	id S964804Ab2FAV1i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 17:27:38 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:45269
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932538Ab2FAV1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 17:17:13 -0400
-Message-ID: <4FC93154.1060906@bootc.net>
-Date: Fri, 01 Jun 2012 22:17:08 +0100
-From: Chris Boot <bootc@bootc.net>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120529 Thunderbird/13.0
+	Fri, 1 Jun 2012 17:27:36 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI9371I98dKzz1202hzzz2dh2a8h668h839h93fhd25he5bhf0ah)
+Message-ID: <4FC933BF.1020901@freescale.com>
+Date: Fri, 1 Jun 2012 16:27:27 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Chris Boot <bootc@bootc.net>
-CC: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nix@esperi.org.uk,
-        carolyn.wyborny@intel.com, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] e1000e: Disable ASPM L1 on 82574
-References: <1335216578-21542-1-git-send-email-bootc@bootc.net> <1335216578-21542-2-git-send-email-bootc@bootc.net>
-In-Reply-To: <1335216578-21542-2-git-send-email-bootc@bootc.net>
-X-Enigmail-Version: 1.5a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com>
+In-Reply-To: <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/04/2012 22:29, Chris Boot wrote:
-> ASPM on the 82574 causes trouble. Currently the driver disables L0s for
-> this NIC but only disables L1 if the MTU is >1500. This patch simply
-> causes L1 to be disabled regardless of the MTU setting.
->
-> Signed-off-by: Chris Boot <bootc@bootc.net>
-> Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-> Cc: Nix <nix@esperi.org.uk>
-> Link: https://lkml.org/lkml/2012/3/19/362
-> ---
->  drivers/net/ethernet/intel/e1000e/82571.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
-> index b3fdc69..c6d95f2 100644
-> --- a/drivers/net/ethernet/intel/e1000e/82571.c
-> +++ b/drivers/net/ethernet/intel/e1000e/82571.c
-> @@ -2061,8 +2061,9 @@ const struct e1000_info e1000_82574_info = {
->  				  | FLAG_HAS_SMART_POWER_DOWN
->  				  | FLAG_HAS_AMT
->  				  | FLAG_HAS_CTRLEXT_ON_LOAD,
-> -	.flags2			  = FLAG2_CHECK_PHY_HANG
-> +	.flags2			= FLAG2_CHECK_PHY_HANG
->  				  | FLAG2_DISABLE_ASPM_L0S
-> +				  | FLAG2_DISABLE_ASPM_L1
->  				  | FLAG2_NO_DISABLE_RX,
->  	.pba			= 32,
->  	.max_hw_frame_size	= DEFAULT_JUMBO,
+On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+\> +#if defined(CONFIG_FSL_BOOKE) || defined(CONFIG_6xx)
+> +extern void __flush_disable_L1(void);
+> +#endif
 
-Now that this patch is in master (d4a4206e) and has presumably been
-widely tested, what's the possibility of it making it into stable? I
-really should have included a CC to stable when I sent it...
+Prototypes aren't normally guarded by ifdefs.
 
-This patch should probably also be accompanied with 59aed952 (e1000e:
-Remove special case for 82573/82574 ASPM L1 disablement) on top, to
-remove a special case that's no longer required once this is applied.
+> +static void __cpuinit smp_85xx_mach_cpu_die(void)
+> +{
+> +	unsigned int cpu = smp_processor_id();
+> +	u32 tmp;
+> +
+> +	local_irq_disable();
+> +	idle_task_exit();
+> +	generic_set_cpu_dead(cpu);
+> +	mb();
+> +
+> +	mtspr(SPRN_TCR, 0);
+> +
+> +	__flush_disable_L1();
+> +	tmp = (mfspr(SPRN_HID0) & ~(HID0_DOZE|HID0_SLEEP)) | HID0_NAP;
+> +	mtspr(SPRN_HID0, tmp);
+> +
+> +	/* Enter NAP mode. */
+> +	tmp = mfmsr();
+> +	tmp |= MSR_WE;
+> +	mb();
+> +	mtmsr(tmp);
+> +	isync();
 
-Thanks,
-Chris
+Need isync after writing to HID0.
 
--- 
-Chris Boot
-bootc@bootc.net
+> +		/*
+> +		 * We don't set the BPTR register here upon it points
+> +		 * to the boot page properly.
+> +		 */
+> +		mpic_reset_core(hw_cpu);
+
+That comment's wording is hard to follow -- maybe s/upon it points/since
+it already points/
+
+> +		/* wait until core is ready... */
+> +		if (!spin_event_timeout(in_be32(&spin_table->addr_l) == 1,
+> +						10000, 100)) {
+> +			pr_err("%s: timeout waiting for core %d to reset\n",
+> +							__func__, hw_cpu);
+> +			ret = -ENOENT;
+> +			goto out;
+> +		}
+
+We need to fix U-Boot to write addr_l last (with an msync beforehand).
+
+> -#ifdef CONFIG_KEXEC
+> +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
+
+Let's not grow lists like this.  Is there any harm in building it
+unconditionally?
+
+-Scott
 
