@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965408Ab2FAQRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 12:17:41 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39544 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965301Ab2FAQRk (ORCPT
+	id S965430Ab2FAQVW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 12:21:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43239 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965382Ab2FAQVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 12:17:40 -0400
-Message-ID: <59CBCFF13ABD41B682835DD5E4851BC1@local.st.by>
-From: "Victor Miasnikov" <vvm@tut.by>
-To: "Greg KH" <gregkh@linuxfoundation.org>
-Cc: <stable@vger.kernel.org>, "Jonathan Nieder" <jrnieder@gmail.com>,
-        <linux-kernel@vger.kernel.org>, "KY Srinivasan" <kys@microsoft.com>
-References: <20120527010903.GA18244@kroah.com> <B4A84D892D5742FE83F71F788F6EAF48@local.st.by> <20120528203518.GA12623@kroah.com> <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by> <20120601092017.GE22821@kroah.com>
-Subject: Re: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the CD-R
-Date: Fri, 1 Jun 2012 19:17:33 +0300
+	Fri, 1 Jun 2012 12:21:21 -0400
+Date: Fri, 1 Jun 2012 17:21:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        H Hartley Sweeten <hsweetn@visionengravers.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] clock: max77686: Add driver for Maxim 77686 32KHz
+ crystal oscillator
+Message-ID: <20120601162118.GA24139@opensource.wolfsonmicro.com>
+References: <1338541736-2978-1-git-send-email-jonghwa3.lee@samsung.com>
+ <201206011613.33706.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="ISO-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.3790.4548
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="L+ytD9kXoSFEJYhc"
+Content-Disposition: inline
+In-Reply-To: <201206011613.33706.arnd@arndb.de>
+X-Cookie: Q:	How do you keep a moron in suspense?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
->>  cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default
->> and its prerequisite
->>  db63a4c8115a libata: add a host flag to ignore detected ATA devices
+--L+ytD9kXoSFEJYhc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Sorry, but I don't see how this meets the rules for the stable trees, do you?  If so, please show me how.
+On Fri, Jun 01, 2012 at 04:13:33PM +0000, Arnd Bergmann wrote:
 
-About "how"  -- ask K.Y. Srinivasan
+> You should also have an of_device_id table so you can match this driver from
+> device tree definitions.
 
- Hyper-V admins need _worked_ Linux v3.4.X / v3.3.X / v3.2.X
+There has been...  some discussion on the value of doing this for MFD
+cells where the MFD cell has no reuse capability (eg, when the driver
+has very little abstraction from the top level chip binding) since we
+don't really get anything from the abstraction if the driver can't be
+reused and may limit ourselves (and others) in future.
 
-Please, _fix_ errors related "use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the 
-CD-ROM)"
+--L+ytD9kXoSFEJYhc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- Thanks
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/ 
+iQIcBAEBAgAGBQJPyOv4AAoJEBus8iNuMP3d4hAP/iNepqdkXzbbbKGOL1OVBsrL
+SyBCpdCpVG04IeMA86g1mWekXYwdxvFwdcBHtA9CBfI8e06XhNfsWL1Ef9u9rTLT
+hWSDNERWomxD0/Lp+ueuRisgCLD1uNueEc9GWbtXmdpWTaiwoiFro1i1RZota4gL
+MtE1AbXekyHQvnB+A9F/wibjbqQFqu0Zt3AwlWXyzJh9jnvTGQeErMSUqailiERQ
+8NheliWMcdFI+mcFrQVo5HSbU2iVrQmqs7OHvnQYMlWp01z/JxOzhUJ2KLZhziUz
+A8FS9Gq8zfR6N6lTJBmERwyrWLy5mGO71Rt7Sz9whyqBgjXkl7wfa9CBzTK6lrkN
+cHHIBFmkBUH+kmQ2FRNPNZOAzc+op2JwVSAeiyQcUBScXcwuRYx+bBj8JpHybk9E
+8LToloKRim5CR6U+NAJCMyU8Hy+vv+EBKxymAb3KCQViN7NhzOMkG5a18hGlQw18
+h8wjseHmtV4SMEeHSxjwpEcpb1c2Ll4vpaAAr7s2TR/TtgAeDJWnj+vW1JUeEn8J
+3Ii9XzYbNz4n9GgQF+WiPJ93oANOMW+SA1hu3gLqVBcu8sm4OjySSdfSP79TlTq4
+st3Z+QrssNgAg4YOjglLUSI8SWZhJc2srGwV6L8C4fCtJVAI6FuaYeFXIUkOXHLu
+EdHUpuPalN18CqOLMVzv
+=LcQ5
+-----END PGP SIGNATURE-----
 
+--L+ytD9kXoSFEJYhc--
