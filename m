@@ -1,109 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965836Ab2FAWRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:17:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54305 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965791Ab2FAWQ5 (ORCPT
+	id S965821Ab2FAWRP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 18:17:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59533 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965792Ab2FAWQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:16:57 -0400
+	Fri, 1 Jun 2012 18:16:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Avik Sil <avik.sil@linaro.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>, Oleg Nesterov <oleg@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/15] perf script: Fix regression in callchain dso name
-Date: Fri,  1 Jun 2012 19:16:25 -0300
-Message-Id: <1338588999-32509-2-git-send-email-acme@infradead.org>
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Sunjin Yang <fan4326@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-perf-users@vger.kernel.org
+Subject: [GIT PULL 00/15] perf/urgent fixes
+Date: Fri,  1 Jun 2012 19:16:24 -0300
+Message-Id: <1338588999-32509-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1338588999-32509-1-git-send-email-acme@infradead.org>
-References: <1338588999-32509-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-MIME-Error: demime acl condition: double headers (content-type, content-disposition or content-transfer-encoding)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Ahern <dsahern@gmail.com>
+Hi Ingo,
 
-$ perf script -i /tmp/perf.data
-...
-gcc 13623 544315.062858: context-switches:
-    ffffffff815f65c9 __schedule ([kernel.kallsyms])
-    ffffffff81087cea __cond_resched ([kernel.kallsyms])
-    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
-    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
-    ffffffff815f8465 page_fault ([kernel.kallsyms])
-        2b7a71ea0303 _dl_lookup_symbol_x ([kernel.kallsyms])
-        2b7a71ea1eb5 _dl_relocate_object ([kernel.kallsyms])
-        2b7a71e99b2e dl_main ([kernel.kallsyms])
-        2b7a71eab7f4 _dl_sysdep_start ([kernel.kallsyms])
+	Please consider pulling, this is in addition to what already were in
+perf/urgent.
 
-All DSO's in a callchain are printed as [kernel.kallsyms].
+- Arnaldo
 
-git bisect chased it to:
+The following changes since commit 79695e1bb65ba0e21488c360a1bed6e358354aaa:
 
-547a92e0aedb88129e7fbd804697a11949de2e5a is the first bad commit
-commit 547a92e0aedb88129e7fbd804697a11949de2e5a
-Author: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Date:   Mon Jan 30 13:42:57 2012 +0900
+  perf stat: Initialize default events wrt exclude_{guest,host} (2012-05-30 14:02:38 -0300)
 
-    perf script: Unify the expressions indicating "unknown"
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
 
-    The perf script command uses various expressions to indicate "unknown".
+Arnaldo Carvalho de Melo (2):
+      perf tools: Fix make tarballs
+      perf tools: Make --version show kernel version instead of pull req tag
 
-    It is unfriendly for user scripts to parse it. So, this patch unifies
-    the expressions to "[unknown]".
+Avik Sil (1):
+      perf tools: Fix pager on minimal-install embedded systems
 
-Looks like a copy-paste in that the other references use al.map but this one
-should be node->map.
+David Ahern (2):
+      perf script: Fix regression in callchain dso name
+      perf tool: Build fix, remove duplicate declarations
 
-With this patch you get:
+Jiri Olsa (3):
+      perf symbols: Handle different endians properly during symbol load
+      perf session: Handle endianity swap on sample_id_all header data
+      perf evsel: Fix 32 bit values endianity swap for sample_id_all header
 
-$ perf script -i /tmp/perf.data
-...
-gcc 13623 544315.062858: context-switches:
-    ffffffff815f65c9 __schedule ([kernel.kallsyms])
-    ffffffff81087cea __cond_resched ([kernel.kallsyms])
-    ffffffff815f6b92 _cond_resched ([kernel.kallsyms])
-    ffffffff815fb87a do_page_fault ([kernel.kallsyms])
-    ffffffff815f8465 page_fault ([kernel.kallsyms])
-        2b7a71ea0303 _dl_lookup_symbol_x (/lib64/ld-2.14.90.so)
-        2b7a71ea1eb5 _dl_relocate_object (/lib64/ld-2.14.90.so)
-        2b7a71e99b2e dl_main (/lib64/ld-2.14.90.so)
-        2b7a71eab7f4 _dl_sysdep_start (/lib64/ld-2.14.90.so)
+Namhyung Kim (5):
+      perf callchain: Make callchain cursors TLS
+      perf tools: Check if callchain is corrupted
+      perf tools: Update ioctl documentation for PERF_IOC_FLAG_GROUP
+      perf evlist: Pass third argument to ioctl explicitly
+      perf: Remove duplicate invocation on perf_event_for_each
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1338353906-60706-1-git-send-email-dsahern@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/session.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Srikar Dronamraju (2):
+      perf symbols: Check for valid dso before creating map
+      perf uprobes: Remove unnecessary check before strlist__delete
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 93d355d..4820614 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1460,7 +1460,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
- 			}
- 			if (print_dso) {
- 				printf(" (");
--				map__fprintf_dsoname(al.map, stdout);
-+				map__fprintf_dsoname(node->map, stdout);
- 				printf(")");
- 			}
- 			printf("\n");
--- 
-1.7.1
-
+ include/linux/perf_event.h       |    4 +-
+ kernel/events/core.c             |    1 -
+ tools/perf/MANIFEST              |    2 +
+ tools/perf/builtin-report.c      |    2 +-
+ tools/perf/builtin-top.c         |    2 +-
+ tools/perf/design.txt            |    7 ++-
+ tools/perf/util/PERF-VERSION-GEN |    2 +-
+ tools/perf/util/callchain.c      |    2 +
+ tools/perf/util/callchain.h      |    2 +
+ tools/perf/util/evlist.c         |    6 ++-
+ tools/perf/util/evsel.c          |   29 +++++++++---
+ tools/perf/util/hist.c           |    7 ++-
+ tools/perf/util/hist.h           |    2 -
+ tools/perf/util/pager.c          |    4 ++
+ tools/perf/util/probe-event.c    |    8 +--
+ tools/perf/util/session.c        |   97 +++++++++++++++++++++++++++++--------
+ tools/perf/util/symbol.c         |   38 ++++++++++++++-
+ tools/perf/util/symbol.h         |   34 ++++++++++++-
+ tools/perf/util/util.h           |    6 +--
+ 19 files changed, 195 insertions(+), 60 deletions(-)
