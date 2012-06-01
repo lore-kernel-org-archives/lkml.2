@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab2FAExe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 00:53:34 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45504 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754524Ab2FAExd (ORCPT
+	id S1756426Ab2FAFGM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 01:06:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:42065 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101Ab2FAFGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 00:53:33 -0400
-X-AuditID: b753bd60-98902ba000007aa1-ca-4fc84aca228d
-X-AuditID: b753bd60-98902ba000007aa1-ca-4fc84aca228d
-Message-ID: <4FC84AC8.3020601@hitachi.com>
-Date: Fri, 01 Jun 2012 13:53:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 1 Jun 2012 01:06:10 -0400
+Date: Fri, 1 Jun 2012 14:06:01 +0900
+From: Tejun Heo <tj@kernel.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] block: avoid infinite loop in get_task_io_context()
+Message-ID: <20120601050601.GF32121@google.com>
+References: <4FC6189B.9080909@fusionio.com>
+ <1338402812.2760.413.camel@edumazet-glaptop>
+ <4FC66D3D.6080509@fusionio.com>
+ <1338404902.2760.451.camel@edumazet-glaptop>
+ <1338410107.2760.544.camel@edumazet-glaptop>
+ <1338460706.2760.1330.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, acme <acme@ghostprotocols.net>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH 1/5] ftrace: Synchronize variable setting with
- breakpoints
-References: <20120531012829.160060586@goodmis.org>  <20120531020440.476352979@goodmis.org> <1338462398.28384.52.camel@twins>  <1338473302.13348.336.camel@gandalf.stny.rr.com>  <1338486029.28384.93.camel@twins>  <1338486820.13348.366.camel@gandalf.stny.rr.com>  <1338487413.28384.103.camel@twins>  <1338490218.13348.379.camel@gandalf.stny.rr.com>  <1338491176.28384.114.camel@twins> <20120531195529.GA22976@Krystal>  <1338495006.13348.418.camel@gandalf.stny.rr.com>  <1338495969.28384.119.camel@twins>  <1338496676.13348.430.camel@gandalf.stny.rr.com>  <1338496857.28384.124.camel@twins> <1338497360.13348.438.camel@gandalf.stny.rr.com>
-In-Reply-To: <1338497360.13348.438.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338460706.2760.1330.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/01 5:49), Steven Rostedt wrote:
-> On Thu, 2012-05-31 at 22:40 +0200, Peter Zijlstra wrote:
->> On Thu, 2012-05-31 at 16:37 -0400, Steven Rostedt wrote:
->>> On Thu, 2012-05-31 at 22:26 +0200, Peter Zijlstra wrote:
->>>
->>>> Right, but when you loose stop-machine you could simply do 30k
->>>> kmap_atomic/kunmap_atomic's consecutively since you're not holding
->>>> anybody up.
->>>
->>> It requires 3 IPIs per update too. Thus that's 90,000 IPIs you are
->>> blasting^Wsending to all CPUs.
->>
->> Uhm, no. 
->>
-> 
-> ----------------------------------+
->> for_each() {			|
->>   kmap_atomic()			|
->>   frob int3			|
->>   kunmap_atomic();		|
->> }				|
->> 				|
->> sync-ipi-broadcast();		+--- Break points applied
->> 				|
->> for_each() {			|
->>   kmap_atomic();		|
->>   frob tail			|
->>   kunmap_atomic();		|
->> }				|
-> ----------------------------------+
-> 
-> Note, for the above time, the entire kernel has breakpoints added, and
-> every function is taking a hit due to it. By slowing down this process,
-> the rest of the system *will* be impacted. Ideally, we want to finish it
-> as quick as possible. Not to mention, the kmap_atomics will be slowed
-> down by the breakpoints that are attached to them.
+Hello, Eric, Jens.
 
-Hmm, why don't we have two text_poke interfaces for single and
-batch? As like dyn_ftrace, since modifying massive points takes
-a lot time, so we may have additional kconfig something like
-CONFIG_QUICK_BATCH_TEXT_POKE which switches text area to rw while
-batch text_poke.
+On Thu, May 31, 2012 at 12:38:26PM +0200, Eric Dumazet wrote:
+> [PATCH] block: avoid infinite loop in get_task_io_context()
+> 
+> Calling get_task_io_context() on a exiting task which isn't %current can
+> loop forever. This triggers at boot time on my dev machine.
+> 
+> BUG: soft lockup - CPU#3 stuck for 22s ! [mountall.1603]
+> 
+> Fix this by making create_task_io_context() returns -EBUSY in this case
+> to break the loop.
+> 
+> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Alan Cox <alan@linux.intel.com>
+> ---
+>  block/blk-ioc.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+> index 1e2d53b..893b800 100644
+> --- a/block/blk-ioc.c
+> +++ b/block/blk-ioc.c
+> @@ -235,6 +235,7 @@ void ioc_clear_queue(struct request_queue *q)
+>  int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
+>  {
+>  	struct io_context *ioc;
+> +	int ret;
+>  
+>  	ioc = kmem_cache_alloc_node(iocontext_cachep, gfp_flags | __GFP_ZERO,
+>  				    node);
+> @@ -262,9 +263,12 @@ int create_task_io_context(struct task_struct *task, gfp_t gfp_flags, int node)
+>  		task->io_context = ioc;
+>  	else
+>  		kmem_cache_free(iocontext_cachep, ioc);
+> +
+> +	ret = task->io_context ? 0 : -EBUSY;
+> +
+>  	task_unlock(task);
+>  
+> -	return 0;
+> +	return ret;
 
-Thank you,
+Ah, right.  This seems correct to me.
+
+FWIW-late-Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks. :)
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+tejun
