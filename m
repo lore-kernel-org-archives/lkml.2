@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760171Ab2FARjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:39:16 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39228 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759261Ab2FARjP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:39:15 -0400
+	id S965572Ab2FARnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:43:42 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47055 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759261Ab2FARnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 13:43:40 -0400
+Date: Fri, 1 Jun 2012 13:43:36 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: GIT PULL] ext4 updates for 3.5
+Message-ID: <20120601174336.GA15778@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com>
+ <CA+55aFwk8oYx8EKWdT=5cMTLK7RDz8GQdGmHk2KXwcCq+Bb8PA@mail.gmail.com>
+ <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120601165614.GJ30000@ZenIV.linux.org.uk>
-References: <20120601165614.GJ30000@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 1 Jun 2012 10:38:53 -0700
-X-Google-Sender-Auth: rvarG0adYsmGgWFp_L-IUn9AbnU
-Message-ID: <CA+55aFxcFKxY8f1-mQz68FX3Uax-i-FQ3Wj9=z+bUn0KxTCbHA@mail.gmail.com>
-Subject: Re: [git pull] vfs.git
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwwfMTN=WGQGmFO7DYeBUOGA7V4_6XueQS4JAzeykwn3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 9:56 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> There's a trivial conflict in Documentation/filesystems/vfs.txt - two
-> method prototypes added, one in mainline, one here.  With the obvious
-> conflict resolution...
+On Fri, Jun 01, 2012 at 10:19:33AM -0700, Linus Torvalds wrote:
+> So pulling 'ext4_for_linus' instead of 'dev' will get me the same
+> commits you asked me to pull, with the added tag information that your
+> pull request containes.
 
-Actually, it's one removed in mainline, one added by your pull.
+So I should do "git request-pull origin git://... ext4_for_linus" next
+time, right?
 
-What I'd *really* like to see is a kind of summary of what this pull
-does, though. Please? That way I can make the merge messages be a
-whole lot more informative.
+Sorry about that.  I thought it had included the reference to tag
+automatically since the text of the tag showed in the request-pull
+text.
 
-            Linus
+> Now I just wonder why your pull request said 'dev' at all.
+
+Because that was the name of the branch head that I used; sorry about
+that.
+
+							- Ted
