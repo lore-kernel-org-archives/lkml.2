@@ -1,160 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab2FABdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 31 May 2012 21:33:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:30695 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab2FABdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 31 May 2012 21:33:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="151126449"
-Date: Fri, 1 Jun 2012 09:33:48 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>,
-        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Ying Han <yinghan@google.com>, Greg Thelen <gthelen@google.com>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC -mm] memcg: prevent from OOM with too many dirty pages
-Message-ID: <20120601013348.GA7069@localhost>
-References: <20120529072853.GD1734@cmpxchg.org>
- <20120529084848.GC10469@localhost>
- <20120529093511.GE1734@cmpxchg.org>
- <20120529135101.GD15293@tiehlicka.suse.cz>
- <20120531151816.GA32252@localhost>
- <20120531153249.GD12809@tiehlicka.suse.cz>
- <20120531154248.GA32734@localhost>
- <20120531154859.GA20546@tiehlicka.suse.cz>
- <20120531160129.GA439@localhost>
- <20120531182509.GA22539@tiehlicka.suse.cz>
+	id S1753876Ab2FABgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 31 May 2012 21:36:19 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:38399 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab2FABgR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 31 May 2012 21:36:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120531182509.GA22539@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1337816857-14694-2-git-send-email-thomas.abraham@linaro.org>
+References: <1337816857-14694-1-git-send-email-thomas.abraham@linaro.org>
+	<1337816857-14694-2-git-send-email-thomas.abraham@linaro.org>
+Date: Fri, 1 Jun 2012 09:36:17 +0800
+Message-ID: <CACRpkdZDnFW4-bDsHN5BOr2e5NLGzouSBY7ngf-VsoPn-SyxAA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] pinctrl: add samsung pinctrl and gpiolib driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        kgene.kim@samsung.com, kyungmin.park@samsung.com, patches@linaro.org,
+        ext Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[restore CC list]
+On Thu, May 24, 2012 at 7:47 AM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
 
-On Thu, May 31, 2012 at 08:25:09PM +0200, Michal Hocko wrote:
-> On Fri 01-06-12 00:01:29, Fengguang Wu wrote:
-> > On Thu, May 31, 2012 at 05:49:00PM +0200, Michal Hocko wrote:
-> > > On Thu 31-05-12 23:42:48, Fengguang Wu wrote:
-> > > > On Thu, May 31, 2012 at 05:32:49PM +0200, Michal Hocko wrote:
-> > > > > JFYI: You might have missed https://lkml.org/lkml/2012/5/31/122 because
-> > > > > intel mail server returned with "we do not like shell scripts as a
-> > > > > attachment".
-> > > > 
-> > > > Yeah I did miss it.. A quick question: does the PageReclaim patch
-> > > > tested include the (priority < 3) test, or it's the originally posted
-> > > > patch?
-> > > 
-> > > It's the original patch.
-> > 
-> > OK, that's fine. I suspect even adding (priority < 3), it can help
-> > only some situations. In the others, the effect will be that writeback
-> > pages get accumulated in LRU until it starts to throttle page reclaims
-> > from both reads/writes. There will have to be some throttling somewhere.
-> 
-> Yes, I agree. But it could help at least sporadic "hey this is a PageReclaim"
-> issues. I just didn't like to push priority into shrink_page_list
-> without. The justification is quite hard.
+> diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
 
-Yeah priority is just a rule of thumb "there may be lots of
-dirty/writeback pages or other pressure if priority goes low". 
-And it's already been used this way in shrink_page_list().
+It would be nice if some DT person could review the bindings, but if
+nothing happens
+I will accept them as-is.
 
-Considering that it's also targeting for -stable merge, we do need
-a very strict condition to safeguard no regressions on other cases.
-This is also true for the wait_iff_congested() scheme.
+This driver is special since it seems to keep all pin, group and
+function information
+in the device tree, but not like Tony is doing it in pinctrl-simple,
+if I understand
+correctly?
 
-> > Subject: mm: pass __GFP_WRITE to memcg charge and reclaim routines
-> > 
-> > __GFP_WRITE will be tested in vmscan to find out the write tasks.
-> > 
-> > For good interactive performance, we try to focus dirty reclaim waits on
-> > them and avoid blocking unrelated tasks.
-> > 
-> > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> 
-> I will have a look at this one tomorrow with a clean head.
+> diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
+> new file mode 100644
+> index 0000000..480e2f0
+(...)
+> +/* reading pin pull up/down and driver strength settings not implemented */
+> +static int samsung_pinconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
+> +                                       unsigned long *config)
+> +{
+> +       return -ENOTSUPP;
+> +}
+> +
+> +/* reading pin pull up/down and driver strength settings not implemented */
+> +static int samsung_pinconf_group_get(struct pinctrl_dev *pctldev,
+> +                               unsigned int group, unsigned long *config)
+> +{
+> +       return -ENOTSUPP;
+> +}
 
-OK. The usage in my mind is
+I think we made these optional now, so you can just leave them undefined
+in the pinconf_ops.
 
-        if (PageWriteback(page) && PageReclaim(page))
-+               if ((sc->gfp_mask & __GFP_WAIT) || (priority < 3))
-                        do some dirty throttling
+> +static inline struct samsung_pinctrl_drv_data *samsung_pinctrl_get_driver_data(
+> +                               struct platform_device *pdev)
+> +{
+> +#ifdef CONFIG_OF
+> +       if (pdev->dev.of_node) {
+> +               int id;
+> +               const struct of_device_id *match;
+> +               const struct device_node *node = pdev->dev.of_node;
+> +
+> +               id = of_alias_get_id(pdev->dev.of_node, "pinctrl");
+> +               if (id < 0) {
+> +                       dev_err(&pdev->dev, "failed to get alias id\n");
+> +                       return NULL;
+> +               }
+> +               match = of_match_node(samsung_pinctrl_dt_match, node);
+> +               return (struct samsung_pinctrl_drv_data *)match->data + id;
+> +       }
+> +#endif
 
-But note that it only detects writes to new pages (ie. simple dd).
-Overwrites to already cached clean pages cannot be detected this way..
+You don't need this #ifdef because in Kconfig the driver already depends on
+OF so this is always available.
 
-Thanks,
-Fengguang
+> +/* driver data for various samsung soc's */
+> +#ifdef CONFIG_CPU_EXYNOS4210
+> +#define EXYNOS4210_PCTRL_DRVDATA (&exynos4210_pinctrl_drv_data)
+> +#else
+> +#define EXYNOS4210_PCTRL_DRVDATA (NULL)
+> +#endif /* CONFIG_CPU_EXYNOS4210 */
 
-> > ---
-> >  include/linux/gfp.h |    2 +-
-> >  mm/filemap.c        |   17 ++++++++++-------
-> >  2 files changed, 11 insertions(+), 8 deletions(-)
-> > 
-> > --- linux.orig/include/linux/gfp.h	2012-03-02 14:06:47.501765703 +0800
-> > +++ linux/include/linux/gfp.h	2012-03-02 14:07:39.921766949 +0800
-> > @@ -129,7 +129,7 @@ struct vm_area_struct;
-> >  /* Control page allocator reclaim behavior */
-> >  #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
-> >  			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
-> > -			__GFP_NORETRY|__GFP_NOMEMALLOC)
-> > +			__GFP_NORETRY|__GFP_NOMEMALLOC|__GFP_WRITE)
-> >  
-> >  /* Control slab gfp mask during early boot */
-> >  #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
-> > --- linux.orig/mm/filemap.c	2012-03-02 14:07:21.000000000 +0800
-> > +++ linux/mm/filemap.c	2012-03-02 14:07:53.709767277 +0800
-> > @@ -2339,23 +2339,26 @@ struct page *grab_cache_page_write_begin
-> >  	int status;
-> >  	gfp_t gfp_mask;
-> >  	struct page *page;
-> > -	gfp_t gfp_notmask = 0;
-> > +	gfp_t lru_gfp_mask = GFP_KERNEL;
-> >  
-> >  	gfp_mask = mapping_gfp_mask(mapping);
-> > -	if (mapping_cap_account_dirty(mapping))
-> > +	if (mapping_cap_account_dirty(mapping)) {
-> >  		gfp_mask |= __GFP_WRITE;
-> > -	if (flags & AOP_FLAG_NOFS)
-> > -		gfp_notmask = __GFP_FS;
-> > +		lru_gfp_mask |= __GFP_WRITE;
-> > +	}
-> > +	if (flags & AOP_FLAG_NOFS) {
-> > +		gfp_mask &= ~__GFP_FS;
-> > +		lru_gfp_mask &= ~__GFP_FS;
-> > +	}
-> >  repeat:
-> >  	page = find_lock_page(mapping, index);
-> >  	if (page)
-> >  		goto found;
-> >  
-> > -	page = __page_cache_alloc(gfp_mask & ~gfp_notmask);
-> > +	page = __page_cache_alloc(gfp_mask);
-> >  	if (!page)
-> >  		return NULL;
-> > -	status = add_to_page_cache_lru(page, mapping, index,
-> > -						GFP_KERNEL & ~gfp_notmask);
-> > +	status = add_to_page_cache_lru(page, mapping, index, lru_gfp_mask);
-> >  	if (unlikely(status)) {
-> >  		page_cache_release(page);
-> >  		if (status == -EEXIST)
-> 
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9    
-> Czech Republic
+Can you do this in some .h file instead?
+
+> +#ifdef CONFIG_OF
+
+You don't need this because in Kconfig the driver depends on OF
+already.
+
+> +static const struct of_device_id samsung_pinctrl_dt_match[] = {
+> +#ifdef CONFIG_CPU_EXYNOS4210
+> +       { .compatible = "samsung,pinctrl-exynos4210",
+> +               .data = (void *)exynos4210_pinctrl_drv_data },
+> +#endif /* CONFIG_CPU_EXYNOS4210 */
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, samsung_pinctrl_dt_match);
+> +#endif /* CONFIG_OF */
+
+So delete the closing #endif too.
+
+Yours,
+Linus Walleij
