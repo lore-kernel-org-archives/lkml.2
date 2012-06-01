@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab2FAIAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 04:00:24 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753767Ab2FAIAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 04:00:23 -0400
-Message-ID: <4FC8768E.1010703@nod.at>
-Date: Fri, 01 Jun 2012 10:00:14 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1758907Ab2FAIFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 04:05:15 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:36198 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758694Ab2FAIFA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 04:05:00 -0400
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: linux-mtd@lists.infradead.org, tglx@linutronix.de, dedekind1@gmail.com,
-        linux-kernel@vger.kernel.org, Heinz.Egger@linutronix.de,
-        tim.bird@am.sony.com
-Subject: Re: [PATCH] [RFC] UBI: Implement Fastmap support
-References: <1337771191-95358-1-git-send-email-richard@nod.at> <1337771191-95358-2-git-send-email-richard@nod.at> <4FC85780.9070200@intel.com>
-In-Reply-To: <4FC85780.9070200@intel.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBCA54CF66458531BF608E578"
+X-Originating-IP: [85.250.83.253]
+In-Reply-To: <1338473535-26957-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1338473535-26957-1-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 1 Jun 2012 11:04:40 +0300
+Message-ID: <CAK=WgbaM-3_rsJ=Tq_YK-HboAUxxpvgG6iFSYafuTbKE7Ss1Hg@mail.gmail.com>
+Subject: Re: [RFC] remoteproc: Add custom STE-modem firmware loader.
+To: sjur.brandeland@stericsson.com
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBCA54CF66458531BF608E578
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Sjur,
 
-Am 01.06.2012 07:47, schrieb Adrian Hunter:
-> It looks like, if you lose power at this point, the old fastmap may hav=
-e
-> been erased but the new fastmap has not been written.  That would mean
-> you lose the fastmap.  Is that correct?  I guess you need to write the
-> new fastmap first and then erase the old one.
+On Thu, May 31, 2012 at 5:12 PM,  <sjur.brandeland@stericsson.com> wrote:
+> OK, here is an early version of the STE-Modem firmware loader.
+> Haven't done the Makefile and Kconfig updates yet though.
 
-True. But why is this a problem?
-If we can recovers using a full scan after a power cut we are fine.
-By deleting the old fastmap after writing the new one we may run out of f=
-ree PEBs.
-E.g: Assume a fastmap needs 4 PEBs and we have only 2 PEBs available the =
-current approach works fine
-because after returning and deleting the old fastmap we have 6 PEBs avail=
-able and can write the new one.
+Thanks for posting this! I'll find the time to review this asap.
+
+> But I have one issue, I need the firmware image to be allocated
+> at the start of shared memory. But the vring gets allocated first.
+> I could work around this by calling dma_mark_declared_memory_occupied(),
+> from the driver and then call dma_release_from_coherent() before booting.
+> But this feels like a hack. Any ideas on how to handle this properly?
+
+One proper way to handle this is to allow platforms to provide
+separate memory regions for separate purposes by binding each memory
+region to a different per-purpose subdevices.
+
+This way remoteproc could then use the right device whenever it
+invokes the DMA API, and memory will then always be allocated from the
+expected region, without being affected by different allocation
+orders.
+
+Ludovic was working on a patch that does exactly that, and the zynq
+folks also need it, so the timing of your request looks perfect :)
 
 Thanks,
-//richard
-
-
---------------enigBCA54CF66458531BF608E578
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPyHaSAAoJEN9758yqZn9eq8gIAJTl1iwx6RZTaE1GW35sKAsW
-6tZV6ep+4kaDrhtsuAf3na88ng/nYNiyYmXCYw9QUr2KBDjbv8TE/9awrncZG/v2
-z8xuhXR697JSTW930whbsg0N9RAfJXCjuJSsw2LlffFvBWDQHaRq+v4VESMs2hDS
-TD8UZcVd5jb86jqjkpOyQ3D33/QY/IzrtS+tcr4/svbOjpXvbu/8wmdDQEzvJD7a
-aY9yiip7AV1qY8IiIwpd8t6WAsjCWeDeaIZNA9WvH/G7tn9ZbgihTs7TKtnWAbaS
-elighN35N7sPXPasbfnt/YHwPU8zE1vBLHwCqTgpoRuJaBPGHpBf8RgZUZssS0o=
-=N/qi
------END PGP SIGNATURE-----
-
---------------enigBCA54CF66458531BF608E578--
+Ohad.
