@@ -1,59 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758103Ab2FAJMp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:12:45 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:34662 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757867Ab2FAJMn convert rfc822-to-8bit (ORCPT
+	id S1755022Ab2FAJMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:12:10 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43518 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab2FAJMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:12:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1206010204150.8697@eggly.anvils>
-References: <20120530163317.GA13189@redhat.com> <20120531005739.GA4532@redhat.com>
- <20120601023107.GA19445@redhat.com> <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
- <4FC88299.1040707@gmail.com> <alpine.LSU.2.00.1206010204150.8697@eggly.anvils>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 1 Jun 2012 05:12:19 -0400
-Message-ID: <CAHGf_=q-VBqtABfC7cYPFY6AtQjjwHAM+0BD-DQ2G1sYoTPKGA@mail.gmail.com>
-Subject: Re: WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0x13a/0x170()
-To: Hugh Dickins <hughd@google.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Fri, 1 Jun 2012 05:12:07 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 04/27] smpboot, x86,
+ xen: Determine smp booting implementations at run-time
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>
+Date: Fri, 01 Jun 2012 14:41:19 +0530
+Message-ID: <20120601091056.31979.80669.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060109-2000-0000-0000-000007C516ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 5:08 AM, Hugh Dickins <hughd@google.com> wrote:
-> On Fri, 1 Jun 2012, KOSAKI Motohiro wrote:
->> >     mlock_migrate_page(newpage, page);
->> > --- 3.4.0+/mm/page-writeback.c      2012-05-29 08:09:58.304806782 -0700
->> > +++ linux/mm/page-writeback.c       2012-06-01 00:23:43.984116973 -0700
->> > @@ -1987,7 +1987,10 @@ int __set_page_dirty_nobuffers(struct pa
->> >             mapping2 = page_mapping(page);
->> >             if (mapping2) { /* Race with truncate? */
->> >                     BUG_ON(mapping2 != mapping);
->> > -                   WARN_ON_ONCE(!PagePrivate(page)&&
->> > !PageUptodate(page));
->> > +                   if (WARN_ON(!PagePrivate(page)&&
->> > !PageUptodate(page)))
->> > +                           print_symbol(KERN_WARNING
->> > +                               "mapping->a_ops->writepage: %s\n",
->> > +                               (unsigned
->> > long)mapping->a_ops->writepage);
->>
->> type mismatch?
->
-> I don't think so: I just copied from print_bad_pte().
-> Probably you're reading "printk" where it's "print_symbol"?
+x86 and xen use the smp_ops structure to determine their respective
+implementations of common functions at run-time, by registering appropriate
+function pointers at early boot. Hook on to this mechanism for generic smp
+booting implementation as well.
 
-Oops, yes, sorry for noise.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
+ arch/x86/include/asm/smp.h |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
->> I guess you want %pf or %pF.
->
-> I expect there is new-fangled %pMagic that can do it too, yes.
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index f483945..ac1f3eb 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -72,6 +72,10 @@ struct smp_ops {
+ 	void (*stop_other_cpus)(int wait);
+ 	void (*smp_send_reschedule)(int cpu);
+ 
++	void (*cpu_pre_starting)(void *arg);
++	void (*cpu_pre_online)(void *arg);
++	void (*cpu_post_online)(void *arg);
++
+ 	int (*cpu_up)(unsigned cpu, struct task_struct *tidle);
+ 	int (*cpu_disable)(void);
+ 	void (*cpu_die)(unsigned int cpu);
+@@ -115,6 +119,24 @@ static inline void smp_cpus_done(unsigned int max_cpus)
+ 	smp_ops.smp_cpus_done(max_cpus);
+ }
+ 
++static inline void __cpu_pre_starting(void *arg)
++{
++	smp_ops.cpu_pre_starting(arg);
++}
++#define __cpu_pre_starting	__cpu_pre_starting
++
++static inline void __cpu_pre_online(void *arg)
++{
++	smp_ops.cpu_pre_online(arg);
++}
++#define __cpu_pre_online	__cpu_pre_online
++
++static inline void __cpu_post_online(void *arg)
++{
++	smp_ops.cpu_post_online(arg);
++}
++#define __cpu_post_online	__cpu_post_online
++
+ static inline int __cpu_up(unsigned int cpu, struct task_struct *tidle)
+ {
+ 	return smp_ops.cpu_up(cpu, tidle);
+
