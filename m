@@ -1,184 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759215Ab2FAJOG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:14:06 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15606 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757974Ab2FAJOA (ORCPT
+	id S1759226Ab2FAJOg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:14:36 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52568 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759229Ab2FAJOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:14:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 01 Jun 2012 02:13:59 -0700
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-To: <swarren@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <olof@lixom.net>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>, <perex@perex.cz>,
-        <tiwai@suse.de>, <alsa-devel@alsa-project.org>
-Subject: [PATCH 8/9] ASoC: tegra: add clk_prepare/clk_unprepare
-Date: Fri, 1 Jun 2012 14:42:47 +0530
-Message-ID: <1338541968-7961-9-git-send-email-pgaikwad@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1338541968-7961-1-git-send-email-pgaikwad@nvidia.com>
-References: <1338541968-7961-1-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 1 Jun 2012 05:14:33 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 15/27] ia64, smpboot: Use generic SMP booting infrastructure
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Cc: rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>, linux-ia64@vger.kernel.org
+Date: Fri, 01 Jun 2012 14:43:43 +0530
+Message-ID: <20120601091337.31979.89266.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060109-3864-0000-0000-00000324746F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use clk_prepare/clk_unprepare as required by the generic clk framework.
+From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 
-This patch should go through Tegra tree since other patches to port Tegra
-to generic clock framework are dependent on it. Posting here to get ack from
-the maintainers.
+Convert ia64 to use the generic framework to boot secondary CPUs.
 
-Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+Notes:
+1. ia64 manipulates the cpu_online_mask under vector_lock. So, while
+converting over to the generic smp booting code, override arch_vector_lock()
+and arch_vector_unlock() appropriately.
+
+2. ia64 needs to enable interrupts before fully completing booting of
+secondary CPU (as explicitly mentioned in the comment above the call to
+ia64_sync_itc()). Luckily this won't pose much of a problem because it
+is in post-online stage (and hence CPU_STARTING notifications have been
+sent and cpu_online_mask is setup already) and moreover, we were going to
+enable the interrupts shortly anyway.
+
+Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-ia64@vger.kernel.org
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- sound/soc/tegra/tegra20_i2s.c      |    4 ++--
- sound/soc/tegra/tegra20_spdif.c    |    4 ++--
- sound/soc/tegra/tegra30_ahub.c     |    8 ++++----
- sound/soc/tegra/tegra30_i2s.c      |    4 ++--
- sound/soc/tegra/tegra_asoc_utils.c |   12 ++++++------
- 5 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/sound/soc/tegra/tegra20_i2s.c b/sound/soc/tegra/tegra20_i2s.c
-index 0c7af63..1647dbf 100644
---- a/sound/soc/tegra/tegra20_i2s.c
-+++ b/sound/soc/tegra/tegra20_i2s.c
-@@ -62,7 +62,7 @@ static int tegra20_i2s_runtime_suspend(struct device *dev)
+ arch/ia64/kernel/irq_ia64.c |   16 ++++++++++++++++
+ arch/ia64/kernel/smpboot.c  |   40 ++++++++++++++++++++++------------------
+ 2 files changed, 38 insertions(+), 18 deletions(-)
+
+diff --git a/arch/ia64/kernel/irq_ia64.c b/arch/ia64/kernel/irq_ia64.c
+index 6ac99c8..6a724f9 100644
+--- a/arch/ia64/kernel/irq_ia64.c
++++ b/arch/ia64/kernel/irq_ia64.c
+@@ -196,6 +196,22 @@ static void clear_irq_vector(int irq)
+ 	spin_unlock_irqrestore(&vector_lock, flags);
+ }
+ 
++/*
++ * We need to hold vector_lock while manipulating cpu_online_mask so that the
++ * set of online cpus does not change while we are assigning vectors to cpus
++ * (assign_irq_vector()). Holding this lock ensures we don't half assign or
++ * remove an irq from a cpu.
++ */
++void arch_vector_lock(void)
++{
++	spin_lock(&vector_lock);
++}
++
++void arch_vector_unlock(void)
++{
++	spin_unlock(&vector_lock);
++}
++
+ int
+ ia64_native_assign_irq_vector (int irq)
  {
- 	struct tegra20_i2s *i2s = dev_get_drvdata(dev);
- 
--	clk_disable(i2s->clk_i2s);
-+	clk_disable_unprepare(i2s->clk_i2s);
- 
- 	return 0;
- }
-@@ -72,7 +72,7 @@ static int tegra20_i2s_runtime_resume(struct device *dev)
- 	struct tegra20_i2s *i2s = dev_get_drvdata(dev);
- 	int ret;
- 
--	ret = clk_enable(i2s->clk_i2s);
-+	ret = clk_prepare_enable(i2s->clk_i2s);
- 	if (ret) {
- 		dev_err(dev, "clk_enable failed: %d\n", ret);
- 		return ret;
-diff --git a/sound/soc/tegra/tegra20_spdif.c b/sound/soc/tegra/tegra20_spdif.c
-index f9b5741..2262e4f 100644
---- a/sound/soc/tegra/tegra20_spdif.c
-+++ b/sound/soc/tegra/tegra20_spdif.c
-@@ -54,7 +54,7 @@ static int tegra20_spdif_runtime_suspend(struct device *dev)
+diff --git a/arch/ia64/kernel/smpboot.c b/arch/ia64/kernel/smpboot.c
+index 709ce07..0f00dc6 100644
+--- a/arch/ia64/kernel/smpboot.c
++++ b/arch/ia64/kernel/smpboot.c
+@@ -351,18 +351,10 @@ smp_setup_percpu_timer (void)
+ static void __cpuinit
+ smp_callin (void)
  {
- 	struct tegra20_spdif *spdif = dev_get_drvdata(dev);
+-	int cpuid, phys_id, itc_master;
+-	struct cpuinfo_ia64 *last_cpuinfo, *this_cpuinfo;
+-	extern void ia64_init_itm(void);
+-	extern volatile int time_keeper_id;
+-
+-#ifdef CONFIG_PERFMON
+-	extern void pfm_init_percpu(void);
+-#endif
++	unsigned int cpuid, phys_id;
  
--	clk_disable(spdif->clk_spdif_out);
-+	clk_disable_unprepare(spdif->clk_spdif_out);
+ 	cpuid = smp_processor_id();
+ 	phys_id = hard_smp_processor_id();
+-	itc_master = time_keeper_id;
  
- 	return 0;
- }
-@@ -64,7 +64,7 @@ static int tegra20_spdif_runtime_resume(struct device *dev)
- 	struct tegra20_spdif *spdif = dev_get_drvdata(dev);
- 	int ret;
+ 	if (cpu_online(cpuid)) {
+ 		printk(KERN_ERR "huh, phys CPU#0x%x, CPU#0x%x already present??\n",
+@@ -380,11 +372,21 @@ smp_callin (void)
  
--	ret = clk_enable(spdif->clk_spdif_out);
-+	ret = clk_prepare_enable(spdif->clk_spdif_out);
- 	if (ret) {
- 		dev_err(dev, "clk_enable failed: %d\n", ret);
- 		return ret;
-diff --git a/sound/soc/tegra/tegra30_ahub.c b/sound/soc/tegra/tegra30_ahub.c
-index 57cd419..1efb822 100644
---- a/sound/soc/tegra/tegra30_ahub.c
-+++ b/sound/soc/tegra/tegra30_ahub.c
-@@ -56,8 +56,8 @@ static int tegra30_ahub_runtime_suspend(struct device *dev)
- 	regcache_cache_only(ahub->regmap_apbif, true);
- 	regcache_cache_only(ahub->regmap_ahub, true);
+ 	/* Setup the per cpu irq handling data structures */
+ 	__setup_vector_irq(cpuid);
+-	notify_cpu_starting(cpuid);
+-	spin_lock(&vector_lock);
+-	set_cpu_online(cpuid, true);
+-	per_cpu(cpu_state, cpuid) = CPU_ONLINE;
+-	spin_unlock(&vector_lock);
++}
++
++void __cpuinit __cpu_post_online(void *unused)
++{
++	unsigned int cpuid, itc_master;
++	struct cpuinfo_ia64 *last_cpuinfo, *this_cpuinfo;
++	extern void ia64_init_itm(void);
++	extern volatile int time_keeper_id;
++
++#ifdef CONFIG_PERFMON
++	extern void pfm_init_percpu(void);
++#endif
++
++	cpuid = smp_processor_id();
++	itc_master = time_keeper_id;
  
--	clk_disable(ahub->clk_apbif);
--	clk_disable(ahub->clk_d_audio);
-+	clk_disable_unprepare(ahub->clk_apbif);
-+	clk_disable_unprepare(ahub->clk_d_audio);
+ 	smp_setup_percpu_timer();
  
- 	return 0;
- }
-@@ -77,12 +77,12 @@ static int tegra30_ahub_runtime_resume(struct device *dev)
+@@ -442,6 +444,12 @@ smp_callin (void)
+ int __cpuinit
+ start_secondary (void *unused)
  {
- 	int ret;
- 
--	ret = clk_enable(ahub->clk_d_audio);
-+	ret = clk_prepare_enable(ahub->clk_d_audio);
- 	if (ret) {
- 		dev_err(dev, "clk_enable d_audio failed: %d\n", ret);
- 		return ret;
- 	}
--	ret = clk_enable(ahub->clk_apbif);
-+	ret = clk_prepare_enable(ahub->clk_apbif);
- 	if (ret) {
- 		dev_err(dev, "clk_enable apbif failed: %d\n", ret);
- 		clk_disable(ahub->clk_d_audio);
-diff --git a/sound/soc/tegra/tegra30_i2s.c b/sound/soc/tegra/tegra30_i2s.c
-index 8596032..d308faa 100644
---- a/sound/soc/tegra/tegra30_i2s.c
-+++ b/sound/soc/tegra/tegra30_i2s.c
-@@ -62,7 +62,7 @@ static int tegra30_i2s_runtime_suspend(struct device *dev)
- 
- 	regcache_cache_only(i2s->regmap, true);
- 
--	clk_disable(i2s->clk_i2s);
-+	clk_disable_unprepare(i2s->clk_i2s);
- 
- 	return 0;
++	smpboot_start_secondary(unused);
++	return 0;
++}
++
++void __cpuinit __cpu_pre_starting(void *unused)
++{
+ 	/* Early console may use I/O ports */
+ 	ia64_set_kr(IA64_KR_IO_BASE, __pa(ia64_iobase));
+ #ifndef CONFIG_PRINTK_TIME
+@@ -449,11 +457,7 @@ start_secondary (void *unused)
+ #endif
+ 	efi_map_pal_code();
+ 	cpu_init();
+-	preempt_disable();
+ 	smp_callin();
+-
+-	cpu_idle();
+-	return 0;
  }
-@@ -72,7 +72,7 @@ static int tegra30_i2s_runtime_resume(struct device *dev)
- 	struct tegra30_i2s *i2s = dev_get_drvdata(dev);
- 	int ret;
  
--	ret = clk_enable(i2s->clk_i2s);
-+	ret = clk_prepare_enable(i2s->clk_i2s);
- 	if (ret) {
- 		dev_err(dev, "clk_enable failed: %d\n", ret);
- 		return ret;
-diff --git a/sound/soc/tegra/tegra_asoc_utils.c b/sound/soc/tegra/tegra_asoc_utils.c
-index 9515ce5..6872c77 100644
---- a/sound/soc/tegra/tegra_asoc_utils.c
-+++ b/sound/soc/tegra/tegra_asoc_utils.c
-@@ -69,9 +69,9 @@ int tegra_asoc_utils_set_rate(struct tegra_asoc_utils_data *data, int srate,
- 	data->set_baseclock = 0;
- 	data->set_mclk = 0;
- 
--	clk_disable(data->clk_cdev1);
--	clk_disable(data->clk_pll_a_out0);
--	clk_disable(data->clk_pll_a);
-+	clk_disable_unprepare(data->clk_cdev1);
-+	clk_disable_unprepare(data->clk_pll_a_out0);
-+	clk_disable_unprepare(data->clk_pll_a);
- 
- 	err = clk_set_rate(data->clk_pll_a, new_baseclock);
- 	if (err) {
-@@ -87,19 +87,19 @@ int tegra_asoc_utils_set_rate(struct tegra_asoc_utils_data *data, int srate,
- 
- 	/* Don't set cdev1/extern1 rate; it's locked to pll_a_out0 */
- 
--	err = clk_enable(data->clk_pll_a);
-+	err = clk_prepare_enable(data->clk_pll_a);
- 	if (err) {
- 		dev_err(data->dev, "Can't enable pll_a: %d\n", err);
- 		return err;
- 	}
- 
--	err = clk_enable(data->clk_pll_a_out0);
-+	err = clk_prepare_enable(data->clk_pll_a_out0);
- 	if (err) {
- 		dev_err(data->dev, "Can't enable pll_a_out0: %d\n", err);
- 		return err;
- 	}
- 
--	err = clk_enable(data->clk_cdev1);
-+	err = clk_prepare_enable(data->clk_cdev1);
- 	if (err) {
- 		dev_err(data->dev, "Can't enable cdev1: %d\n", err);
- 		return err;
--- 
-1.7.4.1
+ struct pt_regs * __cpuinit idle_regs(struct pt_regs *regs)
 
