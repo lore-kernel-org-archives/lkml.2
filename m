@@ -1,68 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759998Ab2FAOk0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 10:40:26 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38704 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758182Ab2FAOkZ (ORCPT
+	id S933362Ab2FAOlD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:41:03 -0400
+Received: from slapinbuild.ihdev.net ([46.4.202.25]:55466 "EHLO
+	build.ossfans.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932185Ab2FAOk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 10:40:25 -0400
-Date: Fri, 1 Jun 2012 15:40:22 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [RFC PATCH] ASoC: make snd_soc_dai_link more symmetrical
-Message-ID: <20120601144022.GV24139@opensource.wolfsonmicro.com>
-References: <1337991731-12149-1-git-send-email-swarren@wwwdotorg.org>
+	Fri, 1 Jun 2012 10:40:57 -0400
+Date: Fri, 1 Jun 2012 10:40:40 -0400
+From: Sergey Lapin <slapin@ossfans.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-x25@vger.kernel.org
+Subject: Re: [PATCH 2/2] lapb-nl: Added driver
+Message-ID: <20120601144040.GA24774@build.ihdev.net>
+References: <1338478278-24732-1-git-send-email-slapin@ossfans.org>
+ <1338478278-24732-2-git-send-email-slapin@ossfans.org>
+ <20120601145201.07a35cc3@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O9T4zNOkGnr0n+A/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1337991731-12149-1-git-send-email-swarren@wwwdotorg.org>
-X-Cookie: Q:	How do you keep a moron in suspense?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120601145201.07a35cc3@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 01, 2012 at 02:52:01PM +0100, Alan Cox wrote:
+> > +	  This driver allows UDP or NETLINK application to transfer data over
+> > +	  serial port using LAPB for delivery guarantee. This allows use LAPB
+> > +	  features without deploying full X.25 stack and use equipment, which
+> > +	  implements LAPB, but not X.25 framing, using custom protocol on top
+> > +	  of LAPB.
+> 
+> The netlink thing is a bit eccentric. I think I'd much rather see either
+> it using raw sockets or an AF_LAPB or similar (AF_X25, SOCK_RAW ?)
+Well, a protocol is very simple, I didn't want to make it into
+whole socket thing...
 
---O9T4zNOkGnr0n+A/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> 
+> > +	dev_info(&sl->netdev->dev, "rx\n");
+> 
+> Debug wants to go before submission or be turned down !
+Sorry about that, forgot to change this (and the following) to dev_dbg
+> 
+> 
+> > +int lapb_nl_ldisc_transmit(struct net_device *dev, u8 *data, size_t len)
+> > +{
+> > +	struct lapb_nl_ldisc *sl;
+> > +	int actual, count;
+> > +	BUG_ON(!dev);
+> 
+> How can that occur ?
 
-On Fri, May 25, 2012 at 06:22:11PM -0600, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
->=20
-> Prior to this patch, the CPU side of a DAI link was specified using a
-> single name. Often, this was the result of calling dev_name() on the
-> device providing the DAI, but in the case of a CPU DAI driver that
-> provided multiple DAIs, it needed to mix together both the device name
-> and some device-relative name, in order to form a single globally unique
-> name.
+This whole thing is ported from older (pre 2.6.30) kernels,
+that's from these days artefacts (including various checks),
+will remove. I even don't remember why these were added...
+> 
+> > +	sl = get_lapb_data(dev);
+> > +	BUG_ON(!sl);
+> > +	spin_lock(&sl->lock);
+> > +	if (sl->tty == NULL) {
+> > +		spin_unlock(&sl->lock);
+> > +		dev_err(&dev->dev, "lapb: tbusy drop\n");
+> 
+> What stops this changing during the transmit call ? You probably want to
+> grab a kref and drop it when the ldisc is closed. That would also negate
+> this meaningless check
+Ditto.
+> 
+> 
+> > +		return -ENOTTY;
+> > +	}
+> > +	count = lapb_esc(data, sl->xbuff, len);
+> > +
+> > +	/* Order of next two lines is *very* important.^S */
+> > +	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+> > +	actual = sl->tty->ops->write(sl->tty, sl->xbuff, count);
+> > +	dev_info(&sl->netdev->dev, "tx\n");
+> 
+> Again all the debug wants a tidy
+> > +
+> > +	print_hex_dump(KERN_INFO, "ldisc out:",
+> > +			DUMP_PREFIX_OFFSET, 16, 2, sl->xbuff,
+> > +			count, 0);
+> > +	sl->xleft = count - actual;
+> > +	sl->xhead = sl->xbuff + actual;
+> > +	/* VSV */
+> > +	clear_bit(SLF_OUTWAIT, &sl->flags);	/* reset outfill flag */
+> 
+> You seem to have copied this flag but not use it ?
+Sorry, another old artefact, will remove.
 
-Applied, thanks.
+> 
+> 
+> > +int lapb_nl_ldisc_start(struct net_device *dev)
+> > +{
+> > +	struct lapb_nl_ldisc *sl;
+> > +	unsigned long len;
+> > +	BUG_ON(!dev);
+> > +	sl = get_lapb_data(dev);
+> > +	BUG_ON(!sl);
+> > +	if (sl->tty == NULL)
+> > +		return -ENODEV;
+> 
+> Again the sl->tty locking needs sorting (I think this may well be true of
+> slip and the others too)
 
---O9T4zNOkGnr0n+A/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Could you please explain a bit more on this?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> 
+> 
+> > +static int lapb_ldisc_open(struct tty_struct *tty)
+> > +{
+> > +	struct net_device *netdev;
+> > +	struct lapb_nl_ldisc *sl;
+> > +	int ret;
+> > +	BUG_ON(!tty);
+> 
+> Can't happen
 
-iQIcBAEBAgAGBQJPyNRPAAoJEBus8iNuMP3dhPkP/1ozI/cemfZucUDcLeCyI6hw
-5gPJoE/Mzz4o0adaWB6wNXR3uNm0pQVS+M+NKqmdfVINQxbo3+G33ZSYwIFPUwZv
-+7N/xQhH7wDhGLEQ6XEnw7INRhrwQ6+W4zyM4dnH9pe71AF59A17+C2J0aLVV97a
-ianbaBI0PXWmpsvDgN6ustZ2iKd11flekNc0uCdPnUtQvJwNGv8qlyoF8RCG09/B
-PIMi1GUCLdYvabt9KSwey1P3GUjuHyBsdsJ4GLTft9fDw6HgLNpI0zmcgxlA8epb
-k3Kf7S5762f7oqLIxzPgUmz7TB6IDh/alN8gAzuKCN23EeV824fyqw9n9tGpafA2
-H6rgatyTC73jexUBLbuHGETnBo9idQuBg780xEtkhBrTnLj0zqk1Wtd28H9SytmF
-HG3WxJqw8Ff453K5f9hMEdxcBvRnCnj9gRC1V/puB6vyxBY1dOJkeyLW82YWwcsb
-sElvglv2UM/ABuUupqUnmv+7m0HFXvTKK+YRRUcHbIsYMgKMVBLvR5QyTyLhkvR+
-yJJVBo7nsE1reJHHb/lvH3bzRBWK2WKiwm1AfzCWq0BQY6v4wQy4F4SojC17LwU+
-av1kmgwSf0kW/TPuSCHQXClC2VWjMnDU7EPRuhWP33Nz6rFlQNpIaH43rwOtLS+f
-DDQFclV/kFhqNia0trY5
-=Ej9J
------END PGP SIGNATURE-----
+Will remove this one.
 
---O9T4zNOkGnr0n+A/--
+> 
+> > +	sl = kzalloc(sizeof(struct lapb_nl_ldisc), GFP_KERNEL);
+> 
+> What if the allocation fails
+> 
+> > +	sl->tty = tty;
+> 
+> kref
+> 
+> > +	sl->netdev = netdev;
+> > +	sl->magic = LAPB_LDISC_MAGIC;
+> > +	tty->disc_data = sl;
+> > +	tty->receive_room = 65536;
+> > +	tty_driver_flush_buffer(tty);
+> > +	tty_ldisc_flush(tty);
+> 
+> Why flush ?
+Problems occured a long time ago, will remove and check.
+> 
+> 
+> > +static int lapb_ldisc_ioctl(struct tty_struct *tty, struct file *file,
+> > +			    unsigned int cmd, unsigned long arg)
+> > +{
+> > +	struct lapb_nl_ldisc *sl = tty->disc_data;
+> > +	BUG_ON(!sl);
+> > +	dev_dbg(&sl->netdev->dev, "LAPB ldisc ioctl %04x\n", cmd);
+> > +
+> > +	/* First make sure we're connected. */
+> > +	if (!sl || sl->magic != LAPB_LDISC_MAGIC)
+> > +		return -EINVAL;
+> 
+> What locks this check ?
+> 
+> [Its safe because the tty mid layer has an ldisc ref of its own as far as
+> I can see but the check is still bogus and does nothing)
+
+Well, as I see, this whole bunch of checks needs cleaning.
+
+> 
+> > +	if (!sl->netdev)
+> > +		return -EBUSY;
+> > +
+> > +	switch (cmd) {
+> > +	case SIOCGIFNAME:
+> > +		if (copy_to_user((void __user *)arg,
+> > +			(void *)(sl->netdev->name),
+> > +			strlen(sl->netdev->name) + 1))
+> > +				return -EFAULT;
+> > +		return 0;
+> > +
+> > +	default:
+> > +		return tty_mode_ioctl(tty, file, cmd, arg);
+> > +	}
+> > +}
+> > +
+> > +#ifdef CONFIG_COMPAT
+> > +static long lapb_ldisc_compat_ioctl(struct tty_struct *tty, struct file *file,
+> > +				    unsigned int cmd, unsigned long arg)
+> > +{
+> > +	switch (cmd) {
+> > +	case SIOCGX25PARMS:
+> > +	case SIOCSX25PARMS:
+> > +		return lapb_ldisc_ioctl(tty, file, cmd,
+> > +				       (unsigned long)compat_ptr(arg));
+> 
+> Which will in turn call the default so this seems surplus ?
+Will remove COMPAT support or rewrite.
+
+> 
+> 
+> 
+> The big question to me is the API for it all, which looks marginally
+> insane. Is there a URL to the userspace for this lot that might help
+> folks work out where your API is actually sensible or if not what it
+> ought to look like.
+> 
+> Alan
+Well, API is quite simple, It is used by python code via specially crafted
+C library, will clean it up proprietary code and put on github soon.
+
+The whole thing is data packat transfer. Application is also notified when
+packet is delivered. That's it, no fancy stuff. There is also UDP code, but it is
+weird mess, and I think if it is to live or be removed. What do you think?
+
+Thanks a lot for review,
+S.
+
