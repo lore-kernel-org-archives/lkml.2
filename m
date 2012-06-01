@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759644Ab2FAM0j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 08:26:39 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41377 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759630Ab2FAM0g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 08:26:36 -0400
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [PATCH 5/5] vmevent: Rename one-shot mode to edge trigger mode
-Date: Fri,  1 Jun 2012 05:24:06 -0700
-Message-Id: <1338553446-22292-5-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <20120601122118.GA6128@lizard>
-References: <20120601122118.GA6128@lizard>
+	id S932988Ab2FAM0x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 08:26:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44950 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759583Ab2FAM0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 08:26:51 -0400
+Subject: Re: seq_file: Use larger buffer to reduce time traversing lists
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Al Viro <viro@zeniv.linux.org.uk>, nstraz@redhat.com
+In-Reply-To: <1338552626.2760.1510.camel@edumazet-glaptop>
+References: <1338547193.2708.16.camel@menhir>
+	 <1338552626.2760.1510.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 01 Jun 2012 13:24:46 +0100
+Message-ID: <1338553486.2708.25.camel@menhir>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VMEVENT_ATTR_STATE_ONE_SHOT is misleading name. That is effect as
-edge trigger shot, not only once.
+Hi,
 
-Suggested-by: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Suggested-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- include/linux/vmevent.h |    4 ++--
- mm/vmevent.c            |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+On Fri, 2012-06-01 at 14:10 +0200, Eric Dumazet wrote:
+> On Fri, 2012-06-01 at 11:39 +0100, Steven Whitehouse wrote:
+> > I've just been taking a look at the seq_read() code, since we've noticed
+> > that dumping files with large numbers of records can take some
+> > considerable time. This is due to seq_read() using a buffer which, at
+> > most is a single page in size, and that it has to find its place again
+> > on every call to seq_read(). That makes it rather inefficient.
+> > 
+> > As an example, I created a GFS2 filesystem with 100k inodes in it, and
+> > then ran ls -l to get a decent number of cached inodes. This result in
+> > there being approx 400k lines in the debugfs file containing GFS2's
+> > glocks. I then timed how long it takes to read this file:
+> > 
+> > [root@chywoon mnt]# time dd if=/sys/kernel/debug/gfs2/unity\:myfs/glocks
+> > of=/dev/null bs=1M
+> > 0+5769 records in
+> > 0+5769 records out
+> > 23273958 bytes (23 MB) copied, 63.3681 s, 367 kB/s
+> 
+> What time do you get if you do
+> 
+> time dd if=/sys/kernel/debug/gfs2/unity\:myfs/glocks of=/dev/null bs=4k
+> 
+Yes, you are right that it will be slow, still. But I'm not sure what we
+can do about that. We have to find our place again on each read call, in
+any case I think.
 
-diff --git a/include/linux/vmevent.h b/include/linux/vmevent.h
-index b8ec0ac..b1c4016 100644
---- a/include/linux/vmevent.h
-+++ b/include/linux/vmevent.h
-@@ -31,9 +31,9 @@ enum {
- 	 */
- 	VMEVENT_ATTR_STATE_VALUE_EQ	= (1UL << 2),
- 	/*
--	 * One-shot mode.
-+	 * Edge trigger mode.
- 	 */
--	VMEVENT_ATTR_STATE_ONE_SHOT	= (1UL << 3),
-+	VMEVENT_ATTR_STATE_EDGE_TRIGGER	= (1UL << 3),
- 
- 	__VMEVENT_ATTR_STATE_INTERNAL	= (1UL << 30) |
- 					  (1UL << 31),
-diff --git a/mm/vmevent.c b/mm/vmevent.c
-index e64a92d..46c1d18 100644
---- a/mm/vmevent.c
-+++ b/mm/vmevent.c
-@@ -104,7 +104,7 @@ static bool vmevent_match(struct vmevent_watch *watch)
- 			continue;
- 
- 		if (attr_lt || attr_gt || attr_eq) {
--			bool one_shot = state & VMEVENT_ATTR_STATE_ONE_SHOT;
-+			bool edge = state & VMEVENT_ATTR_STATE_EDGE_TRIGGER;
- 			u32 was_lt_mask = VMEVENT_ATTR_STATE_VALUE_WAS_LT;
- 			u32 was_gt_mask = VMEVENT_ATTR_STATE_VALUE_WAS_GT;
- 			u64 value = vmevent_sample_attr(watch, attr);
-@@ -117,7 +117,7 @@ static bool vmevent_match(struct vmevent_watch *watch)
- 			bool ret = false;
- 
- 			if (((attr_lt && lt) || (attr_gt && gt) ||
--					(attr_eq && eq)) && !one_shot)
-+					(attr_eq && eq)) && !edge)
- 				return true;
- 
- 			if (attr_eq && eq && was_eq) {
--- 
-1.7.9.2
+> This patch seems the wrong way to me.
+> 
+> seq_read(size = 1MB) should perform many copy_to_user() calls instead of a single one.
+> 
+> Instead of doing kmalloc(m->size <<= 1, GFP_KERNEL) each time we overflow the buffer,
+> we should flush its content to user space.
+> 
+> 
+> 
+
+Yes, I thought of that... there is a potential problem though. Is it
+valid to do a copy to user while between ->seq_start() and ->seq_stop()
+in general? These might be holding locks which may potentially be
+required during a page fault caused by the copy_to_user(). Thats not an
+issue in the GFS2 case, but I don't know if it is generally ok to do
+that. I assume that is why the results are buffered rather than being
+directly written to userspace anyway.
+
+As soon as we do a ->seq_stop, then we have to go through the whole list
+(assuming a list based data source) again to find our place :(
+
+Steve.
+
 
