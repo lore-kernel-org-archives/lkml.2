@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965963Ab2FAWxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:53:47 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45268 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965890Ab2FAWxo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:53:44 -0400
-Date: Fri, 01 Jun 2012 18:53:41 -0400 (EDT)
-Message-Id: <20120601.185341.1462375672682064314.davem@davemloft.net>
-To: srivatsa.bhat@linux.vnet.ibm.com
-Cc: sam@ravnborg.org, tglx@linutronix.de, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        yong.zhang0@gmail.com, akpm@linux-foundation.org,
-        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
-        vapier@gentoo.org, konrad@gaisler.com, tkhai@yandex.ru,
-        sparclinux@vger.kernel.org
-Subject: Re: [UPDATED PATCH 21/27] sparc32, smpboot: Use generic SMP
- booting infrastructure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4FC94693.5050707@linux.vnet.ibm.com>
-References: <20120601.135612.699120609738854050.davem@davemloft.net>
-	<20120601185448.GA19148@merkur.ravnborg.org>
-	<4FC94693.5050707@linux.vnet.ibm.com>
-X-Mailer: Mew version 6.5 on Emacs 24.0.95 / Mule 6.0 (HANACHIRUSATO)
+	id S965979Ab2FAW4K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 18:56:10 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:45356 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965958Ab2FAW4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 18:56:08 -0400
+Date: Fri, 1 Jun 2012 17:56:03 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, rja@americas.sgi.com
+Subject: Re: [PATCH] x86: Avoid intermixing cpu dump_stack output on multi-processor systems
+Message-ID: <20120601225603.GD24318@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20120524144229.GA27713@sgi.com> <20120529175352.GA31524@redhat.com> <20120529191935.GB29726@sgi.com> <20120529223923.GF32472@redhat.com> <20120529231135.GD4592@sgi.com> <20120529235407.GH32472@redhat.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120529235407.GH32472@redhat.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Sat, 02 Jun 2012 04:17:47 +0530
-
+On Tue, May 29, 2012 at 07:54:07PM -0400, Don Zickus wrote:
+> On Tue, May 29, 2012 at 06:11:35PM -0500, Russ Anderson wrote:
+> > > > In this case, I am just using the hardware NMI, which sends the NMI
+> > > > signal to each logical cpu.  Since each cpu receives the NMI at nearly
+> > > > the exact same time, they end up in dump_stack() at the same time.
+> > > > Without some form of locking, trace lines from different cpus end
+> > > > up intermixed, making it impossible to tell what any individual 
+> > > > cpu was doing.
+> > > 
+> > > I forgot the original reasons for having the NMI go to each CPU instead of
+> > > just the boot CPU (commit 78c06176), but it seems like if you revert that
+> > > patch and have the nmi handler just call trigger_all_cpu_backtrace()
+> > > instead (which does stack trace locking for pretty output), that would
+> > > solve your problem, no?  That locking is safe because it is only called in
+> > > the NMI context.
+> > 
+> > We want NMI to hit all the cpus at the same time to get a coherent
+> > snapshot of what is happening in the system at one point in time.
+> > Sending an IPI one cpu at a time skews the results, and doesn't 
 > 
-> Convert sparc32 to use the generic framework to boot secondary CPUs.
+> Oh, I thought it was broadcasting, but I see the apic_uv code serializes
+> it.  Though getting all those hardware locks in the nmi handler has to be
+> time consuming?  But I know you guys did some tricks to speed that up.
 > 
-> Notes:
-> While removing the call to cpu_idle(), we can also remove the call to
-> cpu_panic() because we are calling BUG() in the generic code anyway.
+> > really solve the problem of multiple cpus going into dump_stack()
+> > at the same time.  NMI isn't the only possible caller of dump_stack().
 > 
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> I am curious, your NMI handler has locking wrapped around dump_stack,
+> shouldn't that serialize the output the way you want it?  Why isn't that
+> working?
 
-Almost there, but not quite yet.
+Yes, you're right, it does.  It is working.  I'd forgotten that 
+the community kernel has uv_nmi_lock in uv_handle_nmi.  Must 
+be working too much with distro kernels.  :-)  But that doesn't
+help for all the other code paths than call dump_stack.
 
-You can't get rid of the cpu_panic invocations, those have to be there
-after the *_callin calls to catch if they accidently return.
+
+> > FWIW, "Wait for up to 10 seconds for all CPUs to do the backtrace" on
+> > a 4096 cpu system isn't long enough.  :-)
+> 
+> Good point. :-)
+> 
+> > 
+> > > Whereas the lock you are proposing can be called in a mixture of NMI and
+> > > IRQ which could cause deadlocks I believe.
+> > 
+> > Since this is a lock just around the dump_stack printk, would 
+> > checking for forward progress and a timeout to catch any possible
+> > deadlock be sufficient?  In the unlikely case of a deadlock the
+> > lock gets broken and some of the cpu backtraces get intermixed.
+> > That is still a huge improvement over the current case where 
+> > all of the backtraces get intermixed.
+> 
+> I saw your new patch based on Frederick's input.  It seems to take care of
+> deadlock situations though you run into the starving lock problem that
+> ticketed spinlocks solved.  Which is why I am curious why moving the
+> locking one layer up to the NMI handler (which is where it is currently),
+> didn't fix your problem.
+
+Locking in dump_stack would remove the need for uv_nmi_lock.
+
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
