@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760033Ab2FAPGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:06:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49120 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab2FAPGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:06:46 -0400
-Date: Fri, 1 Jun 2012 16:06:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linaro-mm-sig@lists.linaro.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-Subject: Re: [GIT PULL] CMA and ARM DMA-mapping updates for v3.5
-Message-ID: <20120601150621.GA9525@n2100.arm.linux.org.uk>
-References: <1337672417-10065-1-git-send-email-m.szyprowski@samsung.com> <20120529122932.GA24623@n2100.arm.linux.org.uk> <015e01cd3daa$6d910e50$48b32af0$%szyprowski@samsung.com>
+	id S1760068Ab2FAPHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:07:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40171 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758654Ab2FAPHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 11:07:21 -0400
+Message-ID: <4FC8DA8F.4070602@zytor.com>
+Date: Fri, 01 Jun 2012 08:06:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <015e01cd3daa$6d910e50$48b32af0$%szyprowski@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Borislav Petkov <bp@amd64.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, LKML <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 0/4] x86, CPU, AMD: Cleanup AMD-specific MSR-rw users
+References: <1338562358-28182-1-git-send-email-bp@amd64.org> <4FC8D766.1070700@zytor.com> <20120601145732.GA28216@aftab.osrc.amd.com>
+In-Reply-To: <20120601145732.GA28216@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 04:50:45PM +0200, Marek Szyprowski wrote:
-> Hello,
+On 06/01/2012 07:57 AM, Borislav Petkov wrote:
+> On Fri, Jun 01, 2012 at 07:53:26AM -0700, H. Peter Anvin wrote:
+>> Looks good.  This can be for 3.6, right (no immediate urgency)?
 > 
-> On Tuesday, May 29, 2012 2:30 PM Russell King - ARM Linux wrote:
+> None on arch/x86/ - simply correctness fixes.
 > 
-> > I notice we have new warnings as a result of CMA being merged, though
-> > thankfully they're just in Kconfig:
-> > 
-> > warning: (ARM) selects CMA which has unmet direct dependencies (HAVE_DMA_CONTIGUOUS &&
-> > HAVE_MEMBLOCK && EXPERIMENTAL)
-> > 
-> > This seems totally weird: you're mandating that ARM must have CMA
-> > selected, but it's an experimental feature?  So you're implying that
-> > the entire ARM kernel becomes totally experimental for the next
-> > release cycle?
-> > 
-> > I think this needs fixing.
+> And I'm assuming since you took Konrad's patch, there are no pending
+> issues for xen either.
 > 
-> No, that wasn't my intention. I will provide a patch which removes unconditional dependency
-> on CMA - it will let one to disable CMA and use old allocation method if needed, but this 
-> requires a few more changes in the dma-mapping implementation. I wasn't aware of the 
-> consequences and no one has complained about this since v15 of CMA patches (Aug 2011).
+> So yeah, this can wait for 3.6, IMHO.
+> 
 
-I've just been looking at the automatic build and boot logs, and CMA looks
-like it has the potential to cause regressions:
+Great!  Will queue up shortly.
 
-Linux version 3.4.0+ (rmk@rmk-PC.arm.linux.org.uk) (gcc version 4.3.5 (GCC) ) #1 PREEMPT Fri Jun 1 02:01:58 BST 2012
-CPU: ARMv7 Processor [411fc082] revision 2 (ARMv7), cr=10c53c7d
-CPU: PIPT / VIPT nonaliasing data cache, VIPT nonaliasing instruction cache
-Machine: OMAP LDP board
-vmalloc area is too big, limiting to 976MB
-Reserving 2097152 bytes SDRAM for VRAM
-cma: CMA: failed to reserve 16 MiB
-...
-Kernel command line: console=ttyO2,115200n8 noinitrd vmalloc=1G mem=128M root=/dev/mmcblk0p2 rw ip=none rootdelay=2 video=omap24xxfb:rotation=270
-...
-NET: Registered protocol family 16
-initlevel:2=postcore, 16 registered initcalls
-DMA: failed to allocate 256 KiB pool for atomic coherent allocation
+	-hpa
 
-I don't see any other failures, but that doesn't look good...
 
-Note that that command line has worked perfectly well up until now.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
