@@ -1,107 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759982Ab2FAOGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 10:06:05 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:30870
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759950Ab2FAOFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 10:05:18 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1202hzz8275bh8275dhz2dh668h839hd24he5bhf0ah)
-X-WSS-ID: 0M4XZ4G-02-3IR-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: <iommu@lists.linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH 1/2] iommu/amd: Cache pdev pointer to root-bridge
-Date: Fri, 1 Jun 2012 16:05:00 +0200
-Message-ID: <1338559501-15478-1-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1759976Ab2FAOJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:09:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21885 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758970Ab2FAOJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 10:09:50 -0400
+Date: Fri, 1 Jun 2012 10:09:43 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+Message-ID: <20120601140943.GB1732@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Cong Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org
+References: <20120530163317.GA13189@redhat.com>
+ <20120531005739.GA4532@redhat.com>
+ <20120601023107.GA19445@redhat.com>
+ <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At some point pci_get_bus_and_slot started to enable
-interrupts. Since this function is used in the
-amd_iommu_resume path it will enable interrupts on resume
-which causes a warning. The fix will use a cached pointer
-to the root-bridge to re-enable the IOMMU in case the BIOS
-is broken.
+On Fri, Jun 01, 2012 at 01:44:44AM -0700, Hugh Dickins wrote:
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- drivers/iommu/amd_iommu_init.c  |   13 +++++--------
- drivers/iommu/amd_iommu_types.h |    3 +++
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ > > 3f31d07571eeea18a7d34db9af21d2285b807a17 is the first bad commit
+ > > commit 3f31d07571eeea18a7d34db9af21d2285b807a17
+ > > Author: Hugh Dickins <hughd@google.com>
+ > > Date:   Tue May 29 15:06:40 2012 -0700
+ > > 
+ > >     mm/fs: route MADV_REMOVE to FALLOC_FL_PUNCH_HOLE
+ > >     
+ > >     Now tmpfs supports hole-punching via fallocate(), switch madvise_remove()
+ > >     to use do_fallocate() instead of vmtruncate_range(): which extends
+ > >     madvise(,,MADV_REMOVE) support from tmpfs to ext4, ocfs2 and xfs.
+ > > 
+ > > Hugh ?
+ > 
+ > Ow, you've caught me.
 
-diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
-index c567903..542024b 100644
---- a/drivers/iommu/amd_iommu_init.c
-+++ b/drivers/iommu/amd_iommu_init.c
-@@ -1029,6 +1029,9 @@ static int __init init_iommu_one(struct amd_iommu *iommu, struct ivhd_header *h)
- 	if (!iommu->dev)
- 		return 1;
+As I said in another mail, it looks like the bisect was wrong somewhere,
+as with this backed out I still see problems.
  
-+	iommu->root_pdev = pci_get_bus_and_slot(iommu->dev->bus->number,
-+						PCI_DEVFN(0, 0));
-+
- 	iommu->cap_ptr = h->cap_ptr;
- 	iommu->pci_seg = h->pci_seg;
- 	iommu->mmio_phys = h->mmio_phys;
-@@ -1323,20 +1326,16 @@ static void iommu_apply_resume_quirks(struct amd_iommu *iommu)
- {
- 	int i, j;
- 	u32 ioc_feature_control;
--	struct pci_dev *pdev = NULL;
-+	struct pci_dev *pdev = iommu->root_pdev;
- 
- 	/* RD890 BIOSes may not have completely reconfigured the iommu */
--	if (!is_rd890_iommu(iommu->dev))
-+	if (!is_rd890_iommu(iommu->dev) || !pdev)
- 		return;
- 
- 	/*
- 	 * First, we need to ensure that the iommu is enabled. This is
- 	 * controlled by a register in the northbridge
- 	 */
--	pdev = pci_get_bus_and_slot(iommu->dev->bus->number, PCI_DEVFN(0, 0));
--
--	if (!pdev)
--		return;
- 
- 	/* Select Northbridge indirect register 0x75 and enable writing */
- 	pci_write_config_dword(pdev, 0x60, 0x75 | (1 << 7));
-@@ -1346,8 +1345,6 @@ static void iommu_apply_resume_quirks(struct amd_iommu *iommu)
- 	if (!(ioc_feature_control & 0x1))
- 		pci_write_config_dword(pdev, 0x64, ioc_feature_control | 1);
- 
--	pci_dev_put(pdev);
--
- 	/* Restore the iommu BAR */
- 	pci_write_config_dword(iommu->dev, iommu->cap_ptr + 4,
- 			       iommu->stored_addr_lo);
-diff --git a/drivers/iommu/amd_iommu_types.h b/drivers/iommu/amd_iommu_types.h
-index 2452f3b..2435555 100644
---- a/drivers/iommu/amd_iommu_types.h
-+++ b/drivers/iommu/amd_iommu_types.h
-@@ -481,6 +481,9 @@ struct amd_iommu {
- 	/* Pointer to PCI device of this IOMMU */
- 	struct pci_dev *dev;
- 
-+	/* Cache pdev to root device for resume quirks */
-+	struct pci_dev *root_pdev;
-+
- 	/* physical address of MMIO space */
- 	u64 mmio_phys;
- 	/* virtual address of MMIO space */
--- 
-1.7.9.5
+ > One half of the patch at the bottom should fix that: I'm not sure that
+ > it's the fix we actually want (a mapping_cap_account_dirty test might
+ > be more appropriate, but it's easier just to test a page flag here);
+ > but it should be good to shed more light on the problem.
 
+I'll give the patch a try anyway, as builds are quick on that box.
 
+ > So I'm wondering if your trinity fuzzer happens to succeed a lot more
+ > often on madvise MADV_REMOVEs than fallocate FALLOC_FL_PUNCH_HOLEs, and
+ > the bug you converged on is not in tmpfs, but in ext4 (or xfs? or ocfs2?),
+ > which began to support MADV_REMOVE with that commit.
+
+ext4 is a possibility.
+ 
+ > So the second half of the patch should show which filesystem's page is
+ > involved when you hit the WARN_ON - unless the first half of the patch
+ > turns out to stop the warnings completely, in which case I need to think
+ > harder about what was going on in tmpfs, and whether it matters.
+ > 
+ > Or another possibility is that the bad commit doesn't actually touch mm
+ > at all: you were doing a bisection just on mm/ changes, weren't you?
+
+oh, good point. It hadn't occured to me that this could be fs related.
+The mm-heavy stack-trace may have misled me.
+
+ > > Sometimes during the bisect these errors happened
+ > > in pairs, sometimes only together.
+ > 
+ > Sometimes in pairs, sometimes together?  I don't understand.
+
+beware late-night emails. I meant sometimes I saw both the list-debug's and the WARN,
+but other times I saw only one or the other.
+
+ > Please give this patch a try (preferably on current git), and let us know.
+ 
+Will do.
+
+	Dave
