@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759608Ab2FAMiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 08:38:14 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:37537 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab2FAMiN convert rfc822-to-8bit (ORCPT
+	id S1759647Ab2FAMsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 08:48:18 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46804 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754739Ab2FAMsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 08:38:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120601104925.5135263c@kryten>
-References: <20120601104925.5135263c@kryten>
-Date: Fri, 1 Jun 2012 21:38:13 +0900
-Message-ID: <CAC5umygk+KnmkQ5O-YV+5a_rEyPbRvK6nkipJiw4Hg8uXXGHQA@mail.gmail.com>
-Subject: Re: [PATCH] fault-inject: Avoid call to random32() if fault injection
- is disabled
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Jun 2012 08:48:16 -0400
+Subject: Re: seq_file: Use larger buffer to reduce time traversing lists
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
+        Al Viro <viro@zeniv.linux.org.uk>, nstraz@redhat.com
+In-Reply-To: <1338553486.2708.25.camel@menhir>
+References: <1338547193.2708.16.camel@menhir>
+	 <1338552626.2760.1510.camel@edumazet-glaptop>
+	 <1338553486.2708.25.camel@menhir>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jun 2012 14:48:10 +0200
+Message-ID: <1338554890.2760.1517.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/1 Anton Blanchard <anton@samba.org>:
->
-> After enabling CONFIG_FAILSLAB I noticed random32 in profiles even
-> if slub fault injection wasn't enabled at runtime.
->
-> should_fail forces a comparison against random32() even if
-> probability is 0:
->
->        if (attr->probability <= random32() % 100)
->                return false;
->
-> Add a check up front for probability == 0 and avoid all of the more
-> complicated checks.
->
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> ---
->
-> Index: linux-build/lib/fault-inject.c
-> ===================================================================
-> --- linux-build.orig/lib/fault-inject.c 2012-02-11 21:22:32.303459860 +1100
-> +++ linux-build/lib/fault-inject.c      2012-02-11 22:38:10.470977505 +1100
-> @@ -101,6 +101,10 @@ static inline bool fail_stacktrace(struc
->
->  bool should_fail(struct fault_attr *attr, ssize_t size)
->  {
-> +       /* No need to check any other properties if the probability is 0 */
-> +       if (attr->probability == 0)
-> +               return false;
-> +
->        if (attr->task_filter && !fail_task(attr, current))
->                return false;
->
+On Fri, 2012-06-01 at 13:24 +0100, Steven Whitehouse wrote:
 
-Looks good to me.
+> Yes, you are right that it will be slow, still. But I'm not sure what we
+> can do about that. We have to find our place again on each read call, in
+> any case I think.
 
-Acked-by: Akinobu Mita <akinobu.mita@gmail.com>
+You dont really answer my question, I asked the exact timing...
+
+I can't reproduce this slow behavior you have, using /proc/net seq
+files.
+
+Isn't it a problem with this particular file ?
+
+Does it want to output a single record ( m->op->show(m, p) ) much larger
+than 4KB ?
+
+
+
