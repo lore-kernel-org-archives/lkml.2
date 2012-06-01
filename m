@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964920Ab2FAPdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 11:33:37 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38863 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756067Ab2FAPdg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 11:33:36 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chris Rattray <crattray@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm8994: Support for user defined irq flags
-Date: Fri,  1 Jun 2012 16:33:19 +0100
-Message-Id: <1338564800-20936-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	id S964924Ab2FAPgg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 11:36:36 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:42794 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759952Ab2FAPgf convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:15:2>);
+	Fri, 1 Jun 2012 11:36:35 -0400
+Message-Id: <4FC8FD9C0200007800087DF5@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 01 Jun 2012 16:36:28 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Russell King" <linux@arm.linux.org.uk>, <yong.zhang0@gmail.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>, <peterz@infradead.org>,
+        <mingo@kernel.org>, <x86@kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>, <akpm@linux-foundation.org>,
+        <nikunj@linux.vnet.ibm.com>, <paulmck@linux.vnet.ibm.com>,
+        <vatsa@linux.vnet.ibm.com>,
+        <virtualization@lists.linux-foundation.org>,
+        <xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
+        "Ingo Molnar" <mingo@redhat.com>, <rusty@rustcorp.com.au>,
+        <rjw@sisk.pl>, <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, "Keir Fraser" <keir@xen.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH 05/27] xen, cpu hotplug: Don't call
+ cpu_bringup() in xen_play_dead()
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+ <20120601091124.31979.91984.stgit@srivatsabhat.in.ibm.com>
+ <4FC8D8E30200007800087D2B@nat28.tlf.novell.com>
+ <4FC8DC19.4000007@linux.vnet.ibm.com>
+In-Reply-To: <4FC8DC19.4000007@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Rattray <crattray@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm8994-irq.c         |   10 +++++++++-
- include/linux/mfd/wm8994/pdata.h |    1 +
- 2 files changed, 10 insertions(+), 1 deletion(-)
+>>> On 01.06.12 at 17:13, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+wrote:
+> On 06/01/2012 06:29 PM, Jan Beulich wrote:
+> 
+>>>>> On 01.06.12 at 11:11, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+>> wrote:
+>>> xen_play_dead calls cpu_bringup() which looks weird, because xen_play_dead()
+>>> is invoked in the cpu down path, whereas cpu_bringup() (as the name 
+>>> suggests) is useful in the cpu bringup path.
+>> 
+>> This might not be correct - the code as it is without this change is
+>> safe even when the vCPU gets onlined back later by an external
+>> entity (e.g. the Xen tool stack), and it would in that case resume
+>> at the return point of the VCPUOP_down hypercall. That might
+>> be a heritage from the original XenoLinux tree though, and be
+>> meaningless in pv-ops context - Jeremy, Konrad?
+>> 
+>> Possibly it was bogus/unused even in that original tree - Keir?
+>>
+> 
+> 
+> Thanks for your comments Jan!
+> 
+> In case this change is wrong, the other method I had in mind was to call
+> cpu_bringup_and_idle() in xen_play_dead(). (Even ARM does something similar,
+> in the sense that it runs the cpu bringup code including cpu_idle(), in the
+> cpu offline path, namely the cpu_die() function). Would that approach work
+> for xen as well? If yes, then we wouldn't have any issues to convert xen to
+> generic code.
 
-diff --git a/drivers/mfd/wm8994-irq.c b/drivers/mfd/wm8994-irq.c
-index f1837f6..0aac4af 100644
---- a/drivers/mfd/wm8994-irq.c
-+++ b/drivers/mfd/wm8994-irq.c
-@@ -21,6 +21,7 @@
- #include <linux/regmap.h>
- 
- #include <linux/mfd/wm8994/core.h>
-+#include <linux/mfd/wm8994/pdata.h>
- #include <linux/mfd/wm8994/registers.h>
- 
- #include <linux/delay.h>
-@@ -139,6 +140,8 @@ static struct regmap_irq_chip wm8994_irq_chip = {
- int wm8994_irq_init(struct wm8994 *wm8994)
- {
- 	int ret;
-+	unsigned long irqflags;
-+	struct wm8994_pdata *pdata = wm8994->dev->platform_data;
- 
- 	if (!wm8994->irq) {
- 		dev_warn(wm8994->dev,
-@@ -147,8 +150,13 @@ int wm8994_irq_init(struct wm8994 *wm8994)
- 		return 0;
- 	}
- 
-+	/* select user or default irq flags */
-+	irqflags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT;
-+	if (pdata->irq_flags)
-+		irqflags = pdata->irq_flags;
-+
- 	ret = regmap_add_irq_chip(wm8994->regmap, wm8994->irq,
--				  IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-+				  irqflags,
- 				  wm8994->irq_base, &wm8994_irq_chip,
- 				  &wm8994->irq_data);
- 	if (ret != 0) {
-diff --git a/include/linux/mfd/wm8994/pdata.h b/include/linux/mfd/wm8994/pdata.h
-index 893267b..f0361c0 100644
---- a/include/linux/mfd/wm8994/pdata.h
-+++ b/include/linux/mfd/wm8994/pdata.h
-@@ -141,6 +141,7 @@ struct wm8994_pdata {
- 	struct wm8994_ldo_pdata ldo[WM8994_NUM_LDO];
- 
- 	int irq_base;  /** Base IRQ number for WM8994, required for IRQs */
-+	unsigned long irq_flags; /** user irq flags */
- 
-         int num_drc_cfgs;
-         struct wm8994_drc_cfg *drc_cfgs;
--- 
-1.7.10
+No, that wouldn't work either afaict - the function is expected
+to return.
+
+Jan
 
