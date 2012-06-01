@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754973Ab2FAEge (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 00:36:34 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63695 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab2FAEgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 00:36:33 -0400
-Message-ID: <4FC846CC.20801@linaro.org>
-Date: Fri, 01 Jun 2012 12:36:28 +0800
-From: Lee Jones <lee.jones@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1755412Ab2FAEgz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 00:36:55 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:42026 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755004Ab2FAEgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 00:36:38 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: Re: [PATCH 5/9] blackfin: A couple of task->mm handling fixes
+Date: Fri, 1 Jun 2012 00:36:35 -0400
+User-Agent: KMail/1.13.7 (Linux/3.4.0; KDE/4.6.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Richard Weinberger <richard@nod.at>, Paul Mundt <lethal@linux-sh.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        John Stultz <john.stultz@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org, user-mode-linux-devel@lists.sourceforge.net,
+        linaro-kernel@lists.linaro.org, patches@linaro.org, linux-mm@kvack.org
+References: <20120423070641.GA27702@lizard> <20120423070901.GE30752@lizard>
+In-Reply-To: <20120423070901.GE30752@lizard>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Mattias WALLIN <mattias.wallin@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
- Device Tree
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org> <1338353260-10097-9-git-send-email-lee.jones@linaro.org> <CACRpkdbQv8Q07iRAmG3UQRm7UNDi_Y+s_vvACDKKxR9tg+1iqg@mail.gmail.com> <20120530100302.GD9947@opensource.wolfsonmicro.com> <CAF2Aj3gZMF9ev9B46rBM+aY-srwthef09ad2CWfuXXFHmqqAjA@mail.gmail.com> <20120530121547.GJ9947@opensource.wolfsonmicro.com> <4FC63632.4030504@linaro.org> <20120530151119.GN9947@opensource.wolfsonmicro.com> <4FC63B39.6040905@linaro.org> <20120530164152.GP9947@opensource.wolfsonmicro.com>
-In-Reply-To: <20120530164152.GP9947@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed;
+  boundary="nextPart4094434.0m95qSk5yE";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206010036.40468.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/05/12 00:41, Mark Brown wrote:
-> On Wed, May 30, 2012 at 11:22:33PM +0800, Lee Jones wrote:
->> On 30/05/12 23:11, Mark Brown wrote:
->
->>>> 	vin-supply =<&db8500_vape_reg>;
->>>> 	vmmc-supply =<&ab8500_ldo_aux2_reg>;
->
->>> Oh, oops.  This is going to be fun when someone puts down two of the
->>> same PMIC on a system...
->
->> What does that mean sorry?
->
-> Lots of regulators are using this mechanism for identifying child nodes.
-> If the node name is also used as a handle by other things to reference
-> the regulator then if you have two PMICs of the same type DTC isn't
-> going to be able to figure out which node you mean.
+--nextPart4094434.0m95qSk5yE
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Yes, so it doesn't look like this is an issue.
+On Monday 23 April 2012 03:09:01 Anton Vorontsov wrote:
+> 1. Working with task->mm w/o getting mm or grabing the task lock is
+>    dangerous as ->mm might disappear (exit_mm() assigns NULL under
+>    task_lock(), so tasklist lock is not enough).
 
-This:
+that isn't a problem for this code as it specifically checks if it's in an=
+=20
+atomic section.  if it is, then task->mm can't go away on us.
 
-> sdi@80126000 {
->          vmmc-supply = <&ab8500_ldo_aux3_reg>;
-> };
+>    We can't use get_task_mm()/mmput() pair as mmput() might sleep,
+>    so we have to take the task lock while handle its mm.
 
-Is the same as, and will cause no more issues than:
+if we're not in an atomic section, then sleeping is fine.
 
-> static struct regulator_consumer_supply ab8500_vaux3_consumers[] = {
->         REGULATOR_SUPPLY("vmmc", "sdi0"),
-> };
+> 2. Checking for process->mm is not enough because process' main
+>    thread may exit or detach its mm via use_mm(), but other threads
+>    may still have a valid mm.
 
-... because only nodes which we care about (dictated by compatible 
-declaration protections) will be parsed. So different platforms will not 
-affect each other.
+i don't think it matters for this code (per the reasons above).
 
-Kind regards,
-Lee
+>    To catch this we use find_lock_task_mm(), which walks up all
+>    threads and returns an appropriate task (with task lock held).
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-M: +44 77 88 633 515
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+certainly fine for the non-atomic code path.  i guess we'll notice in crash=
+es=20
+if it causes a problem in atomic code paths as well.
+=2Dmike
+
+--nextPart4094434.0m95qSk5yE
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJPyEbYAAoJEEFjO5/oN/WBjkMP/jWhBHloIwNx3O8WdCb7Jkeb
+oKrprqZwAeiXIZdZz4ENCnxaVidCjzIhkmuRyCyqTGK89Qwz2EDP7mwmIstn88eQ
+XZn77Psp8Qa4F8ZmycV2u+rhqrZK+zybSNNuk05V7K5NrSXPDBSFCYnN0K0svApX
+bG4nRGqPE7gOfHDh62h+r7MIfdCavXgp66xm3cUJ8gDzWCsN8+epSJK/Oh/J8L9b
+FESfd6zyN25ij8+j6K8pY1n0HFBsSCgWFKgz41DDALeNxAspC9Fsn4fjeA8NnpQ6
+6K1COIvAcaQ6zcZlzjcn1igjGCpvkLoXT1nLGuN9cFr/H2JJ5kxxGhQ25I25Voxx
+cPiGjGqTAsl5+PavwNlt6q+dUHT04hdKcJmFad3LJneDmKVw9D/UGY21WWzu7vTP
+ZLotT0ntVjr/Cuqt0J3iBMxUdq2tncWrpXD4cr/TJvvALKXgLQTaO6iVMiptDYVq
+HtSnThyOfplo8vu/l7kYiYPzlGO/uccOrw5kk6lOCokzzzwGZwV+urrDffvH2iWz
++OimgpLcSg8qoqDBQqb3qg5elIbroAcbSfHRDMs6c4Ld9iUcyNyjxJPQDvdU9Hyl
+qJve50YbbUEgcxGQTsVKuzWkrajjeCCQCabGiiHIlLPOSr5nK10WTGTXQVUTivt2
+bZv1rSS6aLk4w6YM4TVm
+=GWQm
+-----END PGP SIGNATURE-----
+
+--nextPart4094434.0m95qSk5yE--
