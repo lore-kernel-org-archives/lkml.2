@@ -1,211 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab2FAOlD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 10:41:03 -0400
-Received: from slapinbuild.ihdev.net ([46.4.202.25]:55466 "EHLO
-	build.ossfans.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab2FAOk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 10:40:57 -0400
-Date: Fri, 1 Jun 2012 10:40:40 -0400
-From: Sergey Lapin <slapin@ossfans.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-x25@vger.kernel.org
-Subject: Re: [PATCH 2/2] lapb-nl: Added driver
-Message-ID: <20120601144040.GA24774@build.ihdev.net>
-References: <1338478278-24732-1-git-send-email-slapin@ossfans.org>
- <1338478278-24732-2-git-send-email-slapin@ossfans.org>
- <20120601145201.07a35cc3@pyramind.ukuu.org.uk>
+	id S933377Ab2FAOsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 10:48:18 -0400
+Received: from void.printf.net ([89.145.121.20]:34824 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933337Ab2FAOsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 10:48:17 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: "Torne \(Richard Coles\)" <torne@google.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linus.walleij@linaro.org,
+        jh80.chung@samsung.com, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] MMC: core: cap MMC card timeouts at 2 seconds.
+In-Reply-To: <4FC8BCA0.1000207@intel.com> (Adrian Hunter's message of "Fri, 01
+	Jun 2012 15:59:12 +0300")
+References: <1338226278-13336-1-git-send-email-torne@google.com>
+	<1338258732.20487.171.camel@deadeye> <4FC87EEA.5010707@intel.com>
+	<CAEV-rjcFx_+Zs+1K5rxapx7ngDkArEKSV8tDubbVL+BfYLDU5Q@mail.gmail.com>
+	<CAEV-rjfkcoEc-4VmMS-wQburo5tZZVDemzHk8LyKGhuLfFnSng@mail.gmail.com>
+	<4FC894E6.7090000@intel.com>
+	<CAEV-rjc0i5i3nU+VgkY3-mF_ndtSzzp8vk7622C9WCNsfcRP+A@mail.gmail.com>
+	<4FC8BCA0.1000207@intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+Date: Fri, 01 Jun 2012 10:48:14 -0400
+Message-ID: <87pq9jhyvl.fsf@laptop.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601145201.07a35cc3@pyramind.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 02:52:01PM +0100, Alan Cox wrote:
-> > +	  This driver allows UDP or NETLINK application to transfer data over
-> > +	  serial port using LAPB for delivery guarantee. This allows use LAPB
-> > +	  features without deploying full X.25 stack and use equipment, which
-> > +	  implements LAPB, but not X.25 framing, using custom protocol on top
-> > +	  of LAPB.
-> 
-> The netlink thing is a bit eccentric. I think I'd much rather see either
-> it using raw sockets or an AF_LAPB or similar (AF_X25, SOCK_RAW ?)
-Well, a protocol is very simple, I didn't want to make it into
-whole socket thing...
+Hi,
 
-> 
-> > +	dev_info(&sl->netdev->dev, "rx\n");
-> 
-> Debug wants to go before submission or be turned down !
-Sorry about that, forgot to change this (and the following) to dev_dbg
-> 
-> 
-> > +int lapb_nl_ldisc_transmit(struct net_device *dev, u8 *data, size_t len)
-> > +{
-> > +	struct lapb_nl_ldisc *sl;
-> > +	int actual, count;
-> > +	BUG_ON(!dev);
-> 
-> How can that occur ?
+On Fri, Jun 01 2012, Adrian Hunter wrote:
+> I just noticed that from linux 3.4, the SD write timeout is now 3 seconds
+> triggering the sdhci driver warning on every write on every SD card.
+> So change pr_warning to DGB in sdhci_calc_timeout().  Chris?
 
-This whole thing is ported from older (pre 2.6.30) kernels,
-that's from these days artefacts (including various checks),
-will remove. I even don't remember why these were added...
-> 
-> > +	sl = get_lapb_data(dev);
-> > +	BUG_ON(!sl);
-> > +	spin_lock(&sl->lock);
-> > +	if (sl->tty == NULL) {
-> > +		spin_unlock(&sl->lock);
-> > +		dev_err(&dev->dev, "lapb: tbusy drop\n");
-> 
-> What stops this changing during the transmit call ? You probably want to
-> grab a kref and drop it when the ldisc is closed. That would also negate
-> this meaningless check
-Ditto.
-> 
-> 
-> > +		return -ENOTTY;
-> > +	}
-> > +	count = lapb_esc(data, sl->xbuff, len);
-> > +
-> > +	/* Order of next two lines is *very* important.^S */
-> > +	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
-> > +	actual = sl->tty->ops->write(sl->tty, sl->xbuff, count);
-> > +	dev_info(&sl->netdev->dev, "tx\n");
-> 
-> Again all the debug wants a tidy
-> > +
-> > +	print_hex_dump(KERN_INFO, "ldisc out:",
-> > +			DUMP_PREFIX_OFFSET, 16, 2, sl->xbuff,
-> > +			count, 0);
-> > +	sl->xleft = count - actual;
-> > +	sl->xhead = sl->xbuff + actual;
-> > +	/* VSV */
-> > +	clear_bit(SLF_OUTWAIT, &sl->flags);	/* reset outfill flag */
-> 
-> You seem to have copied this flag but not use it ?
-Sorry, another old artefact, will remove.
+Oops, thanks for noticing:
 
-> 
-> 
-> > +int lapb_nl_ldisc_start(struct net_device *dev)
-> > +{
-> > +	struct lapb_nl_ldisc *sl;
-> > +	unsigned long len;
-> > +	BUG_ON(!dev);
-> > +	sl = get_lapb_data(dev);
-> > +	BUG_ON(!sl);
-> > +	if (sl->tty == NULL)
-> > +		return -ENODEV;
-> 
-> Again the sl->tty locking needs sorting (I think this may well be true of
-> slip and the others too)
 
-Could you please explain a bit more on this?
+Subject: mmc: sdhci: Use DBG() instead of pr_warning() on large timeout
 
-> 
-> 
-> > +static int lapb_ldisc_open(struct tty_struct *tty)
-> > +{
-> > +	struct net_device *netdev;
-> > +	struct lapb_nl_ldisc *sl;
-> > +	int ret;
-> > +	BUG_ON(!tty);
-> 
-> Can't happen
+3bdc9ba892d6 ("mmc: use really long write timeout to deal with crappy
+cards") in 3.4 increased the write timeout that the core sends to host
+drivers to 3 seconds.  This makes sdhci's "requested timeout too large"
+warning trigger on every write; so, change this pr_warning() to a DBG().
 
-Will remove this one.
+Reported-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+---
+ drivers/mmc/host/sdhci.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-> 
-> > +	sl = kzalloc(sizeof(struct lapb_nl_ldisc), GFP_KERNEL);
-> 
-> What if the allocation fails
-> 
-> > +	sl->tty = tty;
-> 
-> kref
-> 
-> > +	sl->netdev = netdev;
-> > +	sl->magic = LAPB_LDISC_MAGIC;
-> > +	tty->disc_data = sl;
-> > +	tty->receive_room = 65536;
-> > +	tty_driver_flush_buffer(tty);
-> > +	tty_ldisc_flush(tty);
-> 
-> Why flush ?
-Problems occured a long time ago, will remove and check.
-> 
-> 
-> > +static int lapb_ldisc_ioctl(struct tty_struct *tty, struct file *file,
-> > +			    unsigned int cmd, unsigned long arg)
-> > +{
-> > +	struct lapb_nl_ldisc *sl = tty->disc_data;
-> > +	BUG_ON(!sl);
-> > +	dev_dbg(&sl->netdev->dev, "LAPB ldisc ioctl %04x\n", cmd);
-> > +
-> > +	/* First make sure we're connected. */
-> > +	if (!sl || sl->magic != LAPB_LDISC_MAGIC)
-> > +		return -EINVAL;
-> 
-> What locks this check ?
-> 
-> [Its safe because the tty mid layer has an ldisc ref of its own as far as
-> I can see but the check is still bogus and does nothing)
-
-Well, as I see, this whole bunch of checks needs cleaning.
-
-> 
-> > +	if (!sl->netdev)
-> > +		return -EBUSY;
-> > +
-> > +	switch (cmd) {
-> > +	case SIOCGIFNAME:
-> > +		if (copy_to_user((void __user *)arg,
-> > +			(void *)(sl->netdev->name),
-> > +			strlen(sl->netdev->name) + 1))
-> > +				return -EFAULT;
-> > +		return 0;
-> > +
-> > +	default:
-> > +		return tty_mode_ioctl(tty, file, cmd, arg);
-> > +	}
-> > +}
-> > +
-> > +#ifdef CONFIG_COMPAT
-> > +static long lapb_ldisc_compat_ioctl(struct tty_struct *tty, struct file *file,
-> > +				    unsigned int cmd, unsigned long arg)
-> > +{
-> > +	switch (cmd) {
-> > +	case SIOCGX25PARMS:
-> > +	case SIOCSX25PARMS:
-> > +		return lapb_ldisc_ioctl(tty, file, cmd,
-> > +				       (unsigned long)compat_ptr(arg));
-> 
-> Which will in turn call the default so this seems surplus ?
-Will remove COMPAT support or rewrite.
-
-> 
-> 
-> 
-> The big question to me is the API for it all, which looks marginally
-> insane. Is there a URL to the userspace for this lot that might help
-> folks work out where your API is actually sensible or if not what it
-> ought to look like.
-> 
-> Alan
-Well, API is quite simple, It is used by python code via specially crafted
-C library, will clean it up proprietary code and put on github soon.
-
-The whole thing is data packat transfer. Application is also notified when
-packet is delivered. That's it, no fancy stuff. There is also UDP code, but it is
-weird mess, and I think if it is to live or be removed. What do you think?
-
-Thanks a lot for review,
-S.
-
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index e626732..f4b8b4d 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -680,8 +680,8 @@ static u8 sdhci_calc_timeout(struct sdhci_host *host, struct mmc_command *cmd)
+ 	}
+ 
+ 	if (count >= 0xF) {
+-		pr_warning("%s: Too large timeout 0x%x requested for CMD%d!\n",
+-			   mmc_hostname(host->mmc), count, cmd->opcode);
++		DBG("%s: Too large timeout 0x%x requested for CMD%d!\n",
++		    mmc_hostname(host->mmc), count, cmd->opcode);
+ 		count = 0xE;
+ 	}
+ 
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
