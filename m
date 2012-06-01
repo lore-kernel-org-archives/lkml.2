@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759225Ab2FAJWV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 05:22:21 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:60455 "EHLO e4.ny.us.ibm.com"
+	id S1759289Ab2FAJ2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 05:28:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3894 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758513Ab2FAJWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 05:22:20 -0400
-Date: Fri, 1 Jun 2012 14:49:50 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Arapov <anton@redhat.com>
-Subject: [RESEND PATCH 1/3] uprobes: Remove redundant lock_page/unlock_page
-Message-ID: <20120601091950.GF24279@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120531114630.23691.33166.sendpatchset@srdronam.in.ibm.com>
- <1338465518.28384.55.camel@twins>
- <20120531150756.GC24279@linux.vnet.ibm.com>
- <1338483372.28384.65.camel@twins>
+	id S1759148Ab2FAJ2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 05:28:40 -0400
+Date: Fri, 1 Jun 2012 12:28:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Asias He <asias@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] block: Fix lock unbalance caused by lock disconnect
+Message-ID: <20120601092832.GA20346@redhat.com>
+References: <1337911859-22913-1-git-send-email-asias@redhat.com>
+ <20120528000749.GA8305@dhcp-172-17-108-109.mtv.corp.google.com>
+ <4FC2DFB6.6080701@redhat.com>
+ <20120528102055.GA15202@dhcp-172-17-108-109.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338483372.28384.65.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060109-3534-0000-0000-000008F2FBFD
+In-Reply-To: <20120528102055.GA15202@dhcp-172-17-108-109.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On Mon, May 28, 2012 at 07:20:55PM +0900, Tejun Heo wrote:
+> Hello, Asias.
+> 
+> On Mon, May 28, 2012 at 10:15:18AM +0800, Asias He wrote:
+> > >I don't think the patch description is correct.  The lock switcihng is
+> > >inherently broken and the patch doesn't really fix the problem
+> > >although it *might* make the problem less likely.  Trying to switch
+> > >locks while there are other accessors of the lock is simply broken, it
+> > >can never work without outer synchronization.
+> > 
+> > Since the lock switching is broken, is it a good idea to force all
+> > the drivers to use the block layer provided lock? i.e. Change the
+> > API from
+> > blk_init_queue(rfn, driver_lock) to blk_init_queue(rfn). Any reason
+> > not to use the block layer provided one.
+> 
+> I think hch tried to do that a while ago.  Dunno what happened to the
+> patches.  IIRC, the whole external lock thing was about sharing a
+> single lock across different request_queues.  Not sure whether it's
+> actually beneficial enough or just a crazy broken optimization.
 
-Since read_opcode() reads from the referenced page and doesnt modify
-the page contents nor the page attributes, there is no need to lock
-the page.
+Looks like almost all drivers get it wrong.  And it's likely
+something like a floppy driver doesn't need an optimization:
+drivers/block/floppy.c:	disks[dr]->queue = blk_init_queue(do_fd_request, &floppy_lock);
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- Modified changelog based on comments from Peter Zijlstra
+The obvious use of this API is wrong. So how about introducing
+a correct one, deprecating the broken one so we can start
+slowly converting users?
 
- kernel/events/uprobes.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Then if someone sees a real reason for the internal lock,
+he will complain.
 
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 42b21eb..b3f3095 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -315,12 +315,10 @@ static int read_opcode(struct mm_struct *mm, unsigned long vaddr, uprobe_opcode_
- 	if (ret <= 0)
- 		return ret;
- 
--	lock_page(page);
- 	vaddr_new = kmap_atomic(page);
- 	vaddr &= ~PAGE_MASK;
- 	memcpy(opcode, vaddr_new + vaddr, UPROBE_SWBP_INSN_SIZE);
- 	kunmap_atomic(vaddr_new);
--	unlock_page(page);
- 
- 	put_page(page);
- 
 
+
+
+> > >Your patch might make
+> > >the problem somewhat less likely simply because queue draining makes a
+> > >lot of request_queue users go away.
+> > 
+> > Who will use the request_queue after blk_cleanup_queue()?
+> 
+> Anyone who still holds a ref might try to issue a new request on a
+> dead queue.  ie. blkdev with filesystem mounted goes away and the FS
+> issues a new read request after blk_cleanup_queue() finishes drainig.
+> 
+> Thanks.
+> 
+> -- 
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
