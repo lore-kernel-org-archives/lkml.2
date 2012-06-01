@@ -1,65 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759246Ab2FATiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 15:38:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43324 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758729Ab2FATh6 (ORCPT
+	id S965050Ab2FATiU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 15:38:20 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:59526 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964865Ab2FATiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 15:37:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1206011230170.17976@asgard.lang.hm>
-References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
- <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com>
- <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org>
- <alpine.DEB.2.00.1205301349230.31768@router.home> <20120530193234.GV27374@one.firstfloor.org>
- <alpine.DEB.2.00.1205301441350.31768@router.home> <CAHGf_=ooVunBpSdBRCnO1uOoswqxcSy7Xf8xVcgEUGA2fXdcTA@mail.gmail.com>
- <20120530201042.GY27374@one.firstfloor.org> <CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com>
- <alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm> <alpine.DEB.2.00.1206010850430.6302@router.home>
- <alpine.DEB.2.02.1206011230170.17976@asgard.lang.hm>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Fri, 1 Jun 2012 15:37:37 -0400
-Message-ID: <CAHGf_=qDy79cvHX3ym7RvkX7q9+2TDKhgtBHVj6+XHORczj94A@mail.gmail.com>
-Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
-To: david@lang.hm
-Cc: Christoph Lameter <cl@linux.com>, Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
-        sivanich@sgi.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 1 Jun 2012 15:38:18 -0400
+Date: Fri, 1 Jun 2012 21:29:44 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: David Miller <davem@davemloft.net>
+Cc: devendra.aaru@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r8169: call netif_napi_del at errpaths and at driver unload
+Message-ID: <20120601192944.GA21881@electric-eye.fr.zoreil.com>
+References: <1338465080-22720-1-git-send-email-devendra.aaru@gmail.com> <20120601.142531.544977894901194434.davem@davemloft.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601.142531.544977894901194434.davem@davemloft.net>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>>> Yes, that's right direction, I think. Currently, shmem_set_policy()
->>>>>> can't handle
->>>>>> nonlinear mapping.
->>>>>
->>>>> I've been mulling for some time to just remove non linear mappings.
->>>>> AFAIK they were only useful on 32bit and are obsolete and could be
->>>>> emulated with VMAs instead.
->>>>
->>>>
->>>> I agree. It is only userful on 32bit and current enterprise users don't
->>>> use
->>>> 32bit anymore. So, I don't think emulated by vmas cause user visible
->>>> issue.
->>>
->>>
->>> I wish this was true, there are a lot of systems out there still running
->>> 32
->>> bit linux, even on 64 bit capible hardware. This is especially true in
->>> enterprises where they have either homegrown or proprietary software that
->>> isn't 64 bit clean.
->>
->> 32 bit binaries (and entire distros) run fine under 64 bit kernels.
->
-> unfortunantly, not quite 100% of the time. It's very good, but the automount
-> bug a month or so ago is an example of how you can run into rare problems.
-> Many "enterprise" systems are not willing to risk it.
+David Miller <davem@davemloft.net> :
+[...]
+> Francois, I'm assuming you will merge this to me after you've
+> done some testing.
 
-Then we can remove a feature safely. Risk not taker continue to uses old distro
-kernel. And some years after, distros discontinue to support 32bit. And then,
-problem will vanish automatically.
+You can apply it directly.
+
+I have done several loops both with a forced error patch and the normal
+removal of the module without problem. No trivial crash. Four 816x network
+adapters. Reference one still comes up.
+
+-- 
+Ueimor
