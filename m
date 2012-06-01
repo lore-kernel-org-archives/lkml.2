@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759855Ab2FARxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 13:53:24 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:47062 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757949Ab2FARxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 13:53:23 -0400
-Date: Fri, 1 Jun 2012 13:53:19 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: GIT PULL] ext4 updates for 3.5
-Message-ID: <20120601175319.GB15778@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1SaTSI-0005UV-4B@tytso-glaptop.cam.corp.google.com>
- <4FC8F1A7.2060208@teksavvy.com>
+	id S1760179Ab2FARxo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 13:53:44 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62079 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759892Ab2FARxl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jun 2012 13:53:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FC8F1A7.2060208@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <4FC8E00E.60600@gmail.com>
+References: <CA+i8gKK5VJU_0YbBkeav6wTP+5YGp-rd52dTNqyoprz_YZrepA@mail.gmail.com>
+ <4FC8E00E.60600@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Jun 2012 10:53:20 -0700
+X-Google-Sender-Auth: ifpLUx2avhMg189q7IReGg2RBZM
+Message-ID: <CA+55aFyK_m8aO57gC4Q1PJXmY3e1-uRXQ3E6PRgdBVixJSa2gQ@mail.gmail.com>
+Subject: Re: 71ca97da9d overrides user's kernel config
+To: =?ISO-8859-7?Q?Vladimir_=27=F6=2Dcoder=2Fphcoder=27_Serbinenko?= 
+	<phcoder@gmail.com>
+Cc: Emmanuel Benisty <benisty.e@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 12:45:27PM -0400, Mark Lord wrote:
-> On 12-06-01 11:07 AM, Theodore Ts'o wrote:
-> > Ext4 updates for 3.5
-> > 
-> > The major new feature added in this update is Darrick J. Wong's
-> > metadata checksum feature, which adds crc32 checksums to ext4's
-> > metadata fields.  There is also the usual set of cleanups and bug
-> > fixes.
-> 
-> That sounds vaguely like an on-disk change that may have issues
-> with systems that regularly switch between older and newer kernel versions.
-> 
-> Could you elaborate on it a bit more, thanks!
-> 
+On Fri, Jun 1, 2012 at 8:30 AM, Vladimir 'ö-coder/phcoder' Serbinenko
+<phcoder@gmail.com> wrote:
+>
+> Sorry, it wasn't intentional. It was just a stub to compile it without
+> recompiling whole kernel. Should I supply the patch to remove it?
 
-It's an on-disk change, but it's gated by a superblock "feature flag".
-So unless you actually activate the feature, you won't get it.  If you
-do activate the feature, then you won't be able to switch between
-older and newer kernel versions --- at least not and be able to mount
-the file system read/write.  (We have different feature flags that
-indicate whether or not the kernel is allowed to mount the file system
-read/write, read/only, or not at all, if it doesn't know about a bit
-in the COMPAT, COMPAT_RO, or INCOMPAT feature bitmak.)
+Yes, but I wonder if they should *also* be renamed, actually.
 
-The e2fsprogs support for this feature is currently only in the
-(rewinding) proposed update branch, so it's not something that I
-recommend people use just yet.  Even though it's been pretty well
-tested, there are probably still some bugs we still need to shake out.
+Those names are disgusting and unreadable, because the "MAC" part
+mixes with the actual name of the codepage. I really have a hard time
+reading something like MACROMANIAN, because to me it looks like it
+starts with "MACRO". It's just a bad name.
 
-	      	  	   	      	      	    - Ted
+Also, the CODEPAGE part adds questionable value. I wonder if we should
+(a) remove the CODEPAGE part, (b) add an underscore between "MAC" and
+the name, and for the microsoft numeric codepages, do the same just to
+be consistent. IOW, use config names like NLS_DOS_1250 and
+NLS_MAC_ROMANIAN?
+
+(Yes, yes, I realize that people think that 1250 is a "windows"
+codepage, not a DOS codepage. Use WIN_1250 if you want to, but I think
+it's all really the same.)
+
+I dunno. But start with the Mac ones first, since they need fixing
+anyway. Leave the old ones alone for now.
+
+Andrew, who would be in charge of "fs/nls"? Almost nobody has really
+touched that area in several years now, and it doesn't have any
+maintainership. Added the few poor sods that touched it last. "Tag,
+guys, you're it!"
+
+                 Linus
