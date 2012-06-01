@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965850Ab2FAWSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 18:18:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59523 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965672Ab2FAWQy (ORCPT
+	id S965830Ab2FAWSR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 18:18:17 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44828 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965750Ab2FAWSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 18:16:54 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
+	Fri, 1 Jun 2012 18:18:14 -0400
+Date: Fri, 1 Jun 2012 15:17:48 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 12/15] perf symbols: Check for valid dso before creating map
-Date: Fri,  1 Jun 2012 19:16:36 -0300
-Message-Id: <1338588999-32509-13-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.9.2.358.g22243
-In-Reply-To: <1338588999-32509-1-git-send-email-acme@infradead.org>
-References: <1338588999-32509-1-git-send-email-acme@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+In-Reply-To: <20120601171606.GA3794@redhat.com>
+Message-ID: <alpine.LSU.2.00.1206011511560.12839@eggly.anvils>
+References: <20120530163317.GA13189@redhat.com> <20120531005739.GA4532@redhat.com> <20120601023107.GA19445@redhat.com> <alpine.LSU.2.00.1206010030050.8462@eggly.anvils> <20120601161205.GA1918@redhat.com> <20120601171606.GA3794@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+On Fri, 1 Jun 2012, Dave Jones wrote:
+> On Fri, Jun 01, 2012 at 12:12:05PM -0400, Dave Jones wrote:
+>  
+>  > So with this applied, I don't seem to be able to trigger it. It's been running two hours
+>  > so far. I'll leave it running, but right now I don't know what to make of this.
+> 
+> I can trigger the list corruption still, but not the WARN.
+> 
+> 	Dave
+> 
+> [  551.980716] ------------[ cut here ]------------
+> [  551.981646] WARNING: at lib/list_debug.c:59 __list_del_entry+0xa1/0xd0()
+> [  551.983461] list_del corruption. prev->next should be ffffea0004b305a0, but was ffffea0004f117e0
+> [  551.984406] Modules linked in: tun fuse nfnetlink binfmt_misc ipt_ULOG sctp libcrc32c caif_socket caif phonet bluetooth rfkill can llc2 pppoe pppox ppp_generic slhc irda crc_ccitt rds af_key decnet rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables kvm_intel kvm crc32c_intel ghash_clmulni_intel microcode usb_debug serio_raw pcspkr i2c_i801 e1000e nfsd nfs_acl auth_rpcgss lockd sunrpc i915 video i2c_algo_bit drm_kms_helper drm i2c_core [last unloaded: scsi_wait_scan]
+> [  551.988121] Pid: 21459, comm: trinity-child2 Not tainted 3.4.0+ #49
+> [  551.989063] Call Trace:
+> [  551.990012]  [<ffffffff8104912f>] warn_slowpath_common+0x7f/0xc0
+> [  551.990956]  [<ffffffff81049226>] warn_slowpath_fmt+0x46/0x50
+> [  551.991902]  [<ffffffff81329171>] __list_del_entry+0xa1/0xd0
+> [  551.992849]  [<ffffffff81145ad9>] move_freepages_block+0x159/0x190
+> [  551.993800]  [<ffffffff81165be3>] suitable_migration_target.isra.15+0x1b3/0x1d0
+> [  551.994761]  [<ffffffff81165e2e>] compaction_alloc+0x22e/0x2f0
+> [  551.995731]  [<ffffffff81198547>] migrate_pages+0xc7/0x540
+> [  551.996684]  [<ffffffff81165c00>] ? suitable_migration_target.isra.15+0x1d0/0x1d0
+> [  551.997638]  [<ffffffff81166b86>] compact_zone+0x216/0x480
+> [  551.998593]  [<ffffffff810b15f8>] ? trace_hardirqs_off_caller+0x28/0xc0
+> [  551.999558]  [<ffffffff811670cd>] compact_zone_order+0x8d/0xd0
+> [  552.000525]  [<ffffffff81149735>] ? get_page_from_freelist+0x565/0x970
+> [  552.001502]  [<ffffffff811671d9>] try_to_compact_pages+0xc9/0x140
+> [  552.002548]  [<ffffffff8163f491>] __alloc_pages_direct_compact+0xaa/0x1d0
+> [  552.003592]  [<ffffffff8114a14b>] __alloc_pages_nodemask+0x60b/0xab0
+> [  552.004650]  [<ffffffff810b15f8>] ? trace_hardirqs_off_caller+0x28/0xc0
+> [  552.005708]  [<ffffffff810b4f00>] ? __lock_acquire+0x2d0/0x1aa0
+> [  552.007332]  [<ffffffff81189ec6>] alloc_pages_vma+0xb6/0x190
+> [  552.008953]  [<ffffffff8119cfb3>] do_huge_pmd_anonymous_page+0x133/0x310
+> [  552.010584]  [<ffffffff8116c2e2>] handle_mm_fault+0x242/0x2e0
+> [  552.012233]  [<ffffffff8116c592>] __get_user_pages+0x142/0x560
+> [  552.013891]  [<ffffffff81171c58>] ? mmap_region+0x3f8/0x630
+> [  552.015753]  [<ffffffff8116ca62>] get_user_pages+0x52/0x60
+> [  552.017348]  [<ffffffff8116d952>] make_pages_present+0x92/0xc0
+> [  552.018936]  [<ffffffff81171c06>] mmap_region+0x3a6/0x630
+> [  552.021074]  [<ffffffff81050e2c>] ? do_setitimer+0x1cc/0x310
+> [  552.022367]  [<ffffffff811721ed>] do_mmap_pgoff+0x35d/0x3b0
+> [  552.023406]  [<ffffffff811722a6>] ? sys_mmap_pgoff+0x66/0x240
+> [  552.024429]  [<ffffffff811722c4>] sys_mmap_pgoff+0x84/0x240
+> [  552.025445]  [<ffffffff81322cbe>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [  552.026466]  [<ffffffff81006ca2>] sys_mmap+0x22/0x30
+> [  552.027486]  [<ffffffff81651c92>] system_call_fastpath+0x16/0x1b
+> [  552.028521] ---[ end trace c092df1e14d11d14 ]---
 
-dso__new() can return NULL. Hence verify dso before creating a new map.
+Several distractions today, and I must rush out now for two or three
+hours: but please check if this patch below makes sense (I've only
+checked that it builds), and if so give it a run to see if it fixes
+your list corruptions - thanks.
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20120531114656.23691.54223.sendpatchset@srdronam.in.ibm.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/symbol.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+(Looks like there's an independent off-by-one in page_zone(end_page),
+but that shouldn't do any harm.)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 9d04dcd..3e2e5ea 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -2817,8 +2817,11 @@ int machine__load_vmlinux_path(struct machine *machine, enum map_type type,
- 
- struct map *dso__new_map(const char *name)
+Hugh
+
+--- 3.4.0+/mm/compaction.c	2012-05-30 08:17:19.396008280 -0700
++++ linux/mm/compaction.c	2012-06-01 15:04:18.612051243 -0700
+@@ -369,6 +369,9 @@ static bool rescue_unmovable_pageblock(s
  {
-+	struct map *map = NULL;
- 	struct dso *dso = dso__new(name);
--	struct map *map = map__new2(0, dso, MAP__FUNCTION);
-+
-+	if (dso)
-+		map = map__new2(0, dso, MAP__FUNCTION);
+ 	unsigned long pfn, start_pfn, end_pfn;
+ 	struct page *start_page, *end_page;
++	struct zone *zone;
++	unsigned long flags;
++	bool rescued = false;
  
- 	return map;
+ 	pfn = page_to_pfn(page);
+ 	start_pfn = pfn & ~(pageblock_nr_pages - 1);
+@@ -378,9 +381,11 @@ static bool rescue_unmovable_pageblock(s
+ 	end_page = pfn_to_page(end_pfn);
+ 
+ 	/* Do not deal with pageblocks that overlap zones */
+-	if (page_zone(start_page) != page_zone(end_page))
++	zone = page_zone(start_page);
++	if (zone != page_zone(end_page))
+ 		return false;
+ 
++	spin_lock_irqsave(&zone->lock, flags);
+ 	for (page = start_page, pfn = start_pfn; page < end_page; pfn++,
+ 								  page++) {
+ 		if (!pfn_valid_within(pfn))
+@@ -396,12 +401,15 @@ static bool rescue_unmovable_pageblock(s
+ 		} else if (page_count(page) == 0 || PageLRU(page))
+ 			continue;
+ 
+-		return false;
++		goto out;
+ 	}
+ 
+ 	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+-	move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
+-	return true;
++	move_freepages_block(zone, page, MIGRATE_MOVABLE);
++	rescued = true;
++out:
++	spin_unlock_irqrestore(&zone->lock, flags);
++	return rescued;
  }
--- 
-1.7.1
-
+ 
+ enum smt_result {
