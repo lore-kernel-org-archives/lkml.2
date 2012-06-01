@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab2FASWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 14:22:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46098 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932410Ab2FASWD convert rfc822-to-8bit (ORCPT
+	id S933588Ab2FASXC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 14:23:02 -0400
+Received: from mga03.intel.com ([143.182.124.21]:24398 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932410Ab2FASXA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 14:22:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338562358-28182-3-git-send-email-bp@amd64.org>
-References: <1338562358-28182-1-git-send-email-bp@amd64.org>
-	<1338562358-28182-3-git-send-email-bp@amd64.org>
-Date: Fri, 1 Jun 2012 11:22:03 -0700
-X-Google-Sender-Auth: ZBURQ1DsHC01THpXl3G8nu2xPgI
-Message-ID: <CAE9FiQVad9qWvZeBej31Mw4aEJO3L0L6ZC7mx7VJQwRB_q8fzQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] x86, CPU: Fix show_msr MSR accessing function
-From: Yinghai Lu <yinghai@kernel.org>
+	Fri, 1 Jun 2012 14:23:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="106799973"
+From: "Luck, Tony" <tony.luck@intel.com>
 To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Andre Przywara <andre.przywara@amd.com>, jeremy@goop.org,
-        xen-devel@lists.xensource.com, LKML <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, "Chen, Gong" <gong.chen@intel.com>
+Subject: RE: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Thread-Topic: [PATCH] RAS: Add a tracepoint for reporting memory controller
+ events
+Thread-Index: AQHNOZYGtI1DcNZxtEGCK0mbRpqc+pbZOc0AgABYoYCAAAkdAIAAFPOAgAd2gYCAACJ1AIAADiKAgAAIj4CAAZ5vgIABK+aAgAAJUICAAB0igIAAG5oAgAAHRYCAAAZIAIAAApkAgAAB+ICAAAOVAIAAENkAgAAQiYCAACboAIAAApWAgAAIOQCAAAHrAP//kZqggAFGGgD//+9NkIAAg10A//+uljA=
+Date: Fri, 1 Jun 2012 18:21:29 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F192F74E1@ORSMSX104.amr.corp.intel.com>
+References: <20120531151408.GJ14515@aftab.osrc.amd.com>
+ <4FC798E2.4000402@redhat.com> <20120531171337.GN14515@aftab.osrc.amd.com>
+ <1338492772.13348.388.camel@gandalf.stny.rr.com>
+ <20120531194207.GC16998@aftab.osrc.amd.com>
+ <1338495092.13348.419.camel@gandalf.stny.rr.com>
+ <20120531201824.GD16998@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F6DE2@ORSMSX104.amr.corp.intel.com>
+ <20120601091026.GC20959@aftab.osrc.amd.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F71DB@ORSMSX104.amr.corp.intel.com>
+ <20120601160050.GE28216@aftab.osrc.amd.com>
+In-Reply-To: <20120601160050.GE28216@aftab.osrc.amd.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 1, 2012 at 7:52 AM, Borislav Petkov <bp@amd64.org> wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
->
-> There's no real reason why, when showing the MSRs on a CPU at boottime,
-> we should be using the AMD-specific variant. Simply use the generic safe
-> one which handles #GPs just fine.
->
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/common.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index 82f29e70d058..232fba2d54c9 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -947,7 +947,7 @@ static void __cpuinit __print_cpu_msr(void)
->                index_max = msr_range_array[i].max;
->
->                for (index = index_min; index < index_max; index++) {
-> -                       if (rdmsrl_amd_safe(index, &val))
-> +                       if (rdmsrl_safe(index, &val))
->                                continue;
->                        printk(KERN_INFO " MSR%08x: %016llx\n", index, val);
->                }
-> --
+> This is why I'm advocating the userspace - you can implement almost
+> anything there - we only need the kernel to be as thin and as fast when
+> reporting those errors so that we can have the most reliable and full
+> info as possible. The kernel's job is only to report as many errors
+> as it possibly can so that userspace can create a good picture of the
+> situation.
 
-can you double check if the range will need special passcode ?
+I'm with you on this. Userspace is the right place to analyze and set
+policy for actions.
 
+But we need to make sure that user space can actually run. That's the
+motivation behind the CMCI disable patches. Since Intel broadcasts CMCI
+to all cpus on a socket - a CMCI storm on a single socket machine will
+stop any user code from running.
 
+I'd make one small change to what you said:
 
-        { 0x00000000, 0x00000418},
-        { 0xc0000000, 0xc000040b},
-        { 0xc0010000, 0xc0010142},
-        { 0xc0011000, 0xc001103b},
+The kernel's job is to report enough error information that user space
+can make an accurate assessment of the source of the error.
 
-passcode should be
-       gprs[7] = 0x9c5a203a;
+I.e. "enough" is less than "as many errors as it possibly can".
 
-Thanks
-
-Yinghai
+-Tony
