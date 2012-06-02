@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933877Ab2FBJuv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 05:50:51 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:50426 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933865Ab2FBJua convert rfc822-to-8bit (ORCPT
+	id S933888Ab2FBJzY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 05:55:24 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:52115 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933871Ab2FBJzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 05:50:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+i8gK+H-hm9bjJub4siH0pCdOrzRxJXaX2QjosnKCjeWYPt4A@mail.gmail.com>
-References: <CAJd=RBB1s-_VOtoDsBbLidS51HwW6e98p=U-4mL-spByUMvETw@mail.gmail.com>
-	<CA+i8gKKQyGBc-BNBJ72S6rq7aiFqS=onqWQyeY4P+VVvFCeXJw@mail.gmail.com>
-	<CAJd=RBA=mvMGQgdKgW26dgd8nK2-_dW_epQLwbjOo2Zx2gsbeg@mail.gmail.com>
-	<CA+i8gK+H-hm9bjJub4siH0pCdOrzRxJXaX2QjosnKCjeWYPt4A@mail.gmail.com>
-Date: Sat, 2 Jun 2012 17:50:29 +0800
-Message-ID: <CAJd=RBBxnD7JirPpy-jTgE9kpnZXN6gkTMsgcG8=goZxgQfTaQ@mail.gmail.com>
-Subject: Re: [patch] BFS 420: a tiny step forward
-From: Hillf Danton <dhillf@gmail.com>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Manuel Krause <manuelkrause@t-online.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 2 Jun 2012 05:55:22 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 2 Jun 2012 11:55:11 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux1394-user@lists.sourceforge.net,
+        linux1394-devel@lists.sourceforge.net
+Subject: Silent data corruption with kernel 3.4 and FireWire disks
+Message-ID: <20120602115511.5ad979db@stein>
+In-Reply-To: <20120524224447.57a636f7@stein>
+References: <20120524224447.57a636f7@stein>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Emmanuel and Manuel
+About a week ago I noticed silent data corruptions of files on FireWire
+disks:  Mount disk, read lots of data and e.g. compute their md5sum,
+unmount disk, mount disk again, read and md5sum the same files again ->
+MD5s may differ.
 
-On Thu, May 31, 2012 at 9:16 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
->
-> it builds fine now but it won't boot. Some crappy
-> mobile phone picture here:
-> http://ompldr.org/vZTE1eQ/IMG_20120531_200543.jpg
->
-The ttwu was messed up by Hillf, lets revert it.
+Defects in files that were written in May hint that not only reading from
+but also writing to FireWire disks resulted in corrupt data.  This was
+silent corruption without any error messages from the PCI, firewire, SCSI,
+block, or filesystem subsystems.
 
-Good Weekend
--hd
+Affected:
+  - kernel 3.4
+  - kernel 3.4-rc5
+Not affected:
+  - kernel 3.3.1 (which I have been running now for the last 6 days)
 
+I used these three kernels with the same patchlevel of FireWire drivers,
+namely circa those which are about to be released in 3.5-rc1.  FireWire
+disks with different 1394-to-SATA or -IDE bridge chips are affected.  I
+noticed the problem at first on an Agere FW643e PCIe 1394 controller which
+sits behind a PLX PEX 8505 PCIe switch.
 
---- a/kernel/sched/bfs.c	Sat Jun  2 17:14:58 2012
-+++ b/kernel/sched/bfs.c	Sat Jun  2 17:30:28 2012
-@@ -1491,6 +1491,8 @@ static void ttwu_stat(struct task_struct
- #ifdef CONFIG_SMP
- 	if (success)
- 		p->wakeup_cpu = smp_processor_id();
-+#else
-+	schedstat_inc(rq, ttwu_local);
- #endif
- 	schedstat_inc(rq, ttwu_count);
- #endif
-@@ -1515,8 +1517,6 @@ static inline void ttwu_post_activation(
- 					bool success)
- {
- 	trace_sched_wakeup(p, success);
--	if (!success)
--		return;
- 	p->state = TASK_RUNNING;
+MPEG2TS video reception through the same 1394 controller and PCIe switch
+did never show a noticable sign of corruption.
 
- 	/*
-@@ -1562,8 +1562,6 @@ static bool try_to_wake_up(struct task_s
- 	/* This barrier is undocumented, probably for p->state? くそ */
- 	smp_wmb();
+I did not have time yet to systematically test
+  - whether all of my FireWire controllers are affected,
+  - whether SATA or USB disks are affected (SATA probably not, USB not
+    used yet),
+  - whether my secondary Linux PC is affected.
 
--	if (!(p->state & state))
--		goto out;
- 	/*
- 	 * No need to do time_lock_grq as we only need to update the rq clock
- 	 * if we activate the task
-@@ -1586,7 +1584,6 @@ out_running:
- out_unlock:
- 	task_grq_unlock(&flags);
+Kernel 3.4 and 3.4-rc5 exhibited another (seemingly harmless but
+suspicious) issue on my primary PC:  frequent transmit queue time-outs of
+an RTL8111/8168B Ethernet interface,
+http://www.spinics.net/lists/netdev/msg197032.html
 
--out:
- 	ttwu_stat(p, success);
-
- 	put_cpu();
-@@ -1610,17 +1607,14 @@ static void try_to_wake_up_local(struct
- 	lockdep_assert_held(&grq.lock);
-
- 	if (!(p->state & TASK_NORMAL))
--		goto out;
--
--	if (task_queued(p) || task_running(p))
--		goto out;
--
--	ttwu_activate(p, rq, false);
--	success = true;
-+		return;
-
--out:
-+	if (!task_queued(p)) {
-+		ttwu_activate(p, rq, false);
-+		success = true;
-+		ttwu_stat(p, success);
-+	}
- 	ttwu_post_activation(p, rq, success);
--	ttwu_stat(p, success);
- }
-
- /**
-@@ -3052,8 +3046,10 @@ task_struct *earliest_deadline_task(stru
- 			 * deadline when the CPU is scaling, based on cpu
- 			 * cache locality.
- 			 */
--			dl = p->deadline << (locality_diff(p, rq) +
--							!!scaling_rq(rq));
-+			dl = p->deadline;
-+#ifdef CONFIG_SMP
-+			dl <<= locality_diff(p, rq) + scaling_rq(rq);
-+#endif
-
- 			if (deadline_before(dl, earliest_deadline)) {
- 				earliest_deadline = dl;
---
+Being busy at work lately and not having Linux available at work, I will
+be slow to look further into it.  With enough spare time, it should be
+possible to identify the regression by bisection between kernel 3.3 and
+3.4-rc but I have no estimate when I will be able to spend that time.
+-- 
+Stefan Richter
+-=====-===-- -==- ---=-
+http://arcgraph.de/sr/
