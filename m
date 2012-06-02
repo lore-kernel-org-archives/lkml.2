@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966606Ab2FBNmR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 09:42:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61911 "EHLO
+	id S966619Ab2FBNmT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 09:42:19 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58159 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965393Ab2FBNlL (ORCPT
+	with ESMTP id S1759735Ab2FBNkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 09:41:11 -0400
+	Sat, 2 Jun 2012 09:40:49 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
-Subject: [PATCH v2 07/10] ocfs2: use memweight()
-Date: Sat,  2 Jun 2012 22:40:13 +0900
-Message-Id: <1338644416-11417-7-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH v2 03/10] qnx4fs: use memweight()
+Date: Sat,  2 Jun 2012 22:40:09 +0900
+Message-Id: <1338644416-11417-3-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
 References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
@@ -21,40 +20,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight to count the total number of bits set in memory area.
+Use memweight() to count the total number of bits clear in memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Cc: ocfs2-devel@oss.oracle.com
+Acked-by: Anders Larsen <al@alarsen.net>
 ---
 
-No changes from v1
+v2: put whitespace before '-'
 
- fs/ocfs2/localalloc.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ fs/qnx4/bitmap.c |   24 +++++-------------------
+ 1 files changed, 5 insertions(+), 19 deletions(-)
 
-diff --git a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
-index 210c352..a9f78c7 100644
---- a/fs/ocfs2/localalloc.c
-+++ b/fs/ocfs2/localalloc.c
-@@ -784,14 +784,10 @@ bail:
+diff --git a/fs/qnx4/bitmap.c b/fs/qnx4/bitmap.c
+index 22e0d60..76a7a69 100644
+--- a/fs/qnx4/bitmap.c
++++ b/fs/qnx4/bitmap.c
+@@ -17,23 +17,6 @@
+ #include <linux/bitops.h>
+ #include "qnx4.h"
  
- static u32 ocfs2_local_alloc_count_bits(struct ocfs2_dinode *alloc)
+-static void count_bits(register const char *bmPart, register int size,
+-		       int *const tf)
+-{
+-	char b;
+-	int tot = *tf;
+-
+-	if (size > QNX4_BLOCK_SIZE) {
+-		size = QNX4_BLOCK_SIZE;
+-	}
+-	do {
+-		b = *bmPart++;
+-		tot += 8 - hweight8(b);
+-		size--;
+-	} while (size != 0);
+-	*tf = tot;
+-}
+-
+ unsigned long qnx4_count_free_blocks(struct super_block *sb)
  {
--	int i;
--	u8 *buffer;
--	u32 count = 0;
-+	u32 count;
- 	struct ocfs2_local_alloc *la = OCFS2_LOCAL_ALLOC(alloc);
+ 	int start = le32_to_cpu(qnx4_sb(sb)->BitMap->di_first_xtnt.xtnt_blk) - 1;
+@@ -44,13 +27,16 @@ unsigned long qnx4_count_free_blocks(struct super_block *sb)
+ 	struct buffer_head *bh;
  
--	buffer = la->la_bitmap;
--	for (i = 0; i < le16_to_cpu(la->la_size); i++)
--		count += hweight8(buffer[i]);
-+	count = memweight(la->la_bitmap, le16_to_cpu(la->la_size));
+ 	while (total < size) {
++		int bytes = min(size - total, QNX4_BLOCK_SIZE);
++
+ 		if ((bh = sb_bread(sb, start + offset)) == NULL) {
+ 			printk(KERN_ERR "qnx4: I/O error in counting free blocks\n");
+ 			break;
+ 		}
+-		count_bits(bh->b_data, size - total, &total_free);
++		total_free += bytes * BITS_PER_BYTE -
++				memweight(bh->b_data, bytes);
+ 		brelse(bh);
+-		total += QNX4_BLOCK_SIZE;
++		total += bytes;
+ 		offset++;
+ 	}
  
- 	trace_ocfs2_local_alloc_count_bits(count);
- 	return count;
 -- 
 1.7.7.6
 
