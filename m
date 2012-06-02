@@ -1,53 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933777Ab2FBCuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 22:50:39 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50851 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933764Ab2FBCui (ORCPT
+	id S966253Ab2FBC7n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 22:59:43 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:36404 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933774Ab2FBC7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 22:50:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] clock: max77686: Add driver for Maxim 77686 32KHz crystal oscillator
-Date: Sat, 2 Jun 2012 02:50:21 +0000
-User-Agent: KMail/1.12.2 (Linux/3.4.0-rc3; KDE/4.3.2; x86_64; ; )
-Cc: Jonghwa Lee <jonghwa3.lee@samsung.com>, linux-kernel@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>,
-        H Hartley Sweeten <hsweetn@visionengravers.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-References: <1338541736-2978-1-git-send-email-jonghwa3.lee@samsung.com> <201206011613.33706.arnd@arndb.de> <20120601162118.GA24139@opensource.wolfsonmicro.com>
-In-Reply-To: <20120601162118.GA24139@opensource.wolfsonmicro.com>
+	Fri, 1 Jun 2012 22:59:41 -0400
+Message-ID: <4FC98179.4000400@oracle.com>
+Date: Sat, 02 Jun 2012 10:59:05 +0800
+From: Junxiao Bi <junxiao.bi@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
+        jlbec@evilplan.org, bcrl@kvack.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, joe.jin@oracle.com
+Subject: Re: [PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+References: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com> <x49k3zscuk2.fsf@segfault.boston.devel.redhat.com> <4FC81DE0.5080403@oracle.com> <x49r4ty69bw.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49r4ty69bw.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201206020250.21967.arnd@arndb.de>
-X-Provags-ID: V02:K0:NQTAWt/+HMm1P5glS4KgDXymzmlAolt8ATa/Q3Y8luv
- wypjyJfx0UFqktO/XA/TFU6+r3X09eiRz+uzwEVZqBbF3QOgsy
- w89yvNdFvHP2PEuPBXpov/9n2zLmCvDwFSdoRC+8tjeWaPIGDX
- LkTYfaN2WlC19IuHG8W1ImwBGD6dIcMdlAOytOl7gFMfxAlDmc
- NCdtmjsAS6hb7LQfeGYcjHgcO1gNUS3tWX+PwQ+56w2ujVYPnN
- jby2Id1HAJfBtdogTXo95AW79kat/tbFnMJxZOysjsIwjw9NtR
- Or9hL0scFK1VfNMNE7UBaYYQ1N5USZmwbW9YOliTP5X6s2GCiP
- XK4Kmphw7SVFiih7eS80=
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 June 2012, Mark Brown wrote:
-> On Fri, Jun 01, 2012 at 04:13:33PM +0000, Arnd Bergmann wrote:
-> 
-> > You should also have an of_device_id table so you can match this driver from
-> > device tree definitions.
-> 
-> There has been...  some discussion on the value of doing this for MFD
-> cells where the MFD cell has no reuse capability (eg, when the driver
-> has very little abstraction from the top level chip binding) since we
-> don't really get anything from the abstraction if the driver can't be
-> reused and may limit ourselves (and others) in future.
+On 06/02/2012 04:55 AM, Jeff Moyer wrote:
+> Junxiao Bi<junxiao.bi@oracle.com>  writes:
+>
+>> On 05/31/2012 10:08 PM, Jeff Moyer wrote:
+>>> Junxiao Bi<junxiao.bi@oracle.com>  writes:
+>>>
+>>>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+>>>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+>>>> io flag is involved in it to serialize the unaligned aio. As
+>>>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
+>>>> this unaligned io flag may be unexpectly set in an aligned dio.
+>>>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+>>>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+>>>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_write_iter().
+>>>> We can't initialized this flag in ocfs2_file_write_iter() since
+>>>> it may be invoked several times by do_sync_write(). So we initialize
+>>>> it in init_sync_kiocb(), it's also useful for other similiar use of
+>>>> it in the future.
+>>> I don't see any ocfs2_file_write_iter in the upstream kernel.
+>>> ocfs2_file_aio_write most certainly could set ->private to 0, it
+>>> will only be called once for a given kiocb.
+>>  From sys_io_submit->..->io_submit_one->aio_run_iocb->aio_rw_vect_retry,
+>> it seems that aio_write could be called two times. See the following
+>> scenario.
+>> 1. There is a file opened with direct io flag, in aio_rw_vect_retry,
+>> aio_write is called first time. If the direct io can
+>> not be completed, it will fall back into buffer io, see line 2329 in
+>> aio_write.
+> Huh?  What's line 2329 in aio_write?
+See the following code.
 
-Ok, makes sense.
+2312         can_do_direct = direct_io;
+2313         ret = ocfs2_prepare_inode_for_write(file, ppos,
+2314                                             iocb->ki_left, appending,
+2315 &can_do_direct, &has_refcount);
+2316         if (ret < 0) {
+2317                 mlog_errno(ret);
+2318                 goto out;
+2319         }
+2320
+2321         if (direct_io && !is_sync_kiocb(iocb))
+2322                 unaligned_dio = ocfs2_is_io_unaligned(inode, 
+iocb->ki_left,
+2323                                                       *ppos);
+2324
+2325         /*
+2326          * We can't complete the direct I/O as requested, fall back to
+2327          * buffered I/O.
+2328          */
+2329         if (direct_io && !can_do_direct) {
+2330                 ocfs2_rw_unlock(inode, rw_level);
+2331
+2332                 have_alloc_sem = 0;
+2333                 rw_level = -1;
+2334
+2335                 direct_io = 0;
+2336                 goto relock;
+2337         }
 
-	Arnd
+The above is the source code how direct io falled back to buffer io. In 
+line 2313, in function ocfs2_prepare_inode_for_write(), it will judge 
+whether the direct io can be executed. If not, the variable 
+"can_do_direct" will be set to false, then the variable "direct_io" will 
+be set to 0 in line 2335. This means that generic_file_buffered_write() 
+will be called in the following code, not generic_file_direct_write(), 
+see the following code. So if the generic_file_buffered_write() is a 
+partial write, then its return value "written" will be made as the 
+return value of the aio_write, see line 2439. Then it return back to 
+aio_rw_vect_retry(), the condition (ret > 0 && iocb->ki_left > 0 && 
+opcode == IOCB_CMD_PWRITEV) is true. Then aio_write will be called 
+second time. As the unaligned I/O flag may be set in the kiocb at the 
+first time call of aio_write, it may affect the second call of aio_write 
+if its direct IO is aligned.
+
+2372         if (direct_io) {
+2373                 written = generic_file_direct_write(iocb, iov, 
+&nr_segs, *ppos,
+2374                                                     ppos, count, 
+ocount);
+2375                 if (written < 0) {
+2376                         ret = written;
+2377                         goto out_dio;
+2378                 }
+2379         } else {
+2380                 current->backing_dev_info = 
+file->f_mapping->backing_dev_info;
+2381                 written = generic_file_buffered_write(iocb, iov, 
+nr_segs, *ppos,
+2382                                                       ppos, count, 0);
+2383                 current->backing_dev_info = NULL;
+2384         }
+
+2438         if (written)
+2439                 ret = written;
+2440         return ret;
+>
+>> 2. If the very buffer io is a partial write, then it will return back
+>> to  aio_rw_vect_retry and issue the second aio_write.
+> For the generic case, the fallback to buffered I/O happens in
+> __generic_file_aio_write, without bouncing all the way back up the call
+> stack to aio_rw_vect_retry.  I see in ocfs2, things are a bit different:
+>
+> retry->aio_rw_vect_retry->ocfs2_file_aio_write->generic_file_direct_write
+>    ->ocfs2_direct_IO->__blockdev_direct_IO
+>
+> That last function can return 0 if not all of the data was written via
+> direct I/O.  At that point, you return all of the way up the chain to
+> aio_rw_vect_retry, which checks the return value (ret).  If it was 0,
+> then it goes ahead and retries the complete I/O.  How does that make any
+> progress?!
+>
+> Cheers,
+> Jeff
+
