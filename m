@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933681Ab2FBAQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 20:16:08 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:44065 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933664Ab2FBAQF (ORCPT
+	id S933726Ab2FBBDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 21:03:03 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45235 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933322Ab2FBBDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 20:16:05 -0400
-Subject: Re: [GIT PULL] Final round of SCSI updates for the 3.4+ merge
- window
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Fri, 1 Jun 2012 21:03:01 -0400
+Message-ID: <4FC96637.3090701@gmail.com>
+Date: Sat, 02 Jun 2012 03:02:47 +0200
+From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
+	<phcoder@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Arun Easi <arun.easi@qlogic.com>, Avik Shau <avik.shau@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Hannes Reinecke <mail@hannes-reinecke.de>
-In-Reply-To: <CBED88EA.47E61%giridhar.malavali@qlogic.com>
-References: <CBED88EA.47E61%giridhar.malavali@qlogic.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jun 2012 17:16:02 -0700
-Message-ID: <1338596162.23917.108.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH 1/5] REmove accidentally committed asignments
+X-Enigmail-Version: 1.4
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="------------enig30CCB3D744EA3310F7F02F74"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-05-31 at 20:47 -0700, Giridhar Malavali wrote:
-> Nicholas and all others,
-> 
-> I would like to thank you very much on behalf of QLogic Linux FC/FCoE team
-> to everyone who worked with us to get QLogic >= 24xx initial target driver
-> upstream for 3.5-rc1. You responded quickly to our queries and provided
-> the support to get this functionality delivered on time. We would like to
-> work further to get other target related functionalities upstream in
-> future. 
-> 
-
-Hi Giridhar!
-
-I'm really happy to hear that Qlogic would like to expand it's upstream
-target-mode support offerings based on the positive results from qla2xxx
-with the target-mode development community thus far.
-
-While it's going to be a busy ~8 weeks until 3.5 is released to resolve
-the outstanding active I/O target shutdown issues with tcm_qla2xxx, I'm
-eager to get these remaining issues get addressed for this first round.
- 
-I'm also really excited to see 83xx target mode support included as a
-for-3.6 -> for-3.7 item..
-
-:)
-
-Thank you!
-
---nab
-
-> Thanks,
-> Giridhar
-> 
-> 
-> On 5/31/12 12:57 PM, "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> >On Thu, 2012-05-31 at 13:17 +0100, James Bottomley wrote:
-> >> This is primarily another round of driver updates (bnx2fc, qla2xxx,
-> >> qla4xxx) including the target mode driver for qla2xxx.
-> >
-> >Hi everyone,
-> >
-> >With the Qlogic >= 24xx series HW target driver code now upstream for
-> >3.5-rc1, I wanted to take this brief moment to thank those who have
-> >contributed to reaching this initial milestone:
-> >
-> >Andrew Vasquez (Qlogic)
-> >Arun Easi (Qlogic)
-> >Chad Dupuis (Qlogic)
-> >Giridhar Malavali (Qlogic)
-> >Joern Engel (Pure)
-> >John 'Coz' Colgrove (Pure)
-> >Marco Sanvido (Pure)
-> >Patrick Lee (Pure)
-> >Roland Dreier (Pure)
-> >Scott Dietzen (Pure)
-> >Steve Hodgson (Pure)
-> >Jerome Martin (RisingTide)
-> >Madhu Iyengar (RisingTide)
-> >Marc Fleischmann (RisingTide)
-> >Christoph Hellwig (LSF / RTS)
-> >Andy Grover (RHAT)
-> >Dan Carpenter (Oracle)
-> >Hannes Reinecke (Suse.de)
-> >James Bottomley (Parallels)
-> >Stephen Rothwell (IBM)
-> >Vladislav Bolkhovitin (SCST / ID7)
-> >
-> >Without the help and support of these people the initial merge for
-> >v3.5-rc1 would not have been possible.
-> >
-> >Thank you!
-> >
-> >--nab
-> >
-> >
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig30CCB3D744EA3310F7F02F74
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
 
+Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+---
+ fs/nls/Makefile |   12 ------------
+ 1 files changed, 0 insertions(+), 12 deletions(-)
+
+diff --git a/fs/nls/Makefile b/fs/nls/Makefile
+index b6b0550..5d74647 100644
+--- a/fs/nls/Makefile
++++ b/fs/nls/Makefile
+@@ -2,18 +2,6 @@
+ # Makefile for native language support
+ #
+=20
+-CONFIG_NLS_MACCELTIC=3Dm
+-CONFIG_NLS_MACCENTEURO=3Dm
+-CONFIG_NLS_MACCROATIAN=3Dm
+-CONFIG_NLS_MACCYRILLIC=3Dm
+-CONFIG_NLS_MACGAELIC=3Dm
+-CONFIG_NLS_MACGREEK=3Dm
+-CONFIG_NLS_MACICELAND=3Dm
+-CONFIG_NLS_MACINUIT=3Dm
+-CONFIG_NLS_MACROMANIAN=3Dm
+-CONFIG_NLS_MACROMAN=3Dm
+-CONFIG_NLS_MACTURKISH=3Dm
+-
+ obj-$(CONFIG_NLS)		+=3D nls_base.o
+=20
+ obj-$(CONFIG_NLS_CODEPAGE_437)	+=3D nls_cp437.o
+--=20
+1.7.7.6
+
+--=20
+Regards
+Vladimir '=CF=86-coder/phcoder' Serbinenko
+
+
+--------------enig30CCB3D744EA3310F7F02F74
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iF4EAREKAAYFAk/JZkAACgkQNak7dOguQgkx7QEArkkSFdzsPnr8v71wsFA8fjOJ
+qwzeSgkxFvbBKk3ynJoA/i0UN9eJX5c3DwQVM9tEfkqrfvZtbeOfAx0jV+LVm+g/
+=wmyX
+-----END PGP SIGNATURE-----
+
+--------------enig30CCB3D744EA3310F7F02F74--
