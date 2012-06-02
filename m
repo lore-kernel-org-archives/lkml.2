@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966319Ab2FBDaj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 23:30:39 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65390 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964887Ab2FBDai (ORCPT
+	id S966338Ab2FBDhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 23:37:15 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46560 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966324Ab2FBDhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 23:30:38 -0400
-Message-ID: <4FC988CF.5030602@gmail.com>
-Date: Sat, 02 Jun 2012 11:30:23 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Bill Unruh <unruh@physics.ubc.ca>, Bjorn Helgaas <bhelgaas@google.com>
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        bugzilla-daemon@bugzilla.kernel.org
-Subject: Re: [Bug 43331] Re: Bug on bootup of Linux kernel on Panasonic Toughbook
- S10
-References: <Pine.LNX.4.64.1205311412210.11510@info> <CAErSpo7p6XGmsi0Q0PAbWofs9-91taz2Px=VxzL2KEoWWYJwSA@mail.gmail.com> <Pine.LNX.4.64.1206010915580.26561@info>
-In-Reply-To: <Pine.LNX.4.64.1206010915580.26561@info>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jun 2012 23:37:12 -0400
+Date: Sat, 2 Jun 2012 13:37:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tyler Hicks <tyhicks@canonical.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: fate of the ecryptfs tree
+Message-Id: <20120602133703.be8c52b85b17b25b074aac8e@canb.auug.org.au>
+In-Reply-To: <20120601234154.GB6340@boyd>
+References: <20120531144115.0f35af0a8a5d79b73b0ecbe6@canb.auug.org.au>
+	<20120601234154.GB6340@boyd>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bill and Bjorn,
-	Device 8086:0103 is "2nd Generation Core Processor Family Thermal Management
-Controller" or "Sandy Bridge Thermal Management Controller". And address range 
-0xfed98000-0xfed9ffff has been reserved by motherboard device(PNP0C02). 
-	I guess that BIOS has assigned address "0xfed98000" to 0000:00:04.0 for
-thermal management functionality. The BAR0 of 0000:00:04.0 may be locked down 
-(can't be changed by OS) because the ACPI BIOS may have dependency on the assigned
-address ranges. A ACPI dump may give some help here if convenient.
-	Thanks!
-	Gerry
+--Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 06/02/2012 12:22 AM, Bill Unruh wrote:
-> Attached is a complete dmesg from a bootup of the kernel on the toughbook S10.
-> 
-> 
-> RE the noapic, I have no idea how I can give more information on it, since the
-> crash almost always occurs during the boot process itself, often very early in
-> the process. I will see if I can resurect the dmesg that gets saved, if any,
-> during that process. It is probably also an earlier kernel. I have not dared
-> try my current kernel with noapic, but perhaps I will try.
-> 
-> 
-> 
-> On Fri, 1 Jun 2012, Bjorn Helgaas wrote:
-> 
->> On Thu, May 31, 2012 at 3:39 PM, Bill Unruh <unruh@physics.ubc.ca> wrote:
->>> I am running Mageia 2 kernel 3.3.6-desktop586-2.mga2
->>>
->>> Every time I boot up I get the error messages
->>> pci 0000:00:04.0: BAR 0: error updating (0xdfa00004 != 0xfed98004)
->>
->> Thanks very much for this report.  I opened this bug report to help me
->> keep track of it: https://bugzilla.kernel.org/show_bug.cgi?id=43331
->>
->> The message means that we tried to write address 0xdfa00000 to BAR 0
->> of device 00:04.0 (a "signal processing controller," whatever that
->> is), but when we read the BAR back, we read 0xfed98004 instead.
->> That's an interesting address because it looks a lot like a resource
->> of an ACPI PNP0c02 device:
->>
->>  system 00:0e: [mem 0xfed98000-0xfed9ffff] has been reserved
->>  system 00:0e: Plug and Play ACPI device, IDs PNP0c02 (active)
->>
->> You say your machine runs OK (with "noapic"), but I'm doubtful that
->> 00:04.0 is working -- it doesn't even seem to have a driver bound to
->> it.  I don't know what the device does, but if you're not using it,
->> it's not surprising that you wouldn't notice it being broken.
->>
->> Can you attach the complete dmesg log to the bugzilla?  It will have
->> more details about other devices and the ranges from which we allocate
->> resources for PCI devices.
->>
->> You mention that the machine is not reliable unless you use "noapic".
->> That sounds like a separate bug, but also something it would be good
->> to track down.
->>
-> 
+Hi Tyler,
 
+On Fri, 1 Jun 2012 16:41:55 -0700 Tyler Hicks <tyhicks@canonical.com> wrote:
+>
+> On 2012-05-31 14:41:15, Stephen Rothwell wrote:
+> >=20
+> > I am just wondering about the fate of the ecryptfs tree.  The most rece=
+nt
+> > commit to that tree is dated Feb 11 and seems to have been included in
+> > Linus' tree as a different commit.
+>=20
+> My next branch has become stale. Sorry about that! I haven't been doing
+> much development on the kernel side in the last couple months. That will
+> soon change, as I have a few bug fixes in the works and I know of a
+> contribution or two that should surface shortly.
+
+Thanks for that.
+
+> In the meantime, I've just pushed the HEAD of Linus' tree to my next
+> branch to clean things up.
+
+Excellent.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPyYpfAAoJEECxmPOUX5FEpMkQAIclpm0R6LzKxGEbJglbC6xV
+3RVA6mlnk2u4VqIpJh6KIQzUnHUAJTPjgE7a8TIckzb3H0aaTjtQOon3/NoqskbJ
+4iAONNEy1xIqZjy+4p4c01V5w8JRXhTxkDmJbQvbMHd++KjWAlB3Kg1hu/KUcKSs
+6P//aD61KU/rPBE4/VPXBZ0b7VoWD20wQP0ONnFKZLTWsfPNQErQuGIqoayDtDbC
+bov1pM9YuiUJE+LciV5gxbQpkqvHMdxvTtKqJfwzI1q4L5lwHwVrzgXvnb6inq1R
+3uY7DlXvp6voFmJUV9nlIYogL8oSTatGTIovVSbCcJZ384etnyGv+qnk7asgYSWA
+4makUfle0BXwLpz8KaD6o9fEcAkTB7u0UEuXflD/HtmcrpYXR+caA34bUTM6dt/Z
+nRtqYlOTRNZd0eEo7YKwd1kOwnVeTalkT0E6gEPBjXpqUOr/1p7/PMkAlwrAAgWy
+R0qQf4+tHoTYs9ldDywp6OMZ+KiYC8emzqrxq3RG7HDopP2Q86kWNasJAPmOFwLd
+yYiz+S56IWhTTbBXYibYyzjKwosXKNvO/yFj/N2UHk8MjLoqsqqZFdgOQhxThBje
+qe6Cp4/g7YCaNMR9k3K7xtvzRlpXSf/cX5gR4fekE4U/UKrtPIK3kboXU+X5bRv4
+aKWrlywzdNnf+06AdBOC
+=cYFK
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O--
