@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965614Ab2FBNl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 09:41:59 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58159 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933324Ab2FBNkw (ORCPT
+	id S1754828Ab2FBOYo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 10:24:44 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:56767 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab2FBOYm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 09:40:52 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com
-Subject: [PATCH v2 04/10] dm: use memweight()
-Date: Sat,  2 Jun 2012 22:40:10 +0900
-Message-Id: <1338644416-11417-4-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
-References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+	Sat, 2 Jun 2012 10:24:42 -0400
+References: <20120601155447.GG3671@sgi.com>
+In-Reply-To: <20120601155447.GG3671@sgi.com>
+Mime-Version: 1.0 (1.0)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=GB2312
+Message-Id: <B389EF27-033E-4452-801B-A218089C599B@gmail.com>
+Cc: WANG Cong <xiyou.wangcong@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: iPad Mail (9B206)
+From: "Ethan.kernel@gmail" <ethan.kernel@gmail.com>
+Subject: Re: Commit 722bc6b167 breaks booting on an 8TB system.
+Date: Sat, 2 Jun 2012 22:24:30 +0800
+To: Robin Holt <holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use memweight() to count the total number of bits set in memory area.
+very interested about how long time take it to boot,
+I have tested with 4TB.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
----
+Thanks for your info.
 
-v2: change patch title s/dm-log:/dm:/
+Ethan
 
- drivers/md/dm-log.c |   13 ++-----------
- 1 files changed, 2 insertions(+), 11 deletions(-)
+ÔÚ 2012-6-1£¬23:54£¬Robin Holt <holt@sgi.com> Ð´µÀ£º
 
-diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
-index 65ebaeb..627d191 100644
---- a/drivers/md/dm-log.c
-+++ b/drivers/md/dm-log.c
-@@ -571,16 +571,6 @@ static void disk_dtr(struct dm_dirty_log *log)
- 	destroy_log_context(lc);
- }
- 
--static int count_bits32(uint32_t *addr, unsigned size)
--{
--	int count = 0, i;
--
--	for (i = 0; i < size; i++) {
--		count += hweight32(*(addr+i));
--	}
--	return count;
--}
--
- static void fail_log_device(struct log_c *lc)
- {
- 	if (lc->log_dev_failed)
-@@ -629,7 +619,8 @@ static int disk_resume(struct dm_dirty_log *log)
- 
- 	/* copy clean across to sync */
- 	memcpy(lc->sync_bits, lc->clean_bits, size);
--	lc->sync_count = count_bits32(lc->clean_bits, lc->bitset_uint32_count);
-+	lc->sync_count = memweight(lc->clean_bits,
-+				lc->bitset_uint32_count * sizeof(uint32_t));
- 	lc->sync_search = 0;
- 
- 	/* set the correct number of regions in the header */
--- 
-1.7.7.6
-
+> I just tried to boot an 8TB system.  It fails very early in boot with:
+> 
+> Kernel panic - not syncing: Cannot find space for the kernel page tables
+> 
+> 
+> A git bisect lead me to commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8.
+> 
+> A git revert of that commit based on Linus' current as of a few hours ago
+> (commit fb21aff) does boot past that point on the 8TB configuration.
+> 
+> Thanks,
+> Robin
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
