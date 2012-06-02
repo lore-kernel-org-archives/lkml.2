@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965858Ab2FBUgt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 16:36:49 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:42687 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965160Ab2FBUf5 (ORCPT
+	id S965840Ab2FBUgr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 16:36:47 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:52367 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965121Ab2FBUf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 16:35:57 -0400
+	Sat, 2 Jun 2012 16:35:56 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Yoshinori Sato <ysato@users.sourceforge.jp>,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Tony Breeds <tony@bakeyournoodle.com>, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 4/5] h8300/uaccess: Remove assignment to __gu_val in unhandled case of get_user()
-Date: Sat,  2 Jun 2012 22:35:38 +0200
-Message-Id: <1338669339-23214-5-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 3/5] h8300/time: Add missing #include <asm/irq_regs.h>
+Date: Sat,  2 Jun 2012 22:35:37 +0200
+Message-Id: <1338669339-23214-4-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
 References: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
@@ -22,36 +22,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__gu_val is const if the passed ptr is const, giving:
-
-include/linux/pagemap.h: In function 'fault_in_pages_readable':
-include/linux/pagemap.h:442:2: error: assignment of read-only variable '__gu_val'
-include/linux/pagemap.h:448:4: error: assignment of read-only variable '__gu_val'
-include/linux/pagemap.h: In function 'fault_in_multipages_readable':
-include/linux/pagemap.h:499:3: error: assignment of read-only variable '__gu_val'
-include/linux/pagemap.h:508:3: error: assignment of read-only variable '__gu_val'
-make[4]: *** [init/main.o] Error 1
-
-As we don't care about the actual value of __gu_val in the unhandled
-case (it will cause a link error anyway), just remove the assignment.
+arch/h8300/kernel/time.c: In function 'h8300_timer_tick':
+arch/h8300/kernel/time.c:39:2: error: implicit declaration of function 'get_irq_regs' [-Werror=implicit-function-declaration]
+arch/h8300/kernel/time.c:39:42: error: invalid type argument of '->' (have 'int')
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/h8300/include/asm/uaccess.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ arch/h8300/kernel/time.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/h8300/include/asm/uaccess.h b/arch/h8300/include/asm/uaccess.h
-index 356068c..534394f 100644
---- a/arch/h8300/include/asm/uaccess.h
-+++ b/arch/h8300/include/asm/uaccess.h
-@@ -100,7 +100,6 @@ extern int __put_user_bad(void);
- 	break;							\
-     default:							\
- 	__gu_err = __get_user_bad();				\
--	__gu_val = 0;						\
- 	break;							\
-     }								\
-     (x) = __gu_val;						\
+diff --git a/arch/h8300/kernel/time.c b/arch/h8300/kernel/time.c
+index 32263a1..e0f7419 100644
+--- a/arch/h8300/kernel/time.c
++++ b/arch/h8300/kernel/time.c
+@@ -27,6 +27,7 @@
+ #include <linux/profile.h>
+ 
+ #include <asm/io.h>
++#include <asm/irq_regs.h>
+ #include <asm/timer.h>
+ 
+ #define	TICK_SIZE (tick_nsec / 1000)
 -- 
 1.7.0.4
 
