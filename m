@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932988Ab2FBNku (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 09:40:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49994 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759650Ab2FBNkr (ORCPT
+	id S966606Ab2FBNmR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 09:42:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61911 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965393Ab2FBNlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 09:40:47 -0400
+	Sat, 2 Jun 2012 09:41:11 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Anders Larsen <al@alarsen.net>,
-        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
-Subject: [PATCH v2 01/10] string: introduce memweight
-Date: Sat,  2 Jun 2012 22:40:07 +0900
-Message-Id: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH v2 07/10] ocfs2: use memweight()
+Date: Sat,  2 Jun 2012 22:40:13 +0900
+Message-Id: <1338644416-11417-7-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memweight() is the function that counts the total number of bits set
-in memory area.  Unlike bitmap_weight(), memweight() takes pointer
-and size in bytes to specify a memory area which does not need to be
-aligned to long-word boundary.
+Use memweight to count the total number of bits set in memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Anders Larsen <al@alarsen.net>
-Cc: Alasdair Kergon <agk@redhat.com>
-Cc: dm-devel@redhat.com
-Cc: linux-fsdevel@vger.kernel.org
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org
 Cc: Mark Fasheh <mfasheh@suse.com>
 Cc: Joel Becker <jlbec@evilplan.org>
 Cc: ocfs2-devel@oss.oracle.com
-Cc: Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Matthew Wilcox <matthew@wil.cx>
 ---
 
-v2: simplify memweight(), adviced by Jan Kara
+No changes from v1
 
- include/linux/string.h |    3 +++
- lib/string.c           |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 0 deletions(-)
+ fs/ocfs2/localalloc.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/string.h b/include/linux/string.h
-index e033564..ffe0442 100644
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
- #endif
-+
-+extern size_t memweight(const void *ptr, size_t bytes);
-+
- #endif /* _LINUX_STRING_H_ */
-diff --git a/lib/string.c b/lib/string.c
-index e5878de..bf4d5a8 100644
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -26,6 +26,7 @@
- #include <linux/export.h>
- #include <linux/bug.h>
- #include <linux/errno.h>
-+#include <linux/bitmap.h>
+diff --git a/fs/ocfs2/localalloc.c b/fs/ocfs2/localalloc.c
+index 210c352..a9f78c7 100644
+--- a/fs/ocfs2/localalloc.c
++++ b/fs/ocfs2/localalloc.c
+@@ -784,14 +784,10 @@ bail:
  
- #ifndef __HAVE_ARCH_STRNICMP
- /**
-@@ -824,3 +825,34 @@ void *memchr_inv(const void *start, int c, size_t bytes)
- 	return check_bytes8(start, value, bytes % 8);
- }
- EXPORT_SYMBOL(memchr_inv);
-+
-+/**
-+ * memweight - count the total number of bits set in memory area
-+ * @ptr: pointer to the start of the area
-+ * @bytes: the size of the area
-+ */
-+size_t memweight(const void *ptr, size_t bytes)
-+{
-+	size_t w = 0;
-+	size_t longs;
-+	const unsigned char *bitmap = ptr;
-+
-+	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-+			bytes--, bitmap++)
-+		w += hweight8(*bitmap);
-+
-+	longs = bytes / sizeof(long);
-+	if (longs) {
-+		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-+		w += bitmap_weight((unsigned long *)bitmap,
-+				longs * BITS_PER_LONG);
-+		bytes -= longs * sizeof(long);
-+		bitmap += longs * sizeof(long);
-+	}
-+
-+	for (; bytes > 0; bytes--, bitmap++)
-+		w += hweight8(*bitmap);
-+
-+	return w;
-+}
-+EXPORT_SYMBOL(memweight);
+ static u32 ocfs2_local_alloc_count_bits(struct ocfs2_dinode *alloc)
+ {
+-	int i;
+-	u8 *buffer;
+-	u32 count = 0;
++	u32 count;
+ 	struct ocfs2_local_alloc *la = OCFS2_LOCAL_ALLOC(alloc);
+ 
+-	buffer = la->la_bitmap;
+-	for (i = 0; i < le16_to_cpu(la->la_size); i++)
+-		count += hweight8(buffer[i]);
++	count = memweight(la->la_bitmap, le16_to_cpu(la->la_size));
+ 
+ 	trace_ocfs2_local_alloc_count_bits(count);
+ 	return count;
 -- 
 1.7.7.6
 
