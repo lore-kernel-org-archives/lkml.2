@@ -1,142 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966253Ab2FBC7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 22:59:43 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:36404 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933774Ab2FBC7l (ORCPT
+	id S966296Ab2FBDSP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 23:18:15 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:35006 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966277Ab2FBDSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 22:59:41 -0400
-Message-ID: <4FC98179.4000400@oracle.com>
-Date: Sat, 02 Jun 2012 10:59:05 +0800
-From: Junxiao Bi <junxiao.bi@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Fri, 1 Jun 2012 23:18:14 -0400
+Date: Sat, 2 Jun 2012 05:18:11 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: WARNING: at fs/btrfs/extent_map.c:226
+ unpin_extent_cache+0x4b/0xa0()
+Message-ID: <20120602031811.GA329@x4>
+References: <20120602021009.GA332@x4>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, mfasheh@suse.com,
-        jlbec@evilplan.org, bcrl@kvack.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, joe.jin@oracle.com
-Subject: Re: [PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
-References: <1338437550-24499-1-git-send-email-junxiao.bi@oracle.com> <x49k3zscuk2.fsf@segfault.boston.devel.redhat.com> <4FC81DE0.5080403@oracle.com> <x49r4ty69bw.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49r4ty69bw.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120602021009.GA332@x4>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2012 04:55 AM, Jeff Moyer wrote:
-> Junxiao Bi<junxiao.bi@oracle.com>  writes:
->
->> On 05/31/2012 10:08 PM, Jeff Moyer wrote:
->>> Junxiao Bi<junxiao.bi@oracle.com>  writes:
->>>
->>>> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
->>>> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
->>>> io flag is involved in it to serialize the unaligned aio. As
->>>> *private is not initialized in init_sync_kiocb() of do_sync_write(),
->>>> this unaligned io flag may be unexpectly set in an aligned dio.
->>>> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
->>>> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
->>>> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_write_iter().
->>>> We can't initialized this flag in ocfs2_file_write_iter() since
->>>> it may be invoked several times by do_sync_write(). So we initialize
->>>> it in init_sync_kiocb(), it's also useful for other similiar use of
->>>> it in the future.
->>> I don't see any ocfs2_file_write_iter in the upstream kernel.
->>> ocfs2_file_aio_write most certainly could set ->private to 0, it
->>> will only be called once for a given kiocb.
->>  From sys_io_submit->..->io_submit_one->aio_run_iocb->aio_rw_vect_retry,
->> it seems that aio_write could be called two times. See the following
->> scenario.
->> 1. There is a file opened with direct io flag, in aio_rw_vect_retry,
->> aio_write is called first time. If the direct io can
->> not be completed, it will fall back into buffer io, see line 2329 in
->> aio_write.
-> Huh?  What's line 2329 in aio_write?
-See the following code.
+On 2012.06.02 at 04:10 +0200, Markus Trippelsdorf wrote:
+> I'm running the latest git kernel with the btrfs updates already merged.
+> Today I've hit the following warnings during rsnapshot backup:
+> 
+> Jun  1 22:26:30 x4 kernel: Adding 1953788k swap on /dev/sda2.  Priority:-1 extents:1 across:1953788k 
+> Jun  2 01:52:30 x4 kernel: ------------[ cut here ]------------
+> Jun  2 01:52:30 x4 kernel: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
 
-2312         can_do_direct = direct_io;
-2313         ret = ocfs2_prepare_inode_for_write(file, ppos,
-2314                                             iocb->ki_left, appending,
-2315 &can_do_direct, &has_refcount);
-2316         if (ret < 0) {
-2317                 mlog_errno(ret);
-2318                 goto out;
-2319         }
-2320
-2321         if (direct_io && !is_sync_kiocb(iocb))
-2322                 unaligned_dio = ocfs2_is_io_unaligned(inode, 
-iocb->ki_left,
-2323                                                       *ppos);
-2324
-2325         /*
-2326          * We can't complete the direct I/O as requested, fall back to
-2327          * buffered I/O.
-2328          */
-2329         if (direct_io && !can_do_direct) {
-2330                 ocfs2_rw_unlock(inode, rw_level);
-2331
-2332                 have_alloc_sem = 0;
-2333                 rw_level = -1;
-2334
-2335                 direct_io = 0;
-2336                 goto relock;
-2337         }
+ # btrfsck /dev/sdb1
+failed to read /dev/sr0: No medium found
+failed to read /dev/sr0: No medium found
+root 773 inode 2315 errors 400
+root 773 inode 16035 errors 1000
+root 773 inode 23441 errors 1000
+root 773 inode 23487 errors 400
+root 773 inode 23888 errors 400
+root 773 inode 27513 errors 1000
+root 773 inode 103998 errors 1000
+root 773 inode 110549 errors 400
+root 773 inode 110922 errors 400
+root 773 inode 111092 errors 400
+root 773 inode 111204 errors 400
+root 773 inode 238989 errors 400
+root 773 inode 239005 errors 400
+root 773 inode 239006 errors 400
+root 773 inode 239007 errors 400
+root 773 inode 239155 errors 400
+root 773 inode 239238 errors 400
+root 773 inode 241169 errors 400
+root 773 inode 247072 errors 400
+root 773 inode 247076 errors 400
+root 773 inode 247078 errors 400
+root 773 inode 247079 errors 400
+root 773 inode 247082 errors 400
+root 773 inode 247084 errors 400
+root 773 inode 247085 errors 400
+root 773 inode 247086 errors 400
+root 773 inode 247087 errors 400
+root 773 inode 247088 errors 400
+root 773 inode 247092 errors 400
+root 773 inode 247094 errors 400
+root 773 inode 247096 errors 400
+root 773 inode 247099 errors 400
+root 773 inode 249924 errors 400
+root 773 inode 272199 errors 1000
+root 773 inode 274836 errors 400
+root 773 inode 275402 errors 400
+root 773 inode 279188 errors 400
+root 773 inode 279454 errors 400
+root 773 inode 279473 errors 400
+root 773 inode 280002 errors 1000
+root 773 inode 280378 errors 400
+root 773 inode 280425 errors 400
+root 773 inode 280517 errors 400
+root 773 inode 280598 errors 1000
+root 773 inode 280721 errors 400
+root 773 inode 280828 errors 1000
+root 773 inode 281135 errors 400
+root 773 inode 281587 errors 400
+root 773 inode 282019 errors 400
+root 773 inode 282534 errors 1000
+root 773 inode 283008 errors 400
+root 773 inode 283052 errors 400
+root 773 inode 283644 errors 400
+root 773 inode 284382 errors 400
+root 773 inode 284755 errors 400
+root 773 inode 284792 errors 400
+root 773 inode 285630 errors 400
+root 773 inode 285846 errors 400
+root 773 inode 286754 errors 400
+root 773 inode 287473 errors 400
+root 773 inode 287474 errors 400
+root 773 inode 288128 errors 400
+root 773 inode 288894 errors 400
+root 773 inode 289555 errors 400
+root 773 inode 289594 errors 400
+root 773 inode 290633 errors 1000
+root 773 inode 290886 errors 400
+root 773 inode 291418 errors 1000
+root 773 inode 291643 errors 1000
+root 773 inode 292149 errors 1000
+root 773 inode 292654 errors 1000
+root 773 inode 304425 errors 400
+root 773 inode 306969 errors 1000
+root 773 inode 307251 errors 1000
+root 773 inode 307254 errors 1000
+root 773 inode 307558 errors 400
+root 773 inode 307591 errors 400
+root 773 inode 308160 errors 400
+root 773 inode 308870 errors 400
+root 773 inode 308880 errors 1000
+root 773 inode 309013 errors 400
+root 773 inode 309323 errors 400
+root 773 inode 309543 errors 400
+root 773 inode 310070 errors 400
+root 773 inode 310106 errors 400
+root 773 inode 311893 errors 400
+root 773 inode 312734 errors 1000
+root 773 inode 312736 errors 1000
+root 773 inode 313624 errors 400
+root 773 inode 313629 errors 400
+root 773 inode 313630 errors 400
+root 773 inode 314326 errors 1000
+root 773 inode 314516 errors 400
+root 773 inode 314705 errors 400
+root 773 inode 315962 errors 1000
+root 773 inode 316073 errors 400
+root 773 inode 316323 errors 1000
+root 773 inode 316324 errors 1000
+root 773 inode 318054 errors 1000
+root 773 inode 318932 errors 1000
+root 773 inode 319048 errors 1000
+root 773 inode 323024 errors 1000
+root 773 inode 323183 errors 1000
+root 773 inode 323193 errors 1000
+root 773 inode 323227 errors 1000
+root 773 inode 323624 errors 1000
+root 773 inode 323642 errors 1000
+root 773 inode 323841 errors 1000
+root 773 inode 324579 errors 400
+root 773 inode 324806 errors 1000
+root 773 inode 335590 errors 1000
+root 773 inode 335985 errors 400
+root 773 inode 336118 errors 1000
+root 773 inode 336173 errors 1000
+root 773 inode 338188 errors 1000
+root 773 inode 338799 errors 1000
+root 773 inode 338839 errors 1000
+root 773 inode 347565 errors 400
+root 773 inode 347570 errors 400
+root 773 inode 347573 errors 400
+root 773 inode 347579 errors 400
+root 773 inode 347702 errors 1000
+found 580033277952 bytes used err is 1
+total csum bytes: 562329788
+total tree bytes: 2014085120
+total fs tree bytes: 1084829696
+btree space waste bytes: 429308389
+file data blocks allocated: 7079238537216
+ referenced 588881031168
+Btrfs Btrfs v0.19
 
-The above is the source code how direct io falled back to buffer io. In 
-line 2313, in function ocfs2_prepare_inode_for_write(), it will judge 
-whether the direct io can be executed. If not, the variable 
-"can_do_direct" will be set to false, then the variable "direct_io" will 
-be set to 0 in line 2335. This means that generic_file_buffered_write() 
-will be called in the following code, not generic_file_direct_write(), 
-see the following code. So if the generic_file_buffered_write() is a 
-partial write, then its return value "written" will be made as the 
-return value of the aio_write, see line 2439. Then it return back to 
-aio_rw_vect_retry(), the condition (ret > 0 && iocb->ki_left > 0 && 
-opcode == IOCB_CMD_PWRITEV) is true. Then aio_write will be called 
-second time. As the unaligned I/O flag may be set in the kiocb at the 
-first time call of aio_write, it may affect the second call of aio_write 
-if its direct IO is aligned.
-
-2372         if (direct_io) {
-2373                 written = generic_file_direct_write(iocb, iov, 
-&nr_segs, *ppos,
-2374                                                     ppos, count, 
-ocount);
-2375                 if (written < 0) {
-2376                         ret = written;
-2377                         goto out_dio;
-2378                 }
-2379         } else {
-2380                 current->backing_dev_info = 
-file->f_mapping->backing_dev_info;
-2381                 written = generic_file_buffered_write(iocb, iov, 
-nr_segs, *ppos,
-2382                                                       ppos, count, 0);
-2383                 current->backing_dev_info = NULL;
-2384         }
-
-2438         if (written)
-2439                 ret = written;
-2440         return ret;
->
->> 2. If the very buffer io is a partial write, then it will return back
->> to  aio_rw_vect_retry and issue the second aio_write.
-> For the generic case, the fallback to buffered I/O happens in
-> __generic_file_aio_write, without bouncing all the way back up the call
-> stack to aio_rw_vect_retry.  I see in ocfs2, things are a bit different:
->
-> retry->aio_rw_vect_retry->ocfs2_file_aio_write->generic_file_direct_write
->    ->ocfs2_direct_IO->__blockdev_direct_IO
->
-> That last function can return 0 if not all of the data was written via
-> direct I/O.  At that point, you return all of the way up the chain to
-> aio_rw_vect_retry, which checks the return value (ret).  If it was 0,
-> then it goes ahead and retries the complete I/O.  How does that make any
-> progress?!
->
-> Cheers,
-> Jeff
-
+-- 
+Markus
