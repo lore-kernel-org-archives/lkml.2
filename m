@@ -1,169 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966296Ab2FBDSP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 23:18:15 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:35006 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966277Ab2FBDSO (ORCPT
+	id S966319Ab2FBDaj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 23:30:39 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65390 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964887Ab2FBDai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 23:18:14 -0400
-Date: Sat, 2 Jun 2012 05:18:11 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: WARNING: at fs/btrfs/extent_map.c:226
- unpin_extent_cache+0x4b/0xa0()
-Message-ID: <20120602031811.GA329@x4>
-References: <20120602021009.GA332@x4>
+	Fri, 1 Jun 2012 23:30:38 -0400
+Message-ID: <4FC988CF.5030602@gmail.com>
+Date: Sat, 02 Jun 2012 11:30:23 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120602021009.GA332@x4>
+To: Bill Unruh <unruh@physics.ubc.ca>, Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        bugzilla-daemon@bugzilla.kernel.org
+Subject: Re: [Bug 43331] Re: Bug on bootup of Linux kernel on Panasonic Toughbook
+ S10
+References: <Pine.LNX.4.64.1205311412210.11510@info> <CAErSpo7p6XGmsi0Q0PAbWofs9-91taz2Px=VxzL2KEoWWYJwSA@mail.gmail.com> <Pine.LNX.4.64.1206010915580.26561@info>
+In-Reply-To: <Pine.LNX.4.64.1206010915580.26561@info>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.06.02 at 04:10 +0200, Markus Trippelsdorf wrote:
-> I'm running the latest git kernel with the btrfs updates already merged.
-> Today I've hit the following warnings during rsnapshot backup:
+Hi Bill and Bjorn,
+	Device 8086:0103 is "2nd Generation Core Processor Family Thermal Management
+Controller" or "Sandy Bridge Thermal Management Controller". And address range 
+0xfed98000-0xfed9ffff has been reserved by motherboard device(PNP0C02). 
+	I guess that BIOS has assigned address "0xfed98000" to 0000:00:04.0 for
+thermal management functionality. The BAR0 of 0000:00:04.0 may be locked down 
+(can't be changed by OS) because the ACPI BIOS may have dependency on the assigned
+address ranges. A ACPI dump may give some help here if convenient.
+	Thanks!
+	Gerry
+
+On 06/02/2012 12:22 AM, Bill Unruh wrote:
+> Attached is a complete dmesg from a bootup of the kernel on the toughbook S10.
 > 
-> Jun  1 22:26:30 x4 kernel: Adding 1953788k swap on /dev/sda2.  Priority:-1 extents:1 across:1953788k 
-> Jun  2 01:52:30 x4 kernel: ------------[ cut here ]------------
-> Jun  2 01:52:30 x4 kernel: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
+> 
+> RE the noapic, I have no idea how I can give more information on it, since the
+> crash almost always occurs during the boot process itself, often very early in
+> the process. I will see if I can resurect the dmesg that gets saved, if any,
+> during that process. It is probably also an earlier kernel. I have not dared
+> try my current kernel with noapic, but perhaps I will try.
+> 
+> 
+> 
+> On Fri, 1 Jun 2012, Bjorn Helgaas wrote:
+> 
+>> On Thu, May 31, 2012 at 3:39 PM, Bill Unruh <unruh@physics.ubc.ca> wrote:
+>>> I am running Mageia 2 kernel 3.3.6-desktop586-2.mga2
+>>>
+>>> Every time I boot up I get the error messages
+>>> pci 0000:00:04.0: BAR 0: error updating (0xdfa00004 != 0xfed98004)
+>>
+>> Thanks very much for this report.  I opened this bug report to help me
+>> keep track of it: https://bugzilla.kernel.org/show_bug.cgi?id=43331
+>>
+>> The message means that we tried to write address 0xdfa00000 to BAR 0
+>> of device 00:04.0 (a "signal processing controller," whatever that
+>> is), but when we read the BAR back, we read 0xfed98004 instead.
+>> That's an interesting address because it looks a lot like a resource
+>> of an ACPI PNP0c02 device:
+>>
+>>  system 00:0e: [mem 0xfed98000-0xfed9ffff] has been reserved
+>>  system 00:0e: Plug and Play ACPI device, IDs PNP0c02 (active)
+>>
+>> You say your machine runs OK (with "noapic"), but I'm doubtful that
+>> 00:04.0 is working -- it doesn't even seem to have a driver bound to
+>> it.  I don't know what the device does, but if you're not using it,
+>> it's not surprising that you wouldn't notice it being broken.
+>>
+>> Can you attach the complete dmesg log to the bugzilla?  It will have
+>> more details about other devices and the ranges from which we allocate
+>> resources for PCI devices.
+>>
+>> You mention that the machine is not reliable unless you use "noapic".
+>> That sounds like a separate bug, but also something it would be good
+>> to track down.
+>>
+> 
 
- # btrfsck /dev/sdb1
-failed to read /dev/sr0: No medium found
-failed to read /dev/sr0: No medium found
-root 773 inode 2315 errors 400
-root 773 inode 16035 errors 1000
-root 773 inode 23441 errors 1000
-root 773 inode 23487 errors 400
-root 773 inode 23888 errors 400
-root 773 inode 27513 errors 1000
-root 773 inode 103998 errors 1000
-root 773 inode 110549 errors 400
-root 773 inode 110922 errors 400
-root 773 inode 111092 errors 400
-root 773 inode 111204 errors 400
-root 773 inode 238989 errors 400
-root 773 inode 239005 errors 400
-root 773 inode 239006 errors 400
-root 773 inode 239007 errors 400
-root 773 inode 239155 errors 400
-root 773 inode 239238 errors 400
-root 773 inode 241169 errors 400
-root 773 inode 247072 errors 400
-root 773 inode 247076 errors 400
-root 773 inode 247078 errors 400
-root 773 inode 247079 errors 400
-root 773 inode 247082 errors 400
-root 773 inode 247084 errors 400
-root 773 inode 247085 errors 400
-root 773 inode 247086 errors 400
-root 773 inode 247087 errors 400
-root 773 inode 247088 errors 400
-root 773 inode 247092 errors 400
-root 773 inode 247094 errors 400
-root 773 inode 247096 errors 400
-root 773 inode 247099 errors 400
-root 773 inode 249924 errors 400
-root 773 inode 272199 errors 1000
-root 773 inode 274836 errors 400
-root 773 inode 275402 errors 400
-root 773 inode 279188 errors 400
-root 773 inode 279454 errors 400
-root 773 inode 279473 errors 400
-root 773 inode 280002 errors 1000
-root 773 inode 280378 errors 400
-root 773 inode 280425 errors 400
-root 773 inode 280517 errors 400
-root 773 inode 280598 errors 1000
-root 773 inode 280721 errors 400
-root 773 inode 280828 errors 1000
-root 773 inode 281135 errors 400
-root 773 inode 281587 errors 400
-root 773 inode 282019 errors 400
-root 773 inode 282534 errors 1000
-root 773 inode 283008 errors 400
-root 773 inode 283052 errors 400
-root 773 inode 283644 errors 400
-root 773 inode 284382 errors 400
-root 773 inode 284755 errors 400
-root 773 inode 284792 errors 400
-root 773 inode 285630 errors 400
-root 773 inode 285846 errors 400
-root 773 inode 286754 errors 400
-root 773 inode 287473 errors 400
-root 773 inode 287474 errors 400
-root 773 inode 288128 errors 400
-root 773 inode 288894 errors 400
-root 773 inode 289555 errors 400
-root 773 inode 289594 errors 400
-root 773 inode 290633 errors 1000
-root 773 inode 290886 errors 400
-root 773 inode 291418 errors 1000
-root 773 inode 291643 errors 1000
-root 773 inode 292149 errors 1000
-root 773 inode 292654 errors 1000
-root 773 inode 304425 errors 400
-root 773 inode 306969 errors 1000
-root 773 inode 307251 errors 1000
-root 773 inode 307254 errors 1000
-root 773 inode 307558 errors 400
-root 773 inode 307591 errors 400
-root 773 inode 308160 errors 400
-root 773 inode 308870 errors 400
-root 773 inode 308880 errors 1000
-root 773 inode 309013 errors 400
-root 773 inode 309323 errors 400
-root 773 inode 309543 errors 400
-root 773 inode 310070 errors 400
-root 773 inode 310106 errors 400
-root 773 inode 311893 errors 400
-root 773 inode 312734 errors 1000
-root 773 inode 312736 errors 1000
-root 773 inode 313624 errors 400
-root 773 inode 313629 errors 400
-root 773 inode 313630 errors 400
-root 773 inode 314326 errors 1000
-root 773 inode 314516 errors 400
-root 773 inode 314705 errors 400
-root 773 inode 315962 errors 1000
-root 773 inode 316073 errors 400
-root 773 inode 316323 errors 1000
-root 773 inode 316324 errors 1000
-root 773 inode 318054 errors 1000
-root 773 inode 318932 errors 1000
-root 773 inode 319048 errors 1000
-root 773 inode 323024 errors 1000
-root 773 inode 323183 errors 1000
-root 773 inode 323193 errors 1000
-root 773 inode 323227 errors 1000
-root 773 inode 323624 errors 1000
-root 773 inode 323642 errors 1000
-root 773 inode 323841 errors 1000
-root 773 inode 324579 errors 400
-root 773 inode 324806 errors 1000
-root 773 inode 335590 errors 1000
-root 773 inode 335985 errors 400
-root 773 inode 336118 errors 1000
-root 773 inode 336173 errors 1000
-root 773 inode 338188 errors 1000
-root 773 inode 338799 errors 1000
-root 773 inode 338839 errors 1000
-root 773 inode 347565 errors 400
-root 773 inode 347570 errors 400
-root 773 inode 347573 errors 400
-root 773 inode 347579 errors 400
-root 773 inode 347702 errors 1000
-found 580033277952 bytes used err is 1
-total csum bytes: 562329788
-total tree bytes: 2014085120
-total fs tree bytes: 1084829696
-btree space waste bytes: 429308389
-file data blocks allocated: 7079238537216
- referenced 588881031168
-Btrfs Btrfs v0.19
-
--- 
-Markus
