@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760326Ab2FBCIB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 22:08:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22003 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab2FBCIA (ORCPT
+	id S1757856Ab2FBCKO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 22:10:14 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:59359 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2FBCKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 22:08:00 -0400
-X-Authority-Analysis: v=2.0 cv=T6AOvo2Q c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=TZ4Pk1CgInwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=mDV3o1hIAAAA:8 a=5oHEXQPcu1oIOspzj0UA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338602877.13348.474.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC PATCH -tip  1/9] ftrace: Add pt_regs acceptable trace
- callback
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Fri, 01 Jun 2012 22:07:57 -0400
-In-Reply-To: <20120529124857.9191.5868.stgit@localhost.localdomain>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-	 <20120529124857.9191.5868.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 1 Jun 2012 22:10:12 -0400
+Date: Sat, 2 Jun 2012 04:10:09 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-btrfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
+Message-ID: <20120602021009.GA332@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-05-29 at 21:48 +0900, Masami Hiramatsu wrote:
+I'm running the latest git kernel with the btrfs updates already merged.
+Today I've hit the following warnings during rsnapshot backup:
 
->  struct ftrace_ops {
-> -	ftrace_func_t			func;
-> +	union {
-> +		ftrace_func_t			func;
-> +		ftrace_regs_func_t		regs_func;
-> +	};
->  	struct ftrace_ops		*next;
->  	unsigned long			flags;
->  	int __percpu			*disabled;
-> @@ -164,6 +182,7 @@ static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
->  }
+Jun  1 22:26:30 x4 kernel: Adding 1953788k swap on /dev/sda2.  Priority:-1 extents:1 across:1953788k 
+Jun  2 01:52:30 x4 kernel: ------------[ cut here ]------------
+Jun  2 01:52:30 x4 kernel: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
+Jun  2 01:52:30 x4 kernel: Hardware name: System Product Name
+Jun  2 01:52:30 x4 kernel: Pid: 24991, comm: btrfs-endio-wri Not tainted 3.4.0-09820-g86c47b7-dirty #50
+Jun  2 01:52:30 x4 kernel: Call Trace:
+Jun  2 01:52:30 x4 kernel: [<ffffffff8105c6c0>] ? warn_slowpath_common+0x60/0xa0
+Jun  2 01:52:30 x4 kernel: [<ffffffff8121d6eb>] ? unpin_extent_cache+0x4b/0xa0
+Jun  2 01:52:30 x4 kernel: [<ffffffff8121207e>] ? btrfs_finish_ordered_io+0x27e/0x400
+Jun  2 01:52:30 x4 kernel: [<ffffffff8123bb02>] ? worker_loop+0x142/0x4c0
+Jun  2 01:52:30 x4 kernel: [<ffffffff8123b9c0>] ? btrfs_queue_worker+0x300/0x300
+Jun  2 01:52:30 x4 kernel: [<ffffffff81077ae5>] ? kthread+0x85/0xa0
+Jun  2 01:52:30 x4 kernel: [<ffffffff81561c54>] ? kernel_thread_helper+0x4/0x10
+Jun  2 01:52:30 x4 kernel: [<ffffffff81077a60>] ? kthread_flush_work_fn+0x20/0x20
+Jun  2 01:52:30 x4 kernel: [<ffffffff81561c50>] ? gs_change+0xb/0xb
+Jun  2 01:52:30 x4 kernel: ---[ end trace 73bddc9623dbf3c3 ]---
+...
+Jun  2 01:55:27 x4 kernel: ------------[ cut here ]------------
+Jun  2 01:55:27 x4 kernel: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
+Jun  2 01:55:27 x4 kernel: Hardware name: System Product Name
+Jun  2 01:55:27 x4 kernel: Pid: 24997, comm: btrfs-endio-wri Tainted: G        W    3.4.0-09820-g86c47b7-dirty #50
+Jun  2 01:55:27 x4 kernel: Call Trace:
+Jun  2 01:55:27 x4 kernel: [<ffffffff8105c6c0>] ? warn_slowpath_common+0x60/0xa0
+Jun  2 01:55:27 x4 kernel: [<ffffffff8121d6eb>] ? unpin_extent_cache+0x4b/0xa0
+Jun  2 01:55:27 x4 kernel: [<ffffffff8121207e>] ? btrfs_finish_ordered_io+0x27e/0x400
+Jun  2 01:55:27 x4 kernel: [<ffffffff8123bb02>] ? worker_loop+0x142/0x4c0
+Jun  2 01:55:27 x4 kernel: [<ffffffff8123b9c0>] ? btrfs_queue_worker+0x300/0x300
+Jun  2 01:55:27 x4 kernel: [<ffffffff81077ae5>] ? kthread+0x85/0xa0
+Jun  2 01:55:27 x4 kernel: [<ffffffff81561c54>] ? kernel_thread_helper+0x4/0x10
+Jun  2 01:55:27 x4 kernel: [<ffffffff81077a60>] ? kthread_flush_work_fn+0x20/0x20
+Jun  2 01:55:27 x4 kernel: [<ffffffff81561c50>] ? gs_change+0xb/0xb
+Jun  2 01:55:27 x4 kernel: ---[ end trace 73bddc9623dbf3eb ]---
 
-[..]
+ ~ # < /var/log/kern.log | grep extent_map | wc -l
+41
 
->  
->  static struct ftrace_ops global_ops = {
-> -	.func			= ftrace_stub,
-> +	.regs_func		= ftrace_regs_stub,
->  	.notrace_hash		= EMPTY_HASH,
->  	.filter_hash		= EMPTY_HASH,
-> +	.flags			= FTRACE_OPS_FL_SAVE_REGS,
->  };
->  
->  static DEFINE_MUTEX(ftrace_regex_lock);
-> @@ -3911,7 +3924,8 @@ void __init ftrace_init(void)
->  #else
->  
->  static struct ftrace_ops global_ops = {
-> -	.func			= ftrace_stub,
-> +	.regs_func		= ftrace_regs_stub,
-> +	.flags			= FTRACE_OPS_FL_SAVE_REGS,
->  };
->  
+>From /var/log/cron.log
 
-Ug, this wont compile with some versions of gcc :-(
+Jun  2 01:52:00 x4 fcron[24821]: Job /usr/bin/rsnapshot daily started for user root (pid 24822)
+Jun  2 01:55:29 x4 fcron[24821]: Job /usr/bin/rsnapshot daily completed (mailing output)
 
-The one I stumbled on is gcc 4.5.1 (which I test builds against 4.5.1
-and 4.6.0). Then I saw this BZ:
+ ~ # btrfs fi df /var
+Data, RAID1: total=758.00GB, used=538.32GB
+Data: total=8.00MB, used=0.00
+System, RAID1: total=8.00MB, used=116.00KB
+System: total=4.00MB, used=0.00
+Metadata, RAID1: total=37.50GB, used=1.88GB
+Metadata: total=8.00MB, used=0.00
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=10676
+~ # btrfs subvol list /var
+ID 773 top level 5 path .snapshots/daily.0
+ID 800 top level 5 path .snapshots/monthly.0
+ID 811 top level 5 path .snapshots/weekly.3
+ID 813 top level 5 path .snapshots/weekly.2
+ID 839 top level 5 path .snapshots/weekly.1
+ID 870 top level 5 path .snapshots/weekly.0
+ID 871 top level 5 path .snapshots/daily.6
+ID 872 top level 5 path .snapshots/daily.5
+ID 873 top level 5 path .snapshots/daily.4
+ID 874 top level 5 path .snapshots/daily.3
+ID 875 top level 5 path .snapshots/daily.2
+ID 876 top level 5 path .snapshots/daily.1
 
-This can't be a union :-(  Then we can not initialize it.
+Rsnapshot creates a new snapshot with:
+ btrfs subvolume snapshot -r
+and then uses rsync to backup my root drive (on xfs).
 
-I may go with my old approach and just change all callers to have a regs
-parameter.
-
--- Steve
-
-
+-- 
+Markus
