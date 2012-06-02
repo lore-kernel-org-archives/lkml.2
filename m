@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965840Ab2FBUgr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 16:36:47 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:52367 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965121Ab2FBUf4 (ORCPT
+	id S1760372Ab2FBU60 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 16:58:26 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:46236 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759812Ab2FBU6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 16:35:56 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Tony Breeds <tony@bakeyournoodle.com>, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 3/5] h8300/time: Add missing #include <asm/irq_regs.h>
-Date: Sat,  2 Jun 2012 22:35:37 +0200
-Message-Id: <1338669339-23214-4-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
-References: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
+	Sat, 2 Jun 2012 16:58:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120601225754.GA25281@electric-eye.fr.zoreil.com>
+References: <20120530214809.GA19223@redhat.com>
+	<alpine.LFD.2.02.1205310938080.3231@ionos>
+	<20120601225754.GA25281@electric-eye.fr.zoreil.com>
+Date: Sat, 2 Jun 2012 16:58:23 -0400
+Message-ID: <CAB9dFdvWoc1onyWyy4BVmhpjeb5K2d10re0NcW-_NQCbfRC0hw@mail.gmail.com>
+Subject: Re: NOHZ: local_softirq_pending 08
+From: Marc Dionne <marc.c.dionne@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch/h8300/kernel/time.c: In function 'h8300_timer_tick':
-arch/h8300/kernel/time.c:39:2: error: implicit declaration of function 'get_irq_regs' [-Werror=implicit-function-declaration]
-arch/h8300/kernel/time.c:39:42: error: invalid type argument of '->' (have 'int')
+If it helps, I've been seeing the same thing here on a system with an
+r8169.  The message appears consistently enough on network startup to
+be able to track it down to this specific commit:
+    98ddf986fca17840e46e070354b7e2cd2169da15: r8169: bh locking redux
+and task scheduling.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/h8300/kernel/time.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The softirq pending messages always come right after "link down"
+messages for the interface.
 
-diff --git a/arch/h8300/kernel/time.c b/arch/h8300/kernel/time.c
-index 32263a1..e0f7419 100644
---- a/arch/h8300/kernel/time.c
-+++ b/arch/h8300/kernel/time.c
-@@ -27,6 +27,7 @@
- #include <linux/profile.h>
- 
- #include <asm/io.h>
-+#include <asm/irq_regs.h>
- #include <asm/timer.h>
- 
- #define	TICK_SIZE (tick_nsec / 1000)
--- 
-1.7.0.4
-
+Marc
