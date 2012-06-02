@@ -1,66 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965807Ab2FBT4k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 15:56:40 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41886 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965720Ab2FBT4j (ORCPT
+	id S965814Ab2FBT71 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 15:59:27 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40327 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965741Ab2FBT70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 15:56:39 -0400
-Date: Sat, 2 Jun 2012 21:00:06 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Alan Cox <alan@linux.intel.com>,
+	Sat, 2 Jun 2012 15:59:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
+References: <4FC6189B.9080909@fusionio.com> <1338402812.2760.413.camel@edumazet-glaptop>
+ <4FC66D3D.6080509@fusionio.com> <1338404902.2760.451.camel@edumazet-glaptop>
+ <1338410107.2760.544.camel@edumazet-glaptop> <1338456918.2760.1318.camel@edumazet-glaptop>
+ <1338574627.2760.1545.camel@edumazet-glaptop> <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+ <1338583498.2760.1648.camel@edumazet-glaptop> <20120601215620.305155c0@pyramind.ukuu.org.uk>
+ <1338584389.2760.1653.camel@edumazet-glaptop> <1338621438.2760.1679.camel@edumazet-glaptop>
+ <1338623708.2760.1691.camel@edumazet-glaptop> <1338624102.2760.1693.camel@edumazet-glaptop>
+ <20120602125723.5b057570@pyramind.ukuu.org.uk> <1338640231.2760.1704.camel@edumazet-glaptop>
+ <CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 2 Jun 2012 12:59:03 -0700
+X-Google-Sender-Auth: 23r7WqKIbegx2Hzb4lEqMvHHwWA
+Message-ID: <CA+55aFysA72FVTF6k=HnqYjCTqXQO+jcMLeR6MpM=eJm-H+EBQ@mail.gmail.com>
+Subject: Re: [PATCH] tty: add lockdep annotations
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] tty: add lockdep annotations
-Message-ID: <20120602210006.46db6204@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
-References: <4FC6189B.9080909@fusionio.com>
-	<1338402812.2760.413.camel@edumazet-glaptop>
-	<4FC66D3D.6080509@fusionio.com>
-	<1338404902.2760.451.camel@edumazet-glaptop>
-	<1338410107.2760.544.camel@edumazet-glaptop>
-	<1338456918.2760.1318.camel@edumazet-glaptop>
-	<1338574627.2760.1545.camel@edumazet-glaptop>
-	<CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
-	<1338583498.2760.1648.camel@edumazet-glaptop>
-	<20120601215620.305155c0@pyramind.ukuu.org.uk>
-	<1338584389.2760.1653.camel@edumazet-glaptop>
-	<1338621438.2760.1679.camel@edumazet-glaptop>
-	<1338623708.2760.1691.camel@edumazet-glaptop>
-	<1338624102.2760.1693.camel@edumazet-glaptop>
-	<20120602125723.5b057570@pyramind.ukuu.org.uk>
-	<1338640231.2760.1704.camel@edumazet-glaptop>
-	<CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary=001636c5a6f1d73b8804c182bc76
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--001636c5a6f1d73b8804c182bc76
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Sat, Jun 2, 2012 at 11:38 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> I'm pretty sure this is the bug. And there's no way we can make
 > 'tty_mutex' protect every tty_kref_put(). So I think we have two
 > options:
-> 
->  - revert all the tty locking changes
-> 
->  - make a new global lock that protects just driver->ops->lookup(),
+>
+> =A0- revert all the tty locking changes
+>
+> =A0- make a new global lock that protects just driver->ops->lookup(),
 > driver->ttys[idx], and driver->ops->remove()
+>
+> Hmm?
 
-I've been working on the latter as a later step already. It triggers a
-whole set of other horrible problems about synchronization between
-driver->ttys[] and driver->termios.
+Ok, here's the second option. THIS PATCH IS TOTALLY UNTESTED!
 
-Can we just punt the tty localisation patches for a release (the last
-console one before it is fine). 
+Basic concepts:
 
-This isn't urgent stuff, its gradual cleaning the kernel up stuff and if
-we keep it in -next for another cycle while fixing up these cases there
-will be no hardware not supported, nobody unable to use their system, no
-regressions. Better to get it right first because its ugly and
-complicated as hell.
+ - the tty driver lookup is protected with "tty_lookup_mutex",
+similarly to how the "current task mutex" is protected by the signal
+lock.
 
-Alan
+ - At lookup, we now always increment the kref (which in the case of
+tty_open_current_tty() means that we do *not* drop the kref), and in
+the case of a tty driver lookup, we use "atomic_inc_not_zero()" to
+make sure that we get a tty that is not on its way out.
+
+I *think* this makes sense. But it has has had absolutely zero
+testing. It compiles in my config, and the locking is at least
+sensible and well-localized, but maybe I'm missing something.
+
+Comments?
+
+                  Linus
+
+--001636c5a6f1d73b8804c182bc76
+Content-Type: application/octet-stream; name="tty-lookup-locking.patch"
+Content-Disposition: attachment; filename="tty-lookup-locking.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h2z3u48n0
+
+IGRyaXZlcnMvdHR5L3R0eV9pby5jIHwgNTIgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDM5IGluc2VydGlvbnMoKyks
+IDEzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvdHR5L3R0eV9pby5jIGIvZHJp
+dmVycy90dHkvdHR5X2lvLmMKaW5kZXggOWU5MzBjMDA5YmYyLi4yMzRiNWVhZWIzZmYgMTAwNjQ0
+Ci0tLSBhL2RyaXZlcnMvdHR5L3R0eV9pby5jCisrKyBiL2RyaXZlcnMvdHR5L3R0eV9pby5jCkBA
+IC0xMjE3LDI0ICsxMjE3LDQxIEBAIHN0YXRpYyB2b2lkIHR0eV9saW5lX25hbWUoc3RydWN0IHR0
+eV9kcml2ZXIgKmRyaXZlciwgaW50IGluZGV4LCBjaGFyICpwKQogCXNwcmludGYocCwgIiVzJWQi
+LCBkcml2ZXItPm5hbWUsIGluZGV4ICsgZHJpdmVyLT5uYW1lX2Jhc2UpOwogfQogCitzdGF0aWMg
+REVGSU5FX01VVEVYKHR0eV9sb29rdXBfbXV0ZXgpOworCiAvKioKICAqCXR0eV9kcml2ZXJfbG9v
+a3VwX3R0eSgpIC0gZmluZCBhbiBleGlzdGluZyB0dHksIGlmIGFueQogICoJQGRyaXZlcjogdGhl
+IGRyaXZlciBmb3IgdGhlIHR0eQogICoJQGlkeDoJIHRoZSBtaW5vciBudW1iZXIKICAqCi0gKglS
+ZXR1cm4gdGhlIHR0eSwgaWYgZm91bmQgb3IgRVJSX1BUUigpIG90aGVyd2lzZS4KKyAqCVJldHVy
+biB0aGUgdHR5IGlmIGZvdW5kLCBOVUxMIGlmIG5vdCwgb3IgRVJSX1BUUigpIGZvciBlcnJvci4K
+ICAqCi0gKglMb2NraW5nOiB0dHlfbXV0ZXggbXVzdCBiZSBoZWxkLiBJZiB0dHkgaXMgZm91bmQs
+IHRoZSBtdXRleCBtdXN0Ci0gKgliZSBoZWxkIHVudGlsIHRoZSAnZmFzdC1vcGVuJyBpcyBhbHNv
+IGRvbmUuIFdpbGwgY2hhbmdlIG9uY2Ugd2UKLSAqCWhhdmUgcmVmY291bnRpbmcgaW4gdGhlIGRy
+aXZlciBhbmQgcGVyIGRyaXZlciBsb2NraW5nCisgKglMb2NraW5nOiB0dHlfbG9va3VwX211dGV4
+LCBhbmQgcmVmY291bnQgaW5jcmVtZW50ZWQgaWYgc3VjY2Vzc2Z1bGx5IGZvdW5kLgogICovCiBz
+dGF0aWMgc3RydWN0IHR0eV9zdHJ1Y3QgKnR0eV9kcml2ZXJfbG9va3VwX3R0eShzdHJ1Y3QgdHR5
+X2RyaXZlciAqZHJpdmVyLAogCQlzdHJ1Y3QgaW5vZGUgKmlub2RlLCBpbnQgaWR4KQogeworCXN0
+cnVjdCB0dHlfc3RydWN0ICp0dHk7CisKKwltdXRleF9sb2NrKCZ0dHlfbG9va3VwX211dGV4KTsK
+IAlpZiAoZHJpdmVyLT5vcHMtPmxvb2t1cCkKLQkJcmV0dXJuIGRyaXZlci0+b3BzLT5sb29rdXAo
+ZHJpdmVyLCBpbm9kZSwgaWR4KTsKKwkJdHR5ID0gZHJpdmVyLT5vcHMtPmxvb2t1cChkcml2ZXIs
+IGlub2RlLCBpZHgpOworCWVsc2UKKwkJdHR5ID0gZHJpdmVyLT50dHlzW2lkeF07CiAKLQlyZXR1
+cm4gZHJpdmVyLT50dHlzW2lkeF07CisJLyoKKwkgKiBJZiB0aGUgdHR5IHJlZmNvdW50IGlzIHpl
+cm8sIHRoaXMgdHR5IGlzIGluIHRoZSBwcm9jZXNzIG9mIGJlaW5nCisJICogcmVtb3ZlZC4uIFRo
+ZSAndHR5X2xvb2t1cF9tdXRleCcgbG9jayBndWFyYW50ZWVzIHRoYXQgdGhlIHR0eSBpcworCSAq
+IHN0aWxsIGFyb3VuZCwgYnV0IHdpdGhvdXQgYSByZWZjb3VudCBpdCBtYXkgbm90IGJlIGFyb3Vu
+ZCBvbmNlCisJICogd2UgZHJvcCB0aGUgbG9jaywgc28gd2UgbXVzdCBub3QgcmV0dXJuIHN1Y2gg
+YSB0dHkuCisJICovCisJaWYgKHR0eSAmJiAhSVNfRVJSKHR0eSkpIHsKKwkJaWYgKCFhdG9taWNf
+aW5jX25vdF96ZXJvKCZ0dHktPmtyZWYucmVmY291bnQpKQorCQkJdHR5ID0gTlVMTDsKKwl9CisK
+KwltdXRleF91bmxvY2soJnR0eV9sb29rdXBfbXV0ZXgpOworCXJldHVybiB0dHk7CiB9CiAKIC8q
+KgpAQCAtMTI3NSw2ICsxMjkyLDggQEAgaW50IHR0eV9zdGFuZGFyZF9pbnN0YWxsKHN0cnVjdCB0
+dHlfZHJpdmVyICpkcml2ZXIsIHN0cnVjdCB0dHlfc3RydWN0ICp0dHkpCiAJaWYgKHJldCkKIAkJ
+cmV0dXJuIHJldDsKIAorCS8qIFRoaXMgbXVzdCBvbmx5IGV2ZXIgYmUgY2FsbGVkIHRocm91Z2gg
+dGhlIGRyaXZlciBpbnN0YWxsICovCisJV0FSTl9PTl9PTkNFKCFtdXRleF9pc19sb2NrZWQoJnR0
+eV9sb29rdXBfbXV0ZXgpKTsKIAl0dHlfZHJpdmVyX2tyZWZfZ2V0KGRyaXZlcik7CiAJdHR5LT5j
+b3VudCsrOwogCWRyaXZlci0+dHR5c1t0dHktPmluZGV4XSA9IHR0eTsKQEAgLTEyOTcsOCArMTMx
+NiwxMyBAQCBFWFBPUlRfU1lNQk9MX0dQTCh0dHlfc3RhbmRhcmRfaW5zdGFsbCk7CiBzdGF0aWMg
+aW50IHR0eV9kcml2ZXJfaW5zdGFsbF90dHkoc3RydWN0IHR0eV9kcml2ZXIgKmRyaXZlciwKIAkJ
+CQkJCXN0cnVjdCB0dHlfc3RydWN0ICp0dHkpCiB7Ci0JcmV0dXJuIGRyaXZlci0+b3BzLT5pbnN0
+YWxsID8gZHJpdmVyLT5vcHMtPmluc3RhbGwoZHJpdmVyLCB0dHkpIDoKKwlpbnQgcmV0dmFsOwor
+CisJbXV0ZXhfbG9jaygmdHR5X2xvb2t1cF9tdXRleCk7CisJcmV0dmFsID0gZHJpdmVyLT5vcHMt
+Pmluc3RhbGwgPyBkcml2ZXItPm9wcy0+aW5zdGFsbChkcml2ZXIsIHR0eSkgOgogCQl0dHlfc3Rh
+bmRhcmRfaW5zdGFsbChkcml2ZXIsIHR0eSk7CisJbXV0ZXhfdW5sb2NrKCZ0dHlfbG9va3VwX211
+dGV4KTsKKwlyZXR1cm4gcmV0dmFsOwogfQogCiAvKioKQEAgLTEzMTMsMTAgKzEzMzcsMTIgQEAg
+c3RhdGljIGludCB0dHlfZHJpdmVyX2luc3RhbGxfdHR5KHN0cnVjdCB0dHlfZHJpdmVyICpkcml2
+ZXIsCiAgKi8KIHZvaWQgdHR5X2RyaXZlcl9yZW1vdmVfdHR5KHN0cnVjdCB0dHlfZHJpdmVyICpk
+cml2ZXIsIHN0cnVjdCB0dHlfc3RydWN0ICp0dHkpCiB7CisJbXV0ZXhfbG9jaygmdHR5X2xvb2t1
+cF9tdXRleCk7CiAJaWYgKGRyaXZlci0+b3BzLT5yZW1vdmUpCiAJCWRyaXZlci0+b3BzLT5yZW1v
+dmUoZHJpdmVyLCB0dHkpOwogCWVsc2UKIAkJZHJpdmVyLT50dHlzW3R0eS0+aW5kZXhdID0gTlVM
+TDsKKwltdXRleF91bmxvY2soJnR0eV9sb29rdXBfbXV0ZXgpOwogfQogCiAvKgpAQCAtMTgwOSw5
+ICsxODM1LDYgQEAgaW50IHR0eV9yZWxlYXNlKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBm
+aWxlICpmaWxwKQogICoKICAqCVdlIGNhbm5vdCByZXR1cm4gZHJpdmVyIGFuZCBpbmRleCBsaWtl
+IGZvciB0aGUgb3RoZXIgbm9kZXMgYmVjYXVzZQogICoJZGV2cHRzIHdpbGwgbm90IHdvcmsgdGhl
+bi4gSXQgZXhwZWN0cyBpbm9kZXMgdG8gYmUgZnJvbSBkZXZwdHMgRlMuCi0gKgotICoJV2UgbmVl
+ZCB0byBtb3ZlIHRvIHJldHVybmluZyBhIHJlZmNvdW50ZWQgb2JqZWN0IGZyb20gYWxsIHRoZSBs
+b29rdXAKLSAqCXBhdGhzIGluY2x1ZGluZyB0aGlzIG9uZS4KICAqLwogc3RhdGljIHN0cnVjdCB0
+dHlfc3RydWN0ICp0dHlfb3Blbl9jdXJyZW50X3R0eShkZXZfdCBkZXZpY2UsIHN0cnVjdCBmaWxl
+ICpmaWxwKQogewpAQCAtMTgyNiw5ICsxODQ5LDYgQEAgc3RhdGljIHN0cnVjdCB0dHlfc3RydWN0
+ICp0dHlfb3Blbl9jdXJyZW50X3R0eShkZXZfdCBkZXZpY2UsIHN0cnVjdCBmaWxlICpmaWxwKQog
+CiAJZmlscC0+Zl9mbGFncyB8PSBPX05PTkJMT0NLOyAvKiBEb24ndCBsZXQgL2Rldi90dHkgYmxv
+Y2sgKi8KIAkvKiBub2N0dHkgPSAxOyAqLwotCXR0eV9rcmVmX3B1dCh0dHkpOwotCS8qIEZJWE1F
+OiB3ZSBwdXQgYSByZWZlcmVuY2UgYW5kIHJldHVybiBhIFRUWSEgKi8KLQkvKiBUaGlzIGlzIG9u
+bHkgc2FmZSBiZWNhdXNlIHRoZSBjYWxsZXIgaG9sZHMgdHR5X211dGV4ICovCiAJcmV0dXJuIHR0
+eTsKIH0KIApAQCAtMTk0OSw2ICsxOTY5LDEyIEBAIHJldHJ5X29wZW46CiAKIAlpZiAodHR5KSB7
+CiAJCXR0eV9sb2NrKHR0eSk7CisJCS8qCisJCSAqIE5vdyB0aGF0IHdlJ3ZlIGxvY2tlZCB0aGUg
+dHR5LCB3ZSBjYW4gZHJvcCB0aGUga3JlZiB3ZSBnb3QKKwkJICogZnJvbSB0dHlfb3Blbl9jdXJy
+ZW50X3R0eSBvciB0dHlfbG9va3VwX2RyaXZlcigpLiBUaGUgbG9jaworCQkgKiBrZWVwcyBhbiBl
+eHRyYSByZWZjb3VudCB0byBpdC4KKwkJICovCisJCXR0eV9rcmVmX3B1dCh0dHkpOwogCQlyZXR2
+YWwgPSB0dHlfcmVvcGVuKHR0eSk7CiAJCWlmIChyZXR2YWwgPCAwKSB7CiAJCQl0dHlfdW5sb2Nr
+KHR0eSk7Cg==
+--001636c5a6f1d73b8804c182bc76--
