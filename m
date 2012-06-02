@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965160Ab2FBGke (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 02:40:34 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:57666 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758947Ab2FBGkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 02:40:32 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [uclinux-dist-devel] [PATCH 1/2] crypto: Add new test cases for Blackfin CRC crypto driver.
-Date: Sat, 2 Jun 2012 02:40:32 -0400
-User-Agent: KMail/1.13.7 (Linux/3.4.0; KDE/4.6.5; x86_64; ; )
-Cc: Sonic Zhang <sonic.adi@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <1337939654-12222-1-git-send-email-sonic.adi@gmail.com>
-In-Reply-To: <1337939654-12222-1-git-send-email-sonic.adi@gmail.com>
+	id S965256Ab2FBGwy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 02:52:54 -0400
+Received: from smtp.snhosting.dk ([87.238.248.203]:23716 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965192Ab2FBGwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jun 2012 02:52:53 -0400
+Date: Sat, 2 Jun 2012 08:52:49 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: David Miller <davem@davemloft.net>, tglx@linutronix.de,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nikunj@linux.vnet.ibm.com, vapier@gentoo.org, konrad@gaisler.com,
+        tkhai@yandex.ru, sparclinux@vger.kernel.org
+Subject: Re: [UPDATED PATCH 21/27] sparc32, smpboot: Use generic SMP
+	booting infrastructure
+Message-ID: <20120602065249.GA19558@merkur.ravnborg.org>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091503.31979.52537.stgit@srivatsabhat.in.ibm.com> <20120601.135612.699120609738854050.davem@davemloft.net> <20120601185448.GA19148@merkur.ravnborg.org> <4FC94693.5050707@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1427100.hYiEL3DSpF";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206020240.35224.vapier@gentoo.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC94693.5050707@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1427100.hYiEL3DSpF
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Hi Srivatsa.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+I cannot see how this would work for sparc32...
+[Did not notice before...]
 
---nextPart1427100.hYiEL3DSpF
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> --- a/arch/sparc/kernel/leon_smp.c
+> +++ b/arch/sparc/kernel/leon_smp.c
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
+> +void __cpuinit __cpu_pre_starting(void *unused)
+> +{
+> +	unsigned int cpuid = hard_smp_processor_id();
+>  
+> diff --git a/arch/sparc/kernel/sun4d_smp.c b/arch/sparc/kernel/sun4d_smp.c
+> index ddaea31..cd5367a 100644
+> --- a/arch/sparc/kernel/sun4d_smp.c
+> +++ b/arch/sparc/kernel/sun4d_smp.c
 
-iQIcBAABAgAGBQJPybViAAoJEEFjO5/oN/WBxZgQALBDNcskIbLH0py49SuW3/Wg
-Rq2kfVV0zlHiK1/HjCI+O/6eAi2nrseOJz06ZP+/oGB+poh2KmxkNgcUpPOaSKLA
-WIyFAVZ7HCzpVuYp3LhaHBXpDPerqOF/6HbM50TPd4vfZOm7HeDA47pN5OVgxj+n
-lotRd0z5gelw+FxqlhX4vkAaJq9FMDJDccB6JtDq7EcJB+QMzTPzDF3u8uMgl7IH
-O/ImXzpi44T/XcRHuoZ2FV9bzPiZoDM2t4wFBJh950ux+e/ovu1K7OJwqI9pfhD2
-9NAWg4VjiaRZDE0Dtmlh4fvMwRS7dynvxKE2wS3k5x3pz46Jxx89rhTQxCjjiPbY
-L3i8XMz04+g6btf5kbHhBjGb58wwqQtynxw7TK7oRvcMgM41Za43I+Y12F+O2zBV
-F7tT11dJcFf+ypno7t+i1g8YuouQJMgUsBWhbKoDqCDCRWGLTtnSFqVYcshnxUJt
-7yVVh5Z4Th6K+TLUX10jxt/b98ukyxQwwfbZL/WHnYJjyseYv+7HqWWuTbn1wvFe
-xSp6vy6DTWbgXQQeunDvopoYx+mjtqQBDZ15Z7mthicPFQv7fuY5agSEyHhhXhy/
-GzG48fBo8ZbmnV4EytrMFNzjyjvc+tzaF6gdpLjfWo1N388ANZOSxf25rt9yRycI
-4RCycws5KnPURmR0uu4Y
-=wlgl
------END PGP SIGNATURE-----
+> +void __cpuinit __cpu_pre_starting(void *unused)
+> +{
+> +	unsigned int cpuid = hard_smp_processor_id();
+>  
+> diff --git a/arch/sparc/kernel/sun4m_smp.c b/arch/sparc/kernel/sun4m_smp.c
+> index 128af73..ed05f54 100644
+> --- a/arch/sparc/kernel/sun4m_smp.c
+> +++ b/arch/sparc/kernel/sun4m_smp.c
 
---nextPart1427100.hYiEL3DSpF--
+> +void __cpuinit __cpu_pre_starting(void *unused)
+> +{
+> +	unsigned int cpuid = hard_smp_processor_id();
+
+See how you define a function with the same name three times.
+On sparc32 we include all of the above files in the kernel,
+and uses various tricks to determine at run-time
+which variant to use.
+
+We need to define these general functions in smp_32.c and
+then take relevant action depending on sparc_cpu_model.
+
+	Sam
