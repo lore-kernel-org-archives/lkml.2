@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab2FBQyh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 12:54:37 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34381 "EHLO
+	id S933006Ab2FBREE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 13:04:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59681 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759618Ab2FBQyg (ORCPT
+	with ESMTP id S932880Ab2FBREB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 12:54:36 -0400
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Subject: [PATCH] Avoid dereferencing a possibly NULL mm
-Date: Sat,  2 Jun 2012 22:24:22 +0530
-Message-Id: <1338656062-25008-1-git-send-email-siddhesh.poyarekar@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Sat, 2 Jun 2012 13:04:01 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH 1/2] pinctrl: free allocated pinctrl_map structure only once and use kernel facilities for IMX_PMX_DUMP
+Date: Sat,  2 Jun 2012 22:33:53 +0530
+Message-Id: <1338656634-3870-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NULL check for mm in exit_mm occurs after mm_release is
-called. This looks wrong because mm_release dereferences mm:
+a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
+if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
+pointer must be freed only once.
 
-...
-                if (!(tsk->flags & PF_SIGNALED) &&
-                    atomic_read(&mm->mm_users) > 1) {
-                        /*
-...
+CASE. A)
 
-This dereference seems unsafe and hence is fixed by moving the NULL
-check above mm_release.
+as new_map is not moved and allocated like,
 
-Signed-off-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+for (i = 0; i < MAX_ELEMS; i++) {
+	new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
+}
+
+its freed as
+
+for (i = 0; i < MAX_ELEMS; i++) {
+	kfree(new_map[i]);
+}
+
+CASE. B)
+and its allocated like
+	new_map = kmalloc(numelems * size, GFP_KERNEL);
+
+it just needs kfree not as case A's.
+
+b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
+
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 ---
- kernel/exit.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/pinctrl/pinctrl-imx.c |   23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 34867cc..15fe63c 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -640,9 +640,11 @@ static void exit_mm(struct task_struct * tsk)
- 	struct mm_struct *mm = tsk->mm;
- 	struct core_state *core_state;
+diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
+index f6e7c67..553ed95 100644
+--- a/drivers/pinctrl/pinctrl-imx.c
++++ b/drivers/pinctrl/pinctrl-imx.c
+@@ -27,16 +27,16 @@
+ #include "core.h"
+ #include "pinctrl-imx.h"
  
--	mm_release(tsk, mm);
- 	if (!mm)
- 		return;
-+
-+	mm_release(tsk, mm);
-+
- 	/*
- 	 * Serialize with any possible pending coredump.
- 	 * We must hold mmap_sem around checking core_state
+-#define IMX_PMX_DUMP(info, p, m, c, n)		\
+-{						\
+-	int i, j;				\
+-	printk("Format: Pin Mux Config\n");	\
+-	for (i = 0; i < n; i++) {		\
+-		j = p[i];			\
+-		printk("%s %d 0x%lx\n",		\
+-			info->pins[j].name,	\
+-			m[i], c[i]);		\
+-	}					\
++#define IMX_PMX_DUMP(info, p, m, c, n)			\
++{							\
++	int i, j;					\
++	printk(KERN_DEBUG "Format: Pin Mux Config\n");	\
++	for (i = 0; i < n; i++) {			\
++		j = p[i];				\
++		printk(KERN_DEBUG "%s %d 0x%lx\n",	\
++			info->pins[j].name,		\
++			m[i], c[i]);			\
++	}						\
+ }
+ 
+ /* The bits in CONFIG cell defined in binding doc*/
+@@ -203,8 +203,7 @@ static void imx_dt_free_map(struct pinctrl_dev *pctldev,
+ {
+ 	int i;
+ 
+-	for (i = 0; i < num_maps; i++)
+-		kfree(map);
++	kfree(map);
+ }
+ 
+ static struct pinctrl_ops imx_pctrl_ops = {
 -- 
-1.7.7.6
+1.7.9.5
 
