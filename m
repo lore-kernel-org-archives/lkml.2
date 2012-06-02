@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933355Ab2FBRiK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 13:38:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21085 "EHLO mx1.redhat.com"
+	id S933378Ab2FBRnM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 13:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29726 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933221Ab2FBRiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 13:38:08 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH] Fix booted_cores calculation in set_cpu_sibling_map()
-Date: Sat,  2 Jun 2012 13:37:54 -0400
-Message-Id: <1338658674-6550-1-git-send-email-prarit@redhat.com>
+	id S933335Ab2FBRnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jun 2012 13:43:11 -0400
+Date: Sat, 2 Jun 2012 19:41:34 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] Avoid dereferencing a possibly NULL mm
+Message-ID: <20120602174134.GA13626@redhat.com>
+References: <1338656062-25008-1-git-send-email-siddhesh.poyarekar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338656062-25008-1-git-send-email-siddhesh.poyarekar@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git commit 316ad248307fba13be40f01e92a22b89457c32bc changed
- set_cpu_sibling_map() to a single loop.
+On 06/02, Siddhesh Poyarekar wrote:
+>
+> The NULL check for mm in exit_mm occurs after mm_release is
+> called. This looks wrong because mm_release dereferences mm:
+>
+> ...
+>                 if (!(tsk->flags & PF_SIGNALED) &&
+>                     atomic_read(&mm->mm_users) > 1) {
+>                         /*
+> ...
 
-On a 2 socket system with 4 nodes, with 8 cores/socket top of tree
-now shows
+Yes, this looks wrong, but the task without ->mm shouldn't have
+->clear_child_tid != NULL, so this is harmless.
 
-.> cat /proc/cpuinfo | grep cores
-cpu cores	: 2
-cpu cores	: 4
-cpu cores	: 5
-cpu cores	: 6
-cpu cores	: 7
-cpu cores	: 8
-cpu cores	: 9
-cpu cores	: 10
-cpu cores	: 2
-cpu cores	: 4
-cpu cores	: 5
-cpu cores	: 6
-cpu cores	: 7
-cpu cores	: 8
-cpu cores	: 9
-cpu cores	: 10
-cpu cores	: 15
-cpu cores	: 15
-cpu cores	: 13
-cpu cores	: 11
-cpu cores	: 9
-cpu cores	: 7
-cpu cores	: 5
-cpu cores	: 3
-cpu cores	: 15
-cpu cores	: 15
-cpu cores	: 13
-cpu cores	: 11
-cpu cores	: 9
-cpu cores	: 7
-cpu cores	: 5
-cpu cores	: 3
+> This dereference seems unsafe and hence is fixed by moving the NULL
+> check above mm_release.
 
-This is wrong.  The kernel should show
+And this is wrong,
 
-cpu cores	: 8
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -640,9 +640,11 @@ static void exit_mm(struct task_struct * tsk)
+>  	struct mm_struct *mm = tsk->mm;
+>  	struct core_state *core_state;
+>
+> -	mm_release(tsk, mm);
+>  	if (!mm)
+>  		return;
+> +
+> +	mm_release(tsk, mm);
+> +
 
-for each entry.
+mm_release()->complete_vfork_done() should be called even if
+->mm == NULL. See kthread_stop().
 
-set_cpu_sibling_map() must be two separate loops, the first which
-calculates the cpu's sibling_maps and the second which determines
-how many cores have been booted.  The code does a check on
-(cpumask_weight(cpu_sibling_mask(cpu)).  The problem is that
-the sibling_mask may not be fully populated by the time this
-value is checked resulting in incorrect booted_cores values.
+Probably this needs some cleanups or comments, but lets do
+this on top of pending fixes in -mm tree.
 
-I've found this broken and tested the fix on both AMD multi-socket and Intel
-multi-socket systems (as well as single socket single node systems).
------8<-----
-
-The code in set_cpu_sibling_map() checks the value of
-cpu_sibling_mask(cpu) before the mask is fully populated.  This results in
-an incorrect calculation of each cpu's booted_cores.  Move back to a two
-pass mechanism to properly calculate booted_cores.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
----
- arch/x86/kernel/smpboot.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index f56f96d..019248e 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -381,6 +381,10 @@ void __cpuinit set_cpu_sibling_map(int cpu)
- 
- 		if ((i == cpu) || (has_mc && match_llc(c, o)))
- 			link_mask(llc_shared, cpu, i);
-+	}
-+
-+	for_each_cpu(i, cpu_sibling_setup_mask) {
-+		o = &cpu_data(i);
- 
- 		if ((i == cpu) || (has_mc && match_mc(c, o))) {
- 			link_mask(core, cpu, i);
--- 
-1.7.1
+Oleg.
 
