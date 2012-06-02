@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759982Ab2FBUfv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 16:35:51 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:52367 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759804Ab2FBUfu (ORCPT
+	id S965811Ab2FBUgb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 16:36:31 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:42687 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965077Ab2FBUfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 16:35:50 -0400
+	Sat, 2 Jun 2012 16:35:55 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Yoshinori Sato <ysato@users.sourceforge.jp>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Tony Breeds <tony@bakeyournoodle.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] h8300 fixes
-Date: Sat,  2 Jun 2012 22:35:34 +0200
-Message-Id: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
+Cc: Tony Breeds <tony@bakeyournoodle.com>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 1/5] h8300/pgtable: Add missing #include <asm-generic/pgtable.h>
+Date: Sat,  2 Jun 2012 22:35:35 +0200
+Message-Id: <1338669339-23214-2-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
+References: <1338669339-23214-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Sato-san, Andrew,
+kernel/sched/core.c: In function 'context_switch':
+kernel/sched/core.c:2061:2: error: implicit declaration of function 'arch_start_context_switch' [-Werror=implicit-function-declaration]
 
-The following patch set makes h8300 defconfig build again.
-Due to lack of hardware, there's no guarantee this makes it actually boot.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/h8300/include/asm/pgtable.h |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-I used the h8300-elf-gcc from
-http://kernel.org/pub/tools/crosstool/files/bin/x86_64/4.6.3/.
+diff --git a/arch/h8300/include/asm/pgtable.h b/arch/h8300/include/asm/pgtable.h
+index a09230a..62ef176 100644
+--- a/arch/h8300/include/asm/pgtable.h
++++ b/arch/h8300/include/asm/pgtable.h
+@@ -70,4 +70,7 @@ extern int is_in_rom(unsigned long);
+ #define	VMALLOC_END	0xffffffff
+ 
+ #define arch_enter_lazy_cpu_mode()    do {} while (0)
++
++#include <asm-generic/pgtable.h>
++
+ #endif /* _H8300_PGTABLE_H */
+-- 
+1.7.0.4
 
-I had two issues with this compiler, though:
-
-1. I got 2 ICEs:
-
-fs/read_write.c: In function 'sys_pread64':
-fs/read_write.c:514:1: internal compiler error: in based_loc_descr, at dwarf2out.c:13636
-Please submit a full bug report,
-with preprocessed source if appropriate.
-See <http://gcc.gnu.org/bugs.html> for instructions.
-make[4]: *** [fs/read_write.o] Error 1
-  CC      fs/dcache.o
-fs/dcache.c: In function '__d_path':
-fs/dcache.c:2662:1: internal compiler error: in based_loc_descr, at dwarf2out.c:13636
-Please submit a full bug report,
-with preprocessed source if appropriate.
-See <http://gcc.gnu.org/bugs.html> for instructions.
-
-2. I also got several warnings of the form:
-
-warning: format '%zx' expects argument of type 'size_t', but argument 4 has type 'unsigned int'
-
-while the actual parameter type is size_t, not unsigned int. 
-Could this be because the compiler is h8300-elf-gcc and not h8300-linux-gcc?
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
