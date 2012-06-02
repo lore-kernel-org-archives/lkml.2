@@ -1,134 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab2FBOfT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 10:35:19 -0400
-Received: from mail130c7-2520.megamailservers.com ([69.49.98.25]:38090 "EHLO
-	mail130c7.megamailservers.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752863Ab2FBOfR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 10:35:17 -0400
-References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com> <1338644416-11417-10-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1338644416-11417-10-git-send-email-akinobu.mita@gmail.com>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <B6D8D29B-9D9E-4248-B1EE-703D46354522@dilger.ca>
-Content-Transfer-Encoding: 8BIT
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-X-Mailer: iPhone Mail (9B206)
-From: Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH v2 10/10] ext4: use memweight()
-Date: Sat, 2 Jun 2012 08:35:23 -0600
-To: Akinobu Mita <akinobu.mita@gmail.com>
-X-CSC: 0
-X-CHA: v=1.1 cv=jegz8rrpTsCmfIP3oxsmQwLmgXLlG4mytwnW3LPhSlA= c=1 sm=1
-		a=rSEWfyrsUAQA:10 a=kj9zAlcOel0A:10 a=akHhUqyx16pf1Jmt3m6W8Q==:17
-		a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=s2-WecoGcsKQtqJb15gA:9
-		a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=-aTr40GaVSOkttJ1:21
-		a=vx5J2xTG_xO8oy5-:21 a=akHhUqyx16pf1Jmt3m6W8Q==:117
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020205.4FCA249D.00A3,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+	id S1757671Ab2FBOmu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 10:42:50 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36384 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab2FBOmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jun 2012 10:42:49 -0400
+Date: Sat, 2 Jun 2012 15:42:45 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] frv: Remove bogus closing parenthesis
+Message-ID: <20120602144245.GM30000@ZenIV.linux.org.uk>
+References: <1338635319-28226-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338635319-28226-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-06-02, at 7:40, Akinobu Mita <akinobu.mita@gmail.com> wrote:
+On Sat, Jun 02, 2012 at 01:08:39PM +0200, Geert Uytterhoeven wrote:
+> Introduced by commit 6fd84c0831ec78d98736b76dc5e9b849f1dbfc9e
+> ("TIF_RESTORE_SIGMASK can be set only when TIF_SIGPENDING is set")
 
-> Use memweight() to count the total number of bits clear in memory area.
-> This change only affects the code segments enabled by EXT4FS_DEBUG.
+Applied and pushed into signal.git#for-linus.  Please, pull from
+git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
 
-Personally, I'd rather still keep a thin wrapper ext4_count_free() and put the memweight() call and math inside that. The function name ext4_count_free() is meaningful to readers, while memweight() is much less so. 
+Shortlog:
+Geert Uytterhoeven (1):
+      frv: Remove bogus closing parenthesis
 
-Cheers, Andreas
+Diffstat:
+ arch/frv/kernel/signal.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-> Cc: linux-ext4@vger.kernel.org
-> ---
-> 
-> v2: don't remove bitmap.c which now has other than ext4_count_free()
-> 
-> fs/ext4/balloc.c |    3 ++-
-> fs/ext4/bitmap.c |   18 ------------------
-> fs/ext4/ext4.h   |    1 -
-> fs/ext4/ialloc.c |    4 +++-
-> 4 files changed, 5 insertions(+), 21 deletions(-)
-> 
-> diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-> index 99b6324..e5eadfe 100644
-> --- a/fs/ext4/balloc.c
-> +++ b/fs/ext4/balloc.c
-> @@ -609,7 +609,8 @@ ext4_fsblk_t ext4_count_free_clusters(struct super_block *sb)
->        if (bitmap_bh == NULL)
->            continue;
-> 
-> -        x = ext4_count_free(bitmap_bh, sb->s_blocksize);
-> +        x = sb->s_blocksize * BITS_PER_BYTE -
-> +            memweight(bitmap_bh->b_data, sb->s_blocksize);
->        printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
->            i, ext4_free_group_clusters(sb, gdp), x);
->        bitmap_count += x;
-> diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
-> index b319721..3c67c97 100644
-> --- a/fs/ext4/bitmap.c
-> +++ b/fs/ext4/bitmap.c
-> @@ -11,24 +11,6 @@
-> #include <linux/jbd2.h>
-> #include "ext4.h"
-> 
-> -#ifdef EXT4FS_DEBUG
-> -
-> -static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
-> -
-> -unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
-> -{
-> -    unsigned int i, sum = 0;
-> -
-> -    if (!map)
-> -        return 0;
-> -    for (i = 0; i < numchars; i++)
-> -        sum += nibblemap[map->b_data[i] & 0xf] +
-> -            nibblemap[(map->b_data[i] >> 4) & 0xf];
-> -    return sum;
-> -}
-> -
-> -#endif  /*  EXT4FS_DEBUG  */
-> -
-> int ext4_inode_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
->                  struct ext4_group_desc *gdp,
->                  struct buffer_head *bh, int sz)
-> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-> index cfc4e01..3a3511d 100644
-> --- a/fs/ext4/ext4.h
-> +++ b/fs/ext4/ext4.h
-> @@ -1852,7 +1852,6 @@ struct mmpd_data {
-> # define NORET_AND    noreturn,
-> 
-> /* bitmap.c */
-> -extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
-> void ext4_inode_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
->                struct ext4_group_desc *gdp,
->                struct buffer_head *bh, int sz);
-> diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-> index d48e8b1..1310108 100644
-> --- a/fs/ext4/ialloc.c
-> +++ b/fs/ext4/ialloc.c
-> @@ -1054,7 +1054,9 @@ unsigned long ext4_count_free_inodes(struct super_block *sb)
->        if (!bitmap_bh)
->            continue;
-> 
-> -        x = ext4_count_free(bitmap_bh, EXT4_INODES_PER_GROUP(sb) / 8);
-> +        x = EXT4_INODES_PER_GROUP(sb) / 8 * BITS_PER_BYTE -
-> +            memweight(bitmap_bh->b_data,
-> +                EXT4_INODES_PER_GROUP(sb) / 8);
->        printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
->            (unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
->        bitmap_count += x;
-> -- 
-> 1.7.7.6
-> 
