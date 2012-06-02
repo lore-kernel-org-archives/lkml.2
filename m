@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966338Ab2FBDhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 23:37:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46560 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966324Ab2FBDhM (ORCPT
+	id S965041Ab2FBElE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 00:41:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:41504 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964784Ab2FBElC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 23:37:12 -0400
-Date: Sat, 2 Jun 2012 13:37:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tyler Hicks <tyhicks@canonical.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: fate of the ecryptfs tree
-Message-Id: <20120602133703.be8c52b85b17b25b074aac8e@canb.auug.org.au>
-In-Reply-To: <20120601234154.GB6340@boyd>
-References: <20120531144115.0f35af0a8a5d79b73b0ecbe6@canb.auug.org.au>
-	<20120601234154.GB6340@boyd>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O"
+	Sat, 2 Jun 2012 00:41:02 -0400
+Date: Fri, 1 Jun 2012 21:40:35 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+In-Reply-To: <CA+55aFy2-X92EqpiuyvkBp_2-UaYDUpaC2c3XT3gXMN1O+T7sw@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1206012108430.11308@eggly.anvils>
+References: <20120530163317.GA13189@redhat.com> <20120531005739.GA4532@redhat.com> <20120601023107.GA19445@redhat.com> <alpine.LSU.2.00.1206010030050.8462@eggly.anvils> <20120601161205.GA1918@redhat.com> <20120601171606.GA3794@redhat.com>
+ <alpine.LSU.2.00.1206011511560.12839@eggly.anvils> <CA+55aFy2-X92EqpiuyvkBp_2-UaYDUpaC2c3XT3gXMN1O+T7sw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1474580492-1338612042=:11308"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi Tyler,
+--8323584-1474580492-1338612042=:11308
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-On Fri, 1 Jun 2012 16:41:55 -0700 Tyler Hicks <tyhicks@canonical.com> wrote:
->
-> On 2012-05-31 14:41:15, Stephen Rothwell wrote:
-> >=20
-> > I am just wondering about the fate of the ecryptfs tree.  The most rece=
-nt
-> > commit to that tree is dated Feb 11 and seems to have been included in
-> > Linus' tree as a different commit.
+On Fri, 1 Jun 2012, Linus Torvalds wrote:
+> On Fri, Jun 1, 2012 at 3:17 PM, Hugh Dickins <hughd@google.com> wrote:
+> >
+> > + =A0 =A0 =A0 spin_lock_irqsave(&zone->lock, flags);
+> > =A0 =A0 =A0 =A0for (page =3D start_page, pfn =3D start_pfn; page < end_=
+page; pfn++,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
+ =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0page++) {
 >=20
-> My next branch has become stale. Sorry about that! I haven't been doing
-> much development on the kernel side in the last couple months. That will
-> soon change, as I have a few bug fixes in the works and I know of a
-> contribution or two that should surface shortly.
+> So holding the spinlock (and disabling irqs!) over the whole loop
+> sounds horrible.
 
-Thanks for that.
+There looks to be a pretty similar loop inside move_freepages_block(),
+which is the part which I believe really needs the lock - it's moving
+free pages from one lru to another.
 
-> In the meantime, I've just pushed the HEAD of Linus' tree to my next
-> branch to clean things up.
+>=20
+> At the same time, the iterators don't seem to require the spinlock, so
+> it should be possible to just move the lock into the loop, no?
 
-Excellent.
+Move the lock after the loop, I think you meant.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I put the lock before the loop because it's deciding whether it can
+usefully proceed, and then proceeding: I was thinking that the lock
+would stabilize the conditions that it bases that decision on.
 
---Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O
-Content-Type: application/pgp-signature
+But it certainly does not stabilize all of them (most obviously not
+PageLRU), so I'm guesssing that this is a best-effort decision which
+can safely go wrong some of the time.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+In which case, yes, much better to follow your suggestion, and hold
+the lock (with irqs disabled) for only half the time.
 
-iQIcBAEBCAAGBQJPyYpfAAoJEECxmPOUX5FEpMkQAIclpm0R6LzKxGEbJglbC6xV
-3RVA6mlnk2u4VqIpJh6KIQzUnHUAJTPjgE7a8TIckzb3H0aaTjtQOon3/NoqskbJ
-4iAONNEy1xIqZjy+4p4c01V5w8JRXhTxkDmJbQvbMHd++KjWAlB3Kg1hu/KUcKSs
-6P//aD61KU/rPBE4/VPXBZ0b7VoWD20wQP0ONnFKZLTWsfPNQErQuGIqoayDtDbC
-bov1pM9YuiUJE+LciV5gxbQpkqvHMdxvTtKqJfwzI1q4L5lwHwVrzgXvnb6inq1R
-3uY7DlXvp6voFmJUV9nlIYogL8oSTatGTIovVSbCcJZ384etnyGv+qnk7asgYSWA
-4makUfle0BXwLpz8KaD6o9fEcAkTB7u0UEuXflD/HtmcrpYXR+caA34bUTM6dt/Z
-nRtqYlOTRNZd0eEo7YKwd1kOwnVeTalkT0E6gEPBjXpqUOr/1p7/PMkAlwrAAgWy
-R0qQf4+tHoTYs9ldDywp6OMZ+KiYC8emzqrxq3RG7HDopP2Q86kWNasJAPmOFwLd
-yYiz+S56IWhTTbBXYibYyzjKwosXKNvO/yFj/N2UHk8MjLoqsqqZFdgOQhxThBje
-qe6Cp4/g7YCaNMR9k3K7xtvzRlpXSf/cX5gR4fekE4U/UKrtPIK3kboXU+X5bRv4
-aKWrlywzdNnf+06AdBOC
-=cYFK
------END PGP SIGNATURE-----
+Similarly untested patch below.
 
---Signature=_Sat__2_Jun_2012_13_37_03_+1000_Im5cVDtYGXLB5M3O--
+But I'm entirely unfamiliar with this code: best Cc people more familiar
+with it.  Does this addition of locking to rescue_unmovable_pageblock()
+look correct to you, and do you think it has a good chance of fixing the
+move_freepages_block() list debug warnings which Dave has been reporting
+(in this and in another thread)?
+
+(Although there's still something of a mystery in where Dave's bisection
+appeared to converge, our best assumption at present is that one of my
+tmpfs changes is to blame for the __set_page_dirty_nobuffers warnings,
+and I need to send a finalized patch to fix that later.
+
+I'm guessing that the few people who see the warning are those running
+new systemd distros, and that systemd is indeed now making use of the
+fallocate support we added into tmpfs for it.)
+
+Hugh
+
+--- 3.4.0+/mm/compaction.c=092012-05-30 08:17:19.396008280 -0700
++++ linux/mm/compaction.c=092012-06-01 20:59:56.840204915 -0700
+@@ -369,6 +369,8 @@ static bool rescue_unmovable_pageblock(s
+ {
+ =09unsigned long pfn, start_pfn, end_pfn;
+ =09struct page *start_page, *end_page;
++=09struct zone *zone;
++=09unsigned long flags;
+=20
+ =09pfn =3D page_to_pfn(page);
+ =09start_pfn =3D pfn & ~(pageblock_nr_pages - 1);
+@@ -378,7 +380,8 @@ static bool rescue_unmovable_pageblock(s
+ =09end_page =3D pfn_to_page(end_pfn);
+=20
+ =09/* Do not deal with pageblocks that overlap zones */
+-=09if (page_zone(start_page) !=3D page_zone(end_page))
++=09zone =3D page_zone(start_page);
++=09if (zone !=3D page_zone(end_page))
+ =09=09return false;
+=20
+ =09for (page =3D start_page, pfn =3D start_pfn; page < end_page; pfn++,
+@@ -399,8 +402,10 @@ static bool rescue_unmovable_pageblock(s
+ =09=09return false;
+ =09}
+=20
++=09spin_lock_irqsave(&zone->lock, flags);
+ =09set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+-=09move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
++=09move_freepages_block(zone, page, MIGRATE_MOVABLE);
++=09spin_unlock_irqrestore(&zone->lock, flags);
+ =09return true;
+ }
+=20
+--8323584-1474580492-1338612042=:11308--
