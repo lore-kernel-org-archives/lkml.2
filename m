@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965663Ab2FBNmD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 09:42:03 -0400
+	id S965614Ab2FBNl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 09:41:59 -0400
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:58159 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965238Ab2FBNky (ORCPT
+	with ESMTP id S933324Ab2FBNkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 09:40:54 -0400
+	Sat, 2 Jun 2012 09:40:52 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH v2 05/10] affs: use memweight()
-Date: Sat,  2 Jun 2012 22:40:11 +0900
-Message-Id: <1338644416-11417-5-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com
+Subject: [PATCH v2 04/10] dm: use memweight()
+Date: Sat,  2 Jun 2012 22:40:10 +0900
+Message-Id: <1338644416-11417-4-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
 References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
@@ -23,67 +24,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Use memweight() to count the total number of bits set in memory area.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
 ---
 
-No changes from v1
+v2: change patch title s/dm-log:/dm:/
 
- fs/affs/bitmap.c |   28 ++--------------------------
- 1 files changed, 2 insertions(+), 26 deletions(-)
+ drivers/md/dm-log.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/fs/affs/bitmap.c b/fs/affs/bitmap.c
-index 3e26271..3dfdcd2 100644
---- a/fs/affs/bitmap.c
-+++ b/fs/affs/bitmap.c
-@@ -10,30 +10,6 @@
- #include <linux/slab.h>
- #include "affs.h"
+diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
+index 65ebaeb..627d191 100644
+--- a/drivers/md/dm-log.c
++++ b/drivers/md/dm-log.c
+@@ -571,16 +571,6 @@ static void disk_dtr(struct dm_dirty_log *log)
+ 	destroy_log_context(lc);
+ }
  
--/* This is, of course, shamelessly stolen from fs/minix */
--
--static const int nibblemap[] = { 0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4 };
--
--static u32
--affs_count_free_bits(u32 blocksize, const void *data)
+-static int count_bits32(uint32_t *addr, unsigned size)
 -{
--	const u32 *map;
--	u32 free;
--	u32 tmp;
+-	int count = 0, i;
 -
--	map = data;
--	free = 0;
--	for (blocksize /= 4; blocksize > 0; blocksize--) {
--		tmp = *map++;
--		while (tmp) {
--			free += nibblemap[tmp & 0xf];
--			tmp >>= 4;
--		}
+-	for (i = 0; i < size; i++) {
+-		count += hweight32(*(addr+i));
 -	}
--
--	return free;
+-	return count;
 -}
 -
- u32
- affs_count_free_blocks(struct super_block *sb)
+ static void fail_log_device(struct log_c *lc)
  {
-@@ -317,7 +293,7 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
- 			goto out;
- 		}
- 		pr_debug("AFFS: read bitmap block %d: %d\n", blk, bm->bm_key);
--		bm->bm_free = affs_count_free_bits(sb->s_blocksize - 4, bh->b_data + 4);
-+		bm->bm_free = memweight(bh->b_data + 4, sb->s_blocksize - 4);
+ 	if (lc->log_dev_failed)
+@@ -629,7 +619,8 @@ static int disk_resume(struct dm_dirty_log *log)
  
- 		/* Don't try read the extension if this is the last block,
- 		 * but we also need the right bm pointer below
-@@ -367,7 +343,7 @@ int affs_init_bitmap(struct super_block *sb, int *flags)
+ 	/* copy clean across to sync */
+ 	memcpy(lc->sync_bits, lc->clean_bits, size);
+-	lc->sync_count = count_bits32(lc->clean_bits, lc->bitset_uint32_count);
++	lc->sync_count = memweight(lc->clean_bits,
++				lc->bitset_uint32_count * sizeof(uint32_t));
+ 	lc->sync_search = 0;
  
- 	/* recalculate bitmap count for last block */
- 	bm--;
--	bm->bm_free = affs_count_free_bits(sb->s_blocksize - 4, bh->b_data + 4);
-+	bm->bm_free = memweight(bh->b_data + 4, sb->s_blocksize - 4);
- 
- out:
- 	affs_brelse(bh);
+ 	/* set the correct number of regions in the header */
 -- 
 1.7.7.6
 
