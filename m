@@ -1,71 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab2FBRdG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 13:33:06 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43649 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933164Ab2FBRdF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 13:33:05 -0400
-From: Chris Yungmann <yungmann.chris@gmail.com>
-To: yungmann.chris@gmail.com, w.d.hubbs@gmail.com, chris@the-brannons.com,
-        kirk@braille.uwo.ca, samuel.thibault@ens-lyon.org,
-        gregkh@linuxfoundation.org
-Cc: speakup@braille.uwo.ca, linux-kernel@vger.kernel.org,
-        kernelnewbies@kernelnewbies.org
-Subject: [PATCH] staging: speakup: fixed checkpatch and sparse warnings in selection.c
-Date: Sat,  2 Jun 2012 12:32:38 -0500
-Message-Id: <1338658358-20402-1-git-send-email-yungmann.chris@gmail.com>
-X-Mailer: git-send-email 1.7.10
+	id S933355Ab2FBRiK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 13:38:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21085 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933221Ab2FBRiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jun 2012 13:38:08 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH] Fix booted_cores calculation in set_cpu_sibling_map()
+Date: Sat,  2 Jun 2012 13:37:54 -0400
+Message-Id: <1338658674-6550-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Yungmann <yungmann.chris@gmail.com>
----
- drivers/staging/speakup/selection.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+git commit 316ad248307fba13be40f01e92a22b89457c32bc changed
+ set_cpu_sibling_map() to a single loop.
 
-diff --git a/drivers/staging/speakup/selection.c b/drivers/staging/speakup/selection.c
-index fe1f405..496c81e 100644
---- a/drivers/staging/speakup/selection.c
-+++ b/drivers/staging/speakup/selection.c
-@@ -68,7 +68,7 @@ int speakup_set_selection(struct tty_struct *tty)
- 	if (spk_sel_cons != vc_cons[fg_console].d) {
- 		speakup_clear_selection();
- 		spk_sel_cons = vc_cons[fg_console].d;
--		printk(KERN_WARNING
-+		pr_warn(KERN_WARNING
- 			"Selection: mark console not the same as cut\n");
- 		return -EINVAL;
- 	}
-@@ -95,7 +95,7 @@ int speakup_set_selection(struct tty_struct *tty)
- 	/* Allocate a new buffer before freeing the old one ... */
- 	bp = kmalloc((sel_end-sel_start)/2+1, GFP_ATOMIC);
- 	if (!bp) {
--		printk(KERN_WARNING "selection: kmalloc() failed\n");
-+		pr_warn(KERN_WARNING "selection: kmalloc() failed\n");
- 		speakup_clear_selection();
- 		return -ENOMEM;
- 	}
-@@ -132,7 +132,7 @@ int speakup_paste_selection(struct tty_struct *tty)
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
- 		if (test_bit(TTY_THROTTLED, &tty->flags)) {
--			if (in_atomic())
-+			if (in_interrupt())
- 				/* if we are in an interrupt handler, abort */
- 				break;
- 			schedule();
-@@ -141,7 +141,7 @@ int speakup_paste_selection(struct tty_struct *tty)
- 		count = sel_buffer_lth - pasted;
- 		count = min_t(int, count, tty->receive_room);
- 		tty->ldisc->ops->receive_buf(tty, sel_buffer + pasted,
--			0, count);
-+			NULL, count);
- 		pasted += count;
- 	}
- 	remove_wait_queue(&vc->paste_wait, &wait);
+On a 2 socket system with 4 nodes, with 8 cores/socket top of tree
+now shows
+
+.> cat /proc/cpuinfo | grep cores
+cpu cores	: 2
+cpu cores	: 4
+cpu cores	: 5
+cpu cores	: 6
+cpu cores	: 7
+cpu cores	: 8
+cpu cores	: 9
+cpu cores	: 10
+cpu cores	: 2
+cpu cores	: 4
+cpu cores	: 5
+cpu cores	: 6
+cpu cores	: 7
+cpu cores	: 8
+cpu cores	: 9
+cpu cores	: 10
+cpu cores	: 15
+cpu cores	: 15
+cpu cores	: 13
+cpu cores	: 11
+cpu cores	: 9
+cpu cores	: 7
+cpu cores	: 5
+cpu cores	: 3
+cpu cores	: 15
+cpu cores	: 15
+cpu cores	: 13
+cpu cores	: 11
+cpu cores	: 9
+cpu cores	: 7
+cpu cores	: 5
+cpu cores	: 3
+
+This is wrong.  The kernel should show
+
+cpu cores	: 8
+
+for each entry.
+
+set_cpu_sibling_map() must be two separate loops, the first which
+calculates the cpu's sibling_maps and the second which determines
+how many cores have been booted.  The code does a check on
+(cpumask_weight(cpu_sibling_mask(cpu)).  The problem is that
+the sibling_mask may not be fully populated by the time this
+value is checked resulting in incorrect booted_cores values.
+
+I've found this broken and tested the fix on both AMD multi-socket and Intel
+multi-socket systems (as well as single socket single node systems).
+-----8<-----
+
+The code in set_cpu_sibling_map() checks the value of
+cpu_sibling_mask(cpu) before the mask is fully populated.  This results in
+an incorrect calculation of each cpu's booted_cores.  Move back to a two
+pass mechanism to properly calculate booted_cores.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+---
+ arch/x86/kernel/smpboot.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index f56f96d..019248e 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -381,6 +381,10 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 
+ 		if ((i == cpu) || (has_mc && match_llc(c, o)))
+ 			link_mask(llc_shared, cpu, i);
++	}
++
++	for_each_cpu(i, cpu_sibling_setup_mask) {
++		o = &cpu_data(i);
+ 
+ 		if ((i == cpu) || (has_mc && match_mc(c, o))) {
+ 			link_mask(core, cpu, i);
 -- 
-1.7.10
+1.7.1
 
