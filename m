@@ -1,308 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966208Ab2FBHKA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 03:10:00 -0400
-Received: from www84.your-server.de ([213.133.104.84]:58333 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966022Ab2FBHJ7 (ORCPT
+	id S966387Ab2FBHRY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 03:17:24 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44782 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966316Ab2FBHRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 03:09:59 -0400
-Message-ID: <1338621013.25409.74.camel@wall-e>
-Subject: Re: [PATCH] add new NRP power meter USB device driver
-From: Stefani Seibold <stefani@seibold.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, thomas.braunstorfinger@rohde-schwarz.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Oliver Neukum <oneukum@suse.de>
-Date: Sat, 02 Jun 2012 09:10:13 +0200
-In-Reply-To: <20120531094135.GA3400@kroah.com>
-References: <1338318858-24144-1-git-send-email-stefani@seibold.net>
-	 <20120529231549.GB28736@kroah.com> <1338454041.6454.67.camel@wall-e>
-	 <20120531094135.GA3400@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 2 Jun 2012 03:17:22 -0400
+Subject: Re: [PATCH] tty: add lockdep annotations
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <1338584389.2760.1653.camel@edumazet-glaptop>
+References: <4FC6189B.9080909@fusionio.com>
+	 <1338402812.2760.413.camel@edumazet-glaptop>
+	 <4FC66D3D.6080509@fusionio.com>
+	 <1338404902.2760.451.camel@edumazet-glaptop>
+	 <1338410107.2760.544.camel@edumazet-glaptop>
+	 <1338456918.2760.1318.camel@edumazet-glaptop>
+	 <1338574627.2760.1545.camel@edumazet-glaptop>
+	 <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+	 <1338583498.2760.1648.camel@edumazet-glaptop>
+	 <20120601215620.305155c0@pyramind.ukuu.org.uk>
+	 <1338584389.2760.1653.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Jun 2012 09:17:18 +0200
+Message-ID: <1338621438.2760.1679.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Authenticated-Sender: stefani@seibold.net
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grek,
+On Fri, 2012-06-01 at 22:59 +0200, Eric Dumazet wrote:
+> On Fri, 2012-06-01 at 21:56 +0100, Alan Cox wrote:
+> > > Yes, tty->driver deref is ok (tty points to valid memory), but crash is
+> > > on tty->driver->ops (driver points to freed/illegal memory)
+> > > 
+> > > using slub_debug=FZPU, I can indeed see RDI=6b6b6b6b6b6b6b6b
+> > 
+> > driver and driver->ops is basically const and it's not what you'd expect
+> > from a tty refcount bug. The driver side puts shouldn't have changed but
+> > I'll take a look over that patch and the error paths closely again just
+> > in case.
+> 
+> right
+> 
+> The code looks like :
+> ...
+> 	call mcount
+> 	mov  %rdi,%rbx
+> 	mov  0x10(%rdi),%rdi   tty->driver
+> <>	mov  0xf8(%rdi),%rax   CRASH
+> 
+> So tty was freed an tty->driver contains 6b6b6b6b6b6b6b6b
+> 
+> 
 
-sorry for the late answer, but i must first do some investigations.
+Here is the patch I am currently testing (need to boot the machine ~50
+times to make sure it is the right fix)
+
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 9e930c0..128a95b 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1479,13 +1479,14 @@ static void release_one_tty(struct work_struct *work)
+ 	struct tty_struct *tty =
+ 		container_of(work, struct tty_struct, hangup_work);
+ 	struct tty_driver *driver = tty->driver;
++	struct module *module = driver->owner;
  
-On Thu, 2012-05-31 at 17:41 +0800, Greg KH wrote:
-
-> multi-device handling for libusb has been there from the beginning (over
-> 10 years ago) and multi-urb handling has been around for a very long
-> time as well.
-> 
-> So, sorry, I don't buy this argument :)
-> 
-> > So it is a chicken and egg problem. A lot of software is now out with
-> > depends on this driver and a lot of embedded development environments
-> > doesn't provide libudev, libsysfs und libusb. It will also increase the
-> > size of the image and adds additional dependencies to the application.
-> 
-> You don't need any of those libraries to do this.  What's wrong with
-> using "raw" usbfs interactions?
-> 
-
-usbfs must be mounted. On some distribution this is not the case for
-security reasons.
-
-libusb has also this kind of security concerns, since the user must in
-the group for accessing the usb devices.
-
-I know there is always a way, but not for the average developer, which
-is not familiar with udev-rules, ACL, capabilities, fstab, groups and so
-on.
+ 	if (tty->ops->cleanup)
+ 		tty->ops->cleanup(tty);
  
-In the embedded world it is also much easier to create an device node by
-hand, because you know your environment. But this is unwinnable fight of
-the emdedded linux user against the fat desktop and server fraction.
-
-> > Also kernel space is faster and this is a key factor.
-> 
-> I don't buy it.
-> 
-> How much faster?  What numbers do you have?
-> 
-
-It is not important how much, it is only important that is is!
-
-> We have USB vision systems running at wire speeds using usbfs and
-> libusb, and have had that since the early 2.4 kernel days.  Speed is not
-> a valid argument here, unless you have some really bad userspace code.
-> 
-> > And it possible to simple handling the device from script using printf,
-> > echo, cat and so on.
-> 
-> Not really a valid argument, sorry.
-> 
-
-Not in the embedded world, where you want check a system outside in the
-field.
-
-> Which ones?  We have ripped out lots of USB drivers that could have been
-> controlled by usbfs userspace programs over the years for this same
-> reason.  If we missed any, please let me know and I will rectify that.
-> 
-
-Thats easy, e.g the rio500 driver or cyterm.
-
-And if we include any driver which is not needed for booting a linux
-kernel:
-
-- The whole multi touch driver could be replaced by an user space
-driver, using uinput.
-- VFAT can be done by fuse.
-- And so on...
-
-Where is the boundary?
-
->  
-> > Sorry, that was one checkpoint in my ToDo List which i have lost. It
-> > would be kind if you can assign me a minor range for the NRPZ devices.
-> 
-> Not yet, sorry, you need to convince me that this really does need to be
-> a kernel driver.
-> 
-
-I will try to do this ;-)
-
-> > > > +MODULE_DEVICE_TABLE(usb, nrpz_table);
-> > > > +
-> > > > +/* Structure to hold all of our device specific stuff */
-> > > > +struct usb_nrpz {
-> > > > +	struct usb_device *udev;
-> > > > +	struct usb_interface *intf;
-> > > 
-> > 
-> > I tried to remove the udev entry in the next version. I was successfully
-> > in the most cases, but i find no solution for the nrpz_delete()
-> > function, which needs the udev for the usb_put_dev() call. Since intf is
-> > at this time NULL, there is no way to determinate the struct usb_device
-> > pointer.
-> 
-> Why would intf be NULL at some point in time when you really need to
-> find this out?
-> 
-
-That is exactly the code of the usb-skeleton driver does.
-
-BTW: There are some issues with the usb-skeleton driver code, which the
-O_NONBLOCK handling i will fix later.
-
-And again usb_skeleton store also both usb_device and usb_interface.
-
-If the skeleton driver is a example full of wrong code and waste memory
-resources, why is it in and should be used as a template for usb
-drivers? Your name is in the source code header! 
-
-> > > > +	unsigned long in_use;		/* in use flag */
-> > > 
-> > > Why a long for this?
-> > > 
-> > 
-> > test_and_set_bit() expect a unsigned long. This kind of "in use"
-> > handling is not uncommon in a kernel driver.
-> 
-> Don't confuse that with a valid locking primitive.  Please just use a
-> bool or char instead.
-> 
-
-Why not? I see no benefit, but i will do.
-
-I think it is not necessary to count each byte, in the usb_nrpz
-structure. This structure will be only allocated if a device is plugged.
-And some of your suggestions will create more code, which is good for 2
-or 3 attached sensors.
-
->  
-> > Anchors will be used for the running urbs. The callback will then
-> > collect the handled urbs in a list and read() and write() will resubmit
-> > this urbs after processing.
-> > 
-> > Dynamically creation is an option, but i prefer this way, since it is
-> > faster, safer and has less error handling.
-> 
-> How do you know it is faster?  Has it been measured?  How?  What was the
-> results?  Why is it less error handling?  Create, submit, and
-> automatically have the USB core destroy the urb is simpler and less code
-> in a driver than this logic here, right?  If not, then we did something
-> wrong a long time ago.
-> 
-
-Thats not true. And maybe yes. The code is clean.
-
-I preallocate the urbs which would be needed and initialize it. Than i
-can use when it. Simple get the urb from the top op the list and put it
-to the other list and submit it. In the callback handler move it back to
-the other list. Very easy and straight forward.
-
-> > > > +	case NRPZ_GETSENSORINFO:
-> > > > +	 {
-> > > > +		struct nrpz_sensor_info __user *sensor_info =
-> > > > +			(struct nrpz_sensor_info __user *)arg;
-> > > > +
-> > > > +		if (!access_ok(VERIFY_WRITE, sensor_info, sizeof(*sensor_info)))
-> > > > +			return -EFAULT;
-> > > > +
-> > > > +		__put_user(dev->udev->descriptor.bcdDevice,
-> > > > +				&sensor_info->bcdDevice);
-> > > > +		__put_user(dev->udev->descriptor.bcdUSB,
-> > > > +				&sensor_info->bcdUSB);
-> > > > +		__put_user(dev->udev->descriptor.bDescriptorType,
-> > > > +				&sensor_info->bDescriptorType);
-> > > > +		__put_user(dev->udev->descriptor.bDeviceClass,
-> > > > +				&sensor_info->bDeviceClass);
-> > > > +		__put_user(dev->udev->descriptor.bDeviceSubClass,
-> > > > +				&sensor_info->bDeviceSubClass);
-> > > > +		__put_user(dev->udev->descriptor.bDeviceProtocol,
-> > > > +				&sensor_info->bDeviceProtocol);
-> > > > +		__put_user(dev->udev->descriptor.bMaxPacketSize0,
-> > > > +				&sensor_info->bMaxPacketSize0);
-> > > > +		__put_user(dev->udev->descriptor.bNumConfigurations,
-> > > > +				&sensor_info->bNumConfigurations);
-> > > > +		__put_user(dev->udev->descriptor.iManufacturer,
-> > > > +				&sensor_info->iManufacturer);
-> > > > +		__put_user(dev->udev->descriptor.iProduct,
-> > > > +				&sensor_info->iProduct);
-> > > > +		__put_user(dev->udev->descriptor.iSerialNumber,
-> > > > +				&sensor_info->iSerialNumber);
-> > > > +		__put_user(dev->udev->descriptor.idVendor,
-> > > > +				&sensor_info->vendorId);
-> > > > +		__put_user(dev->udev->descriptor.idProduct,
-> > > > +				&sensor_info->productId);
-> > > > +		usb_string(dev->udev, dev->udev->descriptor.iManufacturer,
-> > > > +				(char __force *)sensor_info->manufacturer,
-> > > > +				sizeof(sensor_info->manufacturer));
-> > > > +		usb_string(dev->udev, dev->udev->descriptor.iProduct,
-> > > > +				(char __force *)sensor_info->productName,
-> > > > +				sizeof(sensor_info->productName));
-> > > > +		usb_string(dev->udev, dev->udev->descriptor.iSerialNumber,
-> > > > +				(char __force *)sensor_info->serialNumber,
-> > > > +				sizeof(sensor_info->serialNumber));
-> > > 
-> > > Why are you sending this information through an ioctl, when it is
-> > > already exported in sysfs?  That seems quite needless.
-> > > 
-> > 
-> > This is very easy to do in the driver and would create a lot of code in
-> > the user space using libsysfs and depends on additional libraries.
-> 
-> You can't do a simple 'cat'?  Sorry, this is duplication, even if I
-> could accept this driver, I can't accept this.
-> 
-
-Sorry, but collect this data in user space with libudev is a much harder
-task and produce a lot of code. So there is no code duplication, also
-older software depends on this ioctl.
-
-> > > Anyway, I think the main questions are, "Why is this a kernel driver",
-> > > and "If this is a kernel driver, why not use the IIO interface"?
-> > > 
-> > 
-> > The IIO interface is an option, but not for the Rohde&Schwarz company,
-> > since the driver is in use by our customers for 10 years.
-> 
-> Ok, but I'm not that company, and neither is Linux.  We strive to create
-> unified userspace apis that all drivers can use to ensure device
-> independance (hint, that's what an OS is for.)  Creating one-off
-> user/kernel apis, like this one, is really special syscalls just for
-> this specific piece of hardware.  Which is something we do not do
-> lightly at all.
-> 
-> > I also not sure that the IIO interface can handle all of the features of
-> > the power meter.
-> 
-> Then the IIO interface needs to be extended to do so.  Seriously, that's
-> the only way I could see this being a kernel driver, not with this
-> custom ioctl interface.
-> 
-
-I have checked the IIO interface the last two days.
-
-I see no reason to spend month to extend the IIO interface for the need
-of high sophisticate measurement instruments since it is IMHO not
-possible.
-
-IIO is for simple sensor devices. 
-
-There is no way for an SCPI communication channel, which is the standard
-in the instrument world.
-
-Also IIO does not support float or double data values for accurate
-measuring nor any text messages interface.
-
-IIO will provide the data in separate queues, which will kick a way the
-dependencies of the measurement values. So you are not able to say for
-what value was a trigger for, without scanning all channels and compare
-the time stamps.  
-
-The IIO userland interface is also good for wasting resources. For the
-NRP Devices there where a need of a minimum of 10 open files in the
-sysfs to get the data (trigger, status, measurement values, limit
-changes and so on) from one device.
-
-Your strive to create a unified userspace API for IIO will currently
-have no success, the interface is to complex, waste a lot of resources
-and will never meat the requirements of more complex measurement
-hardware. It is only good for simple sensor devices.
-
-If you want create a clean and useable interface than have a look at
-HID. This is more what we need:
-
-- A descriptor which shows all the capabilities of the device, and which
-can easily extended.
-- A report wich say what is going on.
-- Only one device interface per sensor or instrument
-
-And it would be possible to provide a nice lib which handles and hides
-most of basic work from the application developer.
-
-Greetings,
-Stefani
+ 	tty->magic = 0;
+ 	tty_driver_kref_put(driver);
+-	module_put(driver->owner);
++	module_put(module);
+ 
+ 	spin_lock(&tty_files_lock);
+ 	list_del_init(&tty->tty_files);
+@@ -2005,11 +2006,15 @@ retry_open:
+ 			filp->f_op = &tty_fops;
+ 		goto retry_open;
+ 	}
+-	tty_unlock(tty);
+-
+ 
++	/*
++	 * Must acquire both mutexes in right order,
++	 * and keep a reference on tty, so dont call tty_unlock() !
++	 */
++	mutex_unlock(&tty->legacy_mutex);
+ 	mutex_lock(&tty_mutex);
+-	tty_lock(tty);
++	mutex_lock(&tty->legacy_mutex);
++
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	if (!noctty &&
+ 	    current->signal->leader &&
 
 
