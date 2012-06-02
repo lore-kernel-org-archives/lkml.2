@@ -1,72 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966065Ab2FAXmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 19:42:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43808 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966023Ab2FAXmA (ORCPT
+	id S933681Ab2FBAQI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 20:16:08 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:44065 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933664Ab2FBAQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 19:42:00 -0400
-Date: Fri, 1 Jun 2012 16:41:55 -0700
-From: Tyler Hicks <tyhicks@canonical.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: fate of the ecryptfs tree
-Message-ID: <20120601234154.GB6340@boyd>
-References: <20120531144115.0f35af0a8a5d79b73b0ecbe6@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="uAKRQypu60I7Lcqm"
-Content-Disposition: inline
-In-Reply-To: <20120531144115.0f35af0a8a5d79b73b0ecbe6@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 1 Jun 2012 20:16:05 -0400
+Subject: Re: [GIT PULL] Final round of SCSI updates for the 3.4+ merge
+ window
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Arun Easi <arun.easi@qlogic.com>, Avik Shau <avik.shau@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        Hannes Reinecke <mail@hannes-reinecke.de>
+In-Reply-To: <CBED88EA.47E61%giridhar.malavali@qlogic.com>
+References: <CBED88EA.47E61%giridhar.malavali@qlogic.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jun 2012 17:16:02 -0700
+Message-ID: <1338596162.23917.108.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-05-31 at 20:47 -0700, Giridhar Malavali wrote:
+> Nicholas and all others,
+> 
+> I would like to thank you very much on behalf of QLogic Linux FC/FCoE team
+> to everyone who worked with us to get QLogic >= 24xx initial target driver
+> upstream for 3.5-rc1. You responded quickly to our queries and provided
+> the support to get this functionality delivered on time. We would like to
+> work further to get other target related functionalities upstream in
+> future. 
+> 
 
---uAKRQypu60I7Lcqm
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Giridhar!
 
-On 2012-05-31 14:41:15, Stephen Rothwell wrote:
-> Hi Tyler,
->=20
-> I am just wondering about the fate of the ecryptfs tree.  The most recent
-> commit to that tree is dated Feb 11 and seems to have been included in
-> Linus' tree as a different commit.
+I'm really happy to hear that Qlogic would like to expand it's upstream
+target-mode support offerings based on the positive results from qla2xxx
+with the target-mode development community thus far.
 
-My next branch has become stale. Sorry about that! I haven't been doing
-much development on the kernel side in the last couple months. That will
-soon change, as I have a few bug fixes in the works and I know of a
-contribution or two that should surface shortly.
+While it's going to be a busy ~8 weeks until 3.5 is released to resolve
+the outstanding active I/O target shutdown issues with tcm_qla2xxx, I'm
+eager to get these remaining issues get addressed for this first round.
+ 
+I'm also really excited to see 83xx target mode support included as a
+for-3.6 -> for-3.7 item..
 
-In the meantime, I've just pushed the HEAD of Linus' tree to my next
-branch to clean things up.
+:)
 
-Tyler
+Thank you!
 
---uAKRQypu60I7Lcqm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--nab
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> Thanks,
+> Giridhar
+> 
+> 
+> On 5/31/12 12:57 PM, "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> >On Thu, 2012-05-31 at 13:17 +0100, James Bottomley wrote:
+> >> This is primarily another round of driver updates (bnx2fc, qla2xxx,
+> >> qla4xxx) including the target mode driver for qla2xxx.
+> >
+> >Hi everyone,
+> >
+> >With the Qlogic >= 24xx series HW target driver code now upstream for
+> >3.5-rc1, I wanted to take this brief moment to thank those who have
+> >contributed to reaching this initial milestone:
+> >
+> >Andrew Vasquez (Qlogic)
+> >Arun Easi (Qlogic)
+> >Chad Dupuis (Qlogic)
+> >Giridhar Malavali (Qlogic)
+> >Joern Engel (Pure)
+> >John 'Coz' Colgrove (Pure)
+> >Marco Sanvido (Pure)
+> >Patrick Lee (Pure)
+> >Roland Dreier (Pure)
+> >Scott Dietzen (Pure)
+> >Steve Hodgson (Pure)
+> >Jerome Martin (RisingTide)
+> >Madhu Iyengar (RisingTide)
+> >Marc Fleischmann (RisingTide)
+> >Christoph Hellwig (LSF / RTS)
+> >Andy Grover (RHAT)
+> >Dan Carpenter (Oracle)
+> >Hannes Reinecke (Suse.de)
+> >James Bottomley (Parallels)
+> >Stephen Rothwell (IBM)
+> >Vladislav Bolkhovitin (SCST / ID7)
+> >
+> >Without the help and support of these people the initial merge for
+> >v3.5-rc1 would not have been possible.
+> >
+> >Thank you!
+> >
+> >--nab
+> >
+> >
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-iQIcBAEBCgAGBQJPyVNCAAoJENaSAD2qAscKKGkQAJyO4nTq0+/1GPoQ1eId4p7H
-8rt18pi01bm6d51kPMEhYPZWTc2DO3OSmMzU7fX7Pr/nlghe/cNXNV6T3K9Lyacf
-s6ktt0w3nr3l9D2Hid40jCYp/+vvin8wYnUbqW6OjGVRecRBHjco6svZTY6vdLhU
-xnrh0IejHqZKlBHSbeMsK14jAqlln6sYFOlIQ4SHKsA1b+/8zmkSB6wukcBbARTb
-9Iov6otRW0REV44qXaPcKiuFAyAw+NbTXJqwnBFBjooRPdQxuoHbPmHmM6kPEzga
-d7xjJVavDscg2UGaXzWwkgX18kvb8Sf8R3UZc2ULAFSZk2L0Kg5Kv9BNSXIX4lxW
-qq1EejljihNlRFy/TSkYn7YmU0mYuO8yTkgbh9Rlb2CVdbGD7uh0+z5sRtK3iMIt
-dmD+iIzFYsBO6grjiGEHP47OnPLTJnUzMSmArd8NSJtP4/5ksUfsZ2vYr6tgtddn
-KzziLbm6cf387sTUFO5H1nSFIP1NyupSaODPHXxfCSOcQnFedKnjd7WcB85iLWTS
-yOSIfacLmgWDh1xkirISPV2p1EMnD7TEq7+4gkeQgcCyxu9OacIYT1Ai1OwDPFiQ
-Or3/pcE0c96KkhJyJNr0hfaBEHwge2GRkDXV1vOlHnuJJb1vw/yGIEdNbU8TyPCM
-GNQHEaU0rnL3s+/55xkJ
-=Cf7G
------END PGP SIGNATURE-----
 
---uAKRQypu60I7Lcqm--
