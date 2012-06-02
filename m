@@ -1,94 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab2FBCKO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jun 2012 22:10:14 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:59359 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab2FBCKM (ORCPT
+	id S966238Ab2FBCUw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jun 2012 22:20:52 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33241 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760307Ab2FBCUv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jun 2012 22:10:12 -0400
-Date: Sat, 2 Jun 2012 04:10:09 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
-Message-ID: <20120602021009.GA332@x4>
+	Fri, 1 Jun 2012 22:20:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <CAKB833k7pNMF7+37nCx0GkBqxCBuBx5yffFB5z2shosDVh6HhQ@mail.gmail.com>
+References: <CAKB833k7pNMF7+37nCx0GkBqxCBuBx5yffFB5z2shosDVh6HhQ@mail.gmail.com>
+Date: Sat, 2 Jun 2012 07:50:50 +0530
+Message-ID: <CAKB833=F-Tkss-opb62eeF-zdGdXpG_Z=ONRazdGG1-gF1RidQ@mail.gmail.com>
+Subject: Need help regarding parallel port interrupt in kernel 3.2
+From: Vishal Nandanwar <operational.people@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm running the latest git kernel with the btrfs updates already merged.
-Today I've hit the following warnings during rsnapshot backup:
+Hi,
 
-Jun  1 22:26:30 x4 kernel: Adding 1953788k swap on /dev/sda2.  Priority:-1 extents:1 across:1953788k 
-Jun  2 01:52:30 x4 kernel: ------------[ cut here ]------------
-Jun  2 01:52:30 x4 kernel: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
-Jun  2 01:52:30 x4 kernel: Hardware name: System Product Name
-Jun  2 01:52:30 x4 kernel: Pid: 24991, comm: btrfs-endio-wri Not tainted 3.4.0-09820-g86c47b7-dirty #50
-Jun  2 01:52:30 x4 kernel: Call Trace:
-Jun  2 01:52:30 x4 kernel: [<ffffffff8105c6c0>] ? warn_slowpath_common+0x60/0xa0
-Jun  2 01:52:30 x4 kernel: [<ffffffff8121d6eb>] ? unpin_extent_cache+0x4b/0xa0
-Jun  2 01:52:30 x4 kernel: [<ffffffff8121207e>] ? btrfs_finish_ordered_io+0x27e/0x400
-Jun  2 01:52:30 x4 kernel: [<ffffffff8123bb02>] ? worker_loop+0x142/0x4c0
-Jun  2 01:52:30 x4 kernel: [<ffffffff8123b9c0>] ? btrfs_queue_worker+0x300/0x300
-Jun  2 01:52:30 x4 kernel: [<ffffffff81077ae5>] ? kthread+0x85/0xa0
-Jun  2 01:52:30 x4 kernel: [<ffffffff81561c54>] ? kernel_thread_helper+0x4/0x10
-Jun  2 01:52:30 x4 kernel: [<ffffffff81077a60>] ? kthread_flush_work_fn+0x20/0x20
-Jun  2 01:52:30 x4 kernel: [<ffffffff81561c50>] ? gs_change+0xb/0xb
-Jun  2 01:52:30 x4 kernel: ---[ end trace 73bddc9623dbf3c3 ]---
-...
-Jun  2 01:55:27 x4 kernel: ------------[ cut here ]------------
-Jun  2 01:55:27 x4 kernel: WARNING: at fs/btrfs/extent_map.c:226 unpin_extent_cache+0x4b/0xa0()
-Jun  2 01:55:27 x4 kernel: Hardware name: System Product Name
-Jun  2 01:55:27 x4 kernel: Pid: 24997, comm: btrfs-endio-wri Tainted: G        W    3.4.0-09820-g86c47b7-dirty #50
-Jun  2 01:55:27 x4 kernel: Call Trace:
-Jun  2 01:55:27 x4 kernel: [<ffffffff8105c6c0>] ? warn_slowpath_common+0x60/0xa0
-Jun  2 01:55:27 x4 kernel: [<ffffffff8121d6eb>] ? unpin_extent_cache+0x4b/0xa0
-Jun  2 01:55:27 x4 kernel: [<ffffffff8121207e>] ? btrfs_finish_ordered_io+0x27e/0x400
-Jun  2 01:55:27 x4 kernel: [<ffffffff8123bb02>] ? worker_loop+0x142/0x4c0
-Jun  2 01:55:27 x4 kernel: [<ffffffff8123b9c0>] ? btrfs_queue_worker+0x300/0x300
-Jun  2 01:55:27 x4 kernel: [<ffffffff81077ae5>] ? kthread+0x85/0xa0
-Jun  2 01:55:27 x4 kernel: [<ffffffff81561c54>] ? kernel_thread_helper+0x4/0x10
-Jun  2 01:55:27 x4 kernel: [<ffffffff81077a60>] ? kthread_flush_work_fn+0x20/0x20
-Jun  2 01:55:27 x4 kernel: [<ffffffff81561c50>] ? gs_change+0xb/0xb
-Jun  2 01:55:27 x4 kernel: ---[ end trace 73bddc9623dbf3eb ]---
+I am working on a parallel port code, in which I want to achieve the
+interrupt on pin 10. I have created a sample circuit as mentioned in
+Book LDD. I have connected pin 9 to pin 10 and writing 0x00 and 0xFF
+on the port to generate interrupt.
 
- ~ # < /var/log/kern.log | grep extent_map | wc -l
-41
+I have created one sample code.
 
->From /var/log/cron.log
+##--------------------------------------------------------------------------------------------------------------------------------
+[Code]
+#include<linux/init.h>
+#include<linux/module.h>
+#include<linux/fs.h>
+#include<linux/cdev.h>
+#include<linux/slab.h>
+#include<linux/io.h>
+#include<linux/ioport.h>
+#include<linux/interrupt.h>
+#include<asm/uaccess.h>
+#include<asm/irq.h>
 
-Jun  2 01:52:00 x4 fcron[24821]: Job /usr/bin/rsnapshot daily started for user root (pid 24822)
-Jun  2 01:55:29 x4 fcron[24821]: Job /usr/bin/rsnapshot daily completed (mailing output)
+#include "parportD.h"
 
- ~ # btrfs fi df /var
-Data, RAID1: total=758.00GB, used=538.32GB
-Data: total=8.00MB, used=0.00
-System, RAID1: total=8.00MB, used=116.00KB
-System: total=4.00MB, used=0.00
-Metadata, RAID1: total=37.50GB, used=1.88GB
-Metadata: total=8.00MB, used=0.00
+MODULE_LICENSE("Dual BSD/GPL");
 
-~ # btrfs subvol list /var
-ID 773 top level 5 path .snapshots/daily.0
-ID 800 top level 5 path .snapshots/monthly.0
-ID 811 top level 5 path .snapshots/weekly.3
-ID 813 top level 5 path .snapshots/weekly.2
-ID 839 top level 5 path .snapshots/weekly.1
-ID 870 top level 5 path .snapshots/weekly.0
-ID 871 top level 5 path .snapshots/daily.6
-ID 872 top level 5 path .snapshots/daily.5
-ID 873 top level 5 path .snapshots/daily.4
-ID 874 top level 5 path .snapshots/daily.3
-ID 875 top level 5 path .snapshots/daily.2
-ID 876 top level 5 path .snapshots/daily.1
+int parportD_minor, parportD_major, parportD_count;
+struct cdev *parportD_cdev;
+dev_t dev = 0;
+int flag;
+int intID = 3;
+int s = 0;
+struct resource *res;
+unsigned long portID = 0x378;
+unsigned long length = 0x08;
 
-Rsnapshot creates a new snapshot with:
- btrfs subvolume snapshot -r
-and then uses rsync to backup my root drive (on xfs).
+struct file_operations cDevice_fops = {
+       .owner = THIS_MODULE,
+       .read = parportD_read,
+       .write = parportD_write,
+       .open = parportD_open,
+       .release = parportD_release,
+};
 
--- 
-Markus
+irqreturn_t intHandle(int irq, void *dev_id)
+{
+       printk("Interrupt occured.");
+       s = 1;
+       outb_p(0x00, portID + 2);
+       outb_p(0x10, portID + 2);
+
+
+       return IRQ_HANDLED;
+}
+
+static int parportD_init(void) {
+
+       int retVal, err;
+
+       printk("parportD initialization started.\n");
+
+       parportD_count = 0x01;
+       parportD_minor = 0x00;
+
+/*      res = request_region(portID, length ,"parportD");
+       if (res == NULL) {
+               printk(KERN_NOTICE "Port allocation failed.");
+               return -1;
+       }*/
+
+       retVal = alloc_chrdev_region(&dev, parportD_minor, 1, "parportD");
+       if (retVal != 0x00) {
+               printk(KERN_NOTICE "chrdev region allocation failed.");
+               return -1;
+       }
+
+       parportD_major = MAJOR(dev);
+       parportD_minor = MINOR(dev);
+
+       printk("retVal = %d\n", retVal);
+       printk("Major number = %d\n", parportD_major);
+       printk("Minor number = %d\n", parportD_minor);
+       printk("Device count = %d\n", parportD_count);
+
+       parportD_cdev = cdev_alloc();
+
+       cdev_init(parportD_cdev, &cDevice_fops);
+       parportD_cdev->owner = THIS_MODULE;
+       err = cdev_add(parportD_cdev, dev, 1);
+       if (err < 0) {
+               printk(KERN_NOTICE "Error %d adding parportD", err);
+       } else {
+               printk("parportD initialization completed.\n");
+       }
+
+       //request IRQ
+       retVal = request_irq(intID, intHandle, IRQF_DISABLED, "parportD", NULL);
+
+       printk("Interrupt request return value = %d\n", retVal);
+
+       if (retVal ) {
+           printk("Interrupt request failed. = %d\n", retVal);
+       } else {
+         //enable intrrupts
+         outb(0x10, portID+2);
+          printk("Interrupt enabled.\n");
+       }
+
+       return 0;
+}
+
+static void parportD_exit(void) {
+       printk("parportD exit started.\n");
+       cdev_del(parportD_cdev);
+       free_irq(intID, NULL);
+       release_region(0x378, 8);
+
+       printk("parportD exit completed.\n");
+}
+
+int parportD_open(struct inode *inode, struct file *filep) {
+       int retVal = 0x00;
+       printk("parportD opend.\n");
+
+       return retVal;
+}
+
+int parportD_release(struct inode *inode, struct file *filep) {
+       printk("\nparportD released.\n");
+       return 0x00;
+}
+
+ssize_t parportD_read(struct file *filep, char *buf, size_t count,
+loff_t *f_pos) {
+       /*ssize_t retVal = 0x00;
+       printk("Device read received.\n");
+
+       retVal = copy_to_user((void *)buf, (void*)data, count);
+       printk("Device read = %s ratVal = %d count = %d \n", buf,
+retVal, count);*/
+
+       return count;
+}
+
+ssize_t parportD_write(struct file *filep, const char *buf, size_t
+count, loff_t *f_pos) {
+       printk("Device write received.\n");
+       printk("s = %d\n", s);
+
+       if(flag == 0) {
+               flag = 1;
+               outb(0, portID);
+               printk("Wrote 0 on port. \n");
+       } else {
+               flag = 0;
+               outb(255, portID);
+               printk("Wrote 255 on port. \n");
+       }
+
+       printk("Data received = %s", buf);
+
+       return count;
+}
+
+module_init(parportD_init);
+module_exit(parportD_exit);
+[/Code]
+##------------------------------------------------------------------------------------------------------------------------------
+
+Problem here is, I am not getting interrupt or my interrupt handler is
+not executing. I wonder do we need to do any setting in BIOS for this
+interrupt? Or do we need to enable any flag during kernel compilation?
+
+Vishal N
