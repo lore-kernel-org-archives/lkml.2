@@ -1,79 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759216Ab2FBQPL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 12:15:11 -0400
-Received: from smp.if.uj.edu.pl ([149.156.82.206]:46388 "EHLO smp.if.uj.edu.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754259Ab2FBQPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 12:15:09 -0400
-Date: Sat, 2 Jun 2012 18:15:02 +0200
-From: Witold Baryluk <baryluk@smp.if.uj.edu.pl>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Don Zickus <dzickus@redhat.com>
-Subject: WARNING: arch/x86/built-in.o: Section mismatch in reference from
- the variable test_nmi_ipi_callback_na to function
- .ini.text:test_nmi_ipi_callback
-Message-ID: <20120602161502.GW16584@smp.if.uj.edu.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1758387Ab2FBQSy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 12:18:54 -0400
+Received: from outrelay01.libero.it ([212.52.84.101]:53546 "EHLO
+	outrelay01.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab2FBQSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jun 2012 12:18:52 -0400
+X-CTCH-Spam: Bulk
+X-CTCH-RefID: str=0001.0A0B0208.4FCA3CA6.002F,ss=3,sh,re=0.000,fgs=0
+X-libjamoibt: 1821
+Message-ID: <23544348.4795111338653903720.JavaMail.defaultUser@defaultHost>
+Date: Sat, 2 Jun 2012 18:18:23 +0200 (CEST)
+From: joy <joypatrick21@yahoo.com>
+Reply-To: joy <joypatrick21@yahoo.com>
+Subject: Hello Dear,
+MIME-Version: 1.0
+Content-Type: text/plain;charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SenderIP: 41.208.186.234
+X-libjamv: ctU0lL9Gsg0=
+X-libjamsun: 45fePPGiEhTugB+/HeQsg0qEomUiaQIj
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everybody,
-
-x86 32-bit Build just got 2 WARNINGS when building kernel on Linus' tree.
-
-
- VDSOSYM arch/x86/vdso/vdso32-syms.lds
-  LD      arch/x86/vdso/built-in.o
-  LD      arch/x86/built-in.o
-WARNING: arch/x86/built-in.o(.data+0x5af0): Section mismatch in reference from the variable test_nmi_ipi_callback_na.10451 to the function .init.text:test_nmi_ipi_callback()
-The variable test_nmi_ipi_callback_na.10451 references
-the function __init test_nmi_ipi_callback()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-
-WARNING: arch/x86/built-in.o(.data+0x5b04): Section mismatch in reference from the variable nmi_unk_cb_na.10399 to the function .init.text:nmi_unk_cb()
-The variable nmi_unk_cb_na.10399 references
-the function __init nmi_unk_cb()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-
-  LD      vmlinux.o
-  MODPOST vmlinux.o
-WARNING: vmlinux.o(.data+0x7cf0): Section mismatch in reference from the variable test_nmi_ipi_callback_na.10451 to the function .init.text:test_nmi_ipi_callback()
-The variable test_nmi_ipi_callback_na.10451 references
-the function __init test_nmi_ipi_callback()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-
-WARNING: vmlinux.o(.data+0x7d04): Section mismatch in reference from the variable nmi_unk_cb_na.10399 to the function .init.text:nmi_unk_cb()
-The variable nmi_unk_cb_na.10399 references
-the function __init nmi_unk_cb()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-
-  GEN     .version
-  CHK     include/generated/compile.h
-
-
-
-
-This is recent change.
-
-gcc version 4.7.0 (Debian 4.7.0-11) 
-
-Debian sid, i386.
-
--- 
-Witold Baryluk
+Hello Dear,
+My name is Miss Joy i sawyour profile today and I look to you if you do not 
+mind, I'd like you to contact me back with my private email so I can give you 
+my pictures for you to know of who I am, although I came online to saching a 
+true man and honest, I think we can move from here! Remember, color, or 
+langurage distance does not matter, but liked him very much matters in life. 
+Best of greetings
+Miss Joy
