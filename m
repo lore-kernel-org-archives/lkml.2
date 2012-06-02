@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759852Ab2FBXPU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 19:15:20 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64913 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab2FBXPS (ORCPT
+	id S933878Ab2FBXsP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 19:48:15 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34668 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933325Ab2FBXsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 19:15:18 -0400
+	Sat, 2 Jun 2012 19:48:13 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: hacklu <embedway.linux@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+References: <4FB492F7.8050401@gmail.com>
+Date: Sat, 02 Jun 2012 17:48:04 -0600
+In-Reply-To: <4FB492F7.8050401@gmail.com> (hacklu's message of "Thu, 17 May
+	2012 13:56:07 +0800")
+Message-ID: <87ipf9gtsb.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120603000252.0c5008b9@pyramind.ukuu.org.uk>
-References: <4FC6189B.9080909@fusionio.com> <4FC66D3D.6080509@fusionio.com>
- <1338404902.2760.451.camel@edumazet-glaptop> <1338410107.2760.544.camel@edumazet-glaptop>
- <1338456918.2760.1318.camel@edumazet-glaptop> <1338574627.2760.1545.camel@edumazet-glaptop>
- <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
- <1338583498.2760.1648.camel@edumazet-glaptop> <20120601215620.305155c0@pyramind.ukuu.org.uk>
- <1338584389.2760.1653.camel@edumazet-glaptop> <1338621438.2760.1679.camel@edumazet-glaptop>
- <1338623708.2760.1691.camel@edumazet-glaptop> <1338624102.2760.1693.camel@edumazet-glaptop>
- <20120602125723.5b057570@pyramind.ukuu.org.uk> <1338640231.2760.1704.camel@edumazet-glaptop>
- <CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
- <CA+55aFysA72FVTF6k=HnqYjCTqXQO+jcMLeR6MpM=eJm-H+EBQ@mail.gmail.com>
- <20120602211917.14275f12@pyramind.ukuu.org.uk> <CA+55aFzNQe6WCHKBrs_xNY0MxzF4C9jpfLFjSh8GBFTEzGnxxg@mail.gmail.com>
- <20120603000252.0c5008b9@pyramind.ukuu.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 2 Jun 2012 16:14:57 -0700
-X-Google-Sender-Auth: -TitwkD26B31yKqyJ4s6FnHI4wM
-Message-ID: <CA+55aFzDE8y_K=bcN+7xtLDnF_v-xRe20S+Ws-mhs4CVyUPYOA@mail.gmail.com>
-Subject: Re: [PATCH] tty: add lockdep annotations
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX194Yb64BzOj+qpqqofL65tTskdmrPNKUo0=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1256]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;hacklu <embedway.linux@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: why the decompressed procedure move kernel from address 0x100000(1M) to 0x1000000(16M) +x
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 2, 2012 at 4:02 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+hacklu <embedway.linux@gmail.com> writes:
+
+> hi all,
+> recently, I got some puzzle when I read source code of the system boot. I need
+> some help.
 >
-> per ldisc waitqueue is indeed independent. The rest I'll try and check
-> but may be Wednesday for a serious check. You could also I guess narrow
-> the check by leaving it all passing tty in to the lock function but just
-> using the global lock. Might keep the noise down for the 3.6 work too.
+> at the end of src/arch/x86/boot/header.S,  kernel jump to 0x100000(where is the
+> src/arch/x86/boot/compressed/head_32.S).
+> in __this__ head_32.S, I found the kernel is move to 0x1000000(mostly is to
+> here) +x. the x distance is used for decompressed buf.  must leave some distance
+> for decompressing without overlap.
+>
+> after the move, kernel is decompressed at 0x1000000(16m). and jump to it.
+>
+> so why not decompressed kernel at 0x100000(1M) to 0x1000000(16m) directly
+> without moving?
+>
+> is the move necessary?
 
-Not really possible. The bug fundamentally comes from how the per-tty
-locking locks too late - after the lookup - rather than before.
+The move is nececcessary if we are doing the decompression in place.
+Without a move it is hard to tell if there are going to be overlapping
+address problems.  The move is cheap so there is no apparent reason
+to optimize it away.
 
-And fixing that to lock in the right place is not possible with the
-"pass in the tty" model. Because we don't know what the tty will be.
-
-                 Linus
+Eric
