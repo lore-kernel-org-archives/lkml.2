@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab2FCTjp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 15:39:45 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53377 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab2FCTjn (ORCPT
+	id S1754626Ab2FCTo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 15:44:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:32959 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab2FCToX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 15:39:43 -0400
-Subject: [GIT PULL] target 3.5-merge fixes for -rc2
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+	Sun, 3 Jun 2012 15:44:23 -0400
+Subject: Re: [PATCH] tty: add lockdep annotations
+From: Eric Dumazet <eric.dumazet@gmail.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, Christoph Hellwig <hch@lst.de>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Alan Cox <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+In-Reply-To: <CA+55aFzNQe6WCHKBrs_xNY0MxzF4C9jpfLFjSh8GBFTEzGnxxg@mail.gmail.com>
+References: <4FC6189B.9080909@fusionio.com>
+	 <1338402812.2760.413.camel@edumazet-glaptop>
+	 <4FC66D3D.6080509@fusionio.com>
+	 <1338404902.2760.451.camel@edumazet-glaptop>
+	 <1338410107.2760.544.camel@edumazet-glaptop>
+	 <1338456918.2760.1318.camel@edumazet-glaptop>
+	 <1338574627.2760.1545.camel@edumazet-glaptop>
+	 <CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+	 <1338583498.2760.1648.camel@edumazet-glaptop>
+	 <20120601215620.305155c0@pyramind.ukuu.org.uk>
+	 <1338584389.2760.1653.camel@edumazet-glaptop>
+	 <1338621438.2760.1679.camel@edumazet-glaptop>
+	 <1338623708.2760.1691.camel@edumazet-glaptop>
+	 <1338624102.2760.1693.camel@edumazet-glaptop>
+	 <20120602125723.5b057570@pyramind.ukuu.org.uk>
+	 <1338640231.2760.1704.camel@edumazet-glaptop>
+	 <CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
+	 <CA+55aFysA72FVTF6k=HnqYjCTqXQO+jcMLeR6MpM=eJm-H+EBQ@mail.gmail.com>
+	 <20120602211917.14275f12@pyramind.ukuu.org.uk>
+	 <CA+55aFzNQe6WCHKBrs_xNY0MxzF4C9jpfLFjSh8GBFTEzGnxxg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 03 Jun 2012 12:39:32 -0700
-Message-ID: <1338752372.4238.24.camel@haakon2.linux-iscsi.org>
+Date: Sun, 03 Jun 2012 21:44:18 +0200
+Message-ID: <1338752658.2760.1708.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, 2012-06-02 at 15:25 -0700, Linus Torvalds wrote:
 
-Here are two target patches currently in the queue for 3.5-rc2.
+> Eric, does this make things work for you again? When/if we get the
+> locking sorted out for the tty install/lookup/remove, we can revert
+> this revert and do the locking fixes on top of that.
 
-Please go ahead and pull from:
+Linus, I confirm all is good with 3.5-rc1
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git 3.5-merge-fixes
+Thanks
 
-The first is a small name-space collision fix from Stefan for the new
-sbp-target / ieee-1394 code, and second is the FILEIO backend conversion
-patch to always use O_DSYNC by default instead of O_SYNC as recommended
-by hch.  Note the latter is CC'ed stable.
-
-This branch is based upon commit:
-
-commit af56e0aa35f3ae2a4c1a6d1000702df1dd78cb76
-Merge: 65a50c9 6bd9adb
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Wed May 30 11:17:19 2012 -0700
-
-    Merge git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client
-
-Please let us know if you have any concerns.
-
-Thanks!
-
---nab
-
-Nicholas Bellinger (1):
-  target/file: Use O_DSYNC by default for FILEIO backends
-
-Stefan Richter (1):
-  sbp-target: rename a variable to avoid name clash
-
- drivers/target/sbp/sbp_target.c   |    8 ++--
- drivers/target/target_core_file.c |   70 +++++++++----------------------------
- drivers/target/target_core_file.h |    1 -
- 3 files changed, 21 insertions(+), 58 deletions(-)
 
