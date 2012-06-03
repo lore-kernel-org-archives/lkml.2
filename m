@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2FCNBm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 09:01:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60451 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078Ab2FCNBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 09:01:41 -0400
-Message-ID: <4FCB602B.70907@zytor.com>
-Date: Sun, 03 Jun 2012 06:01:31 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: why the decompressed procedure move kernel from address 0x100000(1M)
- to 0x1000000(16M) +x
-References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com> <4FCAD590.8000506@zytor.com> <87obp0bxdv.fsf@xmission.com>
-In-Reply-To: <87obp0bxdv.fsf@xmission.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+	id S1753816Ab2FCNCe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 09:02:34 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42360 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab2FCNCc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 09:02:32 -0400
+Date: Sun, 3 Jun 2012 14:06:04 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH] tty: add lockdep annotations
+Message-ID: <20120603140604.23b2a34b@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFwPdYfu5p5EPqZLnzps0v0+MaL7=dr9cK71EqhAL-Hebg@mail.gmail.com>
+References: <4FC6189B.9080909@fusionio.com>
+	<1338410107.2760.544.camel@edumazet-glaptop>
+	<1338456918.2760.1318.camel@edumazet-glaptop>
+	<1338574627.2760.1545.camel@edumazet-glaptop>
+	<CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+	<1338583498.2760.1648.camel@edumazet-glaptop>
+	<20120601215620.305155c0@pyramind.ukuu.org.uk>
+	<1338584389.2760.1653.camel@edumazet-glaptop>
+	<1338621438.2760.1679.camel@edumazet-glaptop>
+	<1338623708.2760.1691.camel@edumazet-glaptop>
+	<1338624102.2760.1693.camel@edumazet-glaptop>
+	<20120602125723.5b057570@pyramind.ukuu.org.uk>
+	<1338640231.2760.1704.camel@edumazet-glaptop>
+	<CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
+	<CA+55aFysA72FVTF6k=HnqYjCTqXQO+jcMLeR6MpM=eJm-H+EBQ@mail.gmail.com>
+	<20120602211917.14275f12@pyramind.ukuu.org.uk>
+	<CA+55aFzNQe6WCHKBrs_xNY0MxzF4C9jpfLFjSh8GBFTEzGnxxg@mail.gmail.com>
+	<CA+55aFwPdYfu5p5EPqZLnzps0v0+MaL7=dr9cK71EqhAL-Hebg@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2012 01:41 AM, Eric W. Biederman wrote:
-> 
-> Time wise copying the kernel probably takes a millisecond or less on
-> modern hardware, so I don't think it is a particularly large concern.
-> 
+> Actually, I think we could probably make it really trivial by forcing
+> the free'ing of the tty itself to be RCU-delayed.
 
-If your boot time budget is a second, getting rid of a millisecond helps.
+It doesn't solve the problem of the synchronization between ->ttys[] and
+->termios[]. Thats two objects, and the root of the problem. Given the
+size of struct ktermios it appears to be a win anyway to put it in the
+tty.
 
-> Looking at parse_elf I see two misfeatures.
-> - parse_elf is short some memsets for the ELF sections that are larger
->   in memory than they are in the file data.
-> - We don't return the entry point of the elf header and instead hard
->   code the beginning of the file data.
-> 
-> The oddest thing about parse_elf is what makes the copies parse_elf
-> performs safe.  It just happens to be the case that because of the
-> way ld lays out the file those copies turn into a single memmove 
-> that just strips off the elf header and program header.
-> 
-> So it should be trivial to and perhaps even safer to decompress the
-> program segments to their final destination.
-> 
-> Looking at the way the code is evolving, I suspect we should just give
-> up overlapping compressed data and uncompressed data.  The elf header
-> logic in theory allows the code in a more arbitrary order, and it
-> doesn't look like anyone has done a worst case space analysis for
-> anything except gzip.  The code works most of the time today but
-> I do wonder if it is safe.
-> 
-> Additionally at the rate we are adding compression algorithms I don't
-> believe that all of the compression alorigthms use the gzip footer that
-> reports the uncompressed length of the file.  So I suspect it would be
-> wise to get z_output_len from simply examining the uncompressed file
-> that we feed to compression programs, aka vmlinux.bin.all-y
-> 
-> Perhaps I am wrong but I have the strongest feeling we are playing with
-> fire and getting very lucky right now.
+At that point tty_release can do what it should do.
 
-I think it might be even worse; on x86-64 we produce 2 MiB of completely
-useless zero-padding after the header.  I have wanted to get rid of it
-but I'm not sure if the ELF code is robust enough.  The code is a
-hackwork and yes, should be replaced by decompressing into the
-designated target areas.
+> What do you think?
 
-	-hpa
+Second complication is some ttys have their own private ->shutdown.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+It's possibly a useful optimisation and way of doing it *once* the
+termios tidy is done, but I think once that is done then ->shutdown goes
+away or becomes an non IRQ path event in tty_release.
 
+> Anyway, I'm closing the merge window now (doing the tagging, booting
+> and checking that allmodconfig/allyesconfig/allnoconfigs all compile
+> fine) so it's 3.6 material, but it doesn't sound bad.
+
+I've been gradually putting in places the bits leading up to the tty_lock
+fix. I hadn't realised that one needed to be ahead or was exposing the
+termios/tty array race.
+
+I'll just go back and put the termios stuff further ahead and get that
+chunk right first. After that tty locking, and then we can worry about
+the real nasty which is that if we fix the open/close paths for console
+devices to be secure Fedora breaks because their userspace appears to be
+completely broken in this area.
+
+Alan
