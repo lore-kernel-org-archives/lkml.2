@@ -1,107 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab2FCNMw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 09:12:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46620 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078Ab2FCNMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 09:12:50 -0400
-Date: Sun, 3 Jun 2012 15:12:43 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Marc Dionne <marc.c.dionne@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: logitech: don't use stack based dj_report
- structures
-In-Reply-To: <1338588734-2902-1-git-send-email-marc.c.dionne@gmail.com>
-Message-ID: <alpine.LNX.2.00.1206031512370.5478@pobox.suse.cz>
-References: <1338588734-2902-1-git-send-email-marc.c.dionne@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753598Ab2FCNUf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 09:20:35 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42373 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab2FCNUe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 09:20:34 -0400
+Date: Sun, 3 Jun 2012 14:24:06 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH] tty: add lockdep annotations
+Message-ID: <20120603142406.1ced80f9@pyramind.ukuu.org.uk>
+In-Reply-To: <CA+55aFwPdYfu5p5EPqZLnzps0v0+MaL7=dr9cK71EqhAL-Hebg@mail.gmail.com>
+References: <4FC6189B.9080909@fusionio.com>
+	<1338410107.2760.544.camel@edumazet-glaptop>
+	<1338456918.2760.1318.camel@edumazet-glaptop>
+	<1338574627.2760.1545.camel@edumazet-glaptop>
+	<CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
+	<1338583498.2760.1648.camel@edumazet-glaptop>
+	<20120601215620.305155c0@pyramind.ukuu.org.uk>
+	<1338584389.2760.1653.camel@edumazet-glaptop>
+	<1338621438.2760.1679.camel@edumazet-glaptop>
+	<1338623708.2760.1691.camel@edumazet-glaptop>
+	<1338624102.2760.1693.camel@edumazet-glaptop>
+	<20120602125723.5b057570@pyramind.ukuu.org.uk>
+	<1338640231.2760.1704.camel@edumazet-glaptop>
+	<CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
+	<CA+55aFysA72FVTF6k=HnqYjCTqXQO+jcMLeR6MpM=eJm-H+EBQ@mail.gmail.com>
+	<20120602211917.14275f12@pyramind.ukuu.org.uk>
+	<CA+55aFzNQe6WCHKBrs_xNY0MxzF4C9jpfLFjSh8GBFTEzGnxxg@mail.gmail.com>
+	<CA+55aFwPdYfu5p5EPqZLnzps0v0+MaL7=dr9cK71EqhAL-Hebg@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012, Marc Dionne wrote:
-
-> On a system with a logitech wireless keyboard/mouse and DMA-API debugging
-> enabled, this warning appears at boot:
-> 
-> kernel: WARNING: at lib/dma-debug.c:929 check_for_stack.part.12+0x70/0xa7()
-> kernel: Hardware name: MS-7593
-> kernel: uhci_hcd 0000:00:1d.1: DMA-API: device driver maps memory fromstack [addr=ffff8801b0079c29]
-> 
-> Make logi_dj_recv_query_paired_devices and logi_dj_recv_switch_to_dj_mode
-> use a structure allocated with kzalloc rather than a stack based one.
-> 
-> Signed-off-by: Marc Dionne <marc.c.dionne@gmail.com>
-
-Applied, thanks Marc.
-
-> ---
->  drivers/hid/hid-logitech-dj.c |   38 ++++++++++++++++++++++++--------------
->  1 file changed, 24 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-> index 5e8a7ed..0f9c146 100644
-> --- a/drivers/hid/hid-logitech-dj.c
-> +++ b/drivers/hid/hid-logitech-dj.c
-> @@ -436,27 +436,37 @@ static int logi_dj_recv_send_report(struct dj_receiver_dev *djrcv_dev,
->  
->  static int logi_dj_recv_query_paired_devices(struct dj_receiver_dev *djrcv_dev)
->  {
-> -	struct dj_report dj_report;
-> +	struct dj_report *dj_report;
-> +	int retval;
->  
-> -	memset(&dj_report, 0, sizeof(dj_report));
-> -	dj_report.report_id = REPORT_ID_DJ_SHORT;
-> -	dj_report.device_index = 0xFF;
-> -	dj_report.report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
-> -	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
-> +	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
-> +	if (!dj_report)
-> +		return -ENOMEM;
-> +	dj_report->report_id = REPORT_ID_DJ_SHORT;
-> +	dj_report->device_index = 0xFF;
-> +	dj_report->report_type = REPORT_TYPE_CMD_GET_PAIRED_DEVICES;
-> +	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
-> +	kfree(dj_report);
-> +	return retval;
->  }
->  
->  static int logi_dj_recv_switch_to_dj_mode(struct dj_receiver_dev *djrcv_dev,
->  					  unsigned timeout)
->  {
-> -	struct dj_report dj_report;
-> +	struct dj_report *dj_report;
-> +	int retval;
->  
-> -	memset(&dj_report, 0, sizeof(dj_report));
-> -	dj_report.report_id = REPORT_ID_DJ_SHORT;
-> -	dj_report.device_index = 0xFF;
-> -	dj_report.report_type = REPORT_TYPE_CMD_SWITCH;
-> -	dj_report.report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
-> -	dj_report.report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
-> -	return logi_dj_recv_send_report(djrcv_dev, &dj_report);
-> +	dj_report = kzalloc(sizeof(dj_report), GFP_KERNEL);
-> +	if (!dj_report)
-> +		return -ENOMEM;
-> +	dj_report->report_id = REPORT_ID_DJ_SHORT;
-> +	dj_report->device_index = 0xFF;
-> +	dj_report->report_type = REPORT_TYPE_CMD_SWITCH;
-> +	dj_report->report_params[CMD_SWITCH_PARAM_DEVBITFIELD] = 0x3F;
-> +	dj_report->report_params[CMD_SWITCH_PARAM_TIMEOUT_SECONDS] = (u8)timeout;
-> +	retval = logi_dj_recv_send_report(djrcv_dev, dj_report);
-> +	kfree(dj_report);
-> +	return retval;
->  }
->  
->  
-> -- 
-> 1.7.10.2
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
+And the revert looks fine to me
