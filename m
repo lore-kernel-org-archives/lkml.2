@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab2FCLx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 07:53:59 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:57792 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753456Ab2FCLx6 (ORCPT
+	id S1757635Ab2FCLzr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 07:55:47 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34883 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751834Ab2FCLzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 07:53:58 -0400
-Message-ID: <4FCB5017.40001@linux.vnet.ibm.com>
-Date: Sun, 03 Jun 2012 17:22:55 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Sun, 3 Jun 2012 07:55:46 -0400
+Date: Sun, 3 Jun 2012 12:55:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator
+ tps65911
+Message-ID: <20120603115529.GF4258@opensource.wolfsonmicro.com>
+References: <4FBBC830.2060802@nvidia.com>
+ <4FBBCA8F.3050903@wwwdotorg.org>
+ <4FBBD33C.8020802@nvidia.com>
+ <4FBBDA97.6000006@wwwdotorg.org>
+ <4FBBDE06.5080806@nvidia.com>
+ <4FC916AC.4060804@wwwdotorg.org>
+ <20120601204052.GB4258@opensource.wolfsonmicro.com>
+ <4FC92990.5030104@wwwdotorg.org>
+ <20120601210451.GC4258@opensource.wolfsonmicro.com>
+ <CAOesGMgYAR938F8PnVWaymzMBQwDKeAiUgEP81bv2nN14NmLGg@mail.gmail.com>
 MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>, linux-cris-kernel@axis.com
-Subject: Re: [PATCH 23/27] cris, smpboot: Use generic SMP booting infrastructure
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091534.31979.34403.stgit@srivatsabhat.in.ibm.com> <20120603084145.GC16829@zhy>
-In-Reply-To: <20120603084145.GC16829@zhy>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12060311-4790-0000-0000-0000030FA2F6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zhtSGe8h3+lMyY1M"
+Content-Disposition: inline
+In-Reply-To: <CAOesGMgYAR938F8PnVWaymzMBQwDKeAiUgEP81bv2nN14NmLGg@mail.gmail.com>
+X-Cookie: You may be recognized soon.  Hide.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2012 02:11 PM, Yong Zhang wrote:
 
-> On Fri, Jun 01, 2012 at 02:45:40PM +0530, Srivatsa S. Bhat wrote:
->> Convert cris to use the generic framework to boot secondary CPUs.
->>
->> Cc: Mikael Starvik <starvik@axis.com>
->> Cc: Jesper Nilsson <jesper.nilsson@axis.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Eric Dumazet <eric.dumazet@gmail.com>
->> Cc: Mike Frysinger <vapier@gentoo.org>
->> Cc: linux-cris-kernel@axis.com
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  arch/cris/arch-v32/kernel/smp.c |   14 ++++++--------
->>  1 files changed, 6 insertions(+), 8 deletions(-)
->>
->> diff --git a/arch/cris/arch-v32/kernel/smp.c b/arch/cris/arch-v32/kernel/smp.c
->> index ebe2cb3..357114a 100644
->> --- a/arch/cris/arch-v32/kernel/smp.c
->> +++ b/arch/cris/arch-v32/kernel/smp.c
->> @@ -17,6 +17,7 @@
->>  #include <linux/cpumask.h>
->>  #include <linux/interrupt.h>
->>  #include <linux/module.h>
->> +#include <linux/smpboot.h>
->>  
->>  #define IPI_SCHEDULE 1
->>  #define IPI_CALL 2
->> @@ -145,8 +146,11 @@ smp_boot_one_cpu(int cpuid, struct task_struct idle)
->>   * specific stuff such as the local timer and the MMU. */
->>  void __init smp_callin(void)
->>  {
->> -	extern void cpu_idle(void);
->> +	smpboot_start_secondary(NULL);
->> +}
->>  
->> +void __cpuinit __cpu_pre_starting(void *unused)
->> +{
->>  	int cpu = cpu_now_booting;
->>  	reg_intr_vect_rw_mask vect_mask = {0};
->>  
->> @@ -161,16 +165,10 @@ void __init smp_callin(void)
->>  	/* Setup local timer. */
->>  	cris_timer_init();
->>  
->> -	/* Enable IRQ and idle */
->> +	/* Enable IRQ */
-> 
-> I don't know cris; is the comments right?
-> 
->>  	REG_WR(intr_vect, irq_regs[cpu], rw_mask, vect_mask);
->>  	crisv32_unmask_irq(IPI_INTR_VECT);
->>  	crisv32_unmask_irq(TIMER0_INTR_VECT);
->> -	preempt_disable();
->> -	notify_cpu_starting(cpu);
->> -	local_irq_enable();
->> -
->> -	set_cpu_online(cpu, true);
->> -	cpu_idle();
-> 
-> Before your patch, the comments seems end here.
-> 
+--zhtSGe8h3+lMyY1M
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Sat, Jun 02, 2012 at 02:19:57PM -0700, Olof Johansson wrote:
 
-Good catch! I will remove that comment then, keeping the code in the
-patch untouched.
+> naming dependencies to only be under the regulators in question. In
+> particular, for things such as fixed regulators, they can be located
+> at other places in the device tree.
 
-Regards,
-Srivatsa S. Bhat
+I'm sorry, I can't parse this at all.  What "naming dependencies" are
+you talking about?  This is purely an issue for multi-regulator chips.
 
->>  }
->>  
->>  /* Stop execution on this CPU.*/
-> 
+--zhtSGe8h3+lMyY1M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPy1C2AAoJEBus8iNuMP3dsYsP/i1U6p0kOYBZ4EyFstVpfKUv
+RpzPtvqsBdbEfqAnp0LlW3/DHOJsA8UiD4EJsB5cKnOwNi7Rru53fBMoXbWmIq+P
+MydTj1opKkifb8BhPG86reGUDlWfTYLpHWPeLMqaQuULfK9HBijPUsZVZ8JaPnAL
+6yps1o4TrmDrSQIhoNKAyfTGZxWPFwk1D7sXfx/WMv5I7Eh8H0C3Vv4/Cn4LPswm
+w99nNdX57gRKogqUjCMGl294XdWHvLsImPFBDESH0vjr7TadYyZdxrd4sIi9h+Yn
+61xR9bw4nXE11SNoGtGr9zk8dONqq698FOmHRXmiz17vbjDms58COmLgRuVa8xvD
+Vi5L+NwyCNXeu7bmw7hPjFdkJcOUDeaEdLK0wp3zLm5Io7zdMBSQQ/biLOdRRpaQ
+3T7DnKfy/eg/4SqsnOi50kw9IwrXx3sab95Y/SGn33Gbp9rlJsdeBJHWmVtVQ8x5
+NQzmOk+2MGkrZfJqHW42g5vy4irAWLmE9/BEMy9YOhrMthH1IRL4+o0m3h9d2EiM
+XzB0y+195zdb6jQ0ZlKfC+rlkDV9HFzKLCTJrpsKExhDBitFm/j8d8Umidmh4ARY
+PPw6i56iWl+p875/l3yGlRo/298bASkQLAaHc4ZcjAyTZuQcS9qRHJ56b0EWLtH6
+wEV0ZjbK+PbWIbhKp5vS
+=BFIC
+-----END PGP SIGNATURE-----
+
+--zhtSGe8h3+lMyY1M--
