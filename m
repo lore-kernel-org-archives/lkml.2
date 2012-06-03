@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2FCM0E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 08:26:04 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61162 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751536Ab2FCM0B convert rfc822-to-8bit (ORCPT
+	id S1753660Ab2FCM2T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 08:28:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36221 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750934Ab2FCM2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 08:26:01 -0400
+	Sun, 3 Jun 2012 08:28:17 -0400
+Date: Sun, 3 Jun 2012 13:28:14 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: gregkh@linuxfoundation.org, marc@cpdesign.com.au,
+        philippe.retornaz@epfl.ch, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] regmap: Fix the size calculation for map->format.buf_size
+Message-ID: <20120603122813.GA19969@opensource.wolfsonmicro.com>
+References: <1338509430-24416-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1338720077-14936-1-git-send-email-corone.il.han@gmail.com>
-References: <1338720077-14936-1-git-send-email-corone.il.han@gmail.com>
-Date: Sun, 3 Jun 2012 20:26:00 +0800
-Message-ID: <CAO6yer+0zUNFVGW8wO2mdSQodzzaw2WsRQHVmUAs1Xr_FHXx3Q@mail.gmail.com>
-Subject: Re: [PATCH] drm: An uninitialized return value is returned.
-From: bing deng <deng8bing@gmail.com>
-To: Il Han <corone.il.han@gmail.com>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
+Content-Disposition: inline
+In-Reply-To: <1338509430-24416-1-git-send-email-festevam@gmail.com>
+X-Cookie: You have no real enemies.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 3, 2012 at 6:41 PM, Il Han <corone.il.han@gmail.com> wrote:
-> An uninitialized return value is returned.
-> If the value is not necessary,
-> it would be better to return the constant 0.
->
-> Signed-off-by: Il Han <corone.il.han@gmail.com>
-> ---
->  drivers/gpu/drm/nouveau/nv04_fence.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/gpu/drm/nouveau/nv04_fence.c b/drivers/gpu/drm/nouveau/nv04_fence.c
-> index abe89db..d4091eb 100644
-> --- a/drivers/gpu/drm/nouveau/nv04_fence.c
-> +++ b/drivers/gpu/drm/nouveau/nv04_fence.c
-> @@ -121,7 +121,6 @@ nv04_fence_create(struct drm_device *dev)
->  {
->        struct drm_nouveau_private *dev_priv = dev->dev_private;
->        struct nv04_fence_priv *priv;
-> -       int ret;
->
->        priv = kzalloc(sizeof(*priv), GFP_KERNEL);
->        if (!priv)
-> @@ -136,5 +135,5 @@ nv04_fence_create(struct drm_device *dev)
->        priv->base.sync = nv04_fence_sync;
->        priv->base.read = nv04_fence_read;
->        dev_priv->eng[NVOBJ_ENGINE_FENCE] = &priv->base.engine;
-> -       return ret;
-> +       return 0;
->  }
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi All,
+On Thu, May 31, 2012 at 09:10:30PM -0300, Fabio Estevam wrote:
+> From: Fabio Estevam <fabio.estevam@freescale.com>
+>=20
+> The word to be transmitted/received via regmap is composed by the followi=
+ng
+> parts:
 
-    Why not modify "int ret;" to "int ret = 0;"? Below is the benefit:
-    1. return the constant 0 as wish.
-    2. The variable ret can be used if we want.
--- 
-Best Regards,
-Bing
+Applied, thanks.  The BITS_PER_BYTE thing isn't an entirely bad idea but
+I'd like to go through the entire codebase and do that rather than do a
+little bit at a time.
+
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPy1hWAAoJEBus8iNuMP3d+iEP/0N4f370KMR/GjxKxuGgogMD
+H1u9IeE8W7zlDUuggNmWX3tXei3ZocdnIEizIxTrLFlKO3jWuT4tYpqAr+kQ/9OY
++vLptJzdlh1bemE4pb9qZh8Ywv3MYz+BH3VtnqQdgOWHXllRPxveIND1MD5DEQNI
+VHVwSn8vg5V695FQ9UgU2VEBov+HXmgUcOAkCNILKywQz7We39xK8VOdNYeX3Hud
+7FRgTwIFhCYq7yByvr9PG9Sv1E//29VevxldDBAnSMHkC2/Le208CGRzcYpFaOx3
+UWXOUz1S6EI7XfgGhb48M9ZXD9k90WPpR6SOAr1nMpJ6LGgXLIOqkr0zzdWZkIJG
+vEupIetYGam4k56oZ0Qcnip1VQEuo+wNyPEiNFSCkZsX5oJGuYBGgBjAc7HxlQ4C
+CPt/bqfogAI8tC3tulHouf0Kmrn/Aw9YsO8gXUca+2ZJXROD2d4T0B5TMU3h6aPe
+5oF8LQqYQYB1rwsl1uwD45H58m5Xz+4DtvVWiurRrxcNXM9WbWKS49ZiKqnHsUef
+TqjXTQZkm8vf/Z6NGA2RYBkoVeyAUI14nnAVP29hrqg8fNn9sNwfWVUUEKKDFAoa
+WE7EZMdP1KwxT+bDIi5sFAl9ZrzrJjneiIf26b1oD2Dv5ph/mDLiqtS0nJ6jgmg5
+McSL8kK4DKRsFWnim0P0
+=uanf
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
