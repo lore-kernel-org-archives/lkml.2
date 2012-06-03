@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab2FCUkp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 16:40:45 -0400
-Received: from mga10.intel.com ([192.55.52.92]:40787 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753690Ab2FCUkm (ORCPT
+	id S1754963Ab2FCUyp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 16:54:45 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51001 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754817Ab2FCUyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 16:40:42 -0400
-Subject: Re: [GIT PULL] x86/efi changes for v3.5
-From: Matt Fleming <matt.fleming@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Ingo Molnar <mingo@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Jordan Justen <jordan.l.justen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>
-In-Reply-To: <4FCAD63D.7070604@zytor.com>
-References: <20120523075433.GA12526@gmail.com>
-	 <20120602183827.GA4020@polaris.bitmath.org>  <4FCAD63D.7070604@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Date: Sun, 03 Jun 2012 21:40:27 +0100
-Message-ID: <1338756027.4584.3.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Jun 2012 16:54:25 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 108.17.144.84
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18VtX6OCq9XW/uHMPHgIX923HN6L3BURJE=
+Date: Sun, 3 Jun 2012 16:54:19 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Michael Walle <michael@walle.cc>
+Cc: linux-arm-kernel@lists.infradead.org,
+        "open list:SPI SUBSYSTEM" <spi-devel-general@lists.sourceforge.net>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] spi-orion: remove uneeded spi_info
+Message-ID: <20120603205419.GK14756@titan.lakedaemon.net>
+References: <1338754215-16022-1-git-send-email-michael@walle.cc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338754215-16022-1-git-send-email-michael@walle.cc>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-02 at 20:13 -0700, H. Peter Anvin wrote:
-> On 06/02/2012 11:38 AM, Henrik Rydberg wrote:
-> > Hi Ingo, Hans Peter, Matt, Jordan,
-> > 
-> >> This patchset makes changes to the bzImage EFI header, so that 
-> >> it can be signed with a secure boot signature tool. It should 
-> >> not affect anyone who is not using the EFI self-boot feature in 
-> >> any way.
-> > 
-> > Commit 2e064b1 (Fix issue of overlapping .reloc section for EFI_STUB)
-> > breaks EFI boot on my MacBookAir3,1. The efi firmware no longer
-> > recognizes the bzImage and falls back to BIOS emulation boot.
-> > 
-> > Reverting 2e064b1 works for me, but I am happy to test other options
-> > as well.
-> > 
+On Sun, Jun 03, 2012 at 10:10:14PM +0200, Michael Walle wrote:
+> This was formerly used to store the tclk value. Remove it.
 > 
-> Matt, Jordan,
+> Signed-off-by: Michael Walle <michael@walle.cc>
+
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+
+> ---
+>  drivers/spi/spi-orion.c |    5 -----
+>  1 files changed, 0 insertions(+), 5 deletions(-)
 > 
-> Could you look into this please?
-
-Yeah, there's a bug report for this here,
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=43309
-
-I suspect that older firmware doesn't handle a zero .reloc section
-properly. So, unfortunately we will have to leave the .reloc section
-with a dummy reloc, rather than having one with no entries.
-
-I'll put a patch together.
-
+> diff --git a/drivers/spi/spi-orion.c b/drivers/spi/spi-orion.c
+> index dfd04e9..2760450 100644
+> --- a/drivers/spi/spi-orion.c
+> +++ b/drivers/spi/spi-orion.c
+> @@ -45,7 +45,6 @@ struct orion_spi {
+>  	void __iomem		*base;
+>  	unsigned int		max_speed;
+>  	unsigned int		min_speed;
+> -	struct orion_spi_info	*spi_info;
+>  	struct clk              *clk;
+>  };
+>  
+> @@ -450,12 +449,9 @@ static int __init orion_spi_probe(struct platform_device *pdev)
+>  	struct spi_master *master;
+>  	struct orion_spi *spi;
+>  	struct resource *r;
+> -	struct orion_spi_info *spi_info;
+>  	unsigned long tclk_hz;
+>  	int status = 0;
+>  
+> -	spi_info = pdev->dev.platform_data;
+> -
+>  	master = spi_alloc_master(&pdev->dev, sizeof *spi);
+>  	if (master == NULL) {
+>  		dev_dbg(&pdev->dev, "master allocation failed\n");
+> @@ -476,7 +472,6 @@ static int __init orion_spi_probe(struct platform_device *pdev)
+>  
+>  	spi = spi_master_get_devdata(master);
+>  	spi->master = master;
+> -	spi->spi_info = spi_info;
+>  
+>  	spi->clk = clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(spi->clk)) {
+> -- 
+> 1.7.2.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
