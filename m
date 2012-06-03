@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2FCOnK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 10:43:10 -0400
-Received: from blackhole.sdinet.de ([176.9.52.58]:55696 "EHLO mail.sdinet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752276Ab2FCOnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 10:43:08 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jun 2012 10:43:08 EDT
-Date: Sun, 3 Jun 2012 16:33:28 +0200 (CEST)
-From: Sven-Haegar Koch <haegar@sdinet.de>
-To: Josh Boyer <jwboyer@gmail.com>
-cc: Jens.Gustedt@loria.fr, linux-kernel@vger.kernel.org
-Subject: Re: linux 3.4 got lost
-In-Reply-To: <CA+5PVA4j0ga98UF40DkX4EE0Tux+-j0Bo+=-CNwWcxkzyH+SkQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1206031632330.5640@aurora.sdinet.de>
-References: <4FCB663C.2050808@loria.fr> <CA+5PVA4j0ga98UF40DkX4EE0Tux+-j0Bo+=-CNwWcxkzyH+SkQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753829Ab2FCOqZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 10:46:25 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:54388 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643Ab2FCOqY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 10:46:24 -0400
+Message-ID: <1338734774.21662.2.camel@phoenix>
+Subject: [PATCH] regulator: max77686: Use regulator_map_voltage_linear for
+ simple linear mappings
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chiwoong Byun <woong.byun@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Sun, 03 Jun 2012 22:46:14 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Jun 2012, Josh Boyer wrote:
+Both max77686_ops and max77686_buck_dvs_ops use simple linear voltage maps.
+Thus use regulator_map_voltage_linear is more efficient than using the defult
+regulator_map_voltage_iterate.
 
-> On Sun, Jun 3, 2012 at 9:27 AM, Jens Gustedt <Jens.Gustedt@loria.fr> wrote:
-> > Hello,
-> > it seems that with the upload of 3.5-rc1 linux 3.4 disappeared from the
-> > kernel.org website.
-> 
-> http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-> http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.xz
-> 
-> Seems there to me?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max77686.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-The files are there, it just vanished from the http://www.kernel.org/ 
-frontpage.
-
-c'ya
-sven-haegar
-
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index 70046f8..4e9f4f3 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -90,6 +90,7 @@ static int max77686_set_voltage_time_sel(struct regulator_dev *rdev,
+ 
+ static struct regulator_ops max77686_ops = {
+ 	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= regulator_enable_regmap,
+ 	.disable		= regulator_disable_regmap,
+@@ -100,6 +101,7 @@ static struct regulator_ops max77686_ops = {
+ 
+ static struct regulator_ops max77686_buck_dvs_ops = {
+ 	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
+ 	.is_enabled		= regulator_is_enabled_regmap,
+ 	.enable			= regulator_enable_regmap,
+ 	.disable		= regulator_disable_regmap,
 -- 
-Three may keep a secret, if two of them are dead.
-- Ben F.
+1.7.9.5
+
+
+
