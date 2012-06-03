@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab2FCXH6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 19:07:58 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46526 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab2FCXH5 (ORCPT
+	id S1755103Ab2FCXIt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 19:08:49 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:33878 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755033Ab2FCXIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 19:07:57 -0400
+	Sun, 3 Jun 2012 19:08:10 -0400
+Message-ID: <4FCBEE25.4020704@gmail.com>
+Date: Sun, 03 Jun 2012 20:07:17 -0300
+From: "William F." <william76.sh@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <20120603223617.GB7707@redhat.com>
-References: <20120603223617.GB7707@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 3 Jun 2012 16:07:35 -0700
-X-Google-Sender-Auth: Icpva8dee3DLkuQV9z12-taxYlE
-Message-ID: <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-To: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Roland Stigge <stigge@antcom.de>, srinivas.bakki@nxp.com, lars@metafoo.de,
+        linux-doc@vger.kernel.org, leiwen@marvell.com,
+        devicetree-discuss@lists.ozlabs.org, dedekind1@gmail.com,
+        linux-kernel@vger.kernel.org, kevin.wells@nxp.com,
+        b32955@freescale.com, linux-mtd@lists.infradead.org,
+        hechtb@googlemail.com, dwmw2@infradead.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: PLEASE, REMOVE MY EMAIL ADDRESS FROM ITS LIST.
+References: <1338748689-29645-1-git-send-email-stigge@antcom.de> <20120603190932.GB23368@n2100.arm.linux.org.uk> <4FCBBABF.5080507@gmail.com> <20120603193340.GC23368@n2100.arm.linux.org.uk>
+In-Reply-To: <20120603193340.GC23368@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 3, 2012 at 3:36 PM, Dave Jones <davej@redhat.com> wrote:
+I'm sorry, mates.
+
+Em 03-06-2012 16:33, Russell King - ARM Linux escreveu:
+> Sigh, here we go again... why are you emailing me directly over this
+> issue?
 >
-> It's still up and in this state if you want me to gather any further info
-> before I reboot it.
+> In short, I can't.  I don't run these lists anymore.  Please look at
+> the bottom of any message you've received from the list to find the
+> URL you need to go to to control your subscription.
+>
+> Thanks.
+> .
+>
 
-You seem to have lockdep enabled, since I see the lock information,
-but presumably you didn't get a lockdep splat before this?
-
-Also, sysrq-w is usually way more interesting than 't' when there are
-processes stuck on a mutex.
-
-Because yes, it looks like you have a boattload of trinity processes
-stuck on an inode mutex. Looks like every single one of them is in
-'lock_rename()'. It *shouldn't* be an ABBA deadlock, since lockdep
-should have noticed that, but who knows.
-
-It looks like the lock information is somewhat truncated. I suspect
-the dmesg buffer had filled up with all the task data.
-
-Can you do just "sysrq-d" for the lock information (and maybe
-separately "sysrq-w" for the blocked tasks)? The non-truncated lock
-data might tell us more.
-
-               Linus
