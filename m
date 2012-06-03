@@ -1,63 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2FCMzC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 08:55:02 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62709 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab2FCMzA convert rfc822-to-8bit (ORCPT
+	id S1752774Ab2FCM5o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 08:57:44 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:55714 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab2FCM5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 08:55:00 -0400
+	Sun, 3 Jun 2012 08:57:43 -0400
 MIME-Version: 1.0
-X-Originating-IP: [85.250.83.253]
-In-Reply-To: <1337693217-15466-3-git-send-email-sjur.brandeland@stericsson.com>
-References: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com> <1337693217-15466-3-git-send-email-sjur.brandeland@stericsson.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 3 Jun 2012 15:54:39 +0300
-Message-ID: <CAK=WgbafpAC+DZ71Oon_PyiWGAryAxzZvttpeiFY+A_agYcMFw@mail.gmail.com>
-Subject: Re: [RFC 2/6] remoteproc: Pass struct fw to load_segments and find_rsc_table.
-To: sjur.brandeland@stericsson.com
-Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
-        Ludovic BARRE <ludovic.barre@stericsson.com>,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+In-Reply-To: <B6D8D29B-9D9E-4248-B1EE-703D46354522@dilger.ca>
+References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+	<1338644416-11417-10-git-send-email-akinobu.mita@gmail.com>
+	<B6D8D29B-9D9E-4248-B1EE-703D46354522@dilger.ca>
+Date: Sun, 3 Jun 2012 21:57:42 +0900
+Message-ID: <CAC5umyhJ1mCGHE6i61MKOMr4RxVAh_wUFDWUEPsdtK_rC-o4=A@mail.gmail.com>
+Subject: Re: [PATCH v2 10/10] ext4: use memweight()
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 22, 2012 at 4:26 PM,  <sjur.brandeland@stericsson.com> wrote:
-> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+2012/6/2 Andreas Dilger <adilger@dilger.ca>:
+> On 2012-06-02, at 7:40, Akinobu Mita <akinobu.mita@gmail.com> wrote:
 >
-> Use struct firmware as arguments to functions rproc_find_rcs_table()
-> and rproc_load_segments().
+>> Use memweight() to count the total number of bits clear in memory area.
+>> This change only affects the code segments enabled by EXT4FS_DEBUG.
+>
+> Personally, I'd rather still keep a thin wrapper ext4_count_free() and put the memweight() call and math inside that. The function name ext4_count_free() is meaningful to readers, while memweight() is much less so.
 
-I'll keep reading through the patches to get the big picture, but in
-general, it's best just to provide the incentive behind every change
-in the commit log.
-
-> +rproc_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
->                                                        int *tablesz)
->  {
-...
-> +       /*
-> +        * The ELF entry point is the rproc's boot addr (though this is not
-> +        * a configurable property of all remote processors: some will always
-> +        * boot at a specific hardcoded address).
-> +        */
-> +       rproc->bootaddr = ehdr->e_entry;
-> +
-...
-> @@ -1032,15 +1039,8 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
-> -       /*
-> -        * The ELF entry point is the rproc's boot addr (though this is not
-> -        * a configurable property of all remote processors: some will always
-> -        * boot at a specific hardcoded address).
-> -        */
-> -       rproc->bootaddr = ehdr->e_entry;
-
-Is this change related?
-
-Thanks,
-Ohad.
+OK, I'll make such change to ext[234] if no other people disagree with it.
