@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab2FCS1G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 14:27:06 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34857 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754103Ab2FCS1D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 14:27:03 -0400
-Date: Sun, 3 Jun 2012 21:26:50 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tux.localdomain
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-In-Reply-To: <20120601122118.GA6128@lizard>
-Message-ID: <alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
-References: <20120504073810.GA25175@lizard> <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com> <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com> <20120507121527.GA19526@lizard> <4FA82056.2070706@gmail.com>
- <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
- <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com> <20120601122118.GA6128@lizard>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1754251Ab2FCSb5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 14:31:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081Ab2FCSb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 14:31:56 -0400
+Date: Sun, 3 Jun 2012 14:31:39 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: WARNING: at mm/page-writeback.c:1990
+ __set_page_dirty_nobuffers+0x13a/0x170()
+Message-ID: <20120603183139.GA1061@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Hugh Dickins <hughd@google.com>,
+	Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+	Kyungmin Park <kyungmin.park@samsung.com>,
+	Marek Szyprowski <m.szyprowski@samsung.com>,
+	Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
+	Rik van Riel <riel@redhat.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Cong Wang <amwang@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	linux-kernel@vger.kernel.org, linux-mm@kvack.org
+References: <20120531005739.GA4532@redhat.com>
+ <20120601023107.GA19445@redhat.com>
+ <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
+ <20120601161205.GA1918@redhat.com>
+ <20120601171606.GA3794@redhat.com>
+ <alpine.LSU.2.00.1206011511560.12839@eggly.anvils>
+ <CA+55aFy2-X92EqpiuyvkBp_2-UaYDUpaC2c3XT3gXMN1O+T7sw@mail.gmail.com>
+ <alpine.LSU.2.00.1206012108430.11308@eggly.anvils>
+ <20120603181548.GA306@redhat.com>
+ <CA+55aFwZ5PsBLqM7K8vDQdbS3sf+vi3yeoWx6XKV=nF8k2r7DQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1426780772-1338748020=:1943"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwZ5PsBLqM7K8vDQdbS3sf+vi3yeoWx6XKV=nF8k2r7DQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sun, Jun 03, 2012 at 11:23:29AM -0700, Linus Torvalds wrote:
+ > On Sun, Jun 3, 2012 at 11:15 AM, Dave Jones <davej@redhat.com> wrote:
+ > >
+ > > Things aren't happy with that patch at all.
+ > 
+ > Yeah, at this point I think we need to just revert the compaction changes.
+ > 
+ > Guys, what's the minimal set of commits to revert? That clearly buggy
+ > "rescue_unmovable_pageblock()" function was introduced by commit
+ > 5ceb9ce6fe94, but is that actually involved with the particular bug?
+ > That commit seems to revert cleanly still, but is that sufficient or
+ > does it even matter?
 
---8323328-1426780772-1338748020=:1943
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+I'l rerun the test with that (and Hugh's last patch) backed out, and see
+if that makes any difference.
 
-On Fri, 1 Jun 2012, Anton Vorontsov wrote:
-> > That's pretty awful. Anton, Leonid, comments?
-> [...]
-> > > 5) __VMEVENT_ATTR_STATE_VALUE_WAS_LT should be removed from userland
-> > > exporting files.
-> > >  When exporing kenrel internal, always silly gus used them and made unhappy.
-> > 
-> > Agreed. Anton, care to cook up a patch to do that?
-> 
-> KOSAKI-San, Pekka,
-> 
-> Much thanks for your reviews!
-> 
-> These three issues should be fixed by the following patches. One mm/
-> change is needed outside of vmevent...
-> 
-> And I'm looking into other issues you pointed out...
+	Dave
 
-I applied patches 2, 4, and 5. The vmstat patch need ACKs from VM folks 
-to enter the tree.
-
-			Pekka
---8323328-1426780772-1338748020=:1943--
