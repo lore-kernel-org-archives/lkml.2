@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760020Ab2FCDBM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 23:01:12 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63277 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab2FCDBJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 23:01:09 -0400
-Message-ID: <4FCAD371.6080205@kernel.org>
-Date: Sat, 02 Jun 2012 23:01:05 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	id S1759290Ab2FCDKR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 23:10:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57530 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758207Ab2FCDKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jun 2012 23:10:16 -0400
+Message-ID: <4FCAD590.8000506@zytor.com>
+Date: Sat, 02 Jun 2012 20:10:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-acpi <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ACPI & Power Management Patches for Linux-3.5-merge
-References: <4FC9B39B.403@kernel.org> <CA+55aFyGqZnVvd5-ZLUkS=EE72QG1FqempZrs+vBLyCkWP6T_Q@mail.gmail.com>
-In-Reply-To: <CA+55aFyGqZnVvd5-ZLUkS=EE72QG1FqempZrs+vBLyCkWP6T_Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: hacklu <embedway.linux@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: why the decompressed procedure move kernel from address 0x100000(1M)
+ to 0x1000000(16M) +x
+References: <4FB492F7.8050401@gmail.com> <87ipf9gtsb.fsf@xmission.com>
+In-Reply-To: <87ipf9gtsb.fsf@xmission.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2012 07:51 PM, Linus Torvalds wrote:
-
-> On Fri, Jun 1, 2012 at 11:32 PM, Len Brown <lenb@kernel.org> wrote:
+On 06/02/2012 04:48 PM, Eric W. Biederman wrote:
+On 06/02/2012 04:48 PM, Eric W. Biederman wrote:
+> hacklu <embedway.linux@gmail.com> writes:
+> 
+>> hi all,
+>> recently, I got some puzzle when I read source code of the system boot. I need
+>> some help.
 >>
->> ps. Sorry for sending this request at the tails of the merge window --
->> I'll try to be earlier next time.
+>> at the end of src/arch/x86/boot/header.S,  kernel jump to 0x100000(where is the
+>> src/arch/x86/boot/compressed/head_32.S).
+>> in __this__ head_32.S, I found the kernel is move to 0x1000000(mostly is to
+>> here) +x. the x distance is used for decompressed buf.  must leave some distance
+>> for decompressing without overlap.
+>>
+>> after the move, kernel is decompressed at 0x1000000(16m). and jump to it.
+>>
+>> so why not decompressed kernel at 0x100000(1M) to 0x1000000(16m) directly
+>> without moving?
+>>
+>> is the move necessary?
 > 
-> Christ, not only is it after I really wanted to do -rc1 (held up by
-> the tty locking problems), but it doesn't even compile.
+> The move is nececcessary if we are doing the decompression in place.
+> Without a move it is hard to tell if there are going to be overlapping
+> address problems.  The move is cheap so there is no apparent reason
+> to optimize it away.
 > 
-> Find the bug (the compiler certainly did):
-> 
-> static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
-> {
->         if (p)
->                 *p = ACPI_STATE_D0;
->         return (m >= ACPI_STATE_D0 && <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
-> }
-> 
-> and no, it wasn't a merge error. That's what it looks like in your tree.
 
->
+Well, right now we do two copies (one before decompression, and one
+after while parsing the ELF payload.)  It would be nice to get rid of at
+least one but preferably both (when possible.)
 
-> The commit was done yesterday. It clearly had *zero* testing.
+Boot time does matter, although this isn't a huge amount of time, it is
+something that can be shaved off relatively cheaply.
 
-Hmm.
+	-hpa
 
-This hunk is in the CONFIG_PM=n case.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Of the several hundred x86_64 and i386 kernels I build
-before sending you a pull request, only two do not have CONFIG_PM=y --
-x86_64 allnoconfig and i386 allnoconfig.
-Like the other kernels, those build fine.
-
-I'm curious what config and compiler tripped on this for you.
-
-> Looking more at the pull as a result of this, I notice that almost
-> every commit in that tree is from yesterday, and thus cleary cannot
-> have been in -next.
-
-
-Yes, I did check in Ying's patch this week, and a few others.
-
-But a bunch of the patches have been in linux-next for some time.
-
-I know you'd prefer patches to live in the tree frozen at the
-date that they were 1st checked in, but that doesn't work well
-when patches change.  To update a patch in a series I need to re-base.
-Yes, I could re-base in place -- in the context of an rc
-that nobody anywhere (including me) will ever build or boot.
-Or I could re-base up to the latest release boundary which
-a lot of people (including me) will test.  In this case
-I think I re-based everything up to 3.4.
-
-> I was going to just fix up the obvious one-liner
-
-> fixup, but looking at the bigger picture I'm going to say "3.6
-> material" for this whole thing.
-
-
-It would be sad for a simple, though embarrassing,
-issue with this patch to delay the other patches.
-
--Len
