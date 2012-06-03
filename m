@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab2FCH3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 03:29:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47814 "EHLO mx1.redhat.com"
+	id S1759484Ab2FCH3H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 03:29:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2005 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756131Ab2FCH2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 03:28:39 -0400
-Date: Sun, 3 Jun 2012 10:28:35 +0300
+	id S1756036Ab2FCH23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 03:28:29 -0400
+Date: Sun, 3 Jun 2012 10:28:21 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: x86@kernel.org, kvm@vger.kernel.org
 Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
         Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
         linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv6 7/8] kvm: rearrange injection cancelling code
-Message-ID: <ccea8fbf496a240b66d4b5bb2ccf75b6f7411bb4.1338474301.git.mst@redhat.com>
+Subject: [PATCHv6 5/8] kvm: eoi msi documentation
+Message-ID: <ee4c8513394438ba534b515f5c82d5a37187c811.1338474301.git.mst@redhat.com>
 References: <cover.1338474301.git.mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,53 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Each time we need to cancel injection we invoke same code
-(cancel_injection callback).  Move it towards the end of function using
-the familiar goto on error pattern.
-
-Will make it easier to do more cleanups for PV EOI.
+Document the new EOI MSR. Couldn't decide whether this change belongs
+conceptually on guest or host side, so a separate patch.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/x86/kvm/x86.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+ Documentation/virtual/kvm/msr.txt |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2f70861..67824f0 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5296,8 +5296,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 
- 	r = kvm_mmu_reload(vcpu);
- 	if (unlikely(r)) {
--		kvm_x86_ops->cancel_injection(vcpu);
--		goto out;
-+		goto cancel_injection;
- 	}
- 
- 	preempt_disable();
-@@ -5322,9 +5321,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 		smp_wmb();
- 		local_irq_enable();
- 		preempt_enable();
--		kvm_x86_ops->cancel_injection(vcpu);
- 		r = 1;
--		goto out;
-+		goto cancel_injection;
- 	}
- 
- 	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
-@@ -5392,6 +5390,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 		kvm_lapic_sync_from_vapic(vcpu);
- 
- 	r = kvm_x86_ops->handle_exit(vcpu);
-+	return r;
+diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
+index 96b41bd..f202a22 100644
+--- a/Documentation/virtual/kvm/msr.txt
++++ b/Documentation/virtual/kvm/msr.txt
+@@ -223,3 +223,35 @@ MSR_KVM_STEAL_TIME: 0x4b564d03
+ 		steal: the amount of time in which this vCPU did not run, in
+ 		nanoseconds. Time during which the vcpu is idle, will not be
+ 		reported as steal time.
 +
-+cancel_injection:
-+	kvm_x86_ops->cancel_injection(vcpu);
- out:
- 	return r;
- }
++MSR_KVM_EOI_EN: 0x4b564d04
++	data: Bit 0 is 1 when PV end of interrupt is enabled on the vcpu; 0
++	when disabled.  When enabled, bits 63-1 hold 2-byte aligned physical address
++	of a 2 byte memory area which must be in guest RAM and must be zeroed.
++
++	The first, least significant bit of 2 byte memory location will be
++	written to by the hypervisor, typically at the time of interrupt
++	injection.  Value of 1 means that guest can skip writing EOI to the apic
++	(using MSR or MMIO write); instead, it is sufficient to signal
++	EOI by clearing the bit in guest memory - this location will
++	later be polled by the hypervisor.
++	Value of 0 means that the EOI write is required.
++
++	It is always safe for the guest to ignore the optimization and perform
++	the APIC EOI write anyway.
++
++	Hypervisor is guaranteed to only modify this least
++	significant bit while in the current VCPU context, this means that
++	guest does not need to use either lock prefix or memory ordering
++	primitives to synchronise with the hypervisor.
++
++	However, hypervisor can set and clear this memory bit at any time:
++	therefore to make sure hypervisor does not interrupt the
++	guest and clear the least significant bit in the memory area
++	in the window between guest testing it to detect
++	whether it can skip EOI apic write and between guest
++	clearing it to signal EOI to the hypervisor,
++	guest must both read the least sgnificant bit in the memory area and
++	clear it using a single CPU instruction, such as test and clear, or
++	compare and exchange.
++
 -- 
 MST
 
