@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2FCSZo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 14:25:44 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:59721 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754081Ab2FCSZm (ORCPT
+	id S1754215Ab2FCS1G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 14:27:06 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34857 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754103Ab2FCS1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 14:25:42 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: stern@rowland.harvard.edu, gregkh@linuxfoundation.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kevin.wells@nxp.com,
-        srinivas.bakki@nxp.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH] ohci-nxp: Use ohci_finish_controller_resume()
-Date: Sun,  3 Jun 2012 20:24:52 +0200
-Message-Id: <1338747893-29338-1-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Sun, 3 Jun 2012 14:27:03 -0400
+Date: Sun, 3 Jun 2012 21:26:50 +0300 (EEST)
+From: Pekka Enberg <penberg@kernel.org>
+X-X-Sender: penberg@tux.localdomain
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some vmevent fixes...
+In-Reply-To: <20120601122118.GA6128@lizard>
+Message-ID: <alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
+References: <20120504073810.GA25175@lizard> <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com> <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com> <20120507121527.GA19526@lizard> <4FA82056.2070706@gmail.com>
+ <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
+ <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com> <20120601122118.GA6128@lizard>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1426780772-1338748020=:1943"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OHCI drivers are supposed to use ohci_finish_controller_resume(). This patch
-adds respective suspend and resume code to ohci-nxp. The following compiler
-warning is fixed this way:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-drivers/usb/host/ohci-hub.c:321: warning: 'ohci_finish_controller_resume'
-defined but not used
+--8323328-1426780772-1338748020=:1943
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+On Fri, 1 Jun 2012, Anton Vorontsov wrote:
+> > That's pretty awful. Anton, Leonid, comments?
+> [...]
+> > > 5) __VMEVENT_ATTR_STATE_VALUE_WAS_LT should be removed from userland
+> > > exporting files.
+> > >  When exporing kenrel internal, always silly gus used them and made unhappy.
+> > 
+> > Agreed. Anton, care to cook up a patch to do that?
+> 
+> KOSAKI-San, Pekka,
+> 
+> Much thanks for your reviews!
+> 
+> These three issues should be fixed by the following patches. One mm/
+> change is needed outside of vmevent...
+> 
+> And I'm looking into other issues you pointed out...
 
----
-Applies to v3.5-rc1
+I applied patches 2, 4, and 5. The vmstat patch need ACKs from VM folks 
+to enter the tree.
 
- drivers/usb/host/ohci-nxp.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
---- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
-+++ linux-2.6/drivers/usb/host/ohci-nxp.c
-@@ -432,6 +432,23 @@ static int usb_hcd_nxp_remove(struct pla
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int usb_hcd_suspend(struct platform_device *pdev, pm_message_t message)
-+{
-+	clk_disable(usb_clk);
-+	return 0;
-+}
-+
-+static int usb_hcd_resume(struct platform_device *pdev)
-+{
-+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+
-+	clk_enable(usb_clk);
-+	ohci_finish_controller_resume(hcd);
-+	return 0;
-+}
-+#endif
-+
- /* work with hotplug and coldplug */
- MODULE_ALIAS("platform:usb-ohci");
- 
-@@ -451,5 +468,9 @@ static struct platform_driver usb_hcd_nx
- 	},
- 	.probe = usb_hcd_nxp_probe,
- 	.remove = usb_hcd_nxp_remove,
-+#ifdef CONFIG_PM
-+	.suspend = usb_hcd_suspend,
-+	.resume = usb_hcd_resume,
-+#endif
- };
- 
+			Pekka
+--8323328-1426780772-1338748020=:1943--
