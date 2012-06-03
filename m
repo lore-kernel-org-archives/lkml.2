@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759992Ab2FCCpR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jun 2012 22:45:17 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:43800 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758792Ab2FCCpP (ORCPT
+	id S1760020Ab2FCDBM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jun 2012 23:01:12 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63277 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab2FCDBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jun 2012 22:45:15 -0400
-Message-ID: <4FCACFB6.2060601@gmail.com>
-Date: Sat, 02 Jun 2012 21:45:10 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sat, 2 Jun 2012 23:01:09 -0400
+Message-ID: <4FCAD371.6080205@kernel.org>
+Date: Sat, 02 Jun 2012 23:01:05 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator tps65911
-References: <1337691917-15040-2-git-send-email-ldewangan@nvidia.com> <4FBBC192.7030900@wwwdotorg.org> <4FBBC830.2060802@nvidia.com> <4FBBCA8F.3050903@wwwdotorg.org> <4FBBD33C.8020802@nvidia.com> <4FBBDA97.6000006@wwwdotorg.org> <4FBBDE06.5080806@nvidia.com> <4FC916AC.4060804@wwwdotorg.org> <20120601204052.GB4258@opensource.wolfsonmicro.com> <4FC92990.5030104@wwwdotorg.org> <20120601210451.GC4258@opensource.wolfsonmicro.com> <CAOesGMgYAR938F8PnVWaymzMBQwDKeAiUgEP81bv2nN14NmLGg@mail.gmail.com>
-In-Reply-To: <CAOesGMgYAR938F8PnVWaymzMBQwDKeAiUgEP81bv2nN14NmLGg@mail.gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-acpi <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ACPI & Power Management Patches for Linux-3.5-merge
+References: <4FC9B39B.403@kernel.org> <CA+55aFyGqZnVvd5-ZLUkS=EE72QG1FqempZrs+vBLyCkWP6T_Q@mail.gmail.com>
+In-Reply-To: <CA+55aFyGqZnVvd5-ZLUkS=EE72QG1FqempZrs+vBLyCkWP6T_Q@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2012 04:19 PM, Olof Johansson wrote:
-> [+devicetree-discuss and grant/rob]
-> 
-> On Fri, Jun 1, 2012 at 2:04 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
->> On Fri, Jun 01, 2012 at 02:44:00PM -0600, Stephen Warren wrote:
->>
->>> Could you expand on "named property" a bit; I'm not quite sure what
->>> you're getting at - literally a property with name "named" (which
->>> would be the same as regulator-id under just a different property
->>> name), or ...?
->>
->> Just a property where we only care about a name (ie, that the property
->> is present).
->>
->>>> Can't we use the right hand side of this?  It appears to just be
->>>> syntactic sugar without any current meaning.
->>
->>> The stuff to the right of @ is the "unit address" and must match the
->>> value in the reg property. Using that was the first proposal I had
->>> above (which I also didn't like as much)
->>
->> The stuff to the left of the @ is just noise right now, though - it has
->> no meaning currently.  It's filled in with "regulator" because we need
->> to put something there AFAICT.
-> 
-> Right. In general (and historically) in the device tree, names of the
-> nodes should have meaning for the person reading the device tree, but
-> it's not meant to be used for software to figure out the hardware
-> configuration -- that should instead be handled through compatible +
-> other properties.
-> 
-> Names are generally kept fairly generic (ethernet, cpus, memory, pci, etc).
-> 
-> Where it starts to become gray area is when it comes down to specific
-> bindings, and essentially the device nodes underneath of those
-> devices. It's been generally accepted that we can put meaning to the
-> names there if needed, but it's still better to avoid it.
-> 
-> I was originally OK with the regulator binding where names have
-> meaning, but after having looked at it a bit recently when looking at
-> bindings for some new boards we have, I realized that the original
-> suggestion for regulator bindings doesn't necessarily isolate the
-> naming dependencies to only be under the regulators in question. In
-> particular, for things such as fixed regulators, they can be located
-> at other places in the device tree.
-> 
-> Maybe the solution to that case is to just aggregate them in one place
-> and make a pseudo-binding for that (or those, in case of multiple
-> locations).
-> 
-> On the rest of the name-has-meaning discussion, I think it would be
-> cleaner to move away from it now while there's relatively few users of
-> it (with a migratin path), rather than revise it later. But I'll leave
-> it to Grant and Rob to decide which way the prefer things to be. I
-> think they might both be travelling around LC/LinuxCon events at the
-> moment though.
+On 06/02/2012 07:51 PM, Linus Torvalds wrote:
 
-I tend to agree with Steven's and Olof's comments in this thread. As the
-node names generally don't have much meaning, I don't think we should
-start now. We've already got multiple styles of bindings and I don't
-think we need more.
+> On Fri, Jun 1, 2012 at 11:32 PM, Len Brown <lenb@kernel.org> wrote:
+>>
+>> ps. Sorry for sending this request at the tails of the merge window --
+>> I'll try to be earlier next time.
+> 
+> Christ, not only is it after I really wanted to do -rc1 (held up by
+> the tty locking problems), but it doesn't even compile.
+> 
+> Find the bug (the compiler certainly did):
+> 
+> static inline int acpi_pm_device_sleep_state(struct device *d, int *p, int m)
+> {
+>         if (p)
+>                 *p = ACPI_STATE_D0;
+>         return (m >= ACPI_STATE_D0 && <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
+> }
+> 
+> and no, it wasn't a merge error. That's what it looks like in your tree.
 
-Rob
+>
+
+> The commit was done yesterday. It clearly had *zero* testing.
+
+Hmm.
+
+This hunk is in the CONFIG_PM=n case.
+
+Of the several hundred x86_64 and i386 kernels I build
+before sending you a pull request, only two do not have CONFIG_PM=y --
+x86_64 allnoconfig and i386 allnoconfig.
+Like the other kernels, those build fine.
+
+I'm curious what config and compiler tripped on this for you.
+
+> Looking more at the pull as a result of this, I notice that almost
+> every commit in that tree is from yesterday, and thus cleary cannot
+> have been in -next.
 
 
-> 
-> -Olof
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+Yes, I did check in Ying's patch this week, and a few others.
 
+But a bunch of the patches have been in linux-next for some time.
+
+I know you'd prefer patches to live in the tree frozen at the
+date that they were 1st checked in, but that doesn't work well
+when patches change.  To update a patch in a series I need to re-base.
+Yes, I could re-base in place -- in the context of an rc
+that nobody anywhere (including me) will ever build or boot.
+Or I could re-base up to the latest release boundary which
+a lot of people (including me) will test.  In this case
+I think I re-based everything up to 3.4.
+
+> I was going to just fix up the obvious one-liner
+
+> fixup, but looking at the bigger picture I'm going to say "3.6
+> material" for this whole thing.
+
+
+It would be sad for a simple, though embarrassing,
+issue with this patch to delay the other patches.
+
+-Len
