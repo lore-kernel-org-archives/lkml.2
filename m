@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759034Ab2FCMFN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 08:05:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53199 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753704Ab2FCMFL (ORCPT
+	id S1759154Ab2FCMGx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 08:06:53 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48642 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753754Ab2FCMGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 08:05:11 -0400
-Date: Sun, 3 Jun 2012 13:05:06 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dt: tegra: cardhu: register core regulator
- tps65911
-Message-ID: <20120603120506.GG4258@opensource.wolfsonmicro.com>
-References: <4FBBCA8F.3050903@wwwdotorg.org>
- <4FBBD33C.8020802@nvidia.com>
- <4FBBDA97.6000006@wwwdotorg.org>
- <4FBBDE06.5080806@nvidia.com>
- <4FC916AC.4060804@wwwdotorg.org>
- <20120601204052.GB4258@opensource.wolfsonmicro.com>
- <4FC92990.5030104@wwwdotorg.org>
- <20120601210451.GC4258@opensource.wolfsonmicro.com>
- <CAOesGMgYAR938F8PnVWaymzMBQwDKeAiUgEP81bv2nN14NmLGg@mail.gmail.com>
- <4FCACFB6.2060601@gmail.com>
+	Sun, 3 Jun 2012 08:06:51 -0400
+Message-ID: <4FCB5322.3050707@linux.vnet.ibm.com>
+Date: Sun, 03 Jun 2012 17:35:54 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="e5GLnnZ8mDMEwH4V"
-Content-Disposition: inline
-In-Reply-To: <4FCACFB6.2060601@gmail.com>
-X-Cookie: You may be recognized soon.  Hide.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Yong Zhang <yong.zhang0@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tony Luck <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Richard Kuo <rkuo@codeaurora.org>, David Howells <dhowells@redhat.com>,
+        Bob Liu <lliubbo@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+        Richard Weinberger <richard@nod.at>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Matt Turner <mattst88@gmail.com>, nikunj@linux.vnet.ibm.com
+Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot	secondary
+ processors
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com> <4FC8B0F7.3060705@linux.vnet.ibm.com> <20120603085359.GE16829@zhy> <4FCB4B9E.3090508@linux.vnet.ibm.com> <20120603113948.GC15354@n2100.arm.linux.org.uk>
+In-Reply-To: <20120603113948.GC15354@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060312-4790-0000-0000-0000030FA88D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03/2012 05:09 PM, Russell King - ARM Linux wrote:
 
---e5GLnnZ8mDMEwH4V
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Sun, Jun 03, 2012 at 05:03:50PM +0530, Srivatsa S. Bhat wrote:
+>> That's a good point! But unfortunately we can't do that just yet.
+>> Because, some architectures have explicit comments that say that
+>> irqs must be enabled at a certain point in time, or have something
+>> special than just a local_irq_enable(), and hence fall under the
+>> __cpu_post_online() function when converted to this model.
+>>
+>> Examples: ARM (patch 26) and ia64 (patch 15)
+>>
+>> Unless the maintainers give a go-ahead to change them, I don't
+>> think it would be safe.. (I have added the Notes section to each
+>> patch to get the attention of the maintainers to such issues).
+> 
+> I have no intention of touching ARMs SMP bringup any more than is
+> absolutely necessary - this code is extremely fragile, and it's taken
+> a long time to get it to where it presently is, where most people are
+> happy with it.
+> 
 
-On Sat, Jun 02, 2012 at 09:45:10PM -0500, Rob Herring wrote:
+> Especially problematical is stuff like where we enable interrupts in
 
-> I tend to agree with Steven's and Olof's comments in this thread. As the
-> node names generally don't have much meaning, I don't think we should
-> start now. We've already got multiple styles of bindings and I don't
-> think we need more.
+> relation to other activities.
+> 
+> It's probably best to describe the code not as "mostly bug free" but
+> as "causes the least pain" because I don't think there is a solution
+> which satisfies all the constraints placed upon this code path by
+> the various parts of the kernel.
+> 
 
-Well, if we're going to go with an existing idiom the normal thing would
-be an ordered array which is absolutely abysmal from a usability
-standpoint.  Compatible properties don't work as the whole reason we
-have an issue here is that people want to have a single node
-representing a group of regulators - for regulators which we can add a
-compatible property to we're already doing that and have no issue.
 
-What device tree seems to need rather badly is a way of representing
-key/value pairs - aside from the legacy bindings that seems to be the
-major source of pain when trying to contort things into DT.
+Thanks for your comments Russell. I understand your concerns. So, the
+ARM patch does no functional change and retains how and where the
+interrupts are enabled. And from looking at what you said above about
+the bringup being fragile, I think even in future you wouldn't want any
+functional changes to ARM just to make it fit into some generic model.
+Thanks for the clarification.
 
-Using the "regulator" string that we have to put in the binding (which
-is currently totally meaningless) does seem like a good way forward
-here.
+However, what are your thoughts on the existing ARM patch (patch 26)
+(which doesn't cause any functional changes)? That shouldn't pose any
+problems right?
 
---e5GLnnZ8mDMEwH4V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Srivatsa S. Bhat
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPy1LrAAoJEBus8iNuMP3d8RQP/1NAUydX26zNJ22zFa5HGSqk
-KEhRiGVXVP7go5gm750s8wwT1D4KRlu+hOt1YuL82elZVAx/j6R7JmfCLFV3hYGX
-u2dolI8x/IE/zrZ4vF/bR3s2MlCkhfB9XvNkCcH8kmwCI5CNJMrPk9rh8wBWN2lB
-pw6V1gOY5hRFuLlPAjLriC9WeSp/TXkifrhrcTOvhl3SvczTCBSWe/zUiUitnt72
-FtyUVa3Mf2tt172lyNv/y+11BUyHtlKc2NFoslYYspPCzfYsseo15yaSP00ZA46a
-vlVKEb/t6RX/0EGfq8P1XJfaE2ehuUDO1UUyseXNuTD/4Ssny6ZpRGAzbTHI/ahJ
-CkTwfSfMDIV+enyfjlZFu7d1psVsQLUPKSxxLIHMu4Y03ECfK2O2hKuWw1JGXv0A
-oooFaCNRmuJxx0sPQieAG4bvvpPIxC39MdPoaA5jxhsS2+a23VGPnoE5FNQHpgwF
-YJkj9eXu0rlFXIQLChpIhw+DrfEaixC6BSzxyvhfpj8LYqDrSkJDurJsJT2fGh1Z
-ao2fmEvVY1nH3/kT70mVL+axi/sfr3th7WV42Y4D+l1Qk2ab36bP8mZwNW1pqLgU
-wwgqnbDvx3o0vdUL72tYD9jWZ+Oc3gK8XgtwwkIVVpGA97D5o5gwB0VSGMofO30X
-e1QjMgeqUI9PEPpjIx2W
-=t9T4
------END PGP SIGNATURE-----
-
---e5GLnnZ8mDMEwH4V--
