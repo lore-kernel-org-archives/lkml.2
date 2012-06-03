@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2FCUiJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 16:38:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50111 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab2FCUiE (ORCPT
+	id S1754770Ab2FCUkp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 16:40:45 -0400
+Received: from mga10.intel.com ([192.55.52.92]:40787 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753690Ab2FCUkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 16:38:04 -0400
-Date: Sun, 3 Jun 2012 21:37:49 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roland Stigge <stigge@antcom.de>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        dwmw2@infradead.org, kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, hechtb@googlemail.com,
-        lars@metafoo.de, b32955@freescale.com, leiwen@marvell.com,
-        dedekind1@gmail.com
-Subject: Re: [PATCH v4] MTD: LPC32xx SLC NAND driver
-Message-ID: <20120603203749.GD23368@n2100.arm.linux.org.uk>
-References: <1338748689-29645-1-git-send-email-stigge@antcom.de> <20120603190932.GB23368@n2100.arm.linux.org.uk> <4FCBBFD4.9090401@antcom.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCBBFD4.9090401@antcom.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sun, 3 Jun 2012 16:40:42 -0400
+Subject: Re: [GIT PULL] x86/efi changes for v3.5
+From: Matt Fleming <matt.fleming@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Jordan Justen <jordan.l.justen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <4FCAD63D.7070604@zytor.com>
+References: <20120523075433.GA12526@gmail.com>
+	 <20120602183827.GA4020@polaris.bitmath.org>  <4FCAD63D.7070604@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Date: Sun, 03 Jun 2012 21:40:27 +0100
+Message-ID: <1338756027.4584.3.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 03, 2012 at 09:49:40PM +0200, Roland Stigge wrote:
-> Hi!
-> 
-> Thanks for the suggestions!
-> 
-> On 03/06/12 21:09, Russell King - ARM Linux wrote:
-> >> +	dma_async_issue_pending(host->dma_chan);
-> >> +
-> >> +	wait_for_completion_timeout(&host->comp, msecs_to_jiffies(1000));
+On Sat, 2012-06-02 at 20:13 -0700, H. Peter Anvin wrote:
+> On 06/02/2012 11:38 AM, Henrik Rydberg wrote:
+> > Hi Ingo, Hans Peter, Matt, Jordan,
 > > 
-> > What about unmapping the buffer upon completion?
+> >> This patchset makes changes to the bzImage EFI header, so that 
+> >> it can be signed with a secure boot signature tool. It should 
+> >> not affect anyone who is not using the EFI self-boot feature in 
+> >> any way.
+> > 
+> > Commit 2e064b1 (Fix issue of overlapping .reloc section for EFI_STUB)
+> > breaks EFI boot on my MacBookAir3,1. The efi firmware no longer
+> > recognizes the bzImage and falls back to BIOS emulation boot.
+> > 
+> > Reverting 2e064b1 works for me, but I am happy to test other options
+> > as well.
+> > 
 > 
-> OK - by not specifying DMA_COMPL_SKIP_*_UNMAP in flags, I was thinking
-> that this happens somehow magically. ;-) But maybe I was just confused.
+> Matt, Jordan,
+> 
+> Could you look into this please?
 
-Slave transfers should never be automatically unmapped by the DMA engine
-driver.
+Yeah, there's a bug report for this here,
+
+	https://bugzilla.kernel.org/show_bug.cgi?id=43309
+
+I suspect that older firmware doesn't handle a zero .reloc section
+properly. So, unfortunately we will have to leave the .reloc section
+with a dummy reloc, rather than having one with no entries.
+
+I'll put a patch together.
+
