@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab2FCIvc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 04:51:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57675 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab2FCIv3 (ORCPT
+	id S1752698Ab2FCIyY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 04:54:24 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42875 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2FCIyW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 04:51:29 -0400
-Date: Sun, 3 Jun 2012 16:51:07 +0800
+	Sun, 3 Jun 2012 04:54:22 -0400
+Date: Sun, 3 Jun 2012 16:53:59 +0800
 From: Yong Zhang <yong.zhang0@gmail.com>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -27,7 +27,7 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Matt Turner <mattst88@gmail.com>, nikunj@linux.vnet.ibm.com
 Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot
  secondary processors
-Message-ID: <20120603085107.GD16829@zhy>
+Message-ID: <20120603085359.GE16829@zhy>
 Reply-To: Yong Zhang <yong.zhang0@gmail.com>
 References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
  <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com>
@@ -42,55 +42,6 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jun 01, 2012 at 05:39:27PM +0530, Srivatsa S. Bhat wrote:
-> +/* Implement the following functions in your architecture, as appropriate. */
-> +
-> +/**
-> + * __cpu_pre_starting()
-> + *
-> + * Implement whatever you need to do before the CPU_STARTING notifiers are
-> + * invoked. Note that the CPU_STARTING callbacks run *on* the cpu that is
-> + * coming up. So that cpu better be prepared! IOW, implement all the early
-> + * boot/init code for the cpu here. And do NOT enable interrupts.
-> + */
-> +#ifndef __cpu_pre_starting
-
-Why the ifndef?
-
-Thanks,
-Yong
-
-> +void __weak __cpu_pre_starting(void *arg) {}
-> +#endif
-> +
-> +/**
-> + *  __cpu_pre_online()
-> + *
-> + * Implement whatever you need to do before the upcoming CPU is set in the
-> + * cpu_online_mask. (Setting the cpu in the cpu_online_mask is like an
-> + * announcement that the cpu has come up, because it would be publicly
-> + * visible now). Again, don't enable interrupts.
-> + */
-> +#ifndef __cpu_pre_online
-> +void __weak __cpu_pre_online(void *arg) {}
-> +#endif
-> +
-> +/**
-> + * __cpu_post_online()
-> + *
-> + * Implement whatever you need to do after the CPU has been set in the
-> + * cpu_online_mask, and before enabling interrupts and calling cpu_idle().
-> + * Ideally, it is preferable if you don't have anything to do here.
-> + * We want to move to a model where setting cpu_online_mask is pretty
-> + * much the final step. Again, don't enable interrupts.
-> + */
-> +#ifndef __cpu_post_online
-> +void __weak __cpu_post_online(void *arg) {}
-> +#endif
-> +
-> +
-> +/**
-> + * smpboot_start_secondary - Generic way to boot secondary processors
-> + */
 > +void __cpuinit smpboot_start_secondary(void *arg)
 > +{
 > +	unsigned int cpu;
@@ -114,6 +65,14 @@ Yong
 > +
 > +	__cpu_post_online(arg);
 > +
+
+Seems it worth to catch incorrect irq state here:
+
+	WARN_ON_ONCE(!irqs_disabled());
+
+Thanks,
+Yong
+
 > +	/* Enable local interrupts now */
 > +	local_irq_enable();
 > +
