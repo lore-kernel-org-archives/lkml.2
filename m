@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab2FCNUf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 09:20:35 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42373 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab2FCNUe (ORCPT
+	id S1752304Ab2FCN00 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 09:26:26 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44055 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab2FCN0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 09:20:34 -0400
-Date: Sun, 3 Jun 2012 14:24:06 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH] tty: add lockdep annotations
-Message-ID: <20120603142406.1ced80f9@pyramind.ukuu.org.uk>
-In-Reply-To: <CA+55aFwPdYfu5p5EPqZLnzps0v0+MaL7=dr9cK71EqhAL-Hebg@mail.gmail.com>
-References: <4FC6189B.9080909@fusionio.com>
-	<1338410107.2760.544.camel@edumazet-glaptop>
-	<1338456918.2760.1318.camel@edumazet-glaptop>
-	<1338574627.2760.1545.camel@edumazet-glaptop>
-	<CA+55aFzrbmGjghmR3M=fWrGUdy6BDu+SVXz6rjM4QAuUjfxk_w@mail.gmail.com>
-	<1338583498.2760.1648.camel@edumazet-glaptop>
-	<20120601215620.305155c0@pyramind.ukuu.org.uk>
-	<1338584389.2760.1653.camel@edumazet-glaptop>
-	<1338621438.2760.1679.camel@edumazet-glaptop>
-	<1338623708.2760.1691.camel@edumazet-glaptop>
-	<1338624102.2760.1693.camel@edumazet-glaptop>
-	<20120602125723.5b057570@pyramind.ukuu.org.uk>
-	<1338640231.2760.1704.camel@edumazet-glaptop>
-	<CA+55aFwXrX16ufu1yf_D8rXTPXfpN1D72STuNYOMqT57je+jRA@mail.gmail.com>
-	<CA+55aFysA72FVTF6k=HnqYjCTqXQO+jcMLeR6MpM=eJm-H+EBQ@mail.gmail.com>
-	<20120602211917.14275f12@pyramind.ukuu.org.uk>
-	<CA+55aFzNQe6WCHKBrs_xNY0MxzF4C9jpfLFjSh8GBFTEzGnxxg@mail.gmail.com>
-	<CA+55aFwPdYfu5p5EPqZLnzps0v0+MaL7=dr9cK71EqhAL-Hebg@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Jun 2012 09:26:25 -0400
+Date: Sun, 3 Jun 2012 15:27:47 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Paulo Zanoni <przanoni@gmail.com>
+Cc: Dave Jones <davej@redhat.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org,
+        Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Subject: Re: Lots of i915/drm spew on 3.4
+Message-ID: <20120603132731.GA4696@phenom.ffwll.local>
+Mail-Followup-To: Paulo Zanoni <przanoni@gmail.com>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	dri-devel@lists.freedesktop.org,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+References: <20120530213128.GA10407@redhat.com>
+ <CAKMK7uE7RtzFd1RR4gyOaStSEisircr7gC7sz5BwVNiy2EtV+g@mail.gmail.com>
+ <20120530215848.GB19223@redhat.com>
+ <20120530222651.GA22449@redhat.com>
+ <CA+gsUGRwNh9Zc9bA9JjdHSxpq7djLzqXdhAjcyCb2VcL7H+G_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+gsUGRwNh9Zc9bA9JjdHSxpq7djLzqXdhAjcyCb2VcL7H+G_w@mail.gmail.com>
+X-Operating-System: Linux phenom 3.4.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And the revert looks fine to me
+On Thu, May 31, 2012 at 11:43:21AM -0300, Paulo Zanoni wrote:
+> 2012/5/30 Dave Jones <davej@redhat.com>:
+> > On Wed, May 30, 2012 at 05:58:48PM -0400, Dave Jones wrote:
+> >  > On Wed, May 30, 2012 at 11:51:54PM +0200, Daniel Vetter wrote:
+> >  >  > On Wed, May 30, 2012 at 11:31 PM, Dave Jones <davej@redhat.com> wrote:
+> >  >  > > On this hardware:
+> >  >  > >
+> >  >  > > 00:02.0 VGA compatible controller: Intel Corporation 82945G/GZ Integrated Graphics Controller (rev 02)
+> >  >  > >
+> >  >  > > I get this every boot with Linus current tree (up to af56e0aa35f3ae2a4c1a6d1000702df1dd78cb76)
+> >  >  >
+> >  >  > Just a quick question, is this a regression?
+> >  >
+> >  > seems so, I don't see it on 3.3
+> >  >
+> >  >  > If so, can you please
+> >  >  > attach the output of xrandr --verbose from a noisy and a quite kernel
+> >  >  > (otherwise just please attach it from this noisy kernel).
+> >  >
+> >  > this machine runs headless, so has no X installed right now, I'll get it in a while.
+> >
+> > Attached.
+> >
+> 
+> Just a little more information: you have a lot of connector properties
+> because for some reason the driver thinks you have TV1, TV2 and TV3.
+> Each TV connector has a lot of properties... With kernel 3.3 you have
+> only TV1 and TV2. Maybe instead of increasing the maximum property
+> count we should try to investigate why there's a new TV connector in
+> the new kernel (and maybe this is also not a bug/regression...).
+
+I've merged a patch from Chris to detect additional sdvo TV outputs:
+
+commit a0b1c7a5197293d6206b245b45edc3f508aadab6
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Sep 30 22:56:41 2011 +0100
+
+    drm/i915/sdvo: Include YRPB as an additional TV output type
+
+So that explains that hopefully.
+-Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
