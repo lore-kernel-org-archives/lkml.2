@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab2FCOUe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 10:20:34 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:54056 "EHLO solo.fdn.fr"
+	id S1753451Ab2FCOnK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 10:43:10 -0400
+Received: from blackhole.sdinet.de ([176.9.52.58]:55696 "EHLO mail.sdinet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083Ab2FCOUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 10:20:33 -0400
-Date: Sun, 3 Jun 2012 16:20:21 +0200
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Chris Yungmann <yungmann.chris@gmail.com>
-Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@braille.uwo.ca,
-        gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
-        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
-Subject: Re: [PATCH] staging: speakup: fixed checkpatch and sparse warnings
- in selection.c
-Message-ID: <20120603142021.GI4546@type.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Chris Yungmann <yungmann.chris@gmail.com>, w.d.hubbs@gmail.com,
-	chris@the-brannons.com, kirk@braille.uwo.ca,
-	gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
-	linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
-References: <1338658358-20402-1-git-send-email-yungmann.chris@gmail.com>
+	id S1752276Ab2FCOnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 10:43:08 -0400
+X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jun 2012 10:43:08 EDT
+Date: Sun, 3 Jun 2012 16:33:28 +0200 (CEST)
+From: Sven-Haegar Koch <haegar@sdinet.de>
+To: Josh Boyer <jwboyer@gmail.com>
+cc: Jens.Gustedt@loria.fr, linux-kernel@vger.kernel.org
+Subject: Re: linux 3.4 got lost
+In-Reply-To: <CA+5PVA4j0ga98UF40DkX4EE0Tux+-j0Bo+=-CNwWcxkzyH+SkQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1206031632330.5640@aurora.sdinet.de>
+References: <4FCB663C.2050808@loria.fr> <CA+5PVA4j0ga98UF40DkX4EE0Tux+-j0Bo+=-CNwWcxkzyH+SkQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1338658358-20402-1-git-send-email-yungmann.chris@gmail.com>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Yungmann, le Sat 02 Jun 2012 12:32:38 -0500, a écrit :
-> @@ -132,7 +132,7 @@ int speakup_paste_selection(struct tty_struct *tty)
->  	while (sel_buffer && sel_buffer_lth > pasted) {
->  		set_current_state(TASK_INTERRUPTIBLE);
->  		if (test_bit(TTY_THROTTLED, &tty->flags)) {
-> -			if (in_atomic())
-> +			if (in_interrupt())
->  				/* if we are in an interrupt handler, abort */
->  				break;
->  			schedule();
+On Sun, 3 Jun 2012, Josh Boyer wrote:
 
-I'd rather keep in_atomic(), which is clearly known to be broken (see
-TODO above).
+> On Sun, Jun 3, 2012 at 9:27 AM, Jens Gustedt <Jens.Gustedt@loria.fr> wrote:
+> > Hello,
+> > it seems that with the upload of 3.5-rc1 linux 3.4 disappeared from the
+> > kernel.org website.
+> 
+> http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+> http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.xz
+> 
+> Seems there to me?
 
-Samuel
+The files are there, it just vanished from the http://www.kernel.org/ 
+frontpage.
+
+c'ya
+sven-haegar
+
+-- 
+Three may keep a secret, if two of them are dead.
+- Ben F.
