@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752548Ab2FCF66 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 01:58:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46086 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216Ab2FCF64 (ORCPT
+	id S932282Ab2FCGYn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 02:24:43 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37033 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827Ab2FCGYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 01:58:56 -0400
-MIME-Version: 1.0
-Date: Sun, 3 Jun 2012 01:58:55 -0400
-Message-ID: <CALKntY1xQ7v5VRKxqT3A3G+W3s3CK_JtqWB5GkBcN08J6Hn=-A@mail.gmail.com>
-Subject: futex system call in write
-From: Xin Tong <xerox.time.tech@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 3 Jun 2012 02:24:42 -0400
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] rtc/rtc-spear: free the config right after the rtc_device_unregister
+Date: Sun,  3 Jun 2012 11:54:19 +0530
+Message-Id: <1338704660-30921-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am a program with 2 threads, each of which calling printf in a loop.
-when i strace this programs. i see besides write() gets calls a good
-number of times. futex gets call many times as well. it seems to be
-related to the write system call ? how is the futex system call used
-here ? maybe write() is blocking and futex is used to wait the thread
-up when the write finishes ? if that is the case, what about other
-blocking system calls ?
+the config was freed and its used again at rtc_device_unregister which leads
+to a kernel panic. so, do it right after the rtc_device_unregister
 
-[pid  9057] [      377b4f542e] futex(0x377b78be10, FUTEX_WAIT_PRIVATE,
-2, NULL <unfinished ...>
-[pid  9058] [      377b4f545f] futex(0x377b78be10, FUTEX_WAKE_PRIVATE,
-1 <unfinished ...>
-[pid  9057] [      377b4f542e] <... futex resumed> ) = -1 EAGAIN
-(Resource temporarily unavailable)
-[pid  9058] [      377b4f545f] <... futex resumed> ) = 0
-[pid  9057] [      377b4d8a2d] write(1, "Hello World! It's me, thread
-#0!"..., 33Hello World! It's me, thread #0!
- <unfinished ...>
-[pid  9058] [      377b4f542e] futex(0x377b78be10, FUTEX_WAIT_PRIVATE,
-2, NULL <unfinished ...>
-[pid  9057] [      377b4d8a2d] <... write resumed> ) = 33
-[pid  9057] [      377b4f545f] futex(0x377b78be10, FUTEX_WAKE_PRIVATE,
-1 <unfinished ...>
-[pid  9058] [      377b4f542e] <... futex resumed> ) = 0
-[pid  9057] [      377b4f545f] <... futex resumed> ) = 1
-[pid  9058] [      377b4d8a2d] write(1, "Hello World! It's me, thread
-#1!"..., 33Hello World! It's me, thread #1!
- <unfinished ...>
-[pid  9057] [      377b4f542e] futex(0x377b78be10, FUTEX_WAIT_PRIVATE,
-2, NULL <unfinished ...>
-[pid  9058] [      377b4d8a2d] <... write resumed> ) = 33
-[pid  9058] [      377b4f545f] futex(0x377b78be10, FUTEX_WAKE_PRIVATE, 1) = 1
-[pid  9057] [      377b4f542e] <... futex resumed> ) = 0
-[pid  9058] [      377b4d8a2d] write(1, "Hello World! It's me, thread
-#1!"..., 33Hello World! It's me, thread #1!
- <unfinished ...>
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
+ drivers/rtc/rtc-spear.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/rtc/rtc-spear.c b/drivers/rtc/rtc-spear.c
+index 1f76320..e278547 100644
+--- a/drivers/rtc/rtc-spear.c
++++ b/drivers/rtc/rtc-spear.c
+@@ -458,12 +458,12 @@ static int __devexit spear_rtc_remove(struct platform_device *pdev)
+ 	clk_disable(config->clk);
+ 	clk_put(config->clk);
+ 	iounmap(config->ioaddr);
+-	kfree(config);
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res)
+ 		release_mem_region(res->start, resource_size(res));
+ 	platform_set_drvdata(pdev, NULL);
+ 	rtc_device_unregister(config->rtc);
++	kfree(config);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
+
