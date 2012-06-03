@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab2FCN12 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 09:27:28 -0400
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:29483 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750888Ab2FCN11 (ORCPT
+	id S1753880Ab2FCNhJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 09:37:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63354 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2FCNhH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 09:27:27 -0400
-X-IronPort-AV: E=Sophos;i="4.75,707,1330902000"; 
-   d="scan'208";a="161070935"
-Message-ID: <4FCB663C.2050808@loria.fr>
-Date: Sun, 03 Jun 2012 15:27:24 +0200
-From: Jens Gustedt <Jens.Gustedt@loria.fr>
-Reply-To: Jens.Gustedt@loria.fr
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Sun, 3 Jun 2012 09:37:07 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: linux 3.4 got lost
-X-Enigmail-Version: 1.5pre
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAACRQTFRF
- ERslNjAsLTE9Ok9wUk9TaUs8iWhSrYZkj42Rz6aD3sGZ/P/7B+vw4wAAAAlwSFlzAAALEwAACxMB
- AJqcGAAAAAd0SU1FB9gGGQk7HLeKUa8AAAIoSURBVDjLhdOxbtswEABQyhmz8BjJ7WjRTVHAk2O3
- S5baUNNm1EB59iAJ6m4R2osgRdfWAv0H0Za6QGPo53onOxYtIOhNgh7IuyOPrH4h2H/hvp5Q/OjC
- djIN5lKKYRcmUxWHACCvOzCNojj0FAh5CpObJM1jpXDRyIZtX+uiREG4sGGcGgydUxpuwdYrCEqd
- KwB23cKfV6aJkoCftzDOzKaqUPL4FN4XL8AnY6oGNGbnZy3c7HBB9YDZk1DwXgtvaKeHpixcsS+r
- gbe4S2UOAGx0hEv8uWlyIPjs3NrqsJfOlzCwwG/K3VD2JW510TbYlgvgOy1c7fsrMYNAGB7hd7ah
- o6KS8A5lrz3d27UKVRpDA34L9S39W6z6OvYQhhasFajsV5TjREhpwU6nOi7WfY15pH9tgdFJataq
- ILBusN6VVNVapQjChtps6HDDiA7rBL5j1wgeTdYJ/DU5TlAISqkOaJUVJQJ0IY+aEwSI4cwqt35a
- RVqv8L+3FGwwsqY9iULsWxHwAd36M3xI869VsQQvBDZgKM/wlOrCJKoBisnxDX7Gh4DpPdgDO77B
- S61x3DzVge3YzbBeFYUHcA4g4V1EE5fgUDscwd1frT8TAWSmLGnae5Ix7u/nCjv7CQucN/xgcoAb
- AcF4Br77zVskCY4bOIHPOCe4ghmI4M5bNOPDe3OB8JHV2xmG/+VOpVgugjsXDnNxxaM7c93g9T0B
- dgHBXPQ4OP8ApiUfmpUgHuIAAAAASUVORK5CYII=
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [85.250.83.253]
+In-Reply-To: <1337693217-15466-6-git-send-email-sjur.brandeland@stericsson.com>
+References: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com> <1337693217-15466-6-git-send-email-sjur.brandeland@stericsson.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 3 Jun 2012 16:36:46 +0300
+Message-ID: <CAK=WgbaOZn8K4FberD8gt5+eB1=EwjPhngArwif8u3L5Qqw=3A@mail.gmail.com>
+Subject: Re: [RFC 5/6] remoteproc: Support custom firmware handlers
+To: sjur.brandeland@stericsson.com
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-it seems that with the upload of 3.5-rc1 linux 3.4 disappeared from the
-kernel.org website.
-Jens
+On Tue, May 22, 2012 at 4:26 PM,  <sjur.brandeland@stericsson.com> wrote:
+> From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+>
+> Make the firmware handling customizable by creating
+> a rproc_fw_ops structure. Expose the existing
+> Elf firmware handling in rproc_elf_fw_ops.
+>
+> Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+..
+> @@ -171,6 +171,7 @@ static struct rproc_ops omap_rproc_ops = {
+>        .start          = omap_rproc_start,
+>        .stop           = omap_rproc_stop,
+>        .kick           = omap_rproc_kick,
+> +       .fw             = &rproc_elf_fw_ops
+>  };
 
+Can we instead make these ops dynamically assigned, without mandating
+them in the low level driver ?
 
+E.g. with ELF it's easy (first four bytes of the binary), but I'm not
+sure how feasible it is with proprietary binary formats (such as
+yours).
+
+> @@ -781,12 +780,13 @@ static int rproc_fw_boot(struct rproc *rproc, const struct firmware *fw)
+>  {
+>        struct device *dev = rproc->dev;
+>        const char *name = rproc->firmware;
+> -       struct elf32_hdr *ehdr;
+>        struct resource_table *table;
+>        int ret, tablesz;
+>
+> -       ehdr = (struct elf32_hdr *)fw->data;
+> -
+> +       if (!rproc->ops->fw_ops || !try_module_get(rproc->ops->fw_ops->owner)) {
+
+I'm not sure we need loaders' ops to be full-fledged modules of their
+own. For simplicity, we might just have them statically linked with
+the remoteproc module.
+
+>        /* look for the resource table */
+> -       table = rproc_find_rsc_table(rproc, fw, &tablesz);
+> +       table = rproc->ops->fw_ops->find_rsc_table(rproc, fw, &tablesz);
+
+Might be easier on the eyes if we turn rproc_find_rsc_table() (and
+friends) into static inline "macros" which does all this
+de-referencing.
+
+Thanks,
+Ohad.
