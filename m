@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759154Ab2FCMGx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 08:06:53 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:48642 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754Ab2FCMGv (ORCPT
+	id S1753376Ab2FCMOq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 08:14:46 -0400
+Received: from nm11-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.136]:22330 "HELO
+	nm11-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750934Ab2FCMOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 08:06:51 -0400
-Message-ID: <4FCB5322.3050707@linux.vnet.ibm.com>
-Date: Sun, 03 Jun 2012 17:35:54 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Yong Zhang <yong.zhang0@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Richard Kuo <rkuo@codeaurora.org>, David Howells <dhowells@redhat.com>,
-        Bob Liu <lliubbo@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        Richard Weinberger <richard@nod.at>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Matt Turner <mattst88@gmail.com>, nikunj@linux.vnet.ibm.com
-Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot	secondary
- processors
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com> <4FC8B0F7.3060705@linux.vnet.ibm.com> <20120603085359.GE16829@zhy> <4FCB4B9E.3090508@linux.vnet.ibm.com> <20120603113948.GC15354@n2100.arm.linux.org.uk>
-In-Reply-To: <20120603113948.GC15354@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 12060312-4790-0000-0000-0000030FA88D
+	Sun, 3 Jun 2012 08:14:45 -0400
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jun 2012 08:14:45 EDT
+X-Yahoo-Newman-Id: 991099.13231.bm@smtp217.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: uusTrJ0VM1midnHTYZAtI8oeCuDLDRBeNGIdfTp7CiXPL6B
+ RabONgVXuPKPkjTR65joJvWfLdxnWgp5sP9S9OJROQiMvfCLDoPR1vHwUDBS
+ .tw885NunTL4295Y8.86MsVzIcce7gPxJnvIcdhsZLVGDHevll8F.kUEsRPw
+ t23yQyDJE.2OkY5SCqsIobgTNHuIfFYFzuJJjfXzYCtwT2MsV4In1bymlFxd
+ bRumkOA4mQZLNgKfkLIFbd8gN7kureZuqR53LxzHTcMqKRpG5kmvXnbgh0S.
+ GHFLSUtg5rpTWCY3zJf8Pq2OSvbl0e_IUeYrudoqRUCx9DTUD6H2K0ULU1_k
+ u.RksVgD_GmpPFABS8dqebROPtQiMabW0yaF1MI2C3tpy5XHxksdJqVSkBw0
+ fbFRhZXsppYVIaS6iRMux_RElAjUNIZGy7doxnA8w.mKgN.dkZSSN8y8cE6F
+ KZyW2FMqb7uN3ZK5L4vlsFtXvMkFMfYKtuhlueALzHMVl1w3dcRcFeBu.XCF
+ n9AIgeot03GdH6XingfMd_QNz2w--
+X-Yahoo-SMTP: dNW5aIGswBCf1iV6QK8RWrBgWyjShXs-
+From: Jeffrin Jose <ahiliation@yahoo.co.in>
+To: bryan.wu@canonical.com, rpurdie@rpsys.net
+Cc: linux-kernel@vger.kernel.org, ahiliation@yahoo.co.in
+Subject: [PATCH]drivers:leds:fixed a coding style issue.
+Date: Sun,  3 Jun 2012 17:41:52 +0530
+Message-Id: <1338725513-3156-1-git-send-email-ahiliation@yahoo.co.in>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2012 05:09 PM, Russell King - ARM Linux wrote:
+Fixed a coding style issue relating to trailing
+white space error found by checkpatch.pl tool in drivers/leds/led-class.c
 
-> On Sun, Jun 03, 2012 at 05:03:50PM +0530, Srivatsa S. Bhat wrote:
->> That's a good point! But unfortunately we can't do that just yet.
->> Because, some architectures have explicit comments that say that
->> irqs must be enabled at a certain point in time, or have something
->> special than just a local_irq_enable(), and hence fall under the
->> __cpu_post_online() function when converted to this model.
->>
->> Examples: ARM (patch 26) and ia64 (patch 15)
->>
->> Unless the maintainers give a go-ahead to change them, I don't
->> think it would be safe.. (I have added the Notes section to each
->> patch to get the attention of the maintainers to such issues).
-> 
-> I have no intention of touching ARMs SMP bringup any more than is
-> absolutely necessary - this code is extremely fragile, and it's taken
-> a long time to get it to where it presently is, where most people are
-> happy with it.
-> 
+Signed-off-by: Jeffrin Jose <ahiliation@yahoo.co.in>
+---
+ drivers/leds/led-class.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Especially problematical is stuff like where we enable interrupts in
-
-> relation to other activities.
-> 
-> It's probably best to describe the code not as "mostly bug free" but
-> as "causes the least pain" because I don't think there is a solution
-> which satisfies all the constraints placed upon this code path by
-> the various parts of the kernel.
-> 
-
-
-Thanks for your comments Russell. I understand your concerns. So, the
-ARM patch does no functional change and retains how and where the
-interrupts are enabled. And from looking at what you said above about
-the bringup being fragile, I think even in future you wouldn't want any
-functional changes to ARM just to make it fit into some generic model.
-Thanks for the clarification.
-
-However, what are your thoughts on the existing ARM patch (patch 26)
-(which doesn't cause any functional changes)? That shouldn't pose any
-problems right?
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 8ee92c8..e663e6f 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -29,7 +29,7 @@ static void led_update_brightness(struct led_classdev *led_cdev)
+ 		led_cdev->brightness = led_cdev->brightness_get(led_cdev);
+ }
+ 
+-static ssize_t led_brightness_show(struct device *dev, 
++static ssize_t led_brightness_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+-- 
+1.7.10
 
