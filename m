@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab2FCXNf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 19:13:35 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:44162 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074Ab2FCXNe (ORCPT
+	id S1755091Ab2FCXQT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 19:16:19 -0400
+Received: from nm9.access.bullet.mail.sp2.yahoo.com ([98.139.44.136]:22868
+	"HELO nm9.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753567Ab2FCXQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 19:13:34 -0400
+	Sun, 3 Jun 2012 19:16:18 -0400
+X-Yahoo-Newman-Id: 789283.18205.bm@omp1014.access.mail.sp2.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: VLxK628VM1k4FmjkH.4PoDn8efy3Rh_Ncc_U64impyURmyV
+ TOtVx8ro.2_J932aABKf32W9XZ2sYlY0_0mbFIaiFhQYdL0YEhDR8TjM64I3
+ cqsZYTg_oRdWely3WO2Cqz7bnfGWBJN04BpdCw1kNHwUAbgt7j8jLliUUSCf
+ LyweYcGhHCSAHeT6NZxcO5ge0IjfLnvEN3p10PrxYbN62.V2T2z.qf8S4bXw
+ PTJiUmT3nC9.7uT4pF3kqdzqW3Q6ODbfcJIWfsUwjXlxSS.LpsL7iWDydyWr
+ ZOTXAkLEm8bfmFEdDFYRk6nqT46msmchkP1.2AncGn6v3yxnhVhKtucqdVDx
+ PT6kNQy0Lvm89XOhg6wAIIOd.zQNAiodBmj2wcc1Ux9KAnYylG6EZpOwu0Iw
+ 22HeODA--
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <4FCBF042.2090208@att.net>
+Date: Sun, 03 Jun 2012 18:16:18 -0500
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: daniel.santos@pobox.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1206031459450.15427@eggly.anvils>
-References: <20120601023107.GA19445@redhat.com> <alpine.LSU.2.00.1206010030050.8462@eggly.anvils>
- <20120601161205.GA1918@redhat.com> <20120601171606.GA3794@redhat.com>
- <alpine.LSU.2.00.1206011511560.12839@eggly.anvils> <CA+55aFy2-X92EqpiuyvkBp_2-UaYDUpaC2c3XT3gXMN1O+T7sw@mail.gmail.com>
- <alpine.LSU.2.00.1206012108430.11308@eggly.anvils> <20120603181548.GA306@redhat.com>
- <CA+55aFwZ5PsBLqM7K8vDQdbS3sf+vi3yeoWx6XKV=nF8k2r7DQ@mail.gmail.com>
- <20120603183139.GA1061@redhat.com> <20120603205332.GA5412@redhat.com> <alpine.LSU.2.00.1206031459450.15427@eggly.anvils>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 3 Jun 2012 16:13:13 -0700
-X-Google-Sender-Auth: dVP7z6mlpZKrjxfKJ2IKV_DjlVw
-Message-ID: <CA+55aFz--XDSOConDoM2SO0Jpd78Dg4GsGP+Z0F+__JWz+6JoQ@mail.gmail.com>
-Subject: Re: WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0x13a/0x170()
-To: Hugh Dickins <hughd@google.com>
-Cc: Dave Jones <davej@redhat.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Generic rbtree: compare() vs less()
+X-Enigmail-Version: 1.3.5
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 3, 2012 at 3:17 PM, Hugh Dickins <hughd@google.com> wrote:
->
-> But another strike against that commit: I tried fixing it up to use
-> start_page instead of page at the end, with the worrying but safer
-> locking I suggested at first, with a count of how many times it went
-> there, and how many times it succeeded.
+Peter,
 
-You can't use start_page anyway, it might not be a valid page. There's
-a reson it does that "pfn_valid_within()", methinks.
+I wanted to get with you on something you mentioned in IRC, as well as
+one of your emails.  The (primary) reason my code uses a compare()
+function instead of less() is that it has to work with trees that allow
+unique keys.  In the fair scheduler, it doesn't matter because:
+a.) duplicate keys are allowed
+b.) you never need to do lookups.
 
-Anyway, my current plan is to apply your "mm: fix warning in
-__set_page_dirty_nobuffers" patch - even if it's just a harmless
-WARN_ON_ONCE(), and revert 5ceb9ce6fe94. Sounds like Dave hit normally
-hit his problem much before two hours, and it must be even longer now.
+If you had to do lookups, you would have to call less() twice:
 
-Ack on that plan?
+if (less(p->key, key)) {
+    p = p->right;
+} else if (less(key, p->key)) {
+    p = p->right;
+} else {
+    return p;
+}
 
-        Linus
+Using compare() means that you only call this function once and allows
+for the possibility that some trees might have a more complication
+compare function.  Plus, on gcc 4.5 and earlier, it's not inlining the
+compare function call. :(
+
+The reason I'm returning long from compare() instead of returning int,
+is to hopefully simplify the generated code for compare functions that
+need to subtract two 64-bit values and still not incur additional
+overhead.  If I used int, then the compare function for a 64-bit value
+would have to look like this:
+
+int compare(u64 *a, u64 *b) {
+    return *a > *b ? 1 : (*a < *b ? -1 : 0);
+}
+// or
+int compare(u64 *a, u64 *b) {
+    s64 diff = *a - *b;
+    return diff > 0 ? 1: (diff < 0 ? -1 : 0);
+}
+
+And that's a whole lot more instructions, unless the compiler can inline
+the function, compared the two values, use the CPU's negative & zero
+flags and just completely compiled out int return value which, sadly,
+just doesn't seem to happen very often. :(  (especially on 4.5 and
+earlier where it fails to inline the compare function call).
+
+Incidentally, this is what I've done on my fair.c patch:
+
++static inline long compare_vruntime(u64 *a, u64 *b)
++{
++#if __BITS_PER_LONG >= 64
++       return (long)((s64)*a - (s64)*b);
++#else
++/* This is hacky, but is done to reduce instructions -- we wont use
+this for
++ * rbtree lookups, only inserts, and since our relationship is defined as
++ * non-unique, we only need to return positive if a > b and any other value
++ * means less than.
++ */
++       return (long)(*a > *b);
++#endif
++}
+
+This should keep the instruction count pretty much what it was prior to
+my patch on 32-bit systems as well as 64.
+
+Anyway, please let me know if you have any other ideas on this!  I'm
+going to write up a Q&A or something that explains the reasons for some
+of these seemingly odd decisions. (maybe I'll even find some better
+alternatives after getting feedback)
+
+Daniel
