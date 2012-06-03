@@ -1,200 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755744Ab2FCHAc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 03:00:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:45614 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab2FCHAa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 03:00:30 -0400
+	id S1754570Ab2FCH15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 03:27:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751239Ab2FCH14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 03:27:56 -0400
+Date: Sun, 3 Jun 2012 10:27:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: x86@kernel.org, kvm@vger.kernel.org
+Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        gleb@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCHv6 0/8] kvm: eoi optimization support
+Message-ID: <cover.1338474301.git.mst@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20120601155447.GG3671@sgi.com>
-References: <20120601155447.GG3671@sgi.com>
-Date: Sun, 3 Jun 2012 00:00:29 -0700
-X-Google-Sender-Auth: 6i-DzIGAPpp_bbqbwPOiLuA75-0
-Message-ID: <CAE9FiQWJR6x4_Xhc2k5TFkCj2u5cpbcWf-jFWOB5pEuBQcoJrQ@mail.gmail.com>
-Subject: Re: Commit 722bc6b167 breaks booting on an 8TB system.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: WANG Cong <xiyou.wangcong@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: multipart/mixed; boundary=047d7b2ee03f16288904c18bf9ce
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b2ee03f16288904c18bf9ce
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+I'm looking at reducing the interrupt overhead for virtualized guests:
+some workloads spend a large part of their time processing interrupts.
 
-On Fri, Jun 1, 2012 at 8:54 AM, Robin Holt <holt@sgi.com> wrote:
-> I just tried to boot an 8TB system. =A0It fails very early in boot with:
->
-> Kernel panic - not syncing: Cannot find space for the kernel page tables
->
->
-> A git bisect lead me to commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8.
->
-> A git revert of that commit based on Linus' current as of a few hours ago
-> (commit fb21aff) does boot past that point on the 8TB configuration.
+On kvm, an EOI write from the guest causes an expensive exit to host; we
+avoid this using shared memory.
 
-have some local patches. please check if they are helping...
+The patches work fine on my boxes. See individual patches
+for perf tests. You need to patch qemu to whitelist the kvm feature.
+qemu patch was sent separately.
 
-Thanks
+The patches are against Linus's master and apply to kvm.git
+cleanly.  The last patch in the series, supplying the host
+part, also depends on the ISR optimization patch that I
+have for convenience included in the series (patch 2),
+I also included a documentation patch (patch 1) - it is
+here since it clarifies patch 2.  This revision does not yet address
+Thomas's idea of reworking the APIC page handling.  Changes to this
+optimization would require reworking this last patch in the series.
 
-Yinghai
+The rest of the patchset has not changed since v2.
 
---047d7b2ee03f16288904c18bf9ce
-Content-Type: application/octet-stream; 
-	name="only_need_recalculate_for_low.patch"
-Content-Disposition: attachment; 
-	filename="only_need_recalculate_for_low.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h2zrekqk0
+Thanks,
+MST
 
-LS0tCiBhcmNoL3g4Ni9tbS9pbml0LmMgfCAgICAzICsrLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5z
-ZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9p
-bml0LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvbW0vaW5pdC5jCisr
-KyBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdC5jCkBAIC02Miw3ICs2Miw4IEBAIHN0YXRpYyB2
-b2lkIF9faW5pdCBmaW5kX2Vhcmx5X3RhYmxlX3NwYWMKIAkJZXh0cmEgKz0gUE1EX1NJWkU7CiAj
-ZW5kaWYKIAkJLyogVGhlIGZpcnN0IDIvNE0gZG9lc24ndCB1c2UgbGFyZ2UgcGFnZXMuICovCi0J
-CWV4dHJhICs9IG1yLT5lbmQgLSBtci0+c3RhcnQ7CisJCWlmIChtci0+c3RhcnQgPCBQTURfU0la
-RSkKKwkJCWV4dHJhICs9IG1yLT5lbmQgLSBtci0+c3RhcnQ7CiAKIAkJcHRlcyA9IChleHRyYSAr
-IFBBR0VfU0laRSAtIDEpID4+IFBBR0VfU0hJRlQ7CiAJfSBlbHNlCg==
---047d7b2ee03f16288904c18bf9ce
-Content-Type: application/octet-stream; name="get_page_size_mask.patch"
-Content-Disposition: attachment; filename="get_page_size_mask.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h2zrexkm1
+Changes from v5:
+	Clear PV EOI when we cancel interrupts.
+		Pointed out by Gleb.
+	Always set ISR cache when we inject an interrupt.
+		Suggested by Ronen Hod.
 
-U3ViamVjdDogW1BBVENIIDEvM10geDg2LCBtbTogIEludHJvZHVjZSBnbG9iYWwgcGFnZV9zaXpl
-X21hc2sKCkFkZCBwcm9iZV9wYWdlX3NpemVfbWFzaygpIHRvIGRldGVjdCBpZiBuZWVkIHRvIHVz
-ZSAxRyBvciAyTS4KYW5kIHN0b3JlIHRoZW0gaW4gcGFnZV9zaXplX21hc2suCgpPbmx5IHByb2Jl
-IHRoZW0gYXQgZmlyc3QgaW5pdF9tZW1vcnlfbWFwcGluZyBjYWxsaW5nLgpzZWNvbmQgYW5kIGxh
-dGVyIGluaXRfbWVtb3J5X21hcHBpbmcoKSBjYWxsaW5nIGRvZXMgbm90IG5lZWQgcHJvYmUgYWdh
-aW4uCmFsc28gd2UgZG9uJ3QgbmVlZCB0byBwYXNzIHVzZV9nYnBhZ2VzIGFyb3VuZC4KClN1Z2dl
-c3RlZC1ieTogSW5nbyBNb2xuYXIgPG1pbmdvQGVsdGUuaHU+ClNpZ25lLW9mZi1ieTogWWluZ2hh
-aSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgoKLS0tCiBhcmNoL3g4Ni9pbmNsdWRlL2FzbS9wZ3Rh
-YmxlLmggfCAgICAxIAogYXJjaC94ODYvbW0vaW5pdC5jICAgICAgICAgICAgIHwgICA3MCArKysr
-KysrKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLQogMiBmaWxlcyBjaGFuZ2VkLCAz
-NyBpbnNlcnRpb25zKCspLCAzNCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94
-ODYvaW5jbHVkZS9hc20vcGd0YWJsZS5oCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Fy
-Y2gveDg2L2luY2x1ZGUvYXNtL3BndGFibGUuaAorKysgbGludXgtMi42L2FyY2gveDg2L2luY2x1
-ZGUvYXNtL3BndGFibGUuaApAQCAtNTk3LDYgKzU5Nyw3IEBAIHN0YXRpYyBpbmxpbmUgaW50IHBn
-ZF9ub25lKHBnZF90IHBnZCkKICNpZm5kZWYgX19BU1NFTUJMWV9fCiAKIGV4dGVybiBpbnQgZGly
-ZWN0X2dicGFnZXM7CitleHRlcm4gaW50IHBhZ2Vfc2l6ZV9tYXNrOwogCiAvKiBsb2NhbCBwdGUg
-dXBkYXRlcyBuZWVkIG5vdCB1c2UgeGNoZyBmb3IgbG9ja2luZyAqLwogc3RhdGljIGlubGluZSBw
-dGVfdCBuYXRpdmVfbG9jYWxfcHRlcF9nZXRfYW5kX2NsZWFyKHB0ZV90ICpwdGVwKQpJbmRleDog
-bGludXgtMi42L2FyY2gveDg2L21tL2luaXQuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3Jp
-Zy9hcmNoL3g4Ni9tbS9pbml0LmMKKysrIGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0LmMKQEAg
-LTM1LDggKzM1LDEwIEBAIHN0cnVjdCBtYXBfcmFuZ2UgewogCXVuc2lnbmVkIHBhZ2Vfc2l6ZV9t
-YXNrOwogfTsKIAotc3RhdGljIHZvaWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3BhY2Uoc3Ry
-dWN0IG1hcF9yYW5nZSAqbXIsIHVuc2lnbmVkIGxvbmcgZW5kLAotCQkJCQkgIGludCB1c2VfcHNl
-LCBpbnQgdXNlX2dicGFnZXMpCitpbnQgcGFnZV9zaXplX21hc2sgPSAtMTsKKworc3RhdGljIHZv
-aWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVfc3BhY2Uoc3RydWN0IG1hcF9yYW5nZSAqbXIsCisJ
-CQkJCSAgdW5zaWduZWQgbG9uZyBlbmQpCiB7CiAJdW5zaWduZWQgbG9uZyBwdWRzLCBwbWRzLCBw
-dGVzLCB0YWJsZXMsIHN0YXJ0ID0gMCwgZ29vZF9lbmQgPSBlbmQ7CiAJcGh5c19hZGRyX3QgYmFz
-ZTsKQEAgLTQ0LDcgKzQ2LDcgQEAgc3RhdGljIHZvaWQgX19pbml0IGZpbmRfZWFybHlfdGFibGVf
-c3BhYwogCXB1ZHMgPSAoZW5kICsgUFVEX1NJWkUgLSAxKSA+PiBQVURfU0hJRlQ7CiAJdGFibGVz
-ID0gcm91bmR1cChwdWRzICogc2l6ZW9mKHB1ZF90KSwgUEFHRV9TSVpFKTsKIAotCWlmICh1c2Vf
-Z2JwYWdlcykgeworCWlmIChwYWdlX3NpemVfbWFzayAmICgxIDw8IFBHX0xFVkVMXzFHKSkgewog
-CQl1bnNpZ25lZCBsb25nIGV4dHJhOwogCiAJCWV4dHJhID0gZW5kIC0gKChlbmQ+PlBVRF9TSElG
-VCkgPDwgUFVEX1NISUZUKTsKQEAgLTU0LDcgKzU2LDcgQEAgc3RhdGljIHZvaWQgX19pbml0IGZp
-bmRfZWFybHlfdGFibGVfc3BhYwogCiAJdGFibGVzICs9IHJvdW5kdXAocG1kcyAqIHNpemVvZihw
-bWRfdCksIFBBR0VfU0laRSk7CiAKLQlpZiAodXNlX3BzZSkgeworCWlmIChwYWdlX3NpemVfbWFz
-ayAmICgxIDw8IFBHX0xFVkVMXzJNKSkgewogCQl1bnNpZ25lZCBsb25nIGV4dHJhOwogCiAJCWV4
-dHJhID0gZW5kIC0gKChlbmQ+PlBNRF9TSElGVCkgPDwgUE1EX1NISUZUKTsKQEAgLTkwLDYgKzky
-LDM0IEBAIHN0YXRpYyB2b2lkIF9faW5pdCBmaW5kX2Vhcmx5X3RhYmxlX3NwYWMKIAkJKHBndF9i
-dWZfdG9wIDw8IFBBR0VfU0hJRlQpIC0gMSk7CiB9CiAKK3N0YXRpYyB2b2lkIHByb2JlX3BhZ2Vf
-c2l6ZV9tYXNrKHZvaWQpCit7CisJaWYgKHBhZ2Vfc2l6ZV9tYXNrICE9IC0xKQorCQlyZXR1cm47
-CisKKwlwYWdlX3NpemVfbWFzayA9IDA7CisjaWYgIWRlZmluZWQoQ09ORklHX0RFQlVHX1BBR0VB
-TExPQykgJiYgIWRlZmluZWQoQ09ORklHX0tNRU1DSEVDSykKKwkvKgorCSAqIEZvciBDT05GSUdf
-REVCVUdfUEFHRUFMTE9DLCBpZGVudGl0eSBtYXBwaW5nIHdpbGwgdXNlIHNtYWxsIHBhZ2VzLgor
-CSAqIFRoaXMgd2lsbCBzaW1wbGlmeSBjcGEoKSwgd2hpY2ggb3RoZXJ3aXNlIG5lZWRzIHRvIHN1
-cHBvcnQgc3BsaXR0aW5nCisJICogbGFyZ2UgcGFnZXMgaW50byBzbWFsbCBpbiBpbnRlcnJ1cHQg
-Y29udGV4dCwgZXRjLgorCSAqLworCWlmIChkaXJlY3RfZ2JwYWdlcykKKwkJcGFnZV9zaXplX21h
-c2sgfD0gMSA8PCBQR19MRVZFTF8xRzsKKwlpZiAoY3B1X2hhc19wc2UpCisJCXBhZ2Vfc2l6ZV9t
-YXNrIHw9IDEgPDwgUEdfTEVWRUxfMk07CisjZW5kaWYKKworCS8qIEVuYWJsZSBQU0UgaWYgYXZh
-aWxhYmxlICovCisJaWYgKGNwdV9oYXNfcHNlKQorCQlzZXRfaW5fY3I0KFg4Nl9DUjRfUFNFKTsK
-KworCS8qIEVuYWJsZSBQR0UgaWYgYXZhaWxhYmxlICovCisJaWYgKGNwdV9oYXNfcGdlKSB7CisJ
-CXNldF9pbl9jcjQoWDg2X0NSNF9QR0UpOworCQlfX3N1cHBvcnRlZF9wdGVfbWFzayB8PSBfUEFH
-RV9HTE9CQUw7CisJfQorfQogdm9pZCBfX2luaXQgbmF0aXZlX3BhZ2V0YWJsZV9yZXNlcnZlKHU2
-NCBzdGFydCwgdTY0IGVuZCkKIHsKIAltZW1ibG9ja19yZXNlcnZlKHN0YXJ0LCBlbmQgLSBzdGFy
-dCk7CkBAIC0xMjUsNDQgKzE1NSwxNiBAQCBzdGF0aWMgaW50IF9fbWVtaW5pdCBzYXZlX21yKHN0
-cnVjdCBtYXBfCiB1bnNpZ25lZCBsb25nIF9faW5pdF9yZWZvayBpbml0X21lbW9yeV9tYXBwaW5n
-KHVuc2lnbmVkIGxvbmcgc3RhcnQsCiAJCQkJCSAgICAgICB1bnNpZ25lZCBsb25nIGVuZCkKIHsK
-LQl1bnNpZ25lZCBsb25nIHBhZ2Vfc2l6ZV9tYXNrID0gMDsKIAl1bnNpZ25lZCBsb25nIHN0YXJ0
-X3BmbiwgZW5kX3BmbjsKIAl1bnNpZ25lZCBsb25nIHJldCA9IDA7CiAJdW5zaWduZWQgbG9uZyBw
-b3M7Ci0KIAlzdHJ1Y3QgbWFwX3JhbmdlIG1yW05SX1JBTkdFX01SXTsKIAlpbnQgbnJfcmFuZ2Us
-IGk7Ci0JaW50IHVzZV9wc2UsIHVzZV9nYnBhZ2VzOwogCiAJcHJpbnRrKEtFUk5fSU5GTyAiaW5p
-dF9tZW1vcnlfbWFwcGluZzogW21lbSAlIzAxMGx4LSUjMDEwbHhdXG4iLAogCSAgICAgICBzdGFy
-dCwgZW5kIC0gMSk7CiAKLSNpZiBkZWZpbmVkKENPTkZJR19ERUJVR19QQUdFQUxMT0MpIHx8IGRl
-ZmluZWQoQ09ORklHX0tNRU1DSEVDSykKLQkvKgotCSAqIEZvciBDT05GSUdfREVCVUdfUEFHRUFM
-TE9DLCBpZGVudGl0eSBtYXBwaW5nIHdpbGwgdXNlIHNtYWxsIHBhZ2VzLgotCSAqIFRoaXMgd2ls
-bCBzaW1wbGlmeSBjcGEoKSwgd2hpY2ggb3RoZXJ3aXNlIG5lZWRzIHRvIHN1cHBvcnQgc3BsaXR0
-aW5nCi0JICogbGFyZ2UgcGFnZXMgaW50byBzbWFsbCBpbiBpbnRlcnJ1cHQgY29udGV4dCwgZXRj
-LgotCSAqLwotCXVzZV9wc2UgPSB1c2VfZ2JwYWdlcyA9IDA7Ci0jZWxzZQotCXVzZV9wc2UgPSBj
-cHVfaGFzX3BzZTsKLQl1c2VfZ2JwYWdlcyA9IGRpcmVjdF9nYnBhZ2VzOwotI2VuZGlmCi0KLQkv
-KiBFbmFibGUgUFNFIGlmIGF2YWlsYWJsZSAqLwotCWlmIChjcHVfaGFzX3BzZSkKLQkJc2V0X2lu
-X2NyNChYODZfQ1I0X1BTRSk7Ci0KLQkvKiBFbmFibGUgUEdFIGlmIGF2YWlsYWJsZSAqLwotCWlm
-IChjcHVfaGFzX3BnZSkgewotCQlzZXRfaW5fY3I0KFg4Nl9DUjRfUEdFKTsKLQkJX19zdXBwb3J0
-ZWRfcHRlX21hc2sgfD0gX1BBR0VfR0xPQkFMOwotCX0KLQotCWlmICh1c2VfZ2JwYWdlcykKLQkJ
-cGFnZV9zaXplX21hc2sgfD0gMSA8PCBQR19MRVZFTF8xRzsKLQlpZiAodXNlX3BzZSkKLQkJcGFn
-ZV9zaXplX21hc2sgfD0gMSA8PCBQR19MRVZFTF8yTTsKKwlwcm9iZV9wYWdlX3NpemVfbWFzaygp
-OwogCiAJbWVtc2V0KG1yLCAwLCBzaXplb2YobXIpKTsKIAlucl9yYW5nZSA9IDA7CkBAIC0yNjcs
-NyArMjY5LDcgQEAgdW5zaWduZWQgbG9uZyBfX2luaXRfcmVmb2sgaW5pdF9tZW1vcnlfbQogCSAq
-IG5vZGVzIGFyZSBkaXNjb3ZlcmVkLgogCSAqLwogCWlmICghYWZ0ZXJfYm9vdG1lbSkKLQkJZmlu
-ZF9lYXJseV90YWJsZV9zcGFjZSgmbXJbMF0sIGVuZCwgdXNlX3BzZSwgdXNlX2dicGFnZXMpOwor
-CQlmaW5kX2Vhcmx5X3RhYmxlX3NwYWNlKCZtclswXSwgZW5kKTsKIAogCWZvciAoaSA9IDA7IGkg
-PCBucl9yYW5nZTsgaSsrKQogCQlyZXQgPSBrZXJuZWxfcGh5c2ljYWxfbWFwcGluZ19pbml0KG1y
-W2ldLnN0YXJ0LCBtcltpXS5lbmQsCg==
---047d7b2ee03f16288904c18bf9ce
-Content-Type: application/octet-stream; name="mr_cal.patch"
-Content-Disposition: attachment; filename="mr_cal.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h2zrfa1y2
+Changes from v4:
+	Turn off PV EOI on each exit. Turn it back on when safe.
+		Suggested by Avi.
+	Address bug with nested interrupts pointed out by Marcelo.
 
-LS0tCiBhcmNoL3g4Ni9tbS9pbml0LmMgfCAgIDQ2ICsrKysrKysrKysrKysrKysrKysrKysrKysr
-KystLS0tLS0tLS0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAyOCBpbnNlcnRpb25zKCspLCAx
-OCBkZWxldGlvbnMoLSkKCkluZGV4OiBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdC5jCj09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L21tL2luaXQuYworKysgbGludXgtMi42
-L2FyY2gveDg2L21tL2luaXQuYwpAQCAtMTQ3LDI3ICsxNDcsMTMgQEAgc3RhdGljIGludCBfX21l
-bWluaXQgc2F2ZV9tcihzdHJ1Y3QgbWFwXwogCXJldHVybiBucl9yYW5nZTsKIH0KIAotLyoKLSAq
-IFNldHVwIHRoZSBkaXJlY3QgbWFwcGluZyBvZiB0aGUgcGh5c2ljYWwgbWVtb3J5IGF0IFBBR0Vf
-T0ZGU0VULgotICogVGhpcyBydW5zIGJlZm9yZSBib290bWVtIGlzIGluaXRpYWxpemVkIGFuZCBn
-ZXRzIHBhZ2VzIGRpcmVjdGx5IGZyb20KLSAqIHRoZSBwaHlzaWNhbCBtZW1vcnkuIFRvIGFjY2Vz
-cyB0aGVtIHRoZXkgYXJlIHRlbXBvcmFyaWx5IG1hcHBlZC4KLSAqLwotdW5zaWduZWQgbG9uZyBf
-X2luaXRfcmVmb2sgaW5pdF9tZW1vcnlfbWFwcGluZyh1bnNpZ25lZCBsb25nIHN0YXJ0LAotCQkJ
-CQkgICAgICAgdW5zaWduZWQgbG9uZyBlbmQpCitzdGF0aWMgaW50IF9fbWVtaW5pdCBzcGxpdF9t
-ZW1fcmFuZ2Uoc3RydWN0IG1hcF9yYW5nZSAqbXIsIGludCBucl9yYW5nZSwKKwkJCQkgICAgIHVu
-c2lnbmVkIGxvbmcgc3RhcnQsCisJCQkJICAgICB1bnNpZ25lZCBsb25nIGVuZCkKIHsKIAl1bnNp
-Z25lZCBsb25nIHN0YXJ0X3BmbiwgZW5kX3BmbjsKLQl1bnNpZ25lZCBsb25nIHJldCA9IDA7CiAJ
-dW5zaWduZWQgbG9uZyBwb3M7Ci0Jc3RydWN0IG1hcF9yYW5nZSBtcltOUl9SQU5HRV9NUl07Ci0J
-aW50IG5yX3JhbmdlLCBpOwotCi0JcHJpbnRrKEtFUk5fSU5GTyAiaW5pdF9tZW1vcnlfbWFwcGlu
-ZzogW21lbSAlIzAxMGx4LSUjMDEwbHhdXG4iLAotCSAgICAgICBzdGFydCwgZW5kIC0gMSk7Ci0K
-LQlwcm9iZV9wYWdlX3NpemVfbWFzaygpOwotCi0JbWVtc2V0KG1yLCAwLCBzaXplb2YobXIpKTsK
-LQlucl9yYW5nZSA9IDA7CisJaW50IGk7CiAKIAkvKiBoZWFkIGlmIG5vdCBiaWcgcGFnZSBhbGln
-bm1lbnQgPyAqLwogCXN0YXJ0X3BmbiA9IHN0YXJ0ID4+IFBBR0VfU0hJRlQ7CkBAIC0yNjEsNiAr
-MjQ3LDMwIEBAIHVuc2lnbmVkIGxvbmcgX19pbml0X3JlZm9rIGluaXRfbWVtb3J5X20KIAkJCSht
-cltpXS5wYWdlX3NpemVfbWFzayAmICgxPDxQR19MRVZFTF8xRykpPyIxRyI6KAogCQkJIChtcltp
-XS5wYWdlX3NpemVfbWFzayAmICgxPDxQR19MRVZFTF8yTSkpPyIyTSI6IjRrIikpOwogCisJcmV0
-dXJuIG5yX3JhbmdlOworfQorCisvKgorICogU2V0dXAgdGhlIGRpcmVjdCBtYXBwaW5nIG9mIHRo
-ZSBwaHlzaWNhbCBtZW1vcnkgYXQgUEFHRV9PRkZTRVQuCisgKiBUaGlzIHJ1bnMgYmVmb3JlIGJv
-b3RtZW0gaXMgaW5pdGlhbGl6ZWQgYW5kIGdldHMgcGFnZXMgZGlyZWN0bHkgZnJvbQorICogdGhl
-IHBoeXNpY2FsIG1lbW9yeS4gVG8gYWNjZXNzIHRoZW0gdGhleSBhcmUgdGVtcG9yYXJpbHkgbWFw
-cGVkLgorICovCit1bnNpZ25lZCBsb25nIF9faW5pdF9yZWZvayBpbml0X21lbW9yeV9tYXBwaW5n
-KHVuc2lnbmVkIGxvbmcgc3RhcnQsCisJCQkJCSAgICAgICB1bnNpZ25lZCBsb25nIGVuZCkKK3sK
-KwlzdHJ1Y3QgbWFwX3JhbmdlIG1yW05SX1JBTkdFX01SXTsKKwl1bnNpZ25lZCBsb25nIHJldCA9
-IDA7CisJaW50IG5yX3JhbmdlLCBpOworCisJcHJpbnRrKEtFUk5fSU5GTyAiaW5pdF9tZW1vcnlf
-bWFwcGluZzogW21lbSAlIzAxMGx4LSUjMDEwbHhdXG4iLAorCSAgICAgICBzdGFydCwgZW5kIC0g
-MSk7CisKKwlwcm9iZV9wYWdlX3NpemVfbWFzaygpOworCisJbWVtc2V0KG1yLCAwLCBzaXplb2Yo
-bXIpKTsKKwlucl9yYW5nZSA9IDA7CisJbnJfcmFuZ2UgPSBzcGxpdF9tZW1fcmFuZ2UobXIsIG5y
-X3JhbmdlLCBzdGFydCwgZW5kKTsKKwogCS8qCiAJICogRmluZCBzcGFjZSBmb3IgdGhlIGtlcm5l
-bCBkaXJlY3QgbWFwcGluZyB0YWJsZXMuCiAJICoK
---047d7b2ee03f16288904c18bf9ce--
+Changes from v3:
+	Address review comments by Marcelo:
+		Multiple cosmetic changes eoi -> pv_eoi
+		Added multiple comments
+Changes from v2:
+	Kill guest with GP on an illegal MSR value
+	Add documentation
+
+Changes from v1:
+	Add host side patch to series
+	Remove kvm-specific __test_and_clear_bit, document
+	that x86 one does what we want already
+	Clear msr on cpu unplug
+
+Michael S. Tsirkin (8):
+  kvm: document lapic regs field
+  kvm: optimize ISR lookups
+  kvm_para: guest side for eoi avoidance
+  x86/bitops: note on __test_and_clear_bit atomicity
+  kvm: eoi msi documentation
+  kvm: only sync when attention bits set
+  kvm: rearrange injection cancelling code
+  kvm: host side for eoi optimization
+
+ Documentation/virtual/kvm/msr.txt |   32 ++++++
+ arch/x86/include/asm/bitops.h     |   13 ++-
+ arch/x86/include/asm/kvm_host.h   |   12 +++
+ arch/x86/include/asm/kvm_para.h   |    7 ++
+ arch/x86/kernel/kvm.c             |   51 ++++++++++-
+ arch/x86/kvm/cpuid.c              |    1 +
+ arch/x86/kvm/lapic.c              |  188 +++++++++++++++++++++++++++++++++++-
+ arch/x86/kvm/lapic.h              |   11 ++
+ arch/x86/kvm/trace.h              |   34 +++++++
+ arch/x86/kvm/x86.c                |   20 +++-
+ 10 files changed, 353 insertions(+), 16 deletions(-)
+
+-- 
+MST
