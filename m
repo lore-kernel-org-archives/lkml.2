@@ -1,34 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab2FCNrV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 09:47:21 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46001 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab2FCNrU (ORCPT
+	id S1753606Ab2FCNtF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 09:49:05 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:37761 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab2FCNtD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 09:47:20 -0400
+	Sun, 3 Jun 2012 09:49:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FCB663C.2050808@loria.fr>
-References: <4FCB663C.2050808@loria.fr>
-Date: Sun, 3 Jun 2012 09:47:19 -0400
-Message-ID: <CA+5PVA4j0ga98UF40DkX4EE0Tux+-j0Bo+=-CNwWcxkzyH+SkQ@mail.gmail.com>
-Subject: Re: linux 3.4 got lost
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jens.Gustedt@loria.fr
-Cc: linux-kernel@vger.kernel.org
+X-Originating-IP: [85.250.83.253]
+In-Reply-To: <CAK=WgbaXw04tEJSQUkCWByWw=yUwqkRxVW9dbFUK8w_64OZkkA@mail.gmail.com>
+References: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com> <CAK=WgbaXw04tEJSQUkCWByWw=yUwqkRxVW9dbFUK8w_64OZkkA@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 3 Jun 2012 16:48:42 +0300
+Message-ID: <CAK=WgbaR=MYieVJLvOGR_5-2sATb5TGysam=javPhn+qTG9gcA@mail.gmail.com>
+Subject: Re: [RFC 0/6] remoteproc: custom fw handling
+To: sjur.brandeland@stericsson.com
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 3, 2012 at 9:27 AM, Jens Gustedt <Jens.Gustedt@loria.fr> wrote:
-> Hello,
-> it seems that with the upload of 3.5-rc1 linux 3.4 disappeared from the
-> kernel.org website.
+Hi Sjur,
 
-http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.xz
+On Sat, May 26, 2012 at 6:03 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Tue, May 22, 2012 at 4:26 PM,  <sjur.brandeland@stericsson.com> wrote:
+>> I have cooked a couple of patches for remoteproc. I was planning to
+>> test and polish them some more, but figured that I might as well send
+>> them and find out what you think.
+>
+> Thanks! I'll give it a good look this week.
 
-Seems there to me?
+I think that generally this looks very good, thanks for sending this!
 
-josh
+There's some small stuff we need to hash out but it looks like we can
+nail this pretty quickly.
+
+Thanks,
+Ohad.
