@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2FCODU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 10:03:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55218 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab2FCODT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 10:03:19 -0400
+	id S1753095Ab2FCOUe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 10:20:34 -0400
+Received: from solo.fdn.fr ([80.67.169.19]:54056 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083Ab2FCOUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 10:20:33 -0400
+Date: Sun, 3 Jun 2012 16:20:21 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Chris Yungmann <yungmann.chris@gmail.com>
+Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@braille.uwo.ca,
+        gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
+        linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
+Subject: Re: [PATCH] staging: speakup: fixed checkpatch and sparse warnings
+ in selection.c
+Message-ID: <20120603142021.GI4546@type.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Chris Yungmann <yungmann.chris@gmail.com>, w.d.hubbs@gmail.com,
+	chris@the-brannons.com, kirk@braille.uwo.ca,
+	gregkh@linuxfoundation.org, speakup@braille.uwo.ca,
+	linux-kernel@vger.kernel.org, kernelnewbies@kernelnewbies.org
+References: <1338658358-20402-1-git-send-email-yungmann.chris@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CABexPfHnpZDHhcvum6bUy=vcqNvfxEY9bWAzAPm-j_p0tm2BFw@mail.gmail.com>
-References: <CABexPfEq7cz-nng-gz9TQB=9pyeBFALsRDAPSDbM4HFe=cjxJA@mail.gmail.com>
-	<CABexPfGqW-4hTrsPE=dNUsQ84kikr2sAZ=HKckk6sbFbz6quaQ@mail.gmail.com>
-	<CAO6yerKkadsg5-9hPzZHVhk_Msoym=JpVTHqDpbfPNJsiP8nzg@mail.gmail.com>
-	<CABexPfHnpZDHhcvum6bUy=vcqNvfxEY9bWAzAPm-j_p0tm2BFw@mail.gmail.com>
-Date: Sun, 3 Jun 2012 22:03:19 +0800
-Message-ID: <CABexPfHB2w8269xo63s1j_CGp5M9f5S3XB8HDQSB6BRq4bPGGQ@mail.gmail.com>
-Subject: Re: [build error] building failed with sample kernel code enabled
-From: Zhihua Che <zhihua.che@gmail.com>
-To: bing deng <deng8bing@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1338658358-20402-1-git-send-email-yungmann.chris@gmail.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/3 Zhihua Che <zhihua.che@gmail.com>:
-> 2012/6/3 bing deng <deng8bing@gmail.com>:
->>
->>
->> On Sun, Jun 3, 2012 at 7:23 PM, Zhihua Che <zhihua.che@gmail.com> wrote:
->>>
->>> 2012/6/3 Zhihua Che <zhihua.che@gmail.com>:
->>> > Hi,
->>> >
->>> >    I was building kernel 3.4 with kernel sample code enabled on my
->>> > ubuntu-11.10.
->>> >    The steps I followed are:
->>> >    make O=xxx menuconfig
->>> >    make O=xxx -j16
->>> >    But it failed and complaint the following:
->>> >
->>> > linux/samples/seccomp/bpf-fancy.c:13:27: fatal error: linux/seccomp.h:
->>> > No such file or
->>> >
->>> > directory/home/harvey/open-projects/linux/samples/seccomp/bpf-direct.c:21:27:
->>> > fatal error: linux/seccomp.h: No such file or directory
->>> > compilation terminated.
->>>
->>>
->>> I forgot it.  I've checked the existence of seccomp.h. it's in the source
->>> tree.
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->> Are the header linux/seccomp.h or directory included in the make file?
->>
->> Best Regards,
->> Bing
->
->
-> I find the LINUXINCLUDE variable in MAKEFILE, it contains the
-> directory  path 'include' where the linux/seccomp.h is.
-> So I guess it's included in the searching path.
+Chris Yungmann, le Sat 02 Jun 2012 12:32:38 -0500, a �crit :
+> @@ -132,7 +132,7 @@ int speakup_paste_selection(struct tty_struct *tty)
+>  	while (sel_buffer && sel_buffer_lth > pasted) {
+>  		set_current_state(TASK_INTERRUPTIBLE);
+>  		if (test_bit(TTY_THROTTLED, &tty->flags)) {
+> -			if (in_atomic())
+> +			if (in_interrupt())
+>  				/* if we are in an interrupt handler, abort */
+>  				break;
+>  			schedule();
 
+I'd rather keep in_atomic(), which is clearly known to be broken (see
+TODO above).
 
-Wish this may help.
-I build the kernel in another directory other than source directory. I
-find in building directory there is no seccomp.h.
-Precisely, there is only version.h in builing-dir/include/linux.
-I don't think this is right.
+Samuel
