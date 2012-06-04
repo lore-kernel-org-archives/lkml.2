@@ -1,179 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab2FDFUl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:20:41 -0400
-Received: from szxga03-in.huawei.com ([58.251.152.66]:35274 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049Ab2FDFUi (ORCPT
+	id S1756363Ab2FDF06 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:26:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1348 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab2FDF04 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:20:38 -0400
-Date: Mon, 04 Jun 2012 13:17:00 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-Subject: [RFC PATCH v1 4/6] PCI, ACPI: update PCI slot information when PCI
- hotplug event happens
-In-reply-to: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
-X-Originating-IP: [10.107.208.49]
-To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Alexander Chiang <achiang@hp.com>
-Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Don Dutile <ddutile@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <1338787022-400-4-git-send-email-jiang.liu@huawei.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.8.msysgit.0
-Content-type: text/plain
-Content-transfer-encoding: 7BIT
-X-CFilter-Loop: Reflected
-References: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
+	Mon, 4 Jun 2012 01:26:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208,223";a="151163722"
+Date: Mon, 4 Jun 2012 13:23:21 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <rui.zhang@intel.com>, <fazerxlo@o2.pl>, <x86@kernel.org>
+Subject: [PATCH 1/3] ACPI: Make acpi_skip_timer_override cover all 
+ source_irq==0 cases
+Message-ID: <20120604132321.2eb64443@feng-i7>
+In-Reply-To: <4FC8F36C.8080409@kernel.org>
+References: <1338259418-6167-1-git-send-email-feng.tang@intel.com>
+	<4FC8F36C.8080409@kernel.org>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu <liuj97@gmail.com>
+>From b10f528c1973e89bf6a4da8f91d62228c259acba Mon Sep 17 00:00:00 2001
+From: Feng Tang <feng.tang@intel.com>
+Date: Mon, 4 Jun 2012 10:40:26 +0800
+Subject: [PATCH 1/3] ACPI: Make acpi_skip_timer_override cover all
+ source_irq==0 cases
 
-Currently the pci_slot driver doesn't update PCI slot information
-when PCI device hotplug event happens, which may cause memory leak
-and returning stale information to user.
+Currently when acpi_skip_timer_override is set, it only cover the
+(source_irq == 0 && global_irq == 2) cases. While there is also
+platform which need use this option and its global_irq is not 2.
+This patch will extend acpi_skip_timer_override to cover all
+timer overriding cases as long as the source irq is 0.
 
-So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-update PCI slot information when PCI hotplug event happens.
+This is the first part of a fix to kernel bug bugzilla 40002:
+	"IRQ 0 assigned to VGA"
+https://bugzilla.kernel.org/show_bug.cgi?id=40002
 
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
+Reported-and-tested-by: Szymon Kowalczyk <fazerxlo@o2.pl>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- drivers/acpi/pci_slot.c |   84 +++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 78 insertions(+), 6 deletions(-)
+ arch/x86/kernel/acpi/boot.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
-index e50e31a..22cc00e 100644
---- a/drivers/acpi/pci_slot.c
-+++ b/drivers/acpi/pci_slot.c
-@@ -32,6 +32,7 @@
- #include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <linux/pci-acpi.h>
- #include <linux/dmi.h>
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 8afb693..e7c698e 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -422,12 +422,14 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
+ 		return 0;
+ 	}
  
- static bool debug;
-@@ -123,12 +124,7 @@ struct callback_args {
+-	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
++	if (intsrc->source_irq == 0) {
+ 		if (acpi_skip_timer_override) {
+-			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
++			printk(PREFIX "BIOS IRQ0 override ignored.\n");
+ 			return 0;
+ 		}
+-		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
++
++		if ((intsrc->global_irq == 2) && acpi_fix_pin2_polarity
++			&& (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
+ 			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
+ 			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
+ 		}
+@@ -1334,7 +1336,7 @@ static int __init dmi_disable_acpi(const struct dmi_system_id *d)
+ }
+ 
  /*
-  * register_slot
-  *
-- * Called once for each SxFy object in the namespace. Don't worry about
-- * calling pci_create_slot multiple times for the same pci_bus:device,
-- * since each subsequent call simply bumps the refcount on the pci_slot.
-- *
-- * The number of calls to pci_destroy_slot from unregister_slot is
-- * symmetrical.
-+ * Called once for each SxFy object in the namespace.
+- * Force ignoring BIOS IRQ0 pin2 override
++ * Force ignoring BIOS IRQ0 override
   */
- static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -145,6 +141,18 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	if (device < 0)
- 		return AE_OK;
- 
-+	/* Avoid duplicated records for the same slot */
-+	mutex_lock(&slot_list_lock);
-+	list_for_each_entry(slot, &slot_list, list) {
-+		pci_slot = slot->pci_slot;
-+		if (pci_slot && pci_slot->bus == pci_bus &&
-+		    pci_slot->number == device) {
-+			mutex_unlock(&slot_list_lock);
-+			return AE_OK;
-+		}
-+	}
-+	mutex_unlock(&slot_list_lock);
-+
- 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot) {
- 		err("%s: cannot allocate memory\n", __func__);
-@@ -354,17 +362,81 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
- 	{}
- };
- 
-+static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-+{
-+	acpi_handle handle;
-+	struct callback_args context;
-+
-+	if (!dev->subordinate)
-+		return;
-+
-+	handle = DEVICE_ACPI_HANDLE(&dev->dev);
-+	context.root_handle = acpi_find_root_bridge_handle(dev);
-+	if (handle && context.root_handle) {
-+		context.pci_bus = dev->subordinate;
-+		context.user_function = register_slot;
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-+				    register_slot, NULL, &context, NULL);
-+	}
-+}
-+
-+static void acpi_pci_slot_notify_del(struct pci_dev *dev)
-+{
-+	struct acpi_pci_slot *slot, *tmp;
-+	struct pci_bus *bus = dev->subordinate;
-+
-+	if (!bus)
-+		return;
-+
-+	mutex_lock(&slot_list_lock);
-+	list_for_each_entry_safe(slot, tmp, &slot_list, list) {
-+		if (slot->pci_slot && slot->pci_slot->bus == bus) {
-+			list_del(&slot->list);
-+			pci_destroy_slot(slot->pci_slot);
-+			put_device(&bus->dev);
-+			kfree(slot);
-+		}
-+	}
-+	mutex_unlock(&slot_list_lock);
-+}
-+
-+static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-+				   unsigned long event, void *data)
-+{
-+	struct device *dev = data;
-+
-+	switch (event) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		acpi_pci_slot_notify_add(to_pci_dev(dev));
-+		break;
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		acpi_pci_slot_notify_del(to_pci_dev(dev));
-+		break;
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block acpi_pci_slot_notifier = {
-+	.notifier_call = &acpi_pci_slot_notify_fn,
-+};
-+
- static int __init
- acpi_pci_slot_init(void)
+ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
  {
- 	dmi_check_system(acpi_pci_slot_dmi_table);
- 	acpi_pci_register_driver(&acpi_pci_slot_driver);
-+	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
-+
- 	return 0;
- }
- 
- static void __exit
- acpi_pci_slot_exit(void)
- {
-+	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
- 	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
- }
- 
+@@ -1344,7 +1346,7 @@ static int __init dmi_ignore_irq0_timer_override(const struct dmi_system_id *d)
+ 	 */
+ 	if (!acpi_skip_timer_override) {
+ 		WARN(1, KERN_ERR "ati_ixp4x0 quirk not complete.\n");
+-		pr_notice("%s detected: Ignoring BIOS IRQ0 pin2 override\n",
++		pr_notice("%s detected: Ignoring BIOS IRQ0 override\n",
+ 			d->ident);
+ 		acpi_skip_timer_override = 1;
+ 	}
+@@ -1438,7 +1440,7 @@ static struct dmi_system_id __initdata acpi_dmi_table_late[] = {
+ 	 * is enabled.  This input is incorrectly designated the
+ 	 * ISA IRQ 0 via an interrupt source override even though
+ 	 * it is wired to the output of the master 8259A and INTIN0
+-	 * is not connected at all.  Force ignoring BIOS IRQ0 pin2
++	 * is not connected at all.  Force ignoring BIOS IRQ0
+ 	 * override in that cases.
+ 	 */
+ 	{
 -- 
-1.7.1
-
-
+1.7.9
