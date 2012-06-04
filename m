@@ -1,113 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab2FDRBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:01:32 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45037 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138Ab2FDRB2 (ORCPT
+	id S1753895Ab2FDRCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:02:38 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:43292 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab2FDRCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:01:28 -0400
-Message-ID: <4FCCE9AF.6080309@linux.vnet.ibm.com>
-Date: Mon, 04 Jun 2012 22:30:31 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+	Mon, 4 Jun 2012 13:02:37 -0400
+Message-ID: <4FCCE866.7050203@panasas.com>
+Date: Mon, 4 Jun 2012 19:55:02 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: peterz@infradead.org, paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        mingo@kernel.org, yong.zhang0@gmail.com, akpm@linux-foundation.org,
-        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 07/27] x86, smpboot: Use generic SMP booting infrastructure
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091148.31979.53116.stgit@srivatsabhat.in.ibm.com> <alpine.LFD.2.02.1206041613380.3086@ionos>
-In-Reply-To: <alpine.LFD.2.02.1206041613380.3086@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Richard Weinberger <richard@nod.at>
+CC: Jiri Slaby <jslaby@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
+        <user-mode-linux-devel@lists.sourceforge.net>,
+        <gregkh@linuxfoundation.org>, Jeff Dike <jdike@addtoit.com>,
+        <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        <alan@linux.intel.com>
+Subject: Re: [uml-devel] [PATCH 13/24] TTY: um/line, use tty from tty_port
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at> <4FCCD224.1020307@suse.cz> <4FCCD44A.3090500@nod.at> <4FCCD70D.5010908@suse.cz> <4FCCD774.5040003@nod.at> <4FCCE1D4.7080805@panasas.com> <4FCCE255.4080705@nod.at>
+In-Reply-To: <4FCCE255.4080705@nod.at>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060417-5564-0000-0000-00000311262D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 07:59 PM, Thomas Gleixner wrote:
+On 06/04/2012 07:29 PM, Richard Weinberger wrote:
 
-> On Fri, 1 Jun 2012, Srivatsa S. Bhat wrote:
->> From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+> Am 04.06.2012 18:27, schrieb Boaz Harrosh:
+>> On 06/04/2012 06:42 PM, Richard Weinberger wrote:
 >>
->> Convert x86 to use the generic framework to boot secondary CPUs.
+>>> Am 04.06.2012 17:41, schrieb Jiri Slaby:
+>>>> Hmm, I remember. I suggest you to split the patch into several pieces.
+>>>> For example moving the code from ->open into ->install can be done
+>>>> separately. Otherwise it's hard to tell what's wrong with the patch as
+>>>> a whole.
+>>>>
+>>>> Also, it would be good to see the patch rebased on the top of my
+>>>> patch, because tty_port_set/get pieces would be gone from your patch too.
+>>>
+>>> Okay, I'll redo it!
+>>> I've a much cleaner version in my local queue.
+>>>
 >>
->> Notes:
->> 1. x86 manipulates the cpu_online_mask under vector_lock. So, while
->> converting over to the generic smp booting code, override arch_vector_lock()
->> and arch_vector_unlock() to lock_vector_lock() and unlock_vector_lock()
->> respectively.
 >>
->> 2. In smp_callin(), we allow the master to continue as soon as the physical
->> booting of the secondary processor is done. That is, we don't wait till the
->> CPU_STARTING notifications are sent.
+>> Can you send it my way, I'm still running broken, 3.4 Based ?
 >>
->> Implications:
->>  - This does not alter the order in which the notifications are sent (i.e.,
->>    still CPU_STARTING is followed by CPU_ONLINE) because the master waits till
->>    the new cpu is set in the cpu_online_mask before returning to generic code.
->>
->>  - This approach is better because of 2 reasons:
->>    a. It makes more sense: the master has a timeout for waiting on the
->>       cpu_callin_map - which means we should report back as soon as possible.
->>       The whole idea of having a timeout is to estimate the maximum time that
->>       could be taken for physical booting. This approach separates out the
->>       physical booting vs running CPU hotplug callbacks and reports back to
->>       the master as soon as physical booting is done.
 > 
-> How do you deal with the problem that the master does not come back in
-> time?
-
-
-Sorry, I didn't quite get your point... This doesn't completely solve the timeout
-problem, but makes the situation a little bit better, that's all.
-
-> There is a timeout on the booting side as well.
-
-
-Yes, the wait for the cpu_callout_mask.
-
-> I haven't found
-> out why this timeout exists at all, but we need to take care of that
-> and there is a patch on LKML which removes the panic as this can
-> happen on virt.
-
-
-Oh! Ok..
-
-> I really wonder whether the hardware for which this
-> timeout stuff was introduced still exists or whether we can simply get
-> rid of it completely.
->
-
-
-Sounds good :-)
-
- 
-> Also the whole callin/callout mask business wants to be in the generic
-> code. It can be replaced completely by cpu_state, at least that's what
-> I was aiming for. There is no need for several variables tracking the
-> same thing in different ways.
+> Can you please first give Jiri's patches a try?
+> 
+> [PATCH 12/24] TTY: um/line, add tty_port
+> [PATCH 13/24] TTY: um/line, use tty from tty_port
 > 
 
 
-Exactly! I was thinking of consolidating the callin/callout/commenced/whatever
-mask in various architectures in a future patchset. I haven't touched them
-in this one. And using cpu_state for that is a very good point. I'll keep
-that in mind, thanks!
+No still crashing the same, way. BTW I do not have a systemd Distro. It's
+plain old FC12. Though in the lab I have the same crash with FC15.
 
- 
+The crash is immediately after I login at the initial prompt. (every time)
 
-Regards,
-Srivatsa S. Bhat
+Here is the crash print, what ever that is worth in UML.
+(Can we make the crash dump stack trace a bit less terrible?)
 
+----
+Modules linked in: nfsd nfs lockd auth_rpcgss nfs_acl sunrpc osd libosd ipv6 binfmt_misc [last unloaded: scsi_wait_scan]
+Pid: 1243, comm: login Not tainted 3.4.0-pnfs+
+RIP: 0033:[<00000000601bbf7f>]
+RSP: 0000000077ed7ad0  EFLAGS: 00010202
+RAX: 00000000601bbf6b RBX: 00000000000001d8 RCX: 000000000000000b
+RDX: 00000000600206dc RSI: 00000000601c4c14 RDI: 00000000000001d8
+RBP: 0000000077ed7b20 R08: 0000000000000000 R09: 0000000077ed7c30
+R10: 0000000000000000 R11: 0000003ea3882a83 R12: 0000000000000000
+R13: 0000000000000fff R14: 0000000000000002 R15: 0000000077ed7c30
+Call Trace: 
+603556c8:  [<6001c6ac>] segv+0x2f6/0x31c
+603556e0:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+60355708:  [<6007d89f>] rcu_sched_qs+0xb8/0xbc
+60355740:  [<600191c8>] do_IRQ+0x0/0x54
+60355748:  [<6002bdf3>] os_waiting_for_events+0x0/0xb9
+603557a8:  [<60018d98>] to_irq_stack+0x0/0xa1
+603557b8:  [<6001c75e>] segv_handler+0x8c/0x96
+603557d8:  [<600194c9>] sigio_handler+0x88/0x93
+60355808:  [<6002d733>] sig_handler_common+0x9f/0xb3
+60355860:  [<601bbf6b>] do_raw_spin_lock+0x0/0x121
+60355870:  [<600206dc>] line_chars_in_buffer+0x0/0x82
+60355878:  [<601c4c14>] tty_chars_in_buffer+0x0/0x17
+60355890:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+603558b0:  [<601b331d>] radix_tree_lookup_slot+0x4d/0x5c
+60355920:  [<6001669c>] _einittext+0x18d1/0x2b55
+60355930:  [<600161a8>] _einittext+0x13dd/0x2b55
+60355a08:  [<6001669c>] _einittext+0x18d1/0x2b55
+60355aa0:  [<60017e28>] _init+0x508/0x870
+60355aa8:  [<60018d98>] to_irq_stack+0x0/0xa1
+60355b28:  [<60017e28>] _init+0x508/0x870
+60355b38:  [<6002d906>] sig_handler+0x4c/0x5e
+60355b58:  [<6002db99>] hard_handler+0x89/0xcb
+60355c30:  [<601c4c14>] tty_chars_in_buffer+0x0/0x17
+60355c48:  [<600206dc>] line_chars_in_buffer+0x0/0x82
+60355c50:  [<601bbf6b>] do_raw_spin_lock+0x0/0x121
+60355c68:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+
+Kernel panic - not syncing: Kernel mode fault at addr 0x1dc, ip 0x601bbf7f
+Call Trace: 
+603555b8:  [<60280af4>] panic+0x170/0x2e0
+603555f0:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+603555f8:  [<60280984>] panic+0x0/0x2e0
+60355610:  [<6006d5fd>] __module_text_address+0x14/0x5a
+60355628:  [<6006d653>] is_module_text_address+0x10/0x18
+60355638:  [<60050ced>] __kernel_text_address+0x97/0x9d
+60355640:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+60355658:  [<6001afc0>] show_trace+0xd4/0xdf
+603556c8:  [<6001c6d2>] segv_handler+0x0/0x96
+603556e0:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+60355708:  [<6007d89f>] rcu_sched_qs+0xb8/0xbc
+60355740:  [<600191c8>] do_IRQ+0x0/0x54
+60355748:  [<6002bdf3>] os_waiting_for_events+0x0/0xb9
+603557a8:  [<60018d98>] to_irq_stack+0x0/0xa1
+603557b8:  [<6001c75e>] segv_handler+0x8c/0x96
+603557d8:  [<600194c9>] sigio_handler+0x88/0x93
+60355808:  [<6002d733>] sig_handler_common+0x9f/0xb3
+60355860:  [<601bbf6b>] do_raw_spin_lock+0x0/0x121
+60355870:  [<600206dc>] line_chars_in_buffer+0x0/0x82
+60355878:  [<601c4c14>] tty_chars_in_buffer+0x0/0x17
+60355890:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+603558b0:  [<601b331d>] radix_tree_lookup_slot+0x4d/0x5c
+60355920:  [<6001669c>] _einittext+0x18d1/0x2b55
+60355930:  [<600161a8>] _einittext+0x13dd/0x2b55
+60355a08:  [<6001669c>] _einittext+0x18d1/0x2b55
+60355aa0:  [<60017e28>] _init+0x508/0x870
+60355aa8:  [<60018d98>] to_irq_stack+0x0/0xa1
+60355b28:  [<60017e28>] _init+0x508/0x870
+60355b38:  [<6002d906>] sig_handler+0x4c/0x5e
+60355b58:  [<6002db99>] hard_handler+0x89/0xcb
+60355c30:  [<601c4c14>] tty_chars_in_buffer+0x0/0x17
+60355c48:  [<600206dc>] line_chars_in_buffer+0x0/0x82
+60355c50:  [<601bbf6b>] do_raw_spin_lock+0x0/0x121
+60355c68:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+
+
+Modules linked in: nfsd nfs lockd auth_rpcgss nfs_acl sunrpc osd libosd ipv6 binfmt_misc [last unloaded: scsi_wait_scan]
+Pid: 1243, comm: login Not tainted 3.4.0-pnfs+
+RIP: 0033:[<00000030914d8318>]
+RSP: 0000007fbfe72740  EFLAGS: 00000202
+RAX: ffffffffffffffda RBX: 0000000000000010 RCX: ffffffffffffffff
+RDX: 0000007fbfe72710 RSI: 0000000000005404 RDI: 0000000000000000
+RBP: 0000000000000000 R08: 0000007fbfe74c40 R09: 0000000000000000
+R10: 0000007fbfe72710 R11: 0000000000000202 R12: 0000007fbfe74c40
+R13: 0000007fbfe72ac7 R14: 0000007fbfe72a50 R15: 0000000000000000
+Call Trace: 
+60355538:  [<6001c8c5>] panic_exit+0x3e/0x5c
+60355540:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+60355568:  [<60058a76>] notifier_call_chain+0x32/0x5e
+603555a8:  [<60058ad2>] atomic_notifier_call_chain+0x1a/0x1c
+603555b8:  [<60280b24>] panic+0x1a0/0x2e0
+603555f0:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+603555f8:  [<60280984>] panic+0x0/0x2e0
+60355610:  [<6006d5fd>] __module_text_address+0x14/0x5a
+60355628:  [<6006d653>] is_module_text_address+0x10/0x18
+60355638:  [<60050ced>] __kernel_text_address+0x97/0x9d
+60355640:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+60355658:  [<6001afc0>] show_trace+0xd4/0xdf
+603556c8:  [<6001c6d2>] segv_handler+0x0/0x96
+603556e0:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+60355708:  [<6007d89f>] rcu_sched_qs+0xb8/0xbc
+60355740:  [<600191c8>] do_IRQ+0x0/0x54
+60355748:  [<6002bdf3>] os_waiting_for_events+0x0/0xb9
+603557a8:  [<60018d98>] to_irq_stack+0x0/0xa1
+603557b8:  [<6001c75e>] segv_handler+0x8c/0x96
+603557d8:  [<600194c9>] sigio_handler+0x88/0x93
+60355808:  [<6002d733>] sig_handler_common+0x9f/0xb3
+60355860:  [<601bbf6b>] do_raw_spin_lock+0x0/0x121
+60355870:  [<600206dc>] line_chars_in_buffer+0x0/0x82
+60355878:  [<601c4c14>] tty_chars_in_buffer+0x0/0x17
+60355890:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+603558b0:  [<601b331d>] radix_tree_lookup_slot+0x4d/0x5c
+60355920:  [<6001669c>] _einittext+0x18d1/0x2b55
+60355930:  [<600161a8>] _einittext+0x13dd/0x2b55
+60355a08:  [<6001669c>] _einittext+0x18d1/0x2b55
+60355aa0:  [<60017e28>] _init+0x508/0x870
+60355aa8:  [<60018d98>] to_irq_stack+0x0/0xa1
+60355b28:  [<60017e28>] _init+0x508/0x870
+60355b38:  [<6002d906>] sig_handler+0x4c/0x5e
+60355b58:  [<6002db99>] hard_handler+0x89/0xcb
+60355c30:  [<601c4c14>] tty_chars_in_buffer+0x0/0x17
+60355c48:  [<600206dc>] line_chars_in_buffer+0x0/0x82
+60355c50:  [<601bbf6b>] do_raw_spin_lock+0x0/0x121
+60355c68:  [<601bbf7f>] do_raw_spin_lock+0x14/0x121
+----
+
+BTW I suspect that UML is unable to catch an invalid pointer execution
+and just dumps core and exits. Let me explain.
+
+A:
+	foo == ((foo_t *)NULL)->member_not_first
+ A NULL access backtrace will be generated before UML exit
+
+but ..
+B: a function call
+	((foo_op *)NULL)->function_member_not_first(...);
+
+ Will crap out without any kind of stack trace.
+
+Is that possible?
+
+Thanks
+Boaz
