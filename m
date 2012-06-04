@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761170Ab2FDXLG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 19:11:06 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58931 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757546Ab2FDXLD convert rfc822-to-8bit (ORCPT
+	id S1761193Ab2FDXLS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 19:11:18 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:17548 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761175Ab2FDXLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 19:11:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="152851635"
-From: "Zou, Yi" <yi.zou@intel.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Witold Baryluk <baryluk@smp.if.uj.edu.pl>,
-        "Love, Robert W" <robert.w.love@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "devel@open-fcoe.org" <devel@open-fcoe.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Subject: RE: Different WARNING:
-	drivers/scsi/fcoe/libfcoe.o(.init.text+0x1a): Section mismatch in	reference
- from the function init_module() to the function
-	.exit.text:fcoe_transport_exit()
-Thread-Topic: Different WARNING:
-	drivers/scsi/fcoe/libfcoe.o(.init.text+0x1a): Section mismatch in	reference
- from the function init_module() to the function
-	.exit.text:fcoe_transport_exit()
-Thread-Index: AQHNQobUcuyBnDpikUG0LW5Jh2b9EJbqoknQgACSMYD//5P4cA==
-Date: Mon, 4 Jun 2012 23:11:01 +0000
-Message-ID: <138EA028228D124A900F5E6746F3C216286EAA65@ORSMSX102.amr.corp.intel.com>
-References: <20120602161502.GW16584@smp.if.uj.edu.pl>
- <20120604143643.GJ32472@redhat.com>
- <20120604163556.GA12303@merkur.ravnborg.org>
- <20120604190857.GB16584@smp.if.uj.edu.pl>
- <20120604191757.GA21821@merkur.ravnborg.org>
- <138EA028228D124A900F5E6746F3C216286EA866@ORSMSX102.amr.corp.intel.com>
- <20120604223341.GA28585@merkur.ravnborg.org>
-In-Reply-To: <20120604223341.GA28585@merkur.ravnborg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 4 Jun 2012 19:11:13 -0400
+X-AuditID: cbfee61b-b7f0b6d000000f04-13-4fcd408e20bf
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Linus Walleij'" <linus.walleij@linaro.org>
+Cc: "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Linus Walleij'" <linus.walleij@stericsson.com>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>
+References: <000101cd41f8$251e4cd0$6f5ae670$%han@samsung.com>
+ <CACRpkdaM2VbieCY5deDDHCXEH+gHXJndpYVbXENSbWU4t-_YsA@mail.gmail.com>
+In-reply-to: <CACRpkdaM2VbieCY5deDDHCXEH+gHXJndpYVbXENSbWU4t-_YsA@mail.gmail.com>
+Subject: Re: [PATCH] gpio: samsung: fix build error for EXYNOS5250
+Date: Tue, 05 Jun 2012 08:11:10 +0900
+Message-id: <000101cd42a7$542bf130$fc83d390$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac1CdO38u1UBEN7xSoabQjPxfnqxYQAMTfuA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jQd0+h7P+Bv0HlS0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGruUnWAvOcVTM+faGsYGxh72LkZNDQsBE4sjPT4wQtpjEhXvr
+	2boYuTiEBKYzSjyedo4FwpnNJHG6/QYbSBWbgJrEly+HwbpFBPQk3nxtYQcpYha4zyhxf2sX
+	E0RHC6NEy7V+VpAqToFgiW+P14HtEBZwkphw7hkziM0ioCrx8NkvFhCbV8BWYt6eH1C2oMSP
+	yffAbGYBLYn1O48zQdjyEpvXvAXq5QC6VV3i0V9diCOMJGZ8us0OUSIise/FO8YJjEKzkEya
+	hWTSLCSTZiFpWcDIsopRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOJifSe9gXNVgcYhRgINR
+	iYf3wIkz/kKsiWXFlbmHGCU4mJVEeJ9MBArxpiRWVqUW5ccXleakFh9ilOZgURLnfbJkh7+Q
+	QHpiSWp2ampBahFMlomDU6qBUe367r2+FycKZfT6tFQlWX9d8+LmiYu1b8weuVzaGTlRUWZ7
+	lUqP0OS/W4+s2l0foT7lv4Z2SPHk57N93Yx6n86z7q68GZKuJbHbg/W0is/Dd+8Pz/eoYOw/
+	M2vp0eVv9ibo2UlcfDFpm4fHNKadwoeuBOjacbqYffl1eKHPlvwLz9McguS5fyixFGckGmox
+	FxUnAgDBfEJbYgIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > However, fcoe_transport_exit() is called only in module *exit* path by
-> the
-> > module exit func libfcoe_exit(), not in the init_module error path. Let
-> me
-> > take a objdump of the libfcoe.o to see where your above section
-> mismatch warning
-> > is from. Is this on 32bit only?
-> 
-> static int __init libfcoe_init(void)
-> {
->         int rc = 0;
-> 
->         rc = fcoe_transport_init();
->         if (rc)
->                 return rc;
-> 
->         rc = fcoe_sysfs_setup();
->         if (rc)
->                 fcoe_transport_exit();    <=============
-> 
->         return rc;
-> }
-> 
-> It is called from __init context here.
-> 
-> 
-> 
-> 
-> static void __exit libfcoe_exit(void)
-> {
->         fcoe_sysfs_teardown();
->         fcoe_transport_exit();     <==============
-> }
-> 
-> And from __exit context here.
-> This is -rc1.
-> 
-> 	Sam
-Ah...haven't pulled the rc1 yet, which was why I did not see the this.
-Anyway, yeah you are right, dropping __exit should fix the problem.
 
-thanks,
-yi
+On Tue, Jun 5, 2012 at 2:10 AM, Linus Walleij < linus.walleij@linaro.org> wrote:
+
+> 
+> On Mon, Jun 4, 2012 at 4:17 AM, Jingoo Han <jg1.han@samsung.com> wrote:
+> 
+> > Fixed a typo from "exonys5_gpios_1" to "exonys5_gpios_1"
+> > in order to fix build error as below:
+> >
+> > drivers/gpio/gpio-samsung.c: In function 'exynos5_gpiolib_init':
+> > drivers/gpio/gpio-samsung.c:2836: error: 'exonys5_gpios_1' undeclared (first use in this function)
+> > drivers/gpio/gpio-samsung.c:2836: error: (Each undeclared identifier is reported only once
+> > drivers/gpio/gpio-samsung.c:2836: error: for each function it appears in.)
+> >
+> > Cc: Thomas Abraham <thomas.abraham@linaro.org>
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> 
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Hi Linus Walleij,
+
+This patch is superfluous, for another patch is merged to linux 'master' branch by Linus Torvalds as below.
+commit 5041caa "gpio/samsung: fix the typo 'exynos5_xxx' instead of 'exonys5_xxx'" by Kukjin Kim.
+Thank you.
+
+Best regards,
+Jingoo Han
+
+> 
+> Yours,
+> Linus Walleij
 
