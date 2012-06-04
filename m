@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab2FDDZP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 23:25:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40832 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755691Ab2FDDZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 23:25:13 -0400
-Date: Mon, 4 Jun 2012 13:25:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ola Lilja <ola.o.lilja@stericsson.com>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20120604132500.56c579be8e468d9c20fc0b28@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1755802Ab2FDD25 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 23:28:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30652 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755691Ab2FDD2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 23:28:54 -0400
+Message-ID: <1338780504.25653.18.camel@cr0>
+Subject: Re: [RFC Patch] fs: implement per-file drop caches
+From: Cong Wang <amwang@redhat.com>
+To: John Stoffel <john@stoffel.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Date: Mon, 04 Jun 2012 11:28:24 +0800
+In-Reply-To: <20424.48827.778644.310736@quad.stoffel.home>
+References: <1338385120-14519-1-git-send-email-amwang@redhat.com>
+	 <4FC6393B.7090105@draigBrady.com> <1338445233.19369.21.camel@cr0>
+	 <4FC70FFE.50809@gmail.com> <1338466281.19369.44.camel@cr0>
+	 <4FC7C1CD.7020701@gmail.com> <1338550337.17012.27.camel@cr0>
+	 <20424.48827.778644.310736@quad.stoffel.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Jun_2012_13_25_00_+1000_84Ajv7CkpOx85IaV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Jun_2012_13_25_00_+1000_84Ajv7CkpOx85IaV
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2012-06-01 at 09:08 -0400, John Stoffel wrote:
+> >>>>> "Cong" == Cong Wang <amwang@redhat.com> writes:
+> 
+> Cong> Yeah, at least John Stoffel expressed his interests on this, as
+> Cong> a sysadmin. So I believe there are some people need it.
+> 
+> I expressed an interest if there was a way to usefully *find* the
+> processes that are hogging cache.  Without a reporting mechanism of
+> cache usage on per-file or per-process manner, then I don't see a
+> great use for this.  It's just simpler to drop all the caches when you
+> hit a wall.  
+> 
+> Cong> Now the problem is that I don't find a proper existing utility
+> Cong> to patch, maybe Pádraig has any hints on this? Could this
+> Cong> feature be merged into some core utility? Or I have to write a
+> Cong> new utility for this?
+> 
+> I'd write a new tutorial utility, maybe you could call it 'cache_top'
+> and have it both show the biggest users of cache, as well as exposing
+> your new ability to drop the cache on a per-fd basis.
+> 
+> It's really not much use unless we can measure it.
 
-Hi all,
+Fair enough.
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+We could do that with Keiichi's page cache tracepoint patches:
+https://lkml.org/lkml/2011/7/18/326
 
-ERROR: "clk_enable" [sound/soc/snd-soc-core.ko] undefined!
-ERROR: "clk_disable" [sound/soc/snd-soc-core.ko] undefined!
-ERROR: "clk_get" [sound/soc/snd-soc-core.ko] undefined!
+with that patch, we can measure page caches with `perf`. I tried to
+carry Keiichi's patches, but those patch depend on other patches too,
+the main problem is still translating the inode number to file name for
+user-space users to read, which is not trivial at all.
 
-Caused by commit d7e7eb91551a ("ASoC: core: Add widget
-SND_SOC_DAPM_CLOCK_SUPPLY").  This build does not have CONFIG_COMMON_CLK
-set.  Probably missing select or dependency.
+Also, will vmtouch work for you too? You can get it at
+http://hoytech.com/vmtouch/
 
-I have used the sound-asoc tree from next-20120601 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I can patch it too if you want.
 
+Thanks!
 
---Signature=_Mon__4_Jun_2012_13_25_00_+1000_84Ajv7CkpOx85IaV
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPzCqMAAoJEECxmPOUX5FEZiQP/1YjeWDkHW+3GUpLJMv34moI
-NveySdio20lADIdxHfUhzFzvibnZ0NgML/+RCP2m9+x8XY/xVssS3BZjL8VAFzBh
-rKfGXBPI8NFxw1/+hBgjTKGsAZIzsYAKHNeoJwjjxcpxAbmRLNUB+awcGtthkw5M
-oW75hUq7eY64JcMLHDm0BV01rHdU6jjMPb7eMsey+CDXEW+RO2t2NT7908NE0WYE
-Ng3Kk5jwSzQHFjCOsS83HSrrJQwsWaRbciMsPuDZJoMUkR8wp6u0+ebhcJzyltdX
-qH5wTTx3s9TTO4QyOZP97IWpXcdMDxtCWUTSOkb/hRC0hjZHOot7ebq6q2mxfH/R
-CwyY4XCxyTbpw5dYYO0LZ5x4gqDnycTxdRe/Wk02BRujZLx+Bu57qqg0aHafARnV
-7BCZm9wxg41WERCmNSjSTMRXCaso/a7DIz80+VgO6mAjS0lx+oIl1ynbmEv2Zawe
-L2qLQB9+OOOlDhfNknCMSc6EyyJZ1e+a05KfvAJKW5tZF0xYmfUcyIkO5s6lWaWr
-w2iy88aqu//C+hShu+qqNBLFN0ZTMz7vwXNFGutjgYZbe9rtZCH4qgWChthn77U5
-LxaGYSraARjAXbFXNLarOs0nx3mkSEM40Zc2qixpkYrZHo6RMq3K/tp3NpgV4qAU
-tr9HoMQuDPXETtcrHIK0
-=G11P
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Jun_2012_13_25_00_+1000_84Ajv7CkpOx85IaV--
