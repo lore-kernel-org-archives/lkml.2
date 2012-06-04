@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab2FDKMm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 06:12:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59339 "EHLO mx2.suse.de"
+	id S1756911Ab2FDKRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 06:17:00 -0400
+Received: from gate.crashing.org ([63.228.1.57]:32926 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505Ab2FDKMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 06:12:41 -0400
-Date: Mon, 4 Jun 2012 12:12:37 +0200
-From: Jan Kara <jack@suse.cz>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
-        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
-        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH v2 01/10] string: introduce memweight
-Message-ID: <20120604101237.GD7670@quack.suse.cz>
-References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751885Ab2FDKQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 06:16:59 -0400
+Message-ID: <1338804972.7150.77.camel@pasglop>
+Subject: Re: [PATCH] x86/platform: sta2x11: add platform code
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alessandro Rubini <rubini@gnudd.com>, linux-kernel@vger.kernel.org,
+        giancarlo.asnaghi@st.com, alan@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com, sameo@linux.intel.com, x86@kernel.org,
+        Len Brown <lenb@kernel.org>
+Date: Mon, 04 Jun 2012 20:16:12 +1000
+In-Reply-To: <4FC47D49.50204@zytor.com>
+References: <4FC477A1.4010709@zytor.com>  <4FC47003.1080906@zytor.com>
+	 <4FC40C74.8050003@zytor.com>  <20120527205020.GA3050@mail.gnudd.com>
+	 <20120529063738.GA22711@mail.gnudd.com>
+	 <20120529070557.GA23373@mail.gnudd.com>
+	 <20120529073417.GA25041@mail.gnudd.com> <4FC47D49.50204@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 02-06-12 22:40:07, Akinobu Mita wrote:
-> memweight() is the function that counts the total number of bits set
-> in memory area.  Unlike bitmap_weight(), memweight() takes pointer
-> and size in bytes to specify a memory area which does not need to be
-> aligned to long-word boundary.
+On Tue, 2012-05-29 at 00:39 -0700, H. Peter Anvin wrote:
+> > So, it seems I must go device-tree for the chipset-like mounting.
+> And
+> > what about plug in boards? I may arrange a firmware-loader mechanism
+> > as an alternative, so the vendor of each board can provide the the
+> > platform data for all the sub devices. Actually, if firmware loader
+> is
+> > acceptable, I'd try it first, to avoid changing the boot procedure;
+> > maybe I can save myself from the device tree.
+> > 
 > 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Anders Larsen <al@alarsen.net>
-> Cc: Alasdair Kergon <agk@redhat.com>
-> Cc: dm-devel@redhat.com
-> Cc: linux-fsdevel@vger.kernel.org
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: linux-media@vger.kernel.org
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: ocfs2-devel@oss.oracle.com
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: linux-ext4@vger.kernel.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: Matthew Wilcox <matthew@wil.cx>
-> ---
-> 
-> v2: simplify memweight(), adviced by Jan Kara
-> 
->  include/linux/string.h |    3 +++
->  lib/string.c           |   32 ++++++++++++++++++++++++++++++++
->  2 files changed, 35 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/string.h b/include/linux/string.h
-> index e033564..ffe0442 100644
-> --- a/include/linux/string.h
-> +++ b/include/linux/string.h
-> @@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
->  	return strncmp(str, prefix, strlen(prefix)) == 0;
->  }
->  #endif
-> +
-> +extern size_t memweight(const void *ptr, size_t bytes);
-> +
->  #endif /* _LINUX_STRING_H_ */
-> diff --git a/lib/string.c b/lib/string.c
-> index e5878de..bf4d5a8 100644
-> --- a/lib/string.c
-> +++ b/lib/string.c
-> @@ -26,6 +26,7 @@
->  #include <linux/export.h>
->  #include <linux/bug.h>
->  #include <linux/errno.h>
-> +#include <linux/bitmap.h>
->  
->  #ifndef __HAVE_ARCH_STRNICMP
->  /**
-> @@ -824,3 +825,34 @@ void *memchr_inv(const void *start, int c, size_t bytes)
->  	return check_bytes8(start, value, bytes % 8);
->  }
->  EXPORT_SYMBOL(memchr_inv);
-> +
-> +/**
-> + * memweight - count the total number of bits set in memory area
-> + * @ptr: pointer to the start of the area
-> + * @bytes: the size of the area
-> + */
-> +size_t memweight(const void *ptr, size_t bytes)
-> +{
-> +	size_t w = 0;
-> +	size_t longs;
-> +	const unsigned char *bitmap = ptr;
-> +
-> +	for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
-> +			bytes--, bitmap++)
-> +		w += hweight8(*bitmap);
-> +
-> +	longs = bytes / sizeof(long);
-> +	if (longs) {
-> +		BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
-> +		w += bitmap_weight((unsigned long *)bitmap,
-> +				longs * BITS_PER_LONG);
-> +		bytes -= longs * sizeof(long);
-> +		bitmap += longs * sizeof(long);
-> +	}
-> +
-> +	for (; bytes > 0; bytes--, bitmap++)
-> +		w += hweight8(*bitmap);
-  Looking at bitmap_weight() it seems this last loop is not needed. Just
-pass to bitmap_weight() bytes*BITS_PER_BYTE. Also generally this function
-doesn't seem necessary at all at least for ext2 & ext3 (sorry for not
-noticing this earlier...).
+> If you're going to use a binary blob for the loader, use either ACPI 5
+> SSDT or device tree format.  This is *not* something where
+> (re)invention is encouraged.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Right, a device-tree blob could easily be passed an x86 has the
+infrastructure to use it already afaik.
+
+It then becomes a matter of the bootloader to carry it over to the
+kernel a way or another. If the "vendor" boards don't do the right
+thing, you can always do like powerpc for those cases and "package" the
+device-tree blob in the zImage wrapper.
+
+That way, distribution install tools etc.... can stick the right
+device-tree before doing whatever "flashing" of the image is needed for
+booting etc... and the main kernel image remains agnostic.
+
+That or the ACPI way but I know nothing about it and thus naturally
+assume it's harder :-)
+
+Cheers,
+Ben.
+
