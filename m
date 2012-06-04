@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760803Ab2FDPdr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:33:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55000 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760783Ab2FDPdq convert rfc822-to-8bit (ORCPT
+	id S1760814Ab2FDPel (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:34:41 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:36418 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716Ab2FDPek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:33:46 -0400
-Message-ID: <1338824014.28282.86.camel@twins>
-Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
- as target of (pinned) task migration
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>,
-        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Date: Mon, 04 Jun 2012 17:33:34 +0200
-In-Reply-To: <20120604152522.GE26651@linux.vnet.ibm.com>
-References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
-	 <1338801907.7356.163.camel@marge.simpson.net>
-	 <1338810796.28282.32.camel@twins>
-	 <1338814063.7356.192.camel@marge.simpson.net>
-	 <20120604130740.GC25126@linux.vnet.ibm.com>
-	 <1338820234.7356.250.camel@marge.simpson.net>
-	 <20120604143802.GB26651@linux.vnet.ibm.com>
-	 <1338820895.7356.252.camel@marge.simpson.net>
-	 <20120604150040.GD25126@linux.vnet.ibm.com>
-	 <1338823271.28282.75.camel@twins>
-	 <20120604152522.GE26651@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 11:34:40 -0400
+Message-ID: <4FCCD58B.30000@kernel.org>
+Date: Mon, 04 Jun 2012 11:34:35 -0400
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-acpi <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] ACPI & Power Management Patches for Linux-3.5-rc1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 20:55 +0530, Srivatsa Vaddagiri wrote:
-> * Peter Zijlstra <peterz@infradead.org> [2012-06-04 17:21:11]:
-> 
-> > That is not to say you couldn't contrive a scenario where it would be
-> > needed.. 
-> 
-> Right ..what if B0. B1 are pinned? !! I think most of the current
-> weakness lies in handling tasks that have affinity set.
+Hi Linus,
 
-Yeah, affinity is a pain.. the whole group_imb crap is due to that as
-well.
+Please pull these ACPI & Power Management bug fixes.
 
-Now I'm not as opposed to this as Mike is, the load cpu_power thing can
-also happen due to excessive IRQ time, and hopefully we'll get to have
-an unpriv. SCHED_DEADLINE at some point as well.
+thanks!
+Len Brown, Intel Open Source Technology Center
 
-But we should try to keep the stuff reasonably sane and very much
-consider the worst case compute time of the load-balancer. All that redo
-logic can be triggered on purpose.
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
 
-Thing is, you can create an arbitrary hard problem by creating lots of
-tasks with tricky masks, we shouldn't bend over backwards trying to
-solve it just because.
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
 
-[ Also, I suspect I wrecked the ALL_PINNED muck, shouldn't we reset
-env.loop_break? ]
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
 
+for you to fetch changes up to d3514abcf5b896a3a66d8b7c960a0018a52ebc2c:
+
+  Merge branches 'bugfix-battery', 'bugfix-misc', 'bugfix-rafael', 'bugfix-turbostat', 'bugfix-video' and 'workaround-pss' into release (2012-06-04 00:48:41 -0400)
+
+----------------------------------------------------------------
+
+Alan Cox (3):
+      acpi_video: fix leaking PCI references
+      acpi_video: Intel video is not always i915
+      gma500: don't register the ACPI video bus
+
+Andy Whitcroft (1):
+      ACPI battery: only refresh the sysfs files when pertinent information changes
+
+Dan Carpenter (1):
+      ACPI video: use after input_unregister_device()
+
+Daniel Drake (2):
+      ACPI / PM: Generate wakeup events on fixed power button
+      rtc-cmos / PM: report wakeup event on ACPI RTC alarm
+
+Fabio Estevam (1):
+      drivers: acpi: Fix dependency for ACPI_HOTPLUG_CPU
+
+Len Brown (5):
+      tools/power turbostat: fix un-intended affinity of forked program
+      tools/power turbostat: fix IVB support
+      ACPI: fix acpi_bus.h build warnings when ACPI is not enabled
+      Merge branch 'upstream' into bugfix-video
+      Merge branches 'bugfix-battery', 'bugfix-misc', 'bugfix-rafael', 'bugfix-turbostat', 'bugfix-video' and 'workaround-pss' into release
+
+Marco Aurelio da Costa (1):
+      ACPI: Ignore invalid _PSS entries, but use valid ones
+
+Rafael J. Wysocki (3):
+      ACPI / PM: Fix error messages in drivers/acpi/bus.c
+      ACPI / PM: Make __acpi_bus_get_power() cover D3cold correctly
+      ACPI / PM: Make acpi_pm_device_sleep_state() follow the specification
+
+ drivers/acpi/Kconfig                  |  2 +-
+ drivers/acpi/battery.c                | 10 +++-
+ drivers/acpi/bus.c                    | 88 +++++++++++++++++++++++------------
+ drivers/acpi/power.c                  |  2 +-
+ drivers/acpi/processor_perflib.c      | 30 ++++++++++--
+ drivers/acpi/scan.c                   |  1 +
+ drivers/acpi/sleep.c                  | 49 +++++++++++++++++--
+ drivers/acpi/video.c                  | 33 ++++++++-----
+ drivers/gpu/drm/gma500/psb_drv.c      |  3 +-
+ drivers/rtc/rtc-cmos.c                |  9 ++--
+ include/acpi/acpi_bus.h               |  4 +-
+ tools/power/x86/turbostat/turbostat.c | 30 +++++++++++-
+ 12 files changed, 199 insertions(+), 62 deletions(-)
