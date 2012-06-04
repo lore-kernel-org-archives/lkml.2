@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab2FDG0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 02:26:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60913 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab2FDG0G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 02:26:06 -0400
-Date: Mon, 4 Jun 2012 07:26:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Question about do_mmap changes
-Message-ID: <20120604062604.GV30000@ZenIV.linux.org.uk>
-References: <4FCC47C9.8050904@lwfinger.net>
+	id S1754397Ab2FDG2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 02:28:20 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:25213
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752780Ab2FDG2S convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 02:28:18 -0400
+X-Forefront-Antispam-Report: CIP:195.2.36.114;KIP:(null);UIP:(null);IPV:NLI;H:gbise0weypgp02.eu.sony.com;RD:none;EFVD:NLI
+X-SpamScore: -19
+X-BigFish: VS-19(zzc89bhb3bR1be0I148cI1432N98dK62a3Izz1202hzz8275bhz2dh87h2a8h668h839he96hf0ahadk)
+X-FB-DOMAIN-IP-MATCH: fail
+X-PGP-Universal: processed;
+	by gbise0weypgp02.eu.sony.com on Mon, 04 Jun 2012 07:28:13 +0100
+Date: Mon, 4 Jun 2012 08:28:09 +0200
+From: Geert Uytterhoeven <Geert.Uytterhoeven@sonycom.com>
+To: Philipp Riemer <ruderphilipp@gmail.com>
+CC: Paul Mundt <lethal@linux-sh.org>,
+        =?ISO-8859-15?Q?Michael_B=FCsch?= <m@bues.ch>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Wang Chen <ellre923@gmail.com>,
+        Greg KH <greg@kroah.com>, Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] new mailmap file for the linux kernel git
+ repository
+In-Reply-To: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1206040822500.421@bushbaby.sonytel.be>
+References: <CAFU-uVs_Gwacxj74cyekY2gv+zAq+Spba7nfPLdTc_dR3y8CYw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCC47C9.8050904@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="ISO-8859-15"
+X-OriginalArrivalTime: 04 Jun 2012 06:28:09.0429 (UTC) FILETIME=[35979850:01CD421B]
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: eu.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 12:29:45AM -0500, Larry Finger wrote:
-> Al,
-> 
-> In commit e3fc629d7bb70848fbf479688a66d4e76dff46ac in 3.5-rc1, you
-> change do_mmap() to static, and use do_mmap_pgoff() instaed. The
-> VirtualBox kernel module calls do_mmap(), and no longer compiles. I
-> fixed the compile problem with the patch
-[snip]
-> I am not quite sure why do_munmap() is undefined as the symbol is
-> exported; however, should do_mmap_pgoff() be exported?
 
-a) you'd better make very certain that you are holding ->mmap_sem on
-current->mm; I couldn't verify that.
+    Hi Philipp,
 
-b) as for rtR0MemObjLinuxDoMmap(), I would suggest pulling down_write()/
-up_write() on ->mmap_sem into the function, collapsing them down into
-do_mmap() turning it into vm_mmap().  Oh, and probably breaking wrists
-to whoever had come up with that function name, but that's a matter of
-taste.  Some prefer kneecaps.
+On Wed, 16 May 2012, Philipp Riemer wrote:
+> +Geert Uytterhoeven <geert.uytterhoeven@eu.sony.com> <Geert.Uytterhoeven@eu.sony.com>
+> +Geert Uytterhoeven <geert.uytterhoeven@eu.sony.com> <Geert.Uytterhoeven@sonycom.com>
 
-c) WTF is MY_DO_MUNMAP() and are you guaranteed that you are doing that to
-current->mm and not to something else?  If not, you have a big problem;
-if yes, convert to vm_munmap().
+I just went through "git help shortlog" to find out the meaning of the fields
+and their order.
 
-Again, doing mmap/munmap to some random process' mm is a bloody bad idea;
-there's a shitload of races in that area.
+In my case, I want the reverse mapping: I want to map the FLOSS- and
+vger-incompatible <Geert.Uytterhoeven@eu.sony.com> to
+<Geert.Uytterhoeven@sonycom.com>.
+
+Thanks for updating!
+
+With kind regards,
+
+Geert Uytterhoeven
+Software Architect
+Technology and Software Centre Europe
+
+Sony Belgium, bijkantoor van Sony Europe Limited.
+Da Vincilaan 7-D1 · B-1935 Zaventem · Belgium
+
+Phone:  +32 (0)2 700 8453
+Fax:    +32 (0)2 700 8622
+E-mail: Geert.Uytterhoeven@sonycom.com
+
+Sony Europe Limited. A company registered in England and Wales.
+Registered office: The Heights, Brooklands, Weybridge, Surrey. KT13 0XW.
+                   United Kingdom
+
