@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760930Ab2FDVWu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 17:22:50 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:48554 "EHLO
+	id S1760953Ab2FDVW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 17:22:57 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:48664 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754236Ab2FDVWs (ORCPT
+	with ESMTP id S1754236Ab2FDVW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 17:22:48 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6732"; a="197613218"
-Message-ID: <4FCD2727.7050405@codeaurora.org>
-Date: Mon, 04 Jun 2012 14:22:47 -0700
+	Mon, 4 Jun 2012 17:22:56 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6732"; a="197613343"
+Message-ID: <4FCD272E.1020300@codeaurora.org>
+Date: Mon, 04 Jun 2012 14:22:54 -0700
 From: Stephen Boyd <sboyd@codeaurora.org>
 User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
 To: Ohad Ben-Cohen <ohad@wizery.com>
 CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/2] remoteproc: maintain a generic child device for each
- rproc
-References: <1338017791-9442-1-git-send-email-ohad@wizery.com> <4FC5DBFA.2030300@codeaurora.org> <CAK=WgbZJJJPuNWVv8WgL=KKm6Hrx2krDD9gBOTP7sA8p7mh_rA@mail.gmail.com>
-In-Reply-To: <CAK=WgbZJJJPuNWVv8WgL=KKm6Hrx2krDD9gBOTP7sA8p7mh_rA@mail.gmail.com>
+        Fernando Guzman Lugo <fernando.lugo@ti.com>
+Subject: Re: [PATCH 2/2] remoteproc: remove the now-redundant kref
+References: <1338017791-9442-1-git-send-email-ohad@wizery.com> <1338017791-9442-2-git-send-email-ohad@wizery.com> <4FC5DD74.4030202@codeaurora.org> <CAK=WgbbwaMAnTGcivC9ZR8K-MtTqHAV3+BgUmk8WjCaayifJxw@mail.gmail.com>
+In-Reply-To: <CAK=WgbbwaMAnTGcivC9ZR8K-MtTqHAV3+BgUmk8WjCaayifJxw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry your mail was lost due to mail outage)
+On 05/30/12 05:38, Ohad Ben-Cohen wrote:
+> On Wed, May 30, 2012 at 11:42 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>>> -     /* the rproc will only be released after its refcount drops to zero */
+>>> -     kref_put(&rproc->refcount, rproc_release);
+>>> +     /* unroll rproc_alloc. TODO: we may want to let the users do that */
+>>> +     put_device(&rproc->dev);
+>> Yes I think we want rproc_free() to actually call put_device() the last
+>> time and free the resources.
+> Yeah that was one of the options I considered.
+>
+> In general, we have three options here:
+> 1. Remove this last put_device invocation, and require users to call
+> rproc_free() even after they call rproc_unregister().
+> 2. Let rproc_unregister() still do this, by calling rproc_free().
+> 3. Let rproc_unregister() still do this, by invoking put_device().
+>
+> I think that (1) looks better since it makes the interface symmetric
+> and straight forward.
+>
+> (2) and (3) may be simper because users only need to call
+> rproc_unregister and that's it.
+>
+> I eventually decided against (1) because I was concerned it will only
+> confuse users at this point.
+>
+> But if you think that (1) is nicer too then maybe we should go ahead
+> and do that change.
 
-On 05/30/12 05:16, Ohad Ben-Cohen wrote:
->
-> On Wed, May 30, 2012 at 11:36 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->
->> One complaint I've gotten is that the error messages are essentially
->> useless now. I believe there are some ongoing discussions on lkml to fix
->> this by traversing the device hierarchy to find the "real" device but
->> the hard part is finding the real device.
-> You probably refer to the discussions around the input subsystem's pull request.
->
-> I was thinking about that too when creating this patch, and it looks
-> like whatever Greg will come up with on that matter will benefit us
-> too. So taking that into account, it might make more sense to do stick
-> with the virtual device rather than use the real one here (we'll end
-> up having more information in the long run).
-
-Fair enough. Hopefully something comes out of that discussion since this
-will need it.
-
->> I'm not clear on busses versus classes.
-> I think that busses is a whole lot more complex beast. Probably the
-> main indication we want one is when we need to match drivers to
-> devices.
->
-> In this case, I was more wondering between using a class to a device type.
->
->> I recall seeing a thread where
->> someone said classes were on the way out and shouldn't be used but I
->> can't find it anymore.
-> I also remembered a similar discussion at a plumbers mini-conf about
-> 2-3 years ago too, so I looked at device_type as an alternative to
-> class. The former looks somewhat simpler, but I couldn't find any
-> major advantage for using one over the other, and both seem to be in
-> use by many subsystems.
->
->> Should we use classes for devices that will never
->> have a matching driver?
-> It's not strictly required, but in case we want to provide these
-> devices some common behavior (and in our case we want them all to have
-> the same release handler, and very soon, the same PM handlers, too),
-> then a class (or a type) is helpful.
->
-> It looks like moving from a class to a type is quite trivial, in case
-> classes do eventually go away (or an advantage of using the latter
-> shows up), but I'm not aware of any other viable alternative for us
-> other than class/type.
->
-
-Ok. Will moving from a class to a device type disrupt the kernel ABI?
-First it will be under /sys/class/ and then under /sys/bus? Greg, can
-you shed some light on when to use a class versus a device type?
+Option 1 is nicer and it also follows the model other subsystems have
+put forth such as the input subsystem.
 
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
