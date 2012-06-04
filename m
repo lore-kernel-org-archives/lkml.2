@@ -1,40 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760834Ab2FDPsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:48:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40459 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab2FDPsH (ORCPT
+	id S1760842Ab2FDPsq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:48:46 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34578 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056Ab2FDPsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:48:07 -0400
-Date: Mon, 04 Jun 2012 11:48:03 -0400 (EDT)
-Message-Id: <20120604.114803.742884170282591530.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [PATCH 1/1] net/hyperv: Use wait_event on outstanding sends
- during device removal
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1338820532-2345-2-git-send-email-haiyangz@microsoft.com>
-References: <1338820532-2345-1-git-send-email-haiyangz@microsoft.com>
-	<1338820532-2345-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 4 Jun 2012 11:48:45 -0400
+Message-ID: <4FCCD8D9.2070005@atmel.com>
+Date: Mon, 4 Jun 2012 17:48:41 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] at91: platform data for atmel-mci (for 3.5)
+References: <4FBE4FE7.3010005@atmel.com> <4FC722B7.10409@atmel.com> <CAOesGMhq8uzei+Dn8=1iYrTiAOtuByjm58j9zgFyORVG5VZuNQ@mail.gmail.com>
+In-Reply-To: <CAOesGMhq8uzei+Dn8=1iYrTiAOtuByjm58j9zgFyORVG5VZuNQ@mail.gmail.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.159.245.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Mon,  4 Jun 2012 07:35:32 -0700
+On 05/31/2012 11:04 PM, Olof Johansson :
+> Hi Nicolas,
+> 
+> On Thu, May 31, 2012 at 12:50 AM, Nicolas Ferre <nicolas.ferre@atmel.com
+> <mailto:nicolas.ferre@atmel.com>> wrote:
+> 
+>     On 05/24/2012 05:12 PM, Nicolas Ferre :
+>     > Hi Arnd, hi Olof,
+> 
+>     Ping?
+> 
+>     (or maybe you will have a look at this after the merge window...)
+> 
+> 
+> So, I looked at this branch yesterday but I wasn't entirely happy with
+> the number of ifdefs it adds.
 
-> +	wait_event(net_device->wait_drain,
-> +		atomic_read(&net_device->num_outstanding_sends) == 0);
+Unfortunately, this is the usual shape of any devices/boards files on
+AT91. This amount will be reduced when we remove the old driver and when
+we move newer/popular devices to Device Tree...
 
-Please indent this properly.  The goal is not to indent using only
-TAB characters, the goal is to line things up to the proper column
-using TAB and space characters as needed.
+> If the idea is to deprecate the old driver, wouldn't it make more sense
+> to just cut everyone over instead of having both sets of setup in the
+> kernel?
 
-You must make the first character on the second line be at the
-first column after the openning parenthesis on the previous line.
+Well, the old driver has existed since a very long time and I think that
+people are used to it on oldest platforms. This is why we put in place a
+overlapping period. This way we hope that the transition will be smoother.
+On the other hand, the old code will be removed in 3.7 so the
+overlapping period will not be so long.
+I hope that it will allow people to track bugs if some are remaining and
+switch to newer driver easily.
+
+Best regards,
+-- 
+Nicolas Ferre
