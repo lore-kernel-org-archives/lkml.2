@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab2FDFSt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:18:49 -0400
+	id S1756471Ab2FDFS7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:18:59 -0400
 Received: from szxga04-in.huawei.com ([58.251.152.67]:52176 "EHLO
 	szxga04-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756252Ab2FDFSr (ORCPT
+	with ESMTP id S1756262Ab2FDFSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:18:47 -0400
-Date: Mon, 04 Jun 2012 13:17:02 +0800
+	Mon, 4 Jun 2012 01:18:48 -0400
+Date: Mon, 04 Jun 2012 13:17:01 +0800
 From: Jiang Liu <jiang.liu@huawei.com>
-Subject: [RFC PATCH v1 6/6] PCI: update AER configuration when PCI hotplug
- event happens
+Subject: [RFC PATCH v1 5/6] PCI, ACPI: update ACPI hotplug slot information
+ when PCI hotplug event happens
 In-reply-to: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
 X-Originating-IP: [10.107.208.49]
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Alex Chiang <achiang@hp.com>
 Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Don Dutile <ddutile@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
         Yijing Wang <wangyijing@huawei.com>,
         Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-id: <1338787022-400-6-git-send-email-jiang.liu@huawei.com>
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-id: <1338787022-400-5-git-send-email-jiang.liu@huawei.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.8.msysgit.0
 Content-type: text/plain
@@ -34,78 +34,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <liuj97@gmail.com>
 
-The AER driver only configures downstream PCIe devices at driver
-binding time and all hot-added PCIe devices won't be managed by
-the AER driver.  So hook PCI device hotplug events to setup AER
-configuration for hot-added PCIe devices.
+Currently the acpiphp driver fails to update hotplug slot information under
+several conditions, such as:
+1) The bridge device is removed through /sys/bus/pci/devices/.../remove
+2) The bridge device is added/removed by PCI hotplug driver other than the
+   acpiphp driver itself. For example, if an IO expansion box with ACPI
+   hotplug slots available is hot-added by the pciehp driver, all ACPI
+   hotplug slots won't be discovered by the acpiphp driver.
 
 So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-setup AER configuration for hot-added PCIe devices.
+update ACPI hotplug slot information when PCI hotplug event happens.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/pcie/aer/aerdrv.c |   72 ++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 71 insertions(+), 1 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   64 ++++++++++++++++++++++++++++++++++--
+ 1 files changed, 61 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
-index 58ad791..7033410 100644
---- a/drivers/pci/pcie/aer/aerdrv.c
-+++ b/drivers/pci/pcie/aer/aerdrv.c
-@@ -410,6 +410,69 @@ static void aer_error_resume(struct pci_dev *dev)
- 	pci_write_config_dword(dev, pos + PCI_ERR_UNCOR_STATUS, status);
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 73af337..44d055c 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -61,6 +61,7 @@ static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
+ static void acpiphp_sanitize_bus(struct pci_bus *bus);
+ static void acpiphp_set_hpp_values(struct pci_bus *bus);
+ static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
++static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle);
+ 
+ /* callback routine to check for the existence of a pci dock device */
+ static acpi_status
+@@ -377,7 +378,7 @@ static inline void config_p2p_bridge_flags(struct acpiphp_bridge *bridge)
+ 
+ 
+ /* allocate and initialize host bridge data structure */
+-static void add_host_bridge(acpi_handle *handle)
++static void add_host_bridge(acpi_handle handle)
+ {
+ 	struct acpiphp_bridge *bridge;
+ 	struct acpi_pci_root *root = acpi_pci_find_root(handle);
+@@ -396,12 +397,14 @@ static void add_host_bridge(acpi_handle *handle)
+ 	init_bridge_misc(bridge);
  }
  
-+static int pci_root_port_aer_support(struct pci_dev *dev)
+-
+ /* allocate and initialize PCI-to-PCI bridge data structure */
+-static void add_p2p_bridge(acpi_handle *handle)
++static void add_p2p_bridge(acpi_handle handle)
+ {
+ 	struct acpiphp_bridge *bridge;
+ 
++	if (acpiphp_handle_to_bridge(handle))
++		return;
++
+ 	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
+ 	if (bridge == NULL) {
+ 		err("out of memory\n");
+@@ -1419,6 +1422,58 @@ find_root_bridges(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	return AE_OK ;
+ }
+ 
++static void acpiphp_hp_notify_add(struct pci_dev *dev)
 +{
-+	int rc, pos;
-+	u32 reg32 = 0;
++	acpi_handle handle = DEVICE_ACPI_HANDLE(&dev->dev);
 +
-+	if (!pci_is_pcie(dev))
-+		return false;
++	if (!dev->subordinate || !handle)
++		return;
 +
-+	if (!pci_aer_available() || aer_acpi_firmware_first())
-+		return false;
-+
-+	/* Search for root port */
-+	while (dev->pcie_type != PCI_EXP_TYPE_ROOT_PORT) {
-+		dev = dev->bus->self;
-+		if (!dev)
-+			return false;
++	/* check if this bridge has ejectable slots */
++	if (detect_ejectable_slots(handle) > 0) {
++		dbg("found PCI-to-PCI bridge at PCI %s\n", pci_name(dev));
++		add_p2p_bridge(handle);
 +	}
-+
-+	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
-+	if (!pos)
-+		return false;
-+
-+	rc = pci_read_config_dword(dev, pos + PCI_ERR_ROOT_COMMAND, &reg32);
-+	if (rc || reg32 == 0xFFFFFFFF)
-+		return false;
-+
-+	if (reg32 & (PCI_ERR_ROOT_CMD_COR_EN |
-+		     PCI_ERR_ROOT_CMD_NONFATAL_EN |
-+		     PCI_ERR_ROOT_CMD_FATAL_EN))
-+		return true;
-+
-+	return false;
 +}
 +
-+static void acpi_pcie_aer_notify_dev(struct pci_dev *dev, bool enable)
++static void acpiphp_hp_notify_del(struct pci_dev *dev)
 +{
-+	if (pci_root_port_aer_support(dev))
-+		set_device_error_reporting(dev, &enable);
++	struct acpiphp_bridge *bridge, *tmp;
++	struct pci_bus *bus = dev->subordinate;
++
++	if (!bus)
++		return;
++
++	list_for_each_entry_safe(bridge, tmp, &bridge_list, list)
++		if (bridge->pci_bus == bus) {
++			cleanup_bridge(bridge);
++			break;
++		}
 +}
 +
-+static int acpi_pcie_aer_notify_fn(struct notifier_block *nb,
-+		unsigned long event, void *data)
++static int acpi_pci_hp_notify_fn(struct notifier_block *nb,
++				 unsigned long event, void *data)
 +{
 +	struct device *dev = data;
 +
 +	switch (event) {
 +	case BUS_NOTIFY_ADD_DEVICE:
-+		acpi_pcie_aer_notify_dev(to_pci_dev(dev), true);
++		acpiphp_hp_notify_add(to_pci_dev(dev));
 +		break;
 +	case BUS_NOTIFY_DEL_DEVICE:
-+		acpi_pcie_aer_notify_dev(to_pci_dev(dev), false);
++		acpiphp_hp_notify_del(to_pci_dev(dev));
 +		break;
 +	default:
 +		return NOTIFY_DONE;
@@ -114,36 +140,28 @@ index 58ad791..7033410 100644
 +	return NOTIFY_OK;
 +}
 +
-+static struct notifier_block acpi_pcie_aer_notifier = {
-+	.notifier_call = &acpi_pcie_aer_notify_fn,
++static struct notifier_block acpi_pci_hp_notifier = {
++	.notifier_call = &acpi_pci_hp_notify_fn,
 +};
 +
- /**
-  * aer_service_init - register AER root service driver
-  *
-@@ -417,9 +480,15 @@ static void aer_error_resume(struct pci_dev *dev)
-  */
- static int __init aer_service_init(void)
- {
-+	int ret;
+ static struct acpi_pci_driver acpi_pci_hp_driver = {
+ 	.add =		add_bridge,
+ 	.remove =	remove_bridge,
+@@ -1439,6 +1494,8 @@ int __init acpiphp_glue_init(void)
+ 	else
+ 		acpi_pci_register_driver(&acpi_pci_hp_driver);
+ 
++	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
 +
- 	if (!pci_aer_available() || aer_acpi_firmware_first())
- 		return -ENXIO;
--	return pcie_port_service_register(&aerdriver);
-+	ret = pcie_port_service_register(&aerdriver);
-+	if (!ret)
-+		bus_register_notifier(&pci_bus_type, &acpi_pcie_aer_notifier);
-+
-+	return ret;
+ 	return 0;
  }
  
- /**
-@@ -429,6 +498,7 @@ static int __init aer_service_init(void)
+@@ -1450,6 +1507,7 @@ int __init acpiphp_glue_init(void)
   */
- static void __exit aer_service_exit(void)
+ void  acpiphp_glue_exit(void)
  {
-+	bus_unregister_notifier(&pci_bus_type, &acpi_pcie_aer_notifier);
- 	pcie_port_service_unregister(&aerdriver);
++	bus_unregister_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
+ 	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
  }
  
 -- 
