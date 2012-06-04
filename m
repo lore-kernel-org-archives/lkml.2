@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760886Ab2FDVOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 17:14:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35133 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab2FDVOw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 17:14:52 -0400
-Message-ID: <1338844480.28282.147.camel@twins>
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Jun 2012 23:14:40 +0200
-In-Reply-To: <4FCD1E57.5070706@linux.intel.com>
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-	       <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
-	      <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
-	     <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
-	    <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
-	   <1338827607.28282.99.camel@twins> <4FCCE823.8090700@linux.intel.com>
-	  <1338830167.28282.115.camel@twins> <4FCCEF94.6010805@linux.intel.com>
-	 <1338841878.28282.133.camel@twins> <4FCD1E57.5070706@linux.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1760902Ab2FDVTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 17:19:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:2918 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753316Ab2FDVTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 17:19:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="107679591"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, "Luck, Tony" <tony.luck@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>
+Subject: RE: [PATCH 3/6] x86/smpboot.c: Wake up offline CPU via mwait or nmi
+Thread-Topic: [PATCH 3/6] x86/smpboot.c: Wake up offline CPU via mwait or nmi
+Thread-Index: AQHNQoAQHIHlKMct6Ee2Fsgil0bax5bq+HsA//+Tu0A=
+Date: Mon, 4 Jun 2012 19:35:22 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712200771C22F@ORSMSX105.amr.corp.intel.com>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+	 <1338833876-29721-4-git-send-email-fenghua.yu@intel.com>
+ <1338836326.28766.3.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1338836326.28766.3.camel@sbsiddha-desk.sc.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q54LJKb2031133
 
-On Mon, 2012-06-04 at 13:45 -0700, Arjan van de Ven wrote:
-> On 6/4/2012 1:31 PM, Peter Zijlstra wrote:
-> > 
-> > And like I said many times now, if you inflate some of the idle periods,
-> > the work shifts (it doesn't become less) and a next idle period will be
-> > smaller -- since we'll only become idle again once all work is done.
+> From: Siddha, Suresh B
+> Sent: Monday, June 04, 2012 11:59 AM
+> To: Yu, Fenghua
+> Cc: Ingo Molnar; Thomas Gleixner; H Peter Anvin; Luck, Tony; Mallick,
+> Asit K; Arjan Dan De Ven; linux-kernel; x86; linux-pm
+> Subject: Re: [PATCH 3/6] x86/smpboot.c: Wake up offline CPU via mwait
+> or nmi
 > 
-> this is what is not really correct.
+> On Mon, 2012-06-04 at 11:17 -0700, Fenghua Yu wrote:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > wakeup_secondary_cpu_via_soft() is defined to wake up offline CPU via
+> mwait if
+> > the CPU is in mwait or via nmi if the CPU is in hlt.
+> >
+> > A CPU boots up by INIT, INIT, STARTUP sequence when it boots up for
+> the first
+> > time during boot time or hot plug.
 > 
-> you can be idle for many reasons, not just because you have no work
-> left. most common is waiting for a disk IO. the idle period for that
-> will not get shorter just because the previous one took more time.
+> I think this breaks suspend/resume as the cpu state gets lost.
+> 
+> Have you tried suspend/resume?
 
-Then you're back to synchronous behaviour and your earlier claim that it
-is was not about latency response is false.
+Good catch! Suspend/resume is broken.
+
+A pm callback can be installed to clear cpu_dead state in suspend preparation. So when resume, INIT sequence is used to wakeup CPU's just like the boot time case.
+
+I have a quick fix and will put it in the next version of the patchset.
+
+Thanks.
+
+-Fenghua
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
