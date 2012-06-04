@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab2FDKHF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 06:07:05 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:55243 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab2FDKHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 06:07:03 -0400
-Date: Mon, 4 Jun 2012 05:07:00 -0500
-From: Robin Holt <holt@sgi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, WANG Cong <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Commit 722bc6b167 breaks booting on an 8TB system.
-Message-ID: <20120604100700.GA4948@sgi.com>
-References: <20120601155447.GG3671@sgi.com>
- <CAE9FiQWJR6x4_Xhc2k5TFkCj2u5cpbcWf-jFWOB5pEuBQcoJrQ@mail.gmail.com>
+	id S1759077Ab2FDKHQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 06:07:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48228 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab2FDKHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 06:07:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQWJR6x4_Xhc2k5TFkCj2u5cpbcWf-jFWOB5pEuBQcoJrQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [93.172.31.133]
+In-Reply-To: <81C3A93C17462B4BBD7E272753C10579232F4FBCF7@EXDCVYMBSTM005.EQ1STM.local>
+References: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1337693217-15466-4-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=Wgbbdjf_SnbxQJd04nPSFBbHQQwO5zP_gW_jTiJyj_rn63g@mail.gmail.com> <81C3A93C17462B4BBD7E272753C10579232F4FBCF7@EXDCVYMBSTM005.EQ1STM.local>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 4 Jun 2012 13:06:50 +0300
+Message-ID: <CAK=Wgba1SGzpoHhGcytoO3+zOkJ+92oZfwENZaWdfEzp7BTLNg@mail.gmail.com>
+Subject: Re: [RFC 3/6] remoteproc: Move fw sanity check to find_rsc_table.
+To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 03, 2012 at 12:00:29AM -0700, Yinghai Lu wrote:
-> On Fri, Jun 1, 2012 at 8:54 AM, Robin Holt <holt@sgi.com> wrote:
-> > I just tried to boot an 8TB system.  It fails very early in boot with:
-> >
-> > Kernel panic - not syncing: Cannot find space for the kernel page tables
-> >
-> >
-> > A git bisect lead me to commit 722bc6b16771ed80871e1fd81c86d3627dda2ac8.
-> >
-> > A git revert of that commit based on Linus' current as of a few hours ago
-> > (commit fb21aff) does boot past that point on the 8TB configuration.
-> 
-> have some local patches. please check if they are helping...
+On Mon, Jun 4, 2012 at 12:56 PM, Sjur BRENDELAND
+<sjur.brandeland@stericsson.com> wrote:
+> The sanity_check() is working on the ELF structures. And all ELF
+> processing needs to be moved to a separate file. So if you want
+> to keep the call to sanity_check() here, I need to make the
+> sanity_check() function a separate handler. That could make sense,
+> but will also bloat the struct rproc_fw_ops with one more function
+> pointer.
 
-I will not have access to the machine until late tonight/early tomorrow
-(approximately 24 hours from now).  I will try to give the patches a
-run then.  Would you like them tested individually or as a set?
+I think it's OK.
 
-Robin
+Adding another handler is cheap, and if by doing so the code becomes
+even slightly easier to read or maintain, it's probably worth it.
+
+Thanks,
+Ohad.
