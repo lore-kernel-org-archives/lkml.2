@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760557Ab2FDNPN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 09:15:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17724 "EHLO mga01.intel.com"
+	id S1760574Ab2FDNQm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 09:16:42 -0400
+Received: from david.siemens.de ([192.35.17.14]:26214 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab2FDNPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 09:15:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="160344851"
-Message-ID: <4FCCB4DD.4060407@linux.intel.com>
-Date: Mon, 04 Jun 2012 06:15:09 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756884Ab2FDNQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 09:16:41 -0400
+Message-ID: <4FCCB531.4000008@siemens.com>
+Date: Mon, 04 Jun 2012 15:16:33 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Vladimir Davydov <vdavydov@parallels.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-In-Reply-To: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-X-Enigmail-Version: 1.4.1
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Avi Kivity <avi@redhat.com>, Alex Williamson <alex.williamson@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yongjie.ren@intel.com" <yongjie.ren@intel.com>
+Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI interrupts
+References: <20120601161521.26935.25606.stgit@bling.home>   <4FC8F042.5050600@siemens.com> <1338570192.23475.25.camel@bling.home>  <4FC8F867.7080103@siemens.com> <1338573558.23475.41.camel@bling.home> <4FC90961.8030701@siemens.com> <4FCB2359.9020505@redhat.com> <alpine.LFD.2.02.1206041235540.3086@ionos> <4FCC9EAC.9090007@siemens.com> <alpine.LFD.2.02.1206041458490.3086@ionos>
+In-Reply-To: <alpine.LFD.2.02.1206041458490.3086@ionos>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/4/2012 3:24 AM, Vladimir Davydov wrote:
-> rq->cpuload strongly depends on cgroup hierarchy. For example, if hundreds of
-> tasks are running inside cpu:/test cgroup, the sum of cpuload over all cpus
-> won't exceed 1024 (by default). That makes the cpuidle menu governor take wrong
-> decisions, which can negatively affect overall performance.
+On 2012-06-04 15:07, Thomas Gleixner wrote:
+> On Mon, 4 Jun 2012, Jan Kiszka wrote:
+>> On 2012-06-04 13:21, Thomas Gleixner wrote:
+>> So this shortcut requires some checks before being applied to a specific
+>> MSI/MSI-X vector.
+>>
+>>
+>> Taking KVM aside, my general question remains if threaded MSI handlers
+>> of all devices really need to apply IRQF_ONESHOT though they should have
+>> no use for it.
+> 
+> In theory no, but we had more than one incident, where threaded irqs
+> w/o a primary handler and w/o IRQF_ONEHSOT lead to full system
+> starvation. Linus requested this sanity check and I think it's sane
+> and required.
 
-nr_running is the wrong answer... it is instantaneous, not longer term.
-cpuidle wants a longer term, per cpu, notion of "busy", to use as proxy
-for performance sensitivity.
+OK.
 
+> 
+> In fact it's a non issue for MSI. MSI uses handle_edge_irq which does
+> not mask the interrupt. IRQF_ONESHOT is a noop for that flow handler.
 
+Isn't irq_finalize_oneshot processes for all flows?
+
+Jan
+
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
