@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755801Ab2FDSO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 14:14:57 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:33313 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753087Ab2FDSOz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 14:14:55 -0400
-Date: Mon, 4 Jun 2012 11:13:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: fweisbec@gmail.com
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        Max Krasnyansky <maxk@qualcomm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/2] rcu: Extended quiescent state for adaptive nohz
-Message-ID: <20120604181313.GL2490@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1338811708-18819-1-git-send-email-fweisbec@gmail.com>
+	id S1755742Ab2FDSQS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 14:16:18 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:49273 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753087Ab2FDSQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 14:16:15 -0400
+Date: Mon, 4 Jun 2012 13:16:14 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: relax_domain_level boot parameter has no effect
+Message-ID: <20120604181614.GA22172@sgi.com>
+References: <20120601210348.GA22471@sgi.com>
+ <1338824262.28282.87.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338811708-18819-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060418-2398-0000-0000-000007323FAC
+In-Reply-To: <1338824262.28282.87.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 02:08:26PM +0200, fweisbec@gmail.com wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
+On Mon, Jun 04, 2012 at 05:37:42PM +0200, Peter Zijlstra wrote:
+> On Fri, 2012-06-01 at 16:03 -0500, Dimitri Sivanich wrote:
+> > I noticed (and verified) that the relax_domain_level boot parameter does not
+> > get processed because sched_domain_level_max is 0 at the time that
+> > setup_relax_domain_level() is run.
+> > 
+> > int sched_domain_level_max;
+> > 
+> > static int __init setup_relax_domain_level(char *str)
+> > {
+> >         unsigned long val;
+> > 
+> >         val = simple_strtoul(str, NULL, 0);
+> >         if (val < sched_domain_level_max)
+> >                 default_relax_domain_level = val;
+> > 
+> >         return 1;
+> > }
+> > __setup("relax_domain_level=", setup_relax_domain_level);
 > 
-> Paul, Ingo,
-> 
-> This is a rebase of the nohz cpusets RCU APIs on top of Paul's latest
-> -rcu (rcu/core) branch.
-> 
-> I have only built tested it yet, I need to do a full rebase of my
-> tree to test it in practice. But I wanted to show you how it looks
-> like first.
-> 
-> I also wonder if we can set that to a tree somewhere. Ingo suggested
-> to set up a tree on -tip to apply the uncontroversial part of nohz
-> cpusets patches and iterate from there. I think it would accelerate
-> everything if we start doing that.
+> Ah indeed.. this has been so for a while I guess.
 
-It would probably be best to put these two in the -rcu set in order to
-avoid conflicts with possible further RCU_FAST_NO_HZ work.  I could
-push this to -tip early, if that would help.
+On a very related note, the sched_relax_domain_level setting in cpuset
+doesn't appear to work correctly either (if I'm interpreting all of this
+correctly).
 
-							Thanx, Paul
+The reason is that the build_sched_domain() routine calls the
+set_domain_attribute() routine prior to setting the sd->level, however,
+the set_domain_attribute() routine relies on the sd->level to decide whether
+idle load balancing will be off/on.
 
-> Tell me what you think.
-> 
-> Thanks.
-> 
-> Frederic Weisbecker (2):
->   rcu: New rcu_user_enter() and rcu_user_exit() APIs
->   rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
-> 
->  include/linux/rcupdate.h |    4 +
->  kernel/rcutree.c         |  184 +++++++++++++++++++++++++++++++++++++++------
->  2 files changed, 163 insertions(+), 25 deletions(-)
-> 
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+static void set_domain_attribute(struct sched_domain *sd,
+..
+==>     if (request < sd->level) {
+                /* turn off idle balance on this domain */
+..
+..
+struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
+..
+==>     set_domain_attribute(sd, attr);
+        cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
+        if (child) {
+==>             sd->level = child->level + 1;
+                sched_domain_level_max = max(sched_domain_level_max, sd->level);
 
+
+> What are you using this knob for?
+
+I was poking around for different ways to turn off idle load balancing when
+I ran into all of this.
