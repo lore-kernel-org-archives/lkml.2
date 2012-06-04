@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab2FDFll (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:41:41 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:54747 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756611Ab2FDFkk (ORCPT
+	id S1756661Ab2FDFl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:41:59 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:56777 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756517Ab2FDFkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:40:40 -0400
+	Mon, 4 Jun 2012 01:40:36 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 13/15] tools/power turbostat: fix IVB support
-Date: Mon,  4 Jun 2012 01:40:04 -0400
-Message-Id: <650a37f32d2bc16fa802075be579802bc4ec4132.1338786832.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Len Brown <len.brown@intel.com>
+Subject: [PATCH 11/15] ACPI video: use after input_unregister_device()
+Date: Mon,  4 Jun 2012 01:40:02 -0400
+Message-Id: <301f33fbcf4ced53b3de114846ecece5d6aafeeb.1338786832.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.11.rc0.100.g5498c5f
 In-Reply-To: <1338788406-29981-1-git-send-email-lenb@kernel.org>
 References: <1338788406-29981-1-git-send-email-lenb@kernel.org>
@@ -24,45 +25,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Initial IVB support went into turbostat in Linux-3.1:
-553575f1ae048aa44682b46b3c51929a0b3ad337
-(tools turbostat: recognize and run properly on IVB)
+We can't use "input" anymore after calling input_unregister_device().
+The call to input_free_device() is a double free.  The normal way to
+deal with this is to make input_register_device() the last function
+called in the function.
 
-However, when running on IVB, turbostat would fail
-to report the new couters added with SNB, c7, pc2 and pc7.
-So in scenarios where these counters are non-zero on IVB,
-turbostat would report erroneous residencey results.
-
-In particular c7 time would be added to c1 time,
-since c1 time is calculated as "that which is left over".
-
-Also, turbostat reports MHz capabilities when passed
-the "-v" option, and it would incorrectly report 133MHz
-bclk instead of 100MHz bclk for IVB, which would inflate
-GHz reported with that option.
-
-This patch is a backport of a fix already included in turbostat v2.
-
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- tools/power/x86/turbostat/turbostat.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/acpi/video.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
-index d5d6a3d..16de7ad 100644
---- a/tools/power/x86/turbostat/turbostat.c
-+++ b/tools/power/x86/turbostat/turbostat.c
-@@ -933,6 +933,8 @@ int is_snb(unsigned int family, unsigned int model)
- 	switch (model) {
- 	case 0x2A:
- 	case 0x2D:
-+	case 0x3A:	/* IVB */
-+	case 0x3D:	/* IVB Xeon */
- 		return 1;
- 	}
+diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
+index 609262d..a576575 100644
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -1687,10 +1687,6 @@ static int acpi_video_bus_add(struct acpi_device *device)
+ 	set_bit(KEY_BRIGHTNESS_ZERO, input->keybit);
+ 	set_bit(KEY_DISPLAY_OFF, input->keybit);
+ 
+-	error = input_register_device(input);
+-	if (error)
+-		goto err_stop_video;
+-
+ 	printk(KERN_INFO PREFIX "%s [%s] (multi-head: %s  rom: %s  post: %s)\n",
+ 	       ACPI_VIDEO_DEVICE_NAME, acpi_device_bid(device),
+ 	       video->flags.multihead ? "yes" : "no",
+@@ -1701,12 +1697,16 @@ static int acpi_video_bus_add(struct acpi_device *device)
+ 	video->pm_nb.priority = 0;
+ 	error = register_pm_notifier(&video->pm_nb);
+ 	if (error)
+-		goto err_unregister_input_dev;
++		goto err_stop_video;
++
++	error = input_register_device(input);
++	if (error)
++		goto err_unregister_pm_notifier;
+ 
  	return 0;
+ 
+- err_unregister_input_dev:
+-	input_unregister_device(input);
++ err_unregister_pm_notifier:
++	unregister_pm_notifier(&video->pm_nb);
+  err_stop_video:
+ 	acpi_video_bus_stop_devices(video);
+  err_free_input_dev:
 -- 
 1.7.11.rc0.100.g5498c5f
 
