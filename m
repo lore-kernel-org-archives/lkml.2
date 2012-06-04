@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2FDPZg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:25:36 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38386 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab2FDPZf (ORCPT
+	id S1760739Ab2FDP0W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:26:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53330 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647Ab2FDP0V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:25:35 -0400
-Date: Mon, 4 Jun 2012 20:55:22 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>,
-        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
- as target of (pinned) task migration
-Message-ID: <20120604152522.GE26651@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
- <1338801907.7356.163.camel@marge.simpson.net>
- <1338810796.28282.32.camel@twins>
- <1338814063.7356.192.camel@marge.simpson.net>
- <20120604130740.GC25126@linux.vnet.ibm.com>
- <1338820234.7356.250.camel@marge.simpson.net>
- <20120604143802.GB26651@linux.vnet.ibm.com>
- <1338820895.7356.252.camel@marge.simpson.net>
- <20120604150040.GD25126@linux.vnet.ibm.com>
- <1338823271.28282.75.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1338823271.28282.75.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12060415-5816-0000-0000-000002FFAFE5
+	Mon, 4 Jun 2012 11:26:21 -0400
+Message-ID: <1338823568.28282.79.camel@twins>
+Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
+ calculating perf mult
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Jun 2012 17:26:08 +0200
+In-Reply-To: <4FCCD0CD.8080700@linux.intel.com>
+References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
+	   <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
+	  <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
+	 <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-06-04 17:21:11]:
+On Mon, 2012-06-04 at 08:14 -0700, Arjan van de Ven wrote:
+> On 6/4/2012 8:08 AM, Peter Zijlstra wrote:
+> > On Mon, 2012-06-04 at 06:48 -0700, Arjan van de Ven wrote:
+> >> it's not about busy, it's about performance sensitive.
+> >> it's not a super nice proxy, no argument, but it's one of the few long
+> >> term ones we have.
+> >>
+> > I'm still not seeing how it makes any sense at all. Is there an actual
+> > workload here this matters?
+> 
+> yes there are, mostly server ones.
 
-> That is not to say you couldn't contrive a scenario where it would be
-> needed.. 
+OK, so pick one that cares, and try creating a heuristic based on wakeup
+history or whatever.
 
-Right ..what if B0. B1 are pinned? !! I think most of the current
-weakness lies in handling tasks that have affinity set.
+> the problem isn't an individual idle, it's that the 100us-200us
+> latencies add up if you go in and out repeatedly, when the system is in
+> a situation where it is sensitive to performance (which is not an
+> instant thing, this is a "over the long run we're busy" thing)...
+> ... they become a real factor.
 
-- vatsa
+Right, but since you're inflating idle time, the work will be displaced
+and will complete later. This should result in your idle time est
+shrinking.
+
+I'm just not buying load actually matters or works, if there's lots of
+idle time load history should be low, if there's not a lot of idle time,
+you're busy (per definition) and again load isn't important.
+
 
