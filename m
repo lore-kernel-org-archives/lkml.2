@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760603Ab2FDObP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 10:31:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52172 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818Ab2FDObO (ORCPT
+	id S932256Ab2FDOcz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 10:32:55 -0400
+Received: from mail.windriver.com ([147.11.1.11]:49575 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab2FDOcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 10:31:14 -0400
-Date: Mon, 4 Jun 2012 16:31:10 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Fedora 17 custom kernels
-Message-ID: <20120604143110.GA2536@fancy-poultry.org>
-References: <4FCCA5A6.8080707@spin.net.au>
+	Mon, 4 Jun 2012 10:32:54 -0400
+Message-ID: <4FCCC703.2070609@windriver.com>
+Date: Mon, 4 Jun 2012 10:32:35 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCCA5A6.8080707@spin.net.au>
-Organization: private site
-X-OpenPGP-KeyID: 0x898F89DE
-X-OpenPGP-Fingerprint: 0815 20AD E896 A2B7 488F  4659 4C7B 8951 898F 89DE
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+56 (0488deb39a35) (2011-07-01)
-X-Provags-ID: V02:K0:fYYfJOidp1J3JtZFl5bYwEt45aMh4wgwj87ssLDE3RQ
- BcjctkwrJzK577ZIIuJ2SevRXkAiy0dtFyIQPED+ehzi6SmDu8
- +sHHWp160+vRd5/W9p1n38P4VSaa8A7RdkjnNUI+X5Oivx7YXx
- gFHoVkiFweLRxo6w0KQzuCYyf3Re8jaH703F+DbpG4+MhLK8MV
- opnUwM8D1FeQvoVQpH2873AXoiW6Q5Fv6WElo4aMFFCk/eRNCh
- zdhh0gXLMuBmdA8A3p/s4eN+ksWMkwVU0O9Gddozams/tN9Pzg
- XUXawZWFUq6DkT8+XX1buTbhp03JSMOILySJhpHah7qjhjPHn3
- AMWc+DxgfsWVWffGEJ3pc+TxX8tU0xCvEc9XionoC
+To: <daniel.santos@pobox.com>
+CC: Daniel Santos <danielfsantos@att.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] linux/bug.h: make BUILD_BUG_ON generate compile-time
+ error
+References: <4FCC9D7F.7070404@att.net>
+In-Reply-To: <4FCC9D7F.7070404@att.net>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.06.2012, Chris Jones wrote: 
+On 12-06-04 07:35 AM, Daniel Santos wrote:
+> This is pretty straight-forward. __compiletime_error is defined in
+> compiler-gcc4.h with appropriate version checks, so shouldn't break on
+> older compilers. This makes the difference between getting an error at
+> link-time and getting one at compile time. Example:
 
-> Does Fedora 17 boot with custom kernels built on F17? Or is it only having
-> issues with custom kernels built on other Linux systems?
+It is such a rarity for it to be triggered, that I wonder if it
+really matters whether it happens at compile time, or you wait
+the extra minute for link time.  Regardless, you've got your
+commit log written here, and not in the patch (which was attached
+and not inline; preventing comment) and you've not got any
+Signed-off line. 
 
-F17 boots a custom kernel just fine, if properly configured. I've
-never used any Fedora kernel longer than the install process and have
-never encountered any serious problems.
+> 
+> /home/daniel/proj/kernel/grbtest/grbtest2.c:83:2: error: call to
+> ‘__build_bug_on_failed’ declared with attribute error: BUILD_BUG_ON
+> failed: !__builtin_constant_p(count)
 
+Also the string "BUILD_BUG_ON failed" is in itself misleading, as if
+the macro itself has issues, vs. say using the word "triggered" or 
+"tripped" vs. "failed".  You also don't want to put the whole
+meaningless paths in commit logs normally (the /home/me/mydir part).
+
+> 
+> The above points me directly to where I called BUILD_BUG_ON. Note that
+> I'm moving __build_bug_on_failed out of the global scope, just so it can
+> be re-declared with different attributes each time.
+
+It wasn't clear to me why you'd want to re-declare things with
+different attributes ever.
+
+Paul.
+
+> 
+> Daniel
