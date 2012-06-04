@@ -1,183 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab2FDFRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:17:16 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65159 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755865Ab2FDFRO (ORCPT
+	id S1756417Ab2FDFR1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:17:27 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:40905 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab2FDFRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:17:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAH3Oq6QxFmtTuZSdF=95FPugwu1AzMgHm650qmNUwsdLr9O8Rg@mail.gmail.com>
-References: <CAH3Oq6SHLWvcdVUFsmPvqNedBC_QQhVSxrvCiyAUL3TgPQn3wQ@mail.gmail.com>
-	<alpine.LFD.2.02.1205311834270.3231@ionos>
-	<CAH3Oq6QxFmtTuZSdF=95FPugwu1AzMgHm650qmNUwsdLr9O8Rg@mail.gmail.com>
-Date: Mon, 4 Jun 2012 13:17:11 +0800
-Message-ID: <CAH3Oq6Q-XgNvTB9CFdD2bj+rbUBUsUV2C6drx-JsRYziNAJ=vQ@mail.gmail.com>
-Subject: Re: Make kstat_incr_irqs_this_cpu() called when an irq is actually
- being handled
-From: Ning Jiang <ning.n.jiang@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=e89a8f22c72b893b3804c19ea5e6
+	Mon, 4 Jun 2012 01:17:25 -0400
+Date: Mon, 04 Jun 2012 13:16:58 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+Subject: [RFC PATCH v1 2/6] PCI: split PCI bus device registration into two
+ stages
+In-reply-to: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
+X-Originating-IP: [10.107.208.49]
+To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-id: <1338787022-400-2-git-send-email-jiang.liu@huawei.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.8.msysgit.0
+Content-type: text/plain
+Content-transfer-encoding: 7BIT
+X-CFilter-Loop: Reflected
+References: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f22c72b893b3804c19ea5e6
-Content-Type: text/plain; charset=ISO-8859-1
+From: Jiang Liu <liuj97@gmail.com>
 
-2012/6/1 Ning Jiang <ning.n.jiang@gmail.com>:
-> 2012/6/1 Thomas Gleixner <tglx@linutronix.de>:
->> On Thu, 31 May 2012, Ning Jiang wrote:
->>> kstat_incr_irqs_this_cpu() is supposed to record the irq number
->>> that is actually taken by a certain cpu. But it failed to do so
->>> in its current form.
->>
->> It exactly counts the number of interrupts which are delivered to and
->> handled by a CPU. That includes interrupts which are delivered in a
->> state where the device handler cannot be called. And this is on
->> purpose. We want to see the real number of interruptions not the
->> number of calls to a device handler.
->>
->>> For level irq, if its disabled or no action available, we'll skip
->>> irq handling. When it is enabled later, the irq will be retriggered
->>> and kstat_incr_irqs_this_cpu() will be counted twice for this
->>> single irq.
->>
->> This counts the number of interrupts arrived at the CPU and therefor
->> it counts TWO in this situation. The CPU is interrupted twice, not
->> once.
->>
->
-> I've got your point. For level irq, no problem. But how do you account
-> for edge irq in my comments?
->
-> For edge irq, we'll not have the same problem as level irq because
-> kstat_incr_irqs_this_cpu() is placed after status checking for
-> disable or no action. But it has its own problem. Suppose a second
-> irq happens when the first is being handled, it will mark itself
-> pending and quit, then it will be handled in the same loop after the
-> first one has been handled. Thus kstat_incr_irqs_this_cpu() will
-> only be counted once for two irqs.
+When handling BUS_NOTIFY_ADD_DEVICE event for a new PCI bridge
+device, the notification handler can't hold reference count
+to the new PCI bus because the device object for the new bus
+(pci_dev->subordinate->dev) hasn't been initialized yet.
 
+Split the PCI bus device registration into two stages as below,
+so that the event handler could hold reference counts to the new
+PCI bus when handling BUS_NOTIFY_ADD_DEVICE event.
 
-I've made a another patch based on your conception of irq accounting.
-It fixes the
-corner case in which there comes up a second irq when the first is
-still in progress,
-we'll increment the irq count before we quit.
+1) device_initialize(&pci_dev->dev)
+2) device_initialize(&pci_dev->subordinate->dev)
+3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
+4) device_add(&pci_dev->dev)
+5) device_add(&pci_dev->subordinate->dev)
 
->From 93960c69e588989346589fac78b311ac62fb7552 Mon Sep 17 00:00:00 2001
-From: Ning Jiang <ning.n.jiang@gmail.com>
-Date: Mon, 4 Jun 2012 09:54:08 +0800
-Subject: [PATCH] genirq: Increment irq count for second edge irq when
-the first is in progress
-
-kstat_incr_irqs_this_cpu() records the real number of interruptions
-to a certain CPU, regardless of the current irq state. That includes
-interrupts which are delivered in a state where the device handler
-cannot be called.
-
-For level irq, if its disabled or no action available, we'll skip
-irq handling. When it is enabled later, the irq will be retriggered
-and kstat_incr_irqs_this_cpu() will be incremented again. This counts
-the number of interrupts arrived at the CPU and therefor it counts
-TWO in this situation. The CPU is interrupted twice, not once. The
-accounting works correctly as expected.
-
-But for edge irq, we have a subtle problem. Suppose a second irq
-happens when the first is still in progress, it will mark itself
-pending and quit, then it will be handled in the same loop after
-the first one has been handled. Thus kstat_incr_irqs_this_cpu()
-will only be counted once for two irqs.
-
-Add a check in edge handler if there is a irq already in progress,
-we'll first kstat_incr_irqs_this_cpu() before we mask and quit, so
-that we can get correct irq count in this case.
-
-[ Thanks Thomas for his excellent comments ]
-
-Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- kernel/irq/chip.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/pci/bus.c    |    2 +-
+ drivers/pci/probe.c  |    1 +
+ drivers/pci/remove.c |   10 +++++-----
+ 3 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index eebd6d5..254b8aa 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -489,6 +489,8 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
- 	if (unlikely(irqd_irq_disabled(&desc->irq_data) ||
- 		     irqd_irq_inprogress(&desc->irq_data) || !desc->action)) {
- 		if (!irq_check_poll(desc)) {
-+			if (irqd_irq_inprogress(&desc->irq_data))
-+				kstat_incr_irqs_this_cpu(irq, desc);
- 			desc->istate |= IRQS_PENDING;
- 			mask_ack_irq(desc);
- 			goto out_unlock;
-@@ -550,6 +552,8 @@ void handle_edge_eoi_irq(unsigned int irq, struct
-irq_desc *desc)
- 	if (unlikely(irqd_irq_disabled(&desc->irq_data) ||
- 		     irqd_irq_inprogress(&desc->irq_data) || !desc->action)) {
- 		if (!irq_check_poll(desc)) {
-+			if (irqd_irq_inprogress(&desc->irq_data))
-+				kstat_incr_irqs_this_cpu(irq, desc);
- 			desc->istate |= IRQS_PENDING;
- 			goto out_eoi;
- 		}
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 4ce5ef2..e2a0c52 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -187,7 +187,7 @@ int pci_bus_add_child(struct pci_bus *bus)
+ 	if (bus->bridge)
+ 		bus->dev.parent = bus->bridge;
+ 
+-	retval = device_register(&bus->dev);
++	retval = device_add(&bus->dev);
+ 	if (retval)
+ 		return retval;
+ 
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index dacca26..47ffa6c 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -667,6 +667,7 @@ struct pci_bus *__ref pci_add_new_bus(struct pci_bus *parent, struct pci_dev *de
+ 		down_write(&pci_bus_sem);
+ 		list_add_tail(&child->node, &parent->children);
+ 		up_write(&pci_bus_sem);
++		device_initialize(&child->dev);
+ 	}
+ 	return child;
+ }
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index 6c07bc5..edbd117 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -70,11 +70,11 @@ void pci_remove_bus(struct pci_bus *pci_bus)
+ 	list_del(&pci_bus->node);
+ 	pci_bus_release_busn_res(pci_bus);
+ 	up_write(&pci_bus_sem);
+-	if (!pci_bus->is_added)
+-		return;
+-
+-	pci_remove_legacy_files(pci_bus);
+-	device_unregister(&pci_bus->dev);
++	if (pci_bus->is_added) {
++		pci_remove_legacy_files(pci_bus);
++		device_del(&pci_bus->dev);
++	}
++	put_device(&pci_bus->dev);
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
+ 
 -- 
 1.7.1
 
---e89a8f22c72b893b3804c19ea5e6
-Content-Type: application/octet-stream; 
-	name="0001-genirq-Increment-irq-count-for-second-edge-irq-when-.patch"
-Content-Disposition: attachment; 
-	filename="0001-genirq-Increment-irq-count-for-second-edge-irq-when-.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_h313315n0
 
-RnJvbSA5Mzk2MGM2OWU1ODg5ODkzNDY1ODlmYWM3OGIzMTFhYzYyZmI3NTUyIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBOaW5nIEppYW5nIDxuaW5nLm4uamlhbmdAZ21haWwuY29tPgpE
-YXRlOiBNb24sIDQgSnVuIDIwMTIgMDk6NTQ6MDggKzA4MDAKU3ViamVjdDogW1BBVENIXSBnZW5p
-cnE6IEluY3JlbWVudCBpcnEgY291bnQgZm9yIHNlY29uZCBlZGdlIGlycSB3aGVuIHRoZSBmaXJz
-dCBpcyBpbiBwcm9ncmVzcwoKa3N0YXRfaW5jcl9pcnFzX3RoaXNfY3B1KCkgcmVjb3JkcyB0aGUg
-cmVhbCBudW1iZXIgb2YgaW50ZXJydXB0aW9ucwp0byBhIGNlcnRhaW4gQ1BVLCByZWdhcmRsZXNz
-IG9mIHRoZSBjdXJyZW50IGlycSBzdGF0ZS4gVGhhdCBpbmNsdWRlcwppbnRlcnJ1cHRzIHdoaWNo
-IGFyZSBkZWxpdmVyZWQgaW4gYSBzdGF0ZSB3aGVyZSB0aGUgZGV2aWNlIGhhbmRsZXIKY2Fubm90
-IGJlIGNhbGxlZC4KCkZvciBsZXZlbCBpcnEsIGlmIGl0cyBkaXNhYmxlZCBvciBubyBhY3Rpb24g
-YXZhaWxhYmxlLCB3ZSdsbCBza2lwCmlycSBoYW5kbGluZy4gV2hlbiBpdCBpcyBlbmFibGVkIGxh
-dGVyLCB0aGUgaXJxIHdpbGwgYmUgcmV0cmlnZ2VyZWQKYW5kIGtzdGF0X2luY3JfaXJxc190aGlz
-X2NwdSgpIHdpbGwgYmUgaW5jcmVtZW50ZWQgYWdhaW4uIFRoaXMgY291bnRzCnRoZSBudW1iZXIg
-b2YgaW50ZXJydXB0cyBhcnJpdmVkIGF0IHRoZSBDUFUgYW5kIHRoZXJlZm9yIGl0IGNvdW50cwpU
-V08gaW4gdGhpcyBzaXR1YXRpb24uIFRoZSBDUFUgaXMgaW50ZXJydXB0ZWQgdHdpY2UsIG5vdCBv
-bmNlLiBUaGUKYWNjb3VudGluZyB3b3JrcyBjb3JyZWN0bHkgYXMgZXhwZWN0ZWQuCgpCdXQgZm9y
-IGVkZ2UgaXJxLCB3ZSBoYXZlIGEgc3VidGxlIHByb2JsZW0uIFN1cHBvc2UgYSBzZWNvbmQgaXJx
-CmhhcHBlbnMgd2hlbiB0aGUgZmlyc3QgaXMgc3RpbGwgaW4gcHJvZ3Jlc3MsIGl0IHdpbGwgbWFy
-ayBpdHNlbGYKcGVuZGluZyBhbmQgcXVpdCwgdGhlbiBpdCB3aWxsIGJlIGhhbmRsZWQgaW4gdGhl
-IHNhbWUgbG9vcCBhZnRlcgp0aGUgZmlyc3Qgb25lIGhhcyBiZWVuIGhhbmRsZWQuIFRodXMga3N0
-YXRfaW5jcl9pcnFzX3RoaXNfY3B1KCkKd2lsbCBvbmx5IGJlIGNvdW50ZWQgb25jZSBmb3IgdHdv
-IGlycXMuCgpBZGQgYSBjaGVjayBpbiBlZGdlIGhhbmRsZXIgaWYgdGhlcmUgaXMgYSBpcnEgYWxy
-ZWFkeSBpbiBwcm9ncmVzcywKd2UnbGwgZmlyc3Qga3N0YXRfaW5jcl9pcnFzX3RoaXNfY3B1KCkg
-YmVmb3JlIHdlIG1hc2sgYW5kIHF1aXQsIHNvCnRoYXQgd2UgY2FuIGdldCBjb3JyZWN0IGlycSBj
-b3VudCBpbiB0aGlzIGNhc2UuCgpbIFRoYW5rcyBUaG9tYXMgZm9yIGhpcyBleGNlbGxlbnQgY29t
-bWVudHMgXQoKU2lnbmVkLW9mZi1ieTogTmluZyBKaWFuZyA8bmluZy5uLmppYW5nQGdtYWlsLmNv
-bT4KLS0tCiBrZXJuZWwvaXJxL2NoaXAuYyB8ICAgIDQgKysrKwogMSBmaWxlcyBjaGFuZ2VkLCA0
-IGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEva2VybmVsL2lycS9j
-aGlwLmMgYi9rZXJuZWwvaXJxL2NoaXAuYwppbmRleCBlZWJkNmQ1Li4yNTRiOGFhIDEwMDY0NAot
-LS0gYS9rZXJuZWwvaXJxL2NoaXAuYworKysgYi9rZXJuZWwvaXJxL2NoaXAuYwpAQCAtNDg5LDYg
-KzQ4OSw4IEBAIGhhbmRsZV9lZGdlX2lycSh1bnNpZ25lZCBpbnQgaXJxLCBzdHJ1Y3QgaXJxX2Rl
-c2MgKmRlc2MpCiAJaWYgKHVubGlrZWx5KGlycWRfaXJxX2Rpc2FibGVkKCZkZXNjLT5pcnFfZGF0
-YSkgfHwKIAkJICAgICBpcnFkX2lycV9pbnByb2dyZXNzKCZkZXNjLT5pcnFfZGF0YSkgfHwgIWRl
-c2MtPmFjdGlvbikpIHsKIAkJaWYgKCFpcnFfY2hlY2tfcG9sbChkZXNjKSkgeworCQkJaWYgKGly
-cWRfaXJxX2lucHJvZ3Jlc3MoJmRlc2MtPmlycV9kYXRhKSkKKwkJCQlrc3RhdF9pbmNyX2lycXNf
-dGhpc19jcHUoaXJxLCBkZXNjKTsKIAkJCWRlc2MtPmlzdGF0ZSB8PSBJUlFTX1BFTkRJTkc7CiAJ
-CQltYXNrX2Fja19pcnEoZGVzYyk7CiAJCQlnb3RvIG91dF91bmxvY2s7CkBAIC01NTAsNiArNTUy
-LDggQEAgdm9pZCBoYW5kbGVfZWRnZV9lb2lfaXJxKHVuc2lnbmVkIGludCBpcnEsIHN0cnVjdCBp
-cnFfZGVzYyAqZGVzYykKIAlpZiAodW5saWtlbHkoaXJxZF9pcnFfZGlzYWJsZWQoJmRlc2MtPmly
-cV9kYXRhKSB8fAogCQkgICAgIGlycWRfaXJxX2lucHJvZ3Jlc3MoJmRlc2MtPmlycV9kYXRhKSB8
-fCAhZGVzYy0+YWN0aW9uKSkgewogCQlpZiAoIWlycV9jaGVja19wb2xsKGRlc2MpKSB7CisJCQlp
-ZiAoaXJxZF9pcnFfaW5wcm9ncmVzcygmZGVzYy0+aXJxX2RhdGEpKQorCQkJCWtzdGF0X2luY3Jf
-aXJxc190aGlzX2NwdShpcnEsIGRlc2MpOwogCQkJZGVzYy0+aXN0YXRlIHw9IElSUVNfUEVORElO
-RzsKIAkJCWdvdG8gb3V0X2VvaTsKIAkJfQotLSAKMS43LjEKCg==
---e89a8f22c72b893b3804c19ea5e6--
