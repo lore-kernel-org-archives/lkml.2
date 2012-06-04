@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760733Ab2FDPAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:00:53 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:44140 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab2FDPAw (ORCPT
+	id S1760752Ab2FDPBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:01:06 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46901 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760691Ab2FDPBD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:00:52 -0400
-Date: Mon, 4 Jun 2012 20:30:40 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
- as target of (pinned) task migration
-Message-ID: <20120604150040.GD25126@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
- <1338801907.7356.163.camel@marge.simpson.net>
- <1338810796.28282.32.camel@twins>
- <1338814063.7356.192.camel@marge.simpson.net>
- <20120604130740.GC25126@linux.vnet.ibm.com>
- <1338820234.7356.250.camel@marge.simpson.net>
- <20120604143802.GB26651@linux.vnet.ibm.com>
- <1338820895.7356.252.camel@marge.simpson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1338820895.7356.252.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12060415-8878-0000-0000-000002C591FE
+	Mon, 4 Jun 2012 11:01:03 -0400
+Message-ID: <1338822048.28282.59.camel@twins>
+Subject: Re: [PATCH 3/3] uprobes: document uprobe_register() vs
+ uprobe_mmap() race
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Jun 2012 17:00:48 +0200
+In-Reply-To: <20120604145331.GC6416@redhat.com>
+References: <20120604145238.GA6408@redhat.com>
+	 <20120604145331.GC6416@redhat.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith <efault@gmx.de> [2012-06-04 16:41:35]:
+On Mon, 2012-06-04 at 16:53 +0200, Oleg Nesterov wrote:
 
-> But high priority SCHED_OTHER tasks do not hog the CPU, they get their
-> fair share as defined by the user.
+I didn't check if its my error or not, however:
 
-Consider this case. System with 2 cores (each with 2 thread) and 3
-cgroups :
+> @@ -850,6 +869,10 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+>  
+>  		if (is_register) {
+>  			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
+> +			/*
+> +			 * We can race against uprobe_register(), see the
 
-	A (1024) -> has 2 tasks (A0, A1)
-	B (2048) -> has 2 tasks (B0, B1)
-	C (1024) -> has 1 tasks (C0 - pinned to CPUs 1,2)
+that should be uprobe_mmap(), since this is the register path ;-)
 
-(B0, B1) collectively are eligible to consume 2 full cpus worth of
-bandwidth, (A0, A1) together are eligible to consume 1 full-cpu
-worth of bandwidth and finally C0 is eligible to get 1 full-cpu worth of
-bandwidth. 
-
-Currently C0 is sleeping as a result of which tasks could be spread as:
-
-	CPU0 -> A0
-	CPU1 -> A1
-
-	CPU2 -> B0
-	CPU3 -> B1
-
-Now C0 wakes up and lands on CPU2 (which was its prev_cpu).
-
-	CPU0 -> A0
-	CPU1 -> A1
-
-	CPU2 -> B0, C0
-	CPU3 -> B1
-
-Ideally CPU1 needs to pull it C0 to itself (while A1 moves to CPU0). Do
-you agree to that? I doubt that happens because of how CPU0 does load
-balance on behalf of itself and CPU1 (and thus fails to pull C0 to its
-core).
-
-- vatsa
+> +			 * comment near uprobe_hash().
+> +			 */
+>  			if (err == -EEXIST)
+>  				err = 0;
+>  		} else {
+> @@ -1058,8 +1081,10 @@ int uprobe_mmap(struct vm_area_struct *vma)
+>  			}
+>  
+>  			ret = install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+> -
+> -			/* Ignore double add: */
+> +			/*
+> +			 * We can race against uprobe_register(), see the
+> +			 * comment near uprobe_hash().
+> +			 */
+>  			if (ret == -EEXIST) {
+>  				ret = 0;
+>  
 
