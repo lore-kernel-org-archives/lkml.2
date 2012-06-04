@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab2FDRIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:08:41 -0400
-Received: from relay.parallels.com ([195.214.232.42]:49883 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab2FDRIk convert rfc822-to-8bit (ORCPT
+	id S1754344Ab2FDRIt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:08:49 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50914 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab2FDRIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:08:40 -0400
-From: Vladimir Davydov <VDavydov@parallels.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 4 Jun 2012 21:08:37 +0400
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-Thread-Topic: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-Thread-Index: Ac1CdKs/UPRGNHDZQlK6uIL0Dxv73Q==
-Message-ID: <33E662E8-48BF-49A7-A4A0-CB1A751AAEBC@parallels.com>
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
- <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
- <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
- <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
- <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
- <1338827607.28282.99.camel@twins> <4FCCE823.8090700@linux.intel.com>
-In-Reply-To: <4FCCE823.8090700@linux.intel.com>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, ru-RU
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Mon, 4 Jun 2012 13:08:45 -0400
 MIME-Version: 1.0
+In-Reply-To: <1338727219-24141-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1338727219-24141-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Mon, 4 Jun 2012 19:08:43 +0200
+Message-ID: <CACRpkdZJPH__FzsUmKnQhTOtJ1EstJ8K5LzhTXGUO_VSzrjLew@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib: wm8994: Use irq_domain mappings for gpios
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 4, 2012, at 8:53 PM, Arjan van de Ven wrote:
+On Sun, Jun 3, 2012 at 2:40 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
 
-> 
->> 
->> False, you can have 0 idle time and still have low load.
-> 
-> 1 is not low in this context fwiw.
-> 
->> 
->>> but because idle
->>> time tends to be bursty, we can still be idle for, say, a millisecond
->>> every 10 milliseconds. In this scenario, the load average is used to
->>> ensure that the 200 usecond cost of exiting idle is acceptable.
->> 
->> So what you're saying is that if you have 1ms idle in 10ms, it might not
->> be a continuous 1ms. And you're using load as a measure of how many
->> fragments it comes apart in?
-> 
-> no
-> 
-> what I'm saying is that if you have a workload where you have 10 msec of
-> work, then 1 msec of idle, then 10 msec of work, 1 msec of idle etc etc,
-> it is very different from 100 msec of work, 10 msec of idle, 100 msec of
-> work, even though utilization is the same.
-> 
-> what the logic is trying to do, on a 10 km level, is to limit the damage
-> of accumulated C state exit time.
-> (I'll avoid the word "latency" here, since the real time people will
-> then immediately think this is about controlling latency response, which
-> it isn't)
-> 
-> Now, if you're very idle for a sustained duration (e.g. low load),
-> you're assumed not sensitive to a bit of performance cost.
-> but if you're actually busy (over a longer period, not just "right
-> now"), you're assumed to be sensitive to the performance cost,
-> and what the algorithm does is make it less easy to go into the
-> expensive states.
-> 
-> the closest metric we have right now to "sensitive to performance cost"
-> that I know of is "load average". If the scheduler has a better metric,
-> I'd be more than happy to switch the idle selection code over to it...
-> 
+> This has no practical impact at present since we don't support device tree
+> so any user must have set an irq_base but this will in future allow a
+> transition to device tree with minimal invasiveness.
+>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-But this_cpu_load(), which is currently used by cpuidle, does not return the "load average". It returns the value of cpuload at some moment in the past (actually, the value is updated in update_cpu_load()). This value is usually used for load balancing.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Moreover, this value does not reflect the real cpu load from the cpuidle pow, because it depends on tasks priority (nice) and, what is worse, with the introduction of cgroups it can be pretty arbitrary. For instance, each group of tasks is accounted just as a single task with standard priority "spreaded" among all cpus, no matter how many tasks are actually running in it.
+I read some drivers/base/regmap code and I think I understand this stuff
+now, but seriously, it's quite hard to see the forest with all these trees,
+and regmap is actually one of the finest new things in recent kernels,
+so can could we create
+Documentation/driver-model/regmap.txt?
 
-> 
-> note that the idle selection code has 3 metrics, this is only one of them:
-> 1. PM_QOS latency tolerance
-> 2. Energy break even
-> 3. Performance tolerance
-> 
-> 
+I think this document is needed... I would write it myself if I felt I
+understood the regmap overall concepts well enough, but I'm
+certain to get something wrong.
 
+Yours,
+Linus Walleij
