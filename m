@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab2FDDxw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 23:53:52 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40886 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755774Ab2FDDxv (ORCPT
+	id S1751590Ab2FDECl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 00:02:41 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:63501 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab2FDECj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 23:53:51 -0400
-Message-ID: <4FCC3151.1040503@gmail.com>
-Date: Mon, 04 Jun 2012 07:53:53 +0400
-From: George Shuklin <george.shuklin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+	Mon, 4 Jun 2012 00:02:39 -0400
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Why minor is still 8 bit?
-References: <4FCC0E6D.9000206@gmail.com> <20120604013504.GU30000@ZenIV.linux.org.uk>
-In-Reply-To: <20120604013504.GU30000@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAJd=RBCt-vWozx2Jkvh5Quf1z_LO+4Xy=YM9YAJ9+73GmiaSwA@mail.gmail.com>
+References: <CAJd=RBB1s-_VOtoDsBbLidS51HwW6e98p=U-4mL-spByUMvETw@mail.gmail.com>
+	<CA+i8gKKQyGBc-BNBJ72S6rq7aiFqS=onqWQyeY4P+VVvFCeXJw@mail.gmail.com>
+	<CAJd=RBA=mvMGQgdKgW26dgd8nK2-_dW_epQLwbjOo2Zx2gsbeg@mail.gmail.com>
+	<CA+i8gK+H-hm9bjJub4siH0pCdOrzRxJXaX2QjosnKCjeWYPt4A@mail.gmail.com>
+	<CAJd=RBBxnD7JirPpy-jTgE9kpnZXN6gkTMsgcG8=goZxgQfTaQ@mail.gmail.com>
+	<4FCBA277.7020701@t-online.de>
+	<CAJd=RBCt-vWozx2Jkvh5Quf1z_LO+4Xy=YM9YAJ9+73GmiaSwA@mail.gmail.com>
+Date: Mon, 4 Jun 2012 12:02:38 +0800
+Message-ID: <CAJd=RBDs+KHV+-9EuiLpYGRFL4_S75kF0GAdQVxH5BKKESa02g@mail.gmail.com>
+Subject: Re: [patch] BFS 420: a tiny step forward
+From: Hillf Danton <dhillf@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 04.06.2012 05:35, Al Viro wrote:
-> On Mon, Jun 04, 2012 at 05:25:01AM +0400, George Shuklin wrote:
->> I've understand that major and minor numbers for device is 8-bit size.
->>
->> I've don't understand, WHY? In 2012!
->>
->> (I've just have some discussion about 8-bit counter limitations in
->> context of cloud computing. In middle of 2012!!!!)
-> Yes, shocking.  It's been several years and you are still using that
-> buzzword; I mean, it's _so_ 2010...  Should've moved on to whatever's
-> in this year...
+On Mon, Jun 4, 2012 at 1:44 AM, Manuel Krause <manuelkrause@t-online.de> wrote:
+> Hi Hillf Danton,
 >
-> Incidentally, minors are 20 bit and majors are 12, but don't let that
-> stand in the way of righteous indignation - what's mere facts when
-> one is having discussions in context, presumably leveraging synergies
-> all along...
-Ok, thank you for information.
+> thank you for posting the latest patch directly to me via email. It's now up
+>
+Thank you, too:)
 
-But question is almost same: can I have 30k active logical volumes on my 
-single server, please?
+> and running fine on here (but only with it)! :-)))
+>
+It is good news.
+
+> Kernel 3.3.7 + BFS_420 + mm-drop_swap_cache_aggressively.patch + your first
+> fix patch + this one (quoted below) + BFQ v3r4.
+>
+> Yes, I'm still stuck with 3.3.7, but if I didn't leave a decent uptime for a
+> new revision like yours I would not be able to reproduce/compare normal/old
+> behaviour.
+>
+> Have you already read @blogspot, what Con Kolivas thinks about your patch?
+>
+No, I did not, but URL link please.
+
+> That read, I didn't want to to try your patch at first, but now I find yours
+> to be more interactive than his only.
+>
+I will check that soon.
+
+> What he writes is, indeed, logically
+> clear. But why is your patch then making a much snappier experience?
+>
+Just like me, you are now involved deeper in what is called BFS, yes?
+
+> If this kernel gets worse after a period of uptime I'll come back to you.
+>
+Thank you, again, for your contribution to BFS.
+
+> You may have read that Ralph Ulrich complained about a slowing with 3.3.7 +
+> BFS, what I experienced, too.
+>
+URL link please.
+
+> Best regards, and, please keep up your work!!! (and post something related
+> to kernel 3.4.+ soon)
+>
+I will.
+
+Thanks and Regards
+-hd
