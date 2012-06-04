@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760974Ab2FDVaS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 17:30:18 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57444 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1760949Ab2FDVaP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 17:30:15 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/rFOIuyD3rNF3omd0OjWJJOBKLpNLFpIzrzLgaym
-	vmIiVFcb0Oxe4F
-Message-ID: <4FCD28E4.3090409@gmx.de>
-Date: Mon, 04 Jun 2012 23:30:12 +0200
-From: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120603 Thunderbird/12.0.1
+	id S1761010Ab2FDVaZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 17:30:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48676 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761002Ab2FDVaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 17:30:21 -0400
+Message-ID: <4FCD28C7.3050402@zytor.com>
+Date: Mon, 04 Jun 2012 14:29:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: chroot under kernel 3.4.x gives core dumps
-X-Enigmail-Version: 1.5pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+To: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@mit.edu>,
+        Ingo Molnar <mingo@elte.hu>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kees Cook <keescook@chromium.org>, Kevin Hilman <khilman@ti.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Tejun Heo <tj@kernel.org>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH 0/4 V2] introduce: livedump
+References: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp>
+In-Reply-To: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I try under both kernel versions to chroot into a user mode linux
-image, I often get this :
+On 05/25/2012 02:12 AM, YOSHIDA Masanori wrote:
+> 
+> Such a mechanism is useful especially in the case where very important
+> systems are consolidated onto a single machine via virtualization.
+> Assuming a KVM host runs multiple important VMs on it and one of them
+> fails, the other VMs have to keep running. However, at the same time, an
+> administrator may want to obtain memory dump of not only the failed guest
+> but also the host because possibly the cause of failture is not in the
+> guest but in the host or the hardware under it.
+> 
+> Live Dump is based on Copy-on-write technique. Basically processing is
+> performed in the following order.
+> (1) Suspends processing of all CPUs.
+> (2) Makes pages (which you want to dump) read-only.
+> (3) Resumes all CPUs
+> (4) On page fault, dumps a page including a fault address.
+> (5) Finally, dumps the rest of pages that are not updated.
+> 
+> Currently, Live Dump is just a simple prototype and it has many
+> limitations. I list the important ones below.
+> (1) It write-protects only kernel's straight mapping areas. Therefore
+>     memory updates from vmap areas and user space don't cause page fault.
+>     Pages corresponding to these areas are not consistently dumped.
+> (2) It supports only x86-64 architecture.
+> (3) It can only handle 4K pages. As we know, most pages in kernel space are
+>     mapped via 2M or 1G large page mapping. Therefore, the current
+>     implementation of Live Dump splits all large pages into 4K pages before
+>     setting up write protection.
+> (4) It allocates about 50% of physical RAM to store dumped pages. Currently
+>     Live Dump saves all dumped data on memory once, and after that a user
+>     becomes able to use the dumped data. Live Dump itself has no feature to
+>     save dumped data onto a disk or any other storage device.
+> 
 
-+ mount -o loop /home/tfoerste/virtual/uml/gentoo_unstable /mnt/loop
-+ mount -t proc none /mnt/loop/proc
-+ mount -o bind /dev /mnt/loop/dev
-+ mount -o bind /dev/pts /mnt/loop/dev/pts
-+ mount -o bind /usr/portage /mnt/loop/usr/portage
-+ mount -o bind /usr/local/portage /mnt/loop/usr/local/portage
-+ mount -o bind /tmp/uml_portage /mnt/loop/var/tmp/portage
-+ chroot /mnt/loop /bin/bash
-/home/tfoerste/workspace/bin/chr_uml.sh: line 55:  4143 Segmentation
-fault      (core dumped) chroot /mnt/loop /bin/bash
+I am very concerned about the impact of this patch versus its value...
+losing half the RAM means the value is extremely limited and the other
+limitations above indicates that the cost is very very high.
 
+At the same time, the guest can be dumped without any special tricks.
 
-The core file itself is only 400 KB in size and the back trace with gbd
-is meaningless :
+	-hpa
 
-Core was generated by `/bin/bash'.
-Program terminated with signal 11, Segmentation fault.
-#0  0xb75cac00 in ?? ()
-(gdb) bt
-#0  0xb75cac00 in ?? ()
-#1  0xb76f4ff4 in ?? ()
-Cannot access memory at address 0xffffffdc
-
-
-In the rare cases, where the chroot doesn't crash, all subsequent
-commands cores instead.
-
-Furthermore it seems, that the boinc grid software has problems too
-under kernel 3.4.1.
-
-All kernel 3.3.x works fine.
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
