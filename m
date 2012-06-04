@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab2FDJUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 05:20:20 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44292 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2FDJUT (ORCPT
+	id S1756715Ab2FDJZR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 05:25:17 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:50156 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750973Ab2FDJZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 05:20:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FCC7592.9030403@kernel.org>
-References: <20120504073810.GA25175@lizard>
-	<CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
-	<CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
-	<20120507121527.GA19526@lizard>
-	<4FA82056.2070706@gmail.com>
-	<CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
-	<CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
-	<CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
-	<CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
-	<CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
-	<20120601122118.GA6128@lizard>
-	<alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
-	<4FCC7592.9030403@kernel.org>
-Date: Mon, 4 Jun 2012 12:20:18 +0300
-X-Google-Sender-Auth: 0goRYiRcjYUyG76llyMdK8hnOnU
-Message-ID: <CAOJsxLEH5UZNuo6VQRH+5YHaxpv8C1rBOGi7dp6hJ9MMU3jidQ@mail.gmail.com>
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-From: Pekka Enberg <penberg@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Jun 2012 05:25:15 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19tv4pl7Mltv188WrjVchRahIjPtaIzHA9Ng4qv/o
+	9TByHfSNNH5gN7
+Message-ID: <1338801907.7356.163.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
+ as target of (pinned) task migration
+From: Mike Galbraith <efault@gmx.de>
+To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>
+Date: Mon, 04 Jun 2012 11:25:07 +0200
+In-Reply-To: <4FCC4E3B.4090209@linux.vnet.ibm.com>
+References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 4, 2012 at 11:45 AM, Minchan Kim <minchan@kernel.org> wrote:
-> KOSAKI, AFAIRC, you are a person who hates android low memory killer.
-> Why do you hate it? If it solve problems I mentioned, do you have a concern, still?
-> If so, please, list up.
->
-> Android low memory killer is proved solution for a long time, at least embedded
-> area(So many android phone already have used it) so I think improving it makes
-> sense to me rather than inventing new wheel.
+On Mon, 2012-06-04 at 11:27 +0530, Prashanth Nageshappa wrote: 
+> Based on the description in
+> http://marc.info/?l=linux-kernel&m=133108682113018&w=2 , I was able to recreate
+> a problem where in a SCHED_OTHER thread never gets runtime, even though there is
+> one allowed CPU where it can run and make progress.
+> 
+> On a dual socket box (4 cores per socket, 2 threads per core) with following
+> config:
+> 0 8	1 9	4 12	5 13
+> 2 10	3 11	6 14	7 15
+> |__________|    |__________|
+>  socket 1        socket 2
+> 
+> If we have following 4 tasks (2 SCHED_FIFO and 2 SCHED_OTHER) started in the
+> following order:
+> 1> SCHED_FIFO cpu hogging task bound to cpu 1
+> 2> SCHED_OTHER cpu hogging task bound to cpus 3 & 9 - running on cpu 3
+>    sleeps and wakes up after all other tasks are started
+> 3> SCHED_FIFO cpu hogging task bound to cpu 3
+> 4> SCHED_OTHER cpu hogging task bound to cpu 9
+> 
+> Once all the 4 tasks are started, we observe that 2nd task is starved of CPU
+> after waking up. When it wakes up, it wakes up on its prev_cpu (3) where
+> a FIFO task is now hogging the cpu. To prevent starvation, 2nd task
+> needs to be pulled to cpu 9. However, between cpus 1, 9, cpu1 is the chosen
+> cpu that attempts pulling tasks towards its core. When it tries pulling
+> 2nd tasks towards its core, it is unable to do so as cpu1 is not in 2nd
+> task's cpus_allowed mask. Ideally cpu1 should note that the task can be
+> moved to its sibling and trigger that movement.
 
-VM events started out as *ABI cleanup* of Nokia's N9 Linux lowmem
-notifier. That's not reinventing the wheel.
+Isn't this poking the wrong spot?
 
-On Mon, Jun 4, 2012 at 11:45 AM, Minchan Kim <minchan@kernel.org> wrote:
-> Frankly speaking, I don't know vmevent's other use cases except low memory
-> notification and didn't see any agreement about that with other guys.
+Making load balancing try to correct a bad situation created by a gone
+insane SCHED_FIFO task looks wrong to me.  Better would be to make sure
+insane RT tasks cannot borrow runtime indefinitely.  End result of 100%
+SCHED_FIFO is dead box, so whether we have a spot where we could place
+poor doomed SCHED_OTHER task seems kinda moot. 
 
-I think you are missing the point. "vmevent" is an ABI for delivering
-VM events to userspace. I started it because different userspaces do
-not agree what "low memory" means - for obvious reasons.
+Also, seems everybody and his brother thinks their stuff is so critical
+that they run stuff SCHED_FIFO/99, which is dainbramaged but seemingly
+common practice.  To make the system more robust in the face of that
+insanity, we _could_ perhaps tick SCHED_FIFO when budget is staying
+exceeded, which would allow sane threads at the same prio to get CPU
+instead of returning CPU to the criminally insane.  Better would be to
+just detect elite sociopath, and noisily cancel his Unobtanium CPU Card.
 
-As for use cases, it'd be useful for VMs to be notified of "about to
-swap your pages soon" so that they can aggressively GC before entering
-GC-swapstorm hell. I also hear that something similar would be useful
-for KVM/QEMU but I don't know the details.
+-Mike
 
-I really don't see how Android's "low memory killer" will be useful as
-a generic solution.
-
-                        Pekka
