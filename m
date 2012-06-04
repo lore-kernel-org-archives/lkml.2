@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab2FDUsC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 16:48:02 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:57757 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754684Ab2FDUsA (ORCPT
+	id S1760697Ab2FDUwd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 16:52:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34895 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753455Ab2FDUwc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 16:48:00 -0400
-Message-ID: <4FCD1EF9.6000001@suse.cz>
-Date: Mon, 04 Jun 2012 22:47:53 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120530 Thunderbird/14.0a2
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: user-mode-linux-devel@lists.sourceforge.net, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        alan@linux.intel.com
-Subject: Re: [PATCH 5/6] um: fully use tty_port
-References: <1338841657-30358-1-git-send-email-richard@nod.at> <1338841657-30358-6-git-send-email-richard@nod.at>
-In-Reply-To: <1338841657-30358-6-git-send-email-richard@nod.at>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Jun 2012 16:52:32 -0400
+Message-ID: <1338843134.28282.145.camel@twins>
+Subject: Re: [RFC] [PATCH 0/5] Teach perf tool to profile sleep times (V4)
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arun Sharma <asharma@fb.com>
+Cc: Andrew Vagin <avagin@openvz.org>, Oleg Strikov <OSTRIKOV@nvidia.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Date: Mon, 04 Jun 2012 22:52:14 +0200
+In-Reply-To: <4FCCE9F5.9050808@fb.com>
+References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
+	 <1338813658.28282.43.camel@twins> <4FCCE9F5.9050808@fb.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 10:27 PM, Richard Weinberger wrote:
-> +void line_cleanup(struct tty_struct *tty)
-> +{
-> +	struct line *line = tty->driver_data;
->  
->  	if (line->sigio) {
->  		unregister_winch(tty);
->  		line->sigio = 0;
+On Mon, 2012-06-04 at 10:01 -0700, Arun Sharma wrote:
+> On 6/4/12 5:40 AM, Peter Zijlstra wrote:
+> 
+> > And as a result you need that hideous prev_state crap.
+> >
+> >
+> > Would something like the below work?
+> >
+> > The one thing I'm not entirely sure of is if this is a sekjoerity issue
+> > or not.. anybody? I would think a task was entitled to know who woke it
+> > and wherefrom etc..
+> 
+> Frederic had some comments on this topic in the last round:
+> 
+> http://thread.gmane.org/gmane.linux.kernel/1195368/focus=1195959
+> 
+>  > We should probably avoid the remote callchains, sounds like asking 
+> for complications everywhere.
+> 
+> Do they still apply? Frederic?
 
-r u sure you want to to do this asynchronously? This should be
-tty_port_operations->shutdown I suppose...
+Probably, but note that the approaches are slightly different. The
+previous thing would wreck the callchain for everybody, the proposed
+thing will make more events.
 
->  	}
-> +}
+Also, you don't need the callchain on the wakeup side of things. You
+only want the callchain of the sched_switch site.
 
-Anyway, please split the patch into 2 pieces at least:
-1) introducing ->install and moving the setup there.
-2) switching to tty port helpers
-Otherwise it's a hard-to-review mess.
+We could even dis-allow the callchain unwind when event->ctx->task &&
+event->ctx->task != current -- pretend the unwind failed by writing 0
+entries.
 
-thanks,
--- 
-js
-suse labs
-
-
+That also avoids the 'difficultly' of exposing and trying to interpret
+another task's callchain.
