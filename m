@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760778Ab2FDPOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:14:36 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20030 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756667Ab2FDPOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:14:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="160383227"
-Message-ID: <4FCCD0CD.8080700@linux.intel.com>
-Date: Mon, 04 Jun 2012 08:14:21 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1760775Ab2FDPPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:15:33 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41936 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753061Ab2FDPPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 11:15:32 -0400
+Date: Mon, 4 Jun 2012 17:15:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] smp updates for 3.5
+Message-ID: <alpine.LFD.2.02.1206041714170.3086@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>   <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>  <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com> <1338822509.28282.65.camel@twins>
-In-Reply-To: <1338822509.28282.65.camel@twins>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/4/2012 8:08 AM, Peter Zijlstra wrote:
-> On Mon, 2012-06-04 at 06:48 -0700, Arjan van de Ven wrote:
->> it's not about busy, it's about performance sensitive.
->> it's not a super nice proxy, no argument, but it's one of the few long
->> term ones we have.
->>
-> I'm still not seeing how it makes any sense at all. Is there an actual
-> workload here this matters?
+Linus,
 
-yes there are, mostly server ones.
+please pull the latest smp-hotplug-for-linus git tree from:
 
-the problem isn't an individual idle, it's that the 100us-200us
-latencies add up if you go in and out repeatedly, when the system is in
-a situation where it is sensitive to performance (which is not an
-instant thing, this is a "over the long run we're busy" thing)...
-... they become a real factor.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git smp-hotplug-for-linus
 
-now, "performance sensitive" is highly elusive and unmeasureable, but
-load average is a reasonable approximation... well, the best we have.
-(just cpu usage is not, you can have low cpu usage but block on
-semaphores or IO all the time, and you're still sensitive to performance)
+
+Thanks,
+
+	tglx
+
+------------------>
+Srivatsa S. Bhat (2):
+      smpboot, idle: Optimize calls to smp_processor_id() in idle_threads_init()
+      smpboot, idle: Fix comment mismatch over idle_threads_init()
+
+
+ kernel/smpboot.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/smpboot.c b/kernel/smpboot.c
+index e1a797e..98f60c5 100644
+--- a/kernel/smpboot.c
++++ b/kernel/smpboot.c
+@@ -31,6 +31,12 @@ void __init idle_thread_set_boot_cpu(void)
+ 	per_cpu(idle_threads, smp_processor_id()) = current;
+ }
+ 
++/**
++ * idle_init - Initialize the idle thread for a cpu
++ * @cpu:	The cpu for which the idle thread should be initialized
++ *
++ * Creates the thread if it does not exist.
++ */
+ static inline void idle_init(unsigned int cpu)
+ {
+ 	struct task_struct *tsk = per_cpu(idle_threads, cpu);
+@@ -45,17 +51,16 @@ static inline void idle_init(unsigned int cpu)
+ }
+ 
+ /**
+- * idle_thread_init - Initialize the idle thread for a cpu
+- * @cpu:	The cpu for which the idle thread should be initialized
+- *
+- * Creates the thread if it does not exist.
++ * idle_threads_init - Initialize idle threads for all cpus
+  */
+ void __init idle_threads_init(void)
+ {
+-	unsigned int cpu;
++	unsigned int cpu, boot_cpu;
++
++	boot_cpu = smp_processor_id();
+ 
+ 	for_each_possible_cpu(cpu) {
+-		if (cpu != smp_processor_id())
++		if (cpu != boot_cpu)
+ 			idle_init(cpu);
+ 	}
+ }
