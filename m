@@ -1,200 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760489Ab2FDMlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 08:41:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:51103 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab2FDMlM convert rfc822-to-8bit (ORCPT
+	id S1760532Ab2FDMlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 08:41:36 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59036 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760524Ab2FDMld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 08:41:12 -0400
-Message-ID: <1338813658.28282.43.camel@twins>
-Subject: Re: [RFC] [PATCH 0/5] Teach perf tool to profile sleep times (V4)
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Date: Mon, 04 Jun 2012 14:40:58 +0200
-In-Reply-To: <1338797382-287275-1-git-send-email-avagin@openvz.org>
-References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 08:41:33 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: [PATCH] x86, smp: Fix topology checks on AMD MCM
+Date: Mon,  4 Jun 2012 14:41:57 +0200
+Message-Id: <1338813717-28112-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.9.3.362.g71319
+In-Reply-To: <20120529174804.GC8263@alberich.amd.com>
+References: <20120529174804.GC8263@alberich.amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 12:09 +0400, Andrew Vagin wrote:
-> This series resolves a problem with events filtering and non-root users.
-> Before I tried to use sched_stat* events, but it occurs in a context of
-> another task. For this case logic of perf_event_context* doesn't work.
-> 
-> This series adds one more event sched:sched_switch_finish, it's sent
-> when a task starts executing on a cpu. When a task goes out from cpu,
-> sched:sched_switch is sent.
-> 
-> The time difference between sched_switch and sched_switch_finish is a time
-> when a task wasn't being executed on a cpu.
+From: Borislav Petkov <borislav.petkov@amd.com>
 
+The warning below triggers on AMD MCM packages because physical package
+IDs on the cores of a _physical_ socket are the same. I.e., this field
+says which CPUs belong to the same physical package.
 
-So I really don't like this stuff either.. :-)
+However, the same two CPUs belong to two different internal, i.e.
+"logical" nodes in the same physical socket which is reflected in the
+CPU-to-node map on x86 with NUMA.
 
-Mostly because it adds very similar stuff to what's already there and
-then doesn't try and consolidate things.
+Which makes this check wrong on the above topologies so circumvent it.
 
-And partly because you're measuring the 'wrong' thing, the delay between
-sched-out and sched-in includes a number of things, only one part of
-that is the delay due to blocking.
+[    0.444413] Booting Node   0, Processors  #1 #2 #3 #4 #5 Ok.
+[    0.461388] ------------[ cut here ]------------
+[    0.465997] WARNING: at arch/x86/kernel/smpboot.c:310 topology_sane.clone.1+0x6e/0x81()
+[    0.473960] Hardware name: Dinar
+[    0.477170] sched: CPU #6's mc-sibling CPU #0 is not on the same node! [node: 1 != 0]. Ignoring dependency.
+[    0.486860] Booting Node   1, Processors  #6
+[    0.491104] Modules linked in:
+[    0.494141] Pid: 0, comm: swapper/6 Not tainted 3.4.0+ #1
+[    0.499510] Call Trace:
+[    0.501946]  [<ffffffff8144bf92>] ? topology_sane.clone.1+0x6e/0x81
+[    0.508185]  [<ffffffff8102f1fc>] warn_slowpath_common+0x85/0x9d
+[    0.514163]  [<ffffffff8102f2b7>] warn_slowpath_fmt+0x46/0x48
+[    0.519881]  [<ffffffff8144bf92>] topology_sane.clone.1+0x6e/0x81
+[    0.525943]  [<ffffffff8144c234>] set_cpu_sibling_map+0x251/0x371
+[    0.532004]  [<ffffffff8144c4ee>] start_secondary+0x19a/0x218
+[    0.537729] ---[ end trace 4eaa2a86a8e2da22 ]---
+[    0.628197]  #7 #8 #9 #10 #11 Ok.
+[    0.807108] Booting Node   3, Processors  #12 #13 #14 #15 #16 #17 Ok.
+[    0.897587] Booting Node   2, Processors  #18 #19 #20 #21 #22 #23 Ok.
+[    0.917443] Brought up 24 CPUs
 
-And as a result you need that hideous prev_state crap.
-
-
-Would something like the below work?
-
-The one thing I'm not entirely sure of is if this is a sekjoerity issue
-or not.. anybody? I would think a task was entitled to know who woke it
-and wherefrom etc..
-
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>
+Link: http://lkml.kernel.org/r/20120529135442.GE29157@aftab.osrc.amd.com
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- include/linux/ftrace_event.h |    5 +++--
- include/linux/perf_event.h   |    3 ++-
- include/trace/events/sched.h |    4 ++++
- include/trace/ftrace.h       |    6 +++++-
- kernel/events/core.c         |   19 ++++++++++++++++++-
- kernel/sched/core.c          |    2 +-
- 6 files changed, 33 insertions(+), 6 deletions(-)
+ arch/x86/kernel/smpboot.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 176a939..55b96e3 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -303,9 +303,10 @@ extern void *perf_trace_buf_prepare(int size, unsigned short type,
- 
- static inline void
- perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
--		       u64 count, struct pt_regs *regs, void *head)
-+		       u64 count, struct pt_regs *regs, void *head,
-+		       struct task_struct *task)
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index f56f96da77f5..912e5cac61d8 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -350,7 +350,8 @@ static bool __cpuinit match_llc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+ static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
  {
--	perf_tp_event(addr, count, raw_data, size, regs, head, rctx);
-+	perf_tp_event(addr, count, raw_data, size, regs, head, rctx, task);
+ 	if (c->phys_proc_id == o->phys_proc_id)
+-		return topology_sane(c, o, "mc");
++		if (!cpu_has(c, X86_FEATURE_AMD_DCM))
++			return topology_sane(c, o, "mc");
+ 
+ 	return false;
  }
- #endif
- 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index f325786..a3d7b90 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1269,7 +1269,8 @@ static inline bool perf_paranoid_kernel(void)
- extern void perf_event_init(void);
- extern void perf_tp_event(u64 addr, u64 count, void *record,
- 			  int entry_size, struct pt_regs *regs,
--			  struct hlist_head *head, int rctx);
-+			  struct hlist_head *head, int rctx,
-+			  struct task_struct *task);
- extern void perf_bp_event(struct perf_event *event, void *data);
- 
- #ifndef perf_misc_flags
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index ea7a203..31da561 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -75,6 +75,10 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
- 		__entry->target_cpu	= task_cpu(p);
- 	),
- 
-+	TP_perf_assign(
-+		__perf_task(p);
-+	),
-+
- 	TP_printk("comm=%s pid=%d prio=%d success=%d target_cpu=%03d",
- 		  __entry->comm, __entry->pid, __entry->prio,
- 		  __entry->success, __entry->target_cpu)
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 7697249..db14daf 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -711,6 +711,9 @@ __attribute__((section("_ftrace_events"))) *__event_##call = &event_##call
- #undef __perf_count
- #define __perf_count(c) __count = (c)
- 
-+#undef __perf_task
-+#define __perf_task(t) __task = (t)
-+
- #undef TP_perf_assign
- #define TP_perf_assign(args...) args
- 
-@@ -724,6 +727,7 @@ perf_trace_##call(void *__data, proto)					\
- 	struct ftrace_raw_##call *entry;				\
- 	struct pt_regs __regs;						\
- 	u64 __addr = 0, __count = 1;					\
-+	struct task_struct *__task = NULL;				\
- 	struct hlist_head *head;					\
- 	int __entry_size;						\
- 	int __data_size;						\
-@@ -751,7 +755,7 @@ perf_trace_##call(void *__data, proto)					\
- 									\
- 	head = this_cpu_ptr(event_call->perf_events);			\
- 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
--		__count, &__regs, head);				\
-+		__count, &__regs, head, __task);			\
- }
- 
- /*
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5b06cbb..cb84cbd6 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5204,7 +5204,8 @@ static int perf_tp_event_match(struct perf_event *event,
- }
- 
- void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
--		   struct pt_regs *regs, struct hlist_head *head, int rctx)
-+		   struct pt_regs *regs, struct hlist_head *head, int rctx,
-+		   struct task_struct *task)
- {
- 	struct perf_sample_data data;
- 	struct perf_event *event;
-@@ -5223,6 +5224,22 @@ void perf_tp_event(u64 addr, u64 count, void *record, int entry_size,
- 			perf_swevent_event(event, count, &data, regs);
- 	}
- 
-+	/*
-+	 * If we got specified a target task, also iterate its context and
-+	 * deliver this event there too.
-+	 */
-+	if (task) {
-+		struct perf_event_context *ctx;
-+
-+		rcu_read_lock();
-+		ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
-+		list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
-+			if (perf_tp_event_match(event, &data, regs))
-+				perf_swevent_event(event, count, &data, regs);
-+		}
-+		rcu_read_unlock();
-+	}
-+
- 	perf_swevent_put_recursion_context(rctx);
- }
- EXPORT_SYMBOL_GPL(perf_tp_event);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 420e118..8ac193c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1912,11 +1912,11 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
- 		    struct task_struct *next)
- {
- 	sched_info_switch(prev, next);
-+	trace_sched_switch(prev, next); /* before we flip the trace context */
- 	perf_event_task_sched_out(prev, next);
- 	fire_sched_out_preempt_notifiers(prev, next);
- 	prepare_lock_switch(rq, next);
- 	prepare_arch_switch(next);
--	trace_sched_switch(prev, next);
- }
- 
- /**
+-- 
+1.7.9.3.362.g71319
 
