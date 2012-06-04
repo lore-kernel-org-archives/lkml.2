@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab2FDCRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 22:17:12 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:11867 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755009Ab2FDCRK (ORCPT
+	id S1755515Ab2FDCRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 22:17:52 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40000 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755009Ab2FDCRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 22:17:10 -0400
-X-AuditID: cbfee61a-b7f996d000000ec4-f1-4fcc1aa59802
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Linus Walleij'" <linus.walleij@stericsson.com>
-Cc: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] gpio: samsung: fix build error for EXYNOS5250
-Date: Mon, 04 Jun 2012 11:17:09 +0900
-Message-id: <000101cd41f8$251e4cd0$6f5ae670$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1B+CTW1H/KAdVqSQaMQW142/IXiA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCLMWRmVeSWpSXmKPExsVy+t9jQd2lUmf8DWZs0bC4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZuyfsZim4w1FxbN1dlgbGdexdjJwcEgImEsd3XGOBsMUkLtxb
-	z9bFyMUhJDCdUeLGvkNMEM5sJokTs++DdbAJqEl8+XIYyObgEBFIkHiysQokzCxQK/HvxwRG
-	EFtYwE7i6/ZHYENZBFQlpl19wgxi8wrYSsx7epIJwhaU+DH5HgtEr5bE+p3HmSBseYnNa94y
-	g4yXEFCXePRXFyQsIqAn0d71mR2iRERi34t3jBMYBWYhmTQLyaRZSCbNQtKygJFlFaNoakFy
-	QXFSeq6hXnFibnFpXrpecn7uJkZwWD6T2sG4ssHiEKMAB6MSD6/Eq9P+QqyJZcWVuYcYJTiY
-	lUR4GS4BhXhTEiurUovy44tKc1KLDzFKc7AoifPaLd7hLySQnliSmp2aWpBaBJNl4uCUamA8
-	bH71+SzhL3/LvA64GyUKyr0xqTvveJNd49bVzLNuPwI3/3vLtZJp/cH9t3SEjps83rX/0/b9
-	0wwevtyyQ71F9tXmx2KaLOt5hLX9+1/tXrjAKLzMcdKUxpPHdrxovblkcnC9n+OvOwftNJon
-	5B559Ehvotm8lj1b/+Zdmvll0tx/n9WbXX5dUlJiKc5INNRiLipOBADKXFO/RwIAAA==
-X-TM-AS-MML: No
+	Sun, 3 Jun 2012 22:17:49 -0400
+Date: Mon, 4 Jun 2012 10:17:17 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        David Howells <dhowells@redhat.com>, Arun Sharma <asharma@fb.com>,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 10/27] mips, smpboot: Use generic SMP booting
+ infrastructure
+Message-ID: <20120604021717.GA26319@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+ <20120601091226.31979.62223.stgit@srivatsabhat.in.ibm.com>
+ <20120603082507.GA16829@zhy>
+ <4FCB4F00.8080202@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FCB4F00.8080202@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a typo from "exonys5_gpios_1" to "exonys5_gpios_1"
-in order to fix build error as below:
+On Sun, Jun 03, 2012 at 05:18:16PM +0530, Srivatsa S. Bhat wrote:
+> Yes, I noticed that while writing the patch. But then, I thought of cleaning
+> up the hundreds of callin/callout/commenced maps in various architectures and
+> bringing them out into core code in a later series, and clean this up at that time..
+> I didn't want to do too many invasive changes all at one-shot.
 
-drivers/gpio/gpio-samsung.c: In function 'exynos5_gpiolib_init':
-drivers/gpio/gpio-samsung.c:2836: error: 'exonys5_gpios_1' undeclared (first use in this function)
-drivers/gpio/gpio-samsung.c:2836: error: (Each undeclared identifier is reported only once
-drivers/gpio/gpio-samsung.c:2836: error: for each function it appears in.)
+OK.
 
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/gpio/gpio-samsung.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> But I guess for this particular case of mips, I can get rid of the wait for
+> cpu_callin_map in this patchset itself. I'll update this patch with that change.
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 7bb0044..b6453d0 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2833,7 +2833,7 @@ static __init void exynos5_gpiolib_init(void)
- 	}
- 
- 	/* need to set base address for gpc4 */
--	exonys5_gpios_1[11].base = gpio_base1 + 0x2E0;
-+	exynos5_gpios_1[11].base = gpio_base1 + 0x2E0;
- 
- 	/* need to set base address for gpx */
- 	chip = &exynos5_gpios_1[21];
--- 
-1.7.1
+:-)
 
+> So what is the status of those patches? Has anyone picked them up?
+> 
+> I could rebase this patch on top of yours, or better yet, if your
+> patches haven't been picked up yet, I could include them in this
+> patchset itself to avoid too many dependencies on external patches.
+> 
+> What do you say?
 
+Ralf has pushed it to http://git.linux-mips.org/?p=ralf/linux.git;a=summary
+
+I guess you can see it soon.
+
+Thanks,
+Yong
