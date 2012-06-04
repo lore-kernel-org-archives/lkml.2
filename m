@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab2FDJy4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 05:54:56 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:2886 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751360Ab2FDJyz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 05:54:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6731"; a="197370638"
-Message-ID: <24d7d95d140259af6fd3c3074348b8fe.squirrel@www.codeaurora.org>
-In-Reply-To: <20120530181340.GT9947@opensource.wolfsonmicro.com>
-References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
-    <20120530181340.GT9947@opensource.wolfsonmicro.com>
-Date: Mon, 4 Jun 2012 02:54:54 -0700 (PDT)
-Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
-From: "Sagar Dharia" <sdharia@codeaurora.org>
-To: "Mark Brown" <broonie@opensource.wolfsonmicro.com>
-Cc: "Sagar Dharia" <sdharia@codeaurora.org>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, kheitke@codeaurora.org, marc@plastictigers.com,
-        gclemson@audience.com, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, rob@landley.net,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, ohad@wizery.com,
-        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
-        ak@linux.intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Reply-To: sdharia@codeaurora.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
+	id S1756769Ab2FDJ5E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 05:57:04 -0400
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:36900 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751602Ab2FDJ5C convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 05:57:02 -0400
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Loic PALLARDY <loic.pallardy@stericsson.com>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjurbren@gmail.com>
+Date: Mon, 4 Jun 2012 11:56:47 +0200
+Subject: RE: [RFC 3/6] remoteproc: Move fw sanity check to find_rsc_table.
+Thread-Topic: [RFC 3/6] remoteproc: Move fw sanity check to find_rsc_table.
+Thread-Index: Ac1BjrqFlXL0CpWUT/qRY8MgZ1E11QApAXwQ
+Message-ID: <81C3A93C17462B4BBD7E272753C10579232F4FBCF7@EXDCVYMBSTM005.EQ1STM.local>
+References: <1337693217-15466-1-git-send-email-sjur.brandeland@stericsson.com>
+ <1337693217-15466-4-git-send-email-sjur.brandeland@stericsson.com>
+ <CAK=Wgbbdjf_SnbxQJd04nPSFBbHQQwO5zP_gW_jTiJyj_rn63g@mail.gmail.com>
+In-Reply-To: <CAK=Wgbbdjf_SnbxQJd04nPSFBbHQQwO5zP_gW_jTiJyj_rn63g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch is about 150k which is rather large to review.  It would be
-> enormously helpful for review if it could be broken down into a patch
-> series.  For example, things like the device registration could be
-> broken out into a separate patch as could the core bus operations and
-> things like the clocking/bandwidth management.
->
-Thank you Mark for looking at the patch.
-It's a good idea to break the patch. I am on vacation right now till
-6/15/12. I will work on breaking in logical pieces when I get back.
+>> Prepare for pluggable firmware handling by calling firmware
+>> sanity check from function find_rsc_table.
+> 
+> Can we keep the present location of rproc_fw_sanity_check(), and later
+> just invoke the relevant ops handler instead?
 
-Regards
-Sagar
+The sanity_check() is working on the ELF structures. And all ELF
+processing needs to be moved to a separate file. So if you want
+to keep the call to sanity_check() here, I need to make the
+sanity_check() function a separate handler. That could make sense,
+but will also bloat the struct rproc_fw_ops with one more function
+pointer.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Regards,
+Sjur
