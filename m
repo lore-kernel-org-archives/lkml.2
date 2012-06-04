@@ -1,119 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932141Ab2FDLjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:39:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62349 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab2FDLju (ORCPT
+	id S1760397Ab2FDLkf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:40:35 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:44998 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab2FDLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:39:50 -0400
-Date: Mon, 4 Jun 2012 04:38:12 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-Message-ID: <20120604113811.GA4291@lizard>
-References: <20120507121527.GA19526@lizard>
- <4FA82056.2070706@gmail.com>
- <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
- <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
- <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
- <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
- <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
- <20120601122118.GA6128@lizard>
- <alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
- <4FCC7592.9030403@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FCC7592.9030403@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Jun 2012 07:35:44 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH 21/24] TTY: centralize fail paths in tty_register_driver
+Date: Mon,  4 Jun 2012 13:35:35 +0200
+Message-Id: <1338809738-18967-22-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 05:45:06PM +0900, Minchan Kim wrote:
-[...]
-> AFAIK, low memory notifier is started for replacing android lowmemory killer.
-> At the same time, other folks want use it generally.
-> As I look through android low memory killer, it's not too bad except some point.
-> 
-> 1. It should not depend on shrink_slab. If we need, we can add some hook in vmscan.c directly instead of shrink_slab.
-> 2. We can use out_of_memory instead of custom victim selection/killing function. If we need,
->    we can change out_of_memory interface little bit for passing needed information to select victim.
-> 3. calculation for available pages
-> 
-> 1) and 2) would make android low memory killer very general and 3) can meet each folk's requirement, I believe.
-> 
-> Anton, I expect you already investigated android low memory killer so maybe you know pros and cons of each solution.
-> Could you convince us "why we need vmevent" and "why can't android LMK do it?"
+Currently, some failures are handled in if's false branches, some at
+the end of tty_register_driver via goto-labels. Let us handle the
+failures at the end of the functions to have the failure handling at
+a single place. The only thing needed is to label the lines properly
+and jump there.
 
-Note that 1) and 2) are not problems per se, it's just implementation
-details, easy stuff. Vmevent is basically an ABI/API, and I didn't
-hear anybody who would object to vmevent ABI idea itself. More than
-this, nobody stop us from implementing in-kernel vmevent API, and
-make Android Lowmemory killer use it, if we want to.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/tty_io.c |   18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
-The real problem is not with vmevent. Today there are two real problems:
-
-a) Gathering proper statistics from the kernel. Both cgroups and vmstat
-   have issues. Android lowmemory killer has the same problems w/ the
-   statistics as vmevent, it uses vmstat, so by no means Android
-   low memory killer is better or easier in this regard.
-   (And cgroups has issues w/ slab accounting, plus some folks don't
-   want memcg at all, since it has runtime and memory-wise costs.)
-
-b) Interpreting this statistics. We can't provide one, universal
-   "low memory" definition that would work for everybody.
-   (Btw, your "levels" based low memory grading actually sounds
-   the same as mine RECLAIMABLE_CACHE_PAGES and
-   RECLAIMABLE_CACHE_PAGES_NOIO idea, i.e.
-   http://lkml.indiana.edu/hypermail/linux/kernel/1205.0/02751.html
-   so personally I like the idea of level-based approach, based
-   on available memory *cost*.)
-
-So, you see, all these issues are valid for vmevent, cgroups and
-android low memory killer.
-
-> KOSAKI, AFAIRC, you are a person who hates android low memory killer.
-> Why do you hate it? If it solve problems I mentioned, do you have a concern, still?
-> If so, please, list up.
-> 
-> Android low memory killer is proved solution for a long time, at least embedded area(So many android phone already have used it) so I think improving it makes sense to me rather than inventing new wheel.
-
-Yes, nobody throws Android lowmemory killer away. And recently I fixed
-a bunch of issues in its tasks traversing and killing code. Now it's
-just time to "fix" statistics gathering and interpretation issues,
-and I see vmevent as a good way to do just that, and then we
-can either turn Android lowmemory killer driver to use the vmevent
-in-kernel API (so it will become just a "glue" between notifications
-and killing functions), or use userland daemon.
-
-Note that memcg has notifications as well, so it's another proof that
-there is a demand for this stuff outside of embedded world, and going
-with ad-hoc, custom "low memory killer" is simple and tempting approach,
-but it doesn't solve any real problems.
-
-> Frankly speaking, I don't know vmevent's other use cases except low memory notification 
-
-I won't speak for realistic use-cases, but that is what comes to
-mind:
-
-- DB can grow its caches/in-memory indexes infinitely, and start dropping
-  them on demand (based on internal LRU list, for example). No more
-  guessed/static configuration for DB daemons?
-- Assuming VPS hosting w/ dynamic resources management, notifications
-  would be useful to readjust resources?
-- On desktops, apps can drop their caches on demand if they want to
-  and can avoid swap activity?
-
-Thanks,
-
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index b425c79..d6e045b 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -3144,10 +3144,8 @@ int tty_register_driver(struct tty_driver *driver)
+ 		dev = MKDEV(driver->major, driver->minor_start);
+ 		error = register_chrdev_region(dev, driver->num, driver->name);
+ 	}
+-	if (error < 0) {
+-		kfree(p);
+-		return error;
+-	}
++	if (error < 0)
++		goto err_free_p;
+ 
+ 	if (p) {
+ 		driver->ttys = (struct tty_struct **)p;
+@@ -3160,13 +3158,8 @@ int tty_register_driver(struct tty_driver *driver)
+ 	cdev_init(&driver->cdev, &tty_fops);
+ 	driver->cdev.owner = driver->owner;
+ 	error = cdev_add(&driver->cdev, dev, driver->num);
+-	if (error) {
+-		unregister_chrdev_region(dev, driver->num);
+-		driver->ttys = NULL;
+-		driver->termios = NULL;
+-		kfree(p);
+-		return error;
+-	}
++	if (error)
++		goto err_unreg_char;
+ 
+ 	mutex_lock(&tty_mutex);
+ 	list_add(&driver->tty_drivers, &tty_drivers);
+@@ -3193,13 +3186,14 @@ err:
+ 	list_del(&driver->tty_drivers);
+ 	mutex_unlock(&tty_mutex);
+ 
++err_unreg_char:
+ 	unregister_chrdev_region(dev, driver->num);
+ 	driver->ttys = NULL;
+ 	driver->termios = NULL;
++err_free_p:
+ 	kfree(p);
+ 	return error;
+ }
+-
+ EXPORT_SYMBOL(tty_register_driver);
+ 
+ /*
 -- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+1.7.10.3
+
+
