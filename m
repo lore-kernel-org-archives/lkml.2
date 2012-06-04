@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab2FDRFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:05:46 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753138Ab2FDRFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:05:45 -0400
-Message-ID: <4FCCEAE5.9000801@nod.at>
-Date: Mon, 04 Jun 2012 19:05:41 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1754028Ab2FDRIl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:08:41 -0400
+Received: from relay.parallels.com ([195.214.232.42]:49883 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab2FDRIk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 13:08:40 -0400
+From: Vladimir Davydov <VDavydov@parallels.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 4 Jun 2012 21:08:37 +0400
+Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
+ calculating perf mult
+Thread-Topic: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
+ calculating perf mult
+Thread-Index: Ac1CdKs/UPRGNHDZQlK6uIL0Dxv73Q==
+Message-ID: <33E662E8-48BF-49A7-A4A0-CB1A751AAEBC@parallels.com>
+References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
+ <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
+ <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
+ <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
+ <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
+ <1338827607.28282.99.camel@twins> <4FCCE823.8090700@linux.intel.com>
+In-Reply-To: <4FCCE823.8090700@linux.intel.com>
+Accept-Language: en-US, ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, ru-RU
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Jiri Slaby <jslaby@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, Jeff Dike <jdike@addtoit.com>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        alan@linux.intel.com
-Subject: Re: [uml-devel] [PATCH 13/24] TTY: um/line, use tty from tty_port
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at> <4FCCD224.1020307@suse.cz> <4FCCD44A.3090500@nod.at> <4FCCD70D.5010908@suse.cz> <4FCCD774.5040003@nod.at> <4FCCE1D4.7080805@panasas.com> <4FCCE255.4080705@nod.at> <4FCCE866.7050203@panasas.com>
-In-Reply-To: <4FCCE866.7050203@panasas.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigD7308C4502625E7DF9EB484D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigD7308C4502625E7DF9EB484D
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Jun 4, 2012, at 8:53 PM, Arjan van de Ven wrote:
 
-Am 04.06.2012 18:55, schrieb Boaz Harrosh:
-> No still crashing the same, way. BTW I do not have a systemd Distro. It=
-'s
-> plain old FC12. Though in the lab I have the same crash with FC15.
->=20
-> The crash is immediately after I login at the initial prompt. (every ti=
-me)
+> 
+>> 
+>> False, you can have 0 idle time and still have low load.
+> 
+> 1 is not low in this context fwiw.
+> 
+>> 
+>>> but because idle
+>>> time tends to be bursty, we can still be idle for, say, a millisecond
+>>> every 10 milliseconds. In this scenario, the load average is used to
+>>> ensure that the 200 usecond cost of exiting idle is acceptable.
+>> 
+>> So what you're saying is that if you have 1ms idle in 10ms, it might not
+>> be a continuous 1ms. And you're using load as a measure of how many
+>> fragments it comes apart in?
+> 
+> no
+> 
+> what I'm saying is that if you have a workload where you have 10 msec of
+> work, then 1 msec of idle, then 10 msec of work, 1 msec of idle etc etc,
+> it is very different from 100 msec of work, 10 msec of idle, 100 msec of
+> work, even though utilization is the same.
+> 
+> what the logic is trying to do, on a 10 km level, is to limit the damage
+> of accumulated C state exit time.
+> (I'll avoid the word "latency" here, since the real time people will
+> then immediately think this is about controlling latency response, which
+> it isn't)
+> 
+> Now, if you're very idle for a sustained duration (e.g. low load),
+> you're assumed not sensitive to a bit of performance cost.
+> but if you're actually busy (over a longer period, not just "right
+> now"), you're assumed to be sensitive to the performance cost,
+> and what the algorithm does is make it less easy to go into the
+> expensive states.
+> 
+> the closest metric we have right now to "sensitive to performance cost"
+> that I know of is "load average". If the scheduler has a better metric,
+> I'd be more than happy to switch the idle selection code over to it...
+> 
 
-Okay, I'll test my patches with FC12 too. :-\
+But this_cpu_load(), which is currently used by cpuidle, does not return the "load average". It returns the value of cpuload at some moment in the past (actually, the value is updated in update_cpu_load()). This value is usually used for load balancing.
 
-> Here is the crash print, what ever that is worth in UML.
-> (Can we make the crash dump stack trace a bit less terrible?)
+Moreover, this value does not reflect the real cpu load from the cpuidle pow, because it depends on tasks priority (nice) and, what is worse, with the introduction of cgroups it can be pretty arbitrary. For instance, each group of tasks is accounted just as a single task with standard priority "spreaded" among all cpus, no matter how many tasks are actually running in it.
 
--ENOPATCH. :-)
-Feel free to send one.
+> 
+> note that the idle selection code has 3 metrics, this is only one of them:
+> 1. PM_QOS latency tolerance
+> 2. Energy break even
+> 3. Performance tolerance
+> 
+> 
 
-Thanks,
-//richard
-
-
-
---------------enigD7308C4502625E7DF9EB484D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPzOrlAAoJEN9758yqZn9eUfEIAIvNJb9B71IcHx//2k8qRq3C
-KAgVvXY3dNUAt/GuEbxAqXnNNvFiMBaMuKq08rWiVxew2cAUlbauC9DkS0i0OnQi
-1urSAdSxezcyf/fKJoPN+THP8lyEfIVEtqyumSpZkjItpOhPeeqsNESrma4NIIF8
-l7JI6B6A/JCPM/eiGVAeG6SBJ64XshX4E0I+2LqRJTx9MSNcWOMY61se0rgraKTT
-uHkNSpkBaUKaCRHwP1hABSKddx+mloREaZOj0FeSg3NqY6FLL6zb2SMjQSTVkXHt
-WDXh2IfAB01qAdJHkNFq1M8Hi9aB4jY9oSbBLWIodEmeqIyWbqdacxlq8zsRdUs=
-=8lKY
------END PGP SIGNATURE-----
-
---------------enigD7308C4502625E7DF9EB484D--
