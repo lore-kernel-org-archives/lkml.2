@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab2FDNHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 09:07:51 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35991 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab2FDNHt (ORCPT
+	id S1760461Ab2FDNIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 09:08:04 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41305 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760012Ab2FDNIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 09:07:49 -0400
-Date: Mon, 4 Jun 2012 18:37:41 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
- as target of (pinned) task migration
-Message-ID: <20120604130740.GC25126@linux.vnet.ibm.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
- <1338801907.7356.163.camel@marge.simpson.net>
- <1338810796.28282.32.camel@twins>
- <1338814063.7356.192.camel@marge.simpson.net>
+	Mon, 4 Jun 2012 09:08:01 -0400
+Date: Mon, 4 Jun 2012 15:07:58 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+cc: Avi Kivity <avi@redhat.com>, Alex Williamson <alex.williamson@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yongjie.ren@intel.com" <yongjie.ren@intel.com>
+Subject: Re: [PATCH] KVM: Use IRQF_ONESHOT for assigned device MSI
+ interrupts
+In-Reply-To: <4FCC9EAC.9090007@siemens.com>
+Message-ID: <alpine.LFD.2.02.1206041458490.3086@ionos>
+References: <20120601161521.26935.25606.stgit@bling.home>   <4FC8F042.5050600@siemens.com> <1338570192.23475.25.camel@bling.home>  <4FC8F867.7080103@siemens.com> <1338573558.23475.41.camel@bling.home> <4FC90961.8030701@siemens.com> <4FCB2359.9020505@redhat.com>
+ <alpine.LFD.2.02.1206041235540.3086@ionos> <4FCC9EAC.9090007@siemens.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1338814063.7356.192.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12060413-9574-0000-0000-0000030A1FF5
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mike Galbraith <efault@gmx.de> [2012-06-04 14:47:43]:
+On Mon, 4 Jun 2012, Jan Kiszka wrote:
+> On 2012-06-04 13:21, Thomas Gleixner wrote:
+> So this shortcut requires some checks before being applied to a specific
+> MSI/MSI-X vector.
+> 
+> 
+> Taking KVM aside, my general question remains if threaded MSI handlers
+> of all devices really need to apply IRQF_ONESHOT though they should have
+> no use for it.
 
-> You need a good reason to run RT, and being able to starve others to
-> death ain't it, so I don't see a good reason to care about the 95% case
-> enough to fiddle with load balancing to accommodate the oddball case.
+In theory no, but we had more than one incident, where threaded irqs
+w/o a primary handler and w/o IRQF_ONEHSOT lead to full system
+starvation. Linus requested this sanity check and I think it's sane
+and required.
 
-While starvation of SCHED_OTHER task was an extreme case, the point
-remains that SCHED_OTHER tasks are better served by moving them away
-from cpus running rt tasks that are partially cpu intensive. While the
-current code has the nuts and bolts to recognize this situation
-(scale_rt_power), it fails to effect SCHED_OTHER task movement because of how
-one cpu from a sched_group is designated to pull tasks on behalf of its
-siblings and that chosen balance_cpu may not be in the task's cpus_allowed mask
-(but the task can run on one or more of its sibling cpus).
+In fact it's a non issue for MSI. MSI uses handle_edge_irq which does
+not mask the interrupt. IRQF_ONESHOT is a noop for that flow handler.
 
-- vatsa
+Thanks,
 
+	tglx
