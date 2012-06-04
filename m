@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760501Ab2FDOaR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 10:30:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41671 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753795Ab2FDOaP (ORCPT
+	id S932242Ab2FDOak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 10:30:40 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56322 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754968Ab2FDOaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 10:30:15 -0400
-Date: Mon, 4 Jun 2012 16:29:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: peterz@infradead.org, paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au,
-        mingo@kernel.org, yong.zhang0@gmail.com, akpm@linux-foundation.org,
-        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Joerg Roedel <joerg.roedel@amd.com>, Yinghai Lu <yinghai@kernel.org>,
-        Naga Chumbalkar <nagananda.chumbalkar@hp.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 07/27] x86, smpboot: Use generic SMP booting
- infrastructure
-In-Reply-To: <20120601091148.31979.53116.stgit@srivatsabhat.in.ibm.com>
-Message-ID: <alpine.LFD.2.02.1206041613380.3086@ionos>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091148.31979.53116.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 4 Jun 2012 10:30:39 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX191E9ZLkBV15wJbNxpnWxWUxZcH4lfwS+2CM41jOr
+	B3Z9JiaHgeNYJd
+Message-ID: <1338820234.7356.250.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
+ as target of (pinned) task migration
+From: Mike Galbraith <efault@gmx.de>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Date: Mon, 04 Jun 2012 16:30:34 +0200
+In-Reply-To: <20120604130740.GC25126@linux.vnet.ibm.com>
+References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
+	 <1338801907.7356.163.camel@marge.simpson.net>
+	 <1338810796.28282.32.camel@twins>
+	 <1338814063.7356.192.camel@marge.simpson.net>
+	 <20120604130740.GC25126@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012, Srivatsa S. Bhat wrote:
-> From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+On Mon, 2012-06-04 at 18:37 +0530, Srivatsa Vaddagiri wrote: 
+> * Mike Galbraith <efault@gmx.de> [2012-06-04 14:47:43]:
 > 
-> Convert x86 to use the generic framework to boot secondary CPUs.
+> > You need a good reason to run RT, and being able to starve others to
+> > death ain't it, so I don't see a good reason to care about the 95% case
+> > enough to fiddle with load balancing to accommodate the oddball case.
 > 
-> Notes:
-> 1. x86 manipulates the cpu_online_mask under vector_lock. So, while
-> converting over to the generic smp booting code, override arch_vector_lock()
-> and arch_vector_unlock() to lock_vector_lock() and unlock_vector_lock()
-> respectively.
-> 
-> 2. In smp_callin(), we allow the master to continue as soon as the physical
-> booting of the secondary processor is done. That is, we don't wait till the
-> CPU_STARTING notifications are sent.
-> 
-> Implications:
->  - This does not alter the order in which the notifications are sent (i.e.,
->    still CPU_STARTING is followed by CPU_ONLINE) because the master waits till
->    the new cpu is set in the cpu_online_mask before returning to generic code.
-> 
->  - This approach is better because of 2 reasons:
->    a. It makes more sense: the master has a timeout for waiting on the
->       cpu_callin_map - which means we should report back as soon as possible.
->       The whole idea of having a timeout is to estimate the maximum time that
->       could be taken for physical booting. This approach separates out the
->       physical booting vs running CPU hotplug callbacks and reports back to
->       the master as soon as physical booting is done.
+> While starvation of SCHED_OTHER task was an extreme case, the point
+> remains that SCHED_OTHER tasks are better served by moving them away
+> from cpus running rt tasks that are partially cpu intensive. While the
+> current code has the nuts and bolts to recognize this situation
+> (scale_rt_power), it fails to effect SCHED_OTHER task movement because of how
+> one cpu from a sched_group is designated to pull tasks on behalf of its
+> siblings and that chosen balance_cpu may not be in the task's cpus_allowed mask
+> (but the task can run on one or more of its sibling cpus).
 
-How do you deal with the problem that the master does not come back in
-time? There is a timeout on the booting side as well. I haven't found
-out why this timeout exists at all, but we need to take care of that
-and there is a patch on LKML which removes the panic as this can
-happen on virt. I really wonder whether the hardware for which this
-timeout stuff was introduced still exists or whether we can simply get
-rid of it completely.
+Yeah, this is true, it is a latency source and a fairness violation.
+Slow path balance consideration does make some sense to me.
 
-Also the whole callin/callout mask business wants to be in the generic
-code. It can be replaced completely by cpu_state, at least that's what
-I was aiming for. There is no need for several variables tracking the
-same thing in different ways.
+But, if you have an RT requirement, you can't afford to mix unknown
+entities, nor over-commit etc.  A realtime application will assign all
+resources, so the load balancer becomes essentially unemployed.  No?
+Non critical worker-bees may be allowed to bounce around in say a
+cpuset, but none of the CPUs which do critical work will ever be
+over-committed, else application just lost the war.  In that regard,
+twiddling the load balancer to accommodate strange sounding case still
+seems wrong to me.
 
-Thanks,
+-Mike
 
-	tglx
-
- 
