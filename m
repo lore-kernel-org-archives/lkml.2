@@ -1,33 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab2FDAPW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 20:15:22 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:53767 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab2FDAPV convert rfc822-to-8bit (ORCPT
+	id S1755352Ab2FDAQw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 20:16:52 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35904 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab2FDAQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 20:15:21 -0400
+	Sun, 3 Jun 2012 20:16:51 -0400
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <201206032132.06209.heiko@sntech.de>
-References: <201206032129.45414.heiko@sntech.de> <201206032132.06209.heiko@sntech.de>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 4 Jun 2012 08:15:00 +0800
-Message-ID: <CAF+7xWn4Jje+XGpE3R1NfKN8knJHpGeBVaO428Sm_hN9tyDYBg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] regulator: gpio-regulator: populate selector from set_voltage
-To: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120604000059.GA14144@redhat.com>
+References: <20120603223617.GB7707@redhat.com> <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
+ <20120604000059.GA14144@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 3 Jun 2012 17:16:30 -0700
+X-Google-Sender-Auth: 5rpLQSpnyN9KoQl3zAHZDyiQ41k
+Message-ID: <CA+55aFwJO40594yLH0gS_7YurDGAojVYfgBQXLNawraV_jdNsQ@mail.gmail.com>
+Subject: Re: processes hung after sys_renameat, and 'missing' processes
+To: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/6/4 Heiko Stübner <heiko@sntech.de>:
-> This was missing until now and the underlying
-> _regulator_do_set_voltage is using this value when calling list_voltage.
+On Sun, Jun 3, 2012 at 5:00 PM, Dave Jones <davej@redhat.com> wrote:
 >
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> sysrq-d: http://fpaste.org/ow9O/
 
-Acked-by: Axel Lin <axel.lin@gmail.com>
+Ugh. I'm adding PeterZ to the cc, just to see if he can make more sense of it.
+
+Peter, is there no way to make the lock thing print not just the lock
+class name, but also the pointer to the actual *instance* of the lock
+held?
+
+Also, it's a bit unclear to me, but I *think* that most of those users
+don't actually "hold" the lock - they are waiting for it. Yes/no? Does
+the lockdep information have the capability to distinguish between
+"waiting for" vs "actually successfully owns the lock"?
+
+              Linus
