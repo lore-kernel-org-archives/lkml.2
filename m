@@ -1,194 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964Ab2FDHZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 03:25:56 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:53575 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab2FDHZy convert rfc822-to-8bit (ORCPT
+	id S1755350Ab2FDH1U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 03:27:20 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:59066 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753850Ab2FDH1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 03:25:54 -0400
+	Mon, 4 Jun 2012 03:27:19 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18aqLxgeUjc0KbAyBxJcTnJ
+Date: Mon, 4 Jun 2012 00:27:16 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lauri Leukkunen <lauri.leukkunen@nokia.com>,
+        Sebastian Reichel <sre@debian.org>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Ameya Palande <ameya.palande@nokia.com>
+Subject: [PATCH] ARM: OMAP: Fix lis3lv02d accelerometer to use gpio_to_irq
+Message-ID: <20120604072715.GW12766@atomide.com>
+References: <1621273.5PNGJFOirm@pali>
+ <20120509000734.GZ5088@atomide.com>
+ <20120521160840.GK17852@atomide.com>
+ <11538481.hbXYTSlcIX@pali>
 MIME-Version: 1.0
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 4 Jun 2012 15:25:33 +0800
-X-Google-Sender-Auth: D2XuGVk6AMqDVzfB0rxwmlrdURA
-Message-ID: <CAK5ve-JuZcjdbw_tV8vcriHWxOq1KFHm2mZBm6z3_j7hpPw-eA@mail.gmail.com>
-Subject: [GIT PULL] LED CPU trigger driver and ARM LED code consolidation
-To: Arnd Bergmann <arnd.bergmann@linaro.org>, Olof Johansson <olof@lixom.net>
-Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11538481.hbXYTSlcIX@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Olof,
+Commit 3b511201 (ARM: OMAP: rx51: Platform support for lis3lv02d accelerometer)
+added support for lis3lv02d accelerometer.
 
-Please consider to pull my branch for LED CPU trigger driver and ARM
-LED code consolidation, which is based on 3.5-rc1:
+The patch was still using OMAP_GPIO_IRQ which no longer exists.
 
-The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+Fix it by using gpio_to_irq().
 
-  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 
-are available in the git repository at:
+---
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
-for-arm-soc
+Here's this one fixed. Compile and boot tested only, I don't have
+physical access to my n900 right now.
 
-for you to fetch changes up to ea19d193ef750c09cd789cc3b00196f07ce2209f:
-
-  ARM: use new LEDS CPU trigger stub to replace old one (2012-06-04
-08:50:01 +0800)
-
-----------------------------------------------------------------
-Bryan Wu (18):
-      led-triggers: create a trigger for CPU activity
-      ARM: at91: convert old leds drivers to gpio_led and led_trigger drivers
-      ARM: mach-realview and mach-versatile: retire custom LED code
-      ARM: mach-ks8695: remove leds driver, since nobody use it
-      ARM: mach-shark: retire custom LED code
-      ARM: mach-orion5x: convert custom LED code to gpio_led and LED CPU trigger
-      ARM: mach-integrator: move CM_CTRL to header file for accessing
-by other functions
-      ARM: mach-integrator: retire custom LED code
-      ARM: mach-clps711x: retire custom LED code of P720T machine
-      ARM: mach-ebsa110: retire custom LED code
-      ARM: mach-footbridge: retire custom LED code
-      char: nwflash: remove old led event code
-      ARM: mach-pxa: retire custom LED code
-      ARM: plat-samsung: remove including old leds event API header file
-      ARM: mach-pnx4008: remove including old leds event API header file
-      ARM: mach-omap1: retire custom LED code
-      ARM: mach-sa1100: retire custom LED code
-      ARM: use new LEDS CPU trigger stub to replace old one
-
- arch/arm/Kconfig                             |   53 -----
- arch/arm/include/asm/leds.h                  |   50 -----
- arch/arm/kernel/Makefile                     |    1 -
- arch/arm/kernel/leds.c                       |  121 -----------
- arch/arm/kernel/process.c                    |    6 +-
- arch/arm/kernel/time.c                       |   17 --
- arch/arm/mach-at91/board-csb337.c            |    2 -
- arch/arm/mach-at91/board-ecbat91.c           |   18 +-
- arch/arm/mach-at91/board-eco920.c            |   22 +-
- arch/arm/mach-at91/board-kafa.c              |   17 +-
- arch/arm/mach-at91/board-kb9202.c            |   23 +-
- arch/arm/mach-at91/board-rm9200dk.c          |    3 -
- arch/arm/mach-at91/board-rm9200ek.c          |    3 -
- arch/arm/mach-at91/board-rsi-ews.c           |    3 -
- arch/arm/mach-at91/board-sam9-l9260.c        |   23 +-
- arch/arm/mach-at91/board-sam9261ek.c         |    3 -
- arch/arm/mach-at91/board-yl-9200.c           |    3 -
- arch/arm/mach-at91/include/mach/board.h      |    1 -
- arch/arm/mach-at91/leds.c                    |  105 ---------
- arch/arm/mach-clps711x/Makefile              |    2 -
- arch/arm/mach-clps711x/common.c              |    1 -
- arch/arm/mach-clps711x/p720t-leds.c          |   63 ------
- arch/arm/mach-clps711x/p720t.c               |   61 ++++++
- arch/arm/mach-ebsa110/Makefile               |    4 +-
- arch/arm/mach-ebsa110/leds.c                 |   81 ++++---
- arch/arm/mach-footbridge/Makefile            |    4 -
- arch/arm/mach-footbridge/ebsa285-leds.c      |  138 ------------
- arch/arm/mach-footbridge/ebsa285.c           |   81 +++++++
- arch/arm/mach-footbridge/netwinder-hw.c      |  112 ++++++++--
- arch/arm/mach-footbridge/netwinder-leds.c    |  138 ------------
- arch/arm/mach-integrator/Makefile            |    3 +-
- arch/arm/mach-integrator/core.c              |    3 -
- arch/arm/mach-integrator/include/mach/cm.h   |    2 +
- arch/arm/mach-integrator/leds.c              |  161 ++++++++------
- arch/arm/mach-ks8695/Makefile                |    3 -
- arch/arm/mach-ks8695/devices.c               |   21 --
- arch/arm/mach-ks8695/include/mach/devices.h  |    5 -
- arch/arm/mach-ks8695/leds.c                  |   92 --------
- arch/arm/mach-omap1/Makefile                 |    8 -
- arch/arm/mach-omap1/board-h2.c               |   32 +++
- arch/arm/mach-omap1/board-h3.c               |   32 +++
- arch/arm/mach-omap1/board-osk.c              |   33 +++
- arch/arm/mach-omap1/leds-h2p2-debug.c        |  166 ---------------
- arch/arm/mach-omap1/leds-innovator.c         |   98 ---------
- arch/arm/mach-omap1/leds-osk.c               |  113 ----------
- arch/arm/mach-omap1/leds.c                   |   69 ------
- arch/arm/mach-omap1/leds.h                   |    3 -
- arch/arm/mach-omap1/time.c                   |    1 -
- arch/arm/mach-omap1/timer32k.c               |    1 -
- arch/arm/mach-orion5x/rd88f5181l-fxo-setup.c |    1 -
- arch/arm/mach-orion5x/rd88f5181l-ge-setup.c  |    1 -
- arch/arm/mach-orion5x/rd88f5182-setup.c      |   72 ++-----
- arch/arm/mach-orion5x/rd88f6183ap-ge-setup.c |    1 -
- arch/arm/mach-pnx4008/time.c                 |    1 -
- arch/arm/mach-pxa/Makefile                   |    8 -
- arch/arm/mach-pxa/idp.c                      |   81 +++++++
- arch/arm/mach-pxa/leds-idp.c                 |  115 ----------
- arch/arm/mach-pxa/leds-lubbock.c             |  124 -----------
- arch/arm/mach-pxa/leds-mainstone.c           |  119 -----------
- arch/arm/mach-pxa/leds.c                     |   32 ---
- arch/arm/mach-pxa/leds.h                     |   13 --
- arch/arm/mach-pxa/lubbock.c                  |   95 +++++++++
- arch/arm/mach-pxa/mainstone.c                |   94 +++++++++
- arch/arm/mach-realview/core.c                |   39 ----
- arch/arm/mach-realview/core.h                |    2 -
- arch/arm/mach-realview/realview_eb.c         |    5 -
- arch/arm/mach-realview/realview_pb1176.c     |    5 -
- arch/arm/mach-realview/realview_pb11mp.c     |    5 -
- arch/arm/mach-realview/realview_pba8.c       |    5 -
- arch/arm/mach-realview/realview_pbx.c        |    5 -
- arch/arm/mach-sa1100/Makefile                |    9 -
- arch/arm/mach-sa1100/assabet.c               |   85 ++++++++
- arch/arm/mach-sa1100/badge4.c                |   30 +++
- arch/arm/mach-sa1100/cerf.c                  |   42 ++++
- arch/arm/mach-sa1100/hackkit.c               |   32 +++
- arch/arm/mach-sa1100/lart.c                  |   26 +++
- arch/arm/mach-sa1100/leds-assabet.c          |  113 ----------
- arch/arm/mach-sa1100/leds-badge4.c           |  110 ----------
- arch/arm/mach-sa1100/leds-cerf.c             |  109 ----------
- arch/arm/mach-sa1100/leds-hackkit.c          |  111 ----------
- arch/arm/mach-sa1100/leds-lart.c             |  100 ---------
- arch/arm/mach-sa1100/leds.c                  |   50 -----
- arch/arm/mach-sa1100/leds.h                  |   13 --
- arch/arm/mach-shark/Makefile                 |    4 +-
- arch/arm/mach-shark/core.c                   |    1 -
- arch/arm/mach-shark/leds.c                   |  220 ++++++++-----------
- arch/arm/mach-versatile/core.c               |    5 -
- arch/arm/plat-omap/Kconfig                   |    3 +-
- arch/arm/plat-omap/debug-leds.c              |  293 ++++++--------------------
- arch/arm/plat-samsung/time.c                 |    1 -
- arch/arm/plat-versatile/Kconfig              |    4 +-
- arch/arm/plat-versatile/leds.c               |   13 +-
- drivers/char/nwflash.c                       |   34 ---
- drivers/leds/Kconfig                         |   10 +
- drivers/leds/Makefile                        |    1 +
- drivers/leds/ledtrig-cpu.c                   |  163 ++++++++++++++
- include/linux/leds.h                         |   16 ++
- 97 files changed, 1445 insertions(+), 2981 deletions(-)
- delete mode 100644 arch/arm/include/asm/leds.h
- delete mode 100644 arch/arm/kernel/leds.c
- delete mode 100644 arch/arm/mach-clps711x/p720t-leds.c
- delete mode 100644 arch/arm/mach-footbridge/ebsa285-leds.c
- delete mode 100644 arch/arm/mach-footbridge/netwinder-leds.c
- delete mode 100644 arch/arm/mach-ks8695/leds.c
- delete mode 100644 arch/arm/mach-omap1/leds-h2p2-debug.c
- delete mode 100644 arch/arm/mach-omap1/leds-innovator.c
- delete mode 100644 arch/arm/mach-omap1/leds-osk.c
- delete mode 100644 arch/arm/mach-omap1/leds.c
- delete mode 100644 arch/arm/mach-omap1/leds.h
- delete mode 100644 arch/arm/mach-pxa/leds-idp.c
- delete mode 100644 arch/arm/mach-pxa/leds-lubbock.c
- delete mode 100644 arch/arm/mach-pxa/leds-mainstone.c
- delete mode 100644 arch/arm/mach-pxa/leds.c
- delete mode 100644 arch/arm/mach-pxa/leds.h
- delete mode 100644 arch/arm/mach-sa1100/leds-assabet.c
- delete mode 100644 arch/arm/mach-sa1100/leds-badge4.c
- delete mode 100644 arch/arm/mach-sa1100/leds-cerf.c
- delete mode 100644 arch/arm/mach-sa1100/leds-hackkit.c
- delete mode 100644 arch/arm/mach-sa1100/leds-lart.c
- delete mode 100644 arch/arm/mach-sa1100/leds.c
- delete mode 100644 arch/arm/mach-sa1100/leds.h
- create mode 100644 drivers/leds/ledtrig-cpu.c
-
-Thanks,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -144,7 +144,6 @@ static struct lis3lv02d_platform_data rx51_lis3lv02d_data = {
+ 	.release_resources = lis302_release,
+ 	.st_min_limits = {-32, 3, 3},
+ 	.st_max_limits = {-3, 32, 32},
+-	.irq2 = OMAP_GPIO_IRQ(LIS302_IRQ2_GPIO),
+ };
+ #endif
+ 
+@@ -1030,7 +1029,6 @@ static struct i2c_board_info __initdata rx51_peripherals_i2c_board_info_3[] = {
+ 	{
+ 		I2C_BOARD_INFO("lis3lv02d", 0x1d),
+ 		.platform_data = &rx51_lis3lv02d_data,
+-		.irq = OMAP_GPIO_IRQ(LIS302_IRQ1_GPIO),
+ 	},
+ #endif
+ };
+@@ -1056,6 +1054,10 @@ static int __init rx51_i2c_init(void)
+ 	omap_pmic_init(1, 2200, "twl5030", INT_34XX_SYS_NIRQ, &rx51_twldata);
+ 	omap_register_i2c_bus(2, 100, rx51_peripherals_i2c_board_info_2,
+ 			      ARRAY_SIZE(rx51_peripherals_i2c_board_info_2));
++#if defined(CONFIG_SENSORS_LIS3_I2C) || defined(CONFIG_SENSORS_LIS3_I2C_MODULE)
++	rx51_lis3lv02d_data.irq2 = gpio_to_irq(LIS302_IRQ2_GPIO);
++	rx51_peripherals_i2c_board_info_3[0].irq = gpio_to_irq(LIS302_IRQ1_GPIO);
++#endif
+ 	omap_register_i2c_bus(3, 400, rx51_peripherals_i2c_board_info_3,
+ 			      ARRAY_SIZE(rx51_peripherals_i2c_board_info_3));
+ 	return 0;
