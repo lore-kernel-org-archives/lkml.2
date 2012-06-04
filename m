@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760983Ab2FDQcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:32:54 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:2533 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760971Ab2FDQcw (ORCPT
+	id S932204Ab2FDQc5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:32:57 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43573 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760971Ab2FDQcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:32:52 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCCE32F.1060301@freescale.com>
-Date: Mon, 4 Jun 2012 11:32:47 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com> <4FC933BF.1020901@freescale.com> <20120604110444.GA20676@localhost.localdomain>
-In-Reply-To: <20120604110444.GA20676@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 4 Jun 2012 12:32:55 -0400
+Date: Mon, 4 Jun 2012 17:36:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH 04/24] TTY: ircomm, use open counts from tty_port
+Message-ID: <20120604173613.5a75c451@pyramind.ukuu.org.uk>
+In-Reply-To: <1338809738-18967-5-git-send-email-jslaby@suse.cz>
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+	<1338809738-18967-5-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 06:04 AM, Zhao Chenhui wrote:
-> On Fri, Jun 01, 2012 at 04:27:27PM -0500, Scott Wood wrote:
->> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
->>> -#ifdef CONFIG_KEXEC
->>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
->>
->> Let's not grow lists like this.  Is there any harm in building it
->> unconditionally?
->>
->> -Scott
-> 
-> We need this ifdef. We only set give_timebase/take_timebase
-> when CONFIG_KEXEC or CONFIG_HOTPLUG_CPU is defined.
+On Mon,  4 Jun 2012 13:35:18 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-If we really need this to be a compile-time decision, make a new symbol
-for it, but I really think this should be decided at runtime.  Just
-because we have kexec or hotplug support enabled doesn't mean that's
-actually what we're doing at the moment.
+> Switch to tty_port->count and blocked_open.
 
--Scott
+Only question here is tty_port->count should be under the port lock, so
+code which plays with the count itself like this probably needs to be
+using the port lock ?
+
+Alan
 
