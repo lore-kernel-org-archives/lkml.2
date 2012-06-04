@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423Ab2FDFUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:20:34 -0400
+	id S1756480Ab2FDFUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:20:41 -0400
 Received: from szxga03-in.huawei.com ([58.251.152.66]:35274 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab2FDFUc (ORCPT
+	with ESMTP id S1756049Ab2FDFUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:20:32 -0400
-Date: Mon, 04 Jun 2012 13:16:59 +0800
+	Mon, 4 Jun 2012 01:20:38 -0400
+Date: Mon, 04 Jun 2012 13:17:00 +0800
 From: Jiang Liu <jiang.liu@huawei.com>
-Subject: [RFC PATCH v1 3/6] PCI, ACPI: correctly update binding info when PCI
+Subject: [RFC PATCH v1 4/6] PCI, ACPI: update PCI slot information when PCI
  hotplug event happens
 In-reply-to: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
 X-Originating-IP: [10.107.208.49]
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
         Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Len Brown <lenb@kernel.org>, Alexander Chiang <achiang@hp.com>,
-        Rui Zhang <rui.zhang@intel.com>
+        Alexander Chiang <achiang@hp.com>
 Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Don Dutile <ddutile@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
         Yijing Wang <wangyijing@huawei.com>,
         Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
         linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-id: <1338787022-400-3-git-send-email-jiang.liu@huawei.com>
+Message-id: <1338787022-400-4-git-send-email-jiang.liu@huawei.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.8.msysgit.0
 Content-type: text/plain
@@ -35,281 +34,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <liuj97@gmail.com>
 
-Currently acpi/pci_bind.c is used to maintain binding relationship
-among ACPI and PCI devices. But it's broken when dealing PCI hotplug
-events.
+Currently the pci_slot driver doesn't update PCI slot information
+when PCI device hotplug event happens, which may cause memory leak
+and returning stale information to user.
 
-For the acpiphp driver, it's designed to update the binding relationship
-when PCI hotplug event happensr, but the implementation is broken.
-For PCI device hot-adding:
-enable_device()
-    pci_scan_slot()
-    acpiphp_bus_add()
-        acpi_bus_add()
-	    acpi_pci_bind()
-		acpi_get_pci_dev()
-		    return NULL because dev->archdata.acpi_handle is
-		    still unset
-		return without updating actual binding relationship
-    pci_bus_add_devices()
-	pci_bus_add_device()
-	    device_add()
-		platform_notify()
-		    acpi_bind_one()
-			set dev->archdata.acpi_handle
-
-For PCI device hot-removal,
-disable_device()
-    pci_stop_bus_device()
-    __pci_remove_bus_device()
-    acpiphp_bus_trim()
-	acpi_bus_remove()
-	    acpi_pci_unbind()
-		return without really unbinding because PCI device has
-		already been destroyed
-
-For other PCI hotplug drivers, such as pciehp etc, they even don't
-bother to update binding relationship. So hook into acpi_bind_one()
-and acpi_unbind_one() in drivers/acpi/glue.c to update PCI/ACPI
-binding relationship.
+So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
+update PCI slot information when PCI hotplug event happens.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/acpi/glue.c     |    4 ++
- drivers/acpi/internal.h |    2 +
- drivers/acpi/pci_bind.c |  103 ++++++++++++++++++++++++++++++-----------------
- drivers/acpi/pci_root.c |   22 ----------
- 4 files changed, 72 insertions(+), 59 deletions(-)
+ drivers/acpi/pci_slot.c |   84 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 78 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-index 29a4a5c..1a07c3c 100644
---- a/drivers/acpi/glue.c
-+++ b/drivers/acpi/glue.c
-@@ -160,6 +160,8 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
- 	}
- 	dev->archdata.acpi_handle = handle;
+diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
+index e50e31a..22cc00e 100644
+--- a/drivers/acpi/pci_slot.c
++++ b/drivers/acpi/pci_slot.c
+@@ -32,6 +32,7 @@
+ #include <linux/acpi.h>
+ #include <acpi/acpi_bus.h>
+ #include <acpi/acpi_drivers.h>
++#include <linux/pci-acpi.h>
+ #include <linux/dmi.h>
  
-+	acpi_pci_bind_notify(dev->archdata.acpi_handle, dev, true);
-+
- 	status = acpi_bus_get_device(handle, &acpi_dev);
- 	if (!ACPI_FAILURE(status)) {
- 		int ret;
-@@ -191,6 +193,8 @@ static int acpi_unbind_one(struct device *dev)
- 			sysfs_remove_link(&acpi_dev->dev.kobj, "physical_node");
- 		}
+ static bool debug;
+@@ -123,12 +124,7 @@ struct callback_args {
+ /*
+  * register_slot
+  *
+- * Called once for each SxFy object in the namespace. Don't worry about
+- * calling pci_create_slot multiple times for the same pci_bus:device,
+- * since each subsequent call simply bumps the refcount on the pci_slot.
+- *
+- * The number of calls to pci_destroy_slot from unregister_slot is
+- * symmetrical.
++ * Called once for each SxFy object in the namespace.
+  */
+ static acpi_status
+ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+@@ -145,6 +141,18 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	if (device < 0)
+ 		return AE_OK;
  
-+		acpi_pci_bind_notify(dev->archdata.acpi_handle, dev, false);
-+
- 		acpi_detach_data(dev->archdata.acpi_handle,
- 				 acpi_glue_data_handler);
- 		dev->archdata.acpi_handle = NULL;
-diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-index ca75b9c..5396b20 100644
---- a/drivers/acpi/internal.h
-+++ b/drivers/acpi/internal.h
-@@ -93,4 +93,6 @@ static inline int suspend_nvs_save(void) { return 0; }
- static inline void suspend_nvs_restore(void) {}
- #endif
- 
-+void acpi_pci_bind_notify(acpi_handle handle, struct device *dev, bool bind);
-+
- #endif /* _ACPI_INTERNAL_H_ */
-diff --git a/drivers/acpi/pci_bind.c b/drivers/acpi/pci_bind.c
-index 2ef0409..208e6cd 100644
---- a/drivers/acpi/pci_bind.c
-+++ b/drivers/acpi/pci_bind.c
-@@ -35,54 +35,56 @@
- #define _COMPONENT		ACPI_PCI_COMPONENT
- ACPI_MODULE_NAME("pci_bind");
- 
--static int acpi_pci_unbind(struct acpi_device *device)
--{
--	struct pci_dev *dev;
-+static int acpi_pci_bind(struct acpi_device *device);
- 
--	dev = acpi_get_pci_dev(device->handle);
--	if (!dev)
--		goto out;
--
--	device_set_run_wake(&dev->dev, false);
-+static int __acpi_pci_unbind(struct acpi_device *device, struct pci_dev *pdev)
-+{
-+	device_set_run_wake(&pdev->dev, false);
- 	pci_acpi_remove_pm_notifier(device);
- 
--	if (!dev->subordinate)
--		goto out;
-+	if (pdev->subordinate) {
-+		acpi_pci_irq_del_prt(pdev->subordinate);
-+		device->ops.bind = NULL;
-+		device->ops.unbind = NULL;
++	/* Avoid duplicated records for the same slot */
++	mutex_lock(&slot_list_lock);
++	list_for_each_entry(slot, &slot_list, list) {
++		pci_slot = slot->pci_slot;
++		if (pci_slot && pci_slot->bus == pci_bus &&
++		    pci_slot->number == device) {
++			mutex_unlock(&slot_list_lock);
++			return AE_OK;
++		}
 +	}
++	mutex_unlock(&slot_list_lock);
++
+ 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
+ 	if (!slot) {
+ 		err("%s: cannot allocate memory\n", __func__);
+@@ -354,17 +362,81 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
+ 	{}
+ };
  
--	acpi_pci_irq_del_prt(dev->subordinate);
-+	return 0;
++static void acpi_pci_slot_notify_add(struct pci_dev *dev)
++{
++	acpi_handle handle;
++	struct callback_args context;
++
++	if (!dev->subordinate)
++		return;
++
++	handle = DEVICE_ACPI_HANDLE(&dev->dev);
++	context.root_handle = acpi_find_root_bridge_handle(dev);
++	if (handle && context.root_handle) {
++		context.pci_bus = dev->subordinate;
++		context.user_function = register_slot;
++		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
++				    register_slot, NULL, &context, NULL);
++	}
 +}
- 
--	device->ops.bind = NULL;
--	device->ops.unbind = NULL;
-+static int acpi_pci_unbind(struct acpi_device *device)
++
++static void acpi_pci_slot_notify_del(struct pci_dev *dev)
 +{
-+	int rc = 0;
-+	struct pci_dev *pdev;
- 
--out:
--	pci_dev_put(dev);
--	return 0;
-+	pdev = acpi_get_pci_dev(device->handle);
-+	if (pdev) {
-+		rc = __acpi_pci_unbind(device, pdev);
-+		pci_dev_put(pdev);
++	struct acpi_pci_slot *slot, *tmp;
++	struct pci_bus *bus = dev->subordinate;
++
++	if (!bus)
++		return;
++
++	mutex_lock(&slot_list_lock);
++	list_for_each_entry_safe(slot, tmp, &slot_list, list) {
++		if (slot->pci_slot && slot->pci_slot->bus == bus) {
++			list_del(&slot->list);
++			pci_destroy_slot(slot->pci_slot);
++			put_device(&bus->dev);
++			kfree(slot);
++		}
++	}
++	mutex_unlock(&slot_list_lock);
++}
++
++static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
++				   unsigned long event, void *data)
++{
++	struct device *dev = data;
++
++	switch (event) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		acpi_pci_slot_notify_add(to_pci_dev(dev));
++		break;
++	case BUS_NOTIFY_DEL_DEVICE:
++		acpi_pci_slot_notify_del(to_pci_dev(dev));
++		break;
++	default:
++		return NOTIFY_DONE;
 +	}
 +
-+	return rc;
- }
- 
--static int acpi_pci_bind(struct acpi_device *device)
-+static int __acpi_pci_bind(struct acpi_device *device, struct pci_dev *pdev)
++	return NOTIFY_OK;
++}
++
++static struct notifier_block acpi_pci_slot_notifier = {
++	.notifier_call = &acpi_pci_slot_notify_fn,
++};
++
+ static int __init
+ acpi_pci_slot_init(void)
  {
- 	acpi_status status;
- 	acpi_handle handle;
- 	struct pci_bus *bus;
--	struct pci_dev *dev;
- 
--	dev = acpi_get_pci_dev(device->handle);
--	if (!dev)
--		return 0;
--
--	pci_acpi_add_pm_notifier(device, dev);
-+	pci_acpi_add_pm_notifier(device, pdev);
- 	if (device->wakeup.flags.run_wake)
--		device_set_run_wake(&dev->dev, true);
-+		device_set_run_wake(&pdev->dev, true);
- 
- 	/*
- 	 * Install the 'bind' function to facilitate callbacks for
- 	 * children of the P2P bridge.
- 	 */
--	if (dev->subordinate) {
-+	if (pdev->subordinate) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "Device %04x:%02x:%02x.%d is a PCI bridge\n",
--				  pci_domain_nr(dev->bus), dev->bus->number,
--				  PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn)));
-+				  pci_domain_nr(pdev->bus), pdev->bus->number,
-+				  PCI_SLOT(pdev->devfn),
-+				  PCI_FUNC(pdev->devfn)));
- 		device->ops.bind = acpi_pci_bind;
- 		device->ops.unbind = acpi_pci_unbind;
- 	}
-@@ -96,19 +98,29 @@ static int acpi_pci_bind(struct acpi_device *device)
- 	 * TBD: Can _PRTs exist within the scope of non-bridge PCI devices?
- 	 */
- 	status = acpi_get_handle(device->handle, METHOD_NAME__PRT, &handle);
--	if (ACPI_FAILURE(status))
--		goto out;
-+	if (ACPI_SUCCESS(status)) {
-+		if (pdev->subordinate)
-+			bus = pdev->subordinate;
-+		else
-+			bus = pdev->bus;
-+		acpi_pci_irq_add_prt(device->handle, bus);
-+	}
+ 	dmi_check_system(acpi_pci_slot_dmi_table);
+ 	acpi_pci_register_driver(&acpi_pci_slot_driver);
++	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
 +
-+	return 0;
-+}
- 
--	if (dev->subordinate)
--		bus = dev->subordinate;
--	else
--		bus = dev->bus;
-+static int acpi_pci_bind(struct acpi_device *device)
-+{
-+	int rc = 0;
-+	struct pci_dev *pdev;
- 
--	acpi_pci_irq_add_prt(device->handle, bus);
-+	pdev = acpi_get_pci_dev(device->handle);
-+	if (pdev) {
-+		rc = __acpi_pci_bind(device, pdev);
-+		pci_dev_put(pdev);
-+	}
- 
--out:
--	pci_dev_put(dev);
--	return 0;
-+	return rc;
- }
- 
- int acpi_pci_bind_root(struct acpi_device *device)
-@@ -118,3 +130,20 @@ int acpi_pci_bind_root(struct acpi_device *device)
- 
  	return 0;
  }
-+
-+void acpi_pci_bind_notify(acpi_handle handle, struct device *dev, bool bind)
-+{
-+	struct acpi_device *acpi_dev;
-+
-+	if (!dev_is_pci(dev))
-+		return;
-+	if (acpi_bus_get_device(handle, &acpi_dev))
-+		return;
-+	if (!acpi_dev || !acpi_dev->parent)
-+		return;
-+
-+	if (bind && acpi_dev->parent->ops.bind)
-+		__acpi_pci_bind(acpi_dev, to_pci_dev(dev));
-+	else if (acpi_dev->parent->ops.unbind)
-+		__acpi_pci_unbind(acpi_dev, to_pci_dev(dev));
-+}
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index 7aff631..cd2f7af 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -195,21 +195,6 @@ static acpi_status try_get_root_bridge_busnr(acpi_handle handle,
- 	return AE_OK;
+ 
+ static void __exit
+ acpi_pci_slot_exit(void)
+ {
++	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
+ 	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
  }
  
--static void acpi_pci_bridge_scan(struct acpi_device *device)
--{
--	int status;
--	struct acpi_device *child = NULL;
--
--	if (device->flags.bus_address)
--		if (device->parent && device->parent->ops.bind) {
--			status = device->parent->ops.bind(device);
--			if (!status) {
--				list_for_each_entry(child, &device->children, node)
--					acpi_pci_bridge_scan(child);
--			}
--		}
--}
--
- static u8 pci_osc_uuid_str[] = "33DB4D5B-1FF7-401C-9657-7441C03DD766";
- 
- static acpi_status acpi_pci_run_osc(acpi_handle handle,
-@@ -456,7 +441,6 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
- 	int result;
- 	struct acpi_pci_root *root;
- 	acpi_handle handle;
--	struct acpi_device *child;
- 	u32 flags, base_flags;
- 
- 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
-@@ -557,12 +541,6 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
- 	if (ACPI_SUCCESS(status))
- 		result = acpi_pci_irq_add_prt(device->handle, root->bus);
- 
--	/*
--	 * Scan and bind all _ADR-Based Devices
--	 */
--	list_for_each_entry(child, &device->children, node)
--		acpi_pci_bridge_scan(child);
--
- 	/* Indicate support for various _OSC capabilities. */
- 	if (pci_ext_cfg_avail(root->bus->self))
- 		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
 -- 
 1.7.1
 
