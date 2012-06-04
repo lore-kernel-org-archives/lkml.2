@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760180Ab2FDLBr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:01:47 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:12379 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069Ab2FDLBq (ORCPT
+	id S1760072Ab2FDLER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:04:17 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:45271
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751677Ab2FDLEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:01:46 -0400
-X-AuditID: cbfee61b-b7f0b6d000000f04-c0-4fcc9598bce8
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: merez@codeaurora.org
-Cc: linux-mmc@vger.kernel.org, "'Chris Ball'" <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org
-References: <7155413ec18f57c1151a29992be32b1f.squirrel@www.codeaurora.org>
- <000201cd3fba$942df840$bc89e8c0$%jun@samsung.com>
- <f1ad97e8655631c46afd7084ef6266fd.squirrel@www.codeaurora.org>
-In-reply-to: <f1ad97e8655631c46afd7084ef6266fd.squirrel@www.codeaurora.org>
-Subject: RE: [PATCH v6 2/3] mmc: core: Support packed write command for eMMC4.5
- device
-Date: Mon, 04 Jun 2012 20:01:44 +0900
-Message-id: <001d01cd4241$6dd25220$4976f660$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac1AFfTZSQIdZgaSTQqPMSTDtNiK/gCDZGUw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t9jQd0ZU8/4G7zZY2BxedccNosj//sZ
-	HZg8Pm+SC2CM4rJJSc3JLEst0rdL4MrYdT6j4K1wxav9newNjF/4uxg5OSQETCQe/b3BAmGL
-	SVy4t56ti5GLQ0hgOqNE+9mrTBDOH0aJ/mUNYFVsAloSf9+8YQaxRQQkJGbs/cQKYjMLxEjM
-	bz3AAtGwn1HiZs9GsCJOAW+Jibt+ACU4OIQFIiQWnNYGCbMIqErceXGUDcTmFbCVuPl3O5Qt
-	KPFj8j0WiJl6Eh//3GaEsOUlNq95ywwyRkJAHehqXYgTjCSeLZnNBFEiIrHvxTvGCYxCs5BM
-	moVk0iwkk2YhaVnAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzign0nvYFzVYHGIUYCD
-	UYmHd0bUGX8h1sSy4srcQ4wSHMxKIrxPJgKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8z5ZssNf
-	SCA9sSQ1OzW1ILUIJsvEwSnVwJiy1uvnt6VZEibHpMUDlMvd+LQ//Dhc1amU6/lvD4vPS5k6
-	/9N84kwrH3Bx29w50sdQ58x2t1MpPC06OuG2zetzMfl/P87tLwiPt1nqn+2a9H66xcOTwU5W
-	m12+OP/RPP7a9er34mf/JaxeyHe7dlaVXT50aqXDltVWvLeZmHc8+lRcbt8kosRSnJFoqMVc
-	VJwIAIVs0hFkAgAA
-X-TM-AS-MML: No
+	Mon, 4 Jun 2012 07:04:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+Date: Mon, 4 Jun 2012 19:04:44 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
+Message-ID: <20120604110444.GA20676@localhost.localdomain>
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
+ <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com>
+ <4FC933BF.1020901@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FC933BF.1020901@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maya Erez <merez@codeaurora.org> wrote:
-> > Maya Erez <merez@codeaurora.org> wrote:
-> >> > @@ -1313,10 +1609,17 @@ static int mmc_blk_issue_rw_rq(struct
-> >> mmc_queue
-> >> *mq, struct request *rqc)
-> >> >  			 * A block was successfully transferred.
-> >> >  			 */
-> >> >  			mmc_blk_reset_success(md, type);
-> >> > -			spin_lock_irq(&md->lock);
-> >> > -			ret = __blk_end_request(req, 0,
-> >> > +
-> >> > +			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
-> >> > +				ret = mmc_blk_end_packed_req(mq, mq_rq);
-> >> If a specific request in the packed request consistantly fails, there is
-> >> nothing to stop us from sending the same packed request in an endless
-> >> loop.
-> > There is various error case. This patch reused the existing error
-> > handling.
-> > What is that case we need to consider?
-> >
-> > Best regards,
-> > Seungwon Jeon
+On Fri, Jun 01, 2012 at 04:27:27PM -0500, Scott Wood wrote:
+> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+> \> +#if defined(CONFIG_FSL_BOOKE) || defined(CONFIG_6xx)
+> > +extern void __flush_disable_L1(void);
+> > +#endif
 > 
-> This is different from unpacked requests handling since in the packed err
-> check function you don't always return the error returned from
-> mmc_blk_err_check. In case the EXT_CSD_PACKED_INDEXED_ERROR is set you
-> return MMC_BLK_PARTIAL which is handled differently in the
-> mmc_blk_issue_rw_rd.
-> In our tests we set to 1 the packed bit in CMD23 arg of the first req (in
-> the header). As a result, mmc_blk_err_check returned MMC_BLK_CMD_ERR.
-> However, mmc_blk_packed_err_check returned MMC_BLK_PARTIAL (since the card
-> indicated the index of the first request as the failed request).
-> mmc_blk_issue_rw_rd handles MMC_BLK_PARTIAL by sending the packed command
-> from the failed index and on, but since the packed bit was still set, the
-> same error occurred and was handled the same way and we ended up with an
-> endless loop.
-> I hope my description is clear, let me know if you have further questions.
-I tested your test case equally.
-Even though your test makes the header parameter incorrect artificially
-and keeps going with wrong setting repeatedly, we need to assure that
-the similar result can be found practically with normal running.
-I'll test it heavily and check more.
-And if you have more review about this version, please let me know.
+> Prototypes aren't normally guarded by ifdefs.
 
-Thanks for your review.
-Seungwon Jeon.
+OK. Thanks.
+
 > 
-> Thanks,
-> Maya Erez
-> Consultant for Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+> > +static void __cpuinit smp_85xx_mach_cpu_die(void)
+> > +{
+> > +	unsigned int cpu = smp_processor_id();
+> > +	u32 tmp;
+> > +
+> > +	local_irq_disable();
+> > +	idle_task_exit();
+> > +	generic_set_cpu_dead(cpu);
+> > +	mb();
+> > +
+> > +	mtspr(SPRN_TCR, 0);
+> > +
+> > +	__flush_disable_L1();
+> > +	tmp = (mfspr(SPRN_HID0) & ~(HID0_DOZE|HID0_SLEEP)) | HID0_NAP;
+> > +	mtspr(SPRN_HID0, tmp);
+> > +
+> > +	/* Enter NAP mode. */
+> > +	tmp = mfmsr();
+> > +	tmp |= MSR_WE;
+> > +	mb();
+> > +	mtmsr(tmp);
+> > +	isync();
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Need isync after writing to HID0.
+> 
+> > +		/*
+> > +		 * We don't set the BPTR register here upon it points
+> > +		 * to the boot page properly.
+> > +		 */
+> > +		mpic_reset_core(hw_cpu);
+> 
+> That comment's wording is hard to follow -- maybe s/upon it points/since
+> it already points/
+> 
+> > +		/* wait until core is ready... */
+> > +		if (!spin_event_timeout(in_be32(&spin_table->addr_l) == 1,
+> > +						10000, 100)) {
+> > +			pr_err("%s: timeout waiting for core %d to reset\n",
+> > +							__func__, hw_cpu);
+> > +			ret = -ENOENT;
+> > +			goto out;
+> > +		}
+> 
+> We need to fix U-Boot to write addr_l last (with an msync beforehand).
+
+I agree.
+
+> 
+> > -#ifdef CONFIG_KEXEC
+> > +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
+> 
+> Let's not grow lists like this.  Is there any harm in building it
+> unconditionally?
+> 
+> -Scott
+
+We need this ifdef. We only set give_timebase/take_timebase
+when CONFIG_KEXEC or CONFIG_HOTPLUG_CPU is defined.
+
+-Chenhui
 
