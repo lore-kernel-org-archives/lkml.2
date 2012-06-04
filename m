@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757260Ab2FDTuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 15:50:39 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:50471 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab2FDTub (ORCPT
+	id S1757283Ab2FDTxW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 15:53:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46405 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab2FDTxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 15:50:31 -0400
-Message-ID: <4FCD1184.2000902@gmail.com>
-Date: Mon, 04 Jun 2012 15:50:28 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 4 Jun 2012 15:53:18 -0400
+Date: Mon, 4 Jun 2012 12:52:59 -0700
+From: tip-bot for John Stultz <john.stultz@linaro.org>
+Message-ID: <tip-fad0c66c4bb836d57a5f125ecd38bed653ca863a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, richardcochran@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, richardcochran@gmail.com,
+        tglx@linutronix.de
+In-Reply-To: <1338400497-12420-1-git-send-email-john.stultz@linaro.org>
+References: <1338400497-12420-1-git-send-email-john.stultz@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] timekeeping:
+  Fix CLOCK_MONOTONIC inconsistency during leapsecond
+Git-Commit-ID: fad0c66c4bb836d57a5f125ecd38bed653ca863a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Pekka Enberg <penberg@kernel.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-References: <20120504073810.GA25175@lizard> <CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com> <CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com> <20120507121527.GA19526@lizard> <4FA82056.2070706@gmail.com> <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com> <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com> <20120601122118.GA6128@lizard> <alpine.LFD.2.02.1206032125320.1943@tux.localdomain> <4FCC7592.9030403@kernel.org>
-In-Reply-To: <4FCC7592.9030403@kernel.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Mon, 04 Jun 2012 12:53:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> KOSAKI, AFAIRC, you are a person who hates android low memory killer.
-> Why do you hate it? If it solve problems I mentioned, do you have a concern, still?
-> If so, please, list up.
+Commit-ID:  fad0c66c4bb836d57a5f125ecd38bed653ca863a
+Gitweb:     http://git.kernel.org/tip/fad0c66c4bb836d57a5f125ecd38bed653ca863a
+Author:     John Stultz <john.stultz@linaro.org>
+AuthorDate: Wed, 30 May 2012 10:54:57 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 4 Jun 2012 21:46:29 +0200
 
-1) it took tasklist_lock. (it was solved already)
-2) hacky lowmem_deathpending_timeout
-3) No ZONE awareness. global_page_state(), lowmem_minfree[] and shrink_slab interface
-    don't realize real memory footprint.
-4) No memcg, cpuset awareness.
-5) strange score calculation. the score is calculated from anon_rss+file_rss,
-    but oom killer only free anon_rss.
-6) strange oom_score_adj overload
-7) much duplicate code w/ oom_killer. we can make common helper function, I think.
-8) John's fallocate(VOLATILE) is more cleaner.
+timekeeping: Fix CLOCK_MONOTONIC inconsistency during leapsecond
 
+Commit 6b43ae8a61 (ntp: Fix leap-second hrtimer livelock) broke the
+leapsecond update of CLOCK_MONOTONIC. The missing leapsecond update to
+wall_to_monotonic causes discontinuities in CLOCK_MONOTONIC.
+
+Adjust wall_to_monotonic when NTP inserted a leapsecond.
+
+Reported-by: Richard Cochran <richardcochran@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Tested-by: Richard Cochran <richardcochran@gmail.com>
+Cc: stable@kernel.org
+Link: http://lkml.kernel.org/r/1338400497-12420-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/timekeeping.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6e46cac..6f46a00 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -962,6 +962,7 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 		timekeeper.xtime.tv_sec++;
+ 		leap = second_overflow(timekeeper.xtime.tv_sec);
+ 		timekeeper.xtime.tv_sec += leap;
++		timekeeper.wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+ 	/* Accumulate raw time */
+@@ -1077,6 +1078,7 @@ static void update_wall_time(void)
+ 		timekeeper.xtime.tv_sec++;
+ 		leap = second_overflow(timekeeper.xtime.tv_sec);
+ 		timekeeper.xtime.tv_sec += leap;
++		timekeeper.wall_to_monotonic.tv_sec -= leap;
+ 	}
+ 
+ 	timekeeping_update(false);
