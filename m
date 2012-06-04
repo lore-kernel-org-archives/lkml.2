@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761054Ab2FDW1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 18:27:54 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64678 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757222Ab2FDW1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 18:27:52 -0400
+	id S1761086Ab2FDW21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 18:28:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761051Ab2FDW20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 18:28:26 -0400
+Message-ID: <4FCD3679.60706@redhat.com>
+Date: Mon, 04 Jun 2012 18:28:09 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-Date: Mon, 4 Jun 2012 15:27:51 -0700
-Message-ID: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
-Subject: [PATCH] Add Support for Novatek Touchscreen
-From: Austin Hendrix <ahendrix@willowgarage.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joe Perches <joe@perches.com>
+CC: dwmw2@infradead.org, iommu@lists.linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, chrisw@redhat.com,
+        suresh.b.siddha@intel.com
+Subject: Re: [PATCH 1/2] iommu: dmar: replace printks with appropriate pr_*()
+References: <1338845342-12464-1-git-send-email-ddutile@redhat.com>	 <1338845342-12464-2-git-send-email-ddutile@redhat.com> <1338848137.18442.2.camel@joe2Laptop>
+In-Reply-To: <1338848137.18442.2.camel@joe2Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for a Novatek touchscreen panel as a generic HID multitouch
-panel.
+On 06/04/2012 06:15 PM, Joe Perches wrote:
+> On Mon, 2012-06-04 at 17:29 -0400, Donald Dutile wrote:
+>> Replace printk(KERN_*  with pr_*() functions.
+>
+> Please add
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> before any include and remove the embedded PREFIX
+> from each printk
+>
+>> diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+>
+> []
+>
+>>   			break;
+>>   		}
+>>   		pdev = pci_get_slot(bus, PCI_DEVFN(path->dev, path->fn));
+>>   		if (!pdev) {
+>> -			printk(KERN_WARNING PREFIX
+>> -			"Device scope device [%04x:%02x:%02x.%02x] not found\n",
+>> +			pr_warn(PREFIX "Device scope device"
+>> +				"[%04x:%02x:%02x.%02x] not found\n",
+>>   				segment, bus->number, path->dev, path->fn);
+>
+> Please don't split any format string.  You removed
+> a space between the scope device and an open bracket.
+> It's OK for format strings to exceed 80 chars.
+>
+>
+Joe,
+Thanks for the feeback.  I'll incorporate the changes once
+others have a chance to review & feedback as well.
 
-Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
----
- hid-core.c       |    1 +
- hid-ids.h        |    3 +++
- hid-multitouch.c |    5 +++++
- 3 files changed, 9 insertions(+)
+- Don
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 8e3a6b2..0d6dde1 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1605,6 +1605,7 @@ static const struct hid_device_id
-hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_PCT) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
-USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 9373f53..734a2b9 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -564,6 +564,9 @@
- #define USB_VENDOR_ID_NINTENDO		0x057e
- #define USB_DEVICE_ID_NINTENDO_WIIMOTE	0x0306
-
-+#define USB_VENDOR_ID_NOVATEK		0x0603
-+#define USB_DEVICE_ID_NOVATEK_PCT	0x0600
-+
- #define USB_VENDOR_ID_NTRIG		0x1b96
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index 6e3332a..fae08df 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -951,6 +951,11 @@ static const struct hid_device_id mt_devices[] = {
- 		MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
- 			USB_DEVICE_ID_PANABOARD_UBT880) },
-
-+	/* Novatek Panel */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
-+			USB_DEVICE_ID_NOVATEK_PCT) },
-+
- 	/* PenMount panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE,
- 		MT_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
