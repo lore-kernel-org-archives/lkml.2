@@ -1,134 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab2FDKYy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 06:24:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:51529 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab2FDKYw (ORCPT
+	id S1759685Ab2FDKZU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 06:25:20 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45365 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752177Ab2FDKZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 06:24:52 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arjan van de Ven <arjan@linux.intel.com>
-CC: Vladimir Davydov <vdavydov@parallels.com>, Len Brown <lenb@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpuidle: menu: use nr_running instead of cpuload for calculating perf mult
-Date: Mon, 4 Jun 2012 14:24:45 +0400
-Message-ID: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 4 Jun 2012 06:25:19 -0400
+Date: Mon, 4 Jun 2012 11:25:17 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH RFT 1/2] regulator: max1586: Convert max1586_v6_ops to
+ regulator_list_voltage_table
+Message-ID: <20120604102516.GB7538@opensource.wolfsonmicro.com>
+References: <1338785818.9793.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="v9Ux+11Zm5mwPlX6"
+Content-Disposition: inline
+In-Reply-To: <1338785818.9793.1.camel@phoenix>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rq->cpuload strongly depends on cgroup hierarchy. For example, if hundreds of
-tasks are running inside cpu:/test cgroup, the sum of cpuload over all cpus
-won't exceed 1024 (by default). That makes the cpuidle menu governor take wrong
-decisions, which can negatively affect overall performance.
 
-To cope this, use nr_running last seen in __update_cpu_load() instead of
-cpuload for calculating performance multiplier.
----
- drivers/cpuidle/governors/menu.c |   17 +++--------------
- include/linux/sched.h            |    2 +-
- kernel/sched/core.c              |    7 ++++---
- kernel/sched/sched.h             |    3 +++
- 4 files changed, 11 insertions(+), 18 deletions(-)
+--v9Ux+11Zm5mwPlX6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index 0633575..2aa2625 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -123,17 +123,6 @@ struct menu_device {
- };
- 
- 
--#define LOAD_INT(x) ((x) >> FSHIFT)
--#define LOAD_FRAC(x) LOAD_INT(((x) & (FIXED_1-1)) * 100)
--
--static int get_loadavg(void)
--{
--	unsigned long this = this_cpu_load();
--
--
--	return LOAD_INT(this) * 10 + LOAD_FRAC(this) / 10;
--}
--
- static inline int which_bucket(unsigned int duration)
- {
- 	int bucket = 0;
-@@ -170,13 +159,13 @@ static inline int which_bucket(unsigned int duration)
- static inline int performance_multiplier(void)
- {
- 	int mult = 1;
-+	int this_cpu = smp_processor_id();
- 
- 	/* for higher loadavg, we are more reluctant */
--
--	mult += 2 * get_loadavg();
-+	mult += 10 * nr_active_cpu(this_cpu);
- 
- 	/* for IO wait tasks (per cpu!) we add 5x each */
--	mult += 10 * nr_iowait_cpu(smp_processor_id());
-+	mult += 10 * nr_iowait_cpu(this_cpu);
- 
- 	return mult;
- }
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f45c0b2..fb83d22 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -141,7 +141,7 @@ extern unsigned long nr_running(void);
- extern unsigned long nr_uninterruptible(void);
- extern unsigned long nr_iowait(void);
- extern unsigned long nr_iowait_cpu(int cpu);
--extern unsigned long this_cpu_load(void);
-+extern unsigned long nr_active_cpu(int cpu);
- 
- 
- extern void calc_global_load(unsigned long ticks);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 39eb601..8cc2011 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2155,10 +2155,10 @@ unsigned long nr_iowait_cpu(int cpu)
- 	return atomic_read(&this->nr_iowait);
- }
- 
--unsigned long this_cpu_load(void)
-+unsigned long nr_active_cpu(int cpu)
- {
--	struct rq *this = this_rq();
--	return this->cpu_load[0];
-+	struct rq *this = cpu_rq(cpu);
-+	return this->nr_active;
- }
- 
- 
-@@ -2494,6 +2494,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- 	this_rq->nr_load_updates++;
- 
- 	/* Update our load: */
-+	this_rq->nr_active = this_rq->nr_running;
- 	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
- 	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
- 		unsigned long old_load, new_load;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ba9dccf..2564712 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -379,6 +379,9 @@ struct rq {
- 	struct list_head leaf_rt_rq_list;
- #endif
- 
-+	/* nr_running last seen in __update_cpu_load() */
-+	unsigned long nr_active;
-+
- 	/*
- 	 * This is part of a global counter where only the total sum
- 	 * over all CPUs matters. A task can increase this counter on
--- 
-1.7.1
+On Mon, Jun 04, 2012 at 12:56:58PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
+Applied both, thanks.
+
+--v9Ux+11Zm5mwPlX6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPzI0DAAoJEBus8iNuMP3d0eYP/119LQQb73++Cm3oNuzJLbwe
+BXp7oWQqL0vRWw6rZeNjbG8JXazl6/DXXrjVVCLIhWd+XVeIp5A1IvhLTJ1fpBBi
+CzUM6vs9mz5QHYcDWT/teJZRZG8xTMvE0hyed99lc8GV7RNcPshZaVPPR6jjErIz
+pLLxvqZPAsHoUdnE7Xk9/gQopAjOP8SbPflikzSNrhBwbdCLOSjnTFYqXyGh72nh
+xTJw2xTjVIyS7RQr0KMUMbW6MmuHL3x7tZlzFYhS0OGmtVY0xmZqW45Wz7wWJpB+
+E/CR7G3L0DmPUdCMmVhCH9TV5CFfLkgdEcH8/dCEKxNeySINU4gzI1iw+Fa/XY9v
+FYao3W0yrkCq0vdXH+WQ16YeWzUX1Umh4vxjZS9Ju8r0oZ+ROwCvjJjcgjnMvv2T
+aN8nIaN+uI5Dauhfs2kyuTEvlGmqC520dkq2kFMR153HEp5zePDT6eeaghbbqohJ
+tCIlPkz6CJx66/Z1g7qRKK2r3+8oYZjnjsOz7HJMfAkLWiKHD101E7WBVaX4B/Bx
+yaBgcMN4+mgyBi+Qr5KUduzCUXMY6zgkF37OG7QbwwoRHDZwk1/ocGxXzTblxBBu
+BaAfHX2Gvck57vV4ibML4xc2/3klhmZ15zhwC42B82F5sbVxDoTiE9Xhi9eZwiG0
+MCKXPbKPxmFqyowA/tF3
+=2NJB
+-----END PGP SIGNATURE-----
+
+--v9Ux+11Zm5mwPlX6--
