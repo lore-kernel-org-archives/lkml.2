@@ -1,86 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2FDP3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:29:20 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1760788Ab2FDP3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:29:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54384 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716Ab2FDP3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:29:19 -0400
-Message-ID: <4FCCD44A.3090500@nod.at>
-Date: Mon, 04 Jun 2012 17:29:14 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1760747Ab2FDP3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 11:29:40 -0400
+Date: Mon, 4 Jun 2012 17:29:37 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Vladimir =?utf-8?Q?'=CF=86-coder=2Fphcoder'?= Serbinenko" 
+	<phcoder@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Add UTF-16 convenience functions
+Message-ID: <20120604152937.GG11010@quack.suse.cz>
+References: <4FC81678.5040106@gmail.com>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 13/24] TTY: um/line, use tty from tty_port
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at> <4FCCD224.1020307@suse.cz>
-In-Reply-To: <4FCCD224.1020307@suse.cz>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigFDA9A2597D7A5BB745ED7A66"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4FC81678.5040106@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigFDA9A2597D7A5BB745ED7A66
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Fri 01-06-12 03:10:16, Vladimir 'φ-coder/phcoder' Serbinenko wrote:
+> This is used for UDF and some other FS non-BMP support.
+> This series requires my previously sent
+> [PATCH 1/8] Support full unicode in uni2char and char2uni
+> Can resend if needed.
+  Thanks for the patches Vladimir. I've read them and they all look OK to
+me so feel free to add:
+  Reviewed-by: Jan Kara <jack@suse.cz>
 
-Hi!
+  to them. Al Viro <viro@zeniv.linux.org.uk> should merge these patches but
+he tends to be rather busy so I suggest to also include the above mentioned
+necessary patch in the series and resend all five patches to him, CCing the
+lists. You can also CC Andrew Morton <akpm@linux-foundation.org> since he
+sometimes carries and resends patches to Al when he does not include them.
 
-Am 04.06.2012 17:20, schrieb Jiri Slaby:
-> On 06/04/2012 02:01 PM, Richard Weinberger wrote:
->> I have two questions: 1. Are these patches also usable on 3.4 and
->> 3.3 or do they depend on 3.5's TTY changes?
->=20
-> Hi, I don't think they depend on any changes.
+									Honza
+> 
+> Signed-off-by: Vladimir Serbinenko <phcoder@gmail.com>
+> ---
+>  fs/nls/nls_base.c   |   63 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/nls/nls_utf8.c   |    2 +-
+>  include/linux/nls.h |    6 +++++
+>  3 files changed, 70 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/nls/nls_base.c b/fs/nls/nls_base.c
+> index 4f6d1ae..0c1ad5b 100644
+> --- a/fs/nls/nls_base.c
+> +++ b/fs/nls/nls_base.c
+> @@ -171,6 +171,32 @@ int utf8s_to_utf16s(const u8 *s, int inlen, enum utf16_endian endian,
+>  }
+>  EXPORT_SYMBOL(utf8s_to_utf16s);
+>  
+> +int unicode_to_utf16s(unicode_t u, enum utf16_endian endian,
+> +		      wchar_t *pwcs, int maxout)
+> +{
+> +	u16 *op = pwcs;
+> +
+> +	op = pwcs;
+> +
+> +	if (u >= PLANE_SIZE) {
+> +		if (maxout < 2)
+> +			return -1;
+> +		u -= PLANE_SIZE;
+> +		put_utf16(op++, SURROGATE_PAIR |
+> +			  ((u >> 10) & SURROGATE_BITS),
+> +			  endian);
+> +		put_utf16(op++, SURROGATE_PAIR |
+> +			  SURROGATE_LOW |
+> +			  (u & SURROGATE_BITS),
+> +			  endian);
+> +		return 2;
+> +	} else {
+> +		put_utf16(op++, u, endian);
+> +		return 1;
+> +	}
+> +}
+> +EXPORT_SYMBOL(unicode_to_utf16s);
+> +
+>  static inline unsigned long get_utf16(unsigned c, enum utf16_endian endian)
+>  {
+>  	switch (endian) {
+> @@ -232,6 +258,43 @@ int utf16s_to_utf8s(const wchar_t *pwcs, int inlen, enum utf16_endian endian,
+>  }
+>  EXPORT_SYMBOL(utf16s_to_utf8s);
+>  
+> +int utf16s_to_unicode(const wchar_t *pwcs, int inlen, enum utf16_endian endian,
+> +		      unicode_t *uni)
+> +{
+> +	unsigned long u, v;
+> +	const wchar_t *pwcs0 = pwcs;
+> +
+> +	while (inlen > 0) {
+> +		u = get_utf16(*pwcs, endian);
+> +		if (!u)
+> +			break;
+> +		pwcs++;
+> +		inlen--;
+> +		if ((u & SURROGATE_MASK) == SURROGATE_PAIR) {
+> +			if (u & SURROGATE_LOW) {
+> +				/* Ignore character and move on */
+> +				continue;
+> +			}
+> +			if (inlen <= 0)
+> +				break;
+> +			v = get_utf16(*pwcs, endian);
+> +			if ((v & SURROGATE_MASK) != SURROGATE_PAIR ||
+> +			    !(v & SURROGATE_LOW)) {
+> +				/* Ignore character and move on */
+> +				continue;
+> +			}
+> +			u = PLANE_SIZE + ((u & SURROGATE_BITS) << 10)
+> +				+ (v & SURROGATE_BITS);
+> +			pwcs++;
+> +			inlen--;
+> +		}
+> +		*uni = u;
+> +		return pwcs - pwcs0;
+> +	}
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(utf16s_to_unicode);
+> +
+>  int register_nls(struct nls_table * nls)
+>  {
+>  	struct nls_table ** tmp = &tables;
+> diff --git a/fs/nls/nls_utf8.c b/fs/nls/nls_utf8.c
+> index eb6392e..a3b3de0 100644
+> --- a/fs/nls/nls_utf8.c
+> +++ b/fs/nls/nls_utf8.c
+> @@ -37,7 +37,7 @@ static int char2uni(const unsigned char *rawstring, int boundlen,
+>  		*uni = 0x003f;	/* ? */
+>  		return -EINVAL;
+>  	}
+> -	*uni = (wchar_t) u;
+> +	*uni = u;
+>  	return n;
+>  }
+>  
+> diff --git a/include/linux/nls.h b/include/linux/nls.h
+> index c0292dd..7de1765 100644
+> --- a/include/linux/nls.h
+> +++ b/include/linux/nls.h
+> @@ -50,12 +50,18 @@ extern struct nls_table *load_nls(char *);
+>  extern void unload_nls(struct nls_table *);
+>  extern struct nls_table *load_nls_default(void);
+>  
+> +#define MAX_UTF16_PER_UNICODE 2
+> +
+>  extern int utf8_to_utf32(const u8 *s, int len, unicode_t *pu);
+>  extern int utf32_to_utf8(unicode_t u, u8 *s, int maxlen);
+>  extern int utf8s_to_utf16s(const u8 *s, int len,
+>  		enum utf16_endian endian, wchar_t *pwcs, int maxlen);
+>  extern int utf16s_to_utf8s(const wchar_t *pwcs, int len,
+>  		enum utf16_endian endian, u8 *s, int maxlen);
+> +int unicode_to_utf16s(unicode_t u, enum utf16_endian endian,
+> +		      wchar_t *pwcs, int maxout);
+> +int utf16s_to_unicode(const wchar_t *pwcs, int inlen, enum utf16_endian endian,
+> +		      unicode_t *uni);
+>  
+>  static inline unsigned char nls_tolower(struct nls_table *t, unsigned char c)
+>  {
+> -- 
+> 1.7.10
+> 
+> -- 
+> Regards
+> Vladimir 'φ-coder/phcoder' Serbinenko
+> 
 
-Nice.
 
->> 2. Why didn't you use tty_port_open()/close()/etc. as Alan
->> suggested my in [1]?
->=20
-> This was not intended to fix anything particular. If it does, it is a
-> pure coincidence... These patches are a minimalistic subset to ensure
-> every driver has its own tty_port for each tty. We will need this
-> pairing later.
-
-It looks like that it solves UML's TTY issues with systemd distros. :-)
-
-> So the switch of the driver to the new tty port API, as suggested by
-> Alan, is still needed. I might do that later if I learn how to make
-> UML work. (The conversion is by definition invasive and needs runtime
-> testing.)
-
-Two days ago I did so but still faced the problems described here:
-https://lkml.org/lkml/2012/3/10/163
-
-Thanks,
-//richard
-
-
---------------enigFDA9A2597D7A5BB745ED7A66
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPzNRKAAoJEN9758yqZn9eiYEH/0eWoj8IG38N8ZOkDkECe3jb
-Ogz0+vC5jCSzQbWA4FYrdIO43u69wy0woFjW5Y64tL8g6ys7QVa0TYg6EubEXRnM
-y8wh4hb+7equ73piBITUT91GAJGIKZQS4aJ0lGdgSMYQxzIU5SKobBs8C47SnBa1
-PB/h2aZy+jiacUx8yv4rBD9TVK/LctzD4+sTF4L28dfco/uZ9Z0fuTyhpAX4xRMX
-M+iuTXAOxMETtxtbBmSSicBUZa5j/uQ3CiYWqgo+4x+SasePD+HHUtuuyiE7BoRX
-wFdu+50fSpCf8Rbn13/WN4cYRS2tKFySF9E7a7bqZXmVuA7xK0z3+T+9pJe9bIM=
-=DIpz
------END PGP SIGNATURE-----
-
---------------enigFDA9A2597D7A5BB745ED7A66--
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
