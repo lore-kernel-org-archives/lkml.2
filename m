@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab2FDJfy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 05:35:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45905 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab2FDJfx convert rfc822-to-8bit (ORCPT
+	id S1756761Ab2FDJgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 05:36:39 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:34728 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750973Ab2FDJgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 05:35:53 -0400
-Message-ID: <1338802545.28282.11.camel@twins>
-Subject: Re: processes hung after sys_renameat, and 'missing' processes
-From: Peter Zijlstra <peterz@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 04 Jun 2012 11:35:45 +0200
-In-Reply-To: <20120604002030.GT30000@ZenIV.linux.org.uk>
-References: <20120603223617.GB7707@redhat.com>
-	 <CA+55aFwCusEdMq3_3TAXSZ=+kbN7H6AbnngVaagAZw=ZpicckQ@mail.gmail.com>
-	 <20120604000059.GA14144@redhat.com>
-	 <CA+55aFwJO40594yLH0gS_7YurDGAojVYfgBQXLNawraV_jdNsQ@mail.gmail.com>
-	 <20120604002030.GT30000@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 05:36:07 -0400
+Message-ID: <4FCC817D.5060206@linux.vnet.ibm.com>
+Date: Mon, 04 Jun 2012 15:05:57 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+CC: a.p.zijlstra@chello.nl, mingo@elte.hu, andi@firstfloor.org,
+        eranian@google.com, jolsa@redhat.com, ming.m.lin@intel.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 0/10] perf: Intel uncore pmu counting support
+References: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
+In-Reply-To: <1337144403-30841-1-git-send-email-zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060409-9574-0000-0000-000003096E77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 01:20 +0100, Al Viro wrote:
+aOn Wednesday 16 May 2012 10:29 AM, Yan, Zheng wrote:
+
+> Hi, all
 > 
-> Another question re lockdep - does it scream loudly if process returns
-> to userland without having released some lock?  I hope so, but I've never
-> checked that... ;-/ 
+> Here is the V4 patches to add uncore counting support for Nehalem,
+> Sandy Bridge and Sandy Bridge-EP, applied on top of current tip.
+> The code is based on Lin Ming's old patches.
+> 
+> For Nehalem and Sandy Bridge-EP, A few general events are exported
+> under sysfs directory:
+>   /sys/bus/event_source/devices/${uncore_dev}/events/
+> 
+> Each file in the events directory defines an event. The content is
+> a string such as:
+>   config=1,config1=2
+> 
+> You can use 'perf stat' to access to the uncore pmu. For example:
+>   perf stat -a -C 0 -e 'Uncore_iMC_0/CAS_COUNT_RD/' sleep 1
 
-It does, on some archs. git grep lockdep_sys_exit, suggests x86 and
-s390.
+Hello Yan, 
 
-http://www.google.com/search?q=lock+held+when+returning+to+user+space
+When I boot my Sandy bridge laptop with the patchset applied, I can see the following
+directories in my sysfs interface here at /sys/bus/event_source/devices
 
-will find you people who tripped it ;-) There's a few filesystems that
-did various vile things on freeze or so.
+-------------------------------------------------------
+breakpoint  software    Uncore_C-Box_0  Uncore_C-Box_2
+cpu         tracepoint  Uncore_C-Box_1  Uncore_C-Box_3
+-------------------------------------------------------
+
+So looks like I have 4 C-Box kind of uncore PMUs present on my system. But it does not
+have "events" directory which is suppose to hold the events related to C-box pmu. This
+is in line with you what you have mentioned above, generic events are only exported for
+Nehalem and Sandy Bridge-EP type processors. I guess there are number of RAW events
+associated with C-box type PMU. I am not able to figure out how to use those RAW events
+directly in "perf stat". Could you please guide me how to use them in a sandy bridge setup
+as I have explained above. Thank you.
+
+Regards,
+Anshuman Khandual
+
