@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760810Ab2FDPmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:42:50 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1760829Ab2FDPm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:42:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6949 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754945Ab2FDPmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:42:49 -0400
-Message-ID: <4FCCD774.5040003@nod.at>
-Date: Mon, 04 Jun 2012 17:42:44 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1754878Ab2FDPmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 11:42:53 -0400
+Date: Mon, 4 Jun 2012 17:40:58 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] uprobes: document uprobe_register() vs
+	uprobe_mmap() race
+Message-ID: <20120604154058.GA9045@redhat.com>
+References: <20120604145238.GA6408@redhat.com> <20120604145331.GC6416@redhat.com> <1338822048.28282.59.camel@twins>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 13/24] TTY: um/line, use tty from tty_port
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at> <4FCCD224.1020307@suse.cz> <4FCCD44A.3090500@nod.at> <4FCCD70D.5010908@suse.cz>
-In-Reply-To: <4FCCD70D.5010908@suse.cz>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig876D2C964AE500862634B53D"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338822048.28282.59.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig876D2C964AE500862634B53D
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On 06/04, Peter Zijlstra wrote:
+>
+> On Mon, 2012-06-04 at 16:53 +0200, Oleg Nesterov wrote:
+>
+> I didn't check if its my error or not, however:
+>
+> > @@ -850,6 +869,10 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+> >
+> >  		if (is_register) {
+> >  			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
+> > +			/*
+> > +			 * We can race against uprobe_register(), see the
+>
+> that should be uprobe_mmap(), since this is the register path ;-)
 
-Am 04.06.2012 17:41, schrieb Jiri Slaby:
-> Hmm, I remember. I suggest you to split the patch into several pieces.
-> For example moving the code from ->open into ->install can be done
-> separately. Otherwise it's hard to tell what's wrong with the patch as
-> a whole.
->=20
-> Also, it would be good to see the patch rebased on the top of my
-> patch, because tty_port_set/get pieces would be gone from your patch to=
-o.
+Oops. Fixed. 2/2 is also changed as you suggested.
 
-Okay, I'll redo it!
-I've a much cleaner version in my local queue.
+I'll wait a bit to collect more comments/reviews and resend.
 
-Thanks,
-//richard
+Thanks!
 
+Oleg.
 
-
---------------enig876D2C964AE500862634B53D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPzNd0AAoJEN9758yqZn9emUIIAK0DyxWL5cAXSTkJgoXd3QNW
-+hQ1GYvknVqy7bBsy5xSHQ6OMj/XSZK03kF9+yCmBwdlcmwwbfD6PzaUN3i9XgNP
-lpGl1e9mmQXpGIJVsjvH9abQpS+3/LqtIo8UrmGOHW6HiUZTsOqQ2jFITGpK29DZ
-j8jX7bL5Y+ITujGmlZrDlQcMhXSbiOpJco8LwP3Z1NTV4PIYbHj3+ViXJ/Y39be1
-FB0veDpK+I+CClU5dScBiAcTRfLvb3U/0hK3XPMLHbIhdBGTHfKLYn6oJUPbh92D
-u4dvdnmiLssRf5MS3iYY1jZoI84ycyGFoik4zYk8l7y0uSrltHwmp0PHQOyuKZ4=
-=OMph
------END PGP SIGNATURE-----
-
---------------enig876D2C964AE500862634B53D--
