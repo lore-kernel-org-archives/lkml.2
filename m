@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2FDU1x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 16:27:53 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	id S1760477Ab2FDU2B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 16:28:01 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47840 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967Ab2FDU1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 16:27:49 -0400
+	id S1752121Ab2FDU1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 16:27:54 -0400
 From: Richard Weinberger <richard@nod.at>
 To: jslaby@suse.cz
 Cc: user-mode-linux-devel@lists.sourceforge.net, gregkh@linuxfoundation.org,
         linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        alan@linux.intel.com, Jeff Dike <jdike@addtoit.com>,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 1/6] TTY: um/line, add tty_port
-Date: Mon,  4 Jun 2012 22:27:32 +0200
-Message-Id: <1338841657-30358-2-git-send-email-richard@nod.at>
+        alan@linux.intel.com, Richard Weinberger <richard@nod.at>
+Subject: [PATCH 6/6] um: remove count_lock
+Date: Mon,  4 Jun 2012 22:27:37 +0200
+Message-Id: <1338841657-30358-7-git-send-email-richard@nod.at>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1338841657-30358-1-git-send-email-richard@nod.at>
 References: <1338841657-30358-1-git-send-email-richard@nod.at>
@@ -22,74 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Slaby <jslaby@suse.cz>
+this lock is no longer needed.
 
-And use count from there.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: user-mode-linux-devel@lists.sourceforge.net
 Signed-off-by: Richard Weinberger <richard@nod.at>
 ---
- arch/um/drivers/line.c |    7 ++++---
- arch/um/drivers/line.h |    2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ arch/um/drivers/line.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
 diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
-index acfd0e0..482a7bd 100644
+index 95d5e78..555ccfc 100644
 --- a/arch/um/drivers/line.c
 +++ b/arch/um/drivers/line.c
-@@ -404,7 +404,7 @@ int line_open(struct line *lines, struct tty_struct *tty)
- 		goto out_unlock;
+@@ -382,8 +382,6 @@ int setup_one_line(struct line *lines, int n, char *init,
+ 	struct tty_driver *driver = line->driver->driver;
+ 	int err = -EINVAL;
  
- 	err = 0;
--	if (line->count++)
-+	if (line->port.count++)
- 		goto out_unlock;
- 
- 	BUG_ON(tty->driver_data);
-@@ -446,7 +446,7 @@ void line_close(struct tty_struct *tty, struct file * filp)
- 	mutex_lock(&line->count_lock);
- 	BUG_ON(!line->valid);
- 
--	if (--line->count)
-+	if (--line->port.count)
- 		goto out_unlock;
- 
- 	line->tty = NULL;
-@@ -478,7 +478,7 @@ int setup_one_line(struct line *lines, int n, char *init,
- 
- 	mutex_lock(&line->count_lock);
- 
--	if (line->count) {
-+	if (line->port.count) {
+-	mutex_lock(&line->count_lock);
+-
+ 	if (line->port.count) {
  		*error_out = "Device is already open";
  		goto out;
+@@ -425,7 +423,6 @@ int setup_one_line(struct line *lines, int n, char *init,
+ 		}
  	}
-@@ -663,6 +663,7 @@ int register_lines(struct line_driver *line_driver,
- 	driver->init_termios = tty_std_termios;
- 	
- 	for (i = 0; i < nlines; i++) {
-+		tty_port_init(&lines[i].port);
+ out:
+-	mutex_unlock(&line->count_lock);
+ 	return err;
+ }
+ 
+@@ -513,7 +510,6 @@ int line_get_config(char *name, struct line *lines, unsigned int num, char *str,
+ 
+ 	line = &lines[dev];
+ 
+-	mutex_lock(&line->count_lock);
+ 	if (!line->valid)
+ 		CONFIG_CHUNK(str, size, n, "none", 1);
+ 	else {
+@@ -525,7 +521,6 @@ int line_get_config(char *name, struct line *lines, unsigned int num, char *str,
+ 			tty_kref_put(tty);
+ 		}
+ 	}
+-	mutex_unlock(&line->count_lock);
+ 
+ 	return n;
+ }
+@@ -578,7 +573,6 @@ int register_lines(struct line_driver *line_driver,
+ 		tty_port_init(&lines[i].port);
+ 		lines[i].port.ops = &line_port_ops;
  		spin_lock_init(&lines[i].lock);
- 		mutex_init(&lines[i].count_lock);
+-		mutex_init(&lines[i].count_lock);
  		lines[i].driver = line_driver;
-diff --git a/arch/um/drivers/line.h b/arch/um/drivers/line.h
-index 0a18347..0e06a1f 100644
---- a/arch/um/drivers/line.h
-+++ b/arch/um/drivers/line.h
-@@ -32,9 +32,9 @@ struct line_driver {
- };
- 
- struct line {
-+	struct tty_port port;
- 	struct tty_struct *tty;
- 	struct mutex count_lock;
--	unsigned long count;
- 	int valid;
- 
- 	char *init_str;
+ 		INIT_LIST_HEAD(&lines[i].chan_list);
+ 	}
 -- 
 1.7.7.3
 
