@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2FDFnK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:43:10 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:56777 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab2FDFka (ORCPT
+	id S1756433Ab2FDFkV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:40:21 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:54747 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750750Ab2FDFkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:40:30 -0400
+	Mon, 4 Jun 2012 01:40:18 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+Cc: linux-kernel@vger.kernel.org, Marco Aurelio da Costa <costa@gamic.com>,
         Len Brown <len.brown@intel.com>
-Subject: [PATCH 08/15] acpi_video: fix leaking PCI references
-Date: Mon,  4 Jun 2012 01:39:59 -0400
-Message-Id: <cfb46f433a4da97c31780e08a259fac2cb6bd61f.1338786831.git.len.brown@intel.com>
+Subject: [PATCH 02/15] ACPI: Ignore invalid _PSS entries, but use valid ones
+Date: Mon,  4 Jun 2012 01:39:53 -0400
+Message-Id: <d8e725f356fd5f225ad97f21213fc007e409c9f5.1338786831.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.11.rc0.100.g5498c5f
 In-Reply-To: <1338788406-29981-1-git-send-email-lenb@kernel.org>
 References: <1338788406-29981-1-git-send-email-lenb@kernel.org>
@@ -25,40 +25,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Marco Aurelio da Costa <costa@gamic.com>
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Acked-by: Matthew Garrett <mjg@redhat.com>
+The EliteBook 8560W has non-initialized entries in its _PSS ACPI
+table. Instead of bailing out when the first non-initialized entry is
+found, ignore it and use only  the valid entries. Only bail out if there
+is no valid entry at all.
+
+[v3: Fixes suggested by Konrad]
+
+Signed-off-by: Marco Aurelio da Costa <costa@gamic.com>
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/video.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/acpi/processor_perflib.c | 30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 9577b6f..66e8f73 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1745,6 +1745,7 @@ static int acpi_video_bus_remove(struct acpi_device *device, int type)
+diff --git a/drivers/acpi/processor_perflib.c b/drivers/acpi/processor_perflib.c
+index 0af48a8..a093dc1 100644
+--- a/drivers/acpi/processor_perflib.c
++++ b/drivers/acpi/processor_perflib.c
+@@ -333,6 +333,7 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
+ 	struct acpi_buffer state = { 0, NULL };
+ 	union acpi_object *pss = NULL;
+ 	int i;
++	int last_invalid = -1;
  
- static int __init intel_opregion_present(void)
- {
-+	int i915 = 0;
- #if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
- 	struct pci_dev *dev = NULL;
- 	u32 address;
-@@ -1757,10 +1758,10 @@ static int __init intel_opregion_present(void)
- 		pci_read_config_dword(dev, 0xfc, &address);
- 		if (!address)
- 			continue;
--		return 1;
-+		i915 = 1;
+ 
+ 	status = acpi_evaluate_object(pr->handle, "_PSS", NULL, &buffer);
+@@ -394,14 +395,33 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
+ 		    ((u32)(px->core_frequency * 1000) !=
+ 		     (px->core_frequency * 1000))) {
+ 			printk(KERN_ERR FW_BUG PREFIX
+-			       "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
+-			       px->core_frequency);
+-			result = -EFAULT;
+-			kfree(pr->performance->states);
+-			goto end;
++			       "Invalid BIOS _PSS frequency found for processor %d: 0x%llx MHz\n",
++			       pr->id, px->core_frequency);
++			if (last_invalid == -1)
++				last_invalid = i;
++		} else {
++			if (last_invalid != -1) {
++				/*
++				 * Copy this valid entry over last_invalid entry
++				 */
++				memcpy(&(pr->performance->states[last_invalid]),
++				       px, sizeof(struct acpi_processor_px));
++				++last_invalid;
++			}
+ 		}
  	}
- #endif
--	return 0;
-+	return i915;
- }
  
- int acpi_video_register(void)
++	if (last_invalid == 0) {
++		printk(KERN_ERR FW_BUG PREFIX
++		       "No valid BIOS _PSS frequency found for processor %d\n", pr->id);
++		result = -EFAULT;
++		kfree(pr->performance->states);
++		pr->performance->states = NULL;
++	}
++
++	if (last_invalid > 0)
++		pr->performance->state_count = last_invalid;
++
+       end:
+ 	kfree(buffer.pointer);
+ 
 -- 
 1.7.11.rc0.100.g5498c5f
 
