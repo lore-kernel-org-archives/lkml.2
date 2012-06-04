@@ -1,141 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab2FDFJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:09:27 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:48836 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab2FDFJ0 (ORCPT
+	id S1756314Ab2FDFNS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:13:18 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:33283 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab2FDFNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:09:26 -0400
-Subject: [PATCH v2 7/7] Flush page-table pages before freeing them
+	Mon, 4 Jun 2012 01:13:16 -0400
+Subject: [PATCH v2 6/7] kvm,x86: RCU based table free
 To: peterz@infradead.org, mingo@elte.hu, mtosatti@redhat.com, avi@redhat.com
 From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
 Cc: raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
         vatsa@linux.vnet.ibm.com, hpa@zytor.com
-Date: Mon, 04 Jun 2012 10:38:50 +0530
-Message-ID: <20120604050842.4560.81070.stgit@abhimanyu.in.ibm.com>
+Date: Mon, 04 Jun 2012 10:38:34 +0530
+Message-ID: <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com>
 In-Reply-To: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
 References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
 User-Agent: StGit/0.16-2-g0d85
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060405-2000-0000-0000-000007CAEF90
+x-cbid: 12060318-5490-0000-0000-000001873D00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Certain architecture(viz. x86, arm, s390) have hardware page-table
-walkers(#PF). So during the RCU page-table teardown process make sure
-we do a tlb flush of page-table pages on all relevant CPUs to
-synchronize against hardware walkers, and then free the pages.
+get_user_pages_fast() depends on the IPI to hold off page table
+teardown while they are locklessly walked with interrupts disabled.
+If a vcpu were to be preempted while in this critical section, another
+vcpu tearing down page tables would go ahead and destroy them.  when
+the preempted vcpu resumes it then touches the freed pages.
 
-Moreover, the (mm_users < 2) condition does not hold good for the above
-architectures, as the hardware engine is one of the user.
+Using HAVE_RCU_TABLE_FREE:
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+By using call_rcu_sched() to free the page-tables you'd need to
+receive and process at least one tick on the woken up cpu after the
+freeing, but since the in-progress gup_fast() will have IRQs disabled
+this will be delayed.
+
+http://article.gmane.org/gmane.linux.kernel/1290539
+
+Tested-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 ---
- arch/Kconfig     |    3 +++
- arch/x86/Kconfig |   12 ++++++++++++
- mm/memory.c      |   24 ++++++++++++++++++++++--
- 3 files changed, 37 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/pgalloc.h  |    1 +
+ arch/s390/mm/pgtable.c              |    1 +
+ arch/sparc/include/asm/pgalloc_64.h |    1 +
+ arch/x86/mm/pgtable.c               |    6 +++---
+ include/asm-generic/tlb.h           |    9 +++++++++
+ mm/memory.c                         |    7 +++++++
+ 6 files changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 684eb5a..abc3739 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -196,6 +196,9 @@ config HAVE_ARCH_MUTEX_CPU_RELAX
- config HAVE_RCU_TABLE_FREE
- 	bool
+diff --git a/arch/powerpc/include/asm/pgalloc.h b/arch/powerpc/include/asm/pgalloc.h
+index bf301ac..c33ae79 100644
+--- a/arch/powerpc/include/asm/pgalloc.h
++++ b/arch/powerpc/include/asm/pgalloc.h
+@@ -49,6 +49,7 @@ static inline void __tlb_remove_table(void *_table)
  
-+config ARCH_HW_WALKS_PAGE_TABLE
-+       bool
-+
- config ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	bool
+ 	pgtable_free(table, shift);
+ }
++#define __tlb_remove_table __tlb_remove_table
+ #else /* CONFIG_SMP */
+ static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
+ {
+diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+index 6e765bf..7029ed7 100644
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -730,6 +730,7 @@ void __tlb_remove_table(void *_table)
+ 	else
+ 		free_pages((unsigned long) table, ALLOC_ORDER);
+ }
++#define __tlb_remove_table __tlb_remove_table
  
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index a9ec0da..b0a9f11 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -617,6 +617,18 @@ config PARAVIRT_SPINLOCKS
- 
- 	  If you are unsure how to answer this question, answer N.
- 
-+config PARAVIRT_TLB_FLUSH
-+	bool "Paravirtualization layer for TLB Flush"
-+	depends on PARAVIRT && SMP && EXPERIMENTAL
-+	select HAVE_RCU_TABLE_FREE
-+	select ARCH_HW_WALKS_PAGE_TABLE
-+	---help---
-+	  Paravirtualized Flush TLB replace the native implementation
-+	  with something virtualization-friendly (for example, set a
-+	  flag for sleeping vcpu and do not wait for it).
-+
-+	  If you are unsure how to answer this question, answer N.
-+
- config PARAVIRT_CLOCK
- 	bool
- 
-diff --git a/mm/memory.c b/mm/memory.c
-index c12685d..acfadb8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -335,11 +335,27 @@ static void tlb_remove_table_rcu(struct rcu_head *head)
- 	free_page((unsigned long)batch);
+ static void tlb_remove_table_smp_sync(void *arg)
+ {
+diff --git a/arch/sparc/include/asm/pgalloc_64.h b/arch/sparc/include/asm/pgalloc_64.h
+index 40b2d7a..d10913a 100644
+--- a/arch/sparc/include/asm/pgalloc_64.h
++++ b/arch/sparc/include/asm/pgalloc_64.h
+@@ -106,6 +106,7 @@ static inline void __tlb_remove_table(void *_table)
+ 		is_page = true;
+ 	pgtable_free(table, is_page);
+ }
++#define __tlb_remove_table __tlb_remove_table
+ #else /* CONFIG_SMP */
+ static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, bool is_page)
+ {
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 8573b83..34fa168 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -51,21 +51,21 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
+ {
+ 	pgtable_page_dtor(pte);
+ 	paravirt_release_pte(page_to_pfn(pte));
+-	tlb_remove_page(tlb, pte);
++	tlb_remove_table(tlb, pte);
  }
  
-+#ifdef CONFIG_ARCH_HW_WALKS_PAGE_TABLE
-+/*
-+ * Some architectures(x86, arm, s390) HW walks the page tables when
-+ * the page-table tear down might be happening. So make sure that
-+ * before freeing the page-table pages, flush their tlbs
-+ */
-+static inline void tlb_table_flush_mmu(struct mmu_gather *tlb)
+ #if PAGETABLE_LEVELS > 2
+ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+ {
+ 	paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
+-	tlb_remove_page(tlb, virt_to_page(pmd));
++	tlb_remove_table(tlb, virt_to_page(pmd));
+ }
+ 
+ #if PAGETABLE_LEVELS > 3
+ void ___pud_free_tlb(struct mmu_gather *tlb, pud_t *pud)
+ {
+ 	paravirt_release_pud(__pa(pud) >> PAGE_SHIFT);
+-	tlb_remove_page(tlb, virt_to_page(pud));
++	tlb_remove_table(tlb, virt_to_page(pud));
+ }
+ #endif	/* PAGETABLE_LEVELS > 3 */
+ #endif	/* PAGETABLE_LEVELS > 2 */
+diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+index f96a5b5..9ac30f7 100644
+--- a/include/asm-generic/tlb.h
++++ b/include/asm-generic/tlb.h
+@@ -19,6 +19,8 @@
+ #include <asm/pgalloc.h>
+ #include <asm/tlbflush.h>
+ 
++static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page);
++
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ /*
+  * Semi RCU freeing of the page directories.
+@@ -60,6 +62,13 @@ struct mmu_table_batch {
+ extern void tlb_table_flush(struct mmu_gather *tlb);
+ extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
+ 
++#else
++
++static inline void tlb_remove_table(struct mmu_gather *tlb, void *page)
 +{
-+	tlb_flush_mmu(tlb);
++	tlb_remove_page(tlb, page);
 +}
 +
-+#else
-+#define tlb_table_flush_mmu(tlb) do {} while (0)
+ #endif
+ 
+ /*
+diff --git a/mm/memory.c b/mm/memory.c
+index 6105f47..c12685d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -297,6 +297,13 @@ int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
+  * See the comment near struct mmu_table_batch.
+  */
+ 
++#ifndef __tlb_remove_table
++static void __tlb_remove_table(void *table)
++{
++	free_page_and_swap_cache(table);
++}
 +#endif
 +
- void tlb_table_flush(struct mmu_gather *tlb)
+ static void tlb_remove_table_smp_sync(void *arg)
  {
- 	struct mmu_table_batch **batch = &tlb->batch;
- 
- 	if (*batch) {
-+		tlb_table_flush_mmu(tlb);
- 		call_rcu_sched(&(*batch)->rcu, tlb_remove_table_rcu);
- 		*batch = NULL;
- 	}
-@@ -351,18 +367,22 @@ void tlb_remove_table(struct mmu_gather *tlb, void *table)
- 
- 	tlb->need_flush = 1;
- 
-+#ifndef CONFIG_ARCH_HW_WALKS_PAGE_TABLE
- 	/*
--	 * When there's less then two users of this mm there cannot be a
--	 * concurrent page-table walk.
-+	 * When there's less then two users of this mm there cannot be
-+	 * a concurrent page-table walk for architectures that do not
-+	 * have hardware page-table walkers.
- 	 */
- 	if (atomic_read(&tlb->mm->mm_users) < 2) {
- 		__tlb_remove_table(table);
- 		return;
- 	}
-+#endif
- 
- 	if (*batch == NULL) {
- 		*batch = (struct mmu_table_batch *)__get_free_page(GFP_NOWAIT | __GFP_NOWARN);
- 		if (*batch == NULL) {
-+			tlb_table_flush_mmu(tlb);
- 			tlb_remove_table_one(table);
- 			return;
- 		}
+ 	/* Simply deliver the interrupt */
 
