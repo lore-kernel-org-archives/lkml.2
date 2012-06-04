@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab2FDQdn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:33:43 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59558 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab2FDQdm convert rfc822-to-8bit (ORCPT
+	id S932503Ab2FDQeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:34:11 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:42372 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105Ab2FDQeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:33:42 -0400
-Message-ID: <1338827607.28282.99.camel@twins>
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Jun 2012 18:33:27 +0200
-In-Reply-To: <4FCCD6B7.4030703@linux.intel.com>
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-	    <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
-	   <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
-	  <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
-	 <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 12:34:09 -0400
+Message-ID: <4FCCE1D4.7080805@panasas.com>
+Date: Mon, 4 Jun 2012 19:27:00 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: Jiri Slaby <jslaby@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
+        <user-mode-linux-devel@lists.sourceforge.net>,
+        <gregkh@linuxfoundation.org>, Jeff Dike <jdike@addtoit.com>,
+        <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        <alan@linux.intel.com>
+Subject: Re: [uml-devel] [PATCH 13/24] TTY: um/line, use tty from tty_port
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at> <4FCCD224.1020307@suse.cz> <4FCCD44A.3090500@nod.at> <4FCCD70D.5010908@suse.cz> <4FCCD774.5040003@nod.at>
+In-Reply-To: <4FCCD774.5040003@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 08:39 -0700, Arjan van de Ven wrote:
+On 06/04/2012 06:42 PM, Richard Weinberger wrote:
 
-> hmm I think you're missing the whole point.
-
-Probably.. as I've still no clue what you're wanting to do.
-
-> > I'm just not buying load actually matters or works, if there's lots of
-> > idle time load history should be low, if there's not a lot of idle time,
-> > you're busy (per definition) and again load isn't important.
+> Am 04.06.2012 17:41, schrieb Jiri Slaby:
+>> Hmm, I remember. I suggest you to split the patch into several pieces.
+>> For example moving the code from ->open into ->install can be done
+>> separately. Otherwise it's hard to tell what's wrong with the patch as
+>> a whole.
+>>
+>> Also, it would be good to see the patch rebased on the top of my
+>> patch, because tty_port_set/get pieces would be gone from your patch too.
 > 
-> if there is a lot of idle, load can be low or high; load is more than
-> just cpu usage. it includes waiting for resources and mutexes etc.
-
-It very much does not. The thing its using: this_cpu_load() returns
-rq->cpu_load[0], does not include blocked tasks of any kind.
-
-> if load is low, you are idle, sure (in that direction it works). If load
-> is low, the heuristic that is used here will not hinder a deep C state
-> choice.
+> Okay, I'll redo it!
+> I've a much cleaner version in my local queue.
 > 
-> if there is not a lot of idle time, sure, load is high.
 
-False, you can have 0 idle time and still have low load.
 
->  but because idle
-> time tends to be bursty, we can still be idle for, say, a millisecond
-> every 10 milliseconds. In this scenario, the load average is used to
-> ensure that the 200 usecond cost of exiting idle is acceptable.
+Can you send it my way, I'm still running broken, 3.4 Based ?
 
-So what you're saying is that if you have 1ms idle in 10ms, it might not
-be a continuous 1ms. And you're using load as a measure of how many
-fragments it comes apart in?
+Thanks very much in advance
+Boaz
 
-That's not making sense.
-
-> one other way of doing this would be tracking cumulative accrued latency
-> as a percentage of cpu busy time... but that's also a pretty
-> approximative measure.
-
-To what purpose? I'm completely confused now, none of what you say is
-making any sense.
+> Thanks,
+> //richard
+> 
+> 
+> 
+> 
+> 
+> ------------------------------------------------------------------------------
+> Live Security Virtual Conference
+> Exclusive live event will cover all the ways today's security and 
+> threat landscape has changed and how IT managers can respond. Discussions 
+> will include endpoint security, mobile security and the latest in malware 
+> threats. http://www.accelacomm.com/jaw/sfrnl04242012/114/50122263/
+> 
+> 
+> 
+> _______________________________________________
+> User-mode-linux-devel mailing list
+> User-mode-linux-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/user-mode-linux-devel
 
 
