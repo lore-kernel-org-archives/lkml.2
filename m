@@ -1,488 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab2FDGuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 02:50:22 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61334 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab2FDGuT convert rfc822-to-8bit (ORCPT
+	id S1753151Ab2FDG4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 02:56:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59493 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866Ab2FDG4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 02:50:19 -0400
+	Mon, 4 Jun 2012 02:56:39 -0400
+Date: Mon, 4 Jun 2012 07:56:38 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Question about do_mmap changes
+Message-ID: <20120604065638.GW30000@ZenIV.linux.org.uk>
+References: <4FCC47C9.8050904@lwfinger.net>
+ <20120604062604.GV30000@ZenIV.linux.org.uk>
+ <4FCC57AD.3000803@lwfinger.net>
 MIME-Version: 1.0
-In-Reply-To: <1338523001-11811-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1338523001-11811-1-git-send-email-jonghwa3.lee@samsung.com>
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Mon, 4 Jun 2012 14:49:57 +0800
-X-Google-Sender-Auth: 3cxZEdPgRrXlkJHTcBHE6J6OaIA
-Message-ID: <CAK5ve-KmUVcx9-0jkQ6tVBGpV_f-1KXpRAe9oTmAGKCMDzVj=g@mail.gmail.com>
-Subject: Re: [PATCH v2] led: max77693: Add support for MAX77693 LED driver
-To: Jonghwa Lee <jonghwa3.lee@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpudie@rpsys.net>,
-        linux-leds@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCC57AD.3000803@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonghwa,
+On Mon, Jun 04, 2012 at 01:37:33AM -0500, Larry Finger wrote:
 
-I still found some coding style errors when I applied this patch on my
-branch, please use scripts/checkpatch.pl to check and fix the coding
-style issue.
+> Oh, shit. I was hoping for an easy conversion of this code to work
+> with 3.5 so that I could use VB while testing 3.5. Clearly, the
+> fixes will not be quick.
+> 
+> As you have likely gathered, I am not a VB developer. Is it OK if I
+> pass your comments on to the real developers and let them do the
+> work?
 
-On Fri, Jun 1, 2012 at 11:56 AM, Jonghwa Lee <jonghwa3.lee@samsung.com> wrote:
-> This patch supports max77693 LED driver. MAX77693 LED has 2 mode and 2 FLEDs.
-> The LED of each mode has seperate led data and handle it independently.
-> The 2 FLEDs can be activated by logic inputs (FLEDEN, TORCHEN) and also I2C interface.
->
-> This patch is based on mfd-2.6/for-next branch.
-> git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-next
->
-> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> v2
-> - Transform the data structures which hold led's information.
-> - Move all macro and enum from header file to C file except platform_data strcure only.
->  And replace header file to include/linux/platform_data/ .
-> - Modify platform data in max77693.h to contain led's platform data.
->
->  drivers/leds/Kconfig                        |    7 +
->  drivers/leds/Makefile                       |    1 +
->  drivers/leds/leds-max77693.c                |  282 +++++++++++++++++++++++++++
->  include/linux/mfd/max77693.h                |    4 +
->  include/linux/platform_data/leds-max77693.h |   74 +++++++
->  5 files changed, 368 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/leds/leds-max77693.c
->  create mode 100644 include/linux/platform_data/leds-max77693.h
->
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index ff4b8cf..d69be3c 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -394,6 +394,13 @@ config LEDS_MAX8997
->          This option enables support for on-chip LED drivers on
->          MAXIM MAX8997 PMIC.
->
-> +config LEDS_MAX77693
-> +       tristate "LED support for MAX77693 PMIC"
-> +       depends on LEDS_CLASS && MFD_MAX77693
-> +       help
-> +         This option enables support for on-chip LED drivers on
-> +         MAXIM MAX77693 PMIC.
-> +
->  config LEDS_OT200
->        tristate "LED support for the Bachmann OT200"
->        depends on LEDS_CLASS && HAS_IOMEM
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index 890481c..ff4ff2c 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -45,6 +45,7 @@ obj-$(CONFIG_LEDS_NETXBIG)            += leds-netxbig.o
->  obj-$(CONFIG_LEDS_ASIC3)               += leds-asic3.o
->  obj-$(CONFIG_LEDS_RENESAS_TPU)         += leds-renesas-tpu.o
->  obj-$(CONFIG_LEDS_MAX8997)             += leds-max8997.o
-> +obj-$(CONFIG_LEDS_MAX77693)            += leds-max77693.o
->
->  # LED SPI Drivers
->  obj-$(CONFIG_LEDS_DAC124S085)          += leds-dac124s085.o
-> diff --git a/drivers/leds/leds-max77693.c b/drivers/leds/leds-max77693.c
-> new file mode 100644
-> index 0000000..38d4300
-> --- /dev/null
-> +++ b/drivers/leds/leds-max77693.c
-> @@ -0,0 +1,282 @@
-> +/*
-> + * LED driver for Maxim MAX77693 - leds-max77673.c
-> + *
-> + * Copyright (C) 2012 Samsung Electronics Co.Ltd
-> + * ByungChang Cha <bc.cha@samsung.com>
-> + * Jonghwa Lee <jonghwa3.lee@samsung.com>
-> + *
-> + * This program is not provided / owned by Maxim Integrated Products.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/leds.h>
-> +#include <linux/workqueue.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/slab.h>
-> +#include <linux/mfd/max77693.h>
-> +#include <linux/mfd/max77693-private.h>
-> +#include <linux/platform_data/leds-max77693.h>
-> +#include <linux/module.h>
-> +#include <linux/regmap.h>
-> +
-> +/* MAX77693_IFLASH1 */
-> +#define MAX77693_FLASH_IOUT1                   0x3F
-> +
-> +/* MAX77693_IFLASH2 */
-> +#define MAX77693_FLASH_IOUT2                   0x3F
-> +
-> +/* MAX77693_ITORCH */
-> +#define MAX77693_TORCH_IOUT1                   0x0F
-> +#define MAX77693_TORCH_IOUT2                   0xF0
-> +
-> +/* MAX77693_FLASH_EN */
-> +#define MAX77693_TORCH_FLED2_EN                        0x03
-> +#define MAX77693_TORCH_FLED1_EN                        0x0C
-> +#define MAX77693_FLASH_FLED2_EN                        0x30
-> +#define MAX77693_FLASH_FLED1_EN                        0xC0
-> +/* MAX77693 FLEDx_EN value */
-> +#define MAX77693_FLED_OFF                      0x00
-> +#define MAX77693_FLED_FLASHEN                  0x01
-> +#define MAX77693_FLED_TORCHEN                  0x02
-> +#define MAX77693_FLED_I2C                      0X03
-> +
-> +/* MAX77693_VOUT_CNTL */
-> +#define MAX77693_BOOST_FLASH_MODE              0x07
-> +#define MAX77693_BOOST_FLASH_FLEDNUM           0x80
-> +/* MAX77693_BOOST_FLASH_MODE vaule*/
-> +#define MAX77693_BOOST_FLASH_MODE_OFF          0x00
-> +#define MAX77693_BOOST_FLASH_MODE_FLED1                0x01
-> +#define MAX77693_BOOST_FLASH_MODE_FLED2                0x02
-> +#define MAX77693_BOOST_FLASH_MODE_BOTH         0x03
-> +#define MAX77693_BOOST_FLASH_MODE_FIXED                0x04
-> +/* MAX77693_BOOST_FLASH_FLEDNUM vaule*/
-> +#define MAX77693_BOOST_FLASH_FLEDNUM_1         0x00
-> +#define MAX77693_BOOST_FLASH_FLEDNUM_2         0x80
-> +
-> +/* MAX77693_VOUT_FLASH1 */
-> +#define MAX77693_BOOST_VOUT_FLASH              0x7F
-> +#define MAX77693_BOOST_VOUT_FLASH_FROM_VOLT(mV)                                \
-> +               ((mV) <= 3300 ? 0x00 :                                  \
-> +               ((mV) <= 5500 ? (((mV) - 3300) / 25 + 0x0C) : 0x7F))
-> +
-> +#define MAX_FLASH_CURRENT              1000    /* 1000mA(0x1f) */
-> +#define MAX_TORCH_CURRENT              250     /* 250mA(0x0f) */
-> +#define MAX_FLASH_DRV_LEVEL            63      /* 15.625 + 15.625*63 mA */
-> +#define MAX_TORCH_DRV_LEVEL            15      /* 15.625 + 15.625*15 mA */
-> +
-> +#define MAX77693_LED_CTRL_BY_I2C       1
-> +#define MAX77693_TORCH_LED_2           3
-> +
-> +static u8 led_en_mask[MAX77693_LED_MAX] = {
-> +       MAX77693_FLASH_FLED1_EN,
-> +       MAX77693_FLASH_FLED2_EN,
-> +       MAX77693_TORCH_FLED1_EN,
-> +       MAX77693_TORCH_FLED2_EN
-> +};
-> +
-> +static u8 reg_led_timer[MAX77693_LED_MAX] = {
-> +       MAX77693_LED_REG_FLASH_TIMER,
-> +       MAX77693_LED_REG_FLASH_TIMER,
-> +       MAX77693_LED_REG_ITORCHTIMER,
-> +       MAX77693_LED_REG_ITORCHTIMER,
-> +};
-> +
-> +static u8 reg_led_current[MAX77693_LED_MAX] = {
-> +       MAX77693_LED_REG_IFLASH1,
-> +       MAX77693_LED_REG_IFLASH2,
-> +       MAX77693_LED_REG_ITORCH,
-> +       MAX77693_LED_REG_ITORCH,
-> +};
-> +
-> +static u8 led_current_mask[MAX77693_LED_MAX] = {
-> +       MAX77693_FLASH_IOUT1,
-> +       MAX77693_FLASH_IOUT2,
-> +       MAX77693_TORCH_IOUT1,
-> +       MAX77693_TORCH_IOUT2
-> +};
-> +
-> +static int max77693_led_get_en_value(struct max77693_led *led)
-> +{
-> +       if (led->cntrl_mode == MAX77693_LED_CTRL_BY_I2C)
-> +               return MAX77693_FLED_OFF;
-> +       else if (led->id < 2)
-> +               return MAX77693_FLED_FLASHEN;
-> +       else
-> +               return MAX77693_FLED_TORCHEN;
-> +}
-> +
-> +static void max77693_led_set(struct led_classdev *led_cdev,
-> +                                        enum led_brightness value)
-> +{
-> +       struct max77693_led *led
-> +               = container_of(led_cdev, struct max77693_led, cdev);
-> +
-> +       led->brightness = min_t(int, value, MAX77693_FLASH_IOUT1);
-> +       schedule_work(&led->work);
-> +}
-> +
-> +static void max77693_led_work(struct work_struct *work)
-> +{
-> +       struct max77693_led *led
-> +                       = container_of(work, struct max77693_led, work);
-> +       int ret;
-> +       int en_val;
-> +       int id = led->id;
-> +       u8 shift = id == MAX77693_TORCH_LED_2 ? 4 : 0;
-> +
-> +
+Sure.  BTW, if they are doing that munmap() *not* to current->mm, they
+are in for serious analysis (and very likely - fixing unpleasant races)
+in earlier versions as well; these races hadn't appeared just now.
 
-I think you need mutex_lock here to protect register accessing.
+Note that aio (another place that used to do such munmap()) had been
+racy all way back to original merge.  Moreover, access of task->mm
+becomes really interesting when it's another task - note that execve(2)
+changes the sucker, so you are risking up_write() done to mm->mmap_sem
+that gets freed under you or up_write() on a _different_ mm_struct
+->mmap_sem.  And then there's the fact that exit_mm() is done without
+->mmap_sem (it's done when no active users should've been left, after
+all), so munmap() done on it will do nasty things.  So will munmap()
+racing with do_coredump() (again, no ->mmap_sem there - all threads
+are already not running in userland by that point, so the kernel
+just goes ahead and assumes that nobody will touch that mm_struct).
 
-> +       en_val = max77693_led_get_en_value(led);
-> +       ret = regmap_update_bits(led->max77693->regmap,
-> +                               MAX77693_LED_REG_FLASH_EN,
-> +                               led_en_mask[id],
-> +                               en_val << (ffs(led_en_mask[id]) - 1));
-> +       if (unlikely(ret))
-> +               goto error_set_bits;
-> +
-> +       ret = regmap_update_bits(led->max77693->regmap,
-> +                               reg_led_current[id],
-> +                               led_current_mask[id],
-> +                               led->brightness << shift);
-> +       if (unlikely(ret))
-> +               goto error_set_bits;
-> +
-> +       return;
-> +
-> +error_set_bits:
-> +       dev_err(led->max77693->dev, "%s: can't set led level %d\n", __func__, ret);
-> +       return;
-> +}
-> +
-> +static int max77693_led_setup(struct max77693_led *led)
-> +{
-> +       int ret = 0;
-> +       int id = led->id;
-> +       int value;
-> +       u8 shift = id == MAX77693_TORCH_LED_2 ? 4 : 0;
-> +
-> +       ret |= regmap_write(led->max77693->regmap, MAX77693_LED_REG_VOUT_CNTL,
-> +                                 MAX77693_BOOST_FLASH_FLEDNUM_2
-> +                               | MAX77693_BOOST_FLASH_MODE_BOTH);
-> +       ret |= regmap_write(led->max77693->regmap, MAX77693_LED_REG_VOUT_FLASH1,
-> +                         MAX77693_BOOST_VOUT_FLASH_FROM_VOLT(5000));
-> +       ret |= regmap_write(led->max77693->regmap,
-> +                       MAX77693_LED_REG_MAX_FLASH1, 0xEC);
-> +       ret |= regmap_write(led->max77693->regmap,
-> +                       MAX77693_LED_REG_MAX_FLASH2, 0x00);
-> +
-> +       value = max77693_led_get_en_value(led);
-> +
-> +       ret |= regmap_update_bits(led->max77693->regmap,
-> +                                MAX77693_LED_REG_FLASH_EN,
-> +                                led_en_mask[id],
-> +                                value << (ffs(led_en_mask[id]) - 1));
-> +
-> +       /* Set TORCH_TMR_DUR or FLASH_TMR_DUR */
-> +       if (id < 2) {
-> +               ret |= regmap_write(led->max77693->regmap, reg_led_timer[id],
-> +                               (led->timer | led->timer_mode << 7));
-> +       } else {
-> +               ret |= regmap_write(led->max77693->regmap, reg_led_timer[id],
-> +                                       0xC0);
-> +       }
-> +       /* Set current */
-> +       ret |= regmap_update_bits(led->max77693->regmap, reg_led_current[id],
-> +                       led_current_mask[id],
-> +                       led->brightness << shift);
-> +
-> +       return ret;
-> +}
-> +
-> +static int max77693_led_probe(struct platform_device *pdev)
-> +{
-> +       struct max77693_dev *max77693 = dev_get_drvdata(pdev->dev.parent);
-> +       struct max77693_platform_data *max77693_pdata
-> +                                       = dev_get_platdata(max77693->dev);
-> +       struct max77693_led_platform_data *led_data
-> +                                       = max77693_pdata->led_data;
-> +       struct max77693_led *led;
-> +       int ret = 0;
-> +       int i;
-> +
-> +       if(!led_data) {
-> +               dev_err(&pdev->dev, "%s : No platform data\n", __func__);
-> +               return -ENODEV;
-> +       }
-> +
-> +       platform_set_drvdata(pdev, led_data);
-> +
-> +       for (i = 0; i < led_data->num_leds; i++) {
-> +               led = &(led_data->leds[i]);
-> +
-> +               led->max77693 = max77693;
-> +               led->cdev.name = led->name;
-> +               led->cdev.brightness_set = max77693_led_set;
-> +               led->cdev.brightness = LED_OFF;
-> +               led->cdev.flags = LED_CORE_SUSPENDRESUME;
-> +               led->cdev.max_brightness = led->id < 2
-> +                       ? MAX_FLASH_DRV_LEVEL : MAX_TORCH_DRV_LEVEL;
-> +
-> +               INIT_WORK(&led->work, max77693_led_work);
-> +               ret = led_classdev_register(&pdev->dev, &led->cdev);
-> +               if (unlikely(ret)) {
-> +                       dev_err(&pdev->dev, "unable to register LED\n");
-> +                       ret = -EFAULT;
-> +                       continue;
-> +               }
-> +
-> +               ret = max77693_led_setup(led);
-> +               if (unlikely(ret)) {
-> +                       dev_err(&pdev->dev, "unable to setup LED\n");
-> +                       led_classdev_unregister(&led->cdev);
-> +                       ret = -EFAULT;
-> +               }
-> +       }
-> +       return ret;
-> +}
-> +
-> +static int __devexit max77693_led_remove(struct platform_device *pdev)
-> +{
-> +       struct max77693_led_platform_data *led_data = platform_get_drvdata(pdev);
-> +       struct max77693_led *led;
-> +       int i;
-> +
-> +       for (i = 0; i < led_data->num_leds; i++) {
-> +               led = &(led_data->leds[i]);
-> +               if (led == NULL)
-> +                       continue;
-> +
-> +               led_classdev_unregister(&led->cdev);
-> +       }
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver max77693_led_driver = {
-> +       .probe          = max77693_led_probe,
-> +       .remove         = __devexit_p(max77693_led_remove),
-> +       .driver         = {
-> +               .name   = "max77693-led",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
-> +static int __init max77693_led_init(void)
-> +{
-> +       return platform_driver_register(&max77693_led_driver);
-> +}
-> +module_init(max77693_led_init);
-> +
-> +static void __exit max77693_led_exit(void)
-> +{
-> +       platform_driver_unregister(&max77693_led_driver);
-> +}
-> +module_exit(max77693_led_exit);
-> +
-> +MODULE_AUTHOR("ByungChang Cha <bc.cha@samsung.com>");
-> +MODULE_DESCRIPTION("MAX77693 LED driver");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
-> index 1d28ae9..b163e64 100644
-> --- a/include/linux/mfd/max77693.h
-> +++ b/include/linux/mfd/max77693.h
-> @@ -32,5 +32,9 @@
->
->  struct max77693_platform_data {
->        int wakeup;
-> +#ifdef CONFIG_LEDS_MAX77693
-This doesn't work when leds-max77693 is a module,
+Conversion to vm_mmap()/vm_munmap() was done, in a large part, to simplify
+the analysis and to make damn sure we are doing that to current->mm.
+There are users of do_munmap() outside of mm/* (ipc/shm.c), but they
+are also working on current->mm and the code in question is really
+a misplaced piece of mm/* to start with.
 
-> +       /* led (flash/torch) data */
-> +       struct max77693_led_platform_data *led_data;
-> +#endif
->  };
->  #endif /* __LINUX_MFD_MAX77693_H */
-> diff --git a/include/linux/platform_data/leds-max77693.h b/include/linux/platform_data/leds-max77693.h
-> new file mode 100644
-> index 0000000..24237c7
-> --- /dev/null
-> +++ b/include/linux/platform_data/leds-max77693.h
-> @@ -0,0 +1,74 @@
-> +/*
-> + * leds-max77693.h - Flash-led driver for Maxim MAX77693
-> + *
-> + * Copyright (C) 2012 Samsung Electronics Co.Ltd
-> + * ByungChang Cha <bc.cha@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __LEDS_MAX77693_H__
-> +#define __LEDS_MAX77693_H__
-> +
-> +#define        MAX77693_LED_MAX        4
-> +
-> +/* struct max77693_led - struture containing led's information
-> + * @name: led's name
-> + * @id: integer id for each led.
-> + *     0: FLED1 for FLASH Mode
-> + *     1: FLED2 for FLASH Mode
-> + *     2: FLED1 for TORCH Mode
-> + *     3: FLED2 for TORCH Mode
-> + * @timer: value of timer duration (ms) <= 15
-> + *             FLASH           TORCH
-> + *     0:      62.5            262
-> + *     1:      125             524
-> + *     2:      187.5           786
-> + *     3:      250             1048
-> + *     4:      312.5           1572
-> + *     5:      375             2096
-> + *     6:      437.5           2620
-> + *     7:      500             3144
-> + *     8:      562.5           4193
-> + *     9:      625             5242
-> + *     10:     687.5           6291
-> + *     11:     750             7340
-> + *     12:     812.5           9437
-> + *     13:     875             11534
-> + *     14:     937.5           13631
-> + *     15:     1000            15728
-> + * @brigthness
-> + * @timer_mode: timer mode bit
-> + *     0: One shot mode
-> + *     1: Max timer mode
-> + * @cntrl_mode: set led's control mode
-> +       0: triggered by FLASHEN/TORCHEN
-> +       1: triggered by I2C
-> + * @cdev
-> + * @max77693
-> + * @work
-> + */
-> +
-> +struct max77693_led
-> +{
-> +       const char                      *name;
-> +       int                             id;
-> +       int                             timer;
-> +       int                             brightness;
-> +       int                             timer_mode;
-> +       int                             cntrl_mode;
-> +
-> +       struct led_classdev             cdev;
-> +       struct max77693_dev             *max77693;
-> +       struct work_struct              work;
-> +};
-> +
-> +struct max77693_led_platform_data
-> +{
-> +       int num_leds;
-> +       struct max77693_led leds[MAX77693_LED_MAX];
-> +};
-> +
-> +#endif
-> --
-> 1.7.4.1
->
-
-
-
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.186-168-78255 Mobile
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+_IF_ this is done not to current->mm, these guys are in for a world of
+hurt, probably going all way back.
