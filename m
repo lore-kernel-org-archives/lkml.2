@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab2FDRLe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:11:34 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60873 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194Ab2FDRLd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:11:33 -0400
-Date: Mon, 4 Jun 2012 18:11:30 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] gpiolib: wm8994: Use irq_domain mappings for gpios
-Message-ID: <20120604171130.GB23408@opensource.wolfsonmicro.com>
-References: <1338727219-24141-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <CACRpkdZJPH__FzsUmKnQhTOtJ1EstJ8K5LzhTXGUO_VSzrjLew@mail.gmail.com>
+	id S1754466Ab2FDRMJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:12:09 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58995 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752194Ab2FDRMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 13:12:07 -0400
+Date: Mon, 4 Jun 2012 19:12:02 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: ShuoX Liu <shuox.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v3 2/2] x86 mce: use new printk recursion disabling
+ interface
+Message-ID: <20120604171202.GA8533@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	ShuoX Liu <shuox.liu@intel.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"andi@firstfloor.org" <andi@firstfloor.org>,
+	Ingo Molnar <mingo@elte.hu>
+References: <20120523100138.GA13506@x1.osrc.amd.com>
+ <4FBDCE4A.7050900@intel.com>
+ <20120524061145.GA18284@liondog.tnic>
+ <20120524155611.b7aeff4d.akpm@linux-foundation.org>
+ <1337905811.14538.206.camel@ymzhang.sh.intel.com>
+ <4FBF3295.7090608@intel.com>
+ <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com>
+ <1338165058.14538.209.camel@ymzhang.sh.intel.com>
+ <4FC2E8CF.2040109@intel.com>
+ <4FC2E944.6060903@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GRPZ8SYKNexpdSJ7"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACRpkdZJPH__FzsUmKnQhTOtJ1EstJ8K5LzhTXGUO_VSzrjLew@mail.gmail.com>
-X-Cookie: Condense soup, not books!
+In-Reply-To: <4FC2E944.6060903@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 28, 2012 at 10:56:04AM +0800, ShuoX Liu wrote:
+> From: ShuoX Liu <shuox.liu@intel.com>
+> 
+> Disable printk recursion to make sure MCE logs printed out.
+> 
+> Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+> Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 2afcbd2..365c35d 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1015,6 +1015,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  	DECLARE_BITMAP(toclear, MAX_NR_BANKS);
+>  	char *msg = "Unknown";
+>  
+> +	printk_recursion_check_disable();
+>  	atomic_inc(&mce_entry);
+>  
+>  	this_cpu_inc(mce_exception_count);
+> @@ -1144,6 +1145,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+>  	mce_wrmsrl(MSR_IA32_MCG_STATUS, 0);
+>  out:
+>  	atomic_dec(&mce_entry);
+> +	printk_recursion_check_enable();
+>  	sync_core();
 
---GRPZ8SYKNexpdSJ7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is still adding the recursion check things in do_machine_check
+instead of in print_mce.
 
-On Mon, Jun 04, 2012 at 07:08:43PM +0200, Linus Walleij wrote:
+Also, this commit message above needs more explanation why we want to
+disable the recursion check on an MCE, maybe an example...
 
-> I read some drivers/base/regmap code and I think I understand this stuff
-> now, but seriously, it's quite hard to see the forest with all these trees,
-> and regmap is actually one of the finest new things in recent kernels,
-> so can could we create
-> Documentation/driver-model/regmap.txt?
+Thanks.
 
-Of course, someone can!
-
-> I think this document is needed... I would write it myself if I felt I
-> understood the regmap overall concepts well enough, but I'm
-> certain to get something wrong.
-
-Well, there's one sure fire way to make sure you've got a good
-understanding :)
-
-More seriously I'm not sure I could readily tell what's non-obvious and
-worth writing a document about.  Personally I always just read the
-commit logs for Linux stuff, they're some of the best documentation I've
-ever seen for software.
-
---GRPZ8SYKNexpdSJ7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPzOw3AAoJEBus8iNuMP3ddpYP/isv6dKbzhfvnc/luvnG9OxG
-VNIr5pEl8rKsHBxcNvsOuoOL4C+M9q5AbEQ1YrV4v1gXF0/ND/+fuudUDo1rxPRo
-gxO+GfyEzl6A+mpOB7pL8gc0zyJii3Nuks0F5RsjaNav1fk2oq22wVRD9sfn5cxD
-ZGM7NcIkuIZz+HqNMxSTQHXD0iJoW4BanyrY82yYmcOFG3O6lpBhI2rcHilxFiE+
-2r7NqxgfbZqob0LxkhSjBtfV2un8IDqQp0NoMYmg6HsmCWRcNJ0z8dPcVJKoxjpY
-pVVcQQOm1yq1qmYW9AJfFrJCy2oDZRErS14JE/EFR6iXh/eIb5+0xNc8JVqhjEWC
-G31jJ6IyBR9v6K3iVSaIcQKT4k3Yg3vEfvUsv586t79wbYX1xSWhrvM9q8vkXVnG
-gbTC8C7B0WcsWlzD1eTFaqdo44KWRwn0hIySflm5jZczPOyNDPiZLnzyh4eNyuDl
-ttpKRg2JMDoCSQoQS3H314A7cXxdgStLZ2jiyddCzo3d+SFjlDaqv4aLhL3vVnCS
-+zP7mYO9c3455W6MLt8jRzHBB4+ybSHdYAi9/S8kQ38KlRqLJyoh44bz4bO41CIs
-wwaUslKvYiAXdvJBn1RPPCPSebx9RVTpfL8fR3/6CPauYnGCXf/dcx9vLKU/mryv
-FNZ5b/zj6eZjCJvDabj7
-=mrDJ
------END PGP SIGNATURE-----
-
---GRPZ8SYKNexpdSJ7--
+-- 
+Regards/Gruss,
+Boris.
