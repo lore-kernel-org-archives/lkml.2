@@ -1,101 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab2FDFRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:17:32 -0400
-Received: from szxga03-in.huawei.com ([58.251.152.66]:33113 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756393Ab2FDFRa (ORCPT
+	id S1756406Ab2FDFSt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:18:49 -0400
+Received: from szxga04-in.huawei.com ([58.251.152.67]:52176 "EHLO
+	szxga04-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756252Ab2FDFSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:17:30 -0400
-Date: Mon, 04 Jun 2012 13:16:57 +0800
+	Mon, 4 Jun 2012 01:18:47 -0400
+Date: Mon, 04 Jun 2012 13:17:02 +0800
 From: Jiang Liu <jiang.liu@huawei.com>
-Subject: [RFC PATCH v1 1/6] PCI: change PCI device management logic to better
- follow device model
+Subject: [RFC PATCH v1 6/6] PCI: update AER configuration when PCI hotplug
+ event happens
+In-reply-to: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
 X-Originating-IP: [10.107.208.49]
 To: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Cc: Jiang Liu <liuj97@gmail.com>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
         Don Dutile <ddutile@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
         Yijing Wang <wangyijing@huawei.com>,
         Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-id: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
+Message-id: <1338787022-400-6-git-send-email-jiang.liu@huawei.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.8.msysgit.0
 Content-type: text/plain
 Content-transfer-encoding: 7BIT
 X-CFilter-Loop: Reflected
+References: <1338787022-400-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiang Liu <liuj97@gmail.com>
 
-According to device model documentation, the way to add/remove device
-object should be symmetric.
+The AER driver only configures downstream PCIe devices at driver
+binding time and all hot-added PCIe devices won't be managed by
+the AER driver.  So hook PCI device hotplug events to setup AER
+configuration for hot-added PCIe devices.
 
-/**
- * device_del - delete device from system.
- * @dev: device.
- *
- * This is the first part of the device unregistration
- * sequence. This removes the device from the lists we control
- * from here, has it removed from the other driver model
- * subsystems it was added to in device_add(), and removes it
- * from the kobject hierarchy.
- *
- * NOTE: this should be called manually _iff_ device_add() was
- * also called manually.
- */
-
-The rule here is to either use
-1) device_register()/device_unregister()
-or
-2) device_initialize()/device_add()/device_del()/put_device().
-
-So change PCI core to follow the rule and get rid of the redundant
-pci_dev_get()/pci_dev_put() pair.
+So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
+setup AER configuration for hot-added PCIe devices.
 
 Signed-off-by: Jiang Liu <liuj97@gmail.com>
 ---
- drivers/pci/probe.c  |    1 -
- drivers/pci/remove.c |    4 ++--
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/pci/pcie/aer/aerdrv.c |   72 ++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 71 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 0840409..dacca26 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1294,7 +1294,6 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
+index 58ad791..7033410 100644
+--- a/drivers/pci/pcie/aer/aerdrv.c
++++ b/drivers/pci/pcie/aer/aerdrv.c
+@@ -410,6 +410,69 @@ static void aer_error_resume(struct pci_dev *dev)
+ 	pci_write_config_dword(dev, pos + PCI_ERR_UNCOR_STATUS, status);
+ }
+ 
++static int pci_root_port_aer_support(struct pci_dev *dev)
++{
++	int rc, pos;
++	u32 reg32 = 0;
++
++	if (!pci_is_pcie(dev))
++		return false;
++
++	if (!pci_aer_available() || aer_acpi_firmware_first())
++		return false;
++
++	/* Search for root port */
++	while (dev->pcie_type != PCI_EXP_TYPE_ROOT_PORT) {
++		dev = dev->bus->self;
++		if (!dev)
++			return false;
++	}
++
++	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ERR);
++	if (!pos)
++		return false;
++
++	rc = pci_read_config_dword(dev, pos + PCI_ERR_ROOT_COMMAND, &reg32);
++	if (rc || reg32 == 0xFFFFFFFF)
++		return false;
++
++	if (reg32 & (PCI_ERR_ROOT_CMD_COR_EN |
++		     PCI_ERR_ROOT_CMD_NONFATAL_EN |
++		     PCI_ERR_ROOT_CMD_FATAL_EN))
++		return true;
++
++	return false;
++}
++
++static void acpi_pcie_aer_notify_dev(struct pci_dev *dev, bool enable)
++{
++	if (pci_root_port_aer_support(dev))
++		set_device_error_reporting(dev, &enable);
++}
++
++static int acpi_pcie_aer_notify_fn(struct notifier_block *nb,
++		unsigned long event, void *data)
++{
++	struct device *dev = data;
++
++	switch (event) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		acpi_pcie_aer_notify_dev(to_pci_dev(dev), true);
++		break;
++	case BUS_NOTIFY_DEL_DEVICE:
++		acpi_pcie_aer_notify_dev(to_pci_dev(dev), false);
++		break;
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block acpi_pcie_aer_notifier = {
++	.notifier_call = &acpi_pcie_aer_notify_fn,
++};
++
+ /**
+  * aer_service_init - register AER root service driver
+  *
+@@ -417,9 +480,15 @@ static void aer_error_resume(struct pci_dev *dev)
+  */
+ static int __init aer_service_init(void)
  {
- 	device_initialize(&dev->dev);
- 	dev->dev.release = pci_release_dev;
--	pci_dev_get(dev);
- 
- 	dev->dev.dma_mask = &dev->dma_mask;
- 	dev->dev.dma_parms = &dev->dma_parms;
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index 04a4861..6c07bc5 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -22,7 +22,7 @@ static void pci_stop_dev(struct pci_dev *dev)
- 	if (dev->is_added) {
- 		pci_proc_detach_device(dev);
- 		pci_remove_sysfs_dev_files(dev);
--		device_unregister(&dev->dev);
-+		device_del(&dev->dev);
- 		dev->is_added = 0;
- 	}
- 
-@@ -40,7 +40,7 @@ static void pci_destroy_dev(struct pci_dev *dev)
- 	up_write(&pci_bus_sem);
- 
- 	pci_free_resources(dev);
--	pci_dev_put(dev);
-+	put_device(&dev->dev);
++	int ret;
++
+ 	if (!pci_aer_available() || aer_acpi_firmware_first())
+ 		return -ENXIO;
+-	return pcie_port_service_register(&aerdriver);
++	ret = pcie_port_service_register(&aerdriver);
++	if (!ret)
++		bus_register_notifier(&pci_bus_type, &acpi_pcie_aer_notifier);
++
++	return ret;
  }
  
  /**
+@@ -429,6 +498,7 @@ static int __init aer_service_init(void)
+  */
+ static void __exit aer_service_exit(void)
+ {
++	bus_unregister_notifier(&pci_bus_type, &acpi_pcie_aer_notifier);
+ 	pcie_port_service_unregister(&aerdriver);
+ }
+ 
 -- 
 1.7.1
 
