@@ -1,149 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614Ab2FDNeT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 09:34:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2025 "EHLO mga11.intel.com"
+	id S1760625Ab2FDNfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 09:35:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46613 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab2FDNeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 09:34:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="160350955"
-Date: Mon, 4 Jun 2012 21:34:02 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Wanpeng Li <liwp.linux@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Wanpeng Li <liwp@linux.vnet.ibm.com>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Subject: Re: [PATCH] remove no longer use of pdflush interface
-Message-ID: <20120604133402.GA8468@localhost>
-References: <1338813642-6476-1-git-send-email-liwp.linux@gmail.com>
- <20120604125356.GB7738@localhost>
- <20120604132532.GA6874@kernel>
+	id S1754032Ab2FDNfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 09:35:14 -0400
+Date: Mon, 4 Jun 2012 15:35:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, Anders Larsen <al@alarsen.net>,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
+Subject: Re: [PATCH v2 01/10] string: introduce memweight
+Message-ID: <20120604133509.GA11010@quack.suse.cz>
+References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+ <20120604101237.GD7670@quack.suse.cz>
+ <CAC5umyjP0Pov1a3b7N3VzNVHc1uhan2tLmy2_bOzWeY0u7h2FA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120604132532.GA6874@kernel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAC5umyjP0Pov1a3b7N3VzNVHc1uhan2tLmy2_bOzWeY0u7h2FA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 09:25:53PM +0800, Wanpeng Li wrote:
-> On Mon, Jun 04, 2012 at 08:53:56PM +0800, Fengguang Wu wrote:
-> >Hi Wanpeng,
-> >
-> >On Mon, Jun 04, 2012 at 08:40:42PM +0800, Wanpeng Li wrote:
-> >> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
-> >> 
-> >> remove no longer use of pdflush interface nr_pdflush_threads.
-> >
-> >The patch looks good in itself: the nr_pdflush_threads takes no effect
-> >for many of the recent kernels. But what's the normal process of
-> >interface removal?  Shall we carry some warning printk for some time
-> >first or whatever?
-> 
-> Hi, Fengguang,
-> 
-> I also want to add an interface of nr_bdi_writeback_threads to statistic
-> how many flusher-x:y currently running, do you think it is a good idea?
-
-Hmm, we try to avoid adding interfaces without a good reason. What
-would be the use case? Are there real user demands for this at all?
-
-Thanks,
-Fengguang
-
-> >> Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On Mon 04-06-12 20:46:14, Akinobu Mita wrote:
+> 2012/6/4 Jan Kara <jack@suse.cz>:
+> > On Sat 02-06-12 22:40:07, Akinobu Mita wrote:
+> >> memweight() is the function that counts the total number of bits set
+> >> in memory area.  Unlike bitmap_weight(), memweight() takes pointer
+> >> and size in bytes to specify a memory area which does not need to be
+> >> aligned to long-word boundary.
+> >>
+> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> >> Cc: Anders Larsen <al@alarsen.net>
+> >> Cc: Alasdair Kergon <agk@redhat.com>
+> >> Cc: dm-devel@redhat.com
+> >> Cc: linux-fsdevel@vger.kernel.org
+> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> >> Cc: linux-media@vger.kernel.org
+> >> Cc: Mark Fasheh <mfasheh@suse.com>
+> >> Cc: Joel Becker <jlbec@evilplan.org>
+> >> Cc: ocfs2-devel@oss.oracle.com
+> >> Cc: Jan Kara <jack@suse.cz>
+> >> Cc: linux-ext4@vger.kernel.org
+> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+> >> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+> >> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> >> Cc: Matthew Wilcox <matthew@wil.cx>
 > >> ---
-> >>  Documentation/sysctl/vm.txt |   11 -----------
-> >>  fs/fs-writeback.c           |    5 -----
-> >>  include/linux/writeback.h   |    5 -----
-> >>  kernel/sysctl.c             |    7 -------
-> >>  4 files changed, 28 deletions(-)
-> >> 
-> >> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> >> index 96f0ee8..71c17d2 100644
-> >> --- a/Documentation/sysctl/vm.txt
-> >> +++ b/Documentation/sysctl/vm.txt
-> >> @@ -42,7 +42,6 @@ Currently, these files are in /proc/sys/vm:
-> >>  - mmap_min_addr
-> >>  - nr_hugepages
-> >>  - nr_overcommit_hugepages
-> >> -- nr_pdflush_threads
-> >>  - nr_trim_pages         (only if CONFIG_MMU=n)
-> >>  - numa_zonelist_order
-> >>  - oom_dump_tasks
-> >> @@ -426,16 +425,6 @@ See Documentation/vm/hugetlbpage.txt
-> >>  
-> >>  ==============================================================
-> >>  
-> >> -nr_pdflush_threads
-> >> -
-> >> -The current number of pdflush threads.  This value is read-only.
-> >> -The value changes according to the number of dirty pages in the system.
-> >> -
-> >> -When necessary, additional pdflush threads are created, one per second, up to
-> >> -nr_pdflush_threads_max.
-> >> -
-> >> -==============================================================
-> >> -
-> >>  nr_trim_pages
-> >>  
-> >>  This is available only on NOMMU kernels.
-> >> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> >> index 539f36c..30ddb8a 100644
-> >> --- a/fs/fs-writeback.c
-> >> +++ b/fs/fs-writeback.c
-> >> @@ -52,11 +52,6 @@ struct wb_writeback_work {
-> >>  	struct completion *done;	/* set if the caller waits */
-> >>  };
-> >>  
-> >> -/*
-> >> - * We don't actually have pdflush, but this one is exported though /proc...
-> >> - */
-> >> -int nr_pdflush_threads;
-> >> -
-> >>  /**
-> >>   * writeback_in_progress - determine whether there is writeback in progress
-> >>   * @bdi: the device's backing_dev_info structure.
-> >> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-> >> index a2b84f5..13b5df7 100644
-> >> --- a/include/linux/writeback.h
-> >> +++ b/include/linux/writeback.h
-> >> @@ -193,9 +193,4 @@ void tag_pages_for_writeback(struct address_space *mapping,
-> >>  
-> >>  void account_page_redirty(struct page *page);
-> >>  
-> >> -/* pdflush.c */
-> >> -extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl
-> >> -				   read-only. */
-> >> -
-> >> -
-> >>  #endif		/* WRITEBACK_H */
-> >> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> >> index 4ab1187..e257b61 100644
-> >> --- a/kernel/sysctl.c
-> >> +++ b/kernel/sysctl.c
-> >> @@ -1095,13 +1095,6 @@ static struct ctl_table vm_table[] = {
-> >>  		.extra1		= &zero,
-> >>  	},
-> >>  	{
-> >> -		.procname	= "nr_pdflush_threads",
-> >> -		.data		= &nr_pdflush_threads,
-> >> -		.maxlen		= sizeof nr_pdflush_threads,
-> >> -		.mode		= 0444 /* read-only*/,
-> >> -		.proc_handler	= proc_dointvec,
-> >> -	},
-> >> -	{
-> >>  		.procname	= "swappiness",
-> >>  		.data		= &vm_swappiness,
-> >>  		.maxlen		= sizeof(vm_swappiness),
-> >> -- 
-> >> 1.7.9.5
+> >>
+> >> v2: simplify memweight(), adviced by Jan Kara
+> >>
+> >>  include/linux/string.h |    3 +++
+> >>  lib/string.c           |   32 ++++++++++++++++++++++++++++++++
+> >>  2 files changed, 35 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/include/linux/string.h b/include/linux/string.h
+> >> index e033564..ffe0442 100644
+> >> --- a/include/linux/string.h
+> >> +++ b/include/linux/string.h
+> >> @@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
+> >>       return strncmp(str, prefix, strlen(prefix)) == 0;
+> >>  }
+> >>  #endif
+> >> +
+> >> +extern size_t memweight(const void *ptr, size_t bytes);
+> >> +
+> >>  #endif /* _LINUX_STRING_H_ */
+> >> diff --git a/lib/string.c b/lib/string.c
+> >> index e5878de..bf4d5a8 100644
+> >> --- a/lib/string.c
+> >> +++ b/lib/string.c
+> >> @@ -26,6 +26,7 @@
+> >>  #include <linux/export.h>
+> >>  #include <linux/bug.h>
+> >>  #include <linux/errno.h>
+> >> +#include <linux/bitmap.h>
+> >>
+> >>  #ifndef __HAVE_ARCH_STRNICMP
+> >>  /**
+> >> @@ -824,3 +825,34 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+> >>       return check_bytes8(start, value, bytes % 8);
+> >>  }
+> >>  EXPORT_SYMBOL(memchr_inv);
+> >> +
+> >> +/**
+> >> + * memweight - count the total number of bits set in memory area
+> >> + * @ptr: pointer to the start of the area
+> >> + * @bytes: the size of the area
+> >> + */
+> >> +size_t memweight(const void *ptr, size_t bytes)
+> >> +{
+> >> +     size_t w = 0;
+> >> +     size_t longs;
+> >> +     const unsigned char *bitmap = ptr;
+> >> +
+> >> +     for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
+> >> +                     bytes--, bitmap++)
+> >> +             w += hweight8(*bitmap);
+> >> +
+> >> +     longs = bytes / sizeof(long);
+> >> +     if (longs) {
+> >> +             BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
+> >> +             w += bitmap_weight((unsigned long *)bitmap,
+> >> +                             longs * BITS_PER_LONG);
+> >> +             bytes -= longs * sizeof(long);
+> >> +             bitmap += longs * sizeof(long);
+> >> +     }
+> >> +
+> >> +     for (; bytes > 0; bytes--, bitmap++)
+> >> +             w += hweight8(*bitmap);
+> >  Looking at bitmap_weight() it seems this last loop is not needed. Just
+> > pass to bitmap_weight() bytes*BITS_PER_BYTE. Also generally this function
+> > doesn't seem necessary at all at least for ext2 & ext3 (sorry for not
+> > noticing this earlier...).
+> 
+> This last loop is necessary for big-endian architecture.
+> if bytes % sizeof(long) != 0, bitmap_weight() counts one-bits in wrong
+> byte-field
+> of the last long word.
+  Ah, right. OK. Add this to the comment before the loop please. You save
+yourself some explanations :)
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
