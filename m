@@ -1,109 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab2FDUEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 16:04:08 -0400
-Received: from nm5.access.bullet.mail.mud.yahoo.com ([66.94.237.206]:36726
-	"HELO nm5.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752760Ab2FDUED (ORCPT
+	id S1757434Ab2FDUFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 16:05:11 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48765 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab2FDUFJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 16:04:03 -0400
-X-Yahoo-Newman-Id: 165240.12371.bm@smtp115.sbc.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: YLhpPd4VM1n0lmx3iddvdLZqAByiib4i7dTl9oSN_sxAKWt
- armTIlEteU0aBHWmg70DoOFTkaNkYNX5mBWIf7vnVvl.scEVcaXL1but78Y_
- PyoAS02ScY4AHvXd.TfRsPGEDGT2_H4MKOsBpY.msOGrIqqUMFOsIjrXEHxw
- LzFgkr9s3f4l.P7LFfv23_df1d5zNJolv3Inb8rJ5aX7wR482wFhjJK_Z2W.
- amSXGC.E.as_TDZe5Qx4cxoEMab6GEOvT3RZOHErMVBp9G5aXSSDm0sQiUco
- FZXCs8iovxK6nfboBqIVJ6PnbUunHJGdPVeRen3.xshJgrCGPCFeSvlsCJIc
- UKCUgQE6h.naYJMesjSnRbI240LuieX5V2R7dsvgseQxQFVS7ofwntJqQYd8
- 5p_Dl4FiYijkP1OXaTnEGoeYQOOmniDw-
-X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
-Message-ID: <4FCD14B2.2080906@att.net>
-Date: Mon, 04 Jun 2012 15:04:02 -0500
-From: Daniel Santos <danielfsantos@att.net>
-Reply-To: daniel.santos@pobox.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120502 Thunderbird/10.0.4
+	Mon, 4 Jun 2012 16:05:09 -0400
+Message-ID: <4FCD14F1.1030105@gmail.com>
+Date: Mon, 04 Jun 2012 16:05:05 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Jason Wessel <jason.wessel@windriver.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] linux/bug.h: make BUILD_BUG_ON generate compile-time
- error
-References: <4FCC9D7F.7070404@att.net> <4FCCC703.2070609@windriver.com>
-In-Reply-To: <4FCCC703.2070609@windriver.com>
-X-Enigmail-Version: 1.3.5
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: Minchan Kim <minchan@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some vmevent fixes...
+References: <20120507121527.GA19526@lizard> <4FA82056.2070706@gmail.com> <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com> <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com> <20120601122118.GA6128@lizard> <alpine.LFD.2.02.1206032125320.1943@tux.localdomain> <4FCC7592.9030403@kernel.org> <20120604113811.GA4291@lizard>
+In-Reply-To: <20120604113811.GA4291@lizard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 09:32 AM, Paul Gortmaker wrote:
-> On 12-06-04 07:35 AM, Daniel Santos wrote:
->> This is pretty straight-forward. __compiletime_error is defined in
->> compiler-gcc4.h with appropriate version checks, so shouldn't break on
->> older compilers. This makes the difference between getting an error at
->> link-time and getting one at compile time. Example:
-> It is such a rarity for it to be triggered, that I wonder if it
-> really matters whether it happens at compile time, or you wait
-> the extra minute for link time.  Regardless, you've got your
-> commit log written here, and not in the patch (which was attached
-> and not inline; preventing comment) and you've not got any
-> Signed-off line. 
-I apologize for the quality of patch issues.  I've just read about "git
---signoff" and I'll do that next time.  As far as the patch being
-attached instead of inline, I haven't gotten my mailer client to not
-screw them up yet (I'm using Thunderbird, and apparently I need to
-install an external editor add-on or switch to another mail client).
-
-As for the rarity, it's fairly common for me right now since I'm working
-on stuff that depends upon compile-time constants and
-__builtin_constant_p tests, since I have so many of them, it can be
-tricky to track down which one in particular fails.  Since gcc added
-this feature specifically for these types of checks, I thought it
-appropriate that it should be used here.
->> /home/daniel/proj/kernel/grbtest/grbtest2.c:83:2: error: call to
->> ‘__build_bug_on_failed’ declared with attribute error: BUILD_BUG_ON
->> failed: !__builtin_constant_p(count)
-> Also the string "BUILD_BUG_ON failed" is in itself misleading, as if
-> the macro itself has issues, vs. say using the word "triggered" or 
-> "tripped" vs. "failed".  You also don't want to put the whole
-> meaningless paths in commit logs normally (the /home/me/mydir part).
-ok, good point, I guess I'm thinking along the lines of a assertions
-"failing".  So maybe "BUILD_BUG_ON triggered by: " #condition?
+>> Anton, I expect you already investigated android low memory killer so maybe you know pros and cons of each solution.
+>> Could you convince us "why we need vmevent" and "why can't android LMK do it?"
 >
->> The above points me directly to where I called BUILD_BUG_ON. Note that
->> I'm moving __build_bug_on_failed out of the global scope, just so it can
->> be re-declared with different attributes each time.
-> It wasn't clear to me why you'd want to re-declare things with
-> different attributes ever.
-Sorry for not clarifying this. If I have two lines like this:
+> Note that 1) and 2) are not problems per se, it's just implementation
+> details, easy stuff. Vmevent is basically an ABI/API, and I didn't
+> hear anybody who would object to vmevent ABI idea itself. More than
+> this, nobody stop us from implementing in-kernel vmevent API, and
+> make Android Lowmemory killer use it, if we want to.
 
-BUILD_BUG_ON(!__builtin_constant_p(count));
-BUILD_BUG_ON(size < 1024);
-
-Each will declare extern void __build_bug_on_failed(void), but with
-different attributes.  The first will be delcared with
-__attribute__((error("BUILD_BUG_ON failed:
-!__builtin_constant_p(count)"))) and the second with
-__attribute__((error("BUILD_BUG_ON failed: size < 1024"))).  The
-advantage is that the error output will tell you exactly what triggered
-the failure, which can be especially important if you have a macro that
-expands to more than one BUILD_BUG_ON check on the same line.
-
-But I guess the really sad part that both of us have missed is that
-BUILD_BUG() already uses this attribute, except via a different macro --
-which means that now, in compiler-gcc4.h, we have two macros that both
-expand to __attribute__(((error(msg))), except that __linktime_error
-uses "__error__", where __compiletime_error uses "error".  Also, this
-feature was introduced in 4.3.0 and I was not able to find any bug
-reports indicating that it had problems, so that would mean the compiler
-version check for __linktime_error (4.3.x) is correct and
-__compiletime_error (4.4.x) is 1 minor revision late.
-
-Then again, perhaps these macros exist to be turned off by __CHECKER__.
-
-Daniel
+I never agree "it's mere ABI" discussion. Until the implementation is ugly,
+I never agree the ABI even if syscall interface is very clean.
 
 
+> The real problem is not with vmevent. Today there are two real problems:
+>
+> a) Gathering proper statistics from the kernel. Both cgroups and vmstat
+>     have issues. Android lowmemory killer has the same problems w/ the
+>     statistics as vmevent, it uses vmstat, so by no means Android
+>     low memory killer is better or easier in this regard.
+>     (And cgroups has issues w/ slab accounting, plus some folks don't
+>     want memcg at all, since it has runtime and memory-wise costs.)
 
+Right. android lowmemory killer is also buggy.
+
+
+> b) Interpreting this statistics. We can't provide one, universal
+>     "low memory" definition that would work for everybody.
+>     (Btw, your "levels" based low memory grading actually sounds
+>     the same as mine RECLAIMABLE_CACHE_PAGES and
+>     RECLAIMABLE_CACHE_PAGES_NOIO idea, i.e.
+>     http://lkml.indiana.edu/hypermail/linux/kernel/1205.0/02751.html
+>     so personally I like the idea of level-based approach, based
+>     on available memory *cost*.)
+>
+> So, you see, all these issues are valid for vmevent, cgroups and
+> android low memory killer.
+>
+>> KOSAKI, AFAIRC, you are a person who hates android low memory killer.
+>> Why do you hate it? If it solve problems I mentioned, do you have a concern, still?
+>> If so, please, list up.
+>>
+>> Android low memory killer is proved solution for a long time, at least embedded area(So many android phone already have used it) so I think improving it makes sense to me rather than inventing new wheel.
+>
+> Yes, nobody throws Android lowmemory killer away. And recently I fixed
+> a bunch of issues in its tasks traversing and killing code. Now it's
+> just time to "fix" statistics gathering and interpretation issues,
+> and I see vmevent as a good way to do just that, and then we
+> can either turn Android lowmemory killer driver to use the vmevent
+> in-kernel API (so it will become just a "glue" between notifications
+> and killing functions), or use userland daemon.
+
+Huh? No? android lowmem killer is a "killer". it doesn't make any notification,
+it only kill memory hogging process. I don't think we can merge them.
+
+
+
+> Note that memcg has notifications as well, so it's another proof that
+> there is a demand for this stuff outside of embedded world, and going
+> with ad-hoc, custom "low memory killer" is simple and tempting approach,
+> but it doesn't solve any real problems.
+
+Wrong.
+memcg notification notify the event to _another_ mem cgroup's process. Then, it can
+avoid a notified process can't work well by swap thrashing. Its feature only share a
+weakness of vmevent api.
+
+
+
+>> Frankly speaking, I don't know vmevent's other use cases except low memory notification
+>
+> I won't speak for realistic use-cases, but that is what comes to
+> mind:
+>
+> - DB can grow its caches/in-memory indexes infinitely, and start dropping
+>    them on demand (based on internal LRU list, for example). No more
+>    guessed/static configuration for DB daemons?
+
+They uses direct-io for fine grained cache control.
+
+
+> - Assuming VPS hosting w/ dynamic resources management, notifications
+>    would be useful to readjust resources?
+
+How do they readjust? Now kvm/xen use balloon driver for dynamic resource
+adjustment. AND it work more fine than vmevent because it doesn't route
+userspace.
+
+
+> - On desktops, apps can drop their caches on demand if they want to
+>    and can avoid swap activity?
+
+In this case, fallocate(VOLATILE) is work more better.
 
