@@ -1,89 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932246Ab2FDLqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:46:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:29522 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755818Ab2FDLqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:46:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="160317458"
-Date: Mon, 4 Jun 2012 19:46:03 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Cc: Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: kvm segfaults and bad page state in 3.4.0
-Message-ID: <20120604114603.GA6988@localhost>
+	id S1760391Ab2FDLqS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:46:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56565 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759630Ab2FDLqP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 07:46:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120604101237.GD7670@quack.suse.cz>
+References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+	<20120604101237.GD7670@quack.suse.cz>
+Date: Mon, 4 Jun 2012 20:46:14 +0900
+Message-ID: <CAC5umyjP0Pov1a3b7N3VzNVHc1uhan2tLmy2_bOzWeY0u7h2FA@mail.gmail.com>
+Subject: Re: [PATCH v2 01/10] string: introduce memweight
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2012/6/4 Jan Kara <jack@suse.cz>:
+> On Sat 02-06-12 22:40:07, Akinobu Mita wrote:
+>> memweight() is the function that counts the total number of bits set
+>> in memory area.  Unlike bitmap_weight(), memweight() takes pointer
+>> and size in bytes to specify a memory area which does not need to be
+>> aligned to long-word boundary.
+>>
+>> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> Cc: Anders Larsen <al@alarsen.net>
+>> Cc: Alasdair Kergon <agk@redhat.com>
+>> Cc: dm-devel@redhat.com
+>> Cc: linux-fsdevel@vger.kernel.org
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: linux-media@vger.kernel.org
+>> Cc: Mark Fasheh <mfasheh@suse.com>
+>> Cc: Joel Becker <jlbec@evilplan.org>
+>> Cc: ocfs2-devel@oss.oracle.com
+>> Cc: Jan Kara <jack@suse.cz>
+>> Cc: linux-ext4@vger.kernel.org
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+>> Cc: "Theodore Ts'o" <tytso@mit.edu>
+>> Cc: Matthew Wilcox <matthew@wil.cx>
+>> ---
+>>
+>> v2: simplify memweight(), adviced by Jan Kara
+>>
+>>  include/linux/string.h |    3 +++
+>>  lib/string.c           |   32 ++++++++++++++++++++++++++++++++
+>>  2 files changed, 35 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/string.h b/include/linux/string.h
+>> index e033564..ffe0442 100644
+>> --- a/include/linux/string.h
+>> +++ b/include/linux/string.h
+>> @@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
+>>       return strncmp(str, prefix, strlen(prefix)) == 0;
+>>  }
+>>  #endif
+>> +
+>> +extern size_t memweight(const void *ptr, size_t bytes);
+>> +
+>>  #endif /* _LINUX_STRING_H_ */
+>> diff --git a/lib/string.c b/lib/string.c
+>> index e5878de..bf4d5a8 100644
+>> --- a/lib/string.c
+>> +++ b/lib/string.c
+>> @@ -26,6 +26,7 @@
+>>  #include <linux/export.h>
+>>  #include <linux/bug.h>
+>>  #include <linux/errno.h>
+>> +#include <linux/bitmap.h>
+>>
+>>  #ifndef __HAVE_ARCH_STRNICMP
+>>  /**
+>> @@ -824,3 +825,34 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+>>       return check_bytes8(start, value, bytes % 8);
+>>  }
+>>  EXPORT_SYMBOL(memchr_inv);
+>> +
+>> +/**
+>> + * memweight - count the total number of bits set in memory area
+>> + * @ptr: pointer to the start of the area
+>> + * @bytes: the size of the area
+>> + */
+>> +size_t memweight(const void *ptr, size_t bytes)
+>> +{
+>> +     size_t w = 0;
+>> +     size_t longs;
+>> +     const unsigned char *bitmap = ptr;
+>> +
+>> +     for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
+>> +                     bytes--, bitmap++)
+>> +             w += hweight8(*bitmap);
+>> +
+>> +     longs = bytes / sizeof(long);
+>> +     if (longs) {
+>> +             BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
+>> +             w += bitmap_weight((unsigned long *)bitmap,
+>> +                             longs * BITS_PER_LONG);
+>> +             bytes -= longs * sizeof(long);
+>> +             bitmap += longs * sizeof(long);
+>> +     }
+>> +
+>> +     for (; bytes > 0; bytes--, bitmap++)
+>> +             w += hweight8(*bitmap);
+>  Looking at bitmap_weight() it seems this last loop is not needed. Just
+> pass to bitmap_weight() bytes*BITS_PER_BYTE. Also generally this function
+> doesn't seem necessary at all at least for ext2 & ext3 (sorry for not
+> noticing this earlier...).
 
-I'm running lots of kvm instances for doing kernel boot tests.
-Unfortunately the test system itself is not stable enough, I got scary
-errors in both kvm and the host kernel. Like this. 
-
-[294025.795382] kvm used greatest stack depth: 2896 bytes left
-[310388.622083] kvm[1864]: segfault at c ip 00007f498e9f6a81 sp 00007f4994b9fca0 error 4 in kvm[7f498e960000+33b000]
-[310692.050589] kvm[4332]: segfault at 10 ip 00007fca662620b9 sp 00007fca70472af0 error 6 in kvm[7fca661cc000+33b000]
-[312608.950120] kvm[18931]: segfault at 8 ip 00007f95962a10a5 sp 00007f959d777170 error 4 in kvm[7f959620b000+33b000]
-[312622.941640] kvm[19123]: segfault at 10 ip 00007f406f5580b9 sp 00007f4077d8b350 error 6 in kvm[7f406f4c2000+33b000]
-[313917.860951] kvm[28789]: segfault at c ip 00007f718f4dfa81 sp 00007f7198459520 error 4 in kvm[7f718f449000+33b000]
-[313919.177192] kvm used greatest stack depth: 2864 bytes left
-[314061.390945] kvm used greatest stack depth: 2208 bytes left
-[327479.676068] BUG: Bad page state in process kvm  pfn:59ac9
-[327479.676455] page:ffffea000166b240 count:0 mapcount:0 mapping:          (null) index:0x7fd346bc6
-[327479.677083] page flags: 0x100000000000014(referenced|dirty)
-[327479.677575] Modules linked in:
-[327479.677897] Pid: 11423, comm: kvm Not tainted 3.4.0 #131
-[327479.678272] Call Trace:
-[327479.678538]  [<ffffffff81107343>] bad_page+0xe6/0xfb
-[327479.678897]  [<ffffffff811079c6>] get_page_from_freelist+0x534/0x6f6
-[327479.679314]  [<ffffffff81107d92>] __alloc_pages_nodemask+0x20a/0x75e
-[327479.679729]  [<ffffffff8108e121>] ? finish_task_switch+0x4c/0xf6
-[327479.680136]  [<ffffffff81143477>] ? lookup_page_cgroup_used+0xe/0x24
-[327479.680548]  [<ffffffff811079b5>] ? get_page_from_freelist+0x523/0x6f6
-[327479.680970]  [<ffffffff811367c8>] alloc_pages_current+0xd2/0xf3
-[327479.681369]  [<ffffffff811012e4>] __page_cache_alloc+0xa1/0xae
-[327479.681761]  [<ffffffff8110b144>] __do_page_cache_readahead+0x107/0x20b
-[327479.682188]  [<ffffffff8110b0cc>] ? __do_page_cache_readahead+0x8f/0x20b
-[327479.682615]  [<ffffffff811293b0>] ? anon_vma_prepare+0xb4/0x137
-[327479.683010]  [<ffffffff8110b521>] ra_submit+0x21/0x25
-[327479.683375]  [<ffffffff81102f7a>] filemap_fault+0x18a/0x383
-[327479.683757]  [<ffffffff8111d6b3>] __do_fault+0xc8/0x451
-[327479.684128]  [<ffffffff81120103>] handle_pte_fault+0x2de/0x844
-[327479.684522]  [<ffffffff8114446e>] ? mem_cgroup_count_vm_event+0x1a/0x96
-[327479.684944]  [<ffffffff811218ac>] handle_mm_fault+0x1a6/0x1bb
-[327479.685339]  [<ffffffff819b8c12>] do_page_fault+0x405/0x42a
-[327479.685722]  [<ffffffff8112619e>] ? do_mmap_pgoff+0x299/0x2f3
-[327479.686115]  [<ffffffff813fe03d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[327479.686534]  [<ffffffff819b5b45>] page_fault+0x25/0x30
-[327479.686898] Disabling lock debugging due to kernel taint
-
-The same host kernel, in another test box:
-
-[770644.256817] kvm_get_msr_common: 2123 callbacks suppressed
-[770644.257475] kvm: 31889: cpu0 unhandled rdmsr: 0x2
-[770644.258103] kvm: 31889: cpu0 unhandled rdmsr: 0x3
-[770644.258707] kvm: 31889: cpu0 unhandled rdmsr: 0x4
-[770644.259322] kvm: 31889: cpu0 unhandled rdmsr: 0x5
-[770644.259914] kvm: 31889: cpu0 unhandled rdmsr: 0x6
-[770644.260499] kvm: 31889: cpu0 unhandled rdmsr: 0x7
-[770644.261108] kvm: 31889: cpu0 unhandled rdmsr: 0x8
-[770644.261700] kvm: 31889: cpu0 unhandled rdmsr: 0x9
-[770644.262302] kvm: 31889: cpu0 unhandled rdmsr: 0xa
-[770644.262883] kvm: 31889: cpu0 unhandled rdmsr: 0xb
-[909290.636655] kvm[31619]: segfault at 40 ip 00007fcb3d8c4254 sp 00007fcb41bcaec0 error 4 in kvm[7fcb3d82e000+33b000]
-
-Please drop me hints if I can help debugging it (a week later, after
-returning from LinuxCon Japan), thank you.
-
-Thanks,
-Fengguang
+This last loop is necessary for big-endian architecture.
+if bytes % sizeof(long) != 0, bitmap_weight() counts one-bits in wrong
+byte-field
+of the last long word.
