@@ -1,51 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760554Ab2FDMud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 08:50:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56548 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753225Ab2FDMuc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 08:50:32 -0400
-Message-ID: <1338814210.28282.47.camel@twins>
-Subject: Re: [RFC] [PATCH 0/5] Teach perf tool to profile sleep times (V4)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Date: Mon, 04 Jun 2012 14:50:10 +0200
-In-Reply-To: <1338813658.28282.43.camel@twins>
-References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
-	 <1338813658.28282.43.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	id S1756454Ab2FDMyS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 08:54:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:12881 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751806Ab2FDMyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 08:54:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="160337609"
+Date: Mon, 4 Jun 2012 20:53:56 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Wanpeng Li <liwp@linux.vnet.ibm.com>
+Subject: Re: [PATCH] remove no longer use of pdflush interface
+Message-ID: <20120604125356.GB7738@localhost>
+References: <1338813642-6476-1-git-send-email-liwp.linux@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338813642-6476-1-git-send-email-liwp.linux@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 14:40 +0200, Peter Zijlstra wrote:
-> +       if (task) {
-> +               struct perf_event_context *ctx;
-> +
-> +               rcu_read_lock();
-> +               ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
-> +               list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+Hi Wanpeng,
 
-Ah, this needs a little something like the below:
+On Mon, Jun 04, 2012 at 08:40:42PM +0800, Wanpeng Li wrote:
+> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> 
+> remove no longer use of pdflush interface nr_pdflush_threads.
 
-			if (!(event->attr.type == PERF_TYPE_TRACEPOINT &&
-			      event->attr.config == $something))
-				continue;
+The patch looks good in itself: the nr_pdflush_threads takes no effect
+for many of the recent kernels. But what's the normal process of
+interface removal?  Shall we carry some warning printk for some time
+first or whatever?
 
-Not exactly sure where we hid the tracepoint_id at this point..
+Thanks,
+Fengguang
 
-
-> +                       if (perf_tp_event_match(event, &data, regs))
-> +                               perf_swevent_event(event, count, &data, regs);
-> +               }
-> +               rcu_read_unlock();
-> +       } 
+> Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> ---
+>  Documentation/sysctl/vm.txt |   11 -----------
+>  fs/fs-writeback.c           |    5 -----
+>  include/linux/writeback.h   |    5 -----
+>  kernel/sysctl.c             |    7 -------
+>  4 files changed, 28 deletions(-)
+> 
+> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> index 96f0ee8..71c17d2 100644
+> --- a/Documentation/sysctl/vm.txt
+> +++ b/Documentation/sysctl/vm.txt
+> @@ -42,7 +42,6 @@ Currently, these files are in /proc/sys/vm:
+>  - mmap_min_addr
+>  - nr_hugepages
+>  - nr_overcommit_hugepages
+> -- nr_pdflush_threads
+>  - nr_trim_pages         (only if CONFIG_MMU=n)
+>  - numa_zonelist_order
+>  - oom_dump_tasks
+> @@ -426,16 +425,6 @@ See Documentation/vm/hugetlbpage.txt
+>  
+>  ==============================================================
+>  
+> -nr_pdflush_threads
+> -
+> -The current number of pdflush threads.  This value is read-only.
+> -The value changes according to the number of dirty pages in the system.
+> -
+> -When necessary, additional pdflush threads are created, one per second, up to
+> -nr_pdflush_threads_max.
+> -
+> -==============================================================
+> -
+>  nr_trim_pages
+>  
+>  This is available only on NOMMU kernels.
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 539f36c..30ddb8a 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -52,11 +52,6 @@ struct wb_writeback_work {
+>  	struct completion *done;	/* set if the caller waits */
+>  };
+>  
+> -/*
+> - * We don't actually have pdflush, but this one is exported though /proc...
+> - */
+> -int nr_pdflush_threads;
+> -
+>  /**
+>   * writeback_in_progress - determine whether there is writeback in progress
+>   * @bdi: the device's backing_dev_info structure.
+> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> index a2b84f5..13b5df7 100644
+> --- a/include/linux/writeback.h
+> +++ b/include/linux/writeback.h
+> @@ -193,9 +193,4 @@ void tag_pages_for_writeback(struct address_space *mapping,
+>  
+>  void account_page_redirty(struct page *page);
+>  
+> -/* pdflush.c */
+> -extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl
+> -				   read-only. */
+> -
+> -
+>  #endif		/* WRITEBACK_H */
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index 4ab1187..e257b61 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1095,13 +1095,6 @@ static struct ctl_table vm_table[] = {
+>  		.extra1		= &zero,
+>  	},
+>  	{
+> -		.procname	= "nr_pdflush_threads",
+> -		.data		= &nr_pdflush_threads,
+> -		.maxlen		= sizeof nr_pdflush_threads,
+> -		.mode		= 0444 /* read-only*/,
+> -		.proc_handler	= proc_dointvec,
+> -	},
+> -	{
+>  		.procname	= "swappiness",
+>  		.data		= &vm_swappiness,
+>  		.maxlen		= sizeof(vm_swappiness),
+> -- 
+> 1.7.9.5
