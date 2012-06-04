@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2FDLhG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:37:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40917 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab2FDLhD convert rfc822-to-8bit (ORCPT
+	id S932252Ab2FDLhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:37:45 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:44981 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454Ab2FDLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:37:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338656634-3870-1-git-send-email-devendra.aaru@gmail.com>
-References: <1338656634-3870-1-git-send-email-devendra.aaru@gmail.com>
-Date: Mon, 4 Jun 2012 17:07:02 +0530
-Message-ID: <CAHdPZaMYnMCygOa+mcUMq0vwJpW7W1PE9AqKPkNGEeN0u-bF6w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pinctrl: free allocated pinctrl_map structure only
- once and use kernel facilities for IMX_PMX_DUMP
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Jun 2012 07:35:44 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
+Subject: [PATCH 10/24] TTY: ircomm, use tty_port_close_end helper
+Date: Mon,  4 Jun 2012 13:35:24 +0200
+Message-Id: <1338809738-18967-11-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anybody Please??
+Again, the code is identical, so leverage the helper code.
 
-On Sat, Jun 2, 2012 at 10:33 PM, Devendra Naga <devendra.aaru@gmail.com> wrote:
-> a) as we allocate the pinctrl_map structure at imx_dt_node_to_map at  line 167, anyway
-> if its an element, or a num_elements * (sizeof(type)) elements allocated to one single
-> pointer must be freed only once.
->
-> CASE. A)
->
-> as new_map is not moved and allocated like,
->
-> for (i = 0; i < MAX_ELEMS; i++) {
->        new_map[i] = kmalloc(numelems * size, GFP_KERNEL);
-> }
->
-> its freed as
->
-> for (i = 0; i < MAX_ELEMS; i++) {
->        kfree(new_map[i]);
-> }
->
-> CASE. B)
-> and its allocated like
->        new_map = kmalloc(numelems * size, GFP_KERNEL);
->
-> it just needs kfree not as case A's.
->
-> b) use KERN_DEBUG facility for the IMX_PMX_DUMP macro.
->
-> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
-> ---
->  drivers/pinctrl/pinctrl-imx.c |   23 +++++++++++------------
->  1 file changed, 11 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/pinctrl/pinctrl-imx.c b/drivers/pinctrl/pinctrl-imx.c
-> index f6e7c67..553ed95 100644
-> --- a/drivers/pinctrl/pinctrl-imx.c
-> +++ b/drivers/pinctrl/pinctrl-imx.c
-> @@ -27,16 +27,16 @@
->  #include "core.h"
->  #include "pinctrl-imx.h"
->
-> -#define IMX_PMX_DUMP(info, p, m, c, n)         \
-> -{                                              \
-> -       int i, j;                               \
-> -       printk("Format: Pin Mux Config\n");     \
-> -       for (i = 0; i < n; i++) {               \
-> -               j = p[i];                       \
-> -               printk("%s %d 0x%lx\n",         \
-> -                       info->pins[j].name,     \
-> -                       m[i], c[i]);            \
-> -       }                                       \
-> +#define IMX_PMX_DUMP(info, p, m, c, n)                 \
-> +{                                                      \
-> +       int i, j;                                       \
-> +       printk(KERN_DEBUG "Format: Pin Mux Config\n");  \
-> +       for (i = 0; i < n; i++) {                       \
-> +               j = p[i];                               \
-> +               printk(KERN_DEBUG "%s %d 0x%lx\n",      \
-> +                       info->pins[j].name,             \
-> +                       m[i], c[i]);                    \
-> +       }                                               \
->  }
->
->  /* The bits in CONFIG cell defined in binding doc*/
-> @@ -203,8 +203,7 @@ static void imx_dt_free_map(struct pinctrl_dev *pctldev,
->  {
->        int i;
->
-> -       for (i = 0; i < num_maps; i++)
-> -               kfree(map);
-> +       kfree(map);
->  }
->
->  static struct pinctrl_ops imx_pctrl_ops = {
-> --
-> 1.7.9.5
->
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Samuel Ortiz <samuel@sortiz.org>
+Cc: netdev@vger.kernel.org
+---
+ net/irda/ircomm/ircomm_tty.c |   16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
+
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index 3fdce18..cfe352d 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -568,21 +568,7 @@ static void ircomm_tty_close(struct tty_struct *tty, struct file *filp)
+ 	tty_driver_flush_buffer(tty);
+ 	tty_ldisc_flush(tty);
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+-	tty->closing = 0;
+-
+-	if (port->blocked_open) {
+-		if (port->close_delay) {
+-			spin_unlock_irqrestore(&port->lock, flags);
+-			schedule_timeout_interruptible(port->close_delay);
+-			spin_lock_irqsave(&port->lock, flags);
+-		}
+-		wake_up_interruptible(&port->open_wait);
+-	}
+-
+-	port->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
+-	spin_unlock_irqrestore(&port->lock, flags);
+-	wake_up_interruptible(&port->close_wait);
++	tty_port_close_end(port, tty);
+ 	tty_port_tty_set(port, NULL);
+ }
+ 
+-- 
+1.7.10.3
+
+
