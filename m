@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2FDLpR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:45:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59598 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab2FDLpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:45:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="151277070"
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] udf: stop using s_dirt
-Date: Mon,  4 Jun 2012 14:46:24 +0300
-Message-Id: <1338810384-26437-1-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	id S932332Ab2FDLpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:45:36 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:46974 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105Ab2FDLpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 07:45:30 -0400
+X-AuditID: b753bd60-a0885ba000000655-4c-4fcc9fd73324
+X-AuditID: b753bd60-a0885ba000000655-4c-4fcc9fd73324
+Message-ID: <4FCC9FC8.7060302@hitachi.com>
+Date: Mon, 04 Jun 2012 20:45:12 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe optimization
+References: <20120529124833.9191.23007.stgit@localhost.localdomain>    <1338331514.13348.298.camel@gandalf.stny.rr.com>    <4FC5C55E.9000909@hitachi.com>   <1338377978.13348.308.camel@gandalf.stny.rr.com>   <4FC787D8.4010904@hitachi.com>  <1338477346.13348.351.camel@gandalf.stny.rr.com>  <4FC8C557.9010407@hitachi.com> <1338560427.13348.466.camel@gandalf.stny.rr.com>
+In-Reply-To: <1338560427.13348.466.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+(2012/06/01 23:20), Steven Rostedt wrote:
+> On Fri, 2012-06-01 at 22:36 +0900, Masami Hiramatsu wrote:
+> 
+>> OK, so I've introduced new noprobe tag and replaced __kprobes
+>> with it. And now __kprobes tag which is a combination of noprobe
+>> and notrace, means that the function is not probed and it can be
+>> called from kprobe handler. (thus user must use this with their
+>> handlers and functions which will be used from the handlers)
+>> And also most of __kprobes tags are replaced by noprobe only.
+> 
+> You still haven't answered my question. Why can't function tracer still
+> trace these? If kprobes does not allow it to be probed, it should not
+> interfere with your code. But normal function tracing should still allow
+> these.
 
-The UDF file-system does not need the 's_dirt' superblock flag because it does
-not define the 'write_super()' method. This flag was set to 1 in few places and
-set to 0 in '->sync_fs()' and was basically useless. Stop using it because it
-is on its way out.
+Because those are called from ftrace-based kprobe, which means
+it is directly invoked from kprobe_ftrace_handler. I think
+that should be handled as a part of ftrace handler.
+Currently, I just added notrace on below two kind of functions
 
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
----
- fs/udf/super.c   |    6 ------
- fs/udf/udfdecl.h |    1 -
- 2 files changed, 0 insertions(+), 7 deletions(-)
+ - handler functions which can be called intermediately from ftrace
+ - get_kprobe, set_kprobe_instance, etc. internal utility functions
+   which is called directly from kprobe ftrace handler.
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index ac8a348..34e6b87 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1948,7 +1948,6 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
- 	sb->s_op = &udf_sb_ops;
- 	sb->s_export_op = &udf_export_ops;
- 
--	sb->s_dirt = 0;
- 	sb->s_magic = UDF_SUPER_MAGIC;
- 	sb->s_time_gran = 1000;
- 
-@@ -2070,10 +2069,6 @@ void _udf_err(struct super_block *sb, const char *function,
- 	struct va_format vaf;
- 	va_list args;
- 
--	/* mark sb error */
--	if (!(sb->s_flags & MS_RDONLY))
--		sb->s_dirt = 1;
--
- 	va_start(args, fmt);
- 
- 	vaf.fmt = fmt;
-@@ -2135,7 +2130,6 @@ static int udf_sync_fs(struct super_block *sb, int wait)
- 		 * the buffer for IO
- 		 */
- 		mark_buffer_dirty(sbi->s_lvid_bh);
--		sb->s_dirt = 0;
- 		sbi->s_lvid_dirty = 0;
- 	}
- 	mutex_unlock(&sbi->s_alloc_mutex);
-diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
-index ebe1031..de038da 100644
---- a/fs/udf/udfdecl.h
-+++ b/fs/udf/udfdecl.h
-@@ -129,7 +129,6 @@ static inline void udf_updated_lvid(struct super_block *sb)
- 	WARN_ON_ONCE(((struct logicalVolIntegrityDesc *)
- 		     bh->b_data)->integrityType !=
- 		     cpu_to_le32(LVID_INTEGRITY_TYPE_OPEN));
--	sb->s_dirt = 1;
- 	UDF_SB(sb)->s_lvid_dirty = 1;
- }
- extern u64 lvid_get_unique_id(struct super_block *sb);
+
+> I still do not understand why you need to add 'notrace' at all.
+
+Because I'd like to solve a recursive call problem.
+
+I saw a problem which I hit some odd function tracer behavior.
+When I removed notrace from get_kprobe(), which is an essential
+internal function called directly from kprobe_ftrace_handler,
+I hit a kernel crash caused by recursive call right after I
+registered kprobe_ftrace_handler to ftrace. At that time,
+ftrace_ops.filter was empty so I thought there is no function
+traced, but the kprobe_ftrace_handler was called from somewhere.
+So I saw it hit a recursive loop of ftrace_call ->
+kprobe_ftrace_handler -> get_kprobe -> ftrace_call ...
+
+I think if I just register kprobe's ftrace_ops without start
+tracing, I think we can just do tracing without "notrace".
+
+>> This means that you can trace those by function tracer :)
+>>
+>> BTW, currently kprobes allows user cases pagefault in their
+>> handler (kprobe.fault_handler will handle it). I guess that
+>> can cause some problem with ftrace, isn't it? If so, I need
+>> to deny a kprobe using ftrace if it has fault_handler.
+> 
+> As long as there's recursion protection you are fine. In fact, I may add
+> recursion protection within the assembly itself, that will make all
+> function tracing safe. (does not solve the breakpoint bug from the other
+> thread, but will solve most other things). In fact, this may allow us to
+> remove notraces that were added because of recursion issues.
+
+OK, I think kprobe already solves that as long as
+get_kprobe and kprobe_running doesn't cause recursion...
+
+Thank you,
+
 -- 
-1.7.7.6
-
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
