@@ -1,166 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761064Ab2FDWmJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 18:42:09 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:56168 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757179Ab2FDWmG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 18:42:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <1337791532-15820-1-git-send-email-snanda@chromium.org>
-References: <20120522202453.GA30723@kroah.com> <1337791532-15820-1-git-send-email-snanda@chromium.org>
-From: Sameer Nanda <snanda@chromium.org>
-Date: Mon, 4 Jun 2012 15:41:44 -0700
-X-Google-Sender-Auth: 1perot4uh-BIq0QjiGNxSzvWGS4
-Message-ID: <CANMivWbRM+VvJaAHjz0Tr0SpqN3-OFp7DpXhtiDssJMNRX+5YA@mail.gmail.com>
-Subject: Re: [PATCH v2] power: add knob for printing device resume times
-To: rob@landley.net, len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl,
-        gregkh@linuxfoundation.org
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Sameer Nanda <snanda@chromium.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1761117Ab2FDWq1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 18:46:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757242Ab2FDWqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 18:46:25 -0400
+Message-ID: <1338849977.2860.9.camel@localhost>
+Subject: Re: linux-next: Tree for Apr 12
+From: Eric Paris <eparis@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>
+Date: Mon, 04 Jun 2012 18:46:17 -0400
+In-Reply-To: <20120604150455.7a80b311.akpm@linux-foundation.org>
+References: <20120412145931.9ec6f2b51655071795d60d1d@canb.auug.org.au>
+	 <20120412142415.564710b8.akpm@linux-foundation.org>
+	 <20120604150455.7a80b311.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 23, 2012 at 9:45 AM, Sameer Nanda <snanda@chromium.org> wrote:
-> Added a new knob called /sys/power/pm_print_times. Setting it to 1
-> enables printing of time taken by devices to suspend and resume.
-> Setting it to 0 disables this printing (unless overridden by
-> initcall_debug kernel command line option).
->
-> Signed-off-by: Sameer Nanda <snanda@chromium.org>
-> cc: Greg KH <gregkh@linuxfoundation.org>
-> cc: Rafael J. Wysocki <rjw@sisk.pl>
-> cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  Documentation/ABI/testing/sysfs-power |   13 ++++++++++++
->  drivers/base/power/main.c             |    4 +-
->  drivers/base/power/power.h            |   11 ++++++++++
->  kernel/power/main.c                   |   34 +++++++++++++++++++++++++++++++++
->  4 files changed, 60 insertions(+), 2 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/sysfs-power b/Documentation/ABI/testing/sysfs-power
-> index b464d12..79210d1 100644
-> --- a/Documentation/ABI/testing/sysfs-power
-> +++ b/Documentation/ABI/testing/sysfs-power
-> @@ -172,3 +172,16 @@ Description:
->
->                Reading from this file will display the current value, which is
->                set to 1 MB by default.
+On Mon, 2012-06-04 at 15:04 -0700, Andrew Morton wrote:
+> On Thu, 12 Apr 2012 14:24:15 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Thu, 12 Apr 2012 14:59:31 +1000
+> > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > 
+> > > I have created today's linux-next tree at
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > 
+> > This isn't working for me.  Some time between April 3 and April 12
+> > someone merged something into the non-mm part of linux-next which broke
+> > ssh.
+> > 
+> > I boot the box and everything seems to come up OK, but attemtps to ssh
+> > into the machine fail with
+> > 
+> > X11 forwarding request failed on channel 0
+> > Last login: Thu Apr 12 13:04:35 2012 from akpm.corp.google.com
+> > Connection to akpm2 closed.
+> > 
+> > I took a peek in the `strace ssh' output.
+> > 
+> > Good:
+> > 
+> > 17815 write(5, "Last login: Thu Apr 12 13:27:23 "..., 65) = 65
+> > 17815 select(7, [3 4], [], NULL, {120, 0}) = 1 (in [3], left {119, 770798})
+> > 17815 read(3, "\21O\200\366Mv\343\222\332\251\2403L\376Y18\2047\336\244\226p-+X\2%\2119\314\255"..., 8192) = 80
+> > 17815 select(7, [3 4], [5], NULL, {120, 0}) = 1 (out [5], left {119, 999987})
+> > 17815 write(5, "\r\33[m\17\33[27m\33[24m\33[Jakpm2:/home/ak"..., 39) = 39
+> > 17815 select(7, [3 4], [], NULL, {120, 0}) = 1 (in [4], left {118, 801111})
+> > 17815 read(4, "\4", 16384)              = 1
+> > 17815 select(7, [3 4], [3], NULL, {120, 0}) = 1 (out [3], left {119, 999991})
+> > 17815 write(3, "\235J\5\340\234\21\266\207\26e\362\327\2\332\1\267\272\200\364\267?/\320L\341\35\350{+M:\222"..., 48) = 48
+> > 
+> > 
+> > Bad:
+> > 
+> > 9305  write(5, "Last login: Thu Apr 12 13:02:54 "..., 65) = 65
+> > 9305  select(7, [3 4], [], NULL, {120, 0}) = 1 (in [3], left {119, 945541})
+> > 9305  read(3, "f\357\250~\260i\2259\320\3258\262)O\364;_\251\360-\314\31\374]\326\300\356\364\370S\3105"..., 8192) = 128
+> > 9305  close(5)                          = 0
+> > 9305  close(4)                          = 0
+> > 
+> > That read() is returning a lot more data.
+> > 
+> > It appears that we've done something which breaks X forwarding.  I
+> > won't be able to look any further into this until Monday.
+> 
+> This regression is now in mainline.  I've bisected it to an SELinux
+> patch, below.  I have confirmed that reverting just that patch from
+> current mainline fixes the regression.
+> 
+> Using openssh-server-4.3p2-14.fc6 on FC6.
+> 
+> 
+> commit 95dbf739313f09c8d859bde1373bc264ef979337
+> Author:     Eric Paris <eparis@redhat.com>
+> AuthorDate: Wed Apr 4 13:45:34 2012 -0400
+> Commit:     Eric Paris <eparis@redhat.com>
+> CommitDate: Mon Apr 9 12:22:49 2012 -0400
+> 
+>     SELinux: check OPEN on truncate calls
+>     
+>     In RH BZ 578841 we realized that the SELinux sandbox program was allowed to
+>     truncate files outside of the sandbox.  The reason is because sandbox
+>     confinement is determined almost entirely by the 'open' permission.  The idea
+>     was that if the sandbox was unable to open() files it would be unable to do
+>     harm to those files.  This turns out to be false in light of syscalls like
+>     truncate() and chmod() which don't require a previous open() call.  I looked
+>     at the syscalls that did not have an associated 'open' check and found that
+>     truncate(), did not have a seperate permission and even if it did have a
+>     separate permission such a permission owuld be inadequate for use by
+>     sandbox (since it owuld have to be granted so liberally as to be useless).
+>     This patch checks the OPEN permission on truncate.  I think a better solution
+>     for sandbox is a whole new permission, but at least this fixes what we have
+>     today.
+>     
+>     Signed-off-by: Eric Paris <eparis@redhat.com>
+> 
+> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+> index d85b793..f7d7e77 100644
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@ -2708,6 +2708,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
+>  {
+>  	const struct cred *cred = current_cred();
+>  	unsigned int ia_valid = iattr->ia_valid;
+> +	__u32 av = FILE__WRITE;
+>  
+>  	/* ATTR_FORCE is just used for ATTR_KILL_S[UG]ID. */
+>  	if (ia_valid & ATTR_FORCE) {
+> @@ -2721,7 +2722,10 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
+>  			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
+>  		return dentry_has_perm(cred, dentry, FILE__SETATTR);
+>  
+> -	return dentry_has_perm(cred, dentry, FILE__WRITE);
+> +	if (ia_valid & ATTR_SIZE)
+> +		av |= FILE__OPEN;
 > +
-> +What:          /sys/power/pm_print_times
-> +Date:          May 2012
-> +Contact:       Sameer Nanda <snanda@chromium.org>
-> +Description:
-> +               The /sys/power/pm_print_times file allows user space to
-> +               control whether the time taken by devices to suspend and
-> +               resume is printed.  These prints are useful for hunting down
-> +               devices that take too long to suspend or resume.
-> +
-> +               Writing a "1" enables this printing while writing a "0"
-> +               disables it.  The default value is "0".  Reading from this file
-> +               will display the current value.
-> diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
-> index b462c0e..ca8b2b5 100644
-> --- a/drivers/base/power/main.c
-> +++ b/drivers/base/power/main.c
-> @@ -166,7 +166,7 @@ static ktime_t initcall_debug_start(struct device *dev)
->  {
->        ktime_t calltime = ktime_set(0, 0);
->
-> -       if (initcall_debug) {
-> +       if (pm_print_times) {
->                pr_info("calling  %s+ @ %i, parent: %s\n",
->                        dev_name(dev), task_pid_nr(current),
->                        dev->parent ? dev_name(dev->parent) : "none");
-> @@ -181,7 +181,7 @@ static void initcall_debug_report(struct device *dev, ktime_t calltime,
->  {
->        ktime_t delta, rettime;
->
-> -       if (initcall_debug) {
-> +       if (pm_print_times) {
->                rettime = ktime_get();
->                delta = ktime_sub(rettime, calltime);
->                pr_info("call %s+ returned %d after %Ld usecs\n", dev_name(dev),
-> diff --git a/drivers/base/power/power.h b/drivers/base/power/power.h
-> index eeb4bff..12c77b7 100644
-> --- a/drivers/base/power/power.h
-> +++ b/drivers/base/power/power.h
-> @@ -85,3 +85,14 @@ static inline int pm_qos_sysfs_add(struct device *dev) { return 0; }
->  static inline void pm_qos_sysfs_remove(struct device *dev) {}
->
->  #endif
-> +
-> +#ifdef CONFIG_PM_DEBUG
-> +
-> +extern int pm_print_times_enabled;
-> +#define pm_print_times (initcall_debug || pm_print_times_enabled)
-> +
-> +#else /* CONFIG_PM_DEBUG */
-> +
-> +#define pm_print_times initcall_debug
-> +
-> +#endif /* CONFIG_PM_DEBUG */
-> diff --git a/kernel/power/main.c b/kernel/power/main.c
-> index 1c12581..97eea04 100644
-> --- a/kernel/power/main.c
-> +++ b/kernel/power/main.c
-> @@ -132,6 +132,39 @@ static ssize_t pm_test_store(struct kobject *kobj, struct kobj_attribute *attr,
->  }
->
->  power_attr(pm_test);
-> +
-> +/*
-> + *     pm_print_times: print time taken by devices to suspend and resume.
-> + *
-> + *     show() returns whether printing of suspend and resume times is enabled.
-> + *
-> + *     store() accepts 0 or 1.  0 disables printing and 1 enables it.
-> + */
-> +int pm_print_times_enabled;
-> +
-> +static ssize_t pm_print_times_show(struct kobject *kobj,
-> +                                  struct kobj_attribute *attr, char *buf)
-> +{
-> +       return sprintf(buf, "%d\n", pm_print_times_enabled);
-> +}
-> +
-> +static ssize_t pm_print_times_store(struct kobject *kobj,
-> +                                   struct kobj_attribute *attr,
-> +                                   const char *buf, size_t n)
-> +{
-> +       unsigned long val;
-> +
-> +       if (kstrtoul(buf, 10, &val))
-> +               return -EINVAL;
-> +
-> +       if (val > 1)
-> +               return -EINVAL;
-> +
-> +       pm_print_times_enabled = val;
-> +       return n;
-> +}
-> +
-> +power_attr(pm_print_times);
->  #endif /* CONFIG_PM_DEBUG */
->
->  #ifdef CONFIG_DEBUG_FS
-> @@ -411,6 +444,7 @@ static struct attribute * g[] = {
->        &wakeup_count_attr.attr,
->  #ifdef CONFIG_PM_DEBUG
->        &pm_test_attr.attr,
-> +       &pm_print_times_attr.attr,
->  #endif
->  #endif
->        NULL,
-> --
-> 1.7.7.3
->
+> +	return dentry_has_perm(cred, dentry, av);
+>  }
+>  
+>  static int selinux_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
 
-Greg KH, Rafael: any feedback on this patch?  Questions I can help
-answer to help push this along?
+Very odd indeed...  I can only assume you are SELinux enforcing and have
+a denial every time this fails.  Can you send me that denial?
+
+I really do not want to revert this and feel that the only right fix is
+going to be to update your selinux policy to allow this new check.  I'd
+rather not allow (whatever program) to truncate() files willy-nilly (in
+violation of the intentions of selinux policy)
+
+I'm sorry I never saw it sooner.  We've had it in RHEL for even longer
+than the 3 months it's been in -next.  I think the 'right' fix is going
+to have to be an update to SELinux policy (for your long dead system, if
+you give me the denial I can build you a new policy) rather than leaving
+the potential security hole in mainline...
+
+-Eric
+
