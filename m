@@ -1,65 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759996Ab2FDK3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 06:29:08 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42070 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752069Ab2FDK3G (ORCPT
+	id S1760030Ab2FDKdC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 06:33:02 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36731 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab2FDKdA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 06:29:06 -0400
-Date: Mon, 4 Jun 2012 11:29:05 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Chiwoong Byun <woong.byun@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCH v2] regulator: max77686: Fix checkpatch warnings
-Message-ID: <20120604102904.GD7538@opensource.wolfsonmicro.com>
-References: <1338776358.5855.5.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Hf61M2y+wYpnELGG"
-Content-Disposition: inline
-In-Reply-To: <1338776358.5855.5.camel@phoenix>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Jun 2012 06:33:00 -0400
+Message-ID: <1338805967.28282.12.camel@twins>
+Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
+ calculating perf mult
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Jun 2012 12:32:47 +0200
+In-Reply-To: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
+References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-06-04 at 14:24 +0400, Vladimir Davydov wrote:
+> rq->cpuload strongly depends on cgroup hierarchy. For example, if hundreds of
+> tasks are running inside cpu:/test cgroup, the sum of cpuload over all cpus
+> won't exceed 1024 (by default). That makes the cpuidle menu governor take wrong
+> decisions, which can negatively affect overall performance.
+> 
+> To cope this, use nr_running last seen in __update_cpu_load() instead of
+> cpuload for calculating performance multiplier.
 
---Hf61M2y+wYpnELGG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Jun 04, 2012 at 10:19:18AM +0800, Axel Lin wrote:
-> Fix below checkpatch warnings:
-
-Applied, thanks.
-
---Hf61M2y+wYpnELGG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPzI3KAAoJEBus8iNuMP3dWY8P/3Q2NHADtzr3FueJ96cp34+u
-Y1fbz8/AXg6o5ZQCUj7BnxPKUHfVbfPDbHYjpoO4OinI5vbj/qf6otuNSwJX26Ct
-WnQw9DymW9W0CD+YylIvJk1MvQ/kxOFjbZ+LPPbAzvmvAjR5AKowFT581+A/QukI
-XQc28s7zpnOZwQ3vuHDSTrgxt6pLWw4//fbj4NM+ROz4IcNLbHw63/b8KP1npeCx
-N7jjr0LJHU5CD6SIZz5/dX0Eti4XNCeHTao+rMO4yLqfNEqeBSdkZzdjhjJ18bmx
-BawGNG//9FaiWCRPJPN7O1R9nL9EyKtn8Nvx5rGR0c9r604x0evqkk+pWlvljKuq
-XBEswIK+9GFPznDDIIx4XFXAjPBYkaFtHr2UHWZgWoB1QrtAdsH/s8CL8mAfxFPQ
-r8Y/GqAfYqDkWUBftsIDJb7F+E1x9KhTBWeEtC29OrGp4NZcsrTafU5NHnlOxOSv
-wQpaQFuTDbS7XcBAgoLAaMJtyZ8TTc4tuM271e5elT9XjEPNz0D2zyXin4Vo531Y
-DbktZ59rTsF0dmpMx9W3KzSNVn2JOsVX7vYcmcnW5nDbqYClKX3U2TExlDZ7TNSF
-6sfCv8fjgsRF8hNuQCVsQICjXFFcc1uJc+/qABSzdaL1LSL9tS/6vAGnWnYQTkwH
-G/wJ/ySCIaRQoGoRtJE/
-=eI8a
------END PGP SIGNATURE-----
-
---Hf61M2y+wYpnELGG--
+What is cpuidle trying to do?
