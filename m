@@ -1,346 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757676Ab2FEGF0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 02:05:26 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52844 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab2FEGFZ (ORCPT
+	id S1755834Ab2FEGMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 02:12:53 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:56202 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940Ab2FEGMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 02:05:25 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-87-4fcda19e1df5
-Message-ID: <4FCDA1B4.9050301@kernel.org>
-Date: Tue, 05 Jun 2012 15:05:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 02:12:52 -0400
+Date: Mon, 4 Jun 2012 15:57:57 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Andy King <acking@vmware.com>
+Cc: linux-kernel@vger.kernel.org, dtor@vmware.com, dsouders@vmware.com,
+        cschamp@vmware.com, akpm@linux-foundation.org,
+        virtualization@lists.linux-foundation.org,
+        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+Subject: Re: [vmw_vmci RFC 00/11] VMCI for Linux
+Message-ID: <20120604225757.GC7041@kroah.com>
+References: <20120515235024.GB1758@kroah.com>
+ <552579991.43606.1338564781979.JavaMail.root@vmware.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: undisclosed-recipients:";
-	Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	undisclosed-recipients:;Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-						^-missing end of address
-Subject: Re: [PATCH v9] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
- type pageblocks
-References: <201206041543.56917.b.zolnierkie@samsung.com> <4FCD18FD.5030307@gmail.com> <4FCD6806.7070609@kernel.org> <4FCD713D.3020100@kernel.org> <4FCD8C99.3010401@gmail.com>
-In-Reply-To: <4FCD8C99.3010401@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <552579991.43606.1338564781979.JavaMail.root@vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 01:35 PM, KOSAKI Motohiro wrote:
-
->>>> Minchan, are you interest this patch? If yes, can you please rewrite
->>>> it?
->>>
->>> Can do it but I want to give credit to Bartlomiej.
->>> Bartlomiej, if you like my patch, could you resend it as formal patch
->>> after you do broad testing?
->>>
->>> Frankly speaking, I don't want to merge it without any data which
->>> prove it's really good for real practice.
->>>
->>> When the patch firstly was submitted, it wasn't complicated so I was
->>> okay at that time but it has been complicated
->>> than my expectation. So if Andrew might pass the decision to me, I'm
->>> totally NACK if author doesn't provide
->>> any real data or VOC of some client.
+On Fri, Jun 01, 2012 at 08:33:02AM -0700, Andy King wrote:
+> Greg,
 > 
-> I agree. And you don't need to bother this patch if you are not interest
-> this one. I'm sorry.
-
-
-Never mind.
-
-> Let's throw it away until the author send us data.
+> Thanks so much for the comments and apologies for the delayed response.
 > 
-
-I guess it's hard to make such workload to prove it's useful normally.
-But we can't make sure there isn't such workload in the world.
-So I hope listen VOC. At least, Mel might require it.
-
-If anyone doesn't support it, I hope let's add some vmstat like stuff for proving
-this patch's effect. If we can't see the benefit through vmstat, we can deprecate
-it later.
-
->>> 1) Any comment?
->>>
->>> Anyway, I fixed some bugs and clean up something I found during review.
->>>
->>> Minor thing.
->>> 1. change smt_result naming - I never like such long non-consistent
->>> naming. How about this?
->>> 2. fix can_rescue_unmovable_pageblock
->>>     2.1 pfn valid check for page_zone
->>>
->>> Major thing.
->>>
->>>     2.2 add lru_lock for stablizing PageLRU
->>>         If we don't hold lru_lock, there is possibility that
->>> unmovable(non-LRU) page can put in movable pageblock.
->>>         It can make compaction/CMA's regression. But there is a
->>> concern about deadlock between lru_lock and lock.
->>>         As I look the code, I can't find allocation trial with
->>> holding lru_lock so it might be safe(but not sure,
->>>         I didn't test it. It need more careful review/testing) but it
->>> makes new locking dependency(not sure, too.
->>>         We already made such rule but I didn't know that until now
->>> ;-) ) Why I thought so is we can allocate
->>>         GFP_ATOMIC with holding lru_lock, logically which might be
->>> crazy idea.
->>>
->>>     2.3 remove zone->lock in first phase.
->>>         We do rescue unmovable pageblock by 2-phase. In first-phase,
->>> we just peek pages so we don't need locking.
->>>         If we see non-stablizing value, it would be caught by 2-phase
->>> with needed lock or
->>>         can_rescue_unmovable_pageblock can return out of loop by
->>> stale page_order(cursor_page).
->>>         It couldn't make unmovable pageblock to movable but we can do
->>> it next time, again.
->>>         It's not critical.
->>>
->>> 2) Any comment?
->>>
->>> Now I can't inline the code so sorry but attach patch.
->>> It's not a formal patch/never tested.
->>>
->>
->>
->> Attached patch has a BUG in can_rescue_unmovable_pageblock.
->> Resend. I hope it is fixed.
->>
->>
->>
->>
->>
->> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
->> index 51a90b7..e988037 100644
->> --- a/include/linux/compaction.h
->> +++ b/include/linux/compaction.h
->> @@ -1,6 +1,8 @@
->>  #ifndef _LINUX_COMPACTION_H
->>  #define _LINUX_COMPACTION_H
->>
->> +#include <linux/node.h>
->> +
->>  /* Return values for compact_zone() and try_to_compact_pages() */
->>  /* compaction didn't start as it was not possible or direct reclaim
->> was more suitable */
->>  #define COMPACT_SKIPPED        0
->> @@ -11,6 +13,23 @@
->>  /* The full zone was compacted */
->>  #define COMPACT_COMPLETE    3
->>
->> +/*
->> + * compaction supports three modes
->> + *
->> + * COMPACT_ASYNC_MOVABLE uses asynchronous migration and only scans
->> + *    MIGRATE_MOVABLE pageblocks as migration sources and targets.
->> + * COMPACT_ASYNC_UNMOVABLE uses asynchronous migration and only scans
->> + *    MIGRATE_MOVABLE pageblocks as migration sources.
->> + *    MIGRATE_UNMOVABLE pageblocks are scanned as potential migration
->> + *    targets and convers them to MIGRATE_MOVABLE if possible
->> + * COMPACT_SYNC uses synchronous migration and scans all pageblocks
->> + */
->> +enum compact_mode {
->> +    COMPACT_ASYNC_MOVABLE,
->> +    COMPACT_ASYNC_UNMOVABLE,
->> +    COMPACT_SYNC,
->> +};
->> +
->>  #ifdef CONFIG_COMPACTION
->>  extern int sysctl_compact_memory;
->>  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index 7ea259d..dd02f25 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -236,7 +236,7 @@ isolate_migratepages_range(struct zone *zone,
->> struct compact_control *cc,
->>       */
->>      while (unlikely(too_many_isolated(zone))) {
->>          /* async migration should just abort */
->> -        if (!cc->sync)
->> +        if (cc->mode != COMPACT_SYNC)
->>              return 0;
->>
->>          congestion_wait(BLK_RW_ASYNC, HZ/10);
->> @@ -304,7 +304,8 @@ isolate_migratepages_range(struct zone *zone,
->> struct compact_control *cc,
->>           * satisfies the allocation
->>           */
->>          pageblock_nr = low_pfn >> pageblock_order;
->> -        if (!cc->sync && last_pageblock_nr != pageblock_nr &&
->> +        if (cc->mode != COMPACT_SYNC &&
->> +            last_pageblock_nr != pageblock_nr &&
->>              !migrate_async_suitable(get_pageblock_migratetype(page))) {
->>              low_pfn += pageblock_nr_pages;
->>              low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
->> @@ -325,7 +326,7 @@ isolate_migratepages_range(struct zone *zone,
->> struct compact_control *cc,
->>              continue;
->>          }
->>
->> -        if (!cc->sync)
->> +        if (cc->mode != COMPACT_SYNC)
->>              mode |= ISOLATE_ASYNC_MIGRATE;
->>
->>          lruvec = mem_cgroup_page_lruvec(page, zone);
->> @@ -360,27 +361,121 @@ isolate_migratepages_range(struct zone *zone,
->> struct compact_control *cc,
->>
->>  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
->>  #ifdef CONFIG_COMPACTION
->> +/*
->> + * Returns true if MIGRATE_UNMOVABLE pageblock can be successfully
->> + * converted to MIGRATE_MOVABLE type, false otherwise.
->> + */
->> +static bool can_rescue_unmovable_pageblock(struct page *page, bool
->> need_lrulock)
->> +{
->> +    struct zone *zone;
->> +    unsigned long pfn, start_pfn, end_pfn;
->> +    struct page *start_page, *end_page, *cursor_page;
->> +    bool lru_locked = false;
->> +
->> +    zone = page_zone(page);
->> +    pfn = page_to_pfn(page);
->> +    start_pfn = pfn & ~(pageblock_nr_pages - 1);
->> +    end_pfn = start_pfn + pageblock_nr_pages - 1;
->> +
->> +    start_page = pfn_to_page(start_pfn);
->> +    end_page = pfn_to_page(end_pfn);
->> +
->> +    for (cursor_page = start_page, pfn = start_pfn; cursor_page <=
->> end_page;
->> +        pfn++, cursor_page++) {
->>
->> -/* Returns true if the page is within a block suitable for migration
->> to */
->> -static bool suitable_migration_target(struct page *page)
->> +        if (!pfn_valid_within(pfn))
->> +            continue;
->> +
->> +        /* Do not deal with pageblocks that overlap zones */
->> +        if (page_zone(cursor_page) != zone)
->> +            goto out;
->> +
->> +        if (PageBuddy(cursor_page)) {
->> +            unsigned long order = page_order(cursor_page);
->> +
->> +            pfn += (1 << order) - 1;
->> +            cursor_page += (1 << order) - 1;
->> +            continue;
->> +        } else if (page_count(cursor_page) == 0) {
->> +            continue;
+> > Don't we have something like this already for KVM and maybe Xen?
+> > virtio?  Can't you use that code instead of a new block of code that
+> > is only used by vmware users?  It has virtual pci devices which
+> > should give you what you want/need here, right?
+> >
+> > If not, why doesn't that work for you?  Would it be easier to just
+> > extend it?
 > 
-> Can we assume freed tail page always have page_count()==0? if yes, why
-> do we
-> need dangerous PageBuddy(cursor_page) check? ok, but this may be harmless.
+> The VMCI virtual device for which this driver is intended has been
+> around a lot longer than this submission might suggest.  The virtual
+> hardware was released in a product before Rusty sent his RFC and
+> quite a bit before it made it to mainline; there was, regrettably,
+> no virtio then.
 > 
+> As such, it was designed to be its own transport, and it's something
+> that is now very much fixed at the hardware level (enhancements
+> not withstanding), and which we have to support all the way back.
 
+What "hardware" are you refering to here?
 
-page_count check is for pcp pages.
-Am I missing your point?
+> In addition to that, our hypervisor endpoints are written using
+> the existing device backend; virtio doesn't currently make a lot of
+> sense for them, and would require a lot of additional work.
+> 
+> All of this is unfortunate.  While I agree that virtio is certainly
+> the right approach, and we need to avoid this proliferation, I think
+> at this point we'd really like to try and upstream this in its current
+> form.  There's certainly the possibility going forwards that we could
+> add a glue layer, such that other clients could use virtio if they're
+> willing to write their own hypervisor endpoints.
+> 
+> Does that sound reasonable?
 
-> But if no, this code is seriously dangerous. think following scenario,
-> 
-> 1) cursor page points free page
-> 
->     +----------------+------------------+
->     | free (order-1) |  used (order-1)  |
->     +----------------+------------------+
->     |
->    cursor
-> 
-> 2) moved cursor
-> 
->     +----------------+------------------+
->     | free (order-1) |  used (order-1)  |
->     +----------------+------------------+
->                      |
->                      cursor
-> 
-> 3) neighbor block was freed
-> 
-> 
->     +----------------+------------------+
->     | free (order-2)                    |
->     +----------------+------------------+
->                      |
->                      cursor
-> 
-> now, cursor points to middle of free block.
-> 
+Not really, why should we take an interface that is tied to something
+that you are saying isn't something we should be using?  Don't you also
+have control over the hypervisor side of things in order to properly
+design this type of thing?
 
-> 
+thanks,
 
-> Anyway, I recommend to avoid dangerous no zone->lock game and change
-> can_rescue_unmovable_pageblock() is only called w/ zone->lock. I have
-
-
-
-I can't understand your point.
-If the page is middle of free block, what's the problem in can_rescue_unmovable_pageblock
-at first trial of can_rescue_xxx?
-I think we can stabilize it in second trial of can_rescue_unmovable_pageblock with zone->lock.
-
-> no seen any worth to include this high complex for mere minor optimization.
-
-> 
-
-> 
->> +        } else if (PageLRU(cursor_page)) {
->> +            if (!need_lrulock)
->> +                continue;
->> +            else if (lru_locked)
->> +                continue;
->> +            else {
->> +                spin_lock(&zone->lru_lock);
-> 
-> Hmm...
-> I don't like to take lru_lock. 1) Until now, we carefully avoid to take
-> both zone->lock and zone->lru_lock. they are both performance critical
-> lock. And I think pageblock migratetype don't need strictly correct. It
-> is only optimization of anti fragmentation. Why do we need take it?
-> 
-
-
-movable_block has unmovable page can make regression of anti-fragmentation.
-So I did it. I agree it's a sort of optimization.
-If others don't want it at the cost of regression anti-fragmentation, we can remove the lock.
-
-> 
-> 
->> +                lru_locked = true;
->> +                if (PageLRU(page))
->> +                    continue;
->> +            }
->> +        }
->> +
->> +        goto out;
->> +    }
->> +
-> 
-> Why don't we need to release lru_lock when returning true.
-
-
-Because my brain has gone. :(
-
--- 
-Kind regards,
-Minchan Kim
+greg k-h
