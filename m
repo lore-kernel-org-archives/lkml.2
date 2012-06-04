@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756451Ab2FDHtQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 03:49:16 -0400
-Received: from szxga01-in.huawei.com ([58.251.152.64]:58110 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2FDHtO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 03:49:14 -0400
-Date: Mon, 04 Jun 2012 15:44:54 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-Subject: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe ports
- without native PCIe hotplug capability
-X-Originating-IP: [10.107.208.49]
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Don Dutile <ddutile@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
-        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
-Message-id: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.8.msysgit.0
-Content-type: text/plain
-Content-transfer-encoding: 7BIT
-X-CFilter-Loop: Reflected
+	id S1756526Ab2FDIKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 04:10:32 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:12569 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753827Ab2FDIKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 04:10:13 -0400
+From: Andrew Vagin <avagin@openvz.org>
+Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] sched: send the event sched_switch before perf_event_task_sched_out
+Date: Mon,  4 Jun 2012 12:09:39 +0400
+Message-Id: <1338797382-287275-3-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1338797382-287275-1-git-send-email-avagin@openvz.org>
+References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
-ignore root bridges using PCIe native hotplug) added code that made the
-acpiphp driver completely ignore PCIe root complexes for which the kernel
-had been granted control of the native PCIe hotplug feature by the BIOS
-through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
-"PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
-the constraints to allow acpiphp driver handle non-PCIe bridges under
-such a complex. The constraint needs to be relaxed further to allow
-acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
+Otherwice they can't be filtered for a defined task.
 
-Some MR-IOV switch chipsets, such PLX8696, support multiple virtual PCIe
-switches and may migrate downstream ports among virtual switches.
-To migrate a downstream port from the source virtual switch to the target,
-the port needs to be hot-removed from the source and hot-added into the
-target. pciehp driver can't be used here because there's no slots within
-the virtual PCIe switch. So acpiphp driver is used to support downstream
-port migration. A typical configuration is as below:
-[Root w/o native PCIe HP]
-	[Upstream port of vswitch w/o native PCIe HP]
-		[Downstream port of vswitch w/ native PCIe HP]
-			[PCIe enpoint]
+perf record -e sched:sched_switch ./foo
 
-Here acpiphp driver will be used to handle root ports and upstream port
-in the virtual switch, and pciehp driver will be used to handle downstream
-ports in the virtual switch.
+This command doesn't report any event without this patch.
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Jiang Liu <liuj97@gmail.com>
-
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   49 ++++++++++++++++++++++++++++-------
- 1 files changed, 39 insertions(+), 10 deletions(-)
+ kernel/sched/core.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 806c44f..4889448 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -115,6 +115,43 @@ static const struct acpi_dock_ops acpiphp_dock_ops = {
- 	.handler = handle_hotplug_event_func,
- };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 39eb601..e17a3ec 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1911,12 +1911,12 @@ static inline void
+ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+ 		    struct task_struct *next)
+ {
++	trace_sched_switch(prev, next);
+ 	sched_info_switch(prev, next);
+ 	perf_event_task_sched_out(prev, next);
+ 	fire_sched_out_preempt_notifiers(prev, next);
+ 	prepare_lock_switch(rq, next);
+ 	prepare_arch_switch(next);
+-	trace_sched_switch(prev, next);
+ }
  
-+/* Check whether device is managed by native PCIe hotplug driver */
-+static bool device_is_managed_by_native_pciehp(struct pci_dev *pdev)
-+{
-+	int pos;
-+	u16 reg16;
-+	u32 reg32;
-+	acpi_handle tmp;
-+	struct acpi_pci_root *root;
-+
-+	if (!pci_is_pcie(pdev))
-+		return false;
-+
-+	/* Check whether PCIe port supports native PCIe hotplug */
-+	pos = pci_pcie_cap(pdev);
-+	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
-+	if (!(reg16 & PCI_EXP_FLAGS_SLOT))
-+		return false;
-+	pci_read_config_dword(pdev, pos + PCI_EXP_SLTCAP, &reg32);
-+	if (!(reg32 & PCI_EXP_SLTCAP_HPC))
-+		return false;
-+
-+	/*
-+	 * Check whether native PCIe hotplug has been enabled for
-+	 * this PCIe hierarchy.
-+	 */
-+	tmp = acpi_find_root_bridge_handle(pdev);
-+	if (!tmp)
-+		return false;
-+	root = acpi_pci_find_root(tmp);
-+	if (!root)
-+		return false;
-+	if (!(root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-+		return false;
-+
-+	return true;
-+}
-+
- /* callback routine to register each ACPI PCI slot object */
- static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -133,16 +170,8 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 		return AE_OK;
+ /**
+@@ -1976,6 +1976,7 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 		kprobe_flush_task(prev);
+ 		put_task_struct(prev);
+ 	}
++	trace_sched_switch_finish(current);
+ }
  
- 	pdev = pbus->self;
--	if (pdev && pci_is_pcie(pdev)) {
--		tmp = acpi_find_root_bridge_handle(pdev);
--		if (tmp) {
--			struct acpi_pci_root *root = acpi_pci_find_root(tmp);
--
--			if (root && (root->osc_control_set &
--					OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
--				return AE_OK;
--		}
--	}
-+	if (pdev && device_is_managed_by_native_pciehp(pdev))
-+		return AE_OK;
- 
- 	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
- 	device = (adr >> 16) & 0xffff;
+ #ifdef CONFIG_SMP
 -- 
 1.7.1
-
 
