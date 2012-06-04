@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754129Ab2FDGVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 02:21:12 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39612 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab2FDGVL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 02:21:11 -0400
-Date: Mon, 4 Jun 2012 15:21:00 +0900
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>
-Subject: [PATCH v3.5-rc1] blkcg: fix blkg_alloc() failure path
-Message-ID: <20120604062100.GA2843@dhcp-172-17-108-109.mtv.corp.google.com>
+	id S1754277Ab2FDGWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 02:22:20 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:47656 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751219Ab2FDGWT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 02:22:19 -0400
+From: Arun MURTHY <arun.murthy@stericsson.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Date: Mon, 4 Jun 2012 08:21:25 +0200
+Subject: RE: [PATCH 1/1] mfd: db8500-prcmu: update hostport_access enable
+Thread-Topic: [PATCH 1/1] mfd: db8500-prcmu: update hostport_access enable
+Thread-Index: Ac0+0Oa2pz9OqBGaRhG9YdIODWMcXgDPod6A
+Message-ID: <F45880696056844FA6A73F415B568C69595AD891F5@EXDCVYMBSTM006.EQ1STM.local>
+References: <1337590701-17056-1-git-send-email-arun.murthy@stericsson.com>
+	<F45880696056844FA6A73F415B568C69595AD0E365@EXDCVYMBSTM006.EQ1STM.local>
+ <CACRpkda916-6ArCb4jVdrhOizNcet9S7j_whGzoOv35CYEYyNw@mail.gmail.com>
+In-Reply-To: <CACRpkda916-6ArCb4jVdrhOizNcet9S7j_whGzoOv35CYEYyNw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When policy data allocation fails in the middle, blkg_alloc() invokes
-blkg_free() to destroy the half constructed blkg.  This ends up
-calling pd_exit_fn() on policy datas which didn't go through
-pd_init_fn().  Fix it by making blkg_alloc() call pd_init_fn()
-immediately after each policy data allocation.
+> >> Force the Modem wakeup by asserting the CaWakeReq signal before the
+> >> hostaccess_req/ack ping-pong sequence. The Awake_req signal is de-
+> >> asserted
+> >> asserted at the same time than the hostaccess_req. Return error on
+> >> failure
+> >> case so that the client using this can take appropiate steps.
+> >>
+> >> Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+> >> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> >> ---
+> >
+> >
+> > Any Comments?
+> 
+> Have you checked that this applies cleanly to the latest v3.5 HEAD from
+> Torvalds? I think I tried applying at one point and it didn't work.
+> 
+> Otherwise I think it's ripe for Sam to apply?
+> 
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
----
-Jens, this was posted as part of "block: implement per-blkg request
-allocation" patchset[1] but should be applied as fix on v3.5-rc1.
+The patch applies as is with no conflict.
 
-[1] http://thread.gmane.org/gmane.linux.kernel.containers/23159/focus=2007
-
- block/blk-cgroup.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
-
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -125,12 +125,8 @@ static struct blkcg_gq *blkg_alloc(struc
- 
- 		blkg->pd[i] = pd;
- 		pd->blkg = blkg;
--	}
--
--	/* invoke per-policy init */
--	for (i = 0; i < BLKCG_MAX_POLS; i++) {
--		struct blkcg_policy *pol = blkcg_policy[i];
- 
-+		/* invoke per-policy init */
- 		if (blkcg_policy_enabled(blkg->q, pol))
- 			pol->pd_init_fn(blkg);
- 	}
+Thanks and Regards,
+Arun R Murthy
+-------------
