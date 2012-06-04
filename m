@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932342Ab2FDLkj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:40:39 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:44984 "EHLO
+	id S932300Ab2FDLkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:40:37 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:44983 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab2FDLfo (ORCPT
+	with ESMTP id S1754588Ab2FDLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jun 2012 07:35:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 17/24] TTY: vt, remove con_schedule_flip
-Date: Mon,  4 Jun 2012 13:35:31 +0200
-Message-Id: <1338809738-18967-18-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: [PATCH 12/24] TTY: um/line, add tty_port
+Date: Mon,  4 Jun 2012 13:35:26 +0200
+Message-Id: <1338809738-18967-13-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.3
 In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
 References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
@@ -20,80 +22,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is identical to tty_schedule_flip. So let us use that instead.
+And use count from there.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: user-mode-linux-devel@lists.sourceforge.net
 ---
- drivers/tty/vt/keyboard.c |    6 +++---
- drivers/tty/vt/vt.c       |    2 +-
- include/linux/kbd_kern.h  |   12 ------------
- 3 files changed, 4 insertions(+), 16 deletions(-)
+ arch/um/drivers/line.c |    7 ++++---
+ arch/um/drivers/line.h |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index 48cc6f2..0b6217c 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -310,7 +310,7 @@ static void put_queue(struct vc_data *vc, int ch)
+diff --git a/arch/um/drivers/line.c b/arch/um/drivers/line.c
+index acfd0e0..482a7bd 100644
+--- a/arch/um/drivers/line.c
++++ b/arch/um/drivers/line.c
+@@ -404,7 +404,7 @@ int line_open(struct line *lines, struct tty_struct *tty)
+ 		goto out_unlock;
  
- 	if (tty) {
- 		tty_insert_flip_char(tty, ch, 0);
--		con_schedule_flip(tty);
-+		tty_schedule_flip(tty);
+ 	err = 0;
+-	if (line->count++)
++	if (line->port.count++)
+ 		goto out_unlock;
+ 
+ 	BUG_ON(tty->driver_data);
+@@ -446,7 +446,7 @@ void line_close(struct tty_struct *tty, struct file * filp)
+ 	mutex_lock(&line->count_lock);
+ 	BUG_ON(!line->valid);
+ 
+-	if (--line->count)
++	if (--line->port.count)
+ 		goto out_unlock;
+ 
+ 	line->tty = NULL;
+@@ -478,7 +478,7 @@ int setup_one_line(struct line *lines, int n, char *init,
+ 
+ 	mutex_lock(&line->count_lock);
+ 
+-	if (line->count) {
++	if (line->port.count) {
+ 		*error_out = "Device is already open";
+ 		goto out;
  	}
- }
+@@ -663,6 +663,7 @@ int register_lines(struct line_driver *line_driver,
+ 	driver->init_termios = tty_std_termios;
+ 	
+ 	for (i = 0; i < nlines; i++) {
++		tty_port_init(&lines[i].port);
+ 		spin_lock_init(&lines[i].lock);
+ 		mutex_init(&lines[i].count_lock);
+ 		lines[i].driver = line_driver;
+diff --git a/arch/um/drivers/line.h b/arch/um/drivers/line.h
+index 0a18347..0e06a1f 100644
+--- a/arch/um/drivers/line.h
++++ b/arch/um/drivers/line.h
+@@ -32,9 +32,9 @@ struct line_driver {
+ };
  
-@@ -325,7 +325,7 @@ static void puts_queue(struct vc_data *vc, char *cp)
- 		tty_insert_flip_char(tty, *cp, 0);
- 		cp++;
- 	}
--	con_schedule_flip(tty);
-+	tty_schedule_flip(tty);
- }
+ struct line {
++	struct tty_port port;
+ 	struct tty_struct *tty;
+ 	struct mutex count_lock;
+-	unsigned long count;
+ 	int valid;
  
- static void applkey(struct vc_data *vc, int key, char mode)
-@@ -586,7 +586,7 @@ static void fn_send_intr(struct vc_data *vc)
- 	if (!tty)
- 		return;
- 	tty_insert_flip_char(tty, 0, TTY_BREAK);
--	con_schedule_flip(tty);
-+	tty_schedule_flip(tty);
- }
- 
- static void fn_scroll_forw(struct vc_data *vc)
-diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-index 84cbf29..88a4914 100644
---- a/drivers/tty/vt/vt.c
-+++ b/drivers/tty/vt/vt.c
-@@ -1380,7 +1380,7 @@ static void respond_string(const char *p, struct tty_struct *tty)
- 		tty_insert_flip_char(tty, *p, 0);
- 		p++;
- 	}
--	con_schedule_flip(tty);
-+	tty_schedule_flip(tty);
- }
- 
- static void cursor_report(struct vc_data *vc, struct tty_struct *tty)
-diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
-index daf4a3a..af9137d 100644
---- a/include/linux/kbd_kern.h
-+++ b/include/linux/kbd_kern.h
-@@ -145,16 +145,4 @@ void compute_shiftstate(void);
- 
- extern unsigned int keymap_count;
- 
--/* console.c */
--
--static inline void con_schedule_flip(struct tty_struct *t)
--{
--	unsigned long flags;
--	spin_lock_irqsave(&t->buf.lock, flags);
--	if (t->buf.tail != NULL)
--		t->buf.tail->commit = t->buf.tail->used;
--	spin_unlock_irqrestore(&t->buf.lock, flags);
--	schedule_work(&t->buf.work);
--}
--
- #endif
+ 	char *init_str;
 -- 
 1.7.10.3
 
