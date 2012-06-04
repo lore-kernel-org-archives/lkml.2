@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760856Ab2FDQx6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:53:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:44093 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751874Ab2FDQx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:53:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="151415606"
-Message-ID: <4FCCE823.8090700@linux.intel.com>
-Date: Mon, 04 Jun 2012 09:53:55 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>     <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>    <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>   <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>  <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com> <1338827607.28282.99.camel@twins>
-In-Reply-To: <1338827607.28282.99.camel@twins>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755849Ab2FDQzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:55:12 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43605 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755855Ab2FDQyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 12:54:25 -0400
+Date: Mon, 4 Jun 2012 17:57:49 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
+Subject: Re: [PATCH 06/24] TTY: ircomm, revamp locking
+Message-ID: <20120604175749.3995aa07@pyramind.ukuu.org.uk>
+In-Reply-To: <1338809738-18967-7-git-send-email-jslaby@suse.cz>
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+	<1338809738-18967-7-git-send-email-jslaby@suse.cz>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon,  4 Jun 2012 13:35:20 +0200
+Jiri Slaby <jslaby@suse.cz> wrote:
 
+> Use self->spinlock only for ctrl_skb and tx_skb. TTY stuff is now
+> protected by tty_port->lock. This is needed for further cleanup (and
+> conversion to tty_port helpers).
 > 
-> False, you can have 0 idle time and still have low load.
+> This also closes the race in the end of close.
 
-1 is not low in this context fwiw.
-
-> 
->>  but because idle
->> time tends to be bursty, we can still be idle for, say, a millisecond
->> every 10 milliseconds. In this scenario, the load average is used to
->> ensure that the 200 usecond cost of exiting idle is acceptable.
-> 
-> So what you're saying is that if you have 1ms idle in 10ms, it might not
-> be a continuous 1ms. And you're using load as a measure of how many
-> fragments it comes apart in?
-
-no
-
-what I'm saying is that if you have a workload where you have 10 msec of
-work, then 1 msec of idle, then 10 msec of work, 1 msec of idle etc etc,
-it is very different from 100 msec of work, 10 msec of idle, 100 msec of
-work, even though utilization is the same.
-
-what the logic is trying to do, on a 10 km level, is to limit the damage
-of accumulated C state exit time.
-(I'll avoid the word "latency" here, since the real time people will
-then immediately think this is about controlling latency response, which
-it isn't)
-
-Now, if you're very idle for a sustained duration (e.g. low load),
-you're assumed not sensitive to a bit of performance cost.
-but if you're actually busy (over a longer period, not just "right
-now"), you're assumed to be sensitive to the performance cost,
-and what the algorithm does is make it less easy to go into the
-expensive states.
-
-the closest metric we have right now to "sensitive to performance cost"
-that I know of is "load average". If the scheduler has a better metric,
-I'd be more than happy to switch the idle selection code over to it...
-
-
-note that the idle selection code has 3 metrics, this is only one of them:
-1. PM_QOS latency tolerance
-2. Energy break even
-3. Performance tolerance
-
-
+Ah ok.. fixed here
