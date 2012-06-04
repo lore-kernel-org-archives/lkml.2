@@ -1,180 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab2FDFHG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:07:06 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:45216 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab2FDFHD (ORCPT
+	id S1756186Ab2FDFIS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:08:18 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:57514 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab2FDFIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:07:03 -0400
-Subject: [PATCH v2 2/7] KVM-HV: Add VCPU running/pre-empted state for guest
+	Mon, 4 Jun 2012 01:08:16 -0400
+Subject: [PATCH v2 3/7] KVM: Add paravirt kvm_flush_tlb_others
 To: peterz@infradead.org, mingo@elte.hu, mtosatti@redhat.com, avi@redhat.com
 From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
 Cc: raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
         vatsa@linux.vnet.ibm.com, hpa@zytor.com
-Date: Mon, 04 Jun 2012 10:36:24 +0530
-Message-ID: <20120604050613.4560.97485.stgit@abhimanyu.in.ibm.com>
+Date: Mon, 04 Jun 2012 10:37:24 +0530
+Message-ID: <20120604050629.4560.85284.stgit@abhimanyu.in.ibm.com>
 In-Reply-To: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
 References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
 User-Agent: StGit/0.16-2-g0d85
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060405-4790-0000-0000-000003115828
+x-cbid: 12060405-5816-0000-0000-000002FD7842
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hypervisor code to indicate guest running/pre-empteded status through
-msr.
+flush_tlb_others_ipi depends on lot of statics in tlb.c.  Replicated
+the flush_tlb_others_ipi as kvm_flush_tlb_others to further adapt to
+paravirtualization.
+
+Use the vcpu state information inside the kvm_flush_tlb_others to
+avoid sending ipi to pre-empted vcpus.
+
+* Do not send ipi's to offline vcpus and set flush_on_enter flag
+* For online vcpus: Wait for them to clear the flag
+
+The approach was discussed here: https://lkml.org/lkml/2012/2/20/157
 
 Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
----
- arch/x86/include/asm/kvm_host.h |    7 ++++++
- arch/x86/kvm/cpuid.c            |    1 +
- arch/x86/kvm/x86.c              |   45 ++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 52 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index dad475b..12fe3c7 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -418,6 +418,13 @@ struct kvm_vcpu_arch {
- 		struct kvm_steal_time steal;
- 	} st;
+--
+Pseudo Algo:
+
+   Write()
+   ======
+
+	   guest_exit()
+		   flush_on_enter[i]=0;
+		   running[i] = 0;
+
+	   guest_enter()
+		   running[i] = 1;
+		   smp_mb();
+		   if(flush_on_enter[i]) {
+			   tlb_flush()
+			   flush_on_enter[i]=0;
+		   }
+
+
+   Read()
+   ======
+
+	   GUEST                                                KVM-HV
+
+   f->flushcpumask = cpumask - me;
+
+again:
+   for_each_cpu(i, f->flushmask) {
+
+	   if (!running[i]) {
+						   case 1:
+
+						   running[n]=1
+
+						   (cpuN does not see
+						   flush_on_enter set,
+						   guest later finds it
+						   running and sends ipi,
+						   we are fine here, need
+						   to clear the flag on
+						   guest_exit)
+
+		  flush_on_enter[i] = 1;
+						   case2:
+
+						   running[n]=1
+						   (cpuN - will see flush
+						   on enter and an IPI as
+						   well - addressed in patch-4)
+
+		  if (!running[i])
+		     cpu_clear(f->flushmask);      All is well, vm_enter
+						   will do the fixup
+	   }
+						   case 3:
+						   running[n] = 0;
+
+						   (cpuN went to sleep,
+						   we saw it as awake,
+						   ipi sent, but wait
+						   will break without
+						   zero_mask and goto
+						   again will take care)
+
+   }
+   send_ipi(f->flushmask)
+
+   wait_a_while_for_zero_mask();
+
+   if (!zero_mask)
+	   goto again;
+---
+ arch/x86/include/asm/kvm_para.h |    3 +-
+ arch/x86/include/asm/tlbflush.h |    9 ++++++
+ arch/x86/kernel/kvm.c           |    1 +
+ arch/x86/kvm/x86.c              |   14 ++++++++-
+ arch/x86/mm/tlb.c               |   61 +++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 86 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index f57b5cc..684a285 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -55,7 +55,8 @@ struct kvm_steal_time {
  
-+	/* indicates vcpu is running or preempted */
-+	struct {
-+		u64 msr_val;
-+		struct gfn_to_hva_cache data;
-+		struct kvm_vcpu_state vs;
-+	} v_state;
-+
- 	u64 last_guest_tsc;
- 	u64 last_kernel_ns;
- 	u64 last_host_tsc;
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 7c93806..0588984 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -409,6 +409,7 @@ static int do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
- 			     (1 << KVM_FEATURE_ASYNC_PF) |
- 			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-+			     (1 << KVM_FEATURE_VCPU_STATE) |
- 			     (1 << KVM_FEATURE_PV_UNHALT);
+ struct kvm_vcpu_state {
+ 	__u32 state;
+-	__u32 pad[15];
++	__u32 flush_on_enter;
++	__u32 pad[14];
+ };
  
- 		if (sched_info_on())
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 8e5f57b..264f172 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -789,12 +789,13 @@ EXPORT_SYMBOL_GPL(kvm_rdpmc);
-  * kvm-specific. Those are put in the beginning of the list.
-  */
- 
--#define KVM_SAVE_MSRS_BEGIN	9
-+#define KVM_SAVE_MSRS_BEGIN	10
- static u32 msrs_to_save[] = {
- 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
- 	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
- 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
- 	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
-+	MSR_KVM_VCPU_STATE,
- 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
- 	MSR_STAR,
- #ifdef CONFIG_X86_64
-@@ -1539,6 +1540,32 @@ static void record_steal_time(struct kvm_vcpu *vcpu)
- 		&vcpu->arch.st.steal, sizeof(struct kvm_steal_time));
+ #define KVM_VCPU_STATE_ALIGN_BITS 5
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index c0e108e..29470bd 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -119,6 +119,12 @@ static inline void native_flush_tlb_others(const struct cpumask *cpumask,
+ {
  }
  
-+static void kvm_set_vcpu_state(struct kvm_vcpu *vcpu)
++static inline void kvm_flush_tlb_others(const struct cpumask *cpumask,
++					struct mm_struct *mm,
++					unsigned long va)
 +{
-+	struct kvm_vcpu_state *vs = &vcpu->arch.v_state.vs;
-+	struct gfn_to_hva_cache *ghc = &vcpu->arch.v_state.data;
-+
-+	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
-+		return;
-+
-+	vs->state = 1;
-+	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
-+	smp_wmb();
 +}
 +
-+static void kvm_clear_vcpu_state(struct kvm_vcpu *vcpu)
-+{
-+	struct kvm_vcpu_state *vs = &vcpu->arch.v_state.vs;
-+	struct gfn_to_hva_cache *ghc = &vcpu->arch.v_state.data;
-+
-+	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
-+		return;
-+
-+	vs->state = 0;
-+	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
-+	smp_wmb();
-+}
-+
- int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ static inline void reset_lazy_tlbstate(void)
  {
- 	bool pr = false;
-@@ -1654,6 +1681,14 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ }
+@@ -145,6 +151,9 @@ static inline void flush_tlb_range(struct vm_area_struct *vma,
+ void native_flush_tlb_others(const struct cpumask *cpumask,
+ 			     struct mm_struct *mm, unsigned long va);
  
- 		break;
- 
-+	case MSR_KVM_VCPU_STATE:
-+		if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.v_state.data,
-+					      data & KVM_VCPU_STATE_VALID_BITS))
-+			return 1;
++void kvm_flush_tlb_others(const struct cpumask *cpumask,
++			  struct mm_struct *mm, unsigned long va);
 +
-+		vcpu->arch.v_state.msr_val = data;
-+		break;
-+
- 	case MSR_IA32_MCG_CTL:
- 	case MSR_IA32_MCG_STATUS:
- 	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
-@@ -1974,6 +2009,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 	case MSR_KVM_STEAL_TIME:
- 		data = vcpu->arch.st.msr_val;
- 		break;
-+	case MSR_KVM_VCPU_STATE:
-+		data = vcpu->arch.v_state.msr_val;
-+		break;
- 	case MSR_IA32_P5_MC_ADDR:
- 	case MSR_IA32_P5_MC_TYPE:
- 	case MSR_IA32_MCG_CAP:
-@@ -5324,6 +5362,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 		kvm_load_guest_fpu(vcpu);
- 	kvm_load_guest_xcr0(vcpu);
+ #define TLBSTATE_OK	1
+ #define TLBSTATE_LAZY	2
  
-+	kvm_set_vcpu_state(vcpu);
-+
- 	vcpu->mode = IN_GUEST_MODE;
- 
- 	/* We should set ->mode before check ->requests,
-@@ -5340,6 +5380,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 		local_irq_enable();
- 		preempt_enable();
- 		kvm_x86_ops->cancel_injection(vcpu);
-+		kvm_clear_vcpu_state(vcpu);
- 		r = 1;
- 		goto out;
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index bb686a6..66db54e 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -465,6 +465,7 @@ void __init kvm_guest_init(void)
  	}
-@@ -5374,6 +5415,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
  
- 	vcpu->arch.last_guest_tsc = kvm_x86_ops->read_l1_tsc(vcpu);
+ 	has_vcpu_state = 1;
++	pv_mmu_ops.flush_tlb_others = kvm_flush_tlb_others;
  
-+	kvm_clear_vcpu_state(vcpu);
- 	vcpu->mode = OUTSIDE_GUEST_MODE;
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 264f172..4714a7b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1548,9 +1548,20 @@ static void kvm_set_vcpu_state(struct kvm_vcpu *vcpu)
+ 	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
+ 		return;
+ 
++	/* 
++	 * Let the guest know that we are online, make sure we do not
++	 * overwrite flush_on_enter, just write the vs->state.
++	 */
+ 	vs->state = 1;
+-	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
++	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 1*sizeof(__u32));
  	smp_wmb();
- 	local_irq_enable();
-@@ -6029,6 +6071,7 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
- 	kvm_make_request(KVM_REQ_EVENT, vcpu);
- 	vcpu->arch.apf.msr_val = 0;
- 	vcpu->arch.st.msr_val = 0;
-+	vcpu->arch.v_state.msr_val = 0;
++	/* 
++	 * Guest might have seen us offline and would have set
++	 * flush_on_enter. 
++	 */
++	kvm_read_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
++	if (vs->flush_on_enter) 
++		kvm_x86_ops->tlb_flush(vcpu);
+ }
  
- 	kvmclock_reset(vcpu);
+ static void kvm_clear_vcpu_state(struct kvm_vcpu *vcpu)
+@@ -1561,6 +1572,7 @@ static void kvm_clear_vcpu_state(struct kvm_vcpu *vcpu)
+ 	if (!(vcpu->arch.v_state.msr_val & KVM_MSR_ENABLED))
+ 		return;
  
++	vs->flush_on_enter = 0;
+ 	vs->state = 0;
+ 	kvm_write_guest_cached(vcpu->kvm, ghc, vs, 2*sizeof(__u32));
+ 	smp_wmb();
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..f5dacdd 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -6,6 +6,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ #include <linux/cpu.h>
++#include <linux/kvm_para.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
+@@ -202,6 +203,66 @@ static void flush_tlb_others_ipi(const struct cpumask *cpumask,
+ 		raw_spin_unlock(&f->tlbstate_lock);
+ }
+ 
++#ifdef CONFIG_KVM_GUEST
++
++DECLARE_PER_CPU(struct kvm_vcpu_state, vcpu_state) __aligned(64);
++
++void kvm_flush_tlb_others(const struct cpumask *cpumask,
++			struct mm_struct *mm, unsigned long va)
++{
++	unsigned int sender;
++	union smp_flush_state *f;
++	int cpu, loop;
++	struct kvm_vcpu_state *v_state;
++
++	/* Caller has disabled preemption */
++	sender = this_cpu_read(tlb_vector_offset);
++	f = &flush_state[sender];
++
++	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
++		raw_spin_lock(&f->tlbstate_lock);
++
++	f->flush_mm = mm;
++	f->flush_va = va;
++	if (cpumask_andnot(to_cpumask(f->flush_cpumask), cpumask, cpumask_of(smp_processor_id()))) {
++		/*
++		 * We have to send the IPI only to online vCPUs
++		 * affected. And queue flush_on_enter for pre-empted
++		 * vCPUs
++		 */
++again:
++		for_each_cpu(cpu, to_cpumask(f->flush_cpumask)) {
++			v_state = &per_cpu(vcpu_state, cpu);
++
++			if (!v_state->state) {
++				v_state->flush_on_enter = 1;
++				smp_mb();
++				if (!v_state->state)
++					cpumask_clear_cpu(cpu, to_cpumask(f->flush_cpumask));
++			}
++		}
++
++		if (cpumask_empty(to_cpumask(f->flush_cpumask)))
++			goto out;
++
++		apic->send_IPI_mask(to_cpumask(f->flush_cpumask),
++				    INVALIDATE_TLB_VECTOR_START + sender);
++
++		loop = 1000;
++		while (!cpumask_empty(to_cpumask(f->flush_cpumask)) && --loop)
++			cpu_relax();
++
++		if (!cpumask_empty(to_cpumask(f->flush_cpumask)))
++			goto again;
++	}
++out:
++	f->flush_mm = NULL;
++	f->flush_va = 0;
++	if (nr_cpu_ids > NUM_INVALIDATE_TLB_VECTORS)
++		raw_spin_unlock(&f->tlbstate_lock);
++}
++#endif /* CONFIG_KVM_GUEST */
++
+ void native_flush_tlb_others(const struct cpumask *cpumask,
+ 			     struct mm_struct *mm, unsigned long va)
+ {
 
