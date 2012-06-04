@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab2FDFkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:40:37 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:54747 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756539Ab2FDFkc (ORCPT
+	id S932091Ab2FDFkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:40:42 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:35395 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756539Ab2FDFki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:40:32 -0400
+	Mon, 4 Jun 2012 01:40:38 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-acpi@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Len Brown <len.brown@intel.com>
-Subject: [PATCH 09/15] acpi_video: Intel video is not always i915
-Date: Mon,  4 Jun 2012 01:40:00 -0400
-Message-Id: <c6996bdd850fb53319918487d5f674203517fdc5.1338786832.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 12/15] tools/power turbostat: fix un-intended affinity of forked program
+Date: Mon,  4 Jun 2012 01:40:03 -0400
+Message-Id: <d15cf7c129fa4ec4b44c52521e49ffafb9749029.1338786832.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.11.rc0.100.g5498c5f
 In-Reply-To: <1338788406-29981-1-git-send-email-lenb@kernel.org>
 References: <1338788406-29981-1-git-send-email-lenb@kernel.org>
@@ -25,64 +24,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Len Brown <len.brown@intel.com>
 
-Stop it poking at random registers on the i740 cards that may be out there
-still.
+Linux 3.4 included a modification to turbostat to
+lower cross-call overhead by using scheduler affinity:
 
-As per Matthew's feedback remove the conditional checks and never enable the
-opregion handling unless an appropriate driver has been loaded.
+15aaa34654831e98dd76f7738b6c7f5d05a66430
+(tools turbostat: reduce measurement overhead due to IPIs)
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+In the use-case where turbostat forks a child program,
+that change had the un-intended side-effect of binding
+the child to the last cpu in the system.
+
+This change removed the binding before forking the child.
+
+This is a back-port of a fix already included in turbostat v2.
+
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/video.c | 20 +++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ tools/power/x86/turbostat/turbostat.c | 28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 66e8f73..609262d 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -1743,10 +1743,18 @@ static int acpi_video_bus_remove(struct acpi_device *device, int type)
- 	return 0;
- }
+diff --git a/tools/power/x86/turbostat/turbostat.c b/tools/power/x86/turbostat/turbostat.c
+index ab2f682..d5d6a3d 100644
+--- a/tools/power/x86/turbostat/turbostat.c
++++ b/tools/power/x86/turbostat/turbostat.c
+@@ -73,8 +73,8 @@ int backwards_count;
+ char *progname;
  
-+static int __init is_i740(struct pci_dev *dev)
+ int num_cpus;
+-cpu_set_t *cpu_mask;
+-size_t cpu_mask_size;
++cpu_set_t *cpu_present_set, *cpu_mask;
++size_t cpu_present_setsize, cpu_mask_size;
+ 
+ struct counters {
+ 	unsigned long long tsc;		/* per thread */
+@@ -103,6 +103,12 @@ struct timeval tv_even;
+ struct timeval tv_odd;
+ struct timeval tv_delta;
+ 
++int mark_cpu_present(int pkg, int core, int cpu)
 +{
-+	if (dev->device == 0x00D1)
-+		return 1;
-+	if (dev->device == 0x7000)
-+		return 1;
++	CPU_SET_S(cpu, cpu_present_setsize, cpu_present_set);
 +	return 0;
 +}
 +
- static int __init intel_opregion_present(void)
- {
--	int i915 = 0;
--#if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
-+	int opregion = 0;
- 	struct pci_dev *dev = NULL;
- 	u32 address;
- 
-@@ -1755,13 +1763,15 @@ static int __init intel_opregion_present(void)
- 			continue;
- 		if (dev->vendor != PCI_VENDOR_ID_INTEL)
- 			continue;
-+		/* We don't want to poke around undefined i740 registers */
-+		if (is_i740(dev))
-+			continue;
- 		pci_read_config_dword(dev, 0xfc, &address);
- 		if (!address)
- 			continue;
--		i915 = 1;
-+		opregion = 1;
+ /*
+  * cpu_mask_init(ncpus)
+  *
+@@ -118,6 +124,18 @@ void cpu_mask_init(int ncpus)
  	}
--#endif
--	return i915;
-+	return opregion;
+ 	cpu_mask_size = CPU_ALLOC_SIZE(ncpus);
+ 	CPU_ZERO_S(cpu_mask_size, cpu_mask);
++
++	/*
++	 * Allocate and initialize cpu_present_set
++	 */
++	cpu_present_set = CPU_ALLOC(ncpus);
++	if (cpu_present_set == NULL) {
++		perror("CPU_ALLOC");
++		exit(3);
++	}
++	cpu_present_setsize = CPU_ALLOC_SIZE(ncpus);
++	CPU_ZERO_S(cpu_present_setsize, cpu_present_set);
++	for_all_cpus(mark_cpu_present);
  }
  
- int acpi_video_register(void)
+ void cpu_mask_uninit()
+@@ -125,6 +143,9 @@ void cpu_mask_uninit()
+ 	CPU_FREE(cpu_mask);
+ 	cpu_mask = NULL;
+ 	cpu_mask_size = 0;
++	CPU_FREE(cpu_present_set);
++	cpu_present_set = NULL;
++	cpu_present_setsize = 0;
+ }
+ 
+ int cpu_migrate(int cpu)
+@@ -1047,6 +1068,9 @@ int fork_it(char **argv)
+ 	int retval;
+ 	pid_t child_pid;
+ 	get_counters(cnt_even);
++
++        /* clear affinity side-effect of get_counters() */
++        sched_setaffinity(0, cpu_present_setsize, cpu_present_set);
+ 	gettimeofday(&tv_even, (struct timezone *)NULL);
+ 
+ 	child_pid = fork();
 -- 
 1.7.11.rc0.100.g5498c5f
 
