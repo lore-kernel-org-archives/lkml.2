@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab2FDUbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 16:31:35 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37682 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753768Ab2FDUbc convert rfc822-to-8bit (ORCPT
+	id S1757477Ab2FDUdm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 16:33:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34699 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab2FDUdk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 16:31:32 -0400
-Message-ID: <1338841878.28282.133.camel@twins>
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 04 Jun 2012 22:31:18 +0200
-In-Reply-To: <4FCCEF94.6010805@linux.intel.com>
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-	      <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
-	     <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
-	    <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
-	   <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
-	  <1338827607.28282.99.camel@twins> <4FCCE823.8090700@linux.intel.com>
-	 <1338830167.28282.115.camel@twins> <4FCCEF94.6010805@linux.intel.com>
+	Mon, 4 Jun 2012 16:33:40 -0400
+Message-ID: <1338842001.28282.135.camel@twins>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Date: Mon, 04 Jun 2012 22:33:21 +0200
+In-Reply-To: <alpine.LFD.2.02.1206042203590.3086@ionos>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+	 <alpine.LFD.2.02.1206042203590.3086@ionos>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -32,48 +34,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 10:25 -0700, Arjan van de Ven wrote:
+On Mon, 2012-06-04 at 22:11 +0200, Thomas Gleixner wrote:
+
+> I understand what you are trying to do, though I completely disagree
+> with the solution.
 > 
-> for the sake of argument, lets call it the amount of work the system can
-> get done. (where 'work' is obviously still vague, but the software
-> running on the system will know what it is).
+> The main problem of the current hotplug code is that it is an all or
+> nothing approach. You have to tear down the whole thing completely
+> instead of just taking it out of the usable set of cpus.
+> 
+> I'm working on a proper state machine driven online/offline sequence,
+> where you can put the cpu into an intermediate state which avoids
+> bringing it down completely. This is enough to get the full
+> powersaving benefits w/o having to go through all the synchronization
+> states of a full online/offline. That will shorten the onlining time
+> of an previously offlined cpu to almost nothing.
+> 
+> I really want to avoid adding more bandaids to the hotplug code before
+> we have sorted out the existing horror.
 
-Screw the software, explain it to me.
-
-> can you afford to do no work for those 20 msec every second ?
-> the answer to that will be "it depends", and estimating that "depends"
-> is what the load average value is used for. 
-
-See this just doesn't make any sense..
-
-If there's work, we're not idle. If there's more work we're idle less.
-We're just not going to be idle 20 msec every second if there's more to
-do.
-
-And like I said many times now, if you inflate some of the idle periods,
-the work shifts (it doesn't become less) and a next idle period will be
-smaller -- since we'll only become idle again once all work is done.
-
-( and since its smaller you decrease your idle guestimate, and lower you
-C state level )
-
-The absolute only thing any of this makes any difference to is
-synchronous stuff, like round-trip latencies. If you have a workload
-that doesn't do anything until something else happens and so on. Then,
-if you delay each signal a bit the total time will increase and the
-amount of stuff done in a given time decreases.
-
-However, if you stuff enough work down that pipe, the total throughput
-should still be good -- esp. if you can saturate the thing and all idle
-time goes away.
-
-You said that accrued latency per time unit was an approximate measure,
-but afaict that's related to what you want, whereas the unix
-load-average is completely unrelated to any of this.
-
-Anyway, as it stands you're better off ripping the entire thing out,
-since I don't see how it could have worked, given that you're using an
-entirely random measure of something.
-
-Also, I'm still not understanding why decreasing your idle-period
-guestimation when you're woken up early isn't catching any of this.
+Its far worse.. you shouldn't _ever_ care about hotplug latency unless
+you've got absolutely braindead hardware. We all now ARM has been
+particularly creative here, but is Intel now trying to trump ARM at
+stupid?
