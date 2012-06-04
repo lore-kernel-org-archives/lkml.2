@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab2FDSqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 14:46:03 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34919 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab2FDSp7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 14:45:59 -0400
-From: Giuseppe Bilotta <giuseppe.bilotta@gmail.com>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        trivial@kernel.org, Giuseppe Bilotta <giuseppe.bilotta@gmail.com>
-Subject: [PATCH][trivial] HID: wiimote-ext: trivial spelling fix
-Date: Mon,  4 Jun 2012 20:45:40 +0200
-Message-Id: <1338835541-9217-1-git-send-email-giuseppe.bilotta@gmail.com>
-X-Mailer: git-send-email 1.7.10.rc3.204.g95589
+	id S1756149Ab2FDStm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 14:49:42 -0400
+Received: from plane.gmane.org ([80.91.229.3]:40591 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752503Ab2FDStj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 14:49:39 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Lutz Vieweg <lvml@5t9.de>
+Subject: Re: Improving SD/SDHC/SDXC write performance by using a discard/TRIM
+ like operation
+Date: Mon, 04 Jun 2012 20:49:22 +0200
+Message-ID: <jqivvi$q7m$1@dough.gmane.org>
+References: <jqiull$fvb$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: barriere.frankfurter-softwarefabrik.de
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+In-Reply-To: <jqiull$fvb$1@dough.gmane.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Giuseppe Bilotta <giuseppe.bilotta@gmail.com>
----
- drivers/hid/hid-wiimote-ext.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I just found another credible reference claiming existence of an "erase" command
+for SD cards: The "SD Card Specification Simplified Version of: Part E1" (see:
+http://www.sandisk.com/Assets/File/OEM/Manuals/SD_SDIO_specsv1.pdf ) states:
 
-diff --git a/drivers/hid/hid-wiimote-ext.c b/drivers/hid/hid-wiimote-ext.c
-index aa95870..0a1805c 100644
---- a/drivers/hid/hid-wiimote-ext.c
-+++ b/drivers/hid/hid-wiimote-ext.c
-@@ -77,7 +77,7 @@ static __u16 wiiext_keymap[] = {
- 	BTN_TR,		/* WIIEXT_KEY_RT */
- };
- 
--/* diable all extensions */
-+/* disable all extensions */
- static void ext_disable(struct wiimote_ext *ext)
- {
- 	unsigned long flags;
--- 
-1.7.10.rc3.204.g95589
+> ERASE_WR_BLK_START Sets the address of the first write block to be Index address erased.
+> ERASE_WR_BLK_END Sets the address of the last write block of the address continuous range to be erased.
+
+Since these are "SD bus commands", I wonder whether they are easily accessible
+behind usual USB card reader hardware... but the mentioned "formatter" tool
+seems to be able to do so.
+
+Regards,
+
+Lutz Vieweg
+
+
+On 06/04/2012 08:27 PM, Lutz Vieweg wrote:
+> When I read reports from (non-expert) users who claimed that they were able
+> to restore the initial write performance of their SDXC cards by using a "special
+> formatter tool" (while normal "formatting" did not improve performance),
+> I was very sceptical, as I also had read that there is no way to discard/TRIM
+> blocks on SD/SDHC/SDXC cards.
+>
+> But then I noticed that this "special formatter" tool was actually offered (for free)
+> by the SD Association:
+> https://www.sdcard.org/downloads/formatter_3/
+> ... and its documentation clearly states that this tool is capable of using
+> "flash erase" operations on SD cards, which are said to be different from
+> ordinary "overwrites", see
+> https://www.sdcard.org/downloads/formatter_3/SDFormatter_3.1e.pdf
+> pages 7 ("Format type Erase" vs. "Format type Overwrite") and the screen shot on page 9.
+>
+> Now I wonder: Is there really such a thing as a command to erase NAND flashes
+> in SD cards like there is for SSDs? If so, it would certainly be a good thing
+> to support it with Linux block discard...
+>
+> Regards,
+>
+> Lutz Vieweg
+>
 
