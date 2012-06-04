@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760729Ab2FDPAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:00:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41829 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755896Ab2FDPAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:00:00 -0400
-Message-ID: <4FCCCD5D.6010005@zytor.com>
-Date: Mon, 04 Jun 2012 07:59:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1760733Ab2FDPAx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:00:53 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:44140 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab2FDPAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 11:00:52 -0400
+Date: Mon, 4 Jun 2012 20:30:40 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
+ as target of (pinned) task migration
+Message-ID: <20120604150040.GD25126@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
+ <1338801907.7356.163.camel@marge.simpson.net>
+ <1338810796.28282.32.camel@twins>
+ <1338814063.7356.192.camel@marge.simpson.net>
+ <20120604130740.GC25126@linux.vnet.ibm.com>
+ <1338820234.7356.250.camel@marge.simpson.net>
+ <20120604143802.GB26651@linux.vnet.ibm.com>
+ <1338820895.7356.252.camel@marge.simpson.net>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Witold Baryluk <baryluk@smp.if.uj.edu.pl>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: WARNING: arch/x86/built-in.o: Section mismatch in reference from
- the variable test_nmi_ipi_callback_na to function .ini.text:test_nmi_ipi_callback
-References: <20120602161502.GW16584@smp.if.uj.edu.pl> <20120604143643.GJ32472@redhat.com>
-In-Reply-To: <20120604143643.GJ32472@redhat.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1338820895.7356.252.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12060415-8878-0000-0000-000002C591FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 07:36 AM, Don Zickus wrote:
-> 
-> Basically the test registers two nmi_handlers, run some tests, and
-> then unregisters them.  Those handlers are what the compiler seems to be
-> complaining about.  I do not know what magic to pass the compiler to let
-> it know that both of the handlers will be unregistered before the init
-> section is destroyed.
-> 
-> Perhaps I should tag those callbacks with __ref? I am not sure the right
-> thing to do here.
-> 
+* Mike Galbraith <efault@gmx.de> [2012-06-04 16:41:35]:
 
-Using __ref is the right thing, although __ref is hard to use right...
+> But high priority SCHED_OTHER tasks do not hog the CPU, they get their
+> fair share as defined by the user.
 
-	-hpa
+Consider this case. System with 2 cores (each with 2 thread) and 3
+cgroups :
 
+	A (1024) -> has 2 tasks (A0, A1)
+	B (2048) -> has 2 tasks (B0, B1)
+	C (1024) -> has 1 tasks (C0 - pinned to CPUs 1,2)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+(B0, B1) collectively are eligible to consume 2 full cpus worth of
+bandwidth, (A0, A1) together are eligible to consume 1 full-cpu
+worth of bandwidth and finally C0 is eligible to get 1 full-cpu worth of
+bandwidth. 
+
+Currently C0 is sleeping as a result of which tasks could be spread as:
+
+	CPU0 -> A0
+	CPU1 -> A1
+
+	CPU2 -> B0
+	CPU3 -> B1
+
+Now C0 wakes up and lands on CPU2 (which was its prev_cpu).
+
+	CPU0 -> A0
+	CPU1 -> A1
+
+	CPU2 -> B0, C0
+	CPU3 -> B1
+
+Ideally CPU1 needs to pull it C0 to itself (while A1 moves to CPU0). Do
+you agree to that? I doubt that happens because of how CPU0 does load
+balance on behalf of itself and CPU1 (and thus fails to pull C0 to its
+core).
+
+- vatsa
 
