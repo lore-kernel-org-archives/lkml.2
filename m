@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760775Ab2FDPPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:15:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41936 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753061Ab2FDPPc (ORCPT
+	id S1760405Ab2FDPUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:20:11 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:40539 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2FDPUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:15:32 -0400
-Date: Mon, 4 Jun 2012 17:15:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] smp updates for 3.5
-Message-ID: <alpine.LFD.2.02.1206041714170.3086@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 4 Jun 2012 11:20:09 -0400
+Message-ID: <4FCCD224.1020307@suse.cz>
+Date: Mon, 04 Jun 2012 17:20:04 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120530 Thunderbird/14.0a2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Richard Weinberger <richard@nod.at>
+CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Jeff Dike <jdike@addtoit.com>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH 13/24] TTY: um/line, use tty from tty_port
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at>
+In-Reply-To: <4FCCA3A6.8080608@nod.at>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 06/04/2012 02:01 PM, Richard Weinberger wrote:
+> I have two questions: 1. Are these patches also usable on 3.4 and
+> 3.3 or do they depend on 3.5's TTY changes?
 
-please pull the latest smp-hotplug-for-linus git tree from:
+Hi, I don't think they depend on any changes.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git smp-hotplug-for-linus
+> 2. Why didn't you use tty_port_open()/close()/etc. as Alan
+> suggested my in [1]?
 
+This was not intended to fix anything particular. If it does, it is a
+pure coincidence... These patches are a minimalistic subset to ensure
+every driver has its own tty_port for each tty. We will need this
+pairing later.
 
-Thanks,
+So the switch of the driver to the new tty port API, as suggested by
+Alan, is still needed. I might do that later if I learn how to make
+UML work. (The conversion is by definition invasive and needs runtime
+testing.)
 
-	tglx
+> [1]
+> http://lkml.indiana.edu/hypermail/linux/kernel/1201.3/01705.html
 
------------------->
-Srivatsa S. Bhat (2):
-      smpboot, idle: Optimize calls to smp_processor_id() in idle_threads_init()
-      smpboot, idle: Fix comment mismatch over idle_threads_init()
+thanks,
+-- 
+js
+suse labs
 
-
- kernel/smpboot.c |   17 +++++++++++------
- 1 files changed, 11 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/smpboot.c b/kernel/smpboot.c
-index e1a797e..98f60c5 100644
---- a/kernel/smpboot.c
-+++ b/kernel/smpboot.c
-@@ -31,6 +31,12 @@ void __init idle_thread_set_boot_cpu(void)
- 	per_cpu(idle_threads, smp_processor_id()) = current;
- }
- 
-+/**
-+ * idle_init - Initialize the idle thread for a cpu
-+ * @cpu:	The cpu for which the idle thread should be initialized
-+ *
-+ * Creates the thread if it does not exist.
-+ */
- static inline void idle_init(unsigned int cpu)
- {
- 	struct task_struct *tsk = per_cpu(idle_threads, cpu);
-@@ -45,17 +51,16 @@ static inline void idle_init(unsigned int cpu)
- }
- 
- /**
-- * idle_thread_init - Initialize the idle thread for a cpu
-- * @cpu:	The cpu for which the idle thread should be initialized
-- *
-- * Creates the thread if it does not exist.
-+ * idle_threads_init - Initialize idle threads for all cpus
-  */
- void __init idle_threads_init(void)
- {
--	unsigned int cpu;
-+	unsigned int cpu, boot_cpu;
-+
-+	boot_cpu = smp_processor_id();
- 
- 	for_each_possible_cpu(cpu) {
--		if (cpu != smp_processor_id())
-+		if (cpu != boot_cpu)
- 			idle_init(cpu);
- 	}
- }
