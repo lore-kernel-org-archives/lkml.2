@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab2FDMJL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 08:09:11 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:45477 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760033Ab2FDMJJ (ORCPT
+	id S1759847Ab2FDMJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 08:09:22 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56199 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab2FDMJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 08:09:09 -0400
+	Mon, 4 Jun 2012 08:09:18 -0400
 From: fweisbec@gmail.com
 To: Ingo Molnar <mingo@kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -25,9 +25,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 1/2] rcu: New rcu_user_enter() and rcu_user_exit() APIs
-Date: Mon,  4 Jun 2012 14:08:27 +0200
-Message-Id: <1338811708-18819-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/2] rcu: New rcu_user_enter_irq() and rcu_user_exit_irq() APIs
+Date: Mon,  4 Jun 2012 14:08:28 +0200
+Message-Id: <1338811708-18819-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1338811708-18819-1-git-send-email-fweisbec@gmail.com>
 References: <1338811708-18819-1-git-send-email-fweisbec@gmail.com>
@@ -37,18 +37,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-These two APIs are provided to help the implementation
-of an adaptive tickless kernel (cf: nohz cpusets). We need
-to run into RCU extended quiescent state when we are in
-userland so that a tickless CPU is not involved in the
-global RCU state machine and can shutdown its tick safely.
+A CPU running in adaptive tickless mode wants to enter into
+RCU extended quiescent state while running in userspace. This
+way we can shut down the tick that is usually needed on each
+CPU for the needs of RCU.
 
-These APIs are called from syscall and exception entry/exit
-points and can't be called from interrupt.
+Typically, RCU enters the extended quiescent state when we resume
+to userspace through a syscall or exception exit, this is done
+using rcu_user_enter(). Then RCU exit this state by calling
+rcu_user_exit() from syscall or exception entry.
 
-They are essentially the same than rcu_idle_enter() and
-rcu_idle_exit() minus the checks that ensure the CPU is
-running the idle task.
+However there are two other points where we may want to enter
+or exit this state. Some remote CPU may require a tickless CPU
+to restart its tick for any reason and send it an IPI for
+this purpose. As we restart the tick, we don't want to resume
+from the IPI in RCU extended quiescent state anymore.
+Similarly we may stop the tick from an interrupt in userspace and
+we need to be able to enter RCU extended quiescent state when we
+resume from this interrupt to userspace.
+
+To these ends, we provide two new APIs:
+
+- rcu_user_enter_irq(). This must be called from a non-nesting
+interrupt betwenn rcu_irq_enter() and rcu_irq_exit().
+After the irq calls rcu_irq_exit(), we'll run into RCU extended
+quiescent state.
+
+- rcu_user_exit_irq(). This must be called from a non-nesting
+interrupt, interrupting an RCU extended quiescent state, and
+between rcu_irq_enter() and rcu_irq_exit(). After the irq calls
+rcu_irq_exit(), we'll prevent from resuming the RCU extended
+quiescent.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -71,227 +90,83 @@ Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
  include/linux/rcupdate.h |    2 +
- kernel/rcutree.c         |  135 +++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 112 insertions(+), 25 deletions(-)
+ kernel/rcutree.c         |   49 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 51 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index b737a5b..e8323df 100644
+index e8323df..c0280ce 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
-@@ -191,6 +191,8 @@ extern void rcu_idle_enter(void);
- extern void rcu_idle_exit(void);
- extern void rcu_irq_enter(void);
+@@ -193,6 +193,8 @@ extern void rcu_irq_enter(void);
  extern void rcu_irq_exit(void);
-+extern void rcu_user_enter(void);
-+extern void rcu_user_exit(void);
+ extern void rcu_user_enter(void);
+ extern void rcu_user_exit(void);
++extern void rcu_user_enter_irq(void);
++extern void rcu_user_exit_irq(void);
  extern void exit_rcu(void);
  
  /**
 diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 6acb7c0..59ac305 100644
+index 59ac305..28e542c 100644
 --- a/kernel/rcutree.c
 +++ b/kernel/rcutree.c
-@@ -349,6 +349,29 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
- 	return 0;
+@@ -463,6 +463,30 @@ void rcu_user_enter(void)
  }
- 
-+static void rcu_check_idle_entry(void)
-+{
-+	struct task_struct *idle;
-+	struct rcu_dynticks *rdtp;
-+	unsigned long flags;
-+
-+	if (is_idle_task(current))
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	idle = idle_task(smp_processor_id());
-+
-+	trace_rcu_dyntick("Error on entry: not idle task", rdtp->dynticks_nesting, 0);
-+	ftrace_dump(DUMP_ORIG);
-+	WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-+		  current->pid, current->comm,
-+		  idle->pid, idle->comm); /* must be idle task! */
-+
-+	local_irq_restore(flags);
-+}
-+
- /*
-  * rcu_idle_enter_common - inform RCU that current CPU is moving towards idle
-  *
-@@ -359,15 +382,6 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
- static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
- {
- 	trace_rcu_dyntick("Start", oldval, 0);
--	if (!is_idle_task(current)) {
--		struct task_struct *idle = idle_task(smp_processor_id());
--
--		trace_rcu_dyntick("Error on entry: not idle task", oldval, 0);
--		ftrace_dump(DUMP_ORIG);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
- 	rcu_prepare_for_idle(smp_processor_id());
- 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
- 	smp_mb__before_atomic_inc();  /* See above. */
-@@ -387,8 +401,9 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
- 			   "Illegal idle entry in RCU-sched read-side critical section.");
- }
- 
--/**
-- * rcu_idle_enter - inform RCU that current CPU is entering idle
-+/*
-+ * __rcu_idle_enter - inform RCU that current CPU is entering RCU
-+ * idle mode.
-  *
-  * Enter idle mode, in other words, -leave- the mode in which RCU
-  * read-side critical sections can occur.  (Though RCU read-side
-@@ -399,7 +414,7 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
-  * the possibility of usermode upcalls having messed up our count
-  * of interrupt nesting level during the prior busy period.
-  */
--void rcu_idle_enter(void)
-+static void __rcu_idle_enter(void)
- {
- 	unsigned long flags;
- 	long long oldval;
-@@ -416,9 +431,38 @@ void rcu_idle_enter(void)
- 	rcu_idle_enter_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
-+
-+/**
-+ * rcu_idle_enter - inform RCU that current CPU is entering RCU
-+ * idle mode from the idle task.
-+ *
-+ * Enter idle mode from the idle task before we put the CPU into
-+ * low power mode. No use of RCU is permitted between this call and
-+ * rcu_idle_exit(). This way the CPU doesn't need to keep the
-+ * timer tick to report quiescent states, which is desired for energy
-+ * savings.
-+ */
-+void rcu_idle_enter(void)
-+{
-+	rcu_check_idle_entry();
-+	__rcu_idle_enter();
-+}
- EXPORT_SYMBOL_GPL(rcu_idle_enter);
  
  /**
-+ * rcu_user_enter - inform RCU that we are resuming userspace.
++ * rcu_user_enter_irq - inform RCU that we are going to resume userspace
++ * after the current irq returns.
 + *
-+ * Enter RCU idle mode right before resuming userspace. No use of RCU
-+ * is permitted between this call and rcu_user_exit(). This way the
-+ * CPU doesn't need to maintain the tick for RCU maintainance purpose
-+ * when the CPU runs in userspace.
++ * This is similar to rcu_user_enter() but in the context of a non
++ * nesting irq. After this call, RCU enters into idle mode when the
++ * interrupt returns.
 + */
-+void rcu_user_enter(void)
++void rcu_user_enter_irq(void)
 +{
-+	__rcu_idle_enter();
++	unsigned long flags;
++	struct rcu_dynticks *rdtp;
++
++	local_irq_save(flags);
++	rdtp = &__get_cpu_var(rcu_dynticks);
++	/*
++	 * Ensure this irq is a non nesting one interrupting
++	 * a non-idle RCU state.
++	 */
++	WARN_ON_ONCE(rdtp->dynticks_nesting != DYNTICK_TASK_EXIT_IDLE + 1);
++	rdtp->dynticks_nesting = 1;
++	local_irq_restore(flags);
 +}
 +
 +/**
   * rcu_irq_exit - inform RCU that current CPU is exiting irq towards idle
   *
   * Exit from an interrupt handler, which might possibly result in entering
-@@ -452,6 +496,29 @@ void rcu_irq_exit(void)
- 	local_irq_restore(flags);
+@@ -596,6 +620,31 @@ void rcu_user_exit(void)
  }
- 
-+static void rcu_check_idle_exit(long long oldval)
-+{
-+	struct task_struct *idle;
-+	struct rcu_dynticks *rdtp;
-+	unsigned long flags;
-+
-+	if (is_idle_task(current))
-+		return;
-+
-+	local_irq_save(flags);
-+
-+	idle = idle_task(smp_processor_id());
-+	rdtp = &__get_cpu_var(rcu_dynticks);
-+	trace_rcu_dyntick("Error on exit: not idle task",
-+			  oldval, rdtp->dynticks_nesting);
-+	ftrace_dump(DUMP_ORIG);
-+	WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-+		  current->pid, current->comm,
-+		  idle->pid, idle->comm); /* must be idle task! */
-+
-+	local_irq_restore(flags);
-+}
-+
- /*
-  * rcu_idle_exit_common - inform RCU that current CPU is moving away from idle
-  *
-@@ -468,20 +535,11 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
- 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
- 	rcu_cleanup_after_idle(smp_processor_id());
- 	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
--	if (!is_idle_task(current)) {
--		struct task_struct *idle = idle_task(smp_processor_id());
--
--		trace_rcu_dyntick("Error on exit: not idle task",
--				  oldval, rdtp->dynticks_nesting);
--		ftrace_dump(DUMP_ORIG);
--		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
--			  current->pid, current->comm,
--			  idle->pid, idle->comm); /* must be idle task! */
--	}
- }
- 
--/**
-- * rcu_idle_exit - inform RCU that current CPU is leaving idle
-+/*
-+ * rcu_idle_exit - inform RCU that current CPU is leaving RCU
-+ * idle mode.
-  *
-  * Exit idle mode, in other words, -enter- the mode in which RCU
-  * read-side critical sections can occur.
-@@ -491,7 +549,7 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
-  * of interrupt nesting level during the busy period that is just
-  * now starting.
-  */
--void rcu_idle_exit(void)
-+static long long __rcu_idle_exit(void)
- {
- 	unsigned long flags;
- 	struct rcu_dynticks *rdtp;
-@@ -507,10 +565,37 @@ void rcu_idle_exit(void)
- 		rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
- 	rcu_idle_exit_common(rdtp, oldval);
- 	local_irq_restore(flags);
-+
-+	return oldval;
- }
- EXPORT_SYMBOL_GPL(rcu_idle_exit);
  
  /**
-+ * rcu_idle_exit - inform RCU that current CPU is leaving RCU
-+ * idle mode from the idle task.
++ * rcu_user_exit_irq - inform RCU that we won't resume to userspace
++ * idle mode after the current irq returns.
 + *
-+ * Exit idle mode from the idle task after we wake the CPU up from
-+ * low power mode. The CPU can make use of RCU read side critical
-+ * sections again after this call.
++ * This is similar to rcu_user_exit() but in the context of a non
++ * nesting irq. This is called when the irq has interrupted a userspace
++ * RCU idle mode context. When the interrupt returns after this call,
++ * the CPU won't restore the RCU idle mode.
 + */
-+void rcu_idle_exit(void)
++void rcu_user_exit_irq(void)
 +{
-+	long long oldval = __rcu_idle_exit();
-+	rcu_check_idle_exit(oldval);
-+}
++	unsigned long flags;
++	struct rcu_dynticks *rdtp;
 +
-+/**
-+ * rcu_user_exit - inform RCU that we are exiting userspace.
-+ *
-+ * Exit RCU idle mode while entering the kernel because it can
-+ * run an RCU read side critical section anytime.
-+ */
-+void rcu_user_exit(void)
-+{
-+	__rcu_idle_exit();
++	local_irq_save(flags);
++	rdtp = &__get_cpu_var(rcu_dynticks);
++	/*
++	 * Ensure this irq is a non-nesting one interrupting
++	 * an RCU idle mode.
++	 */
++	WARN_ON_ONCE(rdtp->dynticks_nesting != 1);
++	rdtp->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE + 1;
++	local_irq_restore(flags);
 +}
 +
 +/**
