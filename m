@@ -1,306 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760628Ab2FDNbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 09:31:31 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53020 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab2FDNb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 09:31:26 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Federico Vaga <federico.vaga@gmail.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Date: Mon,  4 Jun 2012 15:32:46 +0200
-Message-Id: <1338816766-7089-2-git-send-email-federico.vaga@gmail.com>
-X-Mailer: git-send-email 1.7.10.2
-In-Reply-To: <1338816766-7089-1-git-send-email-federico.vaga@gmail.com>
-References: <4FC135C6.5030206@grandegger.com>
- <1338816766-7089-1-git-send-email-federico.vaga@gmail.com>
+	id S1760614Ab2FDNeT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 09:34:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2025 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753649Ab2FDNeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 09:34:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="160350955"
+Date: Mon, 4 Jun 2012 21:34:02 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Wanpeng Li <liwp@linux.vnet.ibm.com>,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH] remove no longer use of pdflush interface
+Message-ID: <20120604133402.GA8468@localhost>
+References: <1338813642-6476-1-git-send-email-liwp.linux@gmail.com>
+ <20120604125356.GB7738@localhost>
+ <20120604132532.GA6874@kernel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120604132532.GA6874@kernel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
-Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-Cc: Alan Cox <alan@linux.intel.com>
----
- drivers/net/can/c_can/Kconfig     |   11 +-
- drivers/net/can/c_can/Makefile    |    1 +
- drivers/net/can/c_can/c_can_pci.c |  221 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 230 insertions(+), 3 deletions(-)
- create mode 100644 drivers/net/can/c_can/c_can_pci.c
+On Mon, Jun 04, 2012 at 09:25:53PM +0800, Wanpeng Li wrote:
+> On Mon, Jun 04, 2012 at 08:53:56PM +0800, Fengguang Wu wrote:
+> >Hi Wanpeng,
+> >
+> >On Mon, Jun 04, 2012 at 08:40:42PM +0800, Wanpeng Li wrote:
+> >> From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> >> 
+> >> remove no longer use of pdflush interface nr_pdflush_threads.
+> >
+> >The patch looks good in itself: the nr_pdflush_threads takes no effect
+> >for many of the recent kernels. But what's the normal process of
+> >interface removal?  Shall we carry some warning printk for some time
+> >first or whatever?
+> 
+> Hi, Fengguang,
+> 
+> I also want to add an interface of nr_bdi_writeback_threads to statistic
+> how many flusher-x:y currently running, do you think it is a good idea?
 
-diff --git a/drivers/net/can/c_can/Kconfig b/drivers/net/can/c_can/Kconfig
-index ffb9773..74ef97d 100644
---- a/drivers/net/can/c_can/Kconfig
-+++ b/drivers/net/can/c_can/Kconfig
-@@ -2,14 +2,19 @@ menuconfig CAN_C_CAN
- 	tristate "Bosch C_CAN devices"
- 	depends on CAN_DEV && HAS_IOMEM
- 
--if CAN_C_CAN
--
- config CAN_C_CAN_PLATFORM
- 	tristate "Generic Platform Bus based C_CAN driver"
-+	depends on CAN_C_CAN
- 	---help---
- 	  This driver adds support for the C_CAN chips connected to
- 	  the "platform bus" (Linux abstraction for directly to the
- 	  processor attached devices) which can be found on various
- 	  boards from ST Microelectronics (http://www.st.com)
- 	  like the SPEAr1310 and SPEAr320 evaluation boards.
--endif
-+
-+config CAN_C_CAN_PCI
-+	tristate "Generic PCI Bus based C_CAN driver"
-+	depends on CAN_C_CAN
-+	---help---
-+	  This driver adds support for the C_CAN chips connected to
-+	  the PCI bus.
-diff --git a/drivers/net/can/c_can/Makefile b/drivers/net/can/c_can/Makefile
-index 9273f6d..ad1cc84 100644
---- a/drivers/net/can/c_can/Makefile
-+++ b/drivers/net/can/c_can/Makefile
-@@ -4,5 +4,6 @@
- 
- obj-$(CONFIG_CAN_C_CAN) += c_can.o
- obj-$(CONFIG_CAN_C_CAN_PLATFORM) += c_can_platform.o
-+obj-$(CONFIG_CAN_C_CAN_PCI) += c_can_pci.o
- 
- ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
-diff --git a/drivers/net/can/c_can/c_can_pci.c b/drivers/net/can/c_can/c_can_pci.c
-new file mode 100644
-index 0000000..b635375
---- /dev/null
-+++ b/drivers/net/can/c_can/c_can_pci.c
-@@ -0,0 +1,221 @@
-+/*
-+ * Platform CAN bus driver for Bosch C_CAN controller
-+ *
-+ * Copyright (C) 2012 Federico Vaga <federico.vaga@gmail.com>
-+  *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/netdevice.h>
-+#include <linux/clk.h>
-+#include <linux/pci.h>
-+#include <linux/can/dev.h>
-+
-+#include "c_can.h"
-+
-+enum c_can_pci_reg_align {
-+	C_CAN_REG_ALIGN_16,
-+	C_CAN_REG_ALIGN_32,
-+};
-+
-+struct c_can_pci_data {
-+	unsigned int reg_align;	/* Set the register alignment in the memory */
-+	unsigned int freq;	/* Set the frequency if clk is not usable */
-+};
-+
-+/*
-+ * 16-bit c_can registers can be arranged differently in the memory
-+ * architecture of different implementations. For example: 16-bit
-+ * registers can be aligned to a 16-bit boundary or 32-bit boundary etc.
-+ * Handle the same by providing a common read/write interface.
-+ */
-+static u16 c_can_pci_read_reg_aligned_to_16bit(struct c_can_priv *priv,
-+						void *reg)
-+{
-+	return readw(reg);
-+}
-+
-+static void c_can_pci_write_reg_aligned_to_16bit(struct c_can_priv *priv,
-+						void *reg, u16 val)
-+{
-+	writew(val, reg);
-+}
-+
-+static u16 c_can_pci_read_reg_aligned_to_32bit(struct c_can_priv *priv,
-+						void *reg)
-+{
-+	return readw(reg + (long)reg - (long)priv->regs);
-+}
-+
-+static void c_can_pci_write_reg_aligned_to_32bit(struct c_can_priv *priv,
-+						void *reg, u16 val)
-+{
-+	writew(val, reg + (long)reg - (long)priv->regs);
-+}
-+
-+static int __devinit c_can_pci_probe(struct pci_dev *pdev,
-+				     const struct pci_device_id *ent)
-+{
-+	struct c_can_pci_data *c_can_pci_data = (void *)ent->driver_data;
-+	struct c_can_priv *priv;
-+	struct net_device *dev;
-+	void __iomem *addr;
-+	struct clk *clk;
-+	int ret;
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "pci_enable_device FAILED\n");
-+		goto out;
-+	}
-+
-+	ret = pci_request_regions(pdev, KBUILD_MODNAME);
-+	if (ret) {
-+		dev_err(&pdev->dev, "pci_request_regions FAILED\n");
-+		goto out_disable_device;
-+	}
-+
-+	pci_set_master(pdev);
-+	pci_enable_msi(pdev);
-+
-+	addr = pci_iomap(pdev, 0, pci_resource_len(pdev, 0));
-+	if (!addr) {
-+		dev_err(&pdev->dev,
-+			"device has no PCI memory resources, "
-+			"failing adapter\n");
-+		ret = -ENOMEM;
-+		goto out_release_regions;
-+	}
-+
-+	/* allocate the c_can device */
-+	dev = alloc_c_can_dev();
-+	if (!dev) {
-+		ret = -ENOMEM;
-+		goto out_iounmap;
-+	}
-+
-+	priv = netdev_priv(dev);
-+	pci_set_drvdata(pdev, dev);
-+	SET_NETDEV_DEV(dev, &pdev->dev);
-+
-+	dev->irq = pdev->irq;
-+	priv->regs = addr;
-+
-+	if (!c_can_pci_data->freq) {
-+		/* get the appropriate clk */
-+		clk = clk_get(&pdev->dev, NULL);
-+		if (IS_ERR(clk)) {
-+			dev_err(&pdev->dev, "no clock defined\n");
-+			ret = -ENODEV;
-+			goto out_free_c_can;
-+		}
-+		priv->can.clock.freq = clk_get_rate(clk);
-+		priv->priv = clk;
-+	} else {
-+		priv->can.clock.freq = c_can_pci_data->freq;
-+		priv->priv = NULL;
-+	}
-+
-+	switch (c_can_pci_data->reg_align) {
-+	case C_CAN_REG_ALIGN_32:
-+		priv->read_reg = c_can_pci_read_reg_aligned_to_32bit;
-+		priv->write_reg = c_can_pci_write_reg_aligned_to_32bit;
-+		break;
-+	case C_CAN_REG_ALIGN_16:
-+	default:
-+		priv->read_reg = c_can_pci_read_reg_aligned_to_16bit;
-+		priv->write_reg = c_can_pci_write_reg_aligned_to_16bit;
-+		break;
-+	}
-+
-+	ret = register_c_can_dev(dev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "registering %s failed (err=%d)\n",
-+			KBUILD_MODNAME, ret);
-+		goto out_free_clock;
-+	}
-+
-+	dev_info(&pdev->dev, "%s device registered (regs=%p, irq=%d)\n",
-+		 KBUILD_MODNAME, priv->regs, dev->irq);
-+
-+	return 0;
-+
-+out_free_clock:
-+	if (!priv->priv)
-+		clk_put(priv->priv);
-+out_free_c_can:
-+	pci_set_drvdata(pdev, NULL);
-+	free_c_can_dev(dev);
-+out_iounmap:
-+	pci_iounmap(pdev, addr);
-+out_release_regions:
-+	pci_disable_msi(pdev);
-+	pci_clear_master(pdev);
-+	pci_release_regions(pdev);
-+out_disable_device:
-+	/*
-+	 * do not call pci_disable_device on sta2x11 because it
-+	 * break all other Bus masters on this EP
-+	 */
-+	if(pdev->vendor == PCI_VENDOR_ID_STMICRO &&
-+	   pdev->device == PCI_DEVICE_ID_STMICRO_CAN)
-+		goto out;
-+	pci_disable_device(pdev);
-+out:
-+	return ret;
-+}
-+
-+static void __devexit c_can_pci_remove(struct pci_dev *pdev)
-+{
-+	struct net_device *dev = pci_get_drvdata(pdev);
-+	struct c_can_priv *priv = netdev_priv(dev);
-+
-+	pci_set_drvdata(pdev, NULL);
-+	free_c_can_dev(dev);
-+	if (!priv->priv)
-+		clk_put(priv->priv);
-+	pci_iounmap(pdev, priv->regs);
-+	pci_disable_msi(pdev);
-+	pci_clear_master(pdev);
-+	pci_release_regions(pdev);
-+	/*
-+	 * do not call pci_disable_device on sta2x11 because it
-+	 * break all other Bus masters on this EP
-+	 */
-+	if(pdev->vendor == PCI_VENDOR_ID_STMICRO &&
-+	   pdev->device == PCI_DEVICE_ID_STMICRO_CAN)
-+		return;
-+	pci_disable_device(pdev);
-+}
-+
-+static struct c_can_pci_data c_can_sta2x11= {
-+	.reg_align = C_CAN_REG_ALIGN_32,
-+	.freq = 52000000, /* 52 Mhz */
-+};
-+
-+#define C_CAN_ID(_vend, _dev, _driverdata) {		\
-+	PCI_DEVICE(_vend, _dev),			\
-+	.driver_data = (unsigned long)&_driverdata,	\
-+}
-+DEFINE_PCI_DEVICE_TABLE(c_can_pci_tbl) = {
-+	C_CAN_ID(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_CAN,
-+		 c_can_sta2x11),
-+	{},
-+};
-+static struct pci_driver sta2x11_pci_driver = {
-+	.name = KBUILD_MODNAME,
-+	.id_table = c_can_pci_tbl,
-+	.probe = c_can_pci_probe,
-+	.remove = __devexit_p(c_can_pci_remove),
-+};
-+
-+module_pci_driver(sta2x11_pci_driver);
-+
-+MODULE_AUTHOR("Federico Vaga <federico.vaga@gmail.com>");
-+MODULE_LICENSE("GPL V2");
-+MODULE_DESCRIPTION("PCI CAN bus driver for Bosch C_CAN controller");
-+MODULE_DEVICE_TABLE(pci, c_can_pci_tbl);
--- 
-1.7.10.2
+Hmm, we try to avoid adding interfaces without a good reason. What
+would be the use case? Are there real user demands for this at all?
 
+Thanks,
+Fengguang
+
+> >> Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
+> >> ---
+> >>  Documentation/sysctl/vm.txt |   11 -----------
+> >>  fs/fs-writeback.c           |    5 -----
+> >>  include/linux/writeback.h   |    5 -----
+> >>  kernel/sysctl.c             |    7 -------
+> >>  4 files changed, 28 deletions(-)
+> >> 
+> >> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+> >> index 96f0ee8..71c17d2 100644
+> >> --- a/Documentation/sysctl/vm.txt
+> >> +++ b/Documentation/sysctl/vm.txt
+> >> @@ -42,7 +42,6 @@ Currently, these files are in /proc/sys/vm:
+> >>  - mmap_min_addr
+> >>  - nr_hugepages
+> >>  - nr_overcommit_hugepages
+> >> -- nr_pdflush_threads
+> >>  - nr_trim_pages         (only if CONFIG_MMU=n)
+> >>  - numa_zonelist_order
+> >>  - oom_dump_tasks
+> >> @@ -426,16 +425,6 @@ See Documentation/vm/hugetlbpage.txt
+> >>  
+> >>  ==============================================================
+> >>  
+> >> -nr_pdflush_threads
+> >> -
+> >> -The current number of pdflush threads.  This value is read-only.
+> >> -The value changes according to the number of dirty pages in the system.
+> >> -
+> >> -When necessary, additional pdflush threads are created, one per second, up to
+> >> -nr_pdflush_threads_max.
+> >> -
+> >> -==============================================================
+> >> -
+> >>  nr_trim_pages
+> >>  
+> >>  This is available only on NOMMU kernels.
+> >> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> >> index 539f36c..30ddb8a 100644
+> >> --- a/fs/fs-writeback.c
+> >> +++ b/fs/fs-writeback.c
+> >> @@ -52,11 +52,6 @@ struct wb_writeback_work {
+> >>  	struct completion *done;	/* set if the caller waits */
+> >>  };
+> >>  
+> >> -/*
+> >> - * We don't actually have pdflush, but this one is exported though /proc...
+> >> - */
+> >> -int nr_pdflush_threads;
+> >> -
+> >>  /**
+> >>   * writeback_in_progress - determine whether there is writeback in progress
+> >>   * @bdi: the device's backing_dev_info structure.
+> >> diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+> >> index a2b84f5..13b5df7 100644
+> >> --- a/include/linux/writeback.h
+> >> +++ b/include/linux/writeback.h
+> >> @@ -193,9 +193,4 @@ void tag_pages_for_writeback(struct address_space *mapping,
+> >>  
+> >>  void account_page_redirty(struct page *page);
+> >>  
+> >> -/* pdflush.c */
+> >> -extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl
+> >> -				   read-only. */
+> >> -
+> >> -
+> >>  #endif		/* WRITEBACK_H */
+> >> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> >> index 4ab1187..e257b61 100644
+> >> --- a/kernel/sysctl.c
+> >> +++ b/kernel/sysctl.c
+> >> @@ -1095,13 +1095,6 @@ static struct ctl_table vm_table[] = {
+> >>  		.extra1		= &zero,
+> >>  	},
+> >>  	{
+> >> -		.procname	= "nr_pdflush_threads",
+> >> -		.data		= &nr_pdflush_threads,
+> >> -		.maxlen		= sizeof nr_pdflush_threads,
+> >> -		.mode		= 0444 /* read-only*/,
+> >> -		.proc_handler	= proc_dointvec,
+> >> -	},
+> >> -	{
+> >>  		.procname	= "swappiness",
+> >>  		.data		= &vm_swappiness,
+> >>  		.maxlen		= sizeof(vm_swappiness),
+> >> -- 
+> >> 1.7.9.5
