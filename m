@@ -1,197 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab2FDJBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 05:01:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40854 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab2FDJBQ convert rfc822-to-8bit (ORCPT
+	id S1756695Ab2FDJUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 05:20:20 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44292 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751596Ab2FDJUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 05:01:16 -0400
-Message-ID: <1338800454.2448.71.camel@twins>
-Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
- as target of (pinned) task migration
-From: Peter Zijlstra <peterz@infradead.org>
-To: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>, efault@gmx.de,
-        Ingo Molnar <mingo@elte.hu>
-Date: Mon, 04 Jun 2012 11:00:54 +0200
-In-Reply-To: <4FCC4E3B.4090209@linux.vnet.ibm.com>
-References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 05:20:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FCC7592.9030403@kernel.org>
+References: <20120504073810.GA25175@lizard>
+	<CAOJsxLH_7mMMe+2DvUxBW1i5nbUfkbfRE3iEhLQV9F_MM7=eiw@mail.gmail.com>
+	<CAHGf_=qcGfuG1g15SdE0SDxiuhCyVN025pQB+sQNuNba4Q4jcA@mail.gmail.com>
+	<20120507121527.GA19526@lizard>
+	<4FA82056.2070706@gmail.com>
+	<CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
+	<CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
+	<CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
+	<CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
+	<CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
+	<20120601122118.GA6128@lizard>
+	<alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
+	<4FCC7592.9030403@kernel.org>
+Date: Mon, 4 Jun 2012 12:20:18 +0300
+X-Google-Sender-Auth: 0goRYiRcjYUyG76llyMdK8hnOnU
+Message-ID: <CAOJsxLEH5UZNuo6VQRH+5YHaxpv8C1rBOGi7dp6hJ9MMU3jidQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] Some vmevent fixes...
+From: Pekka Enberg <penberg@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 11:27 +0530, Prashanth Nageshappa wrote:
-> Based on the description in
-> http://marc.info/?l=linux-kernel&m=133108682113018&w=2 , I was able to recreate
-> a problem where in a SCHED_OTHER thread never gets runtime, even though there is
-> one allowed CPU where it can run and make progress.
-
-Do not use external references in changelogs if you don't absolutely
-need to.
-
-> On a dual socket box (4 cores per socket, 2 threads per core) with following
-> config:
-> 0 8	1 9	4 12	5 13
-> 2 10	3 11	6 14	7 15
-> |__________|    |__________|
->  socket 1        socket 2
-> 
-> If we have following 4 tasks (2 SCHED_FIFO and 2 SCHED_OTHER) started in the
-> following order:
-> 1> SCHED_FIFO cpu hogging task bound to cpu 1
-> 2> SCHED_OTHER cpu hogging task bound to cpus 3 & 9 - running on cpu 3
->    sleeps and wakes up after all other tasks are started
-> 3> SCHED_FIFO cpu hogging task bound to cpu 3
-> 4> SCHED_OTHER cpu hogging task bound to cpu 9
-> 
-> Once all the 4 tasks are started, we observe that 2nd task is starved of CPU
-> after waking up. When it wakes up, it wakes up on its prev_cpu (3) where
-> a FIFO task is now hogging the cpu. To prevent starvation, 2nd task
-> needs to be pulled to cpu 9. However, between cpus 1, 9, cpu1 is the chosen
-> cpu that attempts pulling tasks towards its core. When it tries pulling
-> 2nd tasks towards its core, it is unable to do so as cpu1 is not in 2nd
-> task's cpus_allowed mask. Ideally cpu1 should note that the task can be
-> moved to its sibling and trigger that movement.
-> 
-> In this patch, we try to identify if load balancing goal was not achieved
-> completely because of destination cpu not being in cpus_allowed mask of target
-> task(s) and retry load balancing to try and move tasks to other cpus in the
-> same sched_group as that of destination cpu.
-
-Either expand a little more on the implementation or preferably add some
-comments.
-
-> Tested on tip commit cca44889.
-
-This is not a sane addition to the changelog.
-
-> Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-
-Did vatsa write this patch? If so, you forgot a From header, if not,
-wtf!?
-
-> Signed-off-by: Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>
-> 
-> ----
-> 
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index de49ed5..da275d8 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3098,6 +3098,7 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
->  
->  #define LBF_ALL_PINNED	0x01
->  #define LBF_NEED_BREAK	0x02
-> +#define LBF_NEW_DST_CPU	0x04
+On Mon, Jun 4, 2012 at 11:45 AM, Minchan Kim <minchan@kernel.org> wrote:
+> KOSAKI, AFAIRC, you are a person who hates android low memory killer.
+> Why do you hate it? If it solve problems I mentioned, do you have a concern, still?
+> If so, please, list up.
 >
->  struct lb_env {
->  	struct sched_domain	*sd;
-> @@ -3108,6 +3109,8 @@ struct lb_env {
->  	int			dst_cpu;
->  	struct rq		*dst_rq;
->  
-> +	struct cpumask		*dst_grpmask;
-> +	int			new_dst_cpu;
->  	enum cpu_idle_type	idle;
->  	long			imbalance;
->  	unsigned int		flags;
-> @@ -3198,7 +3201,25 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
->  	 * 3) are cache-hot on their current CPU.
->  	 */
->  	if (!cpumask_test_cpu(env->dst_cpu, tsk_cpus_allowed(p))) {
-> -		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
-> +		int new_dst_cpu;
-> +
-> +		if (!env->dst_grpmask) {
-> +			schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
-> +			return 0;
-> +		}
-> +		/*
-> +		 * check if cpus_allowed has any cpus in the same sched_group
-> +		 * as that of dst_cpu and set LBF_NEW_DST_CPU and new_dst_cpu
-> +		 * accordingly
-> +		 */
-> +		new_dst_cpu = cpumask_first_and(env->dst_grpmask,
-> +						tsk_cpus_allowed(p));
-> +		if (new_dst_cpu >= nr_cpu_ids) {
-> +			schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
-> +		} else {
-> +			env->flags |= LBF_NEW_DST_CPU;
-> +			env->new_dst_cpu = new_dst_cpu;
-> +		}
+> Android low memory killer is proved solution for a long time, at least embedded
+> area(So many android phone already have used it) so I think improving it makes
+> sense to me rather than inventing new wheel.
 
-Only a flimsy comment on what the code does -- I can read C thank you.
-Not a single comment on why it does this.
+VM events started out as *ABI cleanup* of Nokia's N9 Linux lowmem
+notifier. That's not reinventing the wheel.
 
->  		return 0;
->  	}
->  	env->flags &= ~LBF_ALL_PINNED;
-> @@ -4418,7 +4439,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->  			struct sched_domain *sd, enum cpu_idle_type idle,
->  			int *balance)
->  {
-> -	int ld_moved, active_balance = 0;
-> +	int ld_moved, old_ld_moved, active_balance = 0;
->  	struct sched_group *group;
->  	struct rq *busiest;
->  	unsigned long flags;
-> @@ -4428,6 +4449,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
->  		.sd		    = sd,
->  		.dst_cpu	    = this_cpu,
->  		.dst_rq		    = this_rq,
-> +		.dst_grpmask	    = sched_group_cpus(sd->groups),
->  		.idle		    = idle,
->  		.loop_break	    = sched_nr_migrate_break,
->  		.find_busiest_queue = find_busiest_queue,
-> @@ -4461,6 +4483,7 @@ redo:
->  	schedstat_add(sd, lb_imbalance[idle], env.imbalance);
->  
->  	ld_moved = 0;
-> +	old_ld_moved = 0;
->  	if (busiest->nr_running > 1) {
->  		/*
->  		 * Attempt to move tasks. If find_busiest_group has found
-> @@ -4488,12 +4511,27 @@ more_balance:
->  			env.flags &= ~LBF_NEED_BREAK;
->  			goto more_balance;
->  		}
-> -
->  		/*
->  		 * some other cpu did the load balance for us.
->  		 */
-> -		if (ld_moved && this_cpu != smp_processor_id())
-> -			resched_cpu(this_cpu);
-> +		if ((ld_moved != old_ld_moved) &&
-> +			(env.dst_cpu != smp_processor_id()))
-> +			resched_cpu(env.dst_cpu);
+On Mon, Jun 4, 2012 at 11:45 AM, Minchan Kim <minchan@kernel.org> wrote:
+> Frankly speaking, I don't know vmevent's other use cases except low memory
+> notification and didn't see any agreement about that with other guys.
 
-The whole old_ld_moved stuff sucks, and preferably needs a rename, or at
-least a comment.
+I think you are missing the point. "vmevent" is an ABI for delivering
+VM events to userspace. I started it because different userspaces do
+not agree what "low memory" means - for obvious reasons.
 
-> +		if ((env.flags & LBF_NEW_DST_CPU) && (env.imbalance > 0)) {
-> +			/*
-> +			 * we could not balance completely as some tasks
-> +			 * were not allowed to move to the dst_cpu, so try
-> +			 * again with new_dst_cpu.
-> +			 */
-> +			this_rq = cpu_rq(env.new_dst_cpu);
-> +			env.dst_rq = this_rq;
-> +			env.dst_cpu = env.new_dst_cpu;
-> +			env.flags &= ~LBF_NEW_DST_CPU;
-> +			env.loop = 0;
-> +			old_ld_moved = ld_moved;
-> +			goto more_balance;
-> +		}
->  
+As for use cases, it'd be useful for VMs to be notified of "about to
+swap your pages soon" so that they can aggressively GC before entering
+GC-swapstorm hell. I also hear that something similar would be useful
+for KVM/QEMU but I don't know the details.
 
-OK, so previously we only pulled to ourselves, now you make cpu x move
-from cpu y to cpu z. This changes the dynamic of the load-balancer, not
-a single word on that and its impact/ramifications.
+I really don't see how Android's "low memory killer" will be useful as
+a generic solution.
 
-
+                        Pekka
