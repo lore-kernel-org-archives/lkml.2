@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab2FDH15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 03:27:57 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50478 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab2FDH14 (ORCPT
+	id S1755794Ab2FDH3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 03:29:38 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59654 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754542Ab2FDH3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 03:27:56 -0400
-Date: Mon, 4 Jun 2012 08:27:55 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Question about do_mmap changes
-Message-ID: <20120604072755.GY30000@ZenIV.linux.org.uk>
-References: <4FCC47C9.8050904@lwfinger.net>
- <20120604062604.GV30000@ZenIV.linux.org.uk>
- <4FCC57AD.3000803@lwfinger.net>
- <20120604065638.GW30000@ZenIV.linux.org.uk>
+	Mon, 4 Jun 2012 03:29:36 -0400
+Date: Mon, 4 Jun 2012 08:29:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rob Landley <rob@landley.net>
+Cc: Sagar Dharia <sdharia@codeaurora.org>, davidb@codeaurora.org,
+        bryanh@codeaurora.org, kheitke@codeaurora.org, marc@plastictigers.com,
+        gclemson@audience.com, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, ohad@wizery.com, gregkh@linuxfoundation.org,
+        linus.walleij@linaro.org, rusty@rustcorp.com.au, joerg.roedel@amd.com,
+        trenn@suse.de, ak@linux.intel.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20120604072933.GE26676@opensource.wolfsonmicro.com>
+References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
+ <4FCC280C.6030103@landley.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Yb+qhiCg54lqZFXW"
 Content-Disposition: inline
-In-Reply-To: <20120604065638.GW30000@ZenIV.linux.org.uk>
+In-Reply-To: <4FCC280C.6030103@landley.net>
+X-Cookie: You are number 6!  Who is number one?
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 07:56:38AM +0100, Al Viro wrote:
-> _IF_ this is done not to current->mm, these guys are in for a world of
-> hurt, probably going all way back.
 
-	BTW, rtR0MemObjLinuxDoMmap() would really better be done with
-pTask == current; it calls do_mmap(), which acts on current->mm and
-nowhere in the function does it look at pTask at all.  The caller
-has locked pTask->mm->mmap_sem.  And do_mmap() obviously assumes that
-current->mm->mmap_sem is held by caller.
+--Yb+qhiCg54lqZFXW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	Looking at the callers (both of that an munmap()), it appears
-that they get task from
-static struct task_struct *rtR0ProcessToLinuxTask(RTR0PROCESS R0Process)
-{
-    /** @todo fix rtR0ProcessToLinuxTask!! */
-    return R0Process == RTR0ProcHandleSelf() ? current : NULL;
-}
+On Sun, Jun 03, 2012 at 10:14:20PM -0500, Rob Landley wrote:
+> On 05/29/2012 08:11 PM, Sagar Dharia wrote:
 
-So it's probably OK, until they follow up on that todo.  BTW, quite a few
-callers of that sucker are followed by Assert(pTask != NULL)...
+> > SLIMbus replaces many digital audio buses and control buses by
+> > providing flexible and dynamic bus-bandwidth between data-functions
+> > and control-functions.
 
-Most of do_munmap() callers are easily converted to vm_munmap(); the only
-exception is cleanup after failure in rtR0MemObjNativeMapUser().  May
-or may not be convertable to vm_munmap(); depends on whether they really
-need ->mmap_sem held over the entire sequence *and* on whether there's
-a better solution.  They seem to be trying to shove an array of pages
-into VMA they'd just created and lock them there; I might be misreading
-and missing details, though - that code is really as pleasant to read
-as using warm stale beer to deal with industrial-strength hangover.  The
-kind when you end up spitting out a fly or two, if not a cigarette butt...
-I'm not up to that right now - it's half past three in the morning here
-and I'll have to get up four hours from now ;-/
+> So that's a really long way of saying "A bit like I2C but faster"?
+
+No, it's replacing I2S (or whatever) too.  Really it's much more like
+USB than I2C.
+
+--Yb+qhiCg54lqZFXW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPzGPUAAoJEBus8iNuMP3dUMgP/i1KUksq0K6N+2VORV+rCsXD
+5YjTFQJ4JPSm2Y+Ln/m9aRdo1MbxpRkp5qruGkt8Pv5yH7g5bmaAhCfAQi47xzQ6
+eoxJ9C2ADI0rruRd5QwSFsdScgETmsrHp/gnJX6qJP0Oea6QOItdIvA0lBRIQ+Mg
+c8JZuc301+Ub3Ih2jXMVQPU5U8nzukbOdUHHJS9dwpu90RbKCcSIMLvGTd6UfVc0
+biJGA8uumN052OR44yLEBpUBsUwug623fr3gImUnYVE7O9v2GdMpRUa4qc0nbIxx
+1RjC7StFSLqOyOub8FnDEL4EmIGVtFLof7YBXPUxOU23KYszVZcIVEuu3kgQdLa7
++Pqv4gbJs53ptVerTpgCFLxxRPJF6LZpbgJ4Q7Yomz862uYxfwicsFaPtbFpDZ/T
+///nFDUpCcoAyM36rxDNnnYaGxNb0N96626w8J+arUHZlCZxKwySmMdxq9W3q4Nj
+wC5mhmypLfhyyVQMc7MFBOwOGZDE+fHaNZyVn2cnkEzZLtlOF9tEtSw7jO+TruaN
+yI3Y0V0usd86l9z1gMV/5MqKtETQRkiT3VZzBRIeF1CxnLltdTL7Uj1sz/IyHQP2
+oocMhRTnxUbAZbdO8R1I5voWWMuN79lP03UoRjzmH5Eop32+IMml43SqrEW8AIF9
+zF5Stq/oNFwbDBerqFiv
+=6S9H
+-----END PGP SIGNATURE-----
+
+--Yb+qhiCg54lqZFXW--
