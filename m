@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab2FDR35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:29:57 -0400
-Received: from tex.lwn.net ([70.33.254.29]:50689 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753260Ab2FDR34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:29:56 -0400
-Date: Mon, 4 Jun 2012 11:30:17 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH] gpiolib: wm8994: Use irq_domain mappings for gpios
-Message-ID: <20120604113017.585830e5@tpl.lwn.net>
-In-Reply-To: <CACRpkdZJPH__FzsUmKnQhTOtJ1EstJ8K5LzhTXGUO_VSzrjLew@mail.gmail.com>
-References: <1338727219-24141-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<CACRpkdZJPH__FzsUmKnQhTOtJ1EstJ8K5LzhTXGUO_VSzrjLew@mail.gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1754978Ab2FDRhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:37:41 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:45431 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab2FDRhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 13:37:39 -0400
+Date: Mon, 4 Jun 2012 23:07:32 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
+ as target of (pinned) task migration
+Message-ID: <20120604173732.GA909@linux.vnet.ibm.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+References: <1338814063.7356.192.camel@marge.simpson.net>
+ <20120604130740.GC25126@linux.vnet.ibm.com>
+ <1338820234.7356.250.camel@marge.simpson.net>
+ <20120604143802.GB26651@linux.vnet.ibm.com>
+ <1338820895.7356.252.camel@marge.simpson.net>
+ <20120604150040.GD25126@linux.vnet.ibm.com>
+ <1338823271.28282.75.camel@twins>
+ <20120604152522.GE26651@linux.vnet.ibm.com>
+ <1338824014.28282.86.camel@twins>
+ <1338828989.7363.8.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1338828989.7363.8.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12060417-4790-0000-0000-0000031407CB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jun 2012 19:08:43 +0200
-Linus Walleij <linus.walleij@linaro.org> wrote:
+* Mike Galbraith <efault@gmx.de> [2012-06-04 18:56:29]:
 
-> I read some drivers/base/regmap code and I think I understand this stuff
-> now, but seriously, it's quite hard to see the forest with all these trees,
-> and regmap is actually one of the finest new things in recent kernels,
-> so can could we create
-> Documentation/driver-model/regmap.txt?
+> I'm not heavily opposed, was just questioning the RT justification.
 
-That's actually on my list of things to do (by way of LWN, of course).
-I just need to get my hands dirty first, probably by converting the
-ov7670 driver.  Unfortunately, I have some serious distractions in my
-life at the moment, so I can't make any promises as to when this will
-happen...
+We will update the changelog to indicate all the scenarios/possibilities
+discussed and publish the next version shortly.
 
-jon
+- vatsa 
+
