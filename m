@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759880Ab2FDKVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 06:21:08 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:64238 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab2FDKVG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 06:21:06 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6731"; a="197375485"
-Message-ID: <74993ac9d11db0db7080c0864daef397.squirrel@www.codeaurora.org>
-In-Reply-To: <20120601001617.GA16311@plastictigers.com>
-References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
-    <20120601001617.GA16311@plastictigers.com>
-Date: Mon, 4 Jun 2012 03:21:06 -0700 (PDT)
-Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
-From: "Sagar Dharia" <sdharia@codeaurora.org>
-To: "Sagar Dharia" <sdharia@codeaurora.org>, davidb@codeaurora.org,
-        bryanh@codeaurora.org, kheitke@codeaurora.org, gclemson@audience.com,
-        broonie@opensource.wolfsonmicro.com, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, rob@landley.net,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, ohad@wizery.com,
-        gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
-        ak@linux.intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Reply-To: sdharia@codeaurora.org
-User-Agent: SquirrelMail/1.4.17
+	id S1759917Ab2FDKWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 06:22:11 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:54379 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756823Ab2FDKWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 06:22:10 -0400
+Date: Mon, 4 Jun 2012 12:21:41 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: benh@kernel.crashing.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, tglx@linutronix.de, mingo@redhat.com,
+        sameo@linux.intel.com, x86@kernel.org, lenb@kernel.org
+Subject: Re: [PATCH] x86/platform: sta2x11: add platform code
+Message-ID: <20120604102141.GA7967@mail.gnudd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <1338804972.7150.77.camel@pasglop>
+References: <1338804972.7150.77.camel@pasglop>
+  <4FC477A1.4010709@zytor.com>  <4FC47003.1080906@zytor.com>
+  <4FC40C74.8050003@zytor.com>  <20120527205020.GA3050@mail.gnudd.com>
+  <20120529063738.GA22711@mail.gnudd.com>
+  <20120529070557.GA23373@mail.gnudd.com>
+  <20120529073417.GA25041@mail.gnudd.com> <4FC47D49.50204@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> These are initial comments. A full review of the patch will take some
-> time. While I am posting this email, this is the result of work both
-> by myself, and my colleague Greg Clemson (cc'ed).
->
-Thank you Marc and Greg for taking time to review this.
+> Right, a device-tree blob could easily be passed an x86 has the
+> infrastructure to use it already afaik.
 
-> The enumeration slim_ch_proto is incorrect. It declares 2 transport
-> protocols which do not exist in the specification: SLIM_HARD_ISO;
-> SLIM_AUTO_ISO.
+Yes, that's the direction I'm aiming at.  I hope it's possibly to also
+load a device sub-tree later (which is needed when the pci device is
+a plug-in board instead of the main chipset in the motherboard.
 
-The enums are more SW representation (and not 1-1 mapping). Difference
-between HARD_ISO and AUTO_ISO with example:
-Let's say the root frequency is 24.576MHz. then all 4K family channels
-(sample rate multiple of 4K) can run isochronously, and all 11.025KHz
-channel can run with good efficiency.
-So if a client wants 11.025KHz and is does not want to do flow-control at
-this root frequency, then the client can specify AUTO_ISO to get the next
-available isochronous frequency.
+> That or the ACPI way but I know nothing about it and thus naturally
+> assume it's harder :-)
 
-> I suggest that term "enumeration address" should be used.
->
-Thank you for catching this. I will change it where-ever applicable.
+I'm studying this first, hoping to confirm my bad feeling about it and
+be happier when working with fdt. Also, I'd better remain portable, in
+case vendors will package the sta2x11 as a pci board -- the one I have is
+just the development system and it's not largely marketed.
 
-> b) Similarly to (a) the driver may be probed before the device has
-> been given a logical address (LA). This makes sense in the case of
-> driver that turns on the device (say via gpio) once the bus has
-> booted. However, the driver then needs to sit and poll
-> slim_get_logical_addr() until the logical address.
-This is not the case anymore.
-While taking care of the comments for RFC, I have introduced a completion
-that will be signalled when LA is given to the device. The driver can wait
-on that completion (wait_enum) instead of polling.
-
-Regards
-Sagar
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Thanks
+/alessandro
