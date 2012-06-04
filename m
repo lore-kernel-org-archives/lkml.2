@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab2FDIL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 04:11:29 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:44797 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406Ab2FDILY convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Mon, 4 Jun 2012 04:11:24 -0400
-Message-Id: <4FCC89C60200007800088112@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 04 Jun 2012 09:11:18 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt.fleming@intel.com>, <mjg@redhat.com>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH] x86-64: use EFI to deal with platform wall clock
-References: <4FBFBF5F020000780008637F@nat28.tlf.novell.com>
- <1338028008.16679.1.camel@mfleming-mobl1.ger.corp.intel.com>
-In-Reply-To: <1338028008.16679.1.camel@mfleming-mobl1.ger.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1756137Ab2FDIK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 04:10:27 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:2035 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752887Ab2FDIKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 04:10:13 -0400
+From: Andrew Vagin <avagin@openvz.org>
+Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] sched: event: add trace events when a task starts executing on a cpu
+Date: Mon,  4 Jun 2012 12:09:38 +0400
+Message-Id: <1338797382-287275-2-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1338797382-287275-1-git-send-email-avagin@openvz.org>
+References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.05.12 at 12:26, Matt Fleming <matt.fleming@intel.com> wrote:
-> On Fri, 2012-05-25 at 16:20 +0100, Jan Beulich wrote:
->> Other than ix86, x86-64 on EFI so far didn't set the {g,s}et_wallclock
->> accessors to the EFI routines, thus incorrectly using raw RTC accesses
->> instead.
->> 
->> Simply removing the #ifdef around the respective code isn't enough,
->> however: While so far early get-time calls were done in physical mode,
->> this doesn't work properly for x86-64, as virtual addresses would still
->> need to be set up for all runtime regions (which wasn't the case on the
->> system I have access to), so instead the patch moves the call to
->> efi_enter_virtual_mode() ahead (which in turn allows to drop all code
->> related to calling efi-get-time in physical mode).
->> 
->> Additionally the earlier calling of efi_set_executable() requires the
->> CPA code to cope, i.e. during early boot it must be avoided to call
->> cpa_flush_array(), as the first thing this function does is a
->> BUG_ON(irqs_disabled()).
->> 
->> Also make the two EFI functions in question here static - they're not
->> being referenced elsewhere.
->> 
->> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->> Cc: Matt Fleming <matt.fleming@intel.com>
->> Cc: Matthew Garrett <mjg@redhat.com>
->> 
->> ---
->> (Note that due to the lack of hardware I wasn't able to test this on
->> 32-bit EFI - Matt offered to do so subsequently.)
-> 
-> Appears to work fine here on 32-bit.
+sched_switch_finish is sent when a task starts executing on a cpu.
+It sends in context of this task, that's why sched_switch can't be used.
+sched_switch is send when a task goes out from a cpu.
 
-Is there any further action required on my part here? Is it clear
-through who's hands this would need to go in order to make it in
-for 3.6 at least?
+This two events will be needed for profiling sleep time.
 
-Thanks, Jan
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/trace/events/sched.h |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index ea7a203..b2219d8 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -149,6 +149,25 @@ TRACE_EVENT(sched_switch,
+ 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
+ );
+ 
++TRACE_EVENT(sched_switch_finish,
++
++	TP_PROTO(struct task_struct *p),
++
++	TP_ARGS(p),
++
++	TP_STRUCT__entry(
++		__array(	char,	comm,	TASK_COMM_LEN	)
++		__field(	pid_t,	pid			)
++	),
++
++	TP_fast_assign(
++		__entry->pid	= p->pid;
++		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
++	),
++
++	TP_printk("comm=%s pid=%d", __entry->comm, __entry->pid)
++);
++
+ /*
+  * Tracepoint for a task being migrated:
+  */
+-- 
+1.7.1
 
