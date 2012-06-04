@@ -1,305 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab2FDLha (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:37:30 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:44988 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717Ab2FDLfo (ORCPT
+	id S932141Ab2FDLjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:39:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62349 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab2FDLju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:35:44 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
-Subject: [PATCH 05/24] TTY: ircomm, use flags from tty_port
-Date: Mon,  4 Jun 2012 13:35:19 +0200
-Message-Id: <1338809738-18967-6-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.10.3
-In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+	Mon, 4 Jun 2012 07:39:50 -0400
+Date: Mon, 4 Jun 2012 04:38:12 -0700
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 0/5] Some vmevent fixes...
+Message-ID: <20120604113811.GA4291@lizard>
+References: <20120507121527.GA19526@lizard>
+ <4FA82056.2070706@gmail.com>
+ <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com>
+ <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
+ <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
+ <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
+ <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
+ <20120601122118.GA6128@lizard>
+ <alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
+ <4FCC7592.9030403@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4FCC7592.9030403@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to tty_port->flags. And while at it, remove redefined flags for
-them.
+On Mon, Jun 04, 2012 at 05:45:06PM +0900, Minchan Kim wrote:
+[...]
+> AFAIK, low memory notifier is started for replacing android lowmemory killer.
+> At the same time, other folks want use it generally.
+> As I look through android low memory killer, it's not too bad except some point.
+> 
+> 1. It should not depend on shrink_slab. If we need, we can add some hook in vmscan.c directly instead of shrink_slab.
+> 2. We can use out_of_memory instead of custom victim selection/killing function. If we need,
+>    we can change out_of_memory interface little bit for passing needed information to select victim.
+> 3. calculation for available pages
+> 
+> 1) and 2) would make android low memory killer very general and 3) can meet each folk's requirement, I believe.
+> 
+> Anton, I expect you already investigated android low memory killer so maybe you know pros and cons of each solution.
+> Could you convince us "why we need vmevent" and "why can't android LMK do it?"
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Samuel Ortiz <samuel@sortiz.org>
-Cc: netdev@vger.kernel.org
----
- include/net/irda/ircomm_tty.h       |    6 -----
- net/irda/ircomm/ircomm_tty.c        |   46 +++++++++++++++++------------------
- net/irda/ircomm/ircomm_tty_attach.c |    5 ++--
- net/irda/ircomm/ircomm_tty_ioctl.c  |   10 ++++----
- 4 files changed, 31 insertions(+), 36 deletions(-)
+Note that 1) and 2) are not problems per se, it's just implementation
+details, easy stuff. Vmevent is basically an ABI/API, and I didn't
+hear anybody who would object to vmevent ABI idea itself. More than
+this, nobody stop us from implementing in-kernel vmevent API, and
+make Android Lowmemory killer use it, if we want to.
 
-diff --git a/include/net/irda/ircomm_tty.h b/include/net/irda/ircomm_tty.h
-index 5e94bad..e4db3b5 100644
---- a/include/net/irda/ircomm_tty.h
-+++ b/include/net/irda/ircomm_tty.h
-@@ -52,11 +52,6 @@
- /* Same for payload size. See qos.c for the smallest max data size */
- #define IRCOMM_TTY_DATA_UNINITIALISED	(64 - IRCOMM_TTY_HDR_UNINITIALISED)
- 
--/* Those are really defined in include/linux/serial.h - Jean II */
--#define ASYNC_B_INITIALIZED	31	/* Serial port was initialized */
--#define ASYNC_B_NORMAL_ACTIVE	29	/* Normal device is active */
--#define ASYNC_B_CLOSING		27	/* Serial port is closing */
--
- /*
-  * IrCOMM TTY driver state
-  */
-@@ -81,7 +76,6 @@ struct ircomm_tty_cb {
- 	LOCAL_FLOW flow;          /* IrTTP flow status */
- 
- 	int line;
--	unsigned long flags;
- 
- 	__u8 dlsap_sel;
- 	__u8 slsap_sel;
-diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
-index 787578f..8e61026 100644
---- a/net/irda/ircomm/ircomm_tty.c
-+++ b/net/irda/ircomm/ircomm_tty.c
-@@ -194,7 +194,7 @@ static int ircomm_tty_startup(struct ircomm_tty_cb *self)
- 	IRDA_ASSERT(self->magic == IRCOMM_TTY_MAGIC, return -1;);
- 
- 	/* Check if already open */
--	if (test_and_set_bit(ASYNC_B_INITIALIZED, &self->flags)) {
-+	if (test_and_set_bit(ASYNCB_INITIALIZED, &self->port.flags)) {
- 		IRDA_DEBUG(2, "%s(), already open so break out!\n", __func__ );
- 		return 0;
- 	}
-@@ -231,7 +231,7 @@ static int ircomm_tty_startup(struct ircomm_tty_cb *self)
- 
- 	return 0;
- err:
--	clear_bit(ASYNC_B_INITIALIZED, &self->flags);
-+	clear_bit(ASYNCB_INITIALIZED, &self->port.flags);
- 	return ret;
- }
- 
-@@ -260,7 +260,7 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 	 */
- 	if (filp->f_flags & O_NONBLOCK || tty->flags & (1 << TTY_IO_ERROR)){
- 		/* nonblock mode is set or port is not enabled */
--		self->flags |= ASYNC_NORMAL_ACTIVE;
-+		self->port.flags |= ASYNC_NORMAL_ACTIVE;
- 		IRDA_DEBUG(1, "%s(), O_NONBLOCK requested!\n", __func__ );
- 		return 0;
- 	}
-@@ -306,8 +306,8 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 		current->state = TASK_INTERRUPTIBLE;
- 
- 		if (tty_hung_up_p(filp) ||
--		    !test_bit(ASYNC_B_INITIALIZED, &self->flags)) {
--			retval = (self->flags & ASYNC_HUP_NOTIFY) ?
-+		    !test_bit(ASYNCB_INITIALIZED, &self->port.flags)) {
-+			retval = (self->port.flags & ASYNC_HUP_NOTIFY) ?
- 					-EAGAIN : -ERESTARTSYS;
- 			break;
- 		}
-@@ -317,7 +317,7 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 		 * specified, we cannot return before the IrCOMM link is
- 		 * ready
- 		 */
--		if (!test_bit(ASYNC_B_CLOSING, &self->flags) &&
-+		if (!test_bit(ASYNCB_CLOSING, &self->port.flags) &&
- 		    (do_clocal || (self->settings.dce & IRCOMM_CD)) &&
- 		    self->state == IRCOMM_TTY_READY)
- 		{
-@@ -350,7 +350,7 @@ static int ircomm_tty_block_til_ready(struct ircomm_tty_cb *self,
- 	      __FILE__, __LINE__, tty->driver->name, self->port.count);
- 
- 	if (!retval)
--		self->flags |= ASYNC_NORMAL_ACTIVE;
-+		self->port.flags |= ASYNC_NORMAL_ACTIVE;
- 
- 	return retval;
- }
-@@ -420,13 +420,13 @@ static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
- 		   self->line, self->port.count);
- 
- 	/* Not really used by us, but lets do it anyway */
--	self->tty->low_latency = (self->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	tty->low_latency = (self->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	/*
- 	 * If the port is the middle of closing, bail out now
- 	 */
- 	if (tty_hung_up_p(filp) ||
--	    test_bit(ASYNC_B_CLOSING, &self->flags)) {
-+	    test_bit(ASYNCB_CLOSING, &self->port.flags)) {
- 
- 		/* Hm, why are we blocking on ASYNC_CLOSING if we
- 		 * do return -EAGAIN/-ERESTARTSYS below anyway?
-@@ -437,14 +437,14 @@ static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
- 		 */
- 
- 		if (wait_event_interruptible(self->port.close_wait,
--				!test_bit(ASYNC_B_CLOSING, &self->flags))) {
-+				!test_bit(ASYNCB_CLOSING, &self->port.flags))) {
- 			IRDA_WARNING("%s - got signal while blocking on ASYNC_CLOSING!\n",
- 				     __func__);
- 			return -ERESTARTSYS;
- 		}
- 
- #ifdef SERIAL_DO_RESTART
--		return (self->flags & ASYNC_HUP_NOTIFY) ?
-+		return (self->port.flags & ASYNC_HUP_NOTIFY) ?
- 			-EAGAIN : -ERESTARTSYS;
- #else
- 		return -EAGAIN;
-@@ -531,7 +531,7 @@ static void ircomm_tty_close(struct tty_struct *tty, struct file *filp)
- 	}
- 
- 	/* Hum... Should be test_and_set_bit ??? - Jean II */
--	set_bit(ASYNC_B_CLOSING, &self->flags);
-+	set_bit(ASYNCB_CLOSING, &self->port.flags);
- 
- 	/* We need to unlock here (we were unlocking at the end of this
- 	 * function), because tty_wait_until_sent() may schedule.
-@@ -561,7 +561,7 @@ static void ircomm_tty_close(struct tty_struct *tty, struct file *filp)
- 		wake_up_interruptible(&self->port.open_wait);
- 	}
- 
--	self->flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
-+	self->port.flags &= ~(ASYNC_NORMAL_ACTIVE|ASYNC_CLOSING);
- 	wake_up_interruptible(&self->port.close_wait);
- }
- 
-@@ -954,7 +954,7 @@ static void ircomm_tty_shutdown(struct ircomm_tty_cb *self)
- 
- 	IRDA_DEBUG(0, "%s()\n", __func__ );
- 
--	if (!test_and_clear_bit(ASYNC_B_INITIALIZED, &self->flags))
-+	if (!test_and_clear_bit(ASYNCB_INITIALIZED, &self->port.flags))
- 		return;
- 
- 	ircomm_tty_detach_cable(self);
-@@ -1005,7 +1005,7 @@ static void ircomm_tty_hangup(struct tty_struct *tty)
- 
- 	/* I guess we need to lock here - Jean II */
- 	spin_lock_irqsave(&self->spinlock, flags);
--	self->flags &= ~ASYNC_NORMAL_ACTIVE;
-+	self->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	self->tty = NULL;
- 	self->port.count = 0;
- 	spin_unlock_irqrestore(&self->spinlock, flags);
-@@ -1077,7 +1077,7 @@ void ircomm_tty_check_modem_status(struct ircomm_tty_cb *self)
- 	if (status & IRCOMM_DCE_DELTA_ANY) {
- 		/*wake_up_interruptible(&self->delta_msr_wait);*/
- 	}
--	if ((self->flags & ASYNC_CHECK_CD) && (status & IRCOMM_DELTA_CD)) {
-+	if ((self->port.flags & ASYNC_CHECK_CD) && (status & IRCOMM_DELTA_CD)) {
- 		IRDA_DEBUG(2,
- 			   "%s(), ircomm%d CD now %s...\n", __func__ , self->line,
- 			   (status & IRCOMM_CD) ? "on" : "off");
-@@ -1094,7 +1094,7 @@ void ircomm_tty_check_modem_status(struct ircomm_tty_cb *self)
- 			return;
- 		}
- 	}
--	if (self->flags & ASYNC_CTS_FLOW) {
-+	if (self->port.flags & ASYNC_CTS_FLOW) {
- 		if (tty->hw_stopped) {
- 			if (status & IRCOMM_CTS) {
- 				IRDA_DEBUG(2,
-@@ -1327,27 +1327,27 @@ static void ircomm_tty_line_info(struct ircomm_tty_cb *self, struct seq_file *m)
- 
- 	seq_puts(m, "Flags:");
- 	sep = ' ';
--	if (self->flags & ASYNC_CTS_FLOW) {
-+	if (self->port.flags & ASYNC_CTS_FLOW) {
- 		seq_printf(m, "%cASYNC_CTS_FLOW", sep);
- 		sep = '|';
- 	}
--	if (self->flags & ASYNC_CHECK_CD) {
-+	if (self->port.flags & ASYNC_CHECK_CD) {
- 		seq_printf(m, "%cASYNC_CHECK_CD", sep);
- 		sep = '|';
- 	}
--	if (self->flags & ASYNC_INITIALIZED) {
-+	if (self->port.flags & ASYNC_INITIALIZED) {
- 		seq_printf(m, "%cASYNC_INITIALIZED", sep);
- 		sep = '|';
- 	}
--	if (self->flags & ASYNC_LOW_LATENCY) {
-+	if (self->port.flags & ASYNC_LOW_LATENCY) {
- 		seq_printf(m, "%cASYNC_LOW_LATENCY", sep);
- 		sep = '|';
- 	}
--	if (self->flags & ASYNC_CLOSING) {
-+	if (self->port.flags & ASYNC_CLOSING) {
- 		seq_printf(m, "%cASYNC_CLOSING", sep);
- 		sep = '|';
- 	}
--	if (self->flags & ASYNC_NORMAL_ACTIVE) {
-+	if (self->port.flags & ASYNC_NORMAL_ACTIVE) {
- 		seq_printf(m, "%cASYNC_NORMAL_ACTIVE", sep);
- 		sep = '|';
- 	}
-diff --git a/net/irda/ircomm/ircomm_tty_attach.c b/net/irda/ircomm/ircomm_tty_attach.c
-index bb1e935..bed311a 100644
---- a/net/irda/ircomm/ircomm_tty_attach.c
-+++ b/net/irda/ircomm/ircomm_tty_attach.c
-@@ -566,7 +566,8 @@ void ircomm_tty_link_established(struct ircomm_tty_cb *self)
- 	 * will have to wait for the peer device (DCE) to raise the CTS
- 	 * line.
- 	 */
--	if ((self->flags & ASYNC_CTS_FLOW) && ((self->settings.dce & IRCOMM_CTS) == 0)) {
-+	if ((self->port.flags & ASYNC_CTS_FLOW) &&
-+			((self->settings.dce & IRCOMM_CTS) == 0)) {
- 		IRDA_DEBUG(0, "%s(), waiting for CTS ...\n", __func__ );
- 		return;
- 	} else {
-@@ -977,7 +978,7 @@ static int ircomm_tty_state_ready(struct ircomm_tty_cb *self,
- 		ircomm_tty_next_state(self, IRCOMM_TTY_SEARCH);
- 		ircomm_tty_start_watchdog_timer(self, 3*HZ);
- 
--		if (self->flags & ASYNC_CHECK_CD) {
-+		if (self->port.flags & ASYNC_CHECK_CD) {
- 			/* Drop carrier */
- 			self->settings.dce = IRCOMM_DELTA_CD;
- 			ircomm_tty_check_modem_status(self);
-diff --git a/net/irda/ircomm/ircomm_tty_ioctl.c b/net/irda/ircomm/ircomm_tty_ioctl.c
-index a6d25e3..31b917e 100644
---- a/net/irda/ircomm/ircomm_tty_ioctl.c
-+++ b/net/irda/ircomm/ircomm_tty_ioctl.c
-@@ -90,19 +90,19 @@ static void ircomm_tty_change_speed(struct ircomm_tty_cb *self)
- 
- 	/* CTS flow control flag and modem status interrupts */
- 	if (cflag & CRTSCTS) {
--		self->flags |= ASYNC_CTS_FLOW;
-+		self->port.flags |= ASYNC_CTS_FLOW;
- 		self->settings.flow_control |= IRCOMM_RTS_CTS_IN;
- 		/* This got me. Bummer. Jean II */
- 		if (self->service_type == IRCOMM_3_WIRE_RAW)
- 			IRDA_WARNING("%s(), enabling RTS/CTS on link that doesn't support it (3-wire-raw)\n", __func__);
- 	} else {
--		self->flags &= ~ASYNC_CTS_FLOW;
-+		self->port.flags &= ~ASYNC_CTS_FLOW;
- 		self->settings.flow_control &= ~IRCOMM_RTS_CTS_IN;
- 	}
- 	if (cflag & CLOCAL)
--		self->flags &= ~ASYNC_CHECK_CD;
-+		self->port.flags &= ~ASYNC_CHECK_CD;
- 	else
--		self->flags |= ASYNC_CHECK_CD;
-+		self->port.flags |= ASYNC_CHECK_CD;
- #if 0
- 	/*
- 	 * Set up parity check flag
-@@ -270,7 +270,7 @@ static int ircomm_tty_get_serial_info(struct ircomm_tty_cb *self,
- 
- 	memset(&info, 0, sizeof(info));
- 	info.line = self->line;
--	info.flags = self->flags;
-+	info.flags = self->port.flags;
- 	info.baud_base = self->settings.data_rate;
- 	info.close_delay = self->port.close_delay;
- 	info.closing_wait = self->port.closing_wait;
+The real problem is not with vmevent. Today there are two real problems:
+
+a) Gathering proper statistics from the kernel. Both cgroups and vmstat
+   have issues. Android lowmemory killer has the same problems w/ the
+   statistics as vmevent, it uses vmstat, so by no means Android
+   low memory killer is better or easier in this regard.
+   (And cgroups has issues w/ slab accounting, plus some folks don't
+   want memcg at all, since it has runtime and memory-wise costs.)
+
+b) Interpreting this statistics. We can't provide one, universal
+   "low memory" definition that would work for everybody.
+   (Btw, your "levels" based low memory grading actually sounds
+   the same as mine RECLAIMABLE_CACHE_PAGES and
+   RECLAIMABLE_CACHE_PAGES_NOIO idea, i.e.
+   http://lkml.indiana.edu/hypermail/linux/kernel/1205.0/02751.html
+   so personally I like the idea of level-based approach, based
+   on available memory *cost*.)
+
+So, you see, all these issues are valid for vmevent, cgroups and
+android low memory killer.
+
+> KOSAKI, AFAIRC, you are a person who hates android low memory killer.
+> Why do you hate it? If it solve problems I mentioned, do you have a concern, still?
+> If so, please, list up.
+> 
+> Android low memory killer is proved solution for a long time, at least embedded area(So many android phone already have used it) so I think improving it makes sense to me rather than inventing new wheel.
+
+Yes, nobody throws Android lowmemory killer away. And recently I fixed
+a bunch of issues in its tasks traversing and killing code. Now it's
+just time to "fix" statistics gathering and interpretation issues,
+and I see vmevent as a good way to do just that, and then we
+can either turn Android lowmemory killer driver to use the vmevent
+in-kernel API (so it will become just a "glue" between notifications
+and killing functions), or use userland daemon.
+
+Note that memcg has notifications as well, so it's another proof that
+there is a demand for this stuff outside of embedded world, and going
+with ad-hoc, custom "low memory killer" is simple and tempting approach,
+but it doesn't solve any real problems.
+
+> Frankly speaking, I don't know vmevent's other use cases except low memory notification 
+
+I won't speak for realistic use-cases, but that is what comes to
+mind:
+
+- DB can grow its caches/in-memory indexes infinitely, and start dropping
+  them on demand (based on internal LRU list, for example). No more
+  guessed/static configuration for DB daemons?
+- Assuming VPS hosting w/ dynamic resources management, notifications
+  would be useful to readjust resources?
+- On desktops, apps can drop their caches on demand if they want to
+  and can avoid swap activity?
+
+Thanks,
+
 -- 
-1.7.10.3
-
-
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
