@@ -1,147 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab2FDChy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 22:37:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11589 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755544Ab2FDChx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 22:37:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="147649290"
-Message-ID: <4FCC1F7C.5000008@linux.intel.com>
-Date: Mon, 04 Jun 2012 10:37:48 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755670Ab2FDCnK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 22:43:10 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42836 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933060Ab2FDCm1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 22:42:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4FCC2098.4030007@jp.fujitsu.com>
+Date: Mon, 04 Jun 2012 11:42:32 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com, bp@amd64.org,
-        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel machines
-References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de>
-In-Reply-To: <20120524175056.478167482@linutronix.de>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, liuj97@gmail.com,
+        kosaki.motohiro@gmail.com, rientjes@google.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [Patch v2] x86 : set numa_nodes_parsed at acpi_numa_memory_affinity_init
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas
+When hot-adding a CPU, the system outputs following messages since
+node_to_cpumask_map[2] was not allocated memory.
 
-I have some confusion in your patch please help to give me some updates.
+Booting Node 2 Processor 32 APIC 0xc0
+node_to_cpumask_map[2] NULL
+Pid: 0, comm: swapper/32 Tainted: G       A     3.3.5-acd #21
+Call Trace:
+ [<ffffffff81048845>] debug_cpumask_set_cpu+0x155/0x160
+ [<ffffffff8105e28a>] ? add_timer_on+0xaa/0x120
+ [<ffffffff8150665f>] numa_add_cpu+0x1e/0x22
+ [<ffffffff815020bb>] identify_cpu+0x1df/0x1e4
+ [<ffffffff815020d6>] identify_econdary_cpu+0x16/0x1d
+ [<ffffffff81504614>] smp_store_cpu_info+0x3c/0x3e
+ [<ffffffff81505263>] smp_callin+0x139/0x1be
+ [<ffffffff815052fb>] start_secondary+0x13/0xeb
 
-于 2012/5/25 1:54, Thomas Gleixner 写道:
-> Intentionally left blank to be filled out by someone who wants that and
-> can explain the reason for this better than me.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/kernel/cpu/mcheck/mce-internal.h |    8 ++
->  arch/x86/kernel/cpu/mcheck/mce.c          |   41 +++++++++++++--
->  arch/x86/kernel/cpu/mcheck/mce_intel.c    |   81 +++++++++++++++++++++++++++++-
->  3 files changed, 125 insertions(+), 5 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> +++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce-internal.h
-> @@ -28,6 +28,14 @@ extern int mce_ser;
->  
->  extern struct mce_bank *mce_banks;
->  
-> +#ifdef CONFIG_X86_MCE_INTEL
-> +unsigned long mce_intel_adjust_timer(unsigned long interval);
-> +#else
-> +# define mce_intel_adjust_timer mce_adjust_timer_default
-> +#endif
-> +
-> +void mce_timer_kick(unsigned long interval);
-> +
->  #ifdef CONFIG_ACPI_APEI
->  int apei_write_mce(struct mce *m);
->  ssize_t apei_read_mce(struct mce *m, u64 *record_id);
-> Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1242,6 +1242,14 @@ static unsigned long check_interval = 5 
->  static DEFINE_PER_CPU(unsigned long, mce_next_interval); /* in jiffies */
->  static DEFINE_PER_CPU(struct timer_list, mce_timer);
->  
-> +static unsigned long mce_adjust_timer_default(unsigned long interval)
-> +{
-> +	return interval;
-> +}
-> +
-> +static unsigned long (*mce_adjust_timer)(unsigned long interval) =
-> +	mce_adjust_timer_default;
-> +
->  static void mce_timer_fn(unsigned long data)
->  {
->  	struct timer_list *t = &__get_cpu_var(mce_timer);
-> @@ -1259,14 +1267,37 @@ static void mce_timer_fn(unsigned long d
->  	 * polling interval, otherwise increase the polling interval.
->  	 */
->  	iv = __this_cpu_read(mce_next_interval);
-> -	if (mce_notify_irq())
-> +	if (mce_notify_irq()) {
->  		iv = max(iv, (unsigned long) HZ/100);
-> -	else
-> +	} else {
->  		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
-> +		iv = mce_adjust_timer(iv);
-> +	}
->  	__this_cpu_write(mce_next_interval, iv);
-> +	/* Might have become 0 after CMCI storm subsided */
-> +	if (iv) {
-> +		t->expires = jiffies + iv;
-> +		add_timer_on(t, smp_processor_id());
-> +	}
-> +}
->  
-> -	t->expires = jiffies + iv;
-> -	add_timer_on(t, smp_processor_id());
-> +/*
-> + * Ensure that the timer is firing in @interval from now.
-> + */
-> +void mce_timer_kick(unsigned long interval)
-> +{
-> +	struct timer_list *t = &__get_cpu_var(mce_timer);
-> +	unsigned long when = jiffies + interval;
-> +	unsigned long iv = __this_cpu_read(mce_next_interval);
-> +
-> +	if (time_before(when, t->expires) && timer_pending(t)) {
-> +		mod_timer(t, when);
-> +	} else if (!mce_next_interval) {
+The reason is that the bit of node 2 was not set at numa_nodes_parsed.
+numa_nodes_parsed is set by only acpi_numa_processor_affinity_init /
+acpi_numa_x2apic_affinity_init. Thus even if hot-added memory which is
+same PXM as hot-added CPU is written in ACPI SRAT Table, if the
+hot-added CPU is not written in ACPI SRAT table, numa_nodes_parsed is
+not set.
 
-Why using mce_next_interval, it is a per_cpu var, should be non-NULL
-definitely, right? How about using *iv* here?
+But according to ACPI Spec Rev 5.0, it says about ACPI SRAT table as follows:
+This optional table provides information that allows OSPM to associate
+processors and memory ranges, including ranges of memory provided by
+hot-added memory devices, with system localities / proximity domains
+and clock domains.
 
-> +		t->expires = round_jiffies(jiffies + iv);
-> +		add_timer_on(t, smp_processor_id());
-> +	}
-> +	if (interval < iv)
-> +		__this_cpu_write(mce_next_interval, iv);
->  }
+It means that ACPI SRAT table only provides information for CPUs present
+at boot time and for memory including hot-added memory. So hot-added memory
+is written in ACPI SRAT table, but hot-added CPU is not written in it.
+Thus numa_nodes_parsed should be set by not only
+acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init
+but also acpi_numa_memory_affinity_init for the case.
 
-This code should be __this_cpu_write(mce_next_interval, interval);?
+Additionally, if system has cpuless memory node,
+acpi_numa_processor_affinity_init / acpi_numa_x2apic_affinity_init cannot
+set numa_nodes_parseds since these functions cannot find cpu description
+for the node. In this case, numa_nodes_parsed needs to be set by
+acpi_numa_memory_affinity_init.
 
->  
->  /* Must not be called in IRQ context where del_timer_sync() can deadlock */
-> @@ -1531,6 +1562,7 @@ static void __mcheck_cpu_init_vendor(str
->  	switch (c->x86_vendor) {
->  	case X86_VENDOR_INTEL:
->  		mce_intel_feature_init(c);
-> +		mce_adjust_timer = mce_intel_adjust_timer;
->  		break;
->  	case X86_VENDOR_AMD:
->  		mce_amd_feature_init(c);
-> @@ -1550,6 +1582,7 @@ static void __mcheck_cpu_init_timer(void
->  	if (mce_ignore_ce)
->  		return;
->  
-> +	iv = mce_adjust_timer(check_interval * HZ);
->  	__this_cpu_write(mce_next_interval, iv);
->  	if (!iv)
->  		return;
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+---
+ arch/x86/mm/srat.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-3.4/arch/x86/mm/srat.c
+===================================================================
+--- linux-3.4.orig/arch/x86/mm/srat.c	2012-05-21 07:29:13.000000000 +0900
++++ linux-3.4/arch/x86/mm/srat.c	2012-05-29 05:28:27.353916902 +0900
+@@ -176,6 +176,8 @@
+ 		return;
+ 	}
+
++	node_set(node, numa_nodes_parsed);
++
+ 	printk(KERN_INFO "SRAT: Node %u PXM %u %Lx-%Lx\n", node, pxm,
+ 	       start, end);
+ }
+
