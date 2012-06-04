@@ -1,104 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab2FDDDP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 23:03:15 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:34786 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616Ab2FDDDL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 23:03:11 -0400
-Date: Mon, 4 Jun 2012 13:03:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        David Dajun Chen <dchen@diasemi.com>,
-        Amit Daniel Kachhap <amit.kachhap@linaro.org>,
-        Donggeun Kim <dg77.kim@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: manual merge of the acpi tree with the hwmon-staging
- tree
-Message-Id: <20120604130305.f8d3a3702d43f660a1db0f9e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Jun_2012_13_03_05_+1000_oDieulfTEYi4mpf0"
+	id S1755686Ab2FDDHI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 23:07:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54628 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755614Ab2FDDHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 23:07:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="152161815"
+Message-ID: <4FCC25D3.7070308@intel.com>
+Date: Mon, 04 Jun 2012 11:04:51 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, andi@firstfloor.org,
+        Tony Luck <tony.luck@intel.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH v4 1/2] printk: add interface for disabling recursion check
+References: <4FBC444A.6060500@intel.com> <20120523100138.GA13506@x1.osrc.amd.com> <4FBDCE4A.7050900@intel.com> <20120524061145.GA18284@liondog.tnic> <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com> <4FBF3295.7090608@intel.com> <4FBF32E8.90101@intel.com> <20120525074114.GA5417@liondog.tnic> <4FC2DDFF.3020600@intel.com> <20120530090844.GA23663@liondog.tnic>
+In-Reply-To: <20120530090844.GA23663@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Jun_2012_13_03_05_+1000_oDieulfTEYi4mpf0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: ShuoX Liu <shuox.liu@intel.com>
 
-Hi Len,
+With some special scenario, such as Machine Check Exception happened
+in printk, we want to bypass printk recursion check to printk some
+important information. So we add these interfaces of printk.
 
-Today's linux-next merge of the acpi tree got a conflict in
-drivers/hwmon/Kconfig between commit 418e7870dca9 ("hwmon: Driver for
-DA9052/53 PMIC") from the hwmon-staging tree and commit f36beb016903
-("hwmon: exynos4: move thermal sensor driver to driver/thermal
-directory") from the acpi tree.
+1) printk_recursion_check_disable() for disabling recursion check
+2) printk_recursion_check_enable() for enabling recursion check
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ include/linux/printk.h |    3 +++
+ kernel/printk.c        |   17 ++++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-diff --cc drivers/hwmon/Kconfig
-index 4039353,2c7ef39..0000000
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@@ -314,26 -314,6 +314,16 @@@ config SENSORS_DS162
-  	  This driver can also be built as a module.  If so, the module
-  	  will be called ds1621.
- =20
- +config SENSORS_DA9052_ADC
- +	tristate "Dialog DA9052/DA9053 ADC"
- +	depends on PMIC_DA9052
- +	help
- +	  Say y here to support the ADC found on Dialog Semiconductor
- +	  DA9052-BC and DA9053-AA/Bx PMICs.
- +
- +	  This driver can also be built as module. If so, the module
- +	  will be called da9052-hwmon.
- +
-- config SENSORS_EXYNOS4_TMU
-- 	tristate "Temperature sensor on Samsung EXYNOS4"
-- 	depends on ARCH_EXYNOS4
-- 	help
-- 	  If you say yes here you get support for TMU (Thermal Management
-- 	  Unit) on SAMSUNG EXYNOS4 series of SoC.
--=20
-- 	  This driver can also be built as a module. If so, the module
-- 	  will be called exynos4-tmu.
--=20
-  config SENSORS_I5K_AMB
-  	tristate "FB-DIMM AMB temperature sensor on Intel 5000 series chipsets"
-  	depends on PCI && EXPERIMENTAL
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..da48ec7 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -42,6 +42,9 @@ static inline void console_verbose(void)
+ 		console_loglevel = 15;
+ }
+ 
++void printk_recursion_check_disable(void);
++void printk_recursion_check_enable(void);
++
+ struct va_format {
+ 	const char *fmt;
+ 	va_list *va;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..0580f67 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -78,6 +78,19 @@ int console_printk[4] = {
+ int oops_in_progress;
+ EXPORT_SYMBOL(oops_in_progress);
+ 
++static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
++
++void printk_recursion_check_disable(void)
++{
++	atomic_inc(&recursion_check_disabled);
++}
++
++void printk_recursion_check_enable(void)
++{
++	WARN_ON(atomic_read(&recursion_check_disabled) < 1);
++	atomic_dec(&recursion_check_disabled);
++}
++
+ /*
+  * console_sem protects the console_drivers list, and also
+  * provides serialisation for access to the entire console
+@@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * recursion and return - but flag the recursion so that
+ 		 * it can be printed at the next appropriate moment:
+ 		 */
+-		if (!oops_in_progress && !lockdep_recursing(current)) {
++		if (!atomic_read(&recursion_check_disabled)
++			&& !oops_in_progress
++			&& !lockdep_recursing(current)) {
+ 			recursion_bug = 1;
+ 			goto out_restore_irqs;
+ 		}
+-- 
+1.7.1
 
---Signature=_Mon__4_Jun_2012_13_03_05_+1000_oDieulfTEYi4mpf0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPzCVpAAoJEECxmPOUX5FEgg4QAJm523OaoylZmSlcGL59wYCw
-0D44WgDcFiDFmdpI87G1/zeP7BfkwMcXlCl1QY2PTilNE79czchcHfxVHPzzGe3G
-MDJf5LFufA7AI60yX07jNgupjFXV900bJhi+CF/m39x/Ql7BtW4MMCSWikn1Shnk
-COL/8yHPb61xePd1NuFr6/DW4mkc3XLPmqc5L4NM253Yt6arOCJZEcR+NDNkeea9
-nFqASgsfZVp9UOAQhYJDKrt5hpWTQNQuZXzIZS5LwZxfv1stw7jydcmLDeYp3iB9
-ZqBEl0O1Yfg38XnHOXo4esjKxGoTRWByZDB8TMm0psriTe9C6c02VxmdkOFHHe2W
-Z4nWRGx/+ZwLeGSovO4lGu5DOGVM5nDsKPqMGKJv1b74dQqz0Ze0wS4UFqzfdHbo
-YkcbJ+m9frQbuZLd0a8U4fK1NCeMcLxuedn1aCc5V8IXD097ljUZwVaMI7vzZMBc
-uBlDUcCeDBQ2Ss9B9nRW+H45dDVZU0FasvQbIK8Dn5OF19EormTBqCwzxRfUemav
-lp4K/SPxQlq/XuYJHgfUu+R56JDsAYaMWvErVEao/rAgGb5KMCCYEDd6W27RUrVG
-ZvlPN6iO9ZuZu/iWVHfIXkyilA6oLV7gBC8E2wmCh9ng+Tax9cw05ddBDxFNzSpT
-bnnU/5T8UDPhS/zFgbD0
-=QsxM
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Jun_2012_13_03_05_+1000_oDieulfTEYi4mpf0--
