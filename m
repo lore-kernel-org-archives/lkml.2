@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab2FDINN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 04:13:13 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3194 "EHLO relay.sw.ru"
+	id S1756629Ab2FDINe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 04:13:34 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:40703 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756514Ab2FDINH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756518Ab2FDINH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jun 2012 04:13:07 -0400
 From: Andrew Vagin <avagin@openvz.org>
 Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
@@ -12,105 +12,123 @@ Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] perf: teach "perf inject" to work with files
-Date: Mon,  4 Jun 2012 12:09:41 +0400
-Message-Id: <1338797382-287275-5-git-send-email-avagin@openvz.org>
+Subject: [RFC] [PATCH 0/5] Teach perf tool to profile sleep times (V4)
+Date: Mon,  4 Jun 2012 12:09:37 +0400
+Message-Id: <1338797382-287275-1-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1338797382-287275-1-git-send-email-avagin@openvz.org>
-References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch "perf inject" can only handle data from pipe.
+Do you want to know where your code waits locks for a long time?
+Yes! It's for you. This feature helps you to find bottlenecks.
 
-I want to use "perf inject" for reworking events. Look at my following patch.
+It's not artificial task. Once one of my colleague was investigating a
+scalability problem. He pressed sysrq-t some times and tried to merge
+call-chains by hand. But perf can do that better.
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- tools/perf/builtin-inject.c |   33 +++++++++++++++++++++++++++++++--
- 1 files changed, 31 insertions(+), 2 deletions(-)
+Here is fourth attempt to add this functionality in the kernel.
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 3beab48..bc30a40 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -14,7 +14,12 @@
- 
- #include "util/parse-options.h"
- 
--static char		const *input_name = "-";
-+static char		const *input_name	= "-";
-+static const char	*output_name		= "-";
-+static int		pipe_output		= 0;
-+static int		output;
-+static u64		bytes_written		= 0;
-+
- static bool		inject_build_ids;
- 
- static int perf_event__repipe_synth(struct perf_tool *tool __used,
-@@ -27,12 +32,14 @@ static int perf_event__repipe_synth(struct perf_tool *tool __used,
- 	size = event->header.size;
- 
- 	while (size) {
--		int ret = write(STDOUT_FILENO, buf, size);
-+		int ret = write(output, buf, size);
- 		if (ret < 0)
- 			return -errno;
- 
- 		size -= ret;
- 		buf += ret;
-+
-+		bytes_written += ret;
- 	}
- 
- 	return 0;
-@@ -244,8 +251,14 @@ static int __cmd_inject(void)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	if (!pipe_output)
-+		lseek(output, session->header.data_offset, SEEK_SET);
- 	ret = perf_session__process_events(session, &perf_inject);
- 
-+	if (!pipe_output) {
-+		session->header.data_size = bytes_written;
-+		perf_session__write_header(session, session->evlist, output, true);
-+	}
- 	perf_session__delete(session);
- 
- 	return ret;
-@@ -259,6 +272,10 @@ static const char * const report_usage[] = {
- static const struct option options[] = {
- 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
- 		    "Inject build-ids into the output stream"),
-+	OPT_STRING('i', "input", &input_name, "file",
-+		    "input file name"),
-+	OPT_STRING('o', "output", &output_name, "file",
-+		    "output file name"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose (show build ids, etc)"),
- 	OPT_END()
-@@ -274,6 +291,18 @@ int cmd_inject(int argc, const char **argv, const char *prefix __used)
- 	if (argc)
- 		usage_with_options(report_usage, options);
- 
-+	if (!strcmp(output_name, "-")) {
-+		pipe_output = 1;
-+		output = STDOUT_FILENO;
-+	} else {
-+		output = open(output_name, O_CREAT| O_WRONLY | O_TRUNC,
-+							S_IRUSR | S_IWUSR);
-+		if (output < 0) {
-+			perror("failed to create output file");
-+			exit(-1);
-+		}
-+	}
-+
- 	if (symbol__init() < 0)
- 		return -1;
- 
--- 
-1.7.1
+Previous attempts:
+* [PATCH 0/4] trace: add ability to collect call chains of non-current task.
+
+* [PATCH rh6 0/7] Teach perf tool to collect D-state statistics
+This version doesn't work for non-root users.
+
+* "sched/tracing: Add a new tracepoint for sleeptime" by Arun Sharma
+It has been committed, but then reverted due to performance reason.
+
+This series resolves a problem with events filtering and non-root users.
+Before I tried to use sched_stat* events, but it occurs in a context of
+another task. For this case logic of perf_event_context* doesn't work.
+
+This series adds one more event sched:sched_switch_finish, it's sent
+when a task starts executing on a cpu. When a task goes out from cpu,
+sched:sched_switch is sent.
+
+The time difference between sched_switch and sched_switch_finish is a time
+when a task wasn't being executed on a cpu.
+
+For profiling sleep time, events of both types should be collected and
+filtered by a defined state (interruptible of uninterruptible sleep).
+
+Then events should be post-processed with help "perf inject". It saves the time
+of sched_switch event for each process and when it meets stat_switch_finish,
+it sets time difference in sample->period and saves this new sample
+in the new perf.data.
+
+./perf record -e sched:sched_switch -g --filter 'prev_state == 1' \
+	-e sched:sched_switch_finish --filter 'state == 1' -P  ~/foo
+
+./perf inject -i ~/perf.data -o perf.data.new -s
+
+A test program:
+#include<unistd.h>
+#include<time.h>
+#include<sys/select.h>
+
+int main()
+{
+          struct timespec ts1;
+          struct timeval tv1;
+          int i;
+        long s;
+
+
+          for (i = 0; i<  2; i++) {
+                  ts1.tv_sec = 0;
+                  ts1.tv_nsec = 10000000;
+                  nanosleep(&ts1, NULL);
+
+                  tv1.tv_sec = 0;
+                  tv1.tv_usec = 40000;
+                  select(0, NULL, NULL, NULL,&tv1);
+                if (i % 100 == 0) {
+                        s = time(NULL);
+                        while (time(NULL) - s < 4);
+                }
+          }
+        return 1;
+}
+
+Profiling results:
+# Overhead  Command      Shared Object                  Symbol
+# ........  .......  .................  ......................
+#
+   100.00%      foo  [kernel.kallsyms]  [k] finish_task_switch
+                |
+                --- finish_task_switch
+                    __schedule
+                    schedule
+                   |          
+                   |--79.85%-- schedule_hrtimeout_range_clock
+                   |          schedule_hrtimeout_range
+                   |          poll_schedule_timeout
+                   |          do_select
+                   |          core_sys_select
+                   |          sys_select
+                   |          system_call
+                   |          __select
+                   |          __libc_start_main
+                   |          
+                    --20.15%-- do_nanosleep
+                              hrtimer_nanosleep
+                              sys_nanosleep
+                              system_call
+                              __GI___libc_nanosleep
+                              __libc_start_main
+
+Andrew Vagin (5):
+  event: add an event sched_switch_finish
+  sched: send the event sched_switch before perf_event_task_sched_out
+  sched: save a previous state on task_struct
+  perf: teach "perf inject" to work with files
+  perf: teach perf inject to merge sched_switch* events
+
+ include/linux/sched.h        |    3 +
+ include/trace/events/sched.h |   29 ++++++++++
+ kernel/sched/core.c          |    3 +-
+ tools/perf/builtin-inject.c  |  119 +++++++++++++++++++++++++++++++++++++++---
+ 4 files changed, 146 insertions(+), 8 deletions(-)
 
