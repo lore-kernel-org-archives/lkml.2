@@ -1,118 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760436Ab2FDM3S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 08:29:18 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:44661 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760156Ab2FDM3Q (ORCPT
+	id S1760470Ab2FDMdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 08:33:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:54955 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760427Ab2FDMdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 08:29:16 -0400
-Date: Mon, 4 Jun 2012 14:29:30 +0200
-From: Fredrik Gustafsson <iveqy@iveqy.com>
-To: linux-kernel@vger.kernel.org
-Subject: Oops 817, pjslib
-Message-ID: <20120604122930.GA23095@paksenarrion.iveqy.com>
+	Mon, 4 Jun 2012 08:33:31 -0400
+Message-ID: <ACB4012399AF4F20A8DAECA154E96ED3@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: "Greg KH" <gregkh@linuxfoundation.org>,
+        "KY Srinivasan" <kys@microsoft.com>
+Cc: <stable@vger.kernel.org>, "Jonathan Nieder" <jrnieder@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        "Mike Sterling" <Mike.Sterling@microsoft.com>
+References: <20120527010903.GA18244@kroah.com> <B4A84D892D5742FE83F71F788F6EAF48@local.st.by> <20120528203518.GA12623@kroah.com> <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by> <20120601092017.GE22821@kroah.com> <59CBCFF13ABD41B682835DD5E4851BC1@local.st.by> <20120601162629.GA11812@kroah.com> <426367E2313C2449837CD2DE46E7EAF90710C295@SN2PRD0310MB382.namprd03.prod.outlook.com> <20120602012249.GA7783@kroah.com>
+Subject: Re: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE disks devices ( but not for the ...
+Date: Mon, 4 Jun 2012 15:33:25 +0300
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-when running pj_init from pjlib (an open source VoIP implementation) I
-got an Oops. This is on an ARM AT91sam20 using glibc. An other
-version of the system with mixed glibc and uclibc and the same
-kernel, does not result in an oops.
+Hi!
 
-The kernel runned is:
-linux-2.6.27-rc8-at91-exp
+VVM > > > Hyper-V admins need _worked_ Linux v3.4.X / v3.3.X / v3.2.X
+VVM > > >
+VVM > > > Please, _fix_ errors related "use hv_storvsc instead of ata_piix to
+VVM > > > handle the IDE disks devices ( but not for the CD-ROM)"
 
-This is from dmesg:
 
-atmel_ssc_startup: SSC_SR=0x204
-atmel_ssc_dau: Stopping clock c02aa690
-atmel_ssc_startup: SSC_SR=0x204
-atmel_ssc_dau: Stopping clock c02aa690
-Unable to handle kernel NULL pointer dereference at virtual address
-00000000
-pgd = c0ed8000
-[00000000] *pgd=20e47031, *pte=00000000, *ppte=00000000
-Internal error: Oops: 817 [#1]
-Modules linked in:
-CPU: 0    Not tainted  (2.6.27-rc8-at91-exp-svn190-dirty686 #4)
-PC is at __clk_disable+0x18/0x60
-LR is at clk_disable+0x1c/0x24
-pc : [<c002a2d4>]    lr : [<c002a338>]    psr: 60000093
-sp : c038de80  ip : c038de98  fp : c038de94
-r10: c02b9f48  r9 : c02b9d70  r8 : c02b9e38
-r7 : c02b9dd8  r6 : 00000000  r5 : 00000000  r4 : c02aa690
-r3 : 00000000  r2 : c02abf58  r1 : c02abf58  r0 : c02aa690
-Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-Control: 0005317f  Table: 20ed8000  DAC: 00000015
-Process voip-ua (pid: 309, stack limit = 0xc038c268)
-Stack: (0xc038de80 to 0xc038e000)
-de80: a0000093 a0000093 c038deac c038de98 c002a338 c002a2cc c0c4c580
-c02b9dc8 
-dea0: c038decc c038deb0 c01890c8 c002a32c c02b9b60 c02b9f68 c0363c80
-c0ca5cc0 
-dec0: c038defc c038ded0 c0185594 c0188ff8 00000000 c0ca5cc0 c0ca5cc0
-c03a5c40 
-dee0: c0c828e0 c0c81108 c038c000 00000000 c038df14 c038df00 c0173f38
-c01854f4 
-df00: 00000001 c0c81000 c038df3c c038df18 c0173fb0 c0173eec c0173f6c
-c0c828e0 
-df20: c0960bf0 c03123a0 c094e438 c0020c68 c038df5c c038df40 c0077f90
-c0173f7c 
-df40: 00000000 c0c828e0 c0cb3ec0 00000006 c038df6c c038df60 c0078078
-c0077f44 
-df60: c038df8c c038df70 c0075080 c0078054 00000003 c0cb3ec0 c0c828e0
-00187ae8 
-df80: c038dfa4 c038df90 c0075108 c0075030 00187ae8 00000000 00000000
-c038dfa8 
-dfa0: c0020ac0 c007509c 00187ae8 00000000 00000004 4016ce54 00000002
-00000000 
-dfc0: 00187ae8 00000000 00187ae8 00000006 00000000 40e58880 00187494
-beaf2edc 
-dfe0: 00187a98 beaf2be8 4016ce68 4010d7ac 60000010 00000004 e28e1001
-e3510003 
-Backtrace: 
-[<c002a2bc>] (__clk_disable+0x0/0x60) from [<c002a338>]
-(clk_disable+0x1c/0x24)
-r4:a0000093 r3:a0000093
-[<c002a31c>] (clk_disable+0x0/0x24) from [<c01890c8>]
-(atmel_ssc_shutdown+0xe0/0x148)
-r4:c02b9dc8 r3:c0c4c580
-[<c0188fe8>] (atmel_ssc_shutdown+0x0/0x148) from [<c0185594>]
-(soc_codec_close+0xb0/0x184)
-r7:c0ca5cc0 r6:c0363c80 r5:c02b9f68 r4:c02b9b60
-[<c01854e4>] (soc_codec_close+0x0/0x184) from [<c0173f38>]
-(snd_pcm_release_substream+0x5c/0x90)
-[<c0173edc>] (snd_pcm_release_substream+0x0/0x90) from [<c0173fb0>]
-(snd_pcm_release+0x44/0x88)
-r4:c0c81000 r3:00000001
-[<c0173f6c>] (snd_pcm_release+0x0/0x88) from [<c0077f90>]
-(__fput+0x5c/0x110)
-r8:c0020c68 r7:c094e438 r6:c03123a0 r5:c0960bf0 r4:c0c828e0
-r3:c0173f6c
-[<c0077f34>] (__fput+0x0/0x110) from [<c0078078>] (fput+0x34/0x38)
-r7:00000006 r6:c0cb3ec0 r5:c0c828e0 r4:00000000
-[<c0078044>] (fput+0x0/0x38) from [<c0075080>]
-(filp_close+0x60/0x6c)
-[<c0075020>] (filp_close+0x0/0x6c) from [<c0075108>]
-(sys_close+0x7c/0xb4)
-r6:00187ae8 r5:c0c828e0 r4:c0cb3ec0 r3:00000003
-[<c007508c>] (sys_close+0x0/0xb4) from [<c0020ac0>]
-(ret_fast_syscall+0x0/0x2c)
-r5:00000000 r4:00187ae8
-Code: e24cb004 e1d032bc e1a04000 e3530000 (05833000) 
----[ end trace 78aa07dd19a459c6 ]---
+K.Y.S. >> {
+ Clearly I cannot tell you anything about this that you don't know!
+Looking at the rules for stable tree patches,
+this patch does not satisfy the requirement that the patch fix a bug
+since we are changing the behavior here of the ata driver to accommodate Hyper-V.
+I don't know how much flexibility you have here for taking patches that improve
+the general usability of Linux in different environments.
+All I can say is that It will be nice to have this patch in previous stable releases.
+}
 
--- 
-Med vänliga hälsningar
-Fredrik Gustafsson
+This is _real_ bug
 
-tel: 0733-608274
-e-post: iveqy@iveqy.com
+{ P.S.
+  Dear K.Y., please read _again_ my letter
+Sent: Monday, April 02, 2012 1:46 PM
+}
+
+> Lots of things would be "nice",
+> but as this doesn't meet the stable_kernel_rules.txt rules, sorry, I can't take them.
+
+ IMHO, patches "does meet the stable_kernel_rules.txt rules" by _all_ criterias . . .
+
+ See info correlated with rules:
+==
+Rules on what kind of patches are accepted, and which ones are not, into the
+"-stable" tree:
+
+{
+ - It must be obviously correct and tested.
+
+ Tested ( but, in early implementaition): Ubuntu 12.04 + OpenSUSE
+
+}
+
+{
+
+- It cannot be bigger than 100 lines, with context.
+
+
+79 lines
+ +
+47 lines
+}
+
+{
+ - It must fix only one thing.
+
+Yes
+
+}
+
+{
+
+ - It must fix a real bug that bothers people (not a, "This could be a
+   problem..." type thing).
+
+
+ Is real bug: see URLs in my e-mails about problem
++ see tranlate from Russian language issue described by Maksim Kramarenko:
+http://lists.debian.org/debian-russian/2012/01/msg00324.html
+==
+
+ . . .
+
+At the conclusion of the system through the halt or when sending a signal shutdown by ACPI to power down the console
+fell errors:
+http://www.k-max.name/wp-content/uploads/2012/01/hyper-v.png
+
+Errors do not interfere with work, but sneaking suspicion about future problems with the hard drive ...
+
+  . . .
+
+in general, the source of the problem as follows:
+After [VVM: turn On in kernel source]  Hyper-V modules [compile and start use], a hard disk was determined as 2 with the 
+same UUID.
+
+ . . .
+
+Here are screenshots of what is happening:
+connected to a drive:
+http://www.k-max.name/wp-content/uploads/2012/01/hdd-e1327750214479.png
+it is defined as a 2:
+http://www.k-max.name/wp-content/uploads/2012/01/2hdd.png
+Naturally, the same UUID:
+http://www.k-max.name/wp-content/uploads/2012/01/blkid.png
+That's what tells us the directory / dev:
+http://www.k-max.name/wp-content/uploads/2012/01/uuid.png
+
+==
+
+
+}
+
+{
+ - It must fix a problem that causes a build error (but not for things
+   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
+   security issue, or some "oh, that's not good" issue.  In short, something
+   critical.
+ - New device IDs and quirks are also accepted.
+
+ not related this patch
+
+}
+
+{
+ - No "theoretical race condition" issues, unless an explanation of how the
+   race can be exploited is also provided.
+ - It cannot contain any "trivial" fixes in it (spelling changes,
+   whitespace cleanups, etc).
+
+No "theoretical" , no "trivial"
+
+}
+
+ - It must follow the Documentation/SubmittingPatches rules.
+
+ Prepare patches -- this job duty of Microsoft employee
+
+ - It or an equivalent fix must already exist in Linus' tree (upstream).
+
+ Yes
+
+==
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
+
