@@ -1,211 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab2FDGls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 02:41:48 -0400
-Received: from szxga03-in.huawei.com ([58.251.152.66]:57961 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab2FDGlq (ORCPT
+	id S1754612Ab2FDGtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 02:49:24 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49047 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab2FDGtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 02:41:46 -0400
-Date: Mon, 04 Jun 2012 14:37:06 +0800
-From: Li Zefan <lizefan@huawei.com>
-Subject: [PATCH] cgroup: remove hierarchy_mutex
-X-Originating-IP: [10.166.88.128]
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Message-id: <4FCC5792.8010203@huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=GB2312
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
- Thunderbird/11.0
-X-CFilter-Loop: Reflected
+	Mon, 4 Jun 2012 02:49:22 -0400
+Message-ID: <4FCC5A2C.1030004@linux.vnet.ibm.com>
+Date: Mon, 04 Jun 2012 12:18:12 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: "David S. Miller" <davem@davemloft.net>, tglx@linutronix.de,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, yong.zhang0@gmail.com,
+        akpm@linux-foundation.org, vatsa@linux.vnet.ibm.com, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nikunj@linux.vnet.ibm.com, vapier@gentoo.org, konrad@gaisler.com,
+        tkhai@yandex.ru, sparclinux@vger.kernel.org
+Subject: Re: [PATCH] sparc32: refactor smp boot
+References: <20120601.135612.699120609738854050.davem@davemloft.net> <20120601185448.GA19148@merkur.ravnborg.org> <4FC94693.5050707@linux.vnet.ibm.com> <20120602065249.GA19558@merkur.ravnborg.org> <20120602074424.GA19690@merkur.ravnborg.org> <4FC9C871.60902@linux.vnet.ibm.com> <20120602151348.GA17409@merkur.ravnborg.org> <4FCA382B.6050601@linux.vnet.ibm.com> <20120602162340.GA27530@merkur.ravnborg.org> <4FCA40A5.3060409@linux.vnet.ibm.com> <20120603211752.GA7594@merkur.ravnborg.org>
+In-Reply-To: <20120603211752.GA7594@merkur.ravnborg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060406-4790-0000-0000-00000311B0DA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was introduced for memcg to iterate cgroup hierarchy without
-holding cgroup_mutex, but soon after that it was replaced with
-a lockless way in memcg.
+On 06/04/2012 02:47 AM, Sam Ravnborg wrote:
 
-No one used hierarchy_mutex since that, so remove it.
+> From 531d9c538fc60c15363890768ea416897853d6af Mon Sep 17 00:00:00 2001
+> From: Sam Ravnborg <sam@ravnborg.org>
+> Date: Sun, 3 Jun 2012 23:08:18 +0200
+> Subject: [PATCH] sparc32: refactor smp boot
+> 
+> Introduce a common smp_callin() function to call
+> from trampoline_32.S.
+> Add platform specific functions to handle the
+> platform details.
+> 
+> This is in preparation for a patch that will
+> unify the smp boot stuff for all architectures.
+> sparc32 was significantly different to warrant
+> this patch in preparation.
+> 
+> Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+> ---
+> 
+> Hi Srivatsa.
+> 
+> This should address all your comemnts (thanks!).
+> I assume you will include this patch in your serie.
+> 
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- Documentation/cgroups/cgroups.txt |    2 +-
- include/linux/cgroup.h            |   17 ++------------
- kernel/cgroup.c                   |   45 -------------------------------------
- 3 files changed, 3 insertions(+), 61 deletions(-)
 
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 8e74980..e86faae 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -656,7 +656,7 @@ example in cpusets, no task may attach before 'cpus' and 'mems' are set
- up.
- 
- void bind(struct cgroup *root)
--(cgroup_mutex and ss->hierarchy_mutex held by caller)
-+(cgroup_mutex held by caller)
- 
- Called when a cgroup subsystem is rebound to a different hierarchy
- and root cgroup. Currently this will only involve movement between
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index d3f5fba..c90eaa8 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -500,21 +500,8 @@ struct cgroup_subsys {
- 	const char *name;
- 
- 	/*
--	 * Protects sibling/children links of cgroups in this
--	 * hierarchy, plus protects which hierarchy (or none) the
--	 * subsystem is a part of (i.e. root/sibling).  To avoid
--	 * potential deadlocks, the following operations should not be
--	 * undertaken while holding any hierarchy_mutex:
--	 *
--	 * - allocating memory
--	 * - initiating hotplug events
--	 */
--	struct mutex hierarchy_mutex;
--	struct lock_class_key subsys_key;
--
--	/*
- 	 * Link to parent, and list entry in parent's children.
--	 * Protected by this->hierarchy_mutex and cgroup_lock()
-+	 * Protected by cgroup_lock()
- 	 */
- 	struct cgroupfs_root *root;
- 	struct list_head sibling;
-@@ -602,7 +589,7 @@ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
-  * the lifetime of cgroup_subsys_state is subsys's matter.
-  *
-  * Looking up and scanning function should be called under rcu_read_lock().
-- * Taking cgroup_mutex()/hierarchy_mutex() is not necessary for following calls.
-+ * Taking cgroup_mutex is not necessary for following calls.
-  * But the css returned by this routine can be "not populated yet" or "being
-  * destroyed". The caller should check css and cgroup's status.
-  */
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 0f3527d..907c3f2 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1063,28 +1063,24 @@ static int rebind_subsystems(struct cgroupfs_root *root,
- 			BUG_ON(cgrp->subsys[i]);
- 			BUG_ON(!dummytop->subsys[i]);
- 			BUG_ON(dummytop->subsys[i]->cgroup != dummytop);
--			mutex_lock(&ss->hierarchy_mutex);
- 			cgrp->subsys[i] = dummytop->subsys[i];
- 			cgrp->subsys[i]->cgroup = cgrp;
- 			list_move(&ss->sibling, &root->subsys_list);
- 			ss->root = root;
- 			if (ss->bind)
- 				ss->bind(cgrp);
--			mutex_unlock(&ss->hierarchy_mutex);
- 			/* refcount was already taken, and we're keeping it */
- 		} else if (bit & removed_bits) {
- 			/* We're removing this subsystem */
- 			BUG_ON(ss == NULL);
- 			BUG_ON(cgrp->subsys[i] != dummytop->subsys[i]);
- 			BUG_ON(cgrp->subsys[i]->cgroup != cgrp);
--			mutex_lock(&ss->hierarchy_mutex);
- 			if (ss->bind)
- 				ss->bind(dummytop);
- 			dummytop->subsys[i]->cgroup = dummytop;
- 			cgrp->subsys[i] = NULL;
- 			subsys[i]->root = &rootnode;
- 			list_move(&ss->sibling, &rootnode.subsys_list);
--			mutex_unlock(&ss->hierarchy_mutex);
- 			/* subsystem is now free - drop reference on module */
- 			module_put(ss->module);
- 		} else if (bit & final_bits) {
-@@ -3906,37 +3902,6 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
- 		set_bit(CSS_CLEAR_CSS_REFS, &css->flags);
- }
- 
--static void cgroup_lock_hierarchy(struct cgroupfs_root *root)
--{
--	/* We need to take each hierarchy_mutex in a consistent order */
--	int i;
--
--	/*
--	 * No worry about a race with rebind_subsystems that might mess up the
--	 * locking order, since both parties are under cgroup_mutex.
--	 */
--	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--		struct cgroup_subsys *ss = subsys[i];
--		if (ss == NULL)
--			continue;
--		if (ss->root == root)
--			mutex_lock(&ss->hierarchy_mutex);
--	}
--}
--
--static void cgroup_unlock_hierarchy(struct cgroupfs_root *root)
--{
--	int i;
--
--	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--		struct cgroup_subsys *ss = subsys[i];
--		if (ss == NULL)
--			continue;
--		if (ss->root == root)
--			mutex_unlock(&ss->hierarchy_mutex);
--	}
--}
--
- /*
-  * cgroup_create - create a cgroup
-  * @parent: cgroup that will be parent of the new cgroup
-@@ -3997,9 +3962,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 			ss->post_clone(cgrp);
- 	}
- 
--	cgroup_lock_hierarchy(root);
- 	list_add(&cgrp->sibling, &cgrp->parent->children);
--	cgroup_unlock_hierarchy(root);
- 	root->number_of_cgroups++;
- 
- 	err = cgroup_create_dir(cgrp, dentry, mode);
-@@ -4026,9 +3989,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
- 
-  err_remove:
- 
--	cgroup_lock_hierarchy(root);
- 	list_del(&cgrp->sibling);
--	cgroup_unlock_hierarchy(root);
- 	root->number_of_cgroups--;
- 
-  err_destroy:
-@@ -4236,10 +4197,8 @@ again:
- 		list_del_init(&cgrp->release_list);
- 	raw_spin_unlock(&release_list_lock);
- 
--	cgroup_lock_hierarchy(cgrp->root);
- 	/* delete this cgroup from parent->children */
- 	list_del_init(&cgrp->sibling);
--	cgroup_unlock_hierarchy(cgrp->root);
- 
- 	list_del_init(&cgrp->allcg_node);
- 
-@@ -4313,8 +4272,6 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	 * need to invoke fork callbacks here. */
- 	BUG_ON(!list_empty(&init_task.tasks));
- 
--	mutex_init(&ss->hierarchy_mutex);
--	lockdep_set_class(&ss->hierarchy_mutex, &ss->subsys_key);
- 	ss->active = 1;
- 
- 	/* this function shouldn't be used with modular subsystems, since they
-@@ -4441,8 +4398,6 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
- 	}
- 	write_unlock(&css_set_lock);
- 
--	mutex_init(&ss->hierarchy_mutex);
--	lockdep_set_class(&ss->hierarchy_mutex, &ss->subsys_key);
- 	ss->active = 1;
- 
- 	/* success! */
--- 
-1.7.9.7
+Of course, thanks for your work!
+
+As soon as the Xen problem gets sorted out (patch 5), I will send out
+a v2 including your patch and addressing all the comments received
+so far.
+
+> diff --git a/arch/sparc/kernel/sun4d_smp.c b/arch/sparc/kernel/sun4d_smp.c
+
+> index ddaea31..c9eb82f 100644
+> --- a/arch/sparc/kernel/sun4d_smp.c
+> +++ b/arch/sparc/kernel/sun4d_smp.c
+> @@ -50,10 +50,9 @@ static inline void show_leds(int cpuid)
+>  			      "i" (ASI_M_CTL));
+>  }
+> 
+> -void __cpuinit smp4d_callin(void)
+> +void __cpuinit sun4d_cpu_pre_starting(void *arg)
+>  {
+>  	int cpuid = hard_smp_processor_id();
+> -	unsigned long flags;
+> 
+>  	/* Show we are alive */
+>  	cpu_leds[cpuid] = 0x6;
+> @@ -61,26 +60,20 @@ void __cpuinit smp4d_callin(void)
+> 
+>  	/* Enable level15 interrupt, disable level14 interrupt for now */
+>  	cc_set_imsk((cc_get_imsk() & ~0x8000) | 0x4000);
+> +}
+> 
+> -	local_ops->cache_all();
+> -	local_ops->tlb_all();
+> +void __cpuinit sun4d_cpu_pre_online(void *arg)
+> +{
+> +	unsigned long flags;
+> +	int cpuid;
+> 
+> -	notify_cpu_starting(cpuid);
+> -	/*
+> -	 * Unblock the master CPU _only_ when the scheduler state
+> +	cpuid = hard_smp_processor_id();
+> +
+> +	/* Unblock the master CPU _only_ when the scheduler state
+>  	 * of all secondary CPUs will be up-to-date, so after
+>  	 * the SMP initialization the master will be just allowed
+>  	 * to call the scheduler code.
+>  	 */
+
+
+Looks like you forgot to update this comment.
+Its ok, I'll update your patch and include it in the series.
+
+Regards,
+Srivatsa S. Bhat
+
+> -	/* Get our local ticker going. */
+> -	register_percpu_ce(cpuid);
+> -
+> -	calibrate_delay();
+> -	smp_store_cpu_info(cpuid);
+> -	local_ops->cache_all();
+> -	local_ops->tlb_all();
+> -
+> -	/* Allow master to continue. */
+>  	sun4d_swap((unsigned long *)&cpu_callin_map[cpuid], 1);
+>  	local_ops->cache_all();
+>  	local_ops->tlb_all();
+> @@ -106,16 +99,12 @@ void __cpuinit smp4d_callin(void)
+>  	local_ops->cache_all();
+>  	local_ops->tlb_all();
+> 
+> -	local_irq_enable();	/* We don't allow PIL 14 yet */
+> -
+>  	while (!cpumask_test_cpu(cpuid, &smp_commenced_mask))
+>  		barrier();
+> 
+>  	spin_lock_irqsave(&sun4d_imsk_lock, flags);
+>  	cc_set_imsk(cc_get_imsk() & ~0x4000); /* Allow PIL 14 as well */
+>  	spin_unlock_irqrestore(&sun4d_imsk_lock, flags);
+> -	set_cpu_online(cpuid, true);
+> -
+>  }
+> 
+
 
