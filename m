@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932204Ab2FDQc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:32:57 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43573 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760971Ab2FDQcz (ORCPT
+	id S932475Ab2FDQdn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:33:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59558 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932105Ab2FDQdm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:32:55 -0400
-Date: Mon, 4 Jun 2012 17:36:13 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
-Subject: Re: [PATCH 04/24] TTY: ircomm, use open counts from tty_port
-Message-ID: <20120604173613.5a75c451@pyramind.ukuu.org.uk>
-In-Reply-To: <1338809738-18967-5-git-send-email-jslaby@suse.cz>
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
-	<1338809738-18967-5-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 12:33:42 -0400
+Message-ID: <1338827607.28282.99.camel@twins>
+Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
+ calculating perf mult
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 04 Jun 2012 18:33:27 +0200
+In-Reply-To: <4FCCD6B7.4030703@linux.intel.com>
+References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
+	    <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
+	   <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
+	  <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
+	 <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  4 Jun 2012 13:35:18 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
+On Mon, 2012-06-04 at 08:39 -0700, Arjan van de Ven wrote:
 
-> Switch to tty_port->count and blocked_open.
+> hmm I think you're missing the whole point.
 
-Only question here is tty_port->count should be under the port lock, so
-code which plays with the count itself like this probably needs to be
-using the port lock ?
+Probably.. as I've still no clue what you're wanting to do.
 
-Alan
+> > I'm just not buying load actually matters or works, if there's lots of
+> > idle time load history should be low, if there's not a lot of idle time,
+> > you're busy (per definition) and again load isn't important.
+> 
+> if there is a lot of idle, load can be low or high; load is more than
+> just cpu usage. it includes waiting for resources and mutexes etc.
+
+It very much does not. The thing its using: this_cpu_load() returns
+rq->cpu_load[0], does not include blocked tasks of any kind.
+
+> if load is low, you are idle, sure (in that direction it works). If load
+> is low, the heuristic that is used here will not hinder a deep C state
+> choice.
+> 
+> if there is not a lot of idle time, sure, load is high.
+
+False, you can have 0 idle time and still have low load.
+
+>  but because idle
+> time tends to be bursty, we can still be idle for, say, a millisecond
+> every 10 milliseconds. In this scenario, the load average is used to
+> ensure that the 200 usecond cost of exiting idle is acceptable.
+
+So what you're saying is that if you have 1ms idle in 10ms, it might not
+be a continuous 1ms. And you're using load as a measure of how many
+fragments it comes apart in?
+
+That's not making sense.
+
+> one other way of doing this would be tracking cumulative accrued latency
+> as a percentage of cpu busy time... but that's also a pretty
+> approximative measure.
+
+To what purpose? I'm completely confused now, none of what you say is
+making any sense.
+
 
