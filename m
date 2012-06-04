@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab2FDLpE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:45:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54920 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752687Ab2FDLpB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:45:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <20120519033154.GA12188@ioremap.net>
-References: <1337330963-20485-1-git-send-email-devendra.aaru@gmail.com>
-	<20120519033154.GA12188@ioremap.net>
-Date: Mon, 4 Jun 2012 17:15:01 +0530
-Message-ID: <CAHdPZaM0pc_2_5Qapk-TwVcXpvYq2F0CHZ_9Cii6Zo=TmT1FGQ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/w1: cleanup w1_uevent
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: linux-kernel@vger.kernel.org, GregKH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932255Ab2FDLpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:45:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59598 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932105Ab2FDLpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 07:45:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="151277070"
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] udf: stop using s_dirt
+Date: Mon,  4 Jun 2012 14:46:24 +0300
+Message-Id: <1338810384-26437-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mr Greg,
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-are you going to take this in?
+The UDF file-system does not need the 's_dirt' superblock flag because it does
+not define the 'write_super()' method. This flag was set to 1 in few places and
+set to 0 in '->sync_fs()' and was basically useless. Stop using it because it
+is on its way out.
 
-Thanks,
-Devendra.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+---
+ fs/udf/super.c   |    6 ------
+ fs/udf/udfdecl.h |    1 -
+ 2 files changed, 0 insertions(+), 7 deletions(-)
 
-On Sat, May 19, 2012 at 9:01 AM, Evgeniy Polyakov <zbr@ioremap.net> wrote:
-> Hi
->
-> On Fri, May 18, 2012 at 02:19:23PM +0530, Devendra Naga (devendra.aaru@gmail.com) wrote:
->> There were some return statements around in the w1_uevent, used goto
->> to cleanup those return statements with the help of err variable,
->> and also removed a semi colon at the end of the w1_uevent's closing
->> brace.
->
-> I personally do not see whether this is better than what was before
-> So, Greg, it is up to you to decide :)
->
-> If you pull it in, then feel free to add my acked-by.
-> Thank you.
->
->        Evgeniy Polyakov
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index ac8a348..34e6b87 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1948,7 +1948,6 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
+ 	sb->s_op = &udf_sb_ops;
+ 	sb->s_export_op = &udf_export_ops;
+ 
+-	sb->s_dirt = 0;
+ 	sb->s_magic = UDF_SUPER_MAGIC;
+ 	sb->s_time_gran = 1000;
+ 
+@@ -2070,10 +2069,6 @@ void _udf_err(struct super_block *sb, const char *function,
+ 	struct va_format vaf;
+ 	va_list args;
+ 
+-	/* mark sb error */
+-	if (!(sb->s_flags & MS_RDONLY))
+-		sb->s_dirt = 1;
+-
+ 	va_start(args, fmt);
+ 
+ 	vaf.fmt = fmt;
+@@ -2135,7 +2130,6 @@ static int udf_sync_fs(struct super_block *sb, int wait)
+ 		 * the buffer for IO
+ 		 */
+ 		mark_buffer_dirty(sbi->s_lvid_bh);
+-		sb->s_dirt = 0;
+ 		sbi->s_lvid_dirty = 0;
+ 	}
+ 	mutex_unlock(&sbi->s_alloc_mutex);
+diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
+index ebe1031..de038da 100644
+--- a/fs/udf/udfdecl.h
++++ b/fs/udf/udfdecl.h
+@@ -129,7 +129,6 @@ static inline void udf_updated_lvid(struct super_block *sb)
+ 	WARN_ON_ONCE(((struct logicalVolIntegrityDesc *)
+ 		     bh->b_data)->integrityType !=
+ 		     cpu_to_le32(LVID_INTEGRITY_TYPE_OPEN));
+-	sb->s_dirt = 1;
+ 	UDF_SB(sb)->s_lvid_dirty = 1;
+ }
+ extern u64 lvid_get_unique_id(struct super_block *sb);
+-- 
+1.7.7.6
+
