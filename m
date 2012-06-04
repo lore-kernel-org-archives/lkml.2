@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760679Ab2FDN5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 09:57:10 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:20815
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754590Ab2FDN5H convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 09:57:07 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:none;EFVD:NLI
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I542M1432Nzz1202hzzz2fh2a8h683h839h944hd25hf0ah)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-From: KY Srinivasan <kys@microsoft.com>
-To: Victor Miasnikov <vvm@tut.by>, Greg KH <gregkh@linuxfoundation.org>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Sterling <mike.sterling@microsoft.com>
-Subject: RE: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the
- Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore
- detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE
- disks devices ( but not for the ...
-Thread-Topic: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the
- Hyper-V drivers by default 2) db63a4c8115a libata: add a host flag to ignore
- detected ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE
- disks devices ( but not for the ...
-Thread-Index: AQHNQA/ykGE+y/YEIE6E+ePj3G2bhJblpN/xgAABmYCAAC978IAAZl6AgAPgITeAABY4UA==
-Date: Mon, 4 Jun 2012 13:56:37 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF90710CAD0@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <20120527010903.GA18244@kroah.com>
- <B4A84D892D5742FE83F71F788F6EAF48@local.st.by>
- <20120528203518.GA12623@kroah.com>
- <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by>
- <20120601092017.GE22821@kroah.com>
- <59CBCFF13ABD41B682835DD5E4851BC1@local.st.by>
- <20120601162629.GA11812@kroah.com>
- <426367E2313C2449837CD2DE46E7EAF90710C295@SN2PRD0310MB382.namprd03.prod.outlook.com>
- <20120602012249.GA7783@kroah.com>
- <ACB4012399AF4F20A8DAECA154E96ED3@local.st.by>
-In-Reply-To: <ACB4012399AF4F20A8DAECA154E96ED3@local.st.by>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.53.133]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1760681Ab2FDN6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 09:58:09 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:33042 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754590Ab2FDN6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 09:58:07 -0400
+X-AuditID: b753bd60-90ec9ba000001453-1d-4fccbeebddcb
+X-AuditID: b753bd60-90ec9ba000001453-1d-4fccbeebddcb
+Message-ID: <4FCCBEE9.8030006@hitachi.com>
+Date: Mon, 04 Jun 2012 22:58:01 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%TUT.BY$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [RFC PATCH -tip  1/9] ftrace: Add pt_regs acceptable trace
+ callback
+References: <20120529124833.9191.23007.stgit@localhost.localdomain>  <20120529124857.9191.5868.stgit@localhost.localdomain> <1338602877.13348.474.camel@gandalf.stny.rr.com>
+In-Reply-To: <1338602877.13348.474.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Victor Miasnikov [mailto:vvm@tut.by]
-> Sent: Monday, June 04, 2012 8:33 AM
-> To: Greg KH; KY Srinivasan
-> Cc: stable@vger.kernel.org; Jonathan Nieder; linux-kernel@vger.kernel.org;
-> Mike Sterling
-> Subject: Re: Linux on Hyper-V 1) cd006086fa5d ata_piix: defer disks to the Hyper-
-> V drivers by default 2) db63a4c8115a libata: add a host flag to ignore detected
-> ATA device FW: use hv_storvsc instead of ata_piix to handle the IDE disks devices
-> ( but not for the ...
+(2012/06/02 11:07), Steven Rostedt wrote:
+> On Tue, 2012-05-29 at 21:48 +0900, Masami Hiramatsu wrote:
 > 
-> Hi!
+>>  struct ftrace_ops {
+>> -	ftrace_func_t			func;
+>> +	union {
+>> +		ftrace_func_t			func;
+>> +		ftrace_regs_func_t		regs_func;
+>> +	};
+>>  	struct ftrace_ops		*next;
+>>  	unsigned long			flags;
+>>  	int __percpu			*disabled;
+>> @@ -164,6 +182,7 @@ static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
+>>  }
 > 
-> VVM > > > Hyper-V admins need _worked_ Linux v3.4.X / v3.3.X / v3.2.X
-
-Victor, what distro are you using. I can help you with the ata patch on specific set of distros of interest. 
-If the system that you are interested loads the ata_piix module, we can solve the issue on hand using
-modprobe rules rather than a patch against the ata driver. Let me know.
-
-Regards,
-
-K. Y 
+> [..]
 > 
+>>  
+>>  static struct ftrace_ops global_ops = {
+>> -	.func			= ftrace_stub,
+>> +	.regs_func		= ftrace_regs_stub,
+>>  	.notrace_hash		= EMPTY_HASH,
+>>  	.filter_hash		= EMPTY_HASH,
+>> +	.flags			= FTRACE_OPS_FL_SAVE_REGS,
+>>  };
+>>  
+>>  static DEFINE_MUTEX(ftrace_regex_lock);
+>> @@ -3911,7 +3924,8 @@ void __init ftrace_init(void)
+>>  #else
+>>  
+>>  static struct ftrace_ops global_ops = {
+>> -	.func			= ftrace_stub,
+>> +	.regs_func		= ftrace_regs_stub,
+>> +	.flags			= FTRACE_OPS_FL_SAVE_REGS,
+>>  };
+>>  
+> 
+> Ug, this wont compile with some versions of gcc :-(
+> 
+> The one I stumbled on is gcc 4.5.1 (which I test builds against 4.5.1
+> and 4.6.0). Then I saw this BZ:
+> 
+> http://gcc.gnu.org/bugzilla/show_bug.cgi?id=10676
+> 
+> This can't be a union :-(  Then we can not initialize it.
 
+Hmm, how about initializing in __init function ?
+Or we can make func and regs_func in different members,
+instead of using a union. (in that case, we can remove
+FTRACE_OPS_FL_SAVE_REGS.)
+I just consider passing uninitialized argument to user
+function can cause unexpected behavior...
 
+Thank you,
 
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
