@@ -1,135 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760689Ab2FDPJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:09:20 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52639 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab2FDPJS (ORCPT
+	id S1754008Ab2FDPLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:11:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4140 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757Ab2FDPLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:09:18 -0400
-X-AuditID: b753bd60-925c5ba000002ea5-d3-4fcccf9bf124
-X-AuditID: b753bd60-925c5ba000002ea5-d3-4fcccf9bf124
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [BUGFIX PATCH] x86/insn: Fix to decode bsr/bsf/jmpe with operand-size
- prefix
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Pekka Enberg <penberg@kernel.org>, <yrl.pp-manager.tt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Tue, 05 Jun 2012 00:09:11 +0900
-Message-ID: <20120604150911.22338.43296.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Mon, 4 Jun 2012 11:11:31 -0400
+X-Authority-Analysis: v=2.0 cv=eIiRfQV1 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=nKPuxUj2xSQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=lqML7umiU0S75Lk8GeQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338822687.13348.516.camel@gandalf.stny.rr.com>
+Subject: Re: Re: Re: [RFC PATCH -tip  1/9] ftrace: Add pt_regs acceptable
+ trace callback
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Mon, 04 Jun 2012 11:11:27 -0400
+In-Reply-To: <4FCCCCE6.5000606@hitachi.com>
+References: <20120529124833.9191.23007.stgit@localhost.localdomain>
+	   <20120529124857.9191.5868.stgit@localhost.localdomain>
+	  <1338602877.13348.474.camel@gandalf.stny.rr.com>
+	  <4FCCBEE9.8030006@hitachi.com>
+	 <1338819915.13348.508.camel@gandalf.stny.rr.com>
+	 <4FCCCCE6.5000606@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix x86 instruction decoder to decode bsr/bsf/jmpe with
-operand-size prefix (66h). This fixes below failure of
-the test case.
+On Mon, 2012-06-04 at 23:57 +0900, Masami Hiramatsu wrote:
 
-bsf/bsr/jmpe have a special encoding. Opcode map in
-Intel Software Developers Manual vol2 says they have
-TZCNT/LZCNT variants if it has F3h prefix. However, there
-is no information if it has other 66h or F2h prefixes.
-Current instruction decoder supposes that those are
-a bad instruction, but it actually accept at least
-operand-size prefix.
+> > As I want all functions to pass the ftrace_ops anyway, we can implement
+> > the ftrace_ops and the regs passing together. The arch will need to
+> > update both at the same time.
+> 
+> Hmm, is that ftrace_ops for recursion check? :)
 
-This fixes errors reported by test_get_len as below:
+Nope, it's to pass data to the callbacks.
 
-  Warning: arch/x86/tools/test_get_len found difference at
-<em_bsf>:ffffffff81036d87
-  Warning: ffffffff81036de5:	66 0f bc c2          	bsf    %dx,%ax
-  Warning: objdump says 4 bytes, but insn_get_length() says 3
-  Warning: arch/x86/tools/test_get_len found difference at
-<em_bsr>:ffffffff81036ea6
-  Warning: ffffffff81036f04:	66 0f bd c2          	bsr    %dx,%ax
-  Warning: objdump says 4 bytes, but insn_get_length() says 3
-  Warning: decoded and checked 13298882 instructions with 2 warnings
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reported-by: Pekka Enberg <penberg@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
+> > Nothing will be passed uninitialized. If an arch does not support
+> > passing ftrace ops and regs, then it will be calling the
+> > noregs_global_list_func() (or whatever I name it), which only expects
+> > the ip and parent_ip as parameters. Then that will be calling the actual
+> > loop function with NULLs in the parameters.
+> 
+> Yeah, that's safe, but I think dyn_ftrace can't call handler
+> directly from ftrace_call on such archs, can it?
+> # It depends on performance degradation.
+> 
 
- arch/x86/lib/x86-opcode-map.txt      |    8 ++++----
- arch/x86/tools/gen-insn-attr-x86.awk |   14 +++++++++-----
- 2 files changed, 13 insertions(+), 9 deletions(-)
+Actually, there's already a performance degradation on most archs. They
+must also implement a fast "shut off function tracing", and if it
+doesn't, it calls a helper function. I'll merge the helper function into
+this call so we don't have two indirections.
 
-diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-index 8191379..5d7e51f 100644
---- a/arch/x86/lib/x86-opcode-map.txt
-+++ b/arch/x86/lib/x86-opcode-map.txt
-@@ -28,7 +28,7 @@
- #  - (66): the last prefix is 0x66
- #  - (F3): the last prefix is 0xF3
- #  - (F2): the last prefix is 0xF2
--#
-+#  - (!F3) : the last prefix is not 0xF3 (including non-last prefix case)
- 
- Table: one byte opcode
- Referrer:
-@@ -515,12 +515,12 @@ b4: LFS Gv,Mp
- b5: LGS Gv,Mp
- b6: MOVZX Gv,Eb
- b7: MOVZX Gv,Ew
--b8: JMPE | POPCNT Gv,Ev (F3)
-+b8: JMPE (!F3) | POPCNT Gv,Ev (F3)
- b9: Grp10 (1A)
- ba: Grp8 Ev,Ib (1A)
- bb: BTC Ev,Gv
--bc: BSF Gv,Ev | TZCNT Gv,Ev (F3)
--bd: BSR Gv,Ev | LZCNT Gv,Ev (F3)
-+bc: BSF Gv,Ev (!F3) | TZCNT Gv,Ev (F3)
-+bd: BSR Gv,Ev (!F3) | LZCNT Gv,Ev (F3)
- be: MOVSX Gv,Eb
- bf: MOVSX Gv,Ew
- # 0x0f 0xc0-0xcf
-diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
-index 5f6a5b6..ddcf39b 100644
---- a/arch/x86/tools/gen-insn-attr-x86.awk
-+++ b/arch/x86/tools/gen-insn-attr-x86.awk
-@@ -66,9 +66,10 @@ BEGIN {
- 	rex_expr = "^REX(\\.[XRWB]+)*"
- 	fpu_expr = "^ESC" # TODO
- 
--	lprefix1_expr = "\\(66\\)"
-+	lprefix1_expr = "\\((66|!F3)\\)"
- 	lprefix2_expr = "\\(F3\\)"
--	lprefix3_expr = "\\(F2\\)"
-+	lprefix3_expr = "\\((F2|!F3)\\)"
-+	lprefix_expr = "\\((66|F2|F3)\\)"
- 	max_lprefix = 4
- 
- 	# All opcodes starting with lower-case 'v' or with (v1) superscript
-@@ -333,13 +334,16 @@ function convert_operands(count,opnd,       i,j,imm,mod)
- 		if (match(ext, lprefix1_expr)) {
- 			lptable1[idx] = add_flags(lptable1[idx],flags)
- 			variant = "INAT_VARIANT"
--		} else if (match(ext, lprefix2_expr)) {
-+		}
-+		if (match(ext, lprefix2_expr)) {
- 			lptable2[idx] = add_flags(lptable2[idx],flags)
- 			variant = "INAT_VARIANT"
--		} else if (match(ext, lprefix3_expr)) {
-+		}
-+		if (match(ext, lprefix3_expr)) {
- 			lptable3[idx] = add_flags(lptable3[idx],flags)
- 			variant = "INAT_VARIANT"
--		} else {
-+		}
-+		if (!match(ext, lprefix_expr)){
- 			table[idx] = add_flags(table[idx],flags)
- 		}
- 	}
+
+> > When an arch supports passing of ftrace_ops, then it should also support
+> > passing in the regs (as that should be the trivial part).
+> 
+> Preparing pt_regs by software is hard on some archs, e.g. IA64.
+> But yeah, that's an obsolete arch. We'd better focus on x86 and
+> ARM variants.
+
+It shouldn't be hard to pass a forth arg. Then if it's too hard to pass
+regs, it can still pass NULL. We can just make all callbacks check for
+NULL. I can add an config option that tests to make sure this is the
+case. If the regs flag isn't set, I can call the call back with NULL in
+the regs, and make it crash. Obviously this config will be a a debug
+config and not something normal users should set. :-)
+
+> 
+> > Note, all funcs will get regs, but it may not get the full regs. That
+> > requires the ftrace_ops setting the special flag. The regs are saved for
+> > the mcount already. But only a partial set. Those will be sent to all
+> > function callbacks. If the function call back requires a full set (like
+> > kprobes does), then it must set the flag before registering.
+> 
+> Just out of curiously, would you mean that you will allocate full
+> pt_regs frame on stack always?
+
+Yes. The allocation is done, but the actual storage is not. This could
+cause cache issues, but nothing too bad. If you are worried about stack
+overflow, then the code itself is using too much stack and should be
+reported. Of course, that's what the stack tracer is for ;-)
+
+> 
+> > 
+> > Hows this sound?
+> 
+> Sounds better to me, at far as there are non-initialized parameters
+> passed to user handler. :)
+> 
+> BTW, would you like to update ftrace part? I'd like to fix to remove
+> notrace from my previous patchset and resend tomorrow.
+
+I'll work today on getting out a new git tree that has my latest
+updates.
+
+Thanks!
+
+-- Steve
+
 
