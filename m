@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab2FDJq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 05:46:58 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53942 "EHLO
+	id S1756773Ab2FDJsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 05:48:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53946 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756666Ab2FDJq5 (ORCPT
+	by vger.kernel.org with ESMTP id S1756733Ab2FDJsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 05:46:57 -0400
-Date: Mon, 4 Jun 2012 10:46:55 +0100
+	Mon, 4 Jun 2012 05:48:54 -0400
+Date: Mon, 4 Jun 2012 10:48:52 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Liam Girdwood <lrg@ti.com>, LKML <linux-kernel@vger.kernel.org>,
-        Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH 1/3] regulator: gpio-regulator: do not pass drvdata
- pointer as reference
-Message-ID: <20120604094654.GB3943@opensource.wolfsonmicro.com>
-References: <201206032129.45414.heiko@sntech.de>
- <201206032130.34509.heiko@sntech.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCH] regulator: core: Use map_voltage_linear() if
+ list_voltage_linear() is in use and nothing is set
+Message-ID: <20120604094852.GC3943@opensource.wolfsonmicro.com>
+References: <1338774098.5855.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nVMJ2NtxeReIH9PS"
+	protocol="application/pgp-signature"; boundary="f0KYrhQ4vYSV2aJu"
 Content-Disposition: inline
-In-Reply-To: <201206032130.34509.heiko@sntech.de>
+In-Reply-To: <1338774098.5855.1.camel@phoenix>
 X-Cookie: Make a wish, it might come true.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,38 +27,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---nVMJ2NtxeReIH9PS
-Content-Type: text/plain; charset=iso-8859-1
+--f0KYrhQ4vYSV2aJu
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Sun, Jun 03, 2012 at 09:30:33PM +0200, Heiko St=FCbner wrote:
-> Commit c172708d38a4 (regulator: core: Use a struct to pass in
-> regulator runtime configuration) added the drvdata pointer
-> only per reference to the new config array in the gpio-regulator.
+On Mon, Jun 04, 2012 at 09:41:38AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Applied all, thanks.
+Applied, thanks.
 
---nVMJ2NtxeReIH9PS
+--f0KYrhQ4vYSV2aJu
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPzIOPAAoJEBus8iNuMP3dnh8P/1fkOqEdVsDV4D1q4tgwwLEK
-EEpChMLpxZ75/hDXsSQTbT4jMsVJvzZeydnAHoGrA+N7iKeQNcczTo/6Kj+zpr3c
-+azfddbBJzuVcj1JPozkcpZ89TU6ArhDbIi4Rd2TEqeVUJN/BwBqtVAuB28zh6OF
-u3O5SAZK7kjMpi/PU+ThvvNeXpguZPLMFoPbBk3CGtNQGl6g0ovAPt151f99N4yB
-FD8URiL3wYkRIT2Pjg4F3bMj5HflJ0mJTPHe6D18149jqgr0A0Z1qDvwB+tQu5Q2
-Dxrex7gC8kEeBYiWtKMkl275lpTO+LxFOQ2z+xIUDfxaeSjY3ESxeXO6N0dlUtZb
-nwqgwQPDD5ksiZapxGD4hoRd3k7Nx0W+TvYacugleYExvpzTgJK94hLTkJpTAR09
-j3/UIOFPLg0YEGI4vGnKwSfoT4SA91lZZ07UxMi+KHHjOcviZ51SyQ8vxzIsb7MO
-7JcxbK6cJYtuJ5MHgBynYqkTB1oin9TEKi7QJ69PNXjVS/yIhYvFLFwzt/jnciXR
-xG+YgVwDIhvWdyUiTBMgVTElHMocHqXH4lRyhymCtMQMtrjyIrqNpESQjlYwKYDE
-OvyU8qjiAVuOneiBXy38kRJZGPDZFR+JxAgYr/GvYb3YDW2QNx7Sn5KdNjL13nCz
-SjtOM3iQQNezSyPGI9Za
-=/k/t
+iQIcBAEBAgAGBQJPzIRqAAoJEBus8iNuMP3dkxYP/AlxmTR/AQQL3FlHKkaaOtBd
+GoewKY0TcKS7Opxnep5VnuZQOvV6ud6Wdlio6/3NpsrRfYswV/y9FvaBXFp0+7Hi
+xZt3zTlPZnNCJy7f5ywjFF/AKGDJetP/2G4dJjl7BQf51x1bG8gH7J1yeGEr2dxs
+0DLTRSWuWeSnkxRYAk/5VYy/iqMV8wITSl9XLuILUnDare+jbhT9d9utiIoqvx2T
+D/jnEhHUCZFdmXJD6HkB+sFgvyL7MENJkywvyzC+COez0toJKdNVMADWDxKSER3z
+xVReo8Qrzm44kfZpHe2qjMYoBbPrHAc7N/oS5HLYfK1z8tIw0/pZ5pmdIo046fHM
+BbS0YAslANlHiv5wYOH+KT9npwMx2B3Rhd8FZlDmv67Ut5XJRSm98UioU0gijhUm
+YmSinRMsLiSPzfh7YanIWKQoyq2Sfd27JcB42ZY82yiVdWdi2lplPYbHKoeWgZDI
+sg8RrRLFCoNMcrCoFK6T8tcHERTeKpaGg7NwoUldKZwzeaizesTDbNpomoX06fgV
+uwD8VDPCFC1DW13eZpSs0bu9AnHdq2C1xJR6BGSrWv0TdKqHvSncjLz9dDhgH1/K
+RGgoJTdjZ+g3o1JUzRMUJl/asUdQ+EylVPoQEEpO2ITv/+ube7qAlm3P3rEzuO3Z
+tKJwmK9RnFuBbxRli0c2
+=vdTH
 -----END PGP SIGNATURE-----
 
---nVMJ2NtxeReIH9PS--
+--f0KYrhQ4vYSV2aJu--
