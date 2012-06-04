@@ -1,109 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760139Ab2FDLk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:40:27 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:44996 "EHLO
+	id S1758472Ab2FDLkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:40:25 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:44989 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103Ab2FDLfo (ORCPT
+	with ESMTP id S1755300Ab2FDLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jun 2012 07:35:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 00/25] TTY buffer in tty_port -- prep no. 3
-Date: Mon,  4 Jun 2012 13:35:14 +0200
-Message-Id: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 19/24] TTY: vt, add ->install
+Date: Mon,  4 Jun 2012 13:35:33 +0200
+Message-Id: <1338809738-18967-20-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We need to initialize the console only on the first open. This is
+usually what is done in the ->install hook. vt used to do this in
+->open. Now we move it to ->install and use newly added helper for
+install: tty_port_install. It ensures tty->port to be set properly.
 
-this is the third series of patches which allow tty buffers to be
-moved from tty_struct (present from open to close/hangup) to tty_port
-(present as long as the device). This will allow us to get rid of the
-tty refcounting in the interrupt service routines and other hot paths
-after we are done. This is because we won't need to handle races among
-ISRs, timers, hangups and others, because tty_port lives as long as an
-interrupt/timer tick may occur. Unlike tty_struct.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/tty/vt/vt.c |   60 ++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 36 insertions(+), 24 deletions(-)
 
-In this series, the third batch of drivers is converted to use
-tty_port.  Read: all drivers now have a tty_port. Second, we start
-assigning tty_port to tty_struct->port in this series. So the TTY
-layer now finally has an access to a tty_port in most of the drivers.
-This means not every driver uses the new shiny interfaces creating
-tty_struct => tty_port links automatically. I ran out of time (I had
-to do other things) to convert them all... The rest is going to be
-converted later.
-
-Standard x86 stuff was runtime-tested. The rest is only checked to be
-compilation-errors free.
-
-Jiri Slaby (25):
-  TTY: ircomm, add tty_port
-  TTY: ircomm, use close times from tty_port
-  TTY: ircomm, use open counts from tty_port
-  TTY: ircomm, use flags from tty_port
-  TTY: ircomm, revamp locking
-  TTY: ircomm, use tty from tty_port
-  TTY: ircomm, define local tty_port
-  TTY: ircomm, define carrier routines
-  TTY: ircomm, use tty_port_close_end helper
-  TTY: ircomm, use tty_port_close_start helper
-  TTY: um/line, add tty_port
-  TTY: um/line, use tty from tty_port
-  PTY: remove one empty ops->remove
-  PTY: merge pty_install implementations
-  PTY: add tty_port
-  TTY: vt, remove con_schedule_flip
-  TTY: provide drivers with tty_port_install
-  TTY: serial_core, add ->install
-  TTY: vt, add ->install
-  TTY: usb-serial, use tty_port_install
-  TTY: centralize fail paths in tty_register_driver
-  TTY: add ports array to tty_driver
-  TTY: add tty_port_register_device helper
-  TTY: cyclades, add local pointer for card
-  TTY: use tty_port_register_device
-
- arch/um/drivers/chan_kern.c         |    4 +-
- arch/um/drivers/line.c              |   35 +++--
- arch/um/drivers/line.h              |    3 +-
- drivers/isdn/capi/capi.c            |    3 +-
- drivers/isdn/gigaset/interface.c    |    3 +-
- drivers/mmc/card/sdio_uart.c        |    4 +-
- drivers/net/usb/hso.c               |    7 +-
- drivers/tty/cyclades.c              |   79 +++++-----
- drivers/tty/ehv_bytechan.c          |    9 +-
- drivers/tty/ipwireless/tty.c        |    2 +-
- drivers/tty/isicom.c                |    3 +-
- drivers/tty/mxser.c                 |    6 +-
- drivers/tty/nozomi.c                |    4 +-
- drivers/tty/pty.c                   |  141 +++++++++---------
- drivers/tty/rocket.c                |    4 +-
- drivers/tty/serial/ifx6x60.c        |    4 +-
- drivers/tty/serial/msm_smd_tty.c    |    8 +-
- drivers/tty/serial/serial_core.c    |   28 ++--
- drivers/tty/synclink_gt.c           |    7 +-
- drivers/tty/tty_io.c                |   34 +++--
- drivers/tty/tty_port.c              |   17 +++
- drivers/tty/vt/keyboard.c           |    6 +-
- drivers/tty/vt/vt.c                 |   62 ++++----
- drivers/usb/class/cdc-acm.c         |    3 +-
- drivers/usb/gadget/u_serial.c       |    3 +-
- drivers/usb/serial/usb-serial.c     |    2 +-
- include/linux/kbd_kern.h            |   12 --
- include/linux/tty.h                 |    5 +
- include/linux/tty_driver.h          |    1 +
- include/net/irda/ircomm_tty.h       |   17 +--
- net/bluetooth/rfcomm/tty.c          |    4 +-
- net/irda/ircomm/ircomm_param.c      |    5 -
- net/irda/ircomm/ircomm_tty.c        |  271 ++++++++++++++++-------------------
- net/irda/ircomm/ircomm_tty_attach.c |   40 ++++--
- net/irda/ircomm/ircomm_tty_ioctl.c  |   25 ++--
- 35 files changed, 450 insertions(+), 411 deletions(-)
-
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index 88a4914..7cb53c2 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -2792,41 +2792,52 @@ static void con_flush_chars(struct tty_struct *tty)
+ /*
+  * Allocate the console screen memory.
+  */
+-static int con_open(struct tty_struct *tty, struct file *filp)
++static int con_install(struct tty_driver *driver, struct tty_struct *tty)
+ {
+ 	unsigned int currcons = tty->index;
+-	int ret = 0;
++	struct vc_data *vc;
++	int ret;
+ 
+ 	console_lock();
+-	if (tty->driver_data == NULL) {
+-		ret = vc_allocate(currcons);
+-		if (ret == 0) {
+-			struct vc_data *vc = vc_cons[currcons].d;
++	ret = vc_allocate(currcons);
++	if (ret)
++		goto unlock;
+ 
+-			/* Still being freed */
+-			if (vc->port.tty) {
+-				console_unlock();
+-				return -ERESTARTSYS;
+-			}
+-			tty->driver_data = vc;
+-			vc->port.tty = tty;
++	vc = vc_cons[currcons].d;
+ 
+-			if (!tty->winsize.ws_row && !tty->winsize.ws_col) {
+-				tty->winsize.ws_row = vc_cons[currcons].d->vc_rows;
+-				tty->winsize.ws_col = vc_cons[currcons].d->vc_cols;
+-			}
+-			if (vc->vc_utf)
+-				tty->termios->c_iflag |= IUTF8;
+-			else
+-				tty->termios->c_iflag &= ~IUTF8;
+-			console_unlock();
+-			return ret;
+-		}
++	/* Still being freed */
++	if (vc->port.tty) {
++		ret = -ERESTARTSYS;
++		goto unlock;
+ 	}
++
++	ret = tty_port_install(&vc->port, driver, tty);
++	if (ret)
++		goto unlock;
++
++	tty->driver_data = vc;
++	vc->port.tty = tty;
++
++	if (!tty->winsize.ws_row && !tty->winsize.ws_col) {
++		tty->winsize.ws_row = vc_cons[currcons].d->vc_rows;
++		tty->winsize.ws_col = vc_cons[currcons].d->vc_cols;
++	}
++	if (vc->vc_utf)
++		tty->termios->c_iflag |= IUTF8;
++	else
++		tty->termios->c_iflag &= ~IUTF8;
++unlock:
+ 	console_unlock();
+ 	return ret;
+ }
+ 
++static int con_open(struct tty_struct *tty, struct file *filp)
++{
++	/* everything done in install */
++	return 0;
++}
++
++
+ static void con_close(struct tty_struct *tty, struct file *filp)
+ {
+ 	/* Nothing to do - we defer to shutdown */
+@@ -2947,6 +2958,7 @@ static int __init con_init(void)
+ console_initcall(con_init);
+ 
+ static const struct tty_operations con_ops = {
++	.install = con_install,
+ 	.open = con_open,
+ 	.close = con_close,
+ 	.write = con_write,
 -- 
 1.7.10.3
 
