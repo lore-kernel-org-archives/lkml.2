@@ -1,119 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761139Ab2FDXCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 19:02:42 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:42374
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761079Ab2FDXCl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 19:02:41 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCD3E8B.30805@freescale.com>
-Date: Mon, 4 Jun 2012 18:02:35 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1761135Ab2FDXEL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 19:04:11 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47665 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757546Ab2FDXEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 19:04:10 -0400
+Date: Mon, 4 Jun 2012 19:04:04 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741:
+ group 1904, 32254 clusters in bitmap, 32258 in gd
+Message-ID: <20120604230404.GB6525@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Sander Eikelenboom <linux@eikelenboom.it>,
+	Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <17610219749.20120604192048@eikelenboom.it>
 MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup event
- source
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-4-git-send-email-chenhui.zhao@freescale.com> <4FC93D74.3090200@freescale.com> <20120604113609.GC20676@localhost.localdomain>
-In-Reply-To: <20120604113609.GC20676@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <17610219749.20120604192048@eikelenboom.it>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 06:36 AM, Zhao Chenhui wrote:
-> On Fri, Jun 01, 2012 at 05:08:52PM -0500, Scott Wood wrote:
->> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
->>> Add APIs for setting wakeup source and lossless Ethernet in low power modes.
->>> These APIs can be used by wake-on-packet feature.
->>>
->>> Signed-off-by: Dave Liu <daveliu@freescale.com>
->>> Signed-off-by: Li Yang <leoli@freescale.com>
->>> Signed-off-by: Jin Qing <b24347@freescale.com>
->>> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
->>> ---
->>>  arch/powerpc/sysdev/fsl_pmc.c |   71 ++++++++++++++++++++++++++++++++++++++++-
->>>  arch/powerpc/sysdev/fsl_soc.h |    9 +++++
->>>  2 files changed, 79 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/arch/powerpc/sysdev/fsl_pmc.c b/arch/powerpc/sysdev/fsl_pmc.c
->>> index 1dc6e9e..c1170f7 100644
->>> --- a/arch/powerpc/sysdev/fsl_pmc.c
->>> +++ b/arch/powerpc/sysdev/fsl_pmc.c
->>> @@ -34,6 +34,7 @@ struct pmc_regs {
->>>  	__be32 powmgtcsr;
->>>  #define POWMGTCSR_SLP		0x00020000
->>>  #define POWMGTCSR_DPSLP		0x00100000
->>> +#define POWMGTCSR_LOSSLESS	0x00400000
->>>  	__be32 res3[2];
->>>  	__be32 pmcdr;
->>>  };
->>> @@ -43,6 +44,74 @@ static unsigned int pmc_flag;
->>>  
->>>  #define PMC_SLEEP	0x1
->>>  #define PMC_DEEP_SLEEP	0x2
->>> +#define PMC_LOSSLESS	0x4
->>> +
->>> +/**
->>> + * mpc85xx_pmc_set_wake - enable devices as wakeup event source
->>> + * @pdev: platform device affected
->>> + * @enable: True to enable event generation; false to disable
->>> + *
->>> + * This enables the device as a wakeup event source, or disables it.
->>> + *
->>> + * RETURN VALUE:
->>> + * 0 is returned on success
->>> + * -EINVAL is returned if device is not supposed to wake up the system
->>> + * Error code depending on the platform is returned if both the platform and
->>> + * the native mechanism fail to enable the generation of wake-up events
->>> + */
->>> +int mpc85xx_pmc_set_wake(struct platform_device *pdev, bool enable)
->>
->> Why does it have to be a platform_device?  Would a bare device_node work
->> here?  If it's for stuff like device_may_wakeup() that could be in a
->> platform_device wrapper function.
+On Mon, Jun 04, 2012 at 07:20:48PM +0200, Sander Eikelenboom wrote:
+> Hello Ted,
 > 
-> It does not have to be a platform_device. I think it can be a struct device.
-
-Why does it even need that?  The low level mechanism for influencing
-PMCDR should only need a device node, not a Linux device struct.
-
->> Where does this get called from?  I don't see an example user in this
->> patchset.
+> I have a problem back that occured , but didn't receive much respons in debugging:
 > 
-> It will be used by a gianfar related patch. I plan to submit that patch
-> after these patches accepted.
+> [ 4688.270789] EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1904, 32254 clusters in bitmap, 32258 in gd
+> [ 4688.279172] Aborting journal on device dm-42-8.
+> [ 4688.288634] EXT4-fs (dm-42): Remounting filesystem read-only
+> [ 4688.299011] EXT4-fs (dm-42): ext4_da_writepages: jbd2_start: 6144 pages, ino 15597569; err -30
 
-It would be nice to see how this is used when reviewing this.
+Ah, sorry, I didn't see this message when I responded to your earlier
+message (you didn't mail thread it).  I also didn't recall your
+earlier complaint until I did an search of my mail archives.
 
->>> +{
->>> +	int ret = 0;
->>> +	struct device_node *clk_np;
->>> +	u32 *prop;
->>> +	u32 pmcdr_mask;
->>> +
->>> +	if (!pmc_regs) {
->>> +		pr_err("%s: PMC is unavailable\n", __func__);
->>> +		return -ENODEV;
->>> +	}
->>> +
->>> +	if (enable && !device_may_wakeup(&pdev->dev))
->>> +		return -EINVAL;
->>
->> Who is setting can_wakeup for these devices?
+The main problem is that we don't have an easy reproduction case.
+It's not a problem which has been showing up on any of my testing.
+Earlier you had said that this happened after a read-only snapshot, so
+I had assumed it was an DM issue.
+
+But you say this time it's not happening without a snapshot.  OK, how
+frequently does this happen?  How easily can you reproduce it?  Can
+you do it pretty much on demand?  And are the numbers *always* the same?
+
 > 
-> The device driver is responsible to set can_wakeup.
+> Running: Fsck -D -f -v -p, results in:
+> 
 
-How would the device driver know how to set it?  Wouldn't this depend on
-the particular SoC and low power mode?
+Can you run this command instead? e2fsck -f /dev/XXXX
 
--Scott
+And send me the output?  The -p overrides the -f option, so it wasn't
+doing a full fsck check.  It should have done a full check if the file
+system was marked as containing an error, regardless of the -p, but
+there was a bug that was fixed in 3.5-rc1 which prevented that.  I'm
+at a loss to explain why you were still seeing problem in 3.5-rc1 ---
+was the fsck log from after running a kernel running 3.5-rc1?  In any
+case, please do a full fsck using "e2fsck -f /dev/XXX" and send me the
+output from that command.
 
+Regards,
+
+						- Ted
