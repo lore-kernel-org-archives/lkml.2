@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab2FDIR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 04:17:26 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56482 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753445Ab2FDIRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 04:17:25 -0400
-Message-ID: <1338797843.8574.2.camel@joe2Laptop>
-Subject: Re: [PATCH RESEND v2] mfd/ab8500: print switch off cause
-From: Joe Perches <joe@perches.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Date: Mon, 04 Jun 2012 01:17:23 -0700
-In-Reply-To: <1338797436-12927-1-git-send-email-linus.walleij@stericsson.com>
-References: <1338797436-12927-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1756603Ab2FDIWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 04:22:45 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42833 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab2FDIWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 04:22:43 -0400
+Message-ID: <4FCC700F.8020609@linux.vnet.ibm.com>
+Date: Mon, 04 Jun 2012 13:51:35 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.1) Gecko/20120216 Thunderbird/10.0.1
+MIME-Version: 1.0
+To: Rob Landley <rob@landley.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Alexander Graf <agraf@suse.de>, KVM <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH] Documentation/kvm : Add documentation on Hypercalls
+References: <20120531080116.24838.15692.sendpatchset@codeblue.in.ibm.com> <4FC7AE6C.9050106@zytor.com> <4FCC32F6.1010101@landley.net>
+In-Reply-To: <4FCC32F6.1010101@landley.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+x-cbid: 12060408-9574-0000-0000-0000030931C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 10:10 +0200, Linus Walleij wrote:
-> From: Jonas Aaberg <jonas.aberg@stericsson.com>
-> 
-> Instead of just printing the register value, also output some
-> description of the value.
-> 
-> Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-> Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> Sam, this seems to have gone missing in the v3.5 merge window,
-> it was sent out and IIRC accepted. Anyway, no big deal but
-> consider pushing this for the -rc:s.
-> 
-> ChangeLog v1->v2:
-> - Print each cause on its own line with a tab to avoid missing
->   initial cause heading if loglevel < info.
-> ---
->  drivers/mfd/ab8500-core.c |   25 ++++++++++++++++++++++++-
->  1 file changed, 24 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-> index dac0e29..6c81dc0 100644
-> --- a/drivers/mfd/ab8500-core.c
-> +++ b/drivers/mfd/ab8500-core.c
-> @@ -1217,6 +1217,15 @@ static const struct of_device_id ab8500_match[] = {
->  
->  static int __devinit ab8500_probe(struct platform_device *pdev)
->  {
-> +	static char *switch_off_status[] = {
-> +		"Swoff bit programming",
-> +		"Thermal protection activation",
-> +		"Vbat lower then BattOk falling threshold",
-> +		"Watchdog expired",
-> +		"Non presence of 32kHz clock",
-> +		"Battery level lower than power on reset threshold",
-> +		"Power on key 1 pressed longer than 10 seconds",
-> +		"DB8500 thermal shutdown"};
->  	struct ab8500_platform_data *plat = dev_get_platdata(&pdev->dev);
->  	const struct platform_device_id *platid = platform_get_device_id(pdev);
->  	enum ab8500_version version = AB8500_VERSION_UNDEFINED;
-> @@ -1323,7 +1332,21 @@ static int __devinit ab8500_probe(struct platform_device *pdev)
->  		AB8500_SWITCH_OFF_STATUS, &value);
->  	if (ret < 0)
->  		return ret;
-> -	dev_info(ab8500->dev, "switch off status: %#x", value);
-> +	dev_info(ab8500->dev, "switch off cause(s) (%#x): ", value);
-> +
-> +	if (value) {
-> +		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
-> +			if (value & 1)
-> +				dev_info(ab8500->dev,
-> +					 "\"\t%s\" ", switch_off_status[i]);
+On 06/04/2012 09:30 AM, Rob Landley wrote:
+> On 05/31/2012 12:46 PM, H. Peter Anvin wrote:
+>> On 05/31/2012 01:01 AM, Raghavendra K T wrote:
+>>> +
+>>> +TODO:
+>>> +1. more information on input and output needed?
+>>> +2. Add more detail to purpose of hypercalls.
+>>>
+>>
+>> 1. definitely, including the hypercall ABI.
+>>
+>> 	-hpa
+>>
+>
+> I was wondering about that. It looks like
+> Documentation/virtual/kvm/api.txt might cover some of that already in
+> section 5, but it doesn't look complete...
+>
+> Also, could I get a 00-INDEX file for this directory explaining what
+> these individual files are? I think "api.txt" is supposed to be
+> host-side API for controlling a guest VM (from userspace via ioctls,
+> looks like),
 
-This should be printk with or without KERN_CONT
+api.txt has  plenty of information apart from  features which are 
+related to guest side api (generally  controls / knows PV features 
+available, that may also involve host query of guest cpuid).
+and capability (of) related to host.
 
-The tab use is also not necessary, a single space
-or a comma would probably be better.
+  and hypercalls.txt is guest-side API for poking the host.
+
+hypercall can be used to take some actions (as needed by guest / 
+exchange information)
+
+
+> How someone would write host-side code that _responds_ to a hypercall, I
+> have no idea.  (It goes in the host kernel?)
+>
+> Rob
+>
 
