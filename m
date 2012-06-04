@@ -1,59 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab2FDTDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 15:03:46 -0400
-Received: from mail.work-microwave.de ([62.245.205.51]:46577 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756329Ab2FDTDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 15:03:33 -0400
-From: Roland Stigge <stigge@antcom.de>
-To: alan@linux.intel.com, gregkh@linuxfoundation.org,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kevin.wells@nxp.com, srinivas.bakki@nxp.com,
-        linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linux@arm.linux.org.uk
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH RESEND 2/2] serial/of-serial: Add LPC3220 standard UART compatible string
-Date: Mon,  4 Jun 2012 21:02:55 +0200
-Message-Id: <1338836575-21738-2-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <1338836575-21738-1-git-send-email-stigge@antcom.de>
-References: <1338836575-21738-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	id S1757117Ab2FDTE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 15:04:29 -0400
+Received: from prod-mail-xrelay05.akamai.com ([96.6.114.97]:45931 "EHLO
+	prod-mail-xrelay05.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752391Ab2FDTE1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 15:04:27 -0400
+From: "Lubashev, Igor" <ilubashe@akamai.com>
+To: David Miller <davem@davemloft.net>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arun Sharma <asharma@fb.com>
+Date: Mon, 4 Jun 2012 15:04:24 -0400
+Subject: RE: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+Thread-Topic: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+Thread-Index: AQHNPr7ayBxPIzOG4ka/ptMv4ZRi65bqY3oQ
+Message-ID: <83CE6FF8F6C9B2468A618FC2C51267260F3319AFDD@USMBX1.msg.corp.akamai.com>
+References: <83CE6FF8F6C9B2468A618FC2C51267260F303CD88B@USMBX1.msg.corp.akamai.com>
+In-Reply-To: <83CE6FF8F6C9B2468A618FC2C51267260F303CD88B@USMBX1.msg.corp.akamai.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a "compatible" string for the new 8250 UART type PORT_LPC3220.
-This is a precondition for initializing LPC32xx UARTs via DT.
+David and Eric,
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
+Any news about this?  We definitely have many machines that are experiencing abnormal behavior under ipv6 load.  The machines are healthier when the ipv6 route cache is increased to 64K, but I am afraid this is a band-aid that is hiding the actual problems.
 
----
-Applies to v3.5-rc1
+So, could you address the concerns about the code in fib6_age?  I can see three potential problems with it:
 
- Documentation/devicetree/bindings/tty/serial/of-serial.txt |    1 +
- drivers/tty/serial/of_serial.c                             |    1 +
- 2 files changed, 2 insertions(+)
+1.  The meaning/use of NTF_ROUTER flag is inverted in 3.4
 
---- linux-2.6.orig/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-+++ linux-2.6/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-@@ -9,6 +9,7 @@ Required properties:
- 	- "ns16750"
- 	- "ns16850"
- 	- "nvidia,tegra20-uart"
-+	- "nxp,lpc3220-uart"
- 	- "ibm,qpace-nwp-serial"
- 	- "serial" if the port type is unknown.
- - reg : offset and length of the register set for the device.
---- linux-2.6.orig/drivers/tty/serial/of_serial.c
-+++ linux-2.6/drivers/tty/serial/of_serial.c
-@@ -208,6 +208,7 @@ static struct of_device_id __devinitdata
- 	{ .compatible = "ns16750",  .data = (void *)PORT_16750, },
- 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
- 	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
-+	{ .compatible = "nxp,lpc3220-uart", .data = (void *)PORT_LPC3220, },
- #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
- 	{ .compatible = "ibm,qpace-nwp-serial",
- 		.data = (void *)PORT_NWPSERIAL, },
+2.  A potential NULL-pointer exception in pre-3.4 versions.  In particular, "rt->rt6i_nexthop" (version 2.6.37) is checked for NULL in (almost?) all cases of referencing that field.  I do not know for sure about "dst_get_neighbour_raw(&rt->dst)" in 3.0.32.
+
+3.   In all cases, an RTF_GATEWAY entry with __refcount > 0 may be garbage collected.  That seems like a wrong thing to do.  Is it?
+
+Thank you!
+
+- Igor
+
+
+-----Original Message-----
+From: Lubashev, Igor 
+Sent: Wednesday, May 30, 2012 7:50 PM
+To: David Miller; Arun Sharma
+Cc: eric.dumazet@gmail.com; netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: compute a more reasonable default ip6_rt_max_size
+
+>It's possible that there is a bug somewhere - we didn't get a chance to 
+>dig deeper. What we observed is that as we got close to the 4096 limit, 
+>some hosts were becoming unreachable. A modest increase in the routing 
+>table size made things better.
+
+First of all, we have observed the same thing.
+
+While I am not an expert in this area of the routing code, the function fib6_age in net/ipv6/ip6_fib.c puzzles me.
+
+
+In kernel version 2.6.37, we have net/ipv6/ip6_fib.c:
+static int fib6_age(struct rt6_info *rt, void *arg) {
+	unsigned long now = jiffies;
+
+	if (rt->rt6i_flags&RTF_EXPIRES && rt->rt6i_expires) {
+		if (time_after(now, rt->rt6i_expires)) {
+			RT6_TRACE("expiring %p\n", rt);
+			return -1;
+		}
+		gc_args.more++;
+	} else if (rt->rt6i_flags & RTF_CACHE) {
+		if (atomic_read(&rt->dst.__refcnt) == 0 &&
+		    time_after_eq(now, rt->dst.lastuse + gc_args.timeout)) {
+			RT6_TRACE("aging clone %p\n", rt);
+			return -1;
+		} else if ((rt->rt6i_flags & RTF_GATEWAY) &&
+			   (!(rt->rt6i_nexthop->flags & NTF_ROUTER))) {
+			RT6_TRACE("purging route %p via non-router but gateway\n",
+				  rt);
+			return -1;
+		}
+		gc_args.more++;
+	}
+
+	return 0;
+}
+
+
+In kernel 3.0.32, we have net/ipv6/ip6_fib.c:
+static int fib6_age(struct rt6_info *rt, void *arg) {
+	unsigned long now = jiffies;
+
+	if (rt->rt6i_flags&RTF_EXPIRES && rt->rt6i_expires) {
+		if (time_after(now, rt->rt6i_expires)) {
+			RT6_TRACE("expiring %p\n", rt);
+			return -1;
+		}
+		gc_args.more++;
+	} else if (rt->rt6i_flags & RTF_CACHE) {
+		if (atomic_read(&rt->dst.__refcnt) == 0 &&
+		    time_after_eq(now, rt->dst.lastuse + gc_args.timeout)) {
+			RT6_TRACE("aging clone %p\n", rt);
+			return -1;
+		} else if ((rt->rt6i_flags & RTF_GATEWAY) &&
+			   (!(dst_get_neighbour_raw(&rt->dst)->flags & NTF_ROUTER))) {
+			RT6_TRACE("purging route %p via non-router but gateway\n",
+				  rt);
+			return -1;
+		}
+		gc_args.more++;
+	}
+
+	return 0;
+}
+
+
+In kernel 3.4, we have net/ipv6/ip6_fib.c:
+static int fib6_age(struct rt6_info *rt, void *arg) {
+	unsigned long now = jiffies;
+
+	if (rt->rt6i_flags & RTF_EXPIRES && rt->dst.expires) {
+		if (time_after(now, rt->dst.expires)) {
+			RT6_TRACE("expiring %p\n", rt);
+			return -1;
+		}
+		gc_args.more++;
+	} else if (rt->rt6i_flags & RTF_CACHE) {
+		if (atomic_read(&rt->dst.__refcnt) == 0 &&
+		    time_after_eq(now, rt->dst.lastuse + gc_args.timeout)) {
+			RT6_TRACE("aging clone %p\n", rt);
+			return -1;
+		} else if (rt->rt6i_flags & RTF_GATEWAY) {
+			struct neighbour *neigh;
+			__u8 neigh_flags = 0;
+
+			neigh = dst_neigh_lookup(&rt->dst, &rt->rt6i_gateway);
+			if (neigh) {
+				neigh_flags = neigh->flags;
+				neigh_release(neigh);
+			}
+			if (neigh_flags & NTF_ROUTER) {
+				RT6_TRACE("purging route %p via non-router but gateway\n",
+					  rt);
+				return -1;
+			}
+		}
+		gc_args.more++;
+	}
+
+	return 0;
+}
+
+
+Do we have the meaning of the NTF_ROUTER flag reversed in kernel 3.4?  Or is the opposite use of that flag a fix for the bug in the previous releases? Or is this a bug in kernel 3.4?
+
+Also, could this remove a Gateway entry, if there is no neighbor entry for it (in any of the version of the code)?  Could this try to deference a null pointer in 3.0.32 version of the code (and any version prior to 3.4)?  In general, is this the right place to remove a gateway route that has __refcnt > 0?
+
+I wish I had more expertise in this area of the code to answer questions and not only to pose them.
+
+Thank you,
+
+- Igor
