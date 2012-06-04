@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab2FDLkY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:40:24 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:44994 "EHLO
+	id S932148Ab2FDLnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:43:37 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:44990 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab2FDLfo (ORCPT
+	with ESMTP id S1754168Ab2FDLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jun 2012 07:35:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
 Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 01/24] TTY: cyclades, add local pointer for card
-Date: Mon,  4 Jun 2012 13:35:15 +0200
-Message-Id: <1338809738-18967-2-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 22/24] TTY: add ports array to tty_driver
+Date: Mon,  4 Jun 2012 13:35:36 +0200
+Message-Id: <1338809738-18967-23-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.3
 In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
 References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
@@ -20,162 +20,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cy_pci_probe and cy_detect_isa reference cy_card[card_no] many times.
-It makes the code hard to read. Let us add a local variable holding a
-pointer to the card indexed by card_no and use that.
+It will hold tty_port structures for all drivers which do not want to
+define tty->ops->install hook.
+
+We ignore PTY here because it wants 1 million lines and it installs
+tty_port in ->install anyway.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/cyclades.c |   63 +++++++++++++++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 30 deletions(-)
+ drivers/tty/tty_io.c       |   18 +++++++++++++++++-
+ include/linux/tty_driver.h |    1 +
+ 2 files changed, 18 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
-index e61cabd..cff5468 100644
---- a/drivers/tty/cyclades.c
-+++ b/drivers/tty/cyclades.c
-@@ -3289,6 +3289,7 @@ static unsigned short __devinit cyy_init_card(void __iomem *true_base_addr,
- static int __init cy_detect_isa(void)
- {
- #ifdef CONFIG_ISA
-+	struct cyclades_card *card;
- 	unsigned short cy_isa_irq, nboard;
- 	void __iomem *cy_isa_address;
- 	unsigned short i, j, cy_isa_nchan;
-@@ -3349,7 +3350,8 @@ static int __init cy_detect_isa(void)
- 		}
- 		/* fill the next cy_card structure available */
- 		for (j = 0; j < NR_CARDS; j++) {
--			if (cy_card[j].base_addr == NULL)
-+			card = &cy_card[j];
-+			if (card->base_addr == NULL)
- 				break;
- 		}
- 		if (j == NR_CARDS) {	/* no more cy_cards available */
-@@ -3363,7 +3365,7 @@ static int __init cy_detect_isa(void)
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index d6e045b..ac96f74 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1407,6 +1407,9 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
+ 	if (retval < 0)
+ 		goto err_deinit_tty;
  
- 		/* allocate IRQ */
- 		if (request_irq(cy_isa_irq, cyy_interrupt,
--				0, "Cyclom-Y", &cy_card[j])) {
-+				0, "Cyclom-Y", card)) {
- 			printk(KERN_ERR "Cyclom-Y/ISA found at 0x%lx, but "
- 				"could not allocate IRQ#%d.\n",
- 				(unsigned long)cy_isa_address, cy_isa_irq);
-@@ -3372,16 +3374,16 @@ static int __init cy_detect_isa(void)
- 		}
- 
- 		/* set cy_card */
--		cy_card[j].base_addr = cy_isa_address;
--		cy_card[j].ctl_addr.p9050 = NULL;
--		cy_card[j].irq = (int)cy_isa_irq;
--		cy_card[j].bus_index = 0;
--		cy_card[j].first_line = cy_next_channel;
--		cy_card[j].num_chips = cy_isa_nchan / CyPORTS_PER_CHIP;
--		cy_card[j].nports = cy_isa_nchan;
--		if (cy_init_card(&cy_card[j])) {
--			cy_card[j].base_addr = NULL;
--			free_irq(cy_isa_irq, &cy_card[j]);
-+		card->base_addr = cy_isa_address;
-+		card->ctl_addr.p9050 = NULL;
-+		card->irq = (int)cy_isa_irq;
-+		card->bus_index = 0;
-+		card->first_line = cy_next_channel;
-+		card->num_chips = cy_isa_nchan / CyPORTS_PER_CHIP;
-+		card->nports = cy_isa_nchan;
-+		if (cy_init_card(card)) {
-+			card->base_addr = NULL;
-+			free_irq(cy_isa_irq, card);
- 			iounmap(cy_isa_address);
- 			continue;
- 		}
-@@ -3695,6 +3697,7 @@ err:
- static int __devinit cy_pci_probe(struct pci_dev *pdev,
- 		const struct pci_device_id *ent)
- {
-+	struct cyclades_card *card;
- 	void __iomem *addr0 = NULL, *addr2 = NULL;
- 	char *card_name = NULL;
- 	u32 uninitialized_var(mailbox);
-@@ -3829,7 +3832,8 @@ static int __devinit cy_pci_probe(struct pci_dev *pdev,
++	if (!tty->port)
++		tty->port = driver->ports[idx];
++
+ 	/*
+ 	 * Structures all installed ... call the ldisc open routines.
+ 	 * If we fail here just call release_tty to clean up.  No need
+@@ -3094,6 +3097,7 @@ static void destruct_tty_driver(struct kref *kref)
+ 		kfree(p);
+ 		cdev_del(&driver->cdev);
  	}
- 	/* fill the next cy_card structure available */
- 	for (card_no = 0; card_no < NR_CARDS; card_no++) {
--		if (cy_card[card_no].base_addr == NULL)
-+		card = &cy_card[card_no];
-+		if (card->base_addr == NULL)
- 			break;
++	kfree(driver->ports);
+ 	kfree(driver);
+ }
+ 
+@@ -3132,6 +3136,18 @@ int tty_register_driver(struct tty_driver *driver)
+ 		if (!p)
+ 			return -ENOMEM;
  	}
- 	if (card_no == NR_CARDS) {	/* no more cy_cards available */
-@@ -3843,27 +3847,26 @@ static int __devinit cy_pci_probe(struct pci_dev *pdev,
- 			device_id == PCI_DEVICE_ID_CYCLOM_Y_Hi) {
- 		/* allocate IRQ */
- 		retval = request_irq(irq, cyy_interrupt,
--				IRQF_SHARED, "Cyclom-Y", &cy_card[card_no]);
-+				IRQF_SHARED, "Cyclom-Y", card);
- 		if (retval) {
- 			dev_err(&pdev->dev, "could not allocate IRQ\n");
- 			goto err_unmap;
- 		}
--		cy_card[card_no].num_chips = nchan / CyPORTS_PER_CHIP;
-+		card->num_chips = nchan / CyPORTS_PER_CHIP;
- 	} else {
- 		struct FIRM_ID __iomem *firm_id = addr2 + ID_ADDRESS;
- 		struct ZFW_CTRL __iomem *zfw_ctrl;
++	/*
++	 * There is too many lines in PTY and we won't need the array there
++	 * since it has an ->install hook where it assigns ports properly.
++	 */
++	if (driver->type != TTY_DRIVER_TYPE_PTY) {
++		driver->ports = kcalloc(driver->num, sizeof(struct tty_port *),
++				GFP_KERNEL);
++		if (!driver->ports) {
++			error = -ENOMEM;
++			goto err_free_p;
++		}
++	}
  
- 		zfw_ctrl = addr2 + (readl(&firm_id->zfwctrl_addr) & 0xfffff);
+ 	if (!driver->major) {
+ 		error = alloc_chrdev_region(&dev, driver->minor_start,
+@@ -3190,7 +3206,7 @@ err_unreg_char:
+ 	unregister_chrdev_region(dev, driver->num);
+ 	driver->ttys = NULL;
+ 	driver->termios = NULL;
+-err_free_p:
++err_free_p: /* destruct_tty_driver will free driver->ports */
+ 	kfree(p);
+ 	return error;
+ }
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index 6e6dbb7..04419c1 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -313,6 +313,7 @@ struct tty_driver {
+ 	 * Pointer to the tty data structures
+ 	 */
+ 	struct tty_struct **ttys;
++	struct tty_port **ports;
+ 	struct ktermios **termios;
+ 	void *driver_state;
  
--		cy_card[card_no].hw_ver = mailbox;
--		cy_card[card_no].num_chips = (unsigned int)-1;
--		cy_card[card_no].board_ctrl = &zfw_ctrl->board_ctrl;
-+		card->hw_ver = mailbox;
-+		card->num_chips = (unsigned int)-1;
-+		card->board_ctrl = &zfw_ctrl->board_ctrl;
- #ifdef CONFIG_CYZ_INTR
- 		/* allocate IRQ only if board has an IRQ */
- 		if (irq != 0 && irq != 255) {
- 			retval = request_irq(irq, cyz_interrupt,
--					IRQF_SHARED, "Cyclades-Z",
--					&cy_card[card_no]);
-+					IRQF_SHARED, "Cyclades-Z", card);
- 			if (retval) {
- 				dev_err(&pdev->dev, "could not allocate IRQ\n");
- 				goto err_unmap;
-@@ -3873,17 +3876,17 @@ static int __devinit cy_pci_probe(struct pci_dev *pdev,
- 	}
- 
- 	/* set cy_card */
--	cy_card[card_no].base_addr = addr2;
--	cy_card[card_no].ctl_addr.p9050 = addr0;
--	cy_card[card_no].irq = irq;
--	cy_card[card_no].bus_index = 1;
--	cy_card[card_no].first_line = cy_next_channel;
--	cy_card[card_no].nports = nchan;
--	retval = cy_init_card(&cy_card[card_no]);
-+	card->base_addr = addr2;
-+	card->ctl_addr.p9050 = addr0;
-+	card->irq = irq;
-+	card->bus_index = 1;
-+	card->first_line = cy_next_channel;
-+	card->nports = nchan;
-+	retval = cy_init_card(card);
- 	if (retval)
- 		goto err_null;
- 
--	pci_set_drvdata(pdev, &cy_card[card_no]);
-+	pci_set_drvdata(pdev, card);
- 
- 	if (device_id == PCI_DEVICE_ID_CYCLOM_Y_Lo ||
- 			device_id == PCI_DEVICE_ID_CYCLOM_Y_Hi) {
-@@ -3915,8 +3918,8 @@ static int __devinit cy_pci_probe(struct pci_dev *pdev,
- 
- 	return 0;
- err_null:
--	cy_card[card_no].base_addr = NULL;
--	free_irq(irq, &cy_card[card_no]);
-+	card->base_addr = NULL;
-+	free_irq(irq, card);
- err_unmap:
- 	iounmap(addr0);
- 	if (addr2)
 -- 
 1.7.10.3
 
