@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760912Ab2FDQRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:17:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752716Ab2FDQRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:17:01 -0400
-Date: Mon, 4 Jun 2012 18:15:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Filipe Brandenburger <filbranden@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] prctl: pdeath_signal sent when parent thread
-	(instead of parent process) dies
-Message-ID: <20120604161516.GA11243@redhat.com>
-References: <1338332348-3469-1-git-send-email-filbranden@gmail.com> <20120601190230.GA405@redhat.com> <CABe66sWwvCq=vWq5=ojbgHZeG764BGvts0cMJExTVrTeHRS+KA@mail.gmail.com>
+	id S1760919Ab2FDQUb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:20:31 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:7828 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751874Ab2FDQU3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 12:20:29 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+X-SpamScore: -13
+X-BigFish: VS-13(zz9371I542M1432N4015Izz1202hzz8275bh8275dhz2fh2a8h668h839h944hd25hf0ah)
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH 0/1] net/hyperv: Use wait_event on outstanding sends
+ during device removal
+Thread-Topic: [PATCH 0/1] net/hyperv: Use wait_event on outstanding sends
+ during device removal
+Thread-Index: AQHNQmlT3T3tfMxvGESLRkeB5KLf4pbqTvCAgAAGaTA=
+Date: Mon, 4 Jun 2012 16:20:19 +0000
+Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0DD6F82A@TK5EX14MBXC223.redmond.corp.microsoft.com>
+References: <1338820532-2345-1-git-send-email-haiyangz@microsoft.com>
+ <20120604.115119.568655178193939719.davem@davemloft.net>
+In-Reply-To: <20120604.115119.568655178193939719.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.70]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABe66sWwvCq=vWq5=ojbgHZeG764BGvts0cMJExTVrTeHRS+KA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Filipe,
 
-On 06/01, Filipe Brandenburger wrote:
->
-> On Fri, Jun 1, 2012 at 3:02 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> > Filipe, you can't even imagine how much do I like this change
-> > personally ;) Although I think that pdeath_signal code should
-> > be moved into reparent_leader(). I suggested this many times.
->
-> Yes, that would really make sense!
 
-Forgot to mention, and we should make ->pdeath_signal per-process.
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Monday, June 04, 2012 11:51 AM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: [PATCH 0/1] net/hyperv: Use wait_event on outstanding sends
+> during device removal
+> 
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Mon,  4 Jun 2012 07:35:31 -0700
+> 
+> > This patch is targeting net-next tree (when it's available for check
+> in).
+> >
+> > Haiyang Zhang (1):
+> >   net/hyperv: Use wait_event on outstanding sends during device
+> removal
+> 
+> Why in the world are you doing this?
+> 
+> This patch you are already asking me to apply to the 'net' tree, and
+> changes already will automatically propagate from 'net' to
+> 'net-next' the next time I merge those trees.
+> 
+> So you never need to submit bug fixes twice, once for 'net' and
+> once for 'net-next' so please do not do it.
 
-> > But I was told there are users which depend on current behaviour,
-> > they really want to know when the parent _thread_ exits.
->
-> Hmmm... but is it the parent thread inside the same process or the
-> thread of the parent process that forked it?
+A while ago, I was told the 'net' tree is only for urgent fixes, and I
+should specify the target tree instead of letting you guess. But, that's
+fine if you will apply it (after my updating the indentation) to 'net',
+then merge it into 'net-next' tree automatically.
 
-It is the parent thread inside the same process which forked the
-child initially. Assuming you are asking about the exiting "father"
-thread.
+Thanks,
+- Haiyang
 
-> doesn't really make any
-> sense to me...
-
-Same here ;) that is why I tried to change this logic too.
-
-Parent/child relationship is process-wide. task->parent points to
-the thread, but this is just the technical detail and it is only
-needed because we have __WNOTHREAD (see do_wait).
-
-IOW. I think we should move ->pdeath_signal from task_struct to
-signal_struct, and then do
-
-	--- x/kernel/exit.c
-	+++ x/kernel/exit.c
-	@@ -770,6 +770,9 @@ static void reparent_leader(struct task_
-		if (same_thread_group(p->real_parent, father))
-			return;
-	 
-	+	if (p->signal->pdeath_signal)
-	+		group_send_sig_info(p->signal->pdeath_signal, SEND_SIG_NOINFO, p);
-	+
-		/* We don't want people slaying init.  */
-		p->exit_signal = SIGCHLD;
-	 
-	@@ -806,9 +809,6 @@ static void forget_original_parent(struc
-					BUG_ON(t->ptrace);
-					t->parent = t->real_parent;
-				}
-	-			if (t->pdeath_signal)
-	-				group_send_sig_info(t->pdeath_signal,
-	-						    SEND_SIG_NOINFO, t);
-			} while_each_thread(p, t);
-			reparent_leader(father, p, &dead_children);
-		}
-
-Oleg.
 
