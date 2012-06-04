@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760405Ab2FDPUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:20:11 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40539 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab2FDPUJ (ORCPT
+	id S1760757Ab2FDPVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:21:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51798 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753448Ab2FDPVb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:20:09 -0400
-Message-ID: <4FCCD224.1020307@suse.cz>
-Date: Mon, 04 Jun 2012 17:20:04 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120530 Thunderbird/14.0a2
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Jeff Dike <jdike@addtoit.com>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH 13/24] TTY: um/line, use tty from tty_port
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at>
-In-Reply-To: <4FCCA3A6.8080608@nod.at>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Jun 2012 11:21:31 -0400
+Message-ID: <1338823271.28282.75.camel@twins>
+Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
+ as target of (pinned) task migration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Date: Mon, 04 Jun 2012 17:21:11 +0200
+In-Reply-To: <20120604150040.GD25126@linux.vnet.ibm.com>
+References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
+	 <1338801907.7356.163.camel@marge.simpson.net>
+	 <1338810796.28282.32.camel@twins>
+	 <1338814063.7356.192.camel@marge.simpson.net>
+	 <20120604130740.GC25126@linux.vnet.ibm.com>
+	 <1338820234.7356.250.camel@marge.simpson.net>
+	 <20120604143802.GB26651@linux.vnet.ibm.com>
+	 <1338820895.7356.252.camel@marge.simpson.net>
+	 <20120604150040.GD25126@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 02:01 PM, Richard Weinberger wrote:
-> I have two questions: 1. Are these patches also usable on 3.4 and
-> 3.3 or do they depend on 3.5's TTY changes?
+On Mon, 2012-06-04 at 20:30 +0530, Srivatsa Vaddagiri wrote:
+> * Mike Galbraith <efault@gmx.de> [2012-06-04 16:41:35]:
+> 
+> > But high priority SCHED_OTHER tasks do not hog the CPU, they get their
+> > fair share as defined by the user.
+> 
+> Consider this case. System with 2 cores (each with 2 thread) and 3
+> cgroups :
+> 
+> 	A (1024) -> has 2 tasks (A0, A1)
+> 	B (2048) -> has 2 tasks (B0, B1)
+> 	C (1024) -> has 1 tasks (C0 - pinned to CPUs 1,2)
+> 
+> (B0, B1) collectively are eligible to consume 2 full cpus worth of
+> bandwidth, (A0, A1) together are eligible to consume 1 full-cpu
+> worth of bandwidth and finally C0 is eligible to get 1 full-cpu worth of
+> bandwidth. 
 
-Hi, I don't think they depend on any changes.
+The much simpler way to say that is: 5 tasks, two of 512, 3 of 1024.
 
-> 2. Why didn't you use tty_port_open()/close()/etc. as Alan
-> suggested my in [1]?
+> Currently C0 is sleeping as a result of which tasks could be spread as:
+> 
+> 	CPU0 -> A0
+> 	CPU1 -> A1
+> 
+> 	CPU2 -> B0
+> 	CPU3 -> B1
+> 
+> Now C0 wakes up and lands on CPU2 (which was its prev_cpu).
+> 
+> 	CPU0 -> A0
+> 	CPU1 -> A1
+> 
+> 	CPU2 -> B0, C0
+> 	CPU3 -> B1
 
-This was not intended to fix anything particular. If it does, it is a
-pure coincidence... These patches are a minimalistic subset to ensure
-every driver has its own tty_port for each tty. We will need this
-pairing later.
+That's 512, 512, 2048, 1024.
 
-So the switch of the driver to the new tty port API, as suggested by
-Alan, is still needed. I might do that later if I learn how to make
-UML work. (The conversion is by definition invasive and needs runtime
-testing.)
+> Ideally CPU1 needs to pull it C0 to itself (while A1 moves to CPU0). Do
+> you agree to that? I doubt that happens because of how CPU0 does load
+> balance on behalf of itself and CPU1 (and thus fails to pull C0 to its
+> core).
 
-> [1]
-> http://lkml.indiana.edu/hypermail/linux/kernel/1201.3/01705.html
+Right, 0 can't pull C0 because of cpus_allowed, it can however pull B0,
+resulting in: {A0, B0}:1536, {A1}:512, {C0}:1024, {B1}:1024, the next
+balance pass of 1 will then pull A0, resulting in: {B0}:1024, {A0,
+A1}:1024, {C0}:1024, {B1}:1024
 
-thanks,
--- 
-js
-suse labs
+And all is well again.
 
+That is not to say you couldn't contrive a scenario where it would be
+needed.. 
