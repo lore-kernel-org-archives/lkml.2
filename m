@@ -1,189 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab2FDRlP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:41:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:44771 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab2FDRlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:41:14 -0400
-Date: Mon, 4 Jun 2012 23:07:11 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] uprobes: make register/unregister O(n)
-Message-ID: <20120604173711.GM24279@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20120604145238.GA6408@redhat.com>
+	id S1755231Ab2FDR7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:59:51 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:32937 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638Ab2FDR7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 13:59:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120604145238.GA6408@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060417-5806-0000-0000-000015DE1DA5
+In-Reply-To: <20120604151407.GD23701@moon>
+References: <20120604151407.GD23701@moon>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 4 Jun 2012 10:59:24 -0700
+X-Google-Sender-Auth: fkwUXOdenwJJSAfURjp0hZX_u50
+Message-ID: <CA+55aFwWpxvPGT2Gopp=y8_=CAsGoted4sg9_+b8yfkEqjLBYw@mail.gmail.com>
+Subject: Re: Probleam reading fdinfo symlinks after 30a08bf2d31d275c6fc71dd1811342777e95c831
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LINUXFS-ML <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Eric Biederman <ebiederm@xmission.com>
+Content-Type: multipart/mixed; boundary=0016e6d6463d9e39f504c1a94c20
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--0016e6d6463d9e39f504c1a94c20
+Content-Type: text/plain; charset=ISO-8859-1
 
-I read this code a few times, but I still think I am getting confused
-about few scenarios.
+On Mon, Jun 4, 2012 at 8:14 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>
+> just tried 3.5-rc1 out and found that with commit
+> 30a08bf2d31d275c6fc71dd1811342777e95c831 the reading
+> of fdinfo files returns "Too many levels of symbolic links"
+> error.
 
-So please correct me.
+Ugh. The fdinfo files aren't symlinks at all, and share the revalidate function.
 
-> struct map_info {
-> 	struct map_info *next;
-> 	struct mm_struct *mm;
-> 	loff_t vaddr;
-> };
-> 
-> static inline struct map_info *free_map_info(struct map_info *info)
-> {
-> 	struct map_info *next = info->next;
-> 	kfree(info);
-> 	return next;
-> }
-> 
-> static struct map_info *
-> build_map_info(struct address_space *mapping, loff_t offset, bool is_register)
-> {
-> 	unsigned long pgoff = offset >> PAGE_SHIFT;
-> 	struct prio_tree_iter iter;
-> 	struct vm_area_struct *vma;
-> 	struct map_info *curr = NULL;
-> 	struct map_info *prev = NULL;
-> 	struct map_info *info;
-> 	int more = 0;
-> 
->  again:
-> 	mutex_lock(&mapping->i_mmap_mutex);
-> 	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
-> 		if (!valid_vma(vma, is_register))
-> 			continue;
-> 
-> 		if (!prev) {
-> 			prev = kmalloc(sizeof(struct map_info),
-> 					GFP_NOWAIT | __GFP_NOMEMALLOC | __GFP_NOWARN);
-> 			if (!prev) {
-> 				more++;
-> 				continue;
-> 			}
-> 			prev->next = NULL;
-> 		}
-> 
-> 		if (!atomic_inc_not_zero(&vma->vm_mm->mm_users))
-> 			continue;
-> 
-> 		info = prev;
-> 		prev = prev->next;
-> 		info->next = curr;
-> 		curr = info;
-> 
-> 		info->mm = vma->vm_mm;
-> 		info->vaddr = vma_address(vma, offset);
-> 	}
-> 	mutex_unlock(&mapping->i_mmap_mutex);
-> 
-> 	if (!more)
-> 		goto out;
-> 
-> 	prev = curr;
-> 	while (curr) {
-> 		mmput(curr->mm);
-> 		curr = curr->next;
-> 	}
-> 
-> 	do {
-> 		info = kmalloc(sizeof(struct map_info), GFP_KERNEL);
-> 		if (!info) {
-> 			curr = ERR_PTR(-ENOMEM);
-> 			goto out;
-> 		}
-> 		info->next = prev;
-> 		prev = info;
-> 	} while (--more);
-> 
-> 	goto again;
+My bad. The fix isn't pretty, but still better than reverting things.
+This should fix it.
 
-This is more theory
-If the number of vmas in the priority tree keeps increasing in every
-iteration, and the kmalloc(GFP_NOWAIT) fails i.e more is !0, then
-dont we end up in a forever loop?
+            Linus
 
-Cant we just restrict this to just 2 iterations? [And depend on
-uprobe_mmap() to do the necessary if new vmas come in].
+--0016e6d6463d9e39f504c1a94c20
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h31ugeoj0
 
->  out:
-
-> 	while (prev)
-> 		prev = free_map_info(prev);
-
-If we were able to allocate all map_info objects in the first pass but
-the last vma belonged to a mm thats at exit, i.e atomic_inc_non_zero
-returned 0 , then prev is !NULL and more is 0.  Then we seem to clear
-all the map_info objects without even decreasing the mm counts for which
-atomic_inc_non_zero() was successful. Will curr be proper in this case.
-
-Should this while be an if?
-
-I am sure I am missing something here. Probably I should take a look
-again. 
-
-> 	return curr;
-> }
-> 
-> static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
-> {
-> 	struct map_info *info;
-> 	int err = 0;
-> 
-> 	info = build_map_info(uprobe->inode->i_mapping,
-> 					uprobe->offset, is_register);
-> 	if (IS_ERR(info))
-> 		return PTR_ERR(info);
-> 
-> 	while (info) {
-> 		struct mm_struct *mm = info->mm;
-> 		struct vm_area_struct *vma;
-> 		loff_t vaddr;
-> 
-> 		if (err)
-> 			goto free;
-> 
-> 		down_write(&mm->mmap_sem);
-> 		vma = find_vma(mm, (unsigned long)info->vaddr);
-> 		if (!vma || !valid_vma(vma, is_register))
-> 			goto unlock;
-> 
-> 		vaddr = vma_address(vma, uprobe->offset);
-> 		if (vma->vm_file->f_mapping->host != uprobe->inode ||
-> 						vaddr != info->vaddr)
-> 			goto unlock;
-> 
-> 		if (is_register) {
-> 			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
-> 			/*
-> 			 * We can race against uprobe_register(), see the
-> 			 * comment near uprobe_hash().
-> 			 */
-> 			if (err == -EEXIST)
-> 				err = 0;
-> 		} else {
-> 			remove_breakpoint(uprobe, mm, info->vaddr);
-> 		}
->  unlock:
-> 		up_write(&mm->mmap_sem);
->  free:
-> 		mmput(mm);
-> 		info = free_map_info(info);
-> 	}
-> 
-> 	return err;
-> }
-> 
-
+IGZzL3Byb2MvYmFzZS5jIHwgMTcgKysrKysrKysrKy0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAx
+MCBpbnNlcnRpb25zKCspLCA3IGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2ZzL3Byb2MvYmFz
+ZS5jIGIvZnMvcHJvYy9iYXNlLmMKaW5kZXggNjE2ZjQxYTdjZGU2Li40MzcxOTVmMjA0ZTEgMTAw
+NjQ0Ci0tLSBhL2ZzL3Byb2MvYmFzZS5jCisrKyBiL2ZzL3Byb2MvYmFzZS5jCkBAIC0xODAzLDcg
+KzE4MDMsNyBAQCBzdGF0aWMgaW50IHRpZF9mZF9yZXZhbGlkYXRlKHN0cnVjdCBkZW50cnkgKmRl
+bnRyeSwgc3RydWN0IG5hbWVpZGF0YSAqbmQpCiAJCQlyY3VfcmVhZF9sb2NrKCk7CiAJCQlmaWxl
+ID0gZmNoZWNrX2ZpbGVzKGZpbGVzLCBmZCk7CiAJCQlpZiAoZmlsZSkgewotCQkJCXVuc2lnbmVk
+IGlfbW9kZSwgZl9tb2RlID0gZmlsZS0+Zl9tb2RlOworCQkJCXVuc2lnbmVkIGZfbW9kZSA9IGZp
+bGUtPmZfbW9kZTsKIAogCQkJCXJjdV9yZWFkX3VubG9jaygpOwogCQkJCXB1dF9maWxlc19zdHJ1
+Y3QoZmlsZXMpOwpAQCAtMTgxOSwxMiArMTgxOSwxNCBAQCBzdGF0aWMgaW50IHRpZF9mZF9yZXZh
+bGlkYXRlKHN0cnVjdCBkZW50cnkgKmRlbnRyeSwgc3RydWN0IG5hbWVpZGF0YSAqbmQpCiAJCQkJ
+CWlub2RlLT5pX2dpZCA9IEdMT0JBTF9ST09UX0dJRDsKIAkJCQl9CiAKLQkJCQlpX21vZGUgPSBT
+X0lGTE5LOwotCQkJCWlmIChmX21vZGUgJiBGTU9ERV9SRUFEKQotCQkJCQlpX21vZGUgfD0gU19J
+UlVTUiB8IFNfSVhVU1I7Ci0JCQkJaWYgKGZfbW9kZSAmIEZNT0RFX1dSSVRFKQotCQkJCQlpX21v
+ZGUgfD0gU19JV1VTUiB8IFNfSVhVU1I7Ci0JCQkJaW5vZGUtPmlfbW9kZSA9IGlfbW9kZTsKKwkJ
+CQlpZiAoU19JU0xOSyhpbm9kZS0+aV9tb2RlKSkgeworCQkJCQl1bnNpZ25lZCBpX21vZGUgPSBT
+X0lGTE5LOworCQkJCQlpZiAoZl9tb2RlICYgRk1PREVfUkVBRCkKKwkJCQkJCWlfbW9kZSB8PSBT
+X0lSVVNSIHwgU19JWFVTUjsKKwkJCQkJaWYgKGZfbW9kZSAmIEZNT0RFX1dSSVRFKQorCQkJCQkJ
+aV9tb2RlIHw9IFNfSVdVU1IgfCBTX0lYVVNSOworCQkJCQlpbm9kZS0+aV9tb2RlID0gaV9tb2Rl
+OworCQkJCX0KIAogCQkJCXNlY3VyaXR5X3Rhc2tfdG9faW5vZGUodGFzaywgaW5vZGUpOwogCQkJ
+CXB1dF90YXNrX3N0cnVjdCh0YXNrKTsKQEAgLTE4NTksNiArMTg2MSw3IEBAIHN0YXRpYyBzdHJ1
+Y3QgZGVudHJ5ICpwcm9jX2ZkX2luc3RhbnRpYXRlKHN0cnVjdCBpbm9kZSAqZGlyLAogCWVpID0g
+UFJPQ19JKGlub2RlKTsKIAllaS0+ZmQgPSBmZDsKIAorCWlub2RlLT5pX21vZGUgPSBTX0lGTE5L
+OwogCWlub2RlLT5pX29wID0gJnByb2NfcGlkX2xpbmtfaW5vZGVfb3BlcmF0aW9uczsKIAlpbm9k
+ZS0+aV9zaXplID0gNjQ7CiAJZWktPm9wLnByb2NfZ2V0X2xpbmsgPSBwcm9jX2ZkX2xpbms7Cg==
+--0016e6d6463d9e39f504c1a94c20--
