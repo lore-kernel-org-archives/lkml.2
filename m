@@ -1,43 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760852Ab2FDPvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 11:51:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40511 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752966Ab2FDPvV (ORCPT
+	id S1760871Ab2FDPwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 11:52:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61221 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754567Ab2FDPwt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 11:51:21 -0400
-Date: Mon, 04 Jun 2012 11:51:19 -0400 (EDT)
-Message-Id: <20120604.115119.568655178193939719.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: Re: [PATCH 0/1] net/hyperv: Use wait_event on outstanding sends
- during device removal
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1338820532-2345-1-git-send-email-haiyangz@microsoft.com>
-References: <1338820532-2345-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Jun 2012 11:52:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAAQKjZNbu9E+bpt0cC8OiRhcGFe13E17bVU_ZY2EeLCzNpSavA@mail.gmail.com>
+References: <1336661600-2409-1-git-send-email-emilgoode@gmail.com>
+	<CAAQKjZNbu9E+bpt0cC8OiRhcGFe13E17bVU_ZY2EeLCzNpSavA@mail.gmail.com>
+Date: Tue, 5 Jun 2012 00:52:48 +0900
+Message-ID: <CAAQKjZMo5pWB+hVudEdTuv1h1L69n=sXTM+VCi9m3AkWPAALiQ@mail.gmail.com>
+Subject: Re: [PATCH] drm/exynos: Include missing linux/types.h in header
+From: InKi Dae <daeinki@gmail.com>
+To: Emil Goode <emilgoode@gmail.com>
+Cc: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
+        kyungmin.park@samsung.com, airlied@linux.ie,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Mon,  4 Jun 2012 07:35:31 -0700
+Hi Emil,
 
-> This patch is targeting net-next tree (when it's available for check in).
-> 
-> Haiyang Zhang (1):
->   net/hyperv: Use wait_event on outstanding sends during device removal
+we included "drm.h" with g2d driver patch instead of "<linux/types.h>
+so your patch will be removed from exynos-drm-fixes. sorry for
+confusing.
 
-Why in the world are you doing this?
+for this, you can refer to below link.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blobdiff;f=include/drm/exynos_drm.h;h=b6d7ce92eadd67a67db12b19bb0d39208b870511;hp=44f79cf468d4b7baff2e5f728667475ab96f7f1e;hb=d7f1642c90ab5eb2d7c48af0581c993094f97e1a;hpb=8dcb96b628a0749184bbcc5e6c94463f89405c58
 
-This patch you are already asking me to apply to the 'net' tree, and
-changes already will automatically propagate from 'net' to
-'net-next' the next time I merge those trees.
+Thanks,
+Inki Dae
 
-So you never need to submit bug fixes twice, once for 'net' and
-once for 'net-next' so please do not do it.
+2012/5/14 InKi Dae <daeinki@gmail.com>:
+> 2012/5/10 Emil Goode <emilgoode@gmail.com>:
+>> Include the linux/types.h file where used types are declared.
+>>
+>> Sparse gives the following warning:
+>> /usr/include/drm/exynos_drm.h:92:
+>>        found __[us]{8,16,32,64} type without
+>>        #include <linux/types.h>
+>>
+>> Signed-off-by: Emil Goode <emilgoode@gmail.com>
+>> ---
+>>  include/drm/exynos_drm.h |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/include/drm/exynos_drm.h b/include/drm/exynos_drm.h
+>> index e478de4..7eb7ae7 100644
+>> --- a/include/drm/exynos_drm.h
+>> +++ b/include/drm/exynos_drm.h
+>> @@ -29,6 +29,8 @@
+>>  #ifndef _EXYNOS_DRM_H_
+>>  #define _EXYNOS_DRM_H_
+>>
+>> +#include <linux/types.h>
+>> +
+>
+> applied.
+>
+> Thanks,
+> Inki Dae
+>
+>>  /**
+>>  * User-desired buffer creation information structure.
+>>  *
+>> --
+>> 1.7.10
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
