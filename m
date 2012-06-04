@@ -1,157 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab2FDFOl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:14:41 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43350 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752330Ab2FDFOk (ORCPT
+	id S1756368Ab2FDFRQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:17:16 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:65159 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755865Ab2FDFRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:14:40 -0400
-Subject: [PATCH v2 1/7] KVM Guest: Add VCPU running/pre-empted state for
- guest
-To: peterz@infradead.org, mingo@elte.hu, mtosatti@redhat.com, avi@redhat.com
-From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
-Cc: raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
-        vatsa@linux.vnet.ibm.com, hpa@zytor.com
-Date: Mon, 04 Jun 2012 10:36:05 +0530
-Message-ID: <20120604050547.4560.48709.stgit@abhimanyu.in.ibm.com>
-In-Reply-To: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
-User-Agent: StGit/0.16-2-g0d85
+	Mon, 4 Jun 2012 01:17:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 12060318-1618-0000-0000-000001C0F3A5
+In-Reply-To: <CAH3Oq6QxFmtTuZSdF=95FPugwu1AzMgHm650qmNUwsdLr9O8Rg@mail.gmail.com>
+References: <CAH3Oq6SHLWvcdVUFsmPvqNedBC_QQhVSxrvCiyAUL3TgPQn3wQ@mail.gmail.com>
+	<alpine.LFD.2.02.1205311834270.3231@ionos>
+	<CAH3Oq6QxFmtTuZSdF=95FPugwu1AzMgHm650qmNUwsdLr9O8Rg@mail.gmail.com>
+Date: Mon, 4 Jun 2012 13:17:11 +0800
+Message-ID: <CAH3Oq6Q-XgNvTB9CFdD2bj+rbUBUsUV2C6drx-JsRYziNAJ=vQ@mail.gmail.com>
+Subject: Re: Make kstat_incr_irqs_this_cpu() called when an irq is actually
+ being handled
+From: Ning Jiang <ning.n.jiang@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8f22c72b893b3804c19ea5e6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds guest code for msr between guest and hypervisor. The
-msr will export the vcpu running/pre-empted information to the guest
-from host. This will enable guest to intelligently send ipi to running
-vcpus and set flag for pre-empted vcpus. This will prevent waiting for
-vcpus that are not running.
+--e89a8f22c72b893b3804c19ea5e6
+Content-Type: text/plain; charset=ISO-8859-1
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+2012/6/1 Ning Jiang <ning.n.jiang@gmail.com>:
+> 2012/6/1 Thomas Gleixner <tglx@linutronix.de>:
+>> On Thu, 31 May 2012, Ning Jiang wrote:
+>>> kstat_incr_irqs_this_cpu() is supposed to record the irq number
+>>> that is actually taken by a certain cpu. But it failed to do so
+>>> in its current form.
+>>
+>> It exactly counts the number of interrupts which are delivered to and
+>> handled by a CPU. That includes interrupts which are delivered in a
+>> state where the device handler cannot be called. And this is on
+>> purpose. We want to see the real number of interruptions not the
+>> number of calls to a device handler.
+>>
+>>> For level irq, if its disabled or no action available, we'll skip
+>>> irq handling. When it is enabled later, the irq will be retriggered
+>>> and kstat_incr_irqs_this_cpu() will be counted twice for this
+>>> single irq.
+>>
+>> This counts the number of interrupts arrived at the CPU and therefor
+>> it counts TWO in this situation. The CPU is interrupted twice, not
+>> once.
+>>
+>
+> I've got your point. For level irq, no problem. But how do you account
+> for edge irq in my comments?
+>
+> For edge irq, we'll not have the same problem as level irq because
+> kstat_incr_irqs_this_cpu() is placed after status checking for
+> disable or no action. But it has its own problem. Suppose a second
+> irq happens when the first is being handled, it will mark itself
+> pending and quit, then it will be handled in the same loop after the
+> first one has been handled. Thus kstat_incr_irqs_this_cpu() will
+> only be counted once for two irqs.
+
+
+I've made a another patch based on your conception of irq accounting.
+It fixes the
+corner case in which there comes up a second irq when the first is
+still in progress,
+we'll increment the irq count before we quit.
+
+>From 93960c69e588989346589fac78b311ac62fb7552 Mon Sep 17 00:00:00 2001
+From: Ning Jiang <ning.n.jiang@gmail.com>
+Date: Mon, 4 Jun 2012 09:54:08 +0800
+Subject: [PATCH] genirq: Increment irq count for second edge irq when
+the first is in progress
+
+kstat_incr_irqs_this_cpu() records the real number of interruptions
+to a certain CPU, regardless of the current irq state. That includes
+interrupts which are delivered in a state where the device handler
+cannot be called.
+
+For level irq, if its disabled or no action available, we'll skip
+irq handling. When it is enabled later, the irq will be retriggered
+and kstat_incr_irqs_this_cpu() will be incremented again. This counts
+the number of interrupts arrived at the CPU and therefor it counts
+TWO in this situation. The CPU is interrupted twice, not once. The
+accounting works correctly as expected.
+
+But for edge irq, we have a subtle problem. Suppose a second irq
+happens when the first is still in progress, it will mark itself
+pending and quit, then it will be handled in the same loop after
+the first one has been handled. Thus kstat_incr_irqs_this_cpu()
+will only be counted once for two irqs.
+
+Add a check in edge handler if there is a irq already in progress,
+we'll first kstat_incr_irqs_this_cpu() before we mask and quit, so
+that we can get correct irq count in this case.
+
+[ Thanks Thomas for his excellent comments ]
+
+Signed-off-by: Ning Jiang <ning.n.jiang@gmail.com>
 ---
- arch/x86/include/asm/kvm_para.h |   10 ++++++++++
- arch/x86/kernel/kvm.c           |   33 +++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 0 deletions(-)
+ kernel/irq/chip.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 77266d3..f57b5cc 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -24,6 +24,7 @@
- #define KVM_FEATURE_ASYNC_PF		4
- #define KVM_FEATURE_STEAL_TIME		5
- #define KVM_FEATURE_PV_UNHALT		6
-+#define KVM_FEATURE_VCPU_STATE          7
- 
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -39,6 +40,7 @@
- #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
- #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
- #define MSR_KVM_STEAL_TIME  0x4b564d03
-+#define MSR_KVM_VCPU_STATE  0x4b564d04
- 
- struct kvm_steal_time {
- 	__u64 steal;
-@@ -51,6 +53,14 @@ struct kvm_steal_time {
- #define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
- #define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
- 
-+struct kvm_vcpu_state {
-+	__u32 state;
-+	__u32 pad[15];
-+};
-+
-+#define KVM_VCPU_STATE_ALIGN_BITS 5
-+#define KVM_VCPU_STATE_VALID_BITS ((-1ULL << (KVM_VCPU_STATE_ALIGN_BITS + 1)))
-+
- #define KVM_MAX_MMU_OP_BATCH           32
- 
- #define KVM_ASYNC_PF_ENABLED			(1 << 0)
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 98f0378..bb686a6 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -64,6 +64,9 @@ static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
- static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
- static int has_steal_clock = 0;
- 
-+DEFINE_PER_CPU(struct kvm_vcpu_state, vcpu_state) __aligned(64);
-+static int has_vcpu_state;
-+
- /*
-  * No need for any "IO delay" on KVM
-  */
-@@ -291,6 +294,22 @@ static void kvm_register_steal_time(void)
- 		cpu, __pa(st));
- }
- 
-+static void kvm_register_vcpu_state(void)
-+{
-+	int cpu = smp_processor_id();
-+	struct kvm_vcpu_state *v_state;
-+
-+	if (!has_vcpu_state)
-+		return;
-+
-+	v_state = &per_cpu(vcpu_state, cpu);
-+	memset(v_state, 0, sizeof(*v_state));
-+
-+	wrmsrl(MSR_KVM_VCPU_STATE, (__pa(v_state) | KVM_MSR_ENABLED));
-+	printk(KERN_INFO "kvm-vcpustate: cpu %d, msr %lu\n",
-+		cpu, __pa(v_state));
-+}
-+
- void __cpuinit kvm_guest_cpu_init(void)
- {
- 	if (!kvm_para_available())
-@@ -310,6 +329,9 @@ void __cpuinit kvm_guest_cpu_init(void)
- 
- 	if (has_steal_clock)
- 		kvm_register_steal_time();
-+
-+	if (has_vcpu_state)
-+		kvm_register_vcpu_state();
- }
- 
- static void kvm_pv_disable_apf(void *unused)
-@@ -361,6 +383,14 @@ void kvm_disable_steal_time(void)
- 	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
- }
- 
-+void kvm_disable_vcpu_state(void)
-+{
-+	if (!has_vcpu_state)
-+		return;
-+
-+	wrmsr(MSR_KVM_VCPU_STATE, 0, 0);
-+}
-+
- #ifdef CONFIG_SMP
- static void __init kvm_smp_prepare_boot_cpu(void)
- {
-@@ -379,6 +409,7 @@ static void __cpuinit kvm_guest_cpu_online(void *dummy)
- 
- static void kvm_guest_cpu_offline(void *dummy)
- {
-+	kvm_disable_vcpu_state();
- 	kvm_disable_steal_time();
- 	kvm_pv_disable_apf(NULL);
- 	apf_task_wake_all();
-@@ -433,6 +464,8 @@ void __init kvm_guest_init(void)
- 		pv_time_ops.steal_clock = kvm_steal_clock;
- 	}
- 
-+	has_vcpu_state = 1;
-+
- #ifdef CONFIG_SMP
- 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
- 	register_cpu_notifier(&kvm_cpu_notifier);
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index eebd6d5..254b8aa 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -489,6 +489,8 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
+ 	if (unlikely(irqd_irq_disabled(&desc->irq_data) ||
+ 		     irqd_irq_inprogress(&desc->irq_data) || !desc->action)) {
+ 		if (!irq_check_poll(desc)) {
++			if (irqd_irq_inprogress(&desc->irq_data))
++				kstat_incr_irqs_this_cpu(irq, desc);
+ 			desc->istate |= IRQS_PENDING;
+ 			mask_ack_irq(desc);
+ 			goto out_unlock;
+@@ -550,6 +552,8 @@ void handle_edge_eoi_irq(unsigned int irq, struct
+irq_desc *desc)
+ 	if (unlikely(irqd_irq_disabled(&desc->irq_data) ||
+ 		     irqd_irq_inprogress(&desc->irq_data) || !desc->action)) {
+ 		if (!irq_check_poll(desc)) {
++			if (irqd_irq_inprogress(&desc->irq_data))
++				kstat_incr_irqs_this_cpu(irq, desc);
+ 			desc->istate |= IRQS_PENDING;
+ 			goto out_eoi;
+ 		}
+-- 
+1.7.1
 
+--e89a8f22c72b893b3804c19ea5e6
+Content-Type: application/octet-stream; 
+	name="0001-genirq-Increment-irq-count-for-second-edge-irq-when-.patch"
+Content-Disposition: attachment; 
+	filename="0001-genirq-Increment-irq-count-for-second-edge-irq-when-.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h313315n0
+
+RnJvbSA5Mzk2MGM2OWU1ODg5ODkzNDY1ODlmYWM3OGIzMTFhYzYyZmI3NTUyIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBOaW5nIEppYW5nIDxuaW5nLm4uamlhbmdAZ21haWwuY29tPgpE
+YXRlOiBNb24sIDQgSnVuIDIwMTIgMDk6NTQ6MDggKzA4MDAKU3ViamVjdDogW1BBVENIXSBnZW5p
+cnE6IEluY3JlbWVudCBpcnEgY291bnQgZm9yIHNlY29uZCBlZGdlIGlycSB3aGVuIHRoZSBmaXJz
+dCBpcyBpbiBwcm9ncmVzcwoKa3N0YXRfaW5jcl9pcnFzX3RoaXNfY3B1KCkgcmVjb3JkcyB0aGUg
+cmVhbCBudW1iZXIgb2YgaW50ZXJydXB0aW9ucwp0byBhIGNlcnRhaW4gQ1BVLCByZWdhcmRsZXNz
+IG9mIHRoZSBjdXJyZW50IGlycSBzdGF0ZS4gVGhhdCBpbmNsdWRlcwppbnRlcnJ1cHRzIHdoaWNo
+IGFyZSBkZWxpdmVyZWQgaW4gYSBzdGF0ZSB3aGVyZSB0aGUgZGV2aWNlIGhhbmRsZXIKY2Fubm90
+IGJlIGNhbGxlZC4KCkZvciBsZXZlbCBpcnEsIGlmIGl0cyBkaXNhYmxlZCBvciBubyBhY3Rpb24g
+YXZhaWxhYmxlLCB3ZSdsbCBza2lwCmlycSBoYW5kbGluZy4gV2hlbiBpdCBpcyBlbmFibGVkIGxh
+dGVyLCB0aGUgaXJxIHdpbGwgYmUgcmV0cmlnZ2VyZWQKYW5kIGtzdGF0X2luY3JfaXJxc190aGlz
+X2NwdSgpIHdpbGwgYmUgaW5jcmVtZW50ZWQgYWdhaW4uIFRoaXMgY291bnRzCnRoZSBudW1iZXIg
+b2YgaW50ZXJydXB0cyBhcnJpdmVkIGF0IHRoZSBDUFUgYW5kIHRoZXJlZm9yIGl0IGNvdW50cwpU
+V08gaW4gdGhpcyBzaXR1YXRpb24uIFRoZSBDUFUgaXMgaW50ZXJydXB0ZWQgdHdpY2UsIG5vdCBv
+bmNlLiBUaGUKYWNjb3VudGluZyB3b3JrcyBjb3JyZWN0bHkgYXMgZXhwZWN0ZWQuCgpCdXQgZm9y
+IGVkZ2UgaXJxLCB3ZSBoYXZlIGEgc3VidGxlIHByb2JsZW0uIFN1cHBvc2UgYSBzZWNvbmQgaXJx
+CmhhcHBlbnMgd2hlbiB0aGUgZmlyc3QgaXMgc3RpbGwgaW4gcHJvZ3Jlc3MsIGl0IHdpbGwgbWFy
+ayBpdHNlbGYKcGVuZGluZyBhbmQgcXVpdCwgdGhlbiBpdCB3aWxsIGJlIGhhbmRsZWQgaW4gdGhl
+IHNhbWUgbG9vcCBhZnRlcgp0aGUgZmlyc3Qgb25lIGhhcyBiZWVuIGhhbmRsZWQuIFRodXMga3N0
+YXRfaW5jcl9pcnFzX3RoaXNfY3B1KCkKd2lsbCBvbmx5IGJlIGNvdW50ZWQgb25jZSBmb3IgdHdv
+IGlycXMuCgpBZGQgYSBjaGVjayBpbiBlZGdlIGhhbmRsZXIgaWYgdGhlcmUgaXMgYSBpcnEgYWxy
+ZWFkeSBpbiBwcm9ncmVzcywKd2UnbGwgZmlyc3Qga3N0YXRfaW5jcl9pcnFzX3RoaXNfY3B1KCkg
+YmVmb3JlIHdlIG1hc2sgYW5kIHF1aXQsIHNvCnRoYXQgd2UgY2FuIGdldCBjb3JyZWN0IGlycSBj
+b3VudCBpbiB0aGlzIGNhc2UuCgpbIFRoYW5rcyBUaG9tYXMgZm9yIGhpcyBleGNlbGxlbnQgY29t
+bWVudHMgXQoKU2lnbmVkLW9mZi1ieTogTmluZyBKaWFuZyA8bmluZy5uLmppYW5nQGdtYWlsLmNv
+bT4KLS0tCiBrZXJuZWwvaXJxL2NoaXAuYyB8ICAgIDQgKysrKwogMSBmaWxlcyBjaGFuZ2VkLCA0
+IGluc2VydGlvbnMoKyksIDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEva2VybmVsL2lycS9j
+aGlwLmMgYi9rZXJuZWwvaXJxL2NoaXAuYwppbmRleCBlZWJkNmQ1Li4yNTRiOGFhIDEwMDY0NAot
+LS0gYS9rZXJuZWwvaXJxL2NoaXAuYworKysgYi9rZXJuZWwvaXJxL2NoaXAuYwpAQCAtNDg5LDYg
+KzQ4OSw4IEBAIGhhbmRsZV9lZGdlX2lycSh1bnNpZ25lZCBpbnQgaXJxLCBzdHJ1Y3QgaXJxX2Rl
+c2MgKmRlc2MpCiAJaWYgKHVubGlrZWx5KGlycWRfaXJxX2Rpc2FibGVkKCZkZXNjLT5pcnFfZGF0
+YSkgfHwKIAkJICAgICBpcnFkX2lycV9pbnByb2dyZXNzKCZkZXNjLT5pcnFfZGF0YSkgfHwgIWRl
+c2MtPmFjdGlvbikpIHsKIAkJaWYgKCFpcnFfY2hlY2tfcG9sbChkZXNjKSkgeworCQkJaWYgKGly
+cWRfaXJxX2lucHJvZ3Jlc3MoJmRlc2MtPmlycV9kYXRhKSkKKwkJCQlrc3RhdF9pbmNyX2lycXNf
+dGhpc19jcHUoaXJxLCBkZXNjKTsKIAkJCWRlc2MtPmlzdGF0ZSB8PSBJUlFTX1BFTkRJTkc7CiAJ
+CQltYXNrX2Fja19pcnEoZGVzYyk7CiAJCQlnb3RvIG91dF91bmxvY2s7CkBAIC01NTAsNiArNTUy
+LDggQEAgdm9pZCBoYW5kbGVfZWRnZV9lb2lfaXJxKHVuc2lnbmVkIGludCBpcnEsIHN0cnVjdCBp
+cnFfZGVzYyAqZGVzYykKIAlpZiAodW5saWtlbHkoaXJxZF9pcnFfZGlzYWJsZWQoJmRlc2MtPmly
+cV9kYXRhKSB8fAogCQkgICAgIGlycWRfaXJxX2lucHJvZ3Jlc3MoJmRlc2MtPmlycV9kYXRhKSB8
+fCAhZGVzYy0+YWN0aW9uKSkgewogCQlpZiAoIWlycV9jaGVja19wb2xsKGRlc2MpKSB7CisJCQlp
+ZiAoaXJxZF9pcnFfaW5wcm9ncmVzcygmZGVzYy0+aXJxX2RhdGEpKQorCQkJCWtzdGF0X2luY3Jf
+aXJxc190aGlzX2NwdShpcnEsIGRlc2MpOwogCQkJZGVzYy0+aXN0YXRlIHw9IElSUVNfUEVORElO
+RzsKIAkJCWdvdG8gb3V0X2VvaTsKIAkJfQotLSAKMS43LjEKCg==
+--e89a8f22c72b893b3804c19ea5e6--
