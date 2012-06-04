@@ -1,167 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab2FDFNS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:13:18 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:33283 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab2FDFNQ (ORCPT
+	id S1756343Ab2FDFOl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:14:41 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:43350 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752330Ab2FDFOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:13:16 -0400
-Subject: [PATCH v2 6/7] kvm,x86: RCU based table free
+	Mon, 4 Jun 2012 01:14:40 -0400
+Subject: [PATCH v2 1/7] KVM Guest: Add VCPU running/pre-empted state for
+ guest
 To: peterz@infradead.org, mingo@elte.hu, mtosatti@redhat.com, avi@redhat.com
 From: "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>
 Cc: raghukt@linux.vnet.ibm.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org, x86@kernel.org, jeremy@goop.org,
         vatsa@linux.vnet.ibm.com, hpa@zytor.com
-Date: Mon, 04 Jun 2012 10:38:34 +0530
-Message-ID: <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com>
+Date: Mon, 04 Jun 2012 10:36:05 +0530
+Message-ID: <20120604050547.4560.48709.stgit@abhimanyu.in.ibm.com>
 In-Reply-To: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
 References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
 User-Agent: StGit/0.16-2-g0d85
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060318-5490-0000-0000-000001873D00
+x-cbid: 12060318-1618-0000-0000-000001C0F3A5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The patch adds guest code for msr between guest and hypervisor. The
+msr will export the vcpu running/pre-empted information to the guest
+from host. This will enable guest to intelligently send ipi to running
+vcpus and set flag for pre-empted vcpus. This will prevent waiting for
+vcpus that are not running.
 
-get_user_pages_fast() depends on the IPI to hold off page table
-teardown while they are locklessly walked with interrupts disabled.
-If a vcpu were to be preempted while in this critical section, another
-vcpu tearing down page tables would go ahead and destroy them.  when
-the preempted vcpu resumes it then touches the freed pages.
-
-Using HAVE_RCU_TABLE_FREE:
-
-By using call_rcu_sched() to free the page-tables you'd need to
-receive and process at least one tick on the woken up cpu after the
-freeing, but since the in-progress gup_fast() will have IRQs disabled
-this will be delayed.
-
-http://article.gmane.org/gmane.linux.kernel/1290539
-
-Tested-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Nikunj A. Dadhania <nikunj@linux.vnet.ibm.com>
 ---
- arch/powerpc/include/asm/pgalloc.h  |    1 +
- arch/s390/mm/pgtable.c              |    1 +
- arch/sparc/include/asm/pgalloc_64.h |    1 +
- arch/x86/mm/pgtable.c               |    6 +++---
- include/asm-generic/tlb.h           |    9 +++++++++
- mm/memory.c                         |    7 +++++++
- 6 files changed, 22 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/kvm_para.h |   10 ++++++++++
+ arch/x86/kernel/kvm.c           |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pgalloc.h b/arch/powerpc/include/asm/pgalloc.h
-index bf301ac..c33ae79 100644
---- a/arch/powerpc/include/asm/pgalloc.h
-+++ b/arch/powerpc/include/asm/pgalloc.h
-@@ -49,6 +49,7 @@ static inline void __tlb_remove_table(void *_table)
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 77266d3..f57b5cc 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -24,6 +24,7 @@
+ #define KVM_FEATURE_ASYNC_PF		4
+ #define KVM_FEATURE_STEAL_TIME		5
+ #define KVM_FEATURE_PV_UNHALT		6
++#define KVM_FEATURE_VCPU_STATE          7
  
- 	pgtable_free(table, shift);
- }
-+#define __tlb_remove_table __tlb_remove_table
- #else /* CONFIG_SMP */
- static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
- {
-diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
-index 6e765bf..7029ed7 100644
---- a/arch/s390/mm/pgtable.c
-+++ b/arch/s390/mm/pgtable.c
-@@ -730,6 +730,7 @@ void __tlb_remove_table(void *_table)
- 	else
- 		free_pages((unsigned long) table, ALLOC_ORDER);
- }
-+#define __tlb_remove_table __tlb_remove_table
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+@@ -39,6 +40,7 @@
+ #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
+ #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+ #define MSR_KVM_STEAL_TIME  0x4b564d03
++#define MSR_KVM_VCPU_STATE  0x4b564d04
  
- static void tlb_remove_table_smp_sync(void *arg)
- {
-diff --git a/arch/sparc/include/asm/pgalloc_64.h b/arch/sparc/include/asm/pgalloc_64.h
-index 40b2d7a..d10913a 100644
---- a/arch/sparc/include/asm/pgalloc_64.h
-+++ b/arch/sparc/include/asm/pgalloc_64.h
-@@ -106,6 +106,7 @@ static inline void __tlb_remove_table(void *_table)
- 		is_page = true;
- 	pgtable_free(table, is_page);
- }
-+#define __tlb_remove_table __tlb_remove_table
- #else /* CONFIG_SMP */
- static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, bool is_page)
- {
-diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
-index 8573b83..34fa168 100644
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -51,21 +51,21 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
- {
- 	pgtable_page_dtor(pte);
- 	paravirt_release_pte(page_to_pfn(pte));
--	tlb_remove_page(tlb, pte);
-+	tlb_remove_table(tlb, pte);
- }
+ struct kvm_steal_time {
+ 	__u64 steal;
+@@ -51,6 +53,14 @@ struct kvm_steal_time {
+ #define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
+ #define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
  
- #if PAGETABLE_LEVELS > 2
- void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
- {
- 	paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
--	tlb_remove_page(tlb, virt_to_page(pmd));
-+	tlb_remove_table(tlb, virt_to_page(pmd));
- }
- 
- #if PAGETABLE_LEVELS > 3
- void ___pud_free_tlb(struct mmu_gather *tlb, pud_t *pud)
- {
- 	paravirt_release_pud(__pa(pud) >> PAGE_SHIFT);
--	tlb_remove_page(tlb, virt_to_page(pud));
-+	tlb_remove_table(tlb, virt_to_page(pud));
- }
- #endif	/* PAGETABLE_LEVELS > 3 */
- #endif	/* PAGETABLE_LEVELS > 2 */
-diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
-index f96a5b5..9ac30f7 100644
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -19,6 +19,8 @@
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
- 
-+static inline void tlb_remove_page(struct mmu_gather *tlb, struct page *page);
++struct kvm_vcpu_state {
++	__u32 state;
++	__u32 pad[15];
++};
 +
- #ifdef CONFIG_HAVE_RCU_TABLE_FREE
++#define KVM_VCPU_STATE_ALIGN_BITS 5
++#define KVM_VCPU_STATE_VALID_BITS ((-1ULL << (KVM_VCPU_STATE_ALIGN_BITS + 1)))
++
+ #define KVM_MAX_MMU_OP_BATCH           32
+ 
+ #define KVM_ASYNC_PF_ENABLED			(1 << 0)
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 98f0378..bb686a6 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -64,6 +64,9 @@ static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+ static DEFINE_PER_CPU(struct kvm_steal_time, steal_time) __aligned(64);
+ static int has_steal_clock = 0;
+ 
++DEFINE_PER_CPU(struct kvm_vcpu_state, vcpu_state) __aligned(64);
++static int has_vcpu_state;
++
  /*
-  * Semi RCU freeing of the page directories.
-@@ -60,6 +62,13 @@ struct mmu_table_batch {
- extern void tlb_table_flush(struct mmu_gather *tlb);
- extern void tlb_remove_table(struct mmu_gather *tlb, void *table);
- 
-+#else
-+
-+static inline void tlb_remove_table(struct mmu_gather *tlb, void *page)
-+{
-+	tlb_remove_page(tlb, page);
-+}
-+
- #endif
- 
- /*
-diff --git a/mm/memory.c b/mm/memory.c
-index 6105f47..c12685d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -297,6 +297,13 @@ int __tlb_remove_page(struct mmu_gather *tlb, struct page *page)
-  * See the comment near struct mmu_table_batch.
+  * No need for any "IO delay" on KVM
   */
+@@ -291,6 +294,22 @@ static void kvm_register_steal_time(void)
+ 		cpu, __pa(st));
+ }
  
-+#ifndef __tlb_remove_table
-+static void __tlb_remove_table(void *table)
++static void kvm_register_vcpu_state(void)
 +{
-+	free_page_and_swap_cache(table);
-+}
-+#endif
++	int cpu = smp_processor_id();
++	struct kvm_vcpu_state *v_state;
 +
- static void tlb_remove_table_smp_sync(void *arg)
++	if (!has_vcpu_state)
++		return;
++
++	v_state = &per_cpu(vcpu_state, cpu);
++	memset(v_state, 0, sizeof(*v_state));
++
++	wrmsrl(MSR_KVM_VCPU_STATE, (__pa(v_state) | KVM_MSR_ENABLED));
++	printk(KERN_INFO "kvm-vcpustate: cpu %d, msr %lu\n",
++		cpu, __pa(v_state));
++}
++
+ void __cpuinit kvm_guest_cpu_init(void)
  {
- 	/* Simply deliver the interrupt */
+ 	if (!kvm_para_available())
+@@ -310,6 +329,9 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 
+ 	if (has_steal_clock)
+ 		kvm_register_steal_time();
++
++	if (has_vcpu_state)
++		kvm_register_vcpu_state();
+ }
+ 
+ static void kvm_pv_disable_apf(void *unused)
+@@ -361,6 +383,14 @@ void kvm_disable_steal_time(void)
+ 	wrmsr(MSR_KVM_STEAL_TIME, 0, 0);
+ }
+ 
++void kvm_disable_vcpu_state(void)
++{
++	if (!has_vcpu_state)
++		return;
++
++	wrmsr(MSR_KVM_VCPU_STATE, 0, 0);
++}
++
+ #ifdef CONFIG_SMP
+ static void __init kvm_smp_prepare_boot_cpu(void)
+ {
+@@ -379,6 +409,7 @@ static void __cpuinit kvm_guest_cpu_online(void *dummy)
+ 
+ static void kvm_guest_cpu_offline(void *dummy)
+ {
++	kvm_disable_vcpu_state();
+ 	kvm_disable_steal_time();
+ 	kvm_pv_disable_apf(NULL);
+ 	apf_task_wake_all();
+@@ -433,6 +464,8 @@ void __init kvm_guest_init(void)
+ 		pv_time_ops.steal_clock = kvm_steal_clock;
+ 	}
+ 
++	has_vcpu_state = 1;
++
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
+ 	register_cpu_notifier(&kvm_cpu_notifier);
 
