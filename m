@@ -1,63 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467Ab2FDGhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 02:37:38 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:64141 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab2FDGhh (ORCPT
+	id S1754569Ab2FDGls (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 02:41:48 -0400
+Received: from szxga03-in.huawei.com ([58.251.152.66]:57961 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab2FDGlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 02:37:37 -0400
-Message-ID: <4FCC57AD.3000803@lwfinger.net>
-Date: Mon, 04 Jun 2012 01:37:33 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Question about do_mmap changes
-References: <4FCC47C9.8050904@lwfinger.net> <20120604062604.GV30000@ZenIV.linux.org.uk>
-In-Reply-To: <20120604062604.GV30000@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Jun 2012 02:41:46 -0400
+Date: Mon, 04 Jun 2012 14:37:06 +0800
+From: Li Zefan <lizefan@huawei.com>
+Subject: [PATCH] cgroup: remove hierarchy_mutex
+X-Originating-IP: [10.166.88.128]
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Message-id: <4FCC5792.8010203@huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=GB2312
+Content-transfer-encoding: 7BIT
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120312
+ Thunderbird/11.0
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 01:26 AM, Al Viro wrote:
-> On Mon, Jun 04, 2012 at 12:29:45AM -0500, Larry Finger wrote:
->> Al,
->>
->> In commit e3fc629d7bb70848fbf479688a66d4e76dff46ac in 3.5-rc1, you
->> change do_mmap() to static, and use do_mmap_pgoff() instaed. The
->> VirtualBox kernel module calls do_mmap(), and no longer compiles. I
->> fixed the compile problem with the patch
-> [snip]
->> I am not quite sure why do_munmap() is undefined as the symbol is
->> exported; however, should do_mmap_pgoff() be exported?
->
-> a) you'd better make very certain that you are holding ->mmap_sem on
-> current->mm; I couldn't verify that.
->
-> b) as for rtR0MemObjLinuxDoMmap(), I would suggest pulling down_write()/
-> up_write() on ->mmap_sem into the function, collapsing them down into
-> do_mmap() turning it into vm_mmap().  Oh, and probably breaking wrists
-> to whoever had come up with that function name, but that's a matter of
-> taste.  Some prefer kneecaps.
->
-> c) WTF is MY_DO_MUNMAP() and are you guaranteed that you are doing that to
-> current->mm and not to something else?  If not, you have a big problem;
-> if yes, convert to vm_munmap().
->
-> Again, doing mmap/munmap to some random process' mm is a bloody bad idea;
-> there's a shitload of races in that area.
+It was introduced for memcg to iterate cgroup hierarchy without
+holding cgroup_mutex, but soon after that it was replaced with
+a lockless way in memcg.
 
-Oh, shit. I was hoping for an easy conversion of this code to work with 3.5 so 
-that I could use VB while testing 3.5. Clearly, the fixes will not be quick.
+No one used hierarchy_mutex since that, so remove it.
 
-As you have likely gathered, I am not a VB developer. Is it OK if I pass your 
-comments on to the real developers and let them do the work?
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ Documentation/cgroups/cgroups.txt |    2 +-
+ include/linux/cgroup.h            |   17 ++------------
+ kernel/cgroup.c                   |   45 -------------------------------------
+ 3 files changed, 3 insertions(+), 61 deletions(-)
 
-Thanks,
-
-Larry
+diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
+index 8e74980..e86faae 100644
+--- a/Documentation/cgroups/cgroups.txt
++++ b/Documentation/cgroups/cgroups.txt
+@@ -656,7 +656,7 @@ example in cpusets, no task may attach before 'cpus' and 'mems' are set
+ up.
+ 
+ void bind(struct cgroup *root)
+-(cgroup_mutex and ss->hierarchy_mutex held by caller)
++(cgroup_mutex held by caller)
+ 
+ Called when a cgroup subsystem is rebound to a different hierarchy
+ and root cgroup. Currently this will only involve movement between
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index d3f5fba..c90eaa8 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -500,21 +500,8 @@ struct cgroup_subsys {
+ 	const char *name;
+ 
+ 	/*
+-	 * Protects sibling/children links of cgroups in this
+-	 * hierarchy, plus protects which hierarchy (or none) the
+-	 * subsystem is a part of (i.e. root/sibling).  To avoid
+-	 * potential deadlocks, the following operations should not be
+-	 * undertaken while holding any hierarchy_mutex:
+-	 *
+-	 * - allocating memory
+-	 * - initiating hotplug events
+-	 */
+-	struct mutex hierarchy_mutex;
+-	struct lock_class_key subsys_key;
+-
+-	/*
+ 	 * Link to parent, and list entry in parent's children.
+-	 * Protected by this->hierarchy_mutex and cgroup_lock()
++	 * Protected by cgroup_lock()
+ 	 */
+ 	struct cgroupfs_root *root;
+ 	struct list_head sibling;
+@@ -602,7 +589,7 @@ int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
+  * the lifetime of cgroup_subsys_state is subsys's matter.
+  *
+  * Looking up and scanning function should be called under rcu_read_lock().
+- * Taking cgroup_mutex()/hierarchy_mutex() is not necessary for following calls.
++ * Taking cgroup_mutex is not necessary for following calls.
+  * But the css returned by this routine can be "not populated yet" or "being
+  * destroyed". The caller should check css and cgroup's status.
+  */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 0f3527d..907c3f2 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1063,28 +1063,24 @@ static int rebind_subsystems(struct cgroupfs_root *root,
+ 			BUG_ON(cgrp->subsys[i]);
+ 			BUG_ON(!dummytop->subsys[i]);
+ 			BUG_ON(dummytop->subsys[i]->cgroup != dummytop);
+-			mutex_lock(&ss->hierarchy_mutex);
+ 			cgrp->subsys[i] = dummytop->subsys[i];
+ 			cgrp->subsys[i]->cgroup = cgrp;
+ 			list_move(&ss->sibling, &root->subsys_list);
+ 			ss->root = root;
+ 			if (ss->bind)
+ 				ss->bind(cgrp);
+-			mutex_unlock(&ss->hierarchy_mutex);
+ 			/* refcount was already taken, and we're keeping it */
+ 		} else if (bit & removed_bits) {
+ 			/* We're removing this subsystem */
+ 			BUG_ON(ss == NULL);
+ 			BUG_ON(cgrp->subsys[i] != dummytop->subsys[i]);
+ 			BUG_ON(cgrp->subsys[i]->cgroup != cgrp);
+-			mutex_lock(&ss->hierarchy_mutex);
+ 			if (ss->bind)
+ 				ss->bind(dummytop);
+ 			dummytop->subsys[i]->cgroup = dummytop;
+ 			cgrp->subsys[i] = NULL;
+ 			subsys[i]->root = &rootnode;
+ 			list_move(&ss->sibling, &rootnode.subsys_list);
+-			mutex_unlock(&ss->hierarchy_mutex);
+ 			/* subsystem is now free - drop reference on module */
+ 			module_put(ss->module);
+ 		} else if (bit & final_bits) {
+@@ -3906,37 +3902,6 @@ static void init_cgroup_css(struct cgroup_subsys_state *css,
+ 		set_bit(CSS_CLEAR_CSS_REFS, &css->flags);
+ }
+ 
+-static void cgroup_lock_hierarchy(struct cgroupfs_root *root)
+-{
+-	/* We need to take each hierarchy_mutex in a consistent order */
+-	int i;
+-
+-	/*
+-	 * No worry about a race with rebind_subsystems that might mess up the
+-	 * locking order, since both parties are under cgroup_mutex.
+-	 */
+-	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+-		struct cgroup_subsys *ss = subsys[i];
+-		if (ss == NULL)
+-			continue;
+-		if (ss->root == root)
+-			mutex_lock(&ss->hierarchy_mutex);
+-	}
+-}
+-
+-static void cgroup_unlock_hierarchy(struct cgroupfs_root *root)
+-{
+-	int i;
+-
+-	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+-		struct cgroup_subsys *ss = subsys[i];
+-		if (ss == NULL)
+-			continue;
+-		if (ss->root == root)
+-			mutex_unlock(&ss->hierarchy_mutex);
+-	}
+-}
+-
+ /*
+  * cgroup_create - create a cgroup
+  * @parent: cgroup that will be parent of the new cgroup
+@@ -3997,9 +3962,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 			ss->post_clone(cgrp);
+ 	}
+ 
+-	cgroup_lock_hierarchy(root);
+ 	list_add(&cgrp->sibling, &cgrp->parent->children);
+-	cgroup_unlock_hierarchy(root);
+ 	root->number_of_cgroups++;
+ 
+ 	err = cgroup_create_dir(cgrp, dentry, mode);
+@@ -4026,9 +3989,7 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 
+  err_remove:
+ 
+-	cgroup_lock_hierarchy(root);
+ 	list_del(&cgrp->sibling);
+-	cgroup_unlock_hierarchy(root);
+ 	root->number_of_cgroups--;
+ 
+  err_destroy:
+@@ -4236,10 +4197,8 @@ again:
+ 		list_del_init(&cgrp->release_list);
+ 	raw_spin_unlock(&release_list_lock);
+ 
+-	cgroup_lock_hierarchy(cgrp->root);
+ 	/* delete this cgroup from parent->children */
+ 	list_del_init(&cgrp->sibling);
+-	cgroup_unlock_hierarchy(cgrp->root);
+ 
+ 	list_del_init(&cgrp->allcg_node);
+ 
+@@ -4313,8 +4272,6 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ 	 * need to invoke fork callbacks here. */
+ 	BUG_ON(!list_empty(&init_task.tasks));
+ 
+-	mutex_init(&ss->hierarchy_mutex);
+-	lockdep_set_class(&ss->hierarchy_mutex, &ss->subsys_key);
+ 	ss->active = 1;
+ 
+ 	/* this function shouldn't be used with modular subsystems, since they
+@@ -4441,8 +4398,6 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 	}
+ 	write_unlock(&css_set_lock);
+ 
+-	mutex_init(&ss->hierarchy_mutex);
+-	lockdep_set_class(&ss->hierarchy_mutex, &ss->subsys_key);
+ 	ss->active = 1;
+ 
+ 	/* success! */
+-- 
+1.7.9.7
 
