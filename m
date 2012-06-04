@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab2FDCTO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 22:19:14 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61397 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755096Ab2FDCTN (ORCPT
+	id S1755602Ab2FDCT0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 22:19:26 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:60879 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab2FDCTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 22:19:13 -0400
-Date: Mon, 4 Jun 2012 10:18:40 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tony Luck <tony.luck@intel.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>, Chris Metcalf <cmetcalf@tilera.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Richard Kuo <rkuo@codeaurora.org>, David Howells <dhowells@redhat.com>,
-        Bob Liu <lliubbo@gmail.com>, "David S. Miller" <davem@davemloft.net>,
-        Richard Weinberger <richard@nod.at>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Matt Turner <mattst88@gmail.com>, nikunj@linux.vnet.ibm.com
-Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot
- secondary processors
-Message-ID: <20120604021839.GB26319@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
- <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com>
- <4FC8B0F7.3060705@linux.vnet.ibm.com>
- <20120603085107.GD16829@zhy>
- <4FCB48EF.8050508@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4FCB48EF.8050508@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 3 Jun 2012 22:19:25 -0400
+Message-ID: <1338776358.5855.5.camel@phoenix>
+Subject: [PATCH v2] regulator: max77686: Fix checkpatch warnings
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Chiwoong Byun <woong.byun@samsung.com>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Date: Mon, 04 Jun 2012 10:19:18 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 03, 2012 at 04:52:23PM +0530, Srivatsa S. Bhat wrote:
-> In short, to avoid breaking build on x86.
-> We wanted to follow the x86 convention of having static inline functions in
-> arch/x86/include/asm/smp.h and use the smp_ops structure to route the calls
-> to x86 or xen as appropriate (see patch 4 in this series).
-> 
-> But __weak definitions interfere with that and break the build. Hence, we
-> followed what Linus suggested doing in a similar context:
-> https://lkml.org/lkml/2008/7/26/187
+Fix below checkpatch warnings:
 
-Good to know that, thanks for your explanation.
+$ scripts/checkpatch.pl -f drivers/regulator/max77686.c
+ERROR: return is not a function, parentheses are not required
++       return (DIV_ROUND_UP(rdev->desc->uV_step
 
-Yong
+WARNING: line over 80 characters
++       .ops            = &max77686_buck_dvs_ops,                               \
+
+total: 1 errors, 1 warnings, 339 lines checked
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+v2: Also remove unnecessary parentheses in max77686_set_voltage_time_sel.
+
+ drivers/regulator/max77686.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/regulator/max77686.c b/drivers/regulator/max77686.c
+index 4e9f4f3..b76a038 100644
+--- a/drivers/regulator/max77686.c
++++ b/drivers/regulator/max77686.c
+@@ -75,17 +75,18 @@ static int max77686_set_dvs_voltage_time_sel(struct regulator_dev *rdev,
+ {
+ 	struct max77686_data *max77686 = rdev_get_drvdata(rdev);
+ 	int ramp_rate[] = {13, 27, 55, 100};
+-	return (DIV_ROUND_UP(rdev->desc->uV_step
+-			* abs(new_selector - old_selector),
+-			ramp_rate[max77686->ramp_delay]));
++
++	return DIV_ROUND_UP(rdev->desc->uV_step *
++			    abs(new_selector - old_selector),
++			    ramp_rate[max77686->ramp_delay]);
+ }
+ 
+ static int max77686_set_voltage_time_sel(struct regulator_dev *rdev,
+ 			unsigned int old_selector, unsigned int new_selector)
+ {
+ 	/* Unconditionally 100 mV/us */
+-	return (DIV_ROUND_UP(rdev->desc->uV_step
+-		 * abs(new_selector - old_selector), 100));
++	return DIV_ROUND_UP(rdev->desc->uV_step *
++			    abs(new_selector - old_selector), 100);
+ }
+ 
+ static struct regulator_ops max77686_ops = {
+@@ -171,7 +172,7 @@ static struct regulator_ops max77686_buck_dvs_ops = {
+ #define regulator_desc_buck_dvs(num)		{			\
+ 	.name		= "BUCK"#num,					\
+ 	.id		= MAX77686_BUCK##num,				\
+-	.ops		= &max77686_buck_dvs_ops,				\
++	.ops		= &max77686_buck_dvs_ops,			\
+ 	.type		= REGULATOR_VOLTAGE,				\
+ 	.owner		= THIS_MODULE,					\
+ 	.min_uV		= MAX77686_DVS_MINUV,				\
+-- 
+1.7.9.5
+
+
+
