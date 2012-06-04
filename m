@@ -1,39 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2FDQzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:55:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43605 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855Ab2FDQyZ (ORCPT
+	id S1754979Ab2FDQzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:55:10 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37897 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab2FDQyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:54:25 -0400
-Date: Mon, 4 Jun 2012 17:57:49 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
-Subject: Re: [PATCH 06/24] TTY: ircomm, revamp locking
-Message-ID: <20120604175749.3995aa07@pyramind.ukuu.org.uk>
-In-Reply-To: <1338809738-18967-7-git-send-email-jslaby@suse.cz>
-References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
-	<1338809738-18967-7-git-send-email-jslaby@suse.cz>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 4 Jun 2012 12:54:10 -0400
+Message-ID: <4FCCE7FB.3000301@linux.vnet.ibm.com>
+Date: Mon, 04 Jun 2012 22:23:15 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Sam Ravnborg <sam@ravnborg.org>, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        yong.zhang0@gmail.com, akpm@linux-foundation.org,
+        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot secondary
+ processors
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com> <20120601165113.GA18870@merkur.ravnborg.org> <4FC9424E.9060009@linux.vnet.ibm.com> <alpine.LFD.2.02.1206041228330.3086@ionos> <4FCCB31B.6060302@linux.vnet.ibm.com> <alpine.LFD.2.02.1206041513000.3086@ionos>
+In-Reply-To: <alpine.LFD.2.02.1206041513000.3086@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12060406-7014-0000-0000-000001522F51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  4 Jun 2012 13:35:20 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
+On 06/04/2012 06:48 PM, Thomas Gleixner wrote:
 
-> Use self->spinlock only for ctrl_skb and tx_skb. TTY stuff is now
-> protected by tty_port->lock. This is needed for further cleanup (and
-> conversion to tty_port helpers).
+> On Mon, 4 Jun 2012, Srivatsa S. Bhat wrote:
+>> On 06/04/2012 04:02 PM, Thomas Gleixner wrote:
+>> I can add the prototype w/o the __weak prefix and the #ifndef magic in
+>> include/linux/smpboot.h (which I will, and include it in v2).
+>>
+>> However, I can't get rid of the #ifndef magic in kernel/smpboot.c because
+>> it will cause build failures on x86.
+>>
+>> I addressed this same issue in another email:
+>> https://lkml.org/lkml/2012/6/3/33
 > 
-> This also closes the race in the end of close.
+>> In short, to avoid breaking build on x86.
+>> We wanted to follow the x86 convention of having static inline functions in
+>> arch/x86/include/asm/smp.h and use the smp_ops structure to route the calls
+>> to x86 or xen as appropriate (see patch 4 in this series).
+> 
+> Oh no. That's not really a good argument.
+> 
+> There is no reason why this _must_ be an inline function on x86. It
+> can be a proper function in arch/x86/kernel/smpboot.c as well.
+> 
 
-Ah ok.. fixed here
+
+Ok, I'll adopt this approach.
+
+> The alternative solution is to generalize the smp_ops approach and get
+> rid of the weak implementations completely.
+> 
+
+
+Ok, but this would mean changes to all architectures, which could be avoided.
+
+One reason why x86 uses that smp_ops structure is because it decides the
+implementation routines between x86 and xen at run-time. Such requirements don't
+exist on other architectures, from what I saw (except sparc32).
+
+So I'll stick with the former approach of adding a proper function for x86, and
+retaining the default weak implementations in kernel/smpboot.c.
+ 
+Regards,
+Srivatsa S. Bhat
+
