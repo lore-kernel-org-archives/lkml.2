@@ -1,139 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab2FDEtw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 00:49:52 -0400
-Received: from ozlabs.org ([203.10.76.45]:45310 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755963Ab2FDEsk convert rfc822-to-8bit (ORCPT
+	id S1754995Ab2FDE51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 00:57:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44770 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab2FDE5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 00:48:40 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        Pawel Moll <pawel.moll@arm.com>
-Cc: benoit thebaudeau <benoit.thebaudeau@advansee.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: init: multi param parsing regression since 3.4
-In-Reply-To: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com>
-References: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com>
-User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 04 Jun 2012 14:02:42 +0930
-Message-ID: <87ipf71ytx.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 4 Jun 2012 00:57:06 -0400
+Message-ID: <1338785818.9793.1.camel@phoenix>
+Subject: [PATCH RFT 1/2] regulator: max1586: Convert max1586_v6_ops to
+ regulator_list_voltage_table
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Date: Mon, 04 Jun 2012 12:56:58 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012 19:26:51 +0200 (CEST), Benoît Thébaudeau <benoit.thebaudeau@advansee.com> wrote:
-> Hi Pawel, Rusty, all,
-> 
-...
-> After some debugging, I found that this is caused by "ubi.mtd=rootfs" in my
-> kernel command line being parsed twice while appearing once in this line.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/regulator/max1586.c |   35 ++++++++++++-----------------------
+ 1 file changed, 12 insertions(+), 23 deletions(-)
 
-Weird, that shouldn't happen.
-
-> The root cause is "parse_args(initcall_level_names[level], ..." that you added
-> to init/main.c in commit #026cee0086fe1df4cf74691cf273062cc769617d, because
-> level 0 is shared by "Booting kernel" and "early parameters".
-
-Erk, I tested it and you're right.  Level 0 is 'early' initcalls, but
-traditional module parameters are called even earlier.  Simplest fix
-is to move the default parameters to -1.
-
-This works for me:
-
-Subject: module_param: stop double-calling parameters.
-From: Rusty Russell <rusty@rustcorp.com.au>
-
-Commit 026cee0086fe1df4cf74691cf273062cc769617d "params:
-<level>_initcall-like kernel parameters" set old-style module
-parameters to level 0.  And we call those level 0 calls where we used
-to, early in start_kernel().
-
-We also loop through the initcall levels and call the levelled
-module_params before the corresponding initcall.  Unfortunately level
-0 is early_init(), so we call the standard module_param calls twice.
-
-(Turns out most things don't care, but at least ubi.mtd does).
-
-Change the level to -1 for standard module_param calls.
-
-Reported-by: Benoît Thébaudeau <benoit.thebaudeau@advansee.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Cc: stable@kernel.org
-
-diff --git a/drivers/mtd/ubi/build.c b/drivers/mtd/ubi/build.c
---- a/drivers/mtd/ubi/build.c
-+++ b/drivers/mtd/ubi/build.c
-@@ -1293,6 +1293,8 @@ static int __init ubi_mtd_param_parse(co
- 	char *pbuf = &buf[0];
- 	char *tokens[2] = {NULL, NULL};
+diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
+index b9444ee..f215195 100644
+--- a/drivers/regulator/max1586.c
++++ b/drivers/regulator/max1586.c
+@@ -48,6 +48,14 @@ struct max1586_data {
+ };
  
-+	printk("ubi_mtd_param_parse: val = %s\n", val);
-+	WARN_ON(1);
- 	if (!val)
+ /*
++ * V6 voltage
++ * On I2C bus, sending a "x" byte to the max1586 means :
++ *   set V6 to either 0V, 1.8V, 2.5V, 3V depending on (x & 0x3)
++ * As regulator framework doesn't accept voltages to be 0V, we use 1uV.
++ */
++static int v6_voltages_uv[] = { 1, 1800000, 2500000, 3000000 };
++
++/*
+  * V3 voltage
+  * On I2C bus, sending a "x" byte to the max1586 means :
+  *   set V3 to 0.700V + (x & 0x1f) * 0.025V
+@@ -97,19 +105,6 @@ static int max1586_v3_list(struct regulator_dev *rdev, unsigned selector)
+ 	return max1586_v3_calc_voltage(max1586, selector);
+ }
+ 
+-/*
+- * V6 voltage
+- * On I2C bus, sending a "x" byte to the max1586 means :
+- *   set V6 to either 0V, 1.8V, 2.5V, 3V depending on (x & 0x3)
+- * As regulator framework doesn't accept voltages to be 0V, we use 1uV.
+- */
+-static int max1586_v6_calc_voltage(unsigned selector)
+-{
+-	static int voltages_uv[] = { 1, 1800000, 2500000, 3000000 };
+-
+-	return voltages_uv[selector];
+-}
+-
+ static int max1586_v6_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 			  unsigned int *selector)
+ {
+@@ -130,23 +125,16 @@ static int max1586_v6_set(struct regulator_dev *rdev, int min_uV, int max_uV,
+ 	else if (min_uV >= 3000000)
+ 		*selector = 3;
+ 
+-	if (max1586_v6_calc_voltage(*selector) > max_uV)
++	if (rdev->desc->volt_table[*selector] > max_uV)
  		return -EINVAL;
  
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -128,7 +128,7 @@ struct kparam_array
-  * The ops can have NULL set or get functions.
-  */
- #define module_param_cb(name, ops, arg, perm)				      \
--	__module_param_call(MODULE_PARAM_PREFIX, name, ops, arg, perm, 0)
-+	__module_param_call(MODULE_PARAM_PREFIX, name, ops, arg, perm, -1)
+ 	dev_dbg(&client->dev, "changing voltage v6 to %dmv\n",
+-		max1586_v6_calc_voltage(*selector) / 1000);
++		rdev->desc->volt_table[*selector] / 1000);
  
- /**
-  * <level>_param_cb - general callback for a module/cmdline parameter
-@@ -192,7 +192,7 @@ struct kparam_array
- 		 { (void *)set, (void *)get };				\
- 	__module_param_call(MODULE_PARAM_PREFIX,			\
- 			    name, &__param_ops_##name, arg,		\
--			    (perm) + sizeof(__check_old_set_param(set))*0, 0)
-+			    (perm) + sizeof(__check_old_set_param(set))*0, -1)
+ 	v6_prog = I2C_V6_SELECT | (u8) *selector;
+ 	return i2c_smbus_write_byte(client, v6_prog);
+ }
  
- /* We don't get oldget: it's often a new-style param_get_uint, etc. */
- static inline int
-@@ -272,7 +272,7 @@ static inline void __kernel_param_unlock
-  */
- #define core_param(name, var, type, perm)				\
- 	param_check_##type(name, &(var));				\
--	__module_param_call("", name, &param_ops_##type, &var, perm, 0)
-+	__module_param_call("", name, &param_ops_##type, &var, perm, -1)
- #endif /* !MODULE */
+-static int max1586_v6_list(struct regulator_dev *rdev, unsigned selector)
+-{
+-	if (selector > MAX1586_V6_MAX_VSEL)
+-		return -EINVAL;
+-	return max1586_v6_calc_voltage(selector);
+-}
+-
+ /*
+  * The Maxim 1586 controls V3 and V6 voltages, but offers no way of reading back
+  * the set up value.
+@@ -158,7 +146,7 @@ static struct regulator_ops max1586_v3_ops = {
  
- /**
-@@ -290,7 +290,7 @@ static inline void __kernel_param_unlock
- 		= { len, string };					\
- 	__module_param_call(MODULE_PARAM_PREFIX, name,			\
- 			    &param_ops_string,				\
--			    .str = &__param_string_##name, perm, 0);	\
-+			    .str = &__param_string_##name, perm, -1);	\
- 	__MODULE_PARM_TYPE(name, "string")
+ static struct regulator_ops max1586_v6_ops = {
+ 	.set_voltage = max1586_v6_set,
+-	.list_voltage = max1586_v6_list,
++	.list_voltage = regulator_list_voltage_table,
+ };
  
- /**
-@@ -432,7 +432,7 @@ extern int param_set_bint(const char *va
- 	__module_param_call(MODULE_PARAM_PREFIX, name,			\
- 			    &param_array_ops,				\
- 			    .arr = &__param_arr_##name,			\
--			    perm, 0);					\
-+			    perm, -1);					\
- 	__MODULE_PARM_TYPE(name, "array of " #type)
- 
- extern struct kernel_param_ops param_array_ops;
-diff --git a/init/main.c b/init/main.c
---- a/init/main.c
-+++ b/init/main.c
-@@ -508,7 +508,7 @@ asmlinkage void __init start_kernel(void
- 	parse_early_param();
- 	parse_args("Booting kernel", static_command_line, __start___param,
- 		   __stop___param - __start___param,
--		   0, 0, &unknown_bootoption);
-+		   -1, -1, &unknown_bootoption);
- 
- 	jump_label_init();
- 
+ static const struct regulator_desc max1586_reg[] = {
+@@ -176,6 +164,7 @@ static const struct regulator_desc max1586_reg[] = {
+ 		.ops = &max1586_v6_ops,
+ 		.type = REGULATOR_VOLTAGE,
+ 		.n_voltages = MAX1586_V6_MAX_VSEL + 1,
++		.volt_table = v6_voltages_uv,
+ 		.owner = THIS_MODULE,
+ 	},
+ };
+-- 
+1.7.9.5
+
+
+
