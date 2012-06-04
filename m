@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab2FDHsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 03:48:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50710 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab2FDHsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 03:48:07 -0400
-Date: Mon, 4 Jun 2012 10:48:03 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: automount hangs during boot somewhere in rcu_barrier.
-Message-ID: <20120604074803.GA23670@redhat.com>
-References: <20120603113236.GW2311@redhat.com>
- <20120604031549.GE2357@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120604031549.GE2357@linux.vnet.ibm.com>
+	id S1756451Ab2FDHtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 03:49:16 -0400
+Received: from szxga01-in.huawei.com ([58.251.152.64]:58110 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab2FDHtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 03:49:14 -0400
+Date: Mon, 04 Jun 2012 15:44:54 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+Subject: [Resend with Ack][PATCH v1] PCI: allow acpiphp to handle PCIe ports
+ without native PCIe hotplug capability
+X-Originating-IP: [10.107.208.49]
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>, Yijing Wang <wangyijing@huawei.com>,
+        Keping Chen <chenkeping@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiang Liu <liuj97@gmail.com>
+Message-id: <1338795894-6292-1-git-send-email-jiang.liu@huawei.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.8.msysgit.0
+Content-type: text/plain
+Content-transfer-encoding: 7BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 03, 2012 at 08:15:49PM -0700, Paul E. McKenney wrote:
-> On Sun, Jun 03, 2012 at 02:32:36PM +0300, Gleb Natapov wrote:
-> > Hello Paul,
-> > 
-> > I see something strange with 3.5.0-rc1 kernel. During boot automount
-> > process hangs for a couple of minutes and when boot finally completes
-> > I find this in dmesg:
-> > 
-> > [  240.676287] INFO: task automount:3000 blocked for more than 120 seconds.
-> > [  240.676393] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > [  240.676495] automount       D ffff88027fc12040     0  3000   2994 0x00000000
-> > [  240.676581]  ffff880273e7dcb8 0000000000000046 ffff880273e7dc70 ffff880273e7dfd8
-> > [  240.676681]  0000000000004000 0000000000012040 ffffffff814e3410 ffff8802732a4100
-> > [  240.676781]  ffff880272470a20 ffff8802732f5001 0000000000000009 ffff880273e7de18
-> > [  240.676880] Call Trace:
-> > [  240.676962]  [<ffffffff81186bae>] ? security_inode_permission+0x1e/0x20
-> > [  240.677072]  [<ffffffff8114ad90>] ? fsnotify_clear_marks_by_inode+0x93/0xd4
-> > [  240.677169]  [<ffffffff8105ae20>] ? sub_preempt_count+0x38/0x4b
-> > [  240.677260]  [<ffffffff8137e738>] schedule+0x64/0x66
-> > [  240.677348]  [<ffffffff8137cad4>] schedule_timeout+0x2b/0x28b
-> > [  240.677435]  [<ffffffff8137dcdd>] ? wait_for_common+0xc0/0x146
-> > [  240.677523]  [<ffffffff8105ae20>] ? sub_preempt_count+0x38/0x4b
-> > [  240.677610]  [<ffffffff8137dce5>] wait_for_common+0xc8/0x146
-> > [  240.677699]  [<ffffffff8109a1cd>] ? synchronize_sched_expedited_cpu_stop+0x10/0x10
-> > [  240.677804]  [<ffffffff8105c963>] ? try_to_wake_up+0x24f/0x24f
-> > [  240.677892]  [<ffffffff8137dd80>] wait_for_completion+0x1d/0x1f
-> > [  240.677979]  [<ffffffff8109a6b4>] _rcu_barrier+0x204/0x21f
-> > [  240.678085]  [<ffffffff8109c560>] ? kfree_call_rcu+0x1c/0x1c
-> > [  240.678178]  [<ffffffff8109a48b>] ? rcu_implicit_dynticks_qs+0x191/0x191
-> > [  240.678272]  [<ffffffff8109a6eb>] rcu_barrier+0x1c/0x1e
-> > [  240.678359]  [<ffffffff81119060>] deactivate_locked_super+0x37/0x57
-> > [  240.678447]  [<ffffffff81119cae>] deactivate_super+0x3f/0x43
-> > [  240.678535]  [<ffffffff8112fdd9>] mntput_no_expire+0x132/0x13a
-> > [  240.678622]  [<ffffffff81130c15>] sys_umount+0x308/0x33a
-> > [  240.678708]  [<ffffffff81380092>] system_call_fastpath+0x16/0x1b
-> > 
-> > When I am actually trying to access automounted NFS directory nfs mount
-> > also hangs in D state in rcu_barrier (I see this behaviour in 3.4 and it
-> > looks like 3.3 kernel too).
-> 
-> So this did not happen in 3.2?
-> 
-Do not remember. Need to check.
+Commit 0d52f54e2ef64c189dedc332e680b2eb4a34590a (PCI / ACPI: Make acpiphp
+ignore root bridges using PCIe native hotplug) added code that made the
+acpiphp driver completely ignore PCIe root complexes for which the kernel
+had been granted control of the native PCIe hotplug feature by the BIOS
+through _OSC. Later commit 619a5182d1f38a3d629ee48e04fa182ef9170052
+"PCI hotplug: Always allow acpiphp to handle non-PCIe bridges" relaxed
+the constraints to allow acpiphp driver handle non-PCIe bridges under
+such a complex. The constraint needs to be relaxed further to allow
+acpiphp driver to hanlde PCIe ports without native PCIe hotplug capability.
 
-> > My kernel config is attached.
-> 
-> Hmmm...  Could you please try disabling CONFIG_RCU_FAST_NO_HZ?  If that
-> makes the problem go away, I have some patches 3.6-targeted patches
-> for you.
-Will report back.
+Some MR-IOV switch chipsets, such PLX8696, support multiple virtual PCIe
+switches and may migrate downstream ports among virtual switches.
+To migrate a downstream port from the source virtual switch to the target,
+the port needs to be hot-removed from the source and hot-added into the
+target. pciehp driver can't be used here because there's no slots within
+the virtual PCIe switch. So acpiphp driver is used to support downstream
+port migration. A typical configuration is as below:
+[Root w/o native PCIe HP]
+	[Upstream port of vswitch w/o native PCIe HP]
+		[Downstream port of vswitch w/ native PCIe HP]
+			[PCIe enpoint]
 
---
-			Gleb.
+Here acpiphp driver will be used to handle root ports and upstream port
+in the virtual switch, and pciehp driver will be used to handle downstream
+ports in the virtual switch.
+
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Jiang Liu <liuj97@gmail.com>
+
+---
+ drivers/pci/hotplug/acpiphp_glue.c |   49 ++++++++++++++++++++++++++++-------
+ 1 files changed, 39 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 806c44f..4889448 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -115,6 +115,43 @@ static const struct acpi_dock_ops acpiphp_dock_ops = {
+ 	.handler = handle_hotplug_event_func,
+ };
+ 
++/* Check whether device is managed by native PCIe hotplug driver */
++static bool device_is_managed_by_native_pciehp(struct pci_dev *pdev)
++{
++	int pos;
++	u16 reg16;
++	u32 reg32;
++	acpi_handle tmp;
++	struct acpi_pci_root *root;
++
++	if (!pci_is_pcie(pdev))
++		return false;
++
++	/* Check whether PCIe port supports native PCIe hotplug */
++	pos = pci_pcie_cap(pdev);
++	pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
++	if (!(reg16 & PCI_EXP_FLAGS_SLOT))
++		return false;
++	pci_read_config_dword(pdev, pos + PCI_EXP_SLTCAP, &reg32);
++	if (!(reg32 & PCI_EXP_SLTCAP_HPC))
++		return false;
++
++	/*
++	 * Check whether native PCIe hotplug has been enabled for
++	 * this PCIe hierarchy.
++	 */
++	tmp = acpi_find_root_bridge_handle(pdev);
++	if (!tmp)
++		return false;
++	root = acpi_pci_find_root(tmp);
++	if (!root)
++		return false;
++	if (!(root->osc_control_set & OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
++		return false;
++
++	return true;
++}
++
+ /* callback routine to register each ACPI PCI slot object */
+ static acpi_status
+ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+@@ -133,16 +170,8 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 		return AE_OK;
+ 
+ 	pdev = pbus->self;
+-	if (pdev && pci_is_pcie(pdev)) {
+-		tmp = acpi_find_root_bridge_handle(pdev);
+-		if (tmp) {
+-			struct acpi_pci_root *root = acpi_pci_find_root(tmp);
+-
+-			if (root && (root->osc_control_set &
+-					OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
+-				return AE_OK;
+-		}
+-	}
++	if (pdev && device_is_managed_by_native_pciehp(pdev))
++		return AE_OK;
+ 
+ 	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
+ 	device = (adr >> 16) & 0xffff;
+-- 
+1.7.1
+
+
