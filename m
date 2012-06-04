@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703Ab2FDRSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 13:18:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35958 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414Ab2FDRSK convert rfc822-to-8bit (ORCPT
+	id S1754917Ab2FDRVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 13:21:52 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:44045 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab2FDRVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 13:18:10 -0400
-Message-ID: <1338830279.28282.117.camel@twins>
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Vladimir Davydov <VDavydov@parallels.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 04 Jun 2012 19:17:59 +0200
-In-Reply-To: <33E662E8-48BF-49A7-A4A0-CB1A751AAEBC@parallels.com>
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-	 <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
-	 <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
-	 <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
-	 <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
-	 <1338827607.28282.99.camel@twins> <4FCCE823.8090700@linux.intel.com>
-	 <33E662E8-48BF-49A7-A4A0-CB1A751AAEBC@parallels.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 13:21:51 -0400
+Message-ID: <4FCCED0A.8080605@panasas.com>
+Date: Mon, 4 Jun 2012 20:14:50 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
+MIME-Version: 1.0
+To: Richard Weinberger <richard@nod.at>
+CC: Jiri Slaby <jslaby@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
+        <user-mode-linux-devel@lists.sourceforge.net>,
+        <gregkh@linuxfoundation.org>, Jeff Dike <jdike@addtoit.com>,
+        <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        <alan@linux.intel.com>
+Subject: Re: [uml-devel] [PATCH 13/24] TTY: um/line, use tty from tty_port
+References: <1338809738-18967-1-git-send-email-jslaby@suse.cz> <1338809738-18967-14-git-send-email-jslaby@suse.cz> <4FCCA3A6.8080608@nod.at> <4FCCD224.1020307@suse.cz> <4FCCD44A.3090500@nod.at> <4FCCD70D.5010908@suse.cz> <4FCCD774.5040003@nod.at> <4FCCE1D4.7080805@panasas.com> <4FCCE255.4080705@nod.at> <4FCCE866.7050203@panasas.com> <4FCCEAE5.9000801@nod.at>
+In-Reply-To: <4FCCEAE5.9000801@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 21:08 +0400, Vladimir Davydov wrote:
-> But this_cpu_load(), which is currently used by cpuidle, does not
-> return the "load average". It returns the value of cpuload at some
-> moment in the past (actually, the value is updated in
-> update_cpu_load()). This value is usually used for load balancing.
-> 
-> Moreover, this value does not reflect the real cpu load from the
-> cpuidle pow, because it depends on tasks priority (nice) and, what is
-> worse, with the introduction of cgroups it can be pretty arbitrary.
-> For instance, each group of tasks is accounted just as a single task
-> with standard priority "spreaded" among all cpus, no matter how many
-> tasks are actually running in it. 
+On 06/04/2012 08:05 PM, Richard Weinberger wrote:
 
-Indeed. 
+> Am 04.06.2012 18:55, schrieb Boaz Harrosh:
+>> No still crashing the same, way. BTW I do not have a systemd Distro. It's
+>> plain old FC12. Though in the lab I have the same crash with FC15.
+>>
+>> The crash is immediately after I login at the initial prompt. (every time)
+> 
+> Okay, I'll test my patches with FC12 too. :-\
+> 
+
+
+Thanks. Do you need help with an image?
+
+>> Here is the crash print, what ever that is worth in UML.
+>> (Can we make the crash dump stack trace a bit less terrible?)
+> 
+> -ENOPATCH. :-)
+> Feel free to send one.
+> 
+
+
+:-) It's always the: "how much time I spend on saving time later?"
+
+But I promise I'll do it one day.
+
+> Thanks,
+> //richard
+> 
+> 
+
+
+Thanks
+Boaz
