@@ -1,83 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2FDCaY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 22:30:24 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:60876 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755323Ab2FDCaX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 22:30:23 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-63-4fcc1dbd97a1
-Message-ID: <4FCC1DD0.8090003@kernel.org>
-Date: Mon, 04 Jun 2012 11:30:40 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1755639Ab2FDChy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 22:37:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11589 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755544Ab2FDChx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jun 2012 22:37:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="147649290"
+Message-ID: <4FCC1F7C.5000008@linux.intel.com>
+Date: Mon, 04 Jun 2012 10:37:48 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: WARNING: at mm/page-writeback.c:1990 __set_page_dirty_nobuffers+0x13a/0x170()
-References: <20120601023107.GA19445@redhat.com> <alpine.LSU.2.00.1206010030050.8462@eggly.anvils> <20120601161205.GA1918@redhat.com> <20120601171606.GA3794@redhat.com> <alpine.LSU.2.00.1206011511560.12839@eggly.anvils> <CA+55aFy2-X92EqpiuyvkBp_2-UaYDUpaC2c3XT3gXMN1O+T7sw@mail.gmail.com> <alpine.LSU.2.00.1206012108430.11308@eggly.anvils> <20120603181548.GA306@redhat.com> <CA+55aFwZ5PsBLqM7K8vDQdbS3sf+vi3yeoWx6XKV=nF8k2r7DQ@mail.gmail.com> <20120603183139.GA1061@redhat.com> <20120603205332.GA5412@redhat.com> <alpine.LSU.2.00.1206031459450.15427@eggly.anvils> <CA+55aFz--XDSOConDoM2SO0Jpd78Dg4GsGP+Z0F+__JWz+6JoQ@mail.gmail.com> <4FCC0DB4.30106@kernel.org> <CAHGf_=qVsqdsrfZw5xHOBboM5_eNFqWcBKjUyNXmAxNDNuuV_A@mail.gmail.com>
-In-Reply-To: <CAHGf_=qVsqdsrfZw5xHOBboM5_eNFqWcBKjUyNXmAxNDNuuV_A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com, bp@amd64.org,
+        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel machines
+References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de>
+In-Reply-To: <20120524175056.478167482@linutronix.de>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 10:26 AM, KOSAKI Motohiro wrote:
+Hi, Thomas
 
->> Right. I missed that. I think we can use the page passed to rescue_unmovable_pageblock.
->> We make sure it's valid in isolate_freepages. So how about this?
->>
->> barrios@bbox:~/linux-2.6$ git diff
->> diff --git a/mm/compaction.c b/mm/compaction.c
->> index 4ac338a..7459ab5 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -368,11 +368,11 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->>  static bool rescue_unmovable_pageblock(struct page *page)
->>  {
->>        unsigned long pfn, start_pfn, end_pfn;
->> -       struct page *start_page, *end_page;
->> +       struct page *start_page, *end_page, *cursor_page;
->>
->>        pfn = page_to_pfn(page);
->>        start_pfn = pfn & ~(pageblock_nr_pages - 1);
->> -       end_pfn = start_pfn + pageblock_nr_pages;
->> +       end_pfn = start_pfn + pageblock_nr_pages - 1;
->>
->>        start_page = pfn_to_page(start_pfn);
->>        end_page = pfn_to_page(end_pfn);
->> @@ -381,19 +381,19 @@ static bool rescue_unmovable_pageblock(struct page *page)
->>        if (page_zone(start_page) != page_zone(end_page))
->>                return false;
->>
->> -       for (page = start_page, pfn = start_pfn; page < end_page; pfn++,
->> -                                                                 page++) {
->> +       for (cursor_page = start_page, pfn = start_pfn; cursor_page <= end_page; pfn++,
->> +                                                                 cursor_page++) {
->>                if (!pfn_valid_within(pfn))
->>                        continue;
+I have some confusion in your patch please help to give me some updates.
+
+于 2012/5/25 1:54, Thomas Gleixner 写道:
+> Intentionally left blank to be filled out by someone who wants that and
+> can explain the reason for this better than me.
 > 
-> I guess  page_zone() should be used after pfn_valid_within(). Why can
-> we assume invalid
-> pfn return correct zone?
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce-internal.h |    8 ++
+>  arch/x86/kernel/cpu/mcheck/mce.c          |   41 +++++++++++++--
+>  arch/x86/kernel/cpu/mcheck/mce_intel.c    |   81 +++++++++++++++++++++++++++++-
+>  3 files changed, 125 insertions(+), 5 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce-internal.h
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce-internal.h
+> +++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce-internal.h
+> @@ -28,6 +28,14 @@ extern int mce_ser;
+>  
+>  extern struct mce_bank *mce_banks;
+>  
+> +#ifdef CONFIG_X86_MCE_INTEL
+> +unsigned long mce_intel_adjust_timer(unsigned long interval);
+> +#else
+> +# define mce_intel_adjust_timer mce_adjust_timer_default
+> +#endif
+> +
+> +void mce_timer_kick(unsigned long interval);
+> +
+>  #ifdef CONFIG_ACPI_APEI
+>  int apei_write_mce(struct mce *m);
+>  ssize_t apei_read_mce(struct mce *m, u64 *record_id);
+> Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1242,6 +1242,14 @@ static unsigned long check_interval = 5 
+>  static DEFINE_PER_CPU(unsigned long, mce_next_interval); /* in jiffies */
+>  static DEFINE_PER_CPU(struct timer_list, mce_timer);
+>  
+> +static unsigned long mce_adjust_timer_default(unsigned long interval)
+> +{
+> +	return interval;
+> +}
+> +
+> +static unsigned long (*mce_adjust_timer)(unsigned long interval) =
+> +	mce_adjust_timer_default;
+> +
+>  static void mce_timer_fn(unsigned long data)
+>  {
+>  	struct timer_list *t = &__get_cpu_var(mce_timer);
+> @@ -1259,14 +1267,37 @@ static void mce_timer_fn(unsigned long d
+>  	 * polling interval, otherwise increase the polling interval.
+>  	 */
+>  	iv = __this_cpu_read(mce_next_interval);
+> -	if (mce_notify_irq())
+> +	if (mce_notify_irq()) {
+>  		iv = max(iv, (unsigned long) HZ/100);
+> -	else
+> +	} else {
+>  		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
+> +		iv = mce_adjust_timer(iv);
+> +	}
+>  	__this_cpu_write(mce_next_interval, iv);
+> +	/* Might have become 0 after CMCI storm subsided */
+> +	if (iv) {
+> +		t->expires = jiffies + iv;
+> +		add_timer_on(t, smp_processor_id());
+> +	}
+> +}
+>  
+> -	t->expires = jiffies + iv;
+> -	add_timer_on(t, smp_processor_id());
+> +/*
+> + * Ensure that the timer is firing in @interval from now.
+> + */
+> +void mce_timer_kick(unsigned long interval)
+> +{
+> +	struct timer_list *t = &__get_cpu_var(mce_timer);
+> +	unsigned long when = jiffies + interval;
+> +	unsigned long iv = __this_cpu_read(mce_next_interval);
+> +
+> +	if (time_before(when, t->expires) && timer_pending(t)) {
+> +		mod_timer(t, when);
+> +	} else if (!mce_next_interval) {
 
+Why using mce_next_interval, it is a per_cpu var, should be non-NULL
+definitely, right? How about using *iv* here?
 
-Right you are. We can't make sure it in case of CONFIG_HOLES_IN_ZONE.
+> +		t->expires = round_jiffies(jiffies + iv);
+> +		add_timer_on(t, smp_processor_id());
+> +	}
+> +	if (interval < iv)
+> +		__this_cpu_write(mce_next_interval, iv);
+>  }
 
+This code should be __this_cpu_write(mce_next_interval, interval);?
 
--- 
-Kind regards,
-Minchan Kim
+>  
+>  /* Must not be called in IRQ context where del_timer_sync() can deadlock */
+> @@ -1531,6 +1562,7 @@ static void __mcheck_cpu_init_vendor(str
+>  	switch (c->x86_vendor) {
+>  	case X86_VENDOR_INTEL:
+>  		mce_intel_feature_init(c);
+> +		mce_adjust_timer = mce_intel_adjust_timer;
+>  		break;
+>  	case X86_VENDOR_AMD:
+>  		mce_amd_feature_init(c);
+> @@ -1550,6 +1582,7 @@ static void __mcheck_cpu_init_timer(void
+>  	if (mce_ignore_ce)
+>  		return;
+>  
+> +	iv = mce_adjust_timer(check_interval * HZ);
+>  	__this_cpu_write(mce_next_interval, iv);
+>  	if (!iv)
+>  		return;
