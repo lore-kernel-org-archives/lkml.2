@@ -1,101 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab2FDDwp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jun 2012 23:52:45 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:37830 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735Ab2FDDwo (ORCPT
+	id S1755882Ab2FDDxw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jun 2012 23:53:52 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40886 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755774Ab2FDDxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jun 2012 23:52:44 -0400
-Date: Mon, 4 Jun 2012 13:52:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: linux-next: manual merge of the tip tree with Linus' tree
-Message-Id: <20120604135232.d9f9526135423f6c25da8f33@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__4_Jun_2012_13_52_32_+1000_5lCVw4tRpEw6YSED"
+	Sun, 3 Jun 2012 23:53:51 -0400
+Message-ID: <4FCC3151.1040503@gmail.com>
+Date: Mon, 04 Jun 2012 07:53:53 +0400
+From: George Shuklin <george.shuklin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120510 Icedove/10.0.4
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Why minor is still 8 bit?
+References: <4FCC0E6D.9000206@gmail.com> <20120604013504.GU30000@ZenIV.linux.org.uk>
+In-Reply-To: <20120604013504.GU30000@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Jun_2012_13_52_32_+1000_5lCVw4tRpEw6YSED
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On 04.06.2012 05:35, Al Viro wrote:
+> On Mon, Jun 04, 2012 at 05:25:01AM +0400, George Shuklin wrote:
+>> I've understand that major and minor numbers for device is 8-bit size.
+>>
+>> I've don't understand, WHY? In 2012!
+>>
+>> (I've just have some discussion about 8-bit counter limitations in
+>> context of cloud computing. In middle of 2012!!!!)
+> Yes, shocking.  It's been several years and you are still using that
+> buzzword; I mean, it's _so_ 2010...  Should've moved on to whatever's
+> in this year...
+>
+> Incidentally, minors are 20 bit and majors are 12, but don't let that
+> stand in the way of righteous indignation - what's mere facts when
+> one is having discussions in context, presumably leveraging synergies
+> all along...
+Ok, thank you for information.
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/syscalls/syscall_32.tbl arch/x86/syscalls/syscall_64.tbl between
-commit d97b46a64674 ("syscalls, x86: add __NR_kcmp syscall") from Linus'
-tree and commit a2dae61eb839 ("sched/numa: Introduce sys_numa_{t,m}bind()")
-from the tip tree.
-
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/x86/syscalls/syscall_32.tbl
-index 7a35a6e,38954c5..0000000
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@@ -355,4 -355,5 +355,6 @@@
-  346	i386	setns			sys_setns
-  347	i386	process_vm_readv	sys_process_vm_readv		compat_sys_process_vm_rea=
-dv
-  348	i386	process_vm_writev	sys_process_vm_writev		compat_sys_process_vm_w=
-ritev
- -349	i386	numa_mbind		sys_numa_mbind			compat_sys_numa_mbind
- -350	i386	numa_tbind		sys_numa_tbind			compat_sys_numa_tbind
- +349	i386	kcmp			sys_kcmp
-++350	i386	numa_mbind		sys_numa_mbind			compat_sys_numa_mbind
-++351	i386	numa_tbind		sys_numa_tbind			compat_sys_numa_tbind
-diff --cc arch/x86/syscalls/syscall_64.tbl
-index 51171ae,63c5285..0000000
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@@ -318,8 -318,8 +318,10 @@@
-  309	common	getcpu			sys_getcpu
-  310	64	process_vm_readv	sys_process_vm_readv
-  311	64	process_vm_writev	sys_process_vm_writev
- -312	64	numa_mbind		sys_numa_mbind
- -313	64	numa_tbind		sys_numa_tbind
- +312	64	kcmp			sys_kcmp
-++313	64	numa_mbind		sys_numa_mbind
-++314	64	numa_tbind		sys_numa_tbind
- +
-  #
-  # x32-specific system call numbers start at 512 to avoid cache impact
-  # for native 64-bit operation.
-
---Signature=_Mon__4_Jun_2012_13_52_32_+1000_5lCVw4tRpEw6YSED
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPzDEAAAoJEECxmPOUX5FErusP/0JWprMir1Sy/Jv37fEYDtKD
-dtBCygPirAT+PTjxrQhfbOP8ALNma3b8reA7pTHD0Y4A0xktMiaPeb9Nmx419/qu
-GSgLYE9YweroVyAQIhkRQX7drEKMi/nUnHhnkTUi9sr+ZURxihIgyETJ5Y+PETWt
-iiKfTTos/IRZRW9RHdwlprjdNZNVek9Pbie2NncOaCahM5YoaGilL3TZVDfcLTld
-wkbNBxMb6rYNYZi9r8AHJbyk+ftDf7uY/Drh46xmXY0TN7fxZqaFONx3ACfFlMcX
-JC52ehljyDEGSMpsvu8cuHwBnRkXE48Iso2A+Ubv3dCJbw2+GP//OcdpiDIMenF6
-qN12kAqQyjKCi2M29ghhSdBPa6wi4WBTCE4oOnBxnFfiFPPz6KslIHpbqvwZkH2/
-zdcz71PBOI6ZgUGEFwBTu8TNPJXxSJvhTxzawPae0tWHMSTguR9BI+RHj5juAN7Y
-tuOZauonw8sQpcpaLvRFP3PxCzrUMvOoh8F0MP2upzIp9pHETTxD6zSgj21+XdF1
-9A7PNnc/L7DSr5I9G+VyM1JuhZ1+xP9NYVARkO4Kqz3MzpFUsuLJdhMfxUZixXf+
-kHj2L5DpfuB+LFVYsAGhivr7re+ox3FbSB9WhN/mMeQvlgkSpmvm0rPcwtJsu/2X
-Ph8GTjC12CHWB9U2yaW6
-=fLFv
------END PGP SIGNATURE-----
-
---Signature=_Mon__4_Jun_2012_13_52_32_+1000_5lCVw4tRpEw6YSED--
+But question is almost same: can I have 30k active logical volumes on my 
+single server, please?
