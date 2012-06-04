@@ -1,97 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab2FDIKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 04:10:30 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:35373 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab2FDIKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 04:10:13 -0400
-From: Andrew Vagin <avagin@openvz.org>
-Cc: Arun Sharma <asharma@fb.com>, Oleg Strikov <OSTRIKOV@nvidia.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] sched: save a previous state on task_struct
-Date: Mon,  4 Jun 2012 12:09:40 +0400
-Message-Id: <1338797382-287275-4-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1338797382-287275-1-git-send-email-avagin@openvz.org>
-References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
-To: unlisted-recipients:; (no To-header on input)
+	id S1756559Ab2FDILF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 04:11:05 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:46368 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753827Ab2FDIK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 04:10:58 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Jonas Aaberg <jonas.aberg@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH RESEND v2] mfd/ab8500: print switch off cause
+Date: Mon, 4 Jun 2012 10:10:36 +0200
+Message-ID: <1338797436-12927-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-prev_state is a state of task, when it stops executing on cpu.
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-It's needed for filtering sched:sched_switch_finish.
-For example If we want to track when a task is sleeping:
+Instead of just printing the register value, also output some
+description of the value.
 
-./perf record -e sched:sched_switch -g --filter 'prev_state == 1' \
-	-e sched:sched_switch_finish --filter 'state == 1' -P  foo
-
-The previous state is set in sched:sched_switch, so it works when
-both events sched:sched_switch and sched:sched_switch_finish are
-enabled.
-
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Reviewed-by: Mattias Wallin <mattias.wallin@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- include/linux/sched.h        |    3 +++
- include/trace/events/sched.h |   12 +++++++++++-
- 2 files changed, 14 insertions(+), 1 deletions(-)
+Sam, this seems to have gone missing in the v3.5 merge window,
+it was sent out and IIRC accepted. Anyway, no big deal but
+consider pushing this for the -rc:s.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f45c0b2..172bbe3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1576,6 +1576,9 @@ struct task_struct {
- 	struct uprobe_task *utask;
- 	int uprobe_srcu_id;
- #endif
-+#ifdef CONFIG_EVENT_TRACING
-+	volatile long prev_state;
-+#endif
- };
+ChangeLog v1->v2:
+- Print each cause on its own line with a tab to avoid missing
+  initial cause heading if loglevel < info.
+---
+ drivers/mfd/ab8500-core.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index dac0e29..6c81dc0 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -1217,6 +1217,15 @@ static const struct of_device_id ab8500_match[] = {
  
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index b2219d8..c1b70b1 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -133,6 +133,7 @@ TRACE_EVENT(sched_switch,
- 		__entry->prev_pid	= prev->pid;
- 		__entry->prev_prio	= prev->prio;
- 		__entry->prev_state	= __trace_sched_switch_state(prev);
-+		prev->prev_state	= __trace_sched_switch_state(prev);
- 		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
- 		__entry->next_pid	= next->pid;
- 		__entry->next_prio	= next->prio;
-@@ -158,14 +159,23 @@ TRACE_EVENT(sched_switch_finish,
- 	TP_STRUCT__entry(
- 		__array(	char,	comm,	TASK_COMM_LEN	)
- 		__field(	pid_t,	pid			)
-+		__field(	long,	state			)
- 	),
+ static int __devinit ab8500_probe(struct platform_device *pdev)
+ {
++	static char *switch_off_status[] = {
++		"Swoff bit programming",
++		"Thermal protection activation",
++		"Vbat lower then BattOk falling threshold",
++		"Watchdog expired",
++		"Non presence of 32kHz clock",
++		"Battery level lower than power on reset threshold",
++		"Power on key 1 pressed longer than 10 seconds",
++		"DB8500 thermal shutdown"};
+ 	struct ab8500_platform_data *plat = dev_get_platdata(&pdev->dev);
+ 	const struct platform_device_id *platid = platform_get_device_id(pdev);
+ 	enum ab8500_version version = AB8500_VERSION_UNDEFINED;
+@@ -1323,7 +1332,21 @@ static int __devinit ab8500_probe(struct platform_device *pdev)
+ 		AB8500_SWITCH_OFF_STATUS, &value);
+ 	if (ret < 0)
+ 		return ret;
+-	dev_info(ab8500->dev, "switch off status: %#x", value);
++	dev_info(ab8500->dev, "switch off cause(s) (%#x): ", value);
++
++	if (value) {
++		for (i = 0; i < ARRAY_SIZE(switch_off_status); i++) {
++			if (value & 1)
++				dev_info(ab8500->dev,
++					 "\"\t%s\" ", switch_off_status[i]);
++			value = value >> 1;
++
++		}
++		printk("\n");
++	} else {
++		printk("None\n");
++	}
++
  
- 	TP_fast_assign(
- 		__entry->pid	= p->pid;
-+		__entry->state	= p->prev_state;
- 		memcpy(__entry->comm, p->comm, TASK_COMM_LEN);
- 	),
- 
--	TP_printk("comm=%s pid=%d", __entry->comm, __entry->pid)
-+	TP_printk("comm=%s pid=%d state=%s%s",
-+		__entry->comm, __entry->pid,
-+		__entry->state & (TASK_STATE_MAX-1) ?
-+		  __print_flags(__entry->state & (TASK_STATE_MAX-1), "|",
-+				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
-+				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
-+				{ 128, "W" }) : "R",
-+		__entry->state & TASK_STATE_MAX ? "+" : "")
- );
- 
- /*
+ 	if (plat && plat->init)
+ 		plat->init(ab8500);
 -- 
-1.7.1
+1.7.9.2
 
