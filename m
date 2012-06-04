@@ -1,101 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760646Ab2FDNfi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 09:35:38 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48740 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753649Ab2FDNfg (ORCPT
+	id S1760634Ab2FDNg6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 09:36:58 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:59356 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab2FDNg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 09:35:36 -0400
-Date: Mon, 4 Jun 2012 21:34:57 +0800
-From: Richard Yang <weiyang@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Richard Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: One problem in reassign pci bus number?
-Message-ID: <20120604133457.GA2969@richard>
-Reply-To: Richard Yang <weiyang@linux.vnet.ibm.com>
-References: <20120422155202.GA13540@richard>
- <4F95B17B.3030401@redhat.com>
- <20120514015536.GA3331@richard>
- <CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
- <20120514064615.GB26605@richard>
- <CAE9FiQUuHFoEXMz_Va+FOGnqEbi9=cnnoSB+h7Ug2e4Y2sFTGQ@mail.gmail.com>
- <20120516011833.GA6599@richard>
- <CAE9FiQVUcYu-KM8fBs3zO5ZnL9jxHmJSN6-Ue5-kdC-niM6=Jw@mail.gmail.com>
- <20120529115900.GA31679@richard>
- <CAE9FiQWO1C76ppjZF4Lm4FVpQYPRv5ZirGp9iOM3pm-xrm3Epg@mail.gmail.com>
+	Mon, 4 Jun 2012 09:36:57 -0400
+Date: Mon, 4 Jun 2012 15:37:22 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Borislav Petkov <bp@amd64.org>, Ingo Molnar <mingo@kernel.org>,
+        X86-ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH] x86, smp: Fix topology checks on AMD MCM
+Message-ID: <20120604133722.GB15433@aftab.osrc.amd.com>
+References: <20120529174804.GC8263@alberich.amd.com>
+ <1338813717-28112-1-git-send-email-bp@amd64.org>
+ <1338813830.28282.44.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQWO1C76ppjZF4Lm4FVpQYPRv5ZirGp9iOM3pm-xrm3Epg@mail.gmail.com>
+In-Reply-To: <1338813830.28282.44.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12060413-5816-0000-0000-000002FF404F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 29, 2012 at 10:14:51AM -0700, Yinghai Lu wrote:
->On Tue, May 29, 2012 at 4:59 AM, Richard Yang
-><weiyang@linux.vnet.ibm.com> wrote:
->>
->> I think about this issue again, this behavior of kernel will bring some
->> unconvenience to the user.
->>
->> Do you think the kernel could handle this situation?
->
->in this extreme case, you may need user to do some comprise.
->
->We should always try to use setting from BIOS if it is sane.
->
->Yinghai
-Yinghai
+On Mon, Jun 04, 2012 at 02:43:50PM +0200, Peter Zijlstra wrote:
+> On Mon, 2012-06-04 at 14:41 +0200, Borislav Petkov wrote:
+> > The warning below triggers on AMD MCM packages because physical
+> > package
+> > IDs on the cores of a _physical_ socket are the same. I.e., this field
+> > says which CPUs belong to the same physical package.
+> > 
+> Thanks!
 
-                    +-------+
-                    |       | root bridge(0,255)
-                    +---+---+
-                        |          Bus 0
-       -----+-----------+------------------------------+--
-            |                                          |
-            |                                          |
-            |                                          |
-       +----+----+                               +-----+-----+
-       |         |  B1(1,15)                     |           |B2(32,35)
-       +----+----+                               +-----+-----+
-            |  Bus 1                                   |    Bus 32 
-       -----+-----------------------             -----------
-                             |
-                        +----+----+
-                        |         | B3
-                        +---------+
+This is still crap.
 
-I reread the current code, v3.4, in linus tree,
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-And I come up with another condition which will have a problem when
-kernel is not given the parameter, pci=assign-busses.
+It breaks tests like those in powernow-k8:
 
-Same condition as previous:
--------------------------------------------------------------------------------
-B1 and B2 works fine with the BIOS and get the bus number assigned. 
-B3 is not probed by BIOS.
+        if (cpumask_first(cpu_core_mask(data->cpu)) == data->cpu)
+                print_basics(data);
 
-Difference between the previous example:
--------------------------------------------------------------------------------
-In this case, B2 is assigned bus range (32, 35), which has a gap between
-B1 number range (1, 15).
+and it calls print_basics() on each core filling up dmesg with:
 
-When kernel meets B3 in second pass, B3 will be assigned with bus number
-16. Well, this time the bus number 16 doesn't overlap with bus number of
-B2. 
+[    5.216925] powernow-k8:    0 : pstate 0 (1700 MHz)
+[    5.222139] powernow-k8:    1 : pstate 1 (1300 MHz)
+[    5.227354] powernow-k8:    2 : pstate 2 (1100 MHz)
+[    5.232568] powernow-k8:    3 : pstate 3 (1000 MHz)
+[    5.237783] powernow-k8:    4 : pstate 4 (800 MHz)
+[    5.242988] powernow-k8:    0 : pstate 0 (1700 MHz)
+[    5.248242] powernow-k8:    1 : pstate 1 (1300 MHz)
+[    5.253462] powernow-k8:    2 : pstate 2 (1100 MHz)
+[    5.258677] powernow-k8:    3 : pstate 3 (1000 MHz)
+[    5.263892] powernow-k8:    4 : pstate 4 (800 MHz)
+[    5.269094] powernow-k8:    0 : pstate 0 (1700 MHz)
+[    5.274348] powernow-k8:    1 : pstate 1 (1300 MHz)
+[    5.279566] powernow-k8:    2 : pstate 2 (1100 MHz)
+[    5.284787] powernow-k8:    3 : pstate 3 (1000 MHz)
+[    5.298387] powernow-k8:    4 : pstate 4 (800 MHz)
+...
 
-But, the pci_fixup_parent_subordinate_busnr() will not work since the
-pci=assign-buses is not passed to kernel. 
+while it should dump the Pstates only once per physical socket.
 
-So B1's bus window is still (1,15) not (1,16).
+The proper fix should be:
 
-BTW, is this also a extrem case?
+static bool __cpuinit match_mc(struct cpuinfo_x86 *c, struct cpuinfo_x86 *o)
+{
+        if (c->phys_proc_id == o->phys_proc_id) {
+                if (cpu_has(c, X86_FEATURE_AMD_DCM))
+                        return true;
+
+                return topology_sane(c, o, "mc");
+        }
+        return false;
+}
+
+which basically circumvents the topology check on MCM modules. I'll run
+this a bit longer to verify it doesn't break anything else.
+
+Thanks.
 
 -- 
-Richard Yang
-Help you, Help me
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
