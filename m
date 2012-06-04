@@ -1,154 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab2FDF2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 01:28:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40106 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab2FDF2N (ORCPT
+	id S1756459Ab2FDF3u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 01:29:50 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63890 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab2FDF3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 01:28:13 -0400
-Date: Mon, 4 Jun 2012 13:27:55 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [sched/rt] Optimization of function pull_rt_task()
-Message-ID: <20120604052755.GA28710@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1334519122.8698.3.camel@hp>
- <1334592379.28106.4.camel@gandalf.stny.rr.com>
- <1334773976.28106.49.camel@gandalf.stny.rr.com>
- <1334783815.28106.56.camel@gandalf.stny.rr.com>
- <20120419085440.GC3963@zhy>
- <69791338569116@web3f.yandex.ru>
+	Mon, 4 Jun 2012 01:29:49 -0400
+Message-ID: <4FCC47C9.8050904@lwfinger.net>
+Date: Mon, 04 Jun 2012 00:29:45 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <69791338569116@web3f.yandex.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@zeniv.linux.org.uk>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Question about do_mmap changes
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 08:45:16PM +0400, Kirill Tkhai wrote:
-> 
-> 
-> 19.04.2012, 12:54, "Yong Zhang" <yong.zhang0@gmail.com>:
-> > On Wed, Apr 18, 2012 at 05:16:55PM -0400, Steven Rostedt wrote:
-> >
-> >> ?On Wed, 2012-04-18 at 14:32 -0400, Steven Rostedt wrote:
-> >>> ?On Mon, 2012-04-16 at 12:06 -0400, Steven Rostedt wrote:
-> >>>> ?On Sun, 2012-04-15 at 23:45 +0400, Kirill Tkhai wrote:
-> >>>>> ?The condition (src_rq->rt.rt_nr_running) is weak because it doesn't
-> >>>>> ?consider the cases when src_rq has only processes bound to it (when
-> >>>>> ?single cpu is allowed). It may be running kernel thread like
-> >>>>> ?migration/x etc.
-> >>>>>
-> >>>>> ?So it's better to use more stronger condition which is able to exclude
-> >>>>> ?above conditions. The function has_pushable_tasks() complitely does
-> >>>>> ?this. A task may be pullable for another cpu rq only if he is pushable
-> >>>>> ?for his own queue.
-> >>>> ?I considered this before, and for some reason I never did the change.
-> >>>> ?I'll have to think about it. It seems like this would be the obvious
-> >>>> ?case, but I think there was something not so obvious that caused issues.
-> >>>> ?But I don't remember what it was.
-> >>>>
-> >>>> ?I'll have to rethink this again.
-> >>> ?I can't find anything wrong with this change. Maybe things change, or I
-> >>> ?was thinking of another change.
-> >>>
-> >>> ?I'll apply it and start running my tests against it.
-> >> ?Not only does this seem to work fine, I took it one step further :-)
-> >
-> > Hmm... throttle doesn't handle the pushable list, so we may find a
-> > throttled task by pick_next_pushable_task().
-> >
-> > Thanks,
-> > Yong
-> 
-> I don't complitelly understand throttle logic.
-> 
-> Is the source patch not-appliable the same reason?
+Al,
 
-I guess so.
+In commit e3fc629d7bb70848fbf479688a66d4e76dff46ac in 3.5-rc1, you change 
+do_mmap() to static, and use do_mmap_pgoff() instaed. The VirtualBox kernel 
+module calls do_mmap(), and no longer compiles. I fixed the compile problem with 
+the patch
 
-Your patch will change the semantic of pick_next_pushable_task().
+Index: vboxhost/vboxdrv/r0drv/linux/memobj-r0drv-linux.c
+===================================================================
+--- vboxhost.orig/vboxdrv/r0drv/linux/memobj-r0drv-linux.c
++++ vboxhost/vboxdrv/r0drv/linux/memobj-r0drv-linux.c
+@@ -65,6 +65,13 @@
+  # define VBOX_USE_PAE_HACK
+  #endif
+
++/*
++ * 3.5+ kernels no longer have do_mmap(). They need to call
++ * do_mmap_pgoff() instead.
++ */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
++#define do_mmap do_mmap_pgoff
++#endif
+
+  /*******************************************************************************
+  *   Structures and Typedefs
+
+================================
+
+Although the code now compiles OK, the link step results in
+
+WARNING: "do_mmap_pgoff" [/usr/share/virtualbox/src/vboxhost/vboxdrv/vboxdrv.ko] 
+undefined!
+WARNING: "do_munmap" [/usr/share/virtualbox/src/vboxhost/vboxdrv/vboxdrv.ko] 
+undefined!
+
+================================
+
+I am not quite sure why do_munmap() is undefined as the symbol is exported; 
+however, should do_mmap_pgoff() be exported?
 
 Thanks,
-Yong
 
-> 
-> Kirill
-> 
-> >
-> >> ?Peter, do you see anything wrong with this patch?
-> >>
-> >> ?-- Steve
-> >>
-> >> ?diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-> >> ?index 61e3086..b44fd1b 100644
-> >> ?--- a/kernel/sched/rt.c
-> >> ?+++ b/kernel/sched/rt.c
-> >> ?@@ -1416,39 +1416,15 @@ static int pick_rt_task(struct rq *rq, struct task_struct *p, int cpu)
-> >> ??/* Return the second highest RT task, NULL otherwise */
-> >> ??static struct task_struct *pick_next_highest_task_rt(struct rq *rq, int cpu)
-> >> ??{
-> >> ?- struct task_struct *next = NULL;
-> >> ?- struct sched_rt_entity *rt_se;
-> >> ?- struct rt_prio_array *array;
-> >> ?- struct rt_rq *rt_rq;
-> >> ?- int idx;
-> >> ?+ struct plist_head *head = &rq->rt.pushable_tasks;
-> >> ?+ struct task_struct *next;
-> >>
-> >> ?- for_each_leaf_rt_rq(rt_rq, rq) {
-> >> ?- array = &rt_rq->active;
-> >> ?- idx = sched_find_first_bit(array->bitmap);
-> >> ?-next_idx:
-> >> ?- if (idx >= MAX_RT_PRIO)
-> >> ?- continue;
-> >> ?- if (next && next->prio <= idx)
-> >> ?- continue;
-> >> ?- list_for_each_entry(rt_se, array->queue + idx, run_list) {
-> >> ?- struct task_struct *p;
-> >> ?-
-> >> ?- if (!rt_entity_is_task(rt_se))
-> >> ?- continue;
-> >> ?-
-> >> ?- p = rt_task_of(rt_se);
-> >> ?- if (pick_rt_task(rq, p, cpu)) {
-> >> ?- next = p;
-> >> ?- break;
-> >> ?- }
-> >> ?- }
-> >> ?- if (!next) {
-> >> ?- idx = find_next_bit(array->bitmap, MAX_RT_PRIO, idx+1);
-> >> ?- goto next_idx;
-> >> ?- }
-> >> ?+ plist_for_each_entry(next, head, pushable_tasks) {
-> >> ?+ if (pick_rt_task(rq, next, cpu))
-> >> ?+ return next;
-> >> ??????????}
-> >>
-> >> ?- return next;
-> >> ?+ return NULL;
-> >> ??}
-> >>
-> >> ??static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
-> >>
-> >> ?--
-> >> ?To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> ?the body of a message to majordomo@vger.kernel.org
-> >> ?More majordomo info at ?http://vger.kernel.org/majordomo-info.html
-> >> ?Please read the FAQ at ?http://www.tux.org/lkml/
-> > --
-> > Only stand for myself
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Only stand for myself
+Larry
