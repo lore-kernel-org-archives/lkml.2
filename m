@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761205Ab2FDXOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 19:14:47 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S1761224Ab2FDXUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 19:20:11 -0400
+Received: from trent.utfs.org ([94.185.90.103]:36416 "EHLO trent.utfs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761164Ab2FDXOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 19:14:46 -0400
-Message-ID: <4FCD4161.7060409@nod.at>
-Date: Tue, 05 Jun 2012 01:14:41 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1761165Ab2FDXUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 19:20:09 -0400
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Jun 2012 19:20:09 EDT
+Date: Mon, 4 Jun 2012 16:14:30 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>, mcarlson@broadcom.com
+Subject: tg3: transmit timed out, resetting
+Message-ID: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: jslaby@suse.cz, user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, alan@linux.intel.com, kzak@redhat.com
-Subject: Re: um: TTY fixes (?)
-References: <1338841657-30358-1-git-send-email-richard@nod.at> <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
-In-Reply-To: <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB8966F045016342BF92DE81B"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB8966F045016342BF92DE81B
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Am 04.06.2012 23:17, schrieb Alan Cox:
->> 	On all other ttys login works but bash dies because of of -EIO.
->> 	After vhangup() the tty returns -EIO upon read()/write().
->=20
-> You can't re-open the tty because a process is holding on to it, not
-> closing it and not killable. Fedora shouldn't be holding these devices
-> open this way. The behaviour we have of refusing to reopen them why thi=
-s
-> is the case is both a) what the spec seems to say b) good security.
+on this Ideapad S10 the onboard Broadcom BCM5906M prints the warning 
+below, once. From then on, the "transmit timed out, resetting" message 
+repeats, every now and then.
 
-Hmm, there seems to be a bug in util-linux's login.
-login-utils/login.c::init_tty() does:
-=2E..
-       /* Kill processes left on this tty */
-        tcsetattr(0, TCSAFLUSH, &ttt);
+This laptop is mounting 2 readonly NFS shares from a box in the same LAN 
+and when scanning lots of files on these NFS shares, the transmit timeouts 
+occur more often, I think. When there's sequential traffic (i.e. reading 
+larger files from the NFS shares), fewer warnings occur. But this is just 
+manual observation, I haven't been able to reproduce this reliably. 
+However, there's constant traffic on the device (maybe ~700KB/s both tx 
+and rx), so the messages occur pretty regularly.
 
-        signal(SIGHUP, SIG_IGN);        /* so vhangup() wont kill us */
-        vhangup();
-        signal(SIGHUP, SIG_DFL);
+I have reported the error against the Fedora 17 kernel [0] but it happens 
+with a vanilla 3.4.0 too[1] - check out for full dmesg, .config and more.
 
-        /* open stdin,stdout,stderr to the tty */
-        open_tty(cxt->tty_path);
+I had a similar issue a while ago[2] and almost forgot about them. The 
+laptop ran Ubuntu 10.04 (2.6.32) since then and the problem was gone, so 
+I'd say 2.6.32 fixed it. Now the same laptop switched to Fedora, kernel 
+3.3.4 and the problem seems to be back again.
 
-        /* restore tty modes */
-        tcsetattr(0, TCSAFLUSH, &tt);
-=2E..
-
-By calling vhangup() it kills all other programs on the current tty.
-open_tty() opens the tty again but it's still open because stdin, stdout =
-and stderr
-belongs to it.
-
-If I add:
-        fclose(stdin);
-        fclose(stdout);
-        fclose(stderr);
-before the call to vhangup() login works like charm. :-)
-
-Karel, what do you think?
+I'll try running with sg=off, as Matt suggested in [3] and report back.
 
 Thanks,
-//richard
+Christian.
+
+[0] https://bugzilla.redhat.com/show_bug.cgi?id=825123
+[1] http://nerdbynature.de/bits/3.4.0/tg3/
+[2] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00004.html
+[3] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00317.html
+
+------------[ cut here ]------------
+WARNING: at /opt/home/chrisk/dev/linux-2.6-git/net/sched/sch_generic.c:255 
+dev_watchdog+0x1cc/0x1e0()
+Hardware name: Lenovo          
+NETDEV WATCHDOG: p2p1 (tg3): transmit queue 0 timed out
+Modules linked in: acpi_cpufreq mperf freq_table nfs lockd sunrpc b43 
+mac80211 cfg80211 ssb coretemp hwmon usb_storage [last unloaded: scsi_wait_scan]
+Pid: 685, comm: FahCore_78 Not tainted 3.4.0-10151-g4fc3acf #8
+Call Trace:
+ [<c102b299>] ? warn_slowpath_common+0x79/0xb0
+ [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
+ [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
+ [<c102b374>] ? warn_slowpath_fmt+0x34/0x40
+ [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
+ [<c12d5320>] ? pfifo_fast_dequeue+0xe0/0xe0
+ [<c1035cf1>] ? run_timer_softirq+0xd1/0x1d0
+ [<c1031615>] ? __do_softirq+0x75/0x100
+ [<c10315a0>] ? remote_softirq_receive+0x20/0x20
+ <IRQ>  [<c10318a6>] ? irq_exit+0x66/0x90
+ [<c101b8d9>] ? smp_apic_timer_interrupt+0x59/0x90
+ [<c1360b35>] ? apic_timer_interrupt+0x31/0x38
+ [<c1360000>] ? rt_mutex_trylock+0x70/0x70
+---[ end trace 9de668a859ee5d6c ]---
+tg3 0000:02:00.0: p2p1: transmit timed out, resetting
 
 
---------------enigB8966F045016342BF92DE81B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
+BOFH excuse #438:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPzUFiAAoJEN9758yqZn9esOkIAIR6UdfhtnMTrQWOo9/0wb/u
-CCKfeygoBPXHIimHWqyOx+L21FEOVGmNsHJRrPpzfAzPnJ2k//NFeEpGIly6AnKB
-RFrX5eWRldaRy6l6f4b3Z4JhY5ceyCfz1/UfZjZkC6PDZGWBUDttzEQwiQDQBzxQ
-PULJXEYHTUN8+TipJU0H9y00VzMSYYd8Q9IDJKxiyFzh2vQ2joV6hUDUp1opB3Wv
-Tyip415QyiYxtY/OhoZi3ya+3JMCPJ9F36CHIY5zmbZW5ldA84Bge58L0HxxKeVe
-l1Ib4xqFYssjWa3XRKDYEjqbz1Gl1RY3Q5iI93LYfekiMFYk2xuYPdxl6V5Ho5Q=
-=Rz9u
------END PGP SIGNATURE-----
-
---------------enigB8966F045016342BF92DE81B--
+sticky bit has come loose
