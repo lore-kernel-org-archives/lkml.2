@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab2FDLpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:45:36 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46974 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932105Ab2FDLpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 07:45:30 -0400
-X-AuditID: b753bd60-a0885ba000000655-4c-4fcc9fd73324
-X-AuditID: b753bd60-a0885ba000000655-4c-4fcc9fd73324
-Message-ID: <4FCC9FC8.7060302@hitachi.com>
-Date: Mon, 04 Jun 2012 20:45:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S932246Ab2FDLqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:46:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29522 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755818Ab2FDLqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 07:46:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="160317458"
+Date: Mon, 4 Jun 2012 19:46:03 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Cc: Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: kvm segfaults and bad page state in 3.4.0
+Message-ID: <20120604114603.GA6988@localhost>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH -tip  0/9]ftrace, kprobes: Ftrace-based kprobe optimization
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>    <1338331514.13348.298.camel@gandalf.stny.rr.com>    <4FC5C55E.9000909@hitachi.com>   <1338377978.13348.308.camel@gandalf.stny.rr.com>   <4FC787D8.4010904@hitachi.com>  <1338477346.13348.351.camel@gandalf.stny.rr.com>  <4FC8C557.9010407@hitachi.com> <1338560427.13348.466.camel@gandalf.stny.rr.com>
-In-Reply-To: <1338560427.13348.466.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/01 23:20), Steven Rostedt wrote:
-> On Fri, 2012-06-01 at 22:36 +0900, Masami Hiramatsu wrote:
-> 
->> OK, so I've introduced new noprobe tag and replaced __kprobes
->> with it. And now __kprobes tag which is a combination of noprobe
->> and notrace, means that the function is not probed and it can be
->> called from kprobe handler. (thus user must use this with their
->> handlers and functions which will be used from the handlers)
->> And also most of __kprobes tags are replaced by noprobe only.
-> 
-> You still haven't answered my question. Why can't function tracer still
-> trace these? If kprobes does not allow it to be probed, it should not
-> interfere with your code. But normal function tracing should still allow
-> these.
+Hi,
 
-Because those are called from ftrace-based kprobe, which means
-it is directly invoked from kprobe_ftrace_handler. I think
-that should be handled as a part of ftrace handler.
-Currently, I just added notrace on below two kind of functions
+I'm running lots of kvm instances for doing kernel boot tests.
+Unfortunately the test system itself is not stable enough, I got scary
+errors in both kvm and the host kernel. Like this. 
 
- - handler functions which can be called intermediately from ftrace
- - get_kprobe, set_kprobe_instance, etc. internal utility functions
-   which is called directly from kprobe ftrace handler.
+[294025.795382] kvm used greatest stack depth: 2896 bytes left
+[310388.622083] kvm[1864]: segfault at c ip 00007f498e9f6a81 sp 00007f4994b9fca0 error 4 in kvm[7f498e960000+33b000]
+[310692.050589] kvm[4332]: segfault at 10 ip 00007fca662620b9 sp 00007fca70472af0 error 6 in kvm[7fca661cc000+33b000]
+[312608.950120] kvm[18931]: segfault at 8 ip 00007f95962a10a5 sp 00007f959d777170 error 4 in kvm[7f959620b000+33b000]
+[312622.941640] kvm[19123]: segfault at 10 ip 00007f406f5580b9 sp 00007f4077d8b350 error 6 in kvm[7f406f4c2000+33b000]
+[313917.860951] kvm[28789]: segfault at c ip 00007f718f4dfa81 sp 00007f7198459520 error 4 in kvm[7f718f449000+33b000]
+[313919.177192] kvm used greatest stack depth: 2864 bytes left
+[314061.390945] kvm used greatest stack depth: 2208 bytes left
+[327479.676068] BUG: Bad page state in process kvm  pfn:59ac9
+[327479.676455] page:ffffea000166b240 count:0 mapcount:0 mapping:          (null) index:0x7fd346bc6
+[327479.677083] page flags: 0x100000000000014(referenced|dirty)
+[327479.677575] Modules linked in:
+[327479.677897] Pid: 11423, comm: kvm Not tainted 3.4.0 #131
+[327479.678272] Call Trace:
+[327479.678538]  [<ffffffff81107343>] bad_page+0xe6/0xfb
+[327479.678897]  [<ffffffff811079c6>] get_page_from_freelist+0x534/0x6f6
+[327479.679314]  [<ffffffff81107d92>] __alloc_pages_nodemask+0x20a/0x75e
+[327479.679729]  [<ffffffff8108e121>] ? finish_task_switch+0x4c/0xf6
+[327479.680136]  [<ffffffff81143477>] ? lookup_page_cgroup_used+0xe/0x24
+[327479.680548]  [<ffffffff811079b5>] ? get_page_from_freelist+0x523/0x6f6
+[327479.680970]  [<ffffffff811367c8>] alloc_pages_current+0xd2/0xf3
+[327479.681369]  [<ffffffff811012e4>] __page_cache_alloc+0xa1/0xae
+[327479.681761]  [<ffffffff8110b144>] __do_page_cache_readahead+0x107/0x20b
+[327479.682188]  [<ffffffff8110b0cc>] ? __do_page_cache_readahead+0x8f/0x20b
+[327479.682615]  [<ffffffff811293b0>] ? anon_vma_prepare+0xb4/0x137
+[327479.683010]  [<ffffffff8110b521>] ra_submit+0x21/0x25
+[327479.683375]  [<ffffffff81102f7a>] filemap_fault+0x18a/0x383
+[327479.683757]  [<ffffffff8111d6b3>] __do_fault+0xc8/0x451
+[327479.684128]  [<ffffffff81120103>] handle_pte_fault+0x2de/0x844
+[327479.684522]  [<ffffffff8114446e>] ? mem_cgroup_count_vm_event+0x1a/0x96
+[327479.684944]  [<ffffffff811218ac>] handle_mm_fault+0x1a6/0x1bb
+[327479.685339]  [<ffffffff819b8c12>] do_page_fault+0x405/0x42a
+[327479.685722]  [<ffffffff8112619e>] ? do_mmap_pgoff+0x299/0x2f3
+[327479.686115]  [<ffffffff813fe03d>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[327479.686534]  [<ffffffff819b5b45>] page_fault+0x25/0x30
+[327479.686898] Disabling lock debugging due to kernel taint
 
+The same host kernel, in another test box:
 
-> I still do not understand why you need to add 'notrace' at all.
+[770644.256817] kvm_get_msr_common: 2123 callbacks suppressed
+[770644.257475] kvm: 31889: cpu0 unhandled rdmsr: 0x2
+[770644.258103] kvm: 31889: cpu0 unhandled rdmsr: 0x3
+[770644.258707] kvm: 31889: cpu0 unhandled rdmsr: 0x4
+[770644.259322] kvm: 31889: cpu0 unhandled rdmsr: 0x5
+[770644.259914] kvm: 31889: cpu0 unhandled rdmsr: 0x6
+[770644.260499] kvm: 31889: cpu0 unhandled rdmsr: 0x7
+[770644.261108] kvm: 31889: cpu0 unhandled rdmsr: 0x8
+[770644.261700] kvm: 31889: cpu0 unhandled rdmsr: 0x9
+[770644.262302] kvm: 31889: cpu0 unhandled rdmsr: 0xa
+[770644.262883] kvm: 31889: cpu0 unhandled rdmsr: 0xb
+[909290.636655] kvm[31619]: segfault at 40 ip 00007fcb3d8c4254 sp 00007fcb41bcaec0 error 4 in kvm[7fcb3d82e000+33b000]
 
-Because I'd like to solve a recursive call problem.
+Please drop me hints if I can help debugging it (a week later, after
+returning from LinuxCon Japan), thank you.
 
-I saw a problem which I hit some odd function tracer behavior.
-When I removed notrace from get_kprobe(), which is an essential
-internal function called directly from kprobe_ftrace_handler,
-I hit a kernel crash caused by recursive call right after I
-registered kprobe_ftrace_handler to ftrace. At that time,
-ftrace_ops.filter was empty so I thought there is no function
-traced, but the kprobe_ftrace_handler was called from somewhere.
-So I saw it hit a recursive loop of ftrace_call ->
-kprobe_ftrace_handler -> get_kprobe -> ftrace_call ...
-
-I think if I just register kprobe's ftrace_ops without start
-tracing, I think we can just do tracing without "notrace".
-
->> This means that you can trace those by function tracer :)
->>
->> BTW, currently kprobes allows user cases pagefault in their
->> handler (kprobe.fault_handler will handle it). I guess that
->> can cause some problem with ftrace, isn't it? If so, I need
->> to deny a kprobe using ftrace if it has fault_handler.
-> 
-> As long as there's recursion protection you are fine. In fact, I may add
-> recursion protection within the assembly itself, that will make all
-> function tracing safe. (does not solve the breakpoint bug from the other
-> thread, but will solve most other things). In fact, this may allow us to
-> remove notraces that were added because of recursion issues.
-
-OK, I think kprobe already solves that as long as
-get_kprobe and kprobe_running doesn't cause recursion...
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Thanks,
+Fengguang
