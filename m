@@ -1,36 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab2FDKJa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 06:09:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29115 "EHLO mx1.redhat.com"
+	id S1759280Ab2FDKKV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 06:10:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59268 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab2FDKJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 06:09:29 -0400
-Date: Mon, 4 Jun 2012 13:09:25 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: automount hangs during boot somewhere in rcu_barrier.
-Message-ID: <20120604100925.GC23670@redhat.com>
-References: <20120603113236.GW2311@redhat.com>
- <20120604031549.GE2357@linux.vnet.ibm.com>
- <20120604074803.GA23670@redhat.com>
+	id S1751403Ab2FDKKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 06:10:20 -0400
+Date: Mon, 4 Jun 2012 12:10:18 +0200
+From: Jan Kara <jack@suse.cz>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jan Kara <jack@suse.cz>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v2 08/10] ext2: use memweight()
+Message-ID: <20120604101018.GC7670@quack.suse.cz>
+References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+ <1338644416-11417-8-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120604074803.GA23670@redhat.com>
+In-Reply-To: <1338644416-11417-8-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 10:48:03AM +0300, Gleb Natapov wrote:
-> On Sun, Jun 03, 2012 at 08:15:49PM -0700, Paul E. McKenney wrote:
-> > Hmmm...  Could you please try disabling CONFIG_RCU_FAST_NO_HZ?  If that
-> > makes the problem go away, I have some patches 3.6-targeted patches
-> > for you.
-> Will report back.
+On Sat 02-06-12 22:40:14, Akinobu Mita wrote:
+> Use memweight() to count the total number of bits clear in memory area.
+> This change only affects the code segments enabled by EXT2FS_DEBUG.
 > 
-Do not see any problems with the option disabled.
+> This also fixes printk format warning that only reveals with EXT2FS_DEBUG.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: linux-ext4@vger.kernel.org
+> ---
+> 
+> No changes from v1
+> 
+>  fs/ext2/balloc.c |   22 ++--------------------
+>  fs/ext2/ext2.h   |    1 -
+>  fs/ext2/ialloc.c |    5 ++++-
+>  3 files changed, 6 insertions(+), 22 deletions(-)
+> 
+> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
+> index 1c36139..9095500 100644
+> --- a/fs/ext2/balloc.c
+> +++ b/fs/ext2/balloc.c
+> @@ -1442,25 +1442,6 @@ ext2_fsblk_t ext2_new_block(struct inode *inode, unsigned long goal, int *errp)
+>  	return ext2_new_blocks(inode, goal, &count, errp);
+>  }
+>  
+> -#ifdef EXT2FS_DEBUG
+> -
+> -static const int nibblemap[] = {4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0};
+> -
+> -unsigned long ext2_count_free (struct buffer_head * map, unsigned int numchars)
+> -{
+> -	unsigned int i;
+> -	unsigned long sum = 0;
+> -
+> -	if (!map)
+> -		return (0);
+> -	for (i = 0; i < numchars; i++)
+> -		sum += nibblemap[map->b_data[i] & 0xf] +
+> -			nibblemap[(map->b_data[i] >> 4) & 0xf];
+> -	return (sum);
+> -}
+> -
+> -#endif  /*  EXT2FS_DEBUG  */
+> -
+  So actually if you look at this function, you see that it counts bits in
+map->b_data. That is guaranteed to be long aligned pointer so there's no
+need for your memweight(). bitmap_weight() would be enough, especially
+given that it can handle number of bits which is not a multiple of
+BITS_PER_LONG.
 
---
-			Gleb.
+  For ext3 it's the same BTW.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
