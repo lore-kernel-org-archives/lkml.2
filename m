@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab2FDUHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 16:07:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42341 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab2FDUHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 16:07:22 -0400
-Date: Mon, 4 Jun 2012 22:07:20 +0200
-From: Jan Kara <jack@suse.cz>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: seq_file dangerous assumption?
-Message-ID: <20120604200720.GI11010@quack.suse.cz>
-References: <CAFkjPTkmgMY_TkUHvCmN0iQ9Hx4ADBVCLXGrQB8uMyoF0xMj0g@mail.gmail.com>
+	id S1757438Ab2FDULt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 16:11:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43020 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752575Ab2FDULr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 16:11:47 -0400
+Date: Mon, 4 Jun 2012 22:11:35 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fenghua Yu <fenghua.yu@intel.com>
+cc: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+In-Reply-To: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+Message-ID: <alpine.LFD.2.02.1206042203590.3086@ionos>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFkjPTkmgMY_TkUHvCmN0iQ9Hx4ADBVCLXGrQB8uMyoF0xMj0g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 04-06-12 14:32:02, Eric Van Hensbergen wrote:
-> I was merging up someone else's driver code from a much older kernel
-> to 3.5-rc1 and ran into some issues with corrupted memory.  The
-> character driver in question was using seq-file.c to handle reads to
-> the device.  Based on looking around at other drivers, no one else
-> does this -- so its probably (well, definitely based on what I found)
-> not the right way to do this.
-> 
-> seq_open seems to make a fairly general assumption:
-> (from linux-3.5-rc1 fs/seq_file.c)
-> ...
-> int seq_open(struct file *file, const struct seq_operations *op)
-> {
->         struct seq_file *p = file->private_data;
-> 
->         if (!p) {
->                 p = kmalloc(sizeof(*p), GFP_KERNEL);
->                 if (!p)
->                         return -ENOMEM;
->                 file->private_data = p;
->         }
->         memset(p, 0, sizeof(*p));
-> ..
-> 
-> In other words, if something is in file->private_data, then we must
-> have already allocated and put our structure there.  In the case of
-> this driver, file->private_data was already populated (with a pointer
-> to the device structure) -- so the call to seq_open zero'd a portion
-> of the device structure and then corrupted it with a seq_file
-> structure.
-> 
-> So, an obvious solution is, don't use seq_file with a character device
-> -- but shouldn't there also be a fingerprint or something in the
-> seq_file structure as a sanity check so foolish developers don't trip
-> over it and corrupt their kernel memory?
-  Well, seq_file was never though to be used for devices... It was written
-for use by virtual files such as those in /proc. Thus noone really thought
-of problems you hit.
+On Mon, 4 Jun 2012, Fenghua Yu wrote:
 
-Also we don't usually put magics into our data structure just to stop bad
-use of interfaces. I agree that in this particular case the interface is
-easy to get wrong - but that should be solved by changing the interface to
-a more robust one. Actually, I'm not sure if anyone actually passes
-->private_data != NULL since seq_open_private() seems to be a standard way
-of associating some additional data with seq_file. So maybe
-BUG_ON(file->private_data) would be a good robustification of the interface
-:).
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Since offline CPU is in wmait or hlt if mwait feature is not available, it can
+> be waken up by writing to monitored memory range or via nmi.
+> 
+> Compared to current INIT, INIT, STARTUP wake up sequence, waking up offline CPU
+> is faster via wmait or nmi. This is especially useful when offline CPU for
+> power saving and shorter waking up time is desired. On one tested desktop
+> machine, waking up time via mwait or nmi is reduced to 23% of waking up time
+> via INIT. Waking up time is measured from the beginning of store_online() to
+> the beginning of cpu_idle() after the CPU is waken up.
+> 
+> Waking up offline CPU via mwait or nmi is also useful to support BSP offline/
+> online because offline BSP can not be waken up by the INIT's sequence. The BSP
+> offline/online patchset will be sent out seperately.
 
-								Honza
+I understand what you are trying to do, though I completely disagree
+with the solution.
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+The main problem of the current hotplug code is that it is an all or
+nothing approach. You have to tear down the whole thing completely
+instead of just taking it out of the usable set of cpus.
+
+I'm working on a proper state machine driven online/offline sequence,
+where you can put the cpu into an intermediate state which avoids
+bringing it down completely. This is enough to get the full
+powersaving benefits w/o having to go through all the synchronization
+states of a full online/offline. That will shorten the onlining time
+of an previously offlined cpu to almost nothing.
+
+I really want to avoid adding more bandaids to the hotplug code before
+we have sorted out the existing horror.
+
+Thanks,
+
+	tglx
