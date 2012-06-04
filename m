@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab2FDLhm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 07:37:42 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:45001 "EHLO
+	id S1760298Ab2FDLhj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 07:37:39 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:44993 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab2FDLfo (ORCPT
+	with ESMTP id S1755321Ab2FDLfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jun 2012 07:35:44 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 15/24] PTY: merge pty_install implementations
-Date: Mon,  4 Jun 2012 13:35:29 +0200
-Message-Id: <1338809738-18967-16-git-send-email-jslaby@suse.cz>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org
+Subject: [PATCH 03/24] TTY: ircomm, use close times from tty_port
+Date: Mon,  4 Jun 2012 13:35:17 +0200
+Message-Id: <1338809738-18967-4-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.10.3
 In-Reply-To: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
 References: <1338809738-18967-1-git-send-email-jslaby@suse.cz>
@@ -20,180 +21,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are currently two instances of code which handles PTY install.
-One for the legacy BSD PTY's, one for unix98's PTY's. Both of them are
-very similar and differ only in termios allocation and handling.
-
-Since we will need to allocate a tty_port at that place, this would
-require editing two places with the same pattern. Instead, let us move
-the implementation to one common place and call it from both places.
+Switch to tty_port->close_delay and closing_wait.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Samuel Ortiz <samuel@sortiz.org>
+Cc: netdev@vger.kernel.org
 ---
- drivers/tty/pty.c |  110 ++++++++++++++++++++++-------------------------------
- 1 file changed, 45 insertions(+), 65 deletions(-)
+ include/net/irda/ircomm_tty.h      |    3 ---
+ net/irda/ircomm/ircomm_tty.c       |   10 ++++------
+ net/irda/ircomm/ircomm_tty_ioctl.c |    4 ++--
+ 3 files changed, 6 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index 4bcaf89..881888f 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -282,39 +282,53 @@ done:
- 	return 0;
- }
+diff --git a/include/net/irda/ircomm_tty.h b/include/net/irda/ircomm_tty.h
+index 365fa6e..b4184d0 100644
+--- a/include/net/irda/ircomm_tty.h
++++ b/include/net/irda/ircomm_tty.h
+@@ -101,9 +101,6 @@ struct ircomm_tty_cb {
+ 	struct timer_list watchdog_timer;
+ 	struct work_struct  tqueue;
  
--/* Traditional BSD devices */
--#ifdef CONFIG_LEGACY_PTYS
+-        unsigned short    close_delay;
+-        unsigned short    closing_wait; /* time to wait before closing */
 -
--static int pty_install(struct tty_driver *driver, struct tty_struct *tty)
-+static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
-+		bool legacy)
- {
- 	struct tty_struct *o_tty;
- 	int idx = tty->index;
--	int retval;
-+	int retval = -ENOMEM;
+ 	int  open_count;
+ 	int  blocked_open;	/* # of blocked opens */
  
- 	o_tty = alloc_tty_struct();
- 	if (!o_tty)
--		return -ENOMEM;
-+		goto err;
- 	if (!try_module_get(driver->other->owner)) {
- 		/* This cannot in fact currently happen */
--		retval = -ENOMEM;
- 		goto err_free_tty;
- 	}
- 	initialize_tty_struct(o_tty, driver->other, idx);
+diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
+index 8eeaa8b..61e0adc 100644
+--- a/net/irda/ircomm/ircomm_tty.c
++++ b/net/irda/ircomm/ircomm_tty.c
+@@ -389,8 +389,6 @@ static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
+ 		INIT_WORK(&self->tqueue, ircomm_tty_do_softint);
+ 		self->max_header_size = IRCOMM_TTY_HDR_UNINITIALISED;
+ 		self->max_data_size = IRCOMM_TTY_DATA_UNINITIALISED;
+-		self->close_delay = 5*HZ/10;
+-		self->closing_wait = 30*HZ;
  
--	/* We always use new tty termios data so we can do this
--	   the easy way .. */
--	retval = tty_init_termios(tty);
--	if (retval)
--		goto err_deinit_tty;
--
--	retval = tty_init_termios(o_tty);
--	if (retval)
--		goto err_free_termios;
-+	if (legacy) {
-+		/* We always use new tty termios data so we can do this
-+		   the easy way .. */
-+		retval = tty_init_termios(tty);
-+		if (retval)
-+			goto err_deinit_tty;
-+
-+		retval = tty_init_termios(o_tty);
-+		if (retval)
-+			goto err_free_termios;
-+
-+		driver->other->ttys[idx] = o_tty;
-+		driver->ttys[idx] = tty;
-+	} else {
-+		tty->termios = kzalloc(sizeof(struct ktermios[2]), GFP_KERNEL);
-+		if (tty->termios == NULL)
-+			goto err_deinit_tty;
-+		*tty->termios = driver->init_termios;
-+		tty->termios_locked = tty->termios + 1;
-+
-+		o_tty->termios = kzalloc(sizeof(struct ktermios[2]),
-+				GFP_KERNEL);
-+		if (o_tty->termios == NULL)
-+			goto err_free_termios;
-+		*o_tty->termios = driver->other->init_termios;
-+		o_tty->termios_locked = o_tty->termios + 1;
-+	}
- 
- 	/*
- 	 * Everything allocated ... set up the o_tty structure.
+ 		/* Init some important stuff */
+ 		init_timer(&self->watchdog_timer);
+@@ -546,8 +544,8 @@ static void ircomm_tty_close(struct tty_struct *tty, struct file *filp)
+ 	 * the line discipline to only process XON/XOFF characters.
  	 */
--	driver->other->ttys[idx] = o_tty;
- 	tty_driver_kref_get(driver->other);
- 	if (driver->subtype == PTY_TYPE_MASTER)
- 		o_tty->count++;
-@@ -324,18 +338,29 @@ static int pty_install(struct tty_driver *driver, struct tty_struct *tty)
+ 	tty->closing = 1;
+-	if (self->closing_wait != ASYNC_CLOSING_WAIT_NONE)
+-		tty_wait_until_sent_from_close(tty, self->closing_wait);
++	if (self->port.closing_wait != ASYNC_CLOSING_WAIT_NONE)
++		tty_wait_until_sent_from_close(tty, self->port.closing_wait);
  
- 	tty_driver_kref_get(driver);
- 	tty->count++;
--	driver->ttys[idx] = tty;
- 	return 0;
- err_free_termios:
--	tty_free_termios(tty);
-+	if (legacy)
-+		tty_free_termios(tty);
-+	else
-+		kfree(tty->termios);
- err_deinit_tty:
- 	deinitialize_tty_struct(o_tty);
- 	module_put(o_tty->driver->owner);
- err_free_tty:
- 	free_tty_struct(o_tty);
-+err:
- 	return retval;
- }
+ 	ircomm_tty_shutdown(self);
  
-+/* Traditional BSD devices */
-+#ifdef CONFIG_LEGACY_PTYS
-+
-+static int pty_install(struct tty_driver *driver, struct tty_struct *tty)
-+{
-+	return pty_common_install(driver, tty, true);
-+}
-+
- static int pty_bsd_ioctl(struct tty_struct *tty,
- 			 unsigned int cmd, unsigned long arg)
- {
-@@ -509,52 +534,7 @@ static void pty_unix98_shutdown(struct tty_struct *tty)
+@@ -558,8 +556,8 @@ static void ircomm_tty_close(struct tty_struct *tty, struct file *filp)
+ 	self->tty = NULL;
  
- static int pty_unix98_install(struct tty_driver *driver, struct tty_struct *tty)
- {
--	struct tty_struct *o_tty;
--	int idx = tty->index;
--
--	o_tty = alloc_tty_struct();
--	if (!o_tty)
--		return -ENOMEM;
--	if (!try_module_get(driver->other->owner)) {
--		/* This cannot in fact currently happen */
--		goto err_free_tty;
--	}
--	initialize_tty_struct(o_tty, driver->other, idx);
--
--	tty->termios = kzalloc(sizeof(struct ktermios[2]), GFP_KERNEL);
--	if (tty->termios == NULL)
--		goto err_free_mem;
--	*tty->termios = driver->init_termios;
--	tty->termios_locked = tty->termios + 1;
--
--	o_tty->termios = kzalloc(sizeof(struct ktermios[2]), GFP_KERNEL);
--	if (o_tty->termios == NULL)
--		goto err_free_mem;
--	*o_tty->termios = driver->other->init_termios;
--	o_tty->termios_locked = o_tty->termios + 1;
--
--	tty_driver_kref_get(driver->other);
--	if (driver->subtype == PTY_TYPE_MASTER)
--		o_tty->count++;
--	/* Establish the links in both directions */
--	tty->link   = o_tty;
--	o_tty->link = tty;
--	/*
--	 * All structures have been allocated, so now we install them.
--	 * Failures after this point use release_tty to clean up, so
--	 * there's no need to null out the local pointers.
--	 */
--	tty_driver_kref_get(driver);
--	tty->count++;
--	return 0;
--err_free_mem:
--	deinitialize_tty_struct(o_tty);
--	kfree(o_tty->termios);
--	kfree(tty->termios);
--	module_put(o_tty->driver->owner);
--err_free_tty:
--	free_tty_struct(o_tty);
--	return -ENOMEM;
-+	return pty_common_install(driver, tty, false);
- }
+ 	if (self->blocked_open) {
+-		if (self->close_delay)
+-			schedule_timeout_interruptible(self->close_delay);
++		if (self->port.close_delay)
++			schedule_timeout_interruptible(self->port.close_delay);
+ 		wake_up_interruptible(&self->port.open_wait);
+ 	}
  
- static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
+diff --git a/net/irda/ircomm/ircomm_tty_ioctl.c b/net/irda/ircomm/ircomm_tty_ioctl.c
+index d0667d6..a6d25e3 100644
+--- a/net/irda/ircomm/ircomm_tty_ioctl.c
++++ b/net/irda/ircomm/ircomm_tty_ioctl.c
+@@ -272,8 +272,8 @@ static int ircomm_tty_get_serial_info(struct ircomm_tty_cb *self,
+ 	info.line = self->line;
+ 	info.flags = self->flags;
+ 	info.baud_base = self->settings.data_rate;
+-	info.close_delay = self->close_delay;
+-	info.closing_wait = self->closing_wait;
++	info.close_delay = self->port.close_delay;
++	info.closing_wait = self->port.closing_wait;
+ 
+ 	/* For compatibility  */
+ 	info.type = PORT_16550A;
 -- 
 1.7.10.3
 
