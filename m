@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2FDOZT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 10:25:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20083 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab2FDOZR (ORCPT
+	id S1757960Ab2FDO3f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 10:29:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35846 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754662Ab2FDO3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 10:25:17 -0400
-X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=BxU6LY-SEyQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=IjpaDU1HHLEYFVsL8M8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1338819915.13348.508.camel@gandalf.stny.rr.com>
-Subject: Re: Re: [RFC PATCH -tip  1/9] ftrace: Add pt_regs acceptable trace
- callback
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Date: Mon, 04 Jun 2012 10:25:15 -0400
-In-Reply-To: <4FCCBEE9.8030006@hitachi.com>
-References: <20120529124833.9191.23007.stgit@localhost.localdomain>
-	  <20120529124857.9191.5868.stgit@localhost.localdomain>
-	 <1338602877.13348.474.camel@gandalf.stny.rr.com>
-	 <4FCCBEE9.8030006@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 4 Jun 2012 10:29:33 -0400
+Date: Mon, 4 Jun 2012 10:29:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roland Stigge <stigge@antcom.de>
+cc: gregkh@linuxfoundation.org, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <kevin.wells@nxp.com>, <srinivas.bakki@nxp.com>
+Subject: Re: [PATCH] ohci-nxp: Use ohci_finish_controller_resume()
+In-Reply-To: <1338747893-29338-1-git-send-email-stigge@antcom.de>
+Message-ID: <Pine.LNX.4.44L0.1206041027420.1555-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 22:58 +0900, Masami Hiramatsu wrote:
+On Sun, 3 Jun 2012, Roland Stigge wrote:
 
-> Hmm, how about initializing in __init function ?
-> Or we can make func and regs_func in different members,
-> instead of using a union. (in that case, we can remove
-> FTRACE_OPS_FL_SAVE_REGS.)
-> I just consider passing uninitialized argument to user
-> function can cause unexpected behavior...
+> OHCI drivers are supposed to use ohci_finish_controller_resume(). This patch
+> adds respective suspend and resume code to ohci-nxp. The following compiler
+> warning is fixed this way:
+> 
+> drivers/usb/host/ohci-hub.c:321: warning: 'ohci_finish_controller_resume'
+> defined but not used
 
-Easy solution:
+This is not a correct description of the patch.  A correct description 
+would be something like:
 
-As I want all functions to pass the ftrace_ops anyway, we can implement
-the ftrace_ops and the regs passing together. The arch will need to
-update both at the same time.
+	Add suspend/resume support to the ohci-nxp driver.
 
-But for archs that do not support ftrace_ops (and thus also not regs),
-we can do (and I will do this):
+The compiler warning needs a completely different fix; 
+ohci_finish_controller_resume should be given a __maybe_unused 
+annotation.
 
-static inline void
- __global_list_func(unsigned long ip, unsigned long parent_ip,
-			struct ftrace_ops *ops, struct pt_regs *regs)
-{
-	[do the loop, ignoring ops anyway, but passing in regs]
-}
+Alan Stern
 
-#ifndef ARCH_SUPPORTS_FTRACE_OPS
-static void
-noregs_global_list_func(unsigned long ip, unsigned long parent_ip)
-{
-	__global_list_func(ip, parent_ip, NULL, NULL);
-}
-#define global_list_func (ftrace_func_t)noregs_global_list_func
-#else
-static void global_list_func(unsigned long ip, unsigned long parent_ip,
-			struct ftrace_ops *ops, struct pt_regs *regs)
-{
-	__global_list_func(ip, parent_ip, ops, regs);
-}
-#endif
-
-
-
-Nothing will be passed uninitialized. If an arch does not support
-passing ftrace ops and regs, then it will be calling the
-noregs_global_list_func() (or whatever I name it), which only expects
-the ip and parent_ip as parameters. Then that will be calling the actual
-loop function with NULLs in the parameters.
-
-When an arch supports passing of ftrace_ops, then it should also support
-passing in the regs (as that should be the trivial part).
-
-Note, all funcs will get regs, but it may not get the full regs. That
-requires the ftrace_ops setting the special flag. The regs are saved for
-the mcount already. But only a partial set. Those will be sent to all
-function callbacks. If the function call back requires a full set (like
-kprobes does), then it must set the flag before registering.
-
-Hows this sound?
-
--- Steve
-
-
+> Signed-off-by: Roland Stigge <stigge@antcom.de>
+> 
+> ---
+> Applies to v3.5-rc1
+> 
+>  drivers/usb/host/ohci-nxp.c |   21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
+> 
+> --- linux-2.6.orig/drivers/usb/host/ohci-nxp.c
+> +++ linux-2.6/drivers/usb/host/ohci-nxp.c
+> @@ -432,6 +432,23 @@ static int usb_hcd_nxp_remove(struct pla
+>  	return 0;
+>  }
+>  
+> +#ifdef CONFIG_PM
+> +static int usb_hcd_suspend(struct platform_device *pdev, pm_message_t message)
+> +{
+> +	clk_disable(usb_clk);
+> +	return 0;
+> +}
+> +
+> +static int usb_hcd_resume(struct platform_device *pdev)
+> +{
+> +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+> +
+> +	clk_enable(usb_clk);
+> +	ohci_finish_controller_resume(hcd);
+> +	return 0;
+> +}
+> +#endif
+> +
+>  /* work with hotplug and coldplug */
+>  MODULE_ALIAS("platform:usb-ohci");
+>  
+> @@ -451,5 +468,9 @@ static struct platform_driver usb_hcd_nx
+>  	},
+>  	.probe = usb_hcd_nxp_probe,
+>  	.remove = usb_hcd_nxp_remove,
+> +#ifdef CONFIG_PM
+> +	.suspend = usb_hcd_suspend,
+> +	.resume = usb_hcd_resume,
+> +#endif
+>  };
 
