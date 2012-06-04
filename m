@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab2FDQzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:55:10 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:37897 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab2FDQyK (ORCPT
+	id S1753272Ab2FDQ4f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:56:35 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:49223 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751989Ab2FDQ4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:54:10 -0400
-Message-ID: <4FCCE7FB.3000301@linux.vnet.ibm.com>
-Date: Mon, 04 Jun 2012 22:23:15 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Sam Ravnborg <sam@ravnborg.org>, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        yong.zhang0@gmail.com, akpm@linux-foundation.org,
-        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>
-Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot secondary
- processors
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com> <20120601165113.GA18870@merkur.ravnborg.org> <4FC9424E.9060009@linux.vnet.ibm.com> <alpine.LFD.2.02.1206041228330.3086@ionos> <4FCCB31B.6060302@linux.vnet.ibm.com> <alpine.LFD.2.02.1206041513000.3086@ionos>
-In-Reply-To: <alpine.LFD.2.02.1206041513000.3086@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Jun 2012 12:56:34 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+Rr5Fan7eRM1k39QrbuWVJdQIVP0XMR1b1ZPNu2g
+	6MhTHdB5wHz8y8
+Message-ID: <1338828989.7363.8.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: balance_cpu to consider other cpus in its group
+ as target of (pinned) task migration
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Prashanth Nageshappa <prashanth@linux.vnet.ibm.com>, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, roland@kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Date: Mon, 04 Jun 2012 18:56:29 +0200
+In-Reply-To: <1338824014.28282.86.camel@twins>
+References: <4FCC4E3B.4090209@linux.vnet.ibm.com>
+	 <1338801907.7356.163.camel@marge.simpson.net>
+	 <1338810796.28282.32.camel@twins>
+	 <1338814063.7356.192.camel@marge.simpson.net>
+	 <20120604130740.GC25126@linux.vnet.ibm.com>
+	 <1338820234.7356.250.camel@marge.simpson.net>
+	 <20120604143802.GB26651@linux.vnet.ibm.com>
+	 <1338820895.7356.252.camel@marge.simpson.net>
+	 <20120604150040.GD25126@linux.vnet.ibm.com>
+	 <1338823271.28282.75.camel@twins>
+	 <20120604152522.GE26651@linux.vnet.ibm.com>
+	 <1338824014.28282.86.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12060406-7014-0000-0000-000001522F51
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 06:48 PM, Thomas Gleixner wrote:
+On Mon, 2012-06-04 at 17:33 +0200, Peter Zijlstra wrote:
 
-> On Mon, 4 Jun 2012, Srivatsa S. Bhat wrote:
->> On 06/04/2012 04:02 PM, Thomas Gleixner wrote:
->> I can add the prototype w/o the __weak prefix and the #ifndef magic in
->> include/linux/smpboot.h (which I will, and include it in v2).
->>
->> However, I can't get rid of the #ifndef magic in kernel/smpboot.c because
->> it will cause build failures on x86.
->>
->> I addressed this same issue in another email:
->> https://lkml.org/lkml/2012/6/3/33
-> 
->> In short, to avoid breaking build on x86.
->> We wanted to follow the x86 convention of having static inline functions in
->> arch/x86/include/asm/smp.h and use the smp_ops structure to route the calls
->> to x86 or xen as appropriate (see patch 4 in this series).
-> 
-> Oh no. That's not really a good argument.
-> 
-> There is no reason why this _must_ be an inline function on x86. It
-> can be a proper function in arch/x86/kernel/smpboot.c as well.
-> 
+> Now I'm not as opposed to this as Mike is, the load cpu_power thing can
+> also happen due to excessive IRQ time, and hopefully we'll get to have
+> an unpriv. SCHED_DEADLINE at some point as well.
 
+I'm not heavily opposed, was just questioning the RT justification.
 
-Ok, I'll adopt this approach.
-
-> The alternative solution is to generalize the smp_ops approach and get
-> rid of the weak implementations completely.
-> 
-
-
-Ok, but this would mean changes to all architectures, which could be avoided.
-
-One reason why x86 uses that smp_ops structure is because it decides the
-implementation routines between x86 and xen at run-time. Such requirements don't
-exist on other architectures, from what I saw (except sparc32).
-
-So I'll stick with the former approach of adding a proper function for x86, and
-retaining the default weak implementations in kernel/smpboot.c.
- 
-Regards,
-Srivatsa S. Bhat
+-Mike
 
