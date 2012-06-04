@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760897Ab2FDQL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 12:11:26 -0400
-Received: from nm24-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.143]:20840
-	"HELO nm24-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752297Ab2FDQLZ (ORCPT
+	id S1760910Ab2FDQNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 12:13:14 -0400
+Received: from natasha.panasas.com ([67.152.220.90]:41251 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752297Ab2FDQNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 12:11:25 -0400
-X-Yahoo-Newman-Id: 351936.77985.bm@smtp102.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: qFvH2qUVM1mirWmFF.MEMpNNdj7ztbqNM.aSEk1cZn8URZT
- ictYU5dtS6ILui7KJbEck6o3uVtenUA46CNk_qR.NyMKYRahRHpJZsnBWN0I
- 66851.3cxfUnurRSJA3hJRajWt3eYokrEBRPiu2ttgGi4U5KQ0Chw60wqZRD
- yeT9.O3TDa_oL.AqBWcQ.uUHVBQUdl.0y.mX.MwNac7z8efaK1hAGfwcBGVO
- DMvk6Sfd0rtXFV0ruBX.vojD9Y3PYGXNc4lMgb8aJGUg7OWkvAlndqWwE_u2
- c2amzQ_otGXRpt0zOkL6DW016UqbvrRftQQxlzfkTzDbTT6MEmwmS6Agb4xI
- w7_rgBn.zt.OWQVKaxYF94XqRFPxFKZ6JJC31cipND6p3HBPD6_PtnV4CuuR
- 1Pt9zAryBkH1_lVCRx3m6RE5Jl4678IxICrLloCUE3VDxzI0xijw.RAbx5s6
- 6dW3cwM8q6FDKvxqIRKW7j7G3og--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <4FCCDE2B.3020306@schaufler-ca.com>
-Date: Mon, 04 Jun 2012 09:11:23 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Mon, 4 Jun 2012 12:13:12 -0400
+Message-ID: <4FCCDE86.4060507@panasas.com>
+Date: Mon, 4 Jun 2012 19:12:54 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111113 Thunderbird/8.0
 MIME-Version: 1.0
-To: George Shuklin <george.shuklin@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: Why minor is still 8 bit?
-References: <4FCC0E6D.9000206@gmail.com> <20120604013504.GU30000@ZenIV.linux.org.uk> <4FCC3151.1040503@gmail.com>
-In-Reply-To: <4FCC3151.1040503@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Artem Bityutskiy <dedekind1@gmail.com>
+CC: Linux FS Maling List <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>,
+        Benny Halevy <bhalevy@tonian.com>, <osd-dev@open-osd.org>
+Subject: Re: [PATCH] exofs: stop using s_dirt
+References: <1338810507-26539-1-git-send-email-dedekind1@gmail.com>
+In-Reply-To: <1338810507-26539-1-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/3/2012 8:53 PM, George Shuklin wrote:
->
-> On 04.06.2012 05:35, Al Viro wrote:
->> On Mon, Jun 04, 2012 at 05:25:01AM +0400, George Shuklin wrote:
->>> I've understand that major and minor numbers for device is 8-bit size.
->>>
->>> I've don't understand, WHY? In 2012!
->>>
->>> (I've just have some discussion about 8-bit counter limitations in
->>> context of cloud computing. In middle of 2012!!!!)
->> Yes, shocking.  It's been several years and you are still using that
->> buzzword; I mean, it's _so_ 2010...  Should've moved on to whatever's
->> in this year...
->>
->> Incidentally, minors are 20 bit and majors are 12, but don't let that
->> stand in the way of righteous indignation - what's mere facts when
->> one is having discussions in context, presumably leveraging synergies
->> all along...
-> Ok, thank you for information.
->
-> But question is almost same: can I have 30k active logical volumes on
-> my single server, please?
+On 06/04/2012 02:48 PM, Artem Bityutskiy wrote:
 
-What are you trying to do, create a logical volume for every file?
-There are at least three separate technologies available that will
-solve whatever your problem is better than having 30,000 logical
-volumes. I don't have a clue what you think you're trying to
-accomplish and I am still willing to bet beers that you're bus is
-parked solidly on the wrong tracks.
+> From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> 
+> Exofs has the '->write_super()' handler and makes some use of the '->s_dirt'
+> superblock flag, but it really needs neither of them because it never sets
+> 's_dirt' to one which means the VFS never calls its '->write_super()' handler.
+> Thus, remove both.
+> 
 
 
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks Artem. I have seen your other FS conversions and thought I would
+eventually need to also do it for exofs, thanks for beating me to it ;-)
+
+I have removed all uses of sb->s_dirt = 1 cases around last year, by
+writing the SB-info as part of the create/delete commands directly. So
+I agree it is not needed anymore see here
+	1cea312 exofs: Write sbi->s_nextid as part of the Create command
+
+I have one question though, which I did not understand at the time?
+
+Today at exofs_write_super() we call exofs_sync_fs() (super_operations->sync_fs)
+Who/when calls ->sync_fs() without the ->write_super() below.
+
+But otherwise I agree that sb->s_dirt = 1 and ->write_super() are not needed
+at all, for regular operations.
+
+Should I take this for 3.6 through my tree. Or do you want my:
+
+Ack-by: Boaz Harrosh <bharrosh@panasas.com>
+
+> Note, I am trying to remove both 's_dirt' and 'write_super()' from VFS
+> altogether once all users are gone.
+> 
+> Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+> ---
+>  fs/exofs/super.c |   11 -----------
+>  1 files changed, 0 insertions(+), 11 deletions(-)
+> 
+> diff --git a/fs/exofs/super.c b/fs/exofs/super.c
+> index 735ca06..6e1c515 100644
+> --- a/fs/exofs/super.c
+> +++ b/fs/exofs/super.c
+> @@ -400,8 +400,6 @@ static int exofs_sync_fs(struct super_block *sb, int wait)
+>  	ret = ore_write(ios);
+>  	if (unlikely(ret))
+>  		EXOFS_ERR("%s: ore_write failed.\n", __func__);
+> -	else
+> -		sb->s_dirt = 0;
+>  
+>  
+>  	unlock_super(sb);
+> @@ -412,14 +410,6 @@ out:
+>  	return ret;
+>  }
+>  
+> -static void exofs_write_super(struct super_block *sb)
+> -{
+> -	if (!(sb->s_flags & MS_RDONLY))
+> -		exofs_sync_fs(sb, 1);
+> -	else
+> -		sb->s_dirt = 0;
+> -}
+> -
+>  static void _exofs_print_device(const char *msg, const char *dev_path,
+>  				struct osd_dev *od, u64 pid)
+>  {
+> @@ -942,7 +932,6 @@ static const struct super_operations exofs_sops = {
+>  	.write_inode    = exofs_write_inode,
+>  	.evict_inode    = exofs_evict_inode,
+>  	.put_super      = exofs_put_super,
+> -	.write_super    = exofs_write_super,
+>  	.sync_fs	= exofs_sync_fs,
+>  	.statfs         = exofs_statfs,
+>  };
+
 
