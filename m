@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab2FERS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:18:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41734 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755051Ab2FERS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:18:57 -0400
-Date: Tue, 5 Jun 2012 13:18:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: write-behind on streaming writes
-Message-ID: <20120605171851.GA28556@redhat.com>
-References: <20120528114124.GA6813@localhost>
- <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
- <20120529155759.GA11326@localhost>
- <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
- <20120530032129.GA7479@localhost>
- <20120605010148.GE4347@dastard>
+	id S1755254Ab2FERTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:19:07 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:47888 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755199Ab2FERTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 13:19:03 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, devel@openvz.org, kir@parallels.com,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+References: <1338816828-25312-1-git-send-email-glommer@parallels.com>
+	<20120604165117.GA13091@redhat.com>
+Date: Tue, 05 Jun 2012 10:18:52 -0700
+In-Reply-To: <20120604165117.GA13091@redhat.com> (Oleg Nesterov's message of
+	"Mon, 4 Jun 2012 18:51:17 +0200")
+Message-ID: <874nqp7k3n.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120605010148.GE4347@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/e8/wooDeGEx1X3o7FWO+ru4fFNPvjAkc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.0719]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] allow a task to join a pid namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 11:01:48AM +1000, Dave Chinner wrote:
-> On Wed, May 30, 2012 at 11:21:29AM +0800, Fengguang Wu wrote:
-> > Linus,
-> > 
-> > On Tue, May 29, 2012 at 10:35:46AM -0700, Linus Torvalds wrote:
-> > > On Tue, May 29, 2012 at 8:57 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> > > I just suspect that we'd be better off teaching upper levels about the
-> > > streaming. I know for a fact that if I do it by hand, system
-> > > responsiveness was *much* better, and IO throughput didn't go down at
-> > > all.
-> > 
-> > Your observation of better responsiveness may well be stemmed from
-> > these two aspects:
-> > 
-> > 1) lower dirty/writeback pages
-> > 2) the async write IO queue being drained constantly
-> > 
-> > (1) is obvious. For a mem=4G desktop, the default dirty limit can be
-> > up to (4096 * 20% = 819MB). While your smart writer effectively limits
-> > dirty/writeback pages to a dramatically lower 16MB.
-> > 
-> > (2) comes from the use of _WAIT_ flags in
-> > 
-> >         sync_file_range(..., SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
-> > 
-> > Each sync_file_range() syscall will submit 8MB write IO and wait for
-> > completion. That means the async write IO queue constantly swing
-> > between 0 and 8MB fillness at the frequency (100MBps / 8MB = 12.5ms).
-> > So on every 12.5ms, the async IO queue runs empty, which gives any
-> > pending read IO (from firefox etc.) a chance to be serviced. Nice
-> > and sweet breaks!
-> > 
-> > I suspect (2) contributes *much more* than (1) to desktop responsiveness.
-> 
-> Almost certainly, especially with NCQ devices where even if the IO
-> scheduler preempts the write queue immediately, the device might
-> complete the outstanding 31 writes before servicing the read which
-> is issued as the 32nd command....
+Oleg Nesterov <oleg@redhat.com> writes:
 
-CFQ does preempt async IO once sync IO gets queued.
+> On 06/04, Glauber Costa wrote:
+>>
+>> Currently, it is possible for a process  to join existing
+>> net, uts and ipc namespaces. This patch allows a process to join an
+>> existing pid namespace as well.
+>
+> I can't understand this patch... but probably I missed something,
+> I never really understood setns.
 
-> 
-> So NCQ depth is going to play a part here as well.
+The idea with setns is akin to callusermodehelper in the kernel.
 
-Yes NCQ depth does contribute primarily to READ latencies in presence of
-async IO. I think disk drivers and disk firmware should also participate in 
-prioritizing READs over pending WRITEs to improve the situation.
+>From outside a container we want to allow an appropriately privileged
+user to create a process inside the container.
 
-IO scheduler can only do so much. CFQ already tries hard to keep pending
-async queue depth low and that results in lower throughput many a times
-(as compared to deadline).
+We run into all kinds of interesting gotchas with entering the
+pid namespace:
+ - Disjoint process trees.
+ - Ensuring all processes are gone when we exit a pid namespace.
+ - Not letting an empty pid namespace accept more processes.
 
-In fact CFQ tries so hard to prioritize SYNC IO over async IO, that I have
-often heard cases of WRITEs being starved and people facing "task blocked
-for 120 second warnings".
+We really only have two possbilities here.
+- Allocate a new struct pid that is a superset of our current struct
+  pid but having additional processes ids inside a new pid namespace.
 
-Thanks
-Vivek
+  Along with all of the appropriate sanity checks to make that safe.
+
+- Just modify the pid namespace the child processes of setns will use.
+
+I lean towards the second option as that seems to have the best semantic
+match to practical applications, and fewer kernel races to contend with,
+but I might be persuadable.
+
+However we do this we need to fix the bugs in pid namespace cleanup,
+and deal with the issues that disjoint process trees bring to waiting
+for all processes in a pid namespace to exit.
+
+Ugh.  Getting the waking up of zap_pid_ns_processes right and handling
+the reaping of zombines in the cases of disjoint process trees is going
+to be interesting.
+
+Eric
