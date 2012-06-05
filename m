@@ -1,165 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934098Ab2FENFD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:05:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37462 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932429Ab2FENFA convert rfc822-to-8bit (ORCPT
+	id S1758094Ab2FENH3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:07:29 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36086 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab2FENH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:05:00 -0400
-Message-ID: <1338901490.28282.167.camel@twins>
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jun 2012 15:04:50 +0200
-In-Reply-To: <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
-	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
-	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
-	 <1338891271.28282.155.camel@twins>
-	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
-	 <1338892071.28282.157.camel@twins>
-	 <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
-	 <1338898024.28282.160.camel@twins> <1338899999.28282.164.camel@twins>
-	 <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 09:07:27 -0400
+Date: Tue, 5 Jun 2012 15:07:52 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH v29] RAS: Add a tracepoint for reporting memory
+ controller events
+Message-ID: <20120605130752.GE13495@aftab.osrc.amd.com>
+References: <1338563258-13322-1-git-send-email-mchehab@redhat.com>
+ <20120601152151.GC28216@aftab.osrc.amd.com>
+ <4FC8E5C4.4080008@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FC8E5C4.4080008@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 14:51 +0200, Stephane Eranian wrote:
-> So I think if you say in:
-> __intel_shared_reg_put_constraints()
-> 
->      if (!cpuc->is_fake)
->            reg->alloc = 1;
-> 
-> That should do it given that:
-> 
-> __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
->                                    struct hw_perf_event_extra *reg)
-> {
->         struct er_account *era;
->         if (!reg->alloc)
->                 return;
-> 
-> }
-> 
-> But then, if reg->alloc was already set to 1, you will have a problem
-> if you leave
-> it as is. So I think in __intel_shared_reg_put_constraints(), you still need:
-> 
-> __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
->                                    struct hw_perf_event_extra *reg)
-> {
->        if (!reg->alloc || cpuc->is_fake)
->           return;
-> 
-> Or something like that. 
+On Fri, Jun 01, 2012 at 12:54:44PM -0300, Mauro Carvalho Chehab wrote:
+> +/*
+> + * Default error mechanisms for Memory Controller errors (CE and UE)
+> + */
+> +TRACE_EVENT(mc_event,
+> +
+> +	TP_PROTO(const unsigned int err_type,
+> +		 const char *error_msg,
+> +		 const char *label,
+> +		 const int error_count,
+> +		 const u8 mc_index,
+> +		 const s8 top_layer,
+> +		 const s8 mid_layer,
+> +		 const s8 low_layer,
+> +		 unsigned long address,
+> +		 const u8 grain_bits,
+> +		 unsigned long syndrome,
+> +		 const char *driver_detail),
+> +
+> +	TP_ARGS(err_type, error_msg, label, error_count, mc_index,
+> +		top_layer, mid_layer, low_layer, address, grain_bits,
+> +		syndrome, driver_detail),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	unsigned int,	error_type		)
+> +		__string(	msg,		error_msg		)
+> +		__string(	label,		label			)
+> +		__field(	u16,		error_count		)
+> +		__field(	u8,		mc_index		)
+> +		__field(	s8,		top_layer		)
+> +		__field(	s8,		middle_layer		)
+> +		__field(	s8,		lower_layer		)
+> +		__field(	long,		address			)
+> +		__field(	u8,		grain_bits		)
+> +		__field(	long,		syndrome		)
+> +		__string(	driver_detail,	driver_detail		)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->error_type		= err_type;
+> +		__assign_str(msg, error_msg);
+> +		__assign_str(label, label);
+> +		__entry->error_count		= error_count;
+> +		__entry->mc_index		= mc_index;
+> +		__entry->top_layer		= top_layer;
+> +		__entry->middle_layer		= mid_layer;
+> +		__entry->lower_layer		= low_layer;
+> +		__entry->address		= address;
+> +		__entry->grain_bits		= grain_bits;
+> +		__entry->syndrome		= syndrome;
+> +		__assign_str(driver_detail, driver_detail);
+> +	),
+> +
+> +	TP_printk("%d %s error%s:%s%s on memory stick %s (mc:%d location:%d:%d:%d address:0x%08lx grain:%d syndrome:0x%08lx%s%s)",
 
-Right, and then something slightly less hideous for intel_try_alt_er().
+Just a minor nitpick:
 
-How does something like this look?
+       mcegen.py-3078  [019] .N..  6815.663058: mc_event: 1 Corrected error: amd64_edac on memory stick unknown memory (mc:0 location:3:1:-1 address:0x000007ba grain:2 syndrome:0x00001809)
 
----
- arch/x86/kernel/cpu/perf_event_intel.c |   43 +++++++++++++++++++++-----------
- 1 file changed, 28 insertions(+), 15 deletions(-)
+It says "... on memory stick unknown memory... "
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 166546e..a3b7eb3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1119,27 +1119,33 @@ intel_bts_constraints(struct perf_event *event)
- 	return NULL;
- }
- 
--static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
-+static int intel_alt_er(int idx)
- {
- 	if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
--		return false;
-+		return idx;
- 
--	if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
-+	if (idx == EXTRA_REG_RSP_0)
-+		return EXTRA_REG_RSP_1;
-+
-+	if (idx == EXTRA_REG_RSP_1)
-+		return EXTRA_REG_RSP_0;
-+
-+	return idx;
-+}
-+
-+static void intel_fixup_er(struct perf_event *event, int idx)
-+{
-+	if (idx == EXTRA_REG_RSP_0) {
- 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
- 		event->hw.config |= 0x01bb;
- 		event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
- 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
--	} else if (event->hw.extra_reg.idx == EXTRA_REG_RSP_1) {
-+	} else if (idx == EXTRA_REG_RSP_1) {
- 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
- 		event->hw.config |= 0x01b7;
- 		event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
- 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
- 	}
--
--	if (event->hw.extra_reg.idx == orig_idx)
--		return false;
--
--	return true;
- }
- 
- /*
-@@ -1157,14 +1163,14 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 	struct event_constraint *c = &emptyconstraint;
- 	struct er_account *era;
- 	unsigned long flags;
--	int orig_idx = reg->idx;
-+	int idx = reg->idx;
- 
- 	/* already allocated shared msr */
- 	if (reg->alloc)
- 		return NULL; /* call x86_get_event_constraint() */
- 
- again:
--	era = &cpuc->shared_regs->regs[reg->idx];
-+	era = &cpuc->shared_regs->regs[idx];
- 	/*
- 	 * we use spin_lock_irqsave() to avoid lockdep issues when
- 	 * passing a fake cpuc
-@@ -1181,16 +1187,23 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 		atomic_inc(&era->ref);
- 
- 		/* no need to reallocate during incremental event scheduling */
--		reg->alloc = 1;
-+		if (!cpuc->is_fake) {
-+			if (idx != reg->idx)
-+				intel_fixup_er(event, idx);
-+			reg->alloc = 1;
-+		}
- 
- 		/*
- 		 * need to call x86_get_event_constraint()
- 		 * to check if associated event has constraints
- 		 */
- 		c = NULL;
--	} else if (intel_try_alt_er(event, orig_idx)) {
--		raw_spin_unlock_irqrestore(&era->lock, flags);
--		goto again;
-+	} else {
-+		idx = intel_alt_er(idx);
-+		if (idx != reg->idx) {
-+			raw_spin_unlock_irqrestore(&era->lock, flags);
-+			goto again;
-+		}
- 	}
- 	raw_spin_unlock_irqrestore(&era->lock, flags);
- 
+Can we make the printk proto like this:
 
+	TP_printk("%d %s error%s:%s%s on %s (mc:%d location:%d:%d:%d address:0x%08lx grain:%d syndrome:0x%08lx%s%s)",
+
+so that both
+
+	"Corrected error on DIMMx..."
+
+and
+
+	"Corrected error on unknown memory..."
+
+work semantically?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
