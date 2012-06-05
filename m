@@ -1,33 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab2FEVlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 17:41:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58750 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab2FEVl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 17:41:29 -0400
-Date: Tue, 05 Jun 2012 14:41:28 -0700 (PDT)
-Message-Id: <20120605.144128.1246711898220435843.davem@davemloft.net>
-To: michel@digirati.com.br
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net: add dev_loopback_xmit() to avoid duplicate
- code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1338902613.2792.16.camel@Thor>
-References: <1337782819.2779.20.camel@Thor>
-	<1338902613.2792.16.camel@Thor>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752614Ab2FEVvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 17:51:20 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63093 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751187Ab2FEVvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 17:51:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="175219751"
+From: Andi Kleen <andi@firstfloor.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip v2 3/9] ftrace/x86: Support SAVE_REGS feature on i386
+References: <20120605102734.27845.43401.stgit@localhost.localdomain>
+	<20120605102802.27845.49309.stgit@localhost.localdomain>
+Date: Tue, 05 Jun 2012 14:51:18 -0700
+In-Reply-To: <20120605102802.27845.49309.stgit@localhost.localdomain> (Masami
+	Hiramatsu's message of "Tue, 05 Jun 2012 19:28:02 +0900")
+Message-ID: <m2ehptjull.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michel Machado <michel@digirati.com.br>
-Date: Tue, 05 Jun 2012 09:23:33 -0400
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+>  
+> +	.macro FTRACE_SAVE_ALL
+> +	/* eflags is saved on cs */
+> +	subl $8, %esp		/* skip ip and orig_ax */
+> +	pushl %gs
+> +	pushl %fs
 
-> Just to avoid bothering you further, should I resend this patch or not?
+For pure in kernel use you don't need to save/restore fs/gs
+This is only needed on kernel/user space boundaries.
 
-Always resend patches.
+And for this usage probably also not flags
+
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
