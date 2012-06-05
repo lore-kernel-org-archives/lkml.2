@@ -1,91 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760418Ab2FEIlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 04:41:05 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58343 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757643Ab2FEIlC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 04:41:02 -0400
-Date: Tue, 5 Jun 2012 01:39:22 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-Message-ID: <20120605083921.GA21745@lizard>
-References: <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com>
- <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com>
- <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com>
- <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com>
- <20120601122118.GA6128@lizard>
- <alpine.LFD.2.02.1206032125320.1943@tux.localdomain>
- <4FCC7592.9030403@kernel.org>
- <20120604113811.GA4291@lizard>
- <4FCD14F1.1030105@gmail.com>
- <CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
+	id S1760638Ab2FEIob (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 04:44:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758048Ab2FEIo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 04:44:29 -0400
+Subject: [net-next RFC PATCH] virtio_net: collect satistics and export
+ through ethtool
+To: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mst@redhat.com
+From: Jason Wang <jasowang@redhat.com>
+Date: Tue, 05 Jun 2012 16:38:41 +0800
+Message-ID: <20120605083841.11878.69056.stgit@amd-6168-8-1.englab.nay.redhat.com>
+User-Agent: StGit/0.16-1-g60c4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLHR4wSgT2hNfOB=X6ud0rXgYg+h7PTHzAZYCUdLs6Ktug@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 10:47:18AM +0300, Pekka Enberg wrote:
-> On Mon, Jun 4, 2012 at 11:05 PM, KOSAKI Motohiro
-> <kosaki.motohiro@gmail.com> wrote:
-> >> Note that 1) and 2) are not problems per se, it's just implementation
-> >> details, easy stuff. Vmevent is basically an ABI/API, and I didn't
-> >> hear anybody who would object to vmevent ABI idea itself. More than
-> >> this, nobody stop us from implementing in-kernel vmevent API, and
-> >> make Android Lowmemory killer use it, if we want to.
-> >
-> > I never agree "it's mere ABI" discussion. Until the implementation is ugly,
-> > I never agree the ABI even if syscall interface is very clean.
-> 
-> I don't know what discussion you are talking about.
-> 
-> I also don't agree that something should be merged just because the
-> ABI is clean. The implementation must also make sense. I don't see how
-> we disagree here at all.
+Satistics counters is useful for debugging and performance optimization, so this
+patch lets virtio_net driver collect following and export them to userspace
+through "ethtool -S":
 
-BTW, I wasn't implying that vmevent should be merged just because
-it is a clean ABI, and I wasn't implying that it is clean, and I
-didn't propose to merge it at all. :-)
+- number of packets sent/received
+- number of bytes sent/received
+- number of callbacks for tx/rx
+- number of kick for tx/rx
+- number of bytes/packets queued for tx
 
-I just don't see any point in trying to scrap vmevent in favour of
-Android low memory killer. This makes no sense at all, since today
-vmevent is more useful than Android's solution. For vmevent we have
-contributors from Nokia, Samsung, and of course Linaro, plus we
-have an userland killer daemon* for Android (which can work with
-both cgroups and vmevent backends). So vmevent is more generic
-already.
+As virtnet_stats were per-cpu, so both per-cpu and gloabl satistics were exposed
+like:
 
-To me it would make more sense if mm guys would tell us "scrap
-this all, just use cgroups and its notifications; fix cgroups'
-slab accounting and be happy". Well, I'd understand that.
+NIC statistics:
+     tx_bytes[0]: 2551
+     tx_packets[0]: 12
+     tx_kick[0]: 12
+     tx_callbacks[0]: 1
+     tx_queued_packets[0]: 12
+     tx_queued_bytes[0]: 3055
+     rx_bytes[0]: 0
+     rx_packets[0]: 0
+     rx_kick[0]: 0
+     rx_callbacks[0]: 0
+     tx_bytes[1]: 5575
+     tx_packets[1]: 37
+     tx_kick[1]: 38
+     tx_callbacks[1]: 0
+     tx_queued_packets[1]: 38
+     tx_queued_bytes[1]: 5217
+     rx_bytes[1]: 4175
+     rx_packets[1]: 25
+     rx_kick[1]: 1
+     rx_callbacks[1]: 16
+     tx_bytes: 8126
+     tx_packets: 49
+     tx_kick: 50
+     tx_callbacks: 1
+     tx_queued_packets: 50
+     tx_queued_bytes: 8272
+     rx_bytes: 4175
+     rx_packets: 25
+     rx_kick: 1
+     rx_callbacks: 16
 
-Anyway, we all know that vmevent is 'work in progress', so nobody
-tries to push it, nobody asks to merge it. So far we're just
-discussing any possible solutions, and vmevent is a good
-playground.
+TODO:
 
+- more satistics
+- unitfy the ndo_get_stats64 and get_ethtool_stats
+- calculate the pending bytes/pkts
 
-So, question to Minchan. Do you have anything particular in mind
-regarding how the vmstat hooks should look like? And how all this
-would connect with cgroups, since KOSAKI wants to see it cgroups-
-aware...
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/virtio_net.c |  130 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 127 insertions(+), 3 deletions(-)
 
-p.s. http://git.infradead.org/users/cbou/ulmkd.git
-     I haven't updated it for new vmevent changes, but still,
-     its idea should be clear enough.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 5214b1e..7ab0cc1 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -41,6 +41,10 @@ module_param(gso, bool, 0444);
+ #define VIRTNET_SEND_COMMAND_SG_MAX    2
+ #define VIRTNET_DRIVER_VERSION "1.0.0"
+ 
++#define VIRTNET_STAT_OFF(m) offsetof(struct virtnet_stats, m)
++#define VIRTNET_STAT(stat, i) (*((u64 *)((char *)stat + \
++			       virtnet_stats_str_attr[i].stat_offset)))
++
+ struct virtnet_stats {
+ 	struct u64_stats_sync syncp;
+ 	u64 tx_bytes;
+@@ -48,8 +52,33 @@ struct virtnet_stats {
+ 
+ 	u64 rx_bytes;
+ 	u64 rx_packets;
++
++	u64 tx_kick;
++	u64 rx_kick;
++	u64 tx_callbacks;
++	u64 rx_callbacks;
++	u64 tx_queued_packets;
++	u64 tx_queued_bytes;
++};
++
++static struct {
++	char string[ETH_GSTRING_LEN];
++	int stat_offset;
++} virtnet_stats_str_attr[] = {
++	{ "tx_bytes", VIRTNET_STAT_OFF(tx_bytes)},
++	{ "tx_packets", VIRTNET_STAT_OFF(tx_packets)},
++	{ "tx_kick", VIRTNET_STAT_OFF(tx_kick)},
++	{ "tx_callbacks", VIRTNET_STAT_OFF(tx_callbacks)},
++	{ "tx_queued_packets", VIRTNET_STAT_OFF(tx_queued_packets)},
++	{ "tx_queued_bytes", VIRTNET_STAT_OFF(tx_queued_bytes)},
++	{ "rx_bytes" , VIRTNET_STAT_OFF(rx_bytes)},
++	{ "rx_packets", VIRTNET_STAT_OFF(rx_packets)},
++	{ "rx_kick", VIRTNET_STAT_OFF(rx_kick)},
++	{ "rx_callbacks", VIRTNET_STAT_OFF(rx_callbacks)},
+ };
+ 
++#define VIRTNET_NUM_STATS ARRAY_SIZE(virtnet_stats_str_attr)
++
+ struct virtnet_info {
+ 	struct virtio_device *vdev;
+ 	struct virtqueue *rvq, *svq, *cvq;
+@@ -142,6 +171,11 @@ static struct page *get_a_page(struct virtnet_info *vi, gfp_t gfp_mask)
+ static void skb_xmit_done(struct virtqueue *svq)
+ {
+ 	struct virtnet_info *vi = svq->vdev->priv;
++	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
++
++	u64_stats_update_begin(&stats->syncp);
++	stats->tx_callbacks++;
++	u64_stats_update_end(&stats->syncp);
+ 
+ 	/* Suppress further interrupts. */
+ 	virtqueue_disable_cb(svq);
+@@ -461,6 +495,7 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+ {
+ 	int err;
+ 	bool oom;
++	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+ 
+ 	do {
+ 		if (vi->mergeable_rx_bufs)
+@@ -477,13 +512,24 @@ static bool try_fill_recv(struct virtnet_info *vi, gfp_t gfp)
+ 	} while (err > 0);
+ 	if (unlikely(vi->num > vi->max))
+ 		vi->max = vi->num;
+-	virtqueue_kick(vi->rvq);
++	if (virtqueue_kick_prepare(vi->rvq)) {
++		virtqueue_notify(vi->rvq);
++		u64_stats_update_begin(&stats->syncp);
++		stats->rx_kick++;
++		u64_stats_update_end(&stats->syncp);
++	}
+ 	return !oom;
+ }
+ 
+ static void skb_recv_done(struct virtqueue *rvq)
+ {
+ 	struct virtnet_info *vi = rvq->vdev->priv;
++	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
++
++	u64_stats_update_begin(&stats->syncp);
++	stats->rx_callbacks++;
++	u64_stats_update_end(&stats->syncp);
++
+ 	/* Schedule NAPI, Suppress further interrupts if successful. */
+ 	if (napi_schedule_prep(&vi->napi)) {
+ 		virtqueue_disable_cb(rvq);
+@@ -626,7 +672,9 @@ static int xmit_skb(struct virtnet_info *vi, struct sk_buff *skb)
+ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	struct virtnet_info *vi = netdev_priv(dev);
++	struct virtnet_stats *stats = this_cpu_ptr(vi->stats);
+ 	int capacity;
++	bool kick;
+ 
+ 	/* Free up any pending old buffers before queueing new ones. */
+ 	free_old_xmit_skbs(vi);
+@@ -651,7 +699,17 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		kfree_skb(skb);
+ 		return NETDEV_TX_OK;
+ 	}
+-	virtqueue_kick(vi->svq);
++
++	kick = virtqueue_kick_prepare(vi->svq);
++	if (kick)
++		virtqueue_notify(vi->svq);
++
++	u64_stats_update_begin(&stats->syncp);
++	if (kick)
++		stats->tx_kick++;
++	stats->tx_queued_bytes += skb->len;
++	stats->tx_queued_packets++;
++	u64_stats_update_end(&stats->syncp);
+ 
+ 	/* Don't wait up for transmitted skbs to be freed. */
+ 	skb_orphan(skb);
+@@ -926,7 +984,6 @@ static void virtnet_get_ringparam(struct net_device *dev,
+ 
+ }
+ 
+-
+ static void virtnet_get_drvinfo(struct net_device *dev,
+ 				struct ethtool_drvinfo *info)
+ {
+@@ -939,10 +996,77 @@ static void virtnet_get_drvinfo(struct net_device *dev,
+ 
+ }
+ 
++static void virtnet_get_strings(struct net_device *dev, u32 stringset, u8 *buf)
++{
++	int i, cpu;
++	switch (stringset) {
++	case ETH_SS_STATS:
++		for_each_possible_cpu(cpu)
++			for (i = 0; i < VIRTNET_NUM_STATS; i++) {
++				sprintf(buf, "%s[%u]",
++					virtnet_stats_str_attr[i].string, cpu);
++				buf += ETH_GSTRING_LEN;
++			}
++		for (i = 0; i < VIRTNET_NUM_STATS; i++) {
++			memcpy(buf, virtnet_stats_str_attr[i].string,
++				ETH_GSTRING_LEN);
++			buf += ETH_GSTRING_LEN;
++		}
++		break;
++	}
++}
++
++static int virtnet_get_sset_count(struct net_device *dev, int sset)
++{
++	switch (sset) {
++	case ETH_SS_STATS:
++		return VIRTNET_NUM_STATS * (num_online_cpus() + 1);
++	default:
++		return -EOPNOTSUPP;
++	}
++}
++
++static void virtnet_get_ethtool_stats(struct net_device *dev,
++				struct ethtool_stats *stats, u64 *buf)
++{
++	struct virtnet_info *vi = netdev_priv(dev);
++	int cpu, i;
++	unsigned int start;
++	struct virtnet_stats sample, total;
++
++	memset(&total, 0, sizeof(total));
++	memset(&sample, 0, sizeof(sample));
++
++	for_each_possible_cpu(cpu) {
++		struct virtnet_stats *stats = per_cpu_ptr(vi->stats, cpu);
++		do {
++			start = u64_stats_fetch_begin(&stats->syncp);
++			for (i = 0; i < VIRTNET_NUM_STATS; i++) {
++				VIRTNET_STAT(&sample, i) =
++					VIRTNET_STAT(stats, i);
++
++			}
++		} while (u64_stats_fetch_retry(&stats->syncp, start));
++		for (i = 0; i < VIRTNET_NUM_STATS; i++) {
++			*buf = VIRTNET_STAT(&sample, i);
++			VIRTNET_STAT(&total, i) += VIRTNET_STAT(stats, i);
++			buf++;
++		}
++	}
++
++	for (i = 0; i < VIRTNET_NUM_STATS; i++) {
++		*buf = VIRTNET_STAT(&total, i);
++		buf++;
++	}
++}
++
+ static const struct ethtool_ops virtnet_ethtool_ops = {
+ 	.get_drvinfo = virtnet_get_drvinfo,
+ 	.get_link = ethtool_op_get_link,
+ 	.get_ringparam = virtnet_get_ringparam,
++	.get_ethtool_stats = virtnet_get_ethtool_stats,
++	.get_strings = virtnet_get_strings,
++	.get_sset_count = virtnet_get_sset_count,
+ };
+ 
+ #define MIN_MTU 68
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
