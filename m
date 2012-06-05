@@ -1,110 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733Ab2FETlC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:41:02 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36152 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab2FETlA (ORCPT
+	id S1751932Ab2FETmS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 15:42:18 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54096 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab2FETmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:41:00 -0400
+	Tue, 5 Jun 2012 15:42:16 -0400
 From: Devendra Naga <devendra.aaru@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>,
+        Joseph Salisbury <salisbury.joseph@gmail.com>,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
 Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH 1/2] staging/wlan-ng: cfg80211.c coding style cleanup
-Date: Wed,  6 Jun 2012 01:10:50 +0530
-Message-Id: <1338925250-23528-1-git-send-email-devendra.aaru@gmail.com>
+Subject: [PATCH 2/2] staging/wlan-ng: prsim2fw.c coding style cleanup
+Date: Wed,  6 Jun 2012 01:12:06 +0530
+Message-Id: <1338925326-23584-1-git-send-email-devendra.aaru@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-there are warnings that are reported by checkpatch.pl
-fixed the following problems
+this patch fixes the coding style problems found by using checkpatch.pl
 
-drivers/staging/wlan-ng/cfg80211.c:130: WARNING: line over 80 characters
-drivers/staging/wlan-ng/cfg80211.c:366: WARNING: line over 80 characters
-drivers/staging/wlan-ng/cfg80211.c:543: WARNING: line over 80 characters
-drivers/staging/wlan-ng/cfg80211.c:665: WARNING: line over 80 characters
-drivers/staging/wlan-ng/cfg80211.c:692: WARNING: line over 80 characters
-drivers/staging/wlan-ng/cfg80211.c:735: WARNING: line over 80 characters
+drivers/staging/wlan-ng/prism2fw.c:175: ERROR: "foo * bar" should be "foo *bar"
+drivers/staging/wlan-ng/prism2fw.c:210: WARNING: line over 80 characters
+drivers/staging/wlan-ng/prism2fw.c:596: WARNING: line over 80 characters
+drivers/staging/wlan-ng/prism2fw.c:658: ERROR: "foo * bar" should be "foo *bar"
 
 Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
 ---
- drivers/staging/wlan-ng/cfg80211.c |   20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ drivers/staging/wlan-ng/prism2fw.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index 8bc562b..fabff4d 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -127,7 +127,9 @@ int prism2_change_virtual_intf(struct wiphy *wiphy,
- 	}
+diff --git a/drivers/staging/wlan-ng/prism2fw.c b/drivers/staging/wlan-ng/prism2fw.c
+index 3c40096..f13cdc9 100644
+--- a/drivers/staging/wlan-ng/prism2fw.c
++++ b/drivers/staging/wlan-ng/prism2fw.c
+@@ -172,7 +172,7 @@ static int read_cardpda(struct pda *pda, wlandevice_t *wlandev);
+ static int mkpdrlist(struct pda *pda);
  
- 	/* Set Operation mode to the PORT TYPE RID */
--	result = prism2_domibset_uint32(wlandev, DIDmib_p2_p2Static_p2CnfPortType, data);
-+	result = prism2_domibset_uint32(wlandev,
-+					DIDmib_p2_p2Static_p2CnfPortType,
-+					data);
+ static int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
+-	      struct s3plugrec *s3plug, unsigned int ns3plug, struct pda * pda);
++	      struct s3plugrec *s3plug, unsigned int ns3plug, struct pda *pda);
  
- 	if (result)
- 		err = -EFAULT;
-@@ -363,7 +365,8 @@ int prism2_scan(struct wiphy *wiphy, struct net_device *dev,
- 	if (request->n_ssids > 0) {
- 		msg1.scantype.data = P80211ENUM_scantype_active;
- 		msg1.ssid.data.len = request->ssids->ssid_len;
--		memcpy(msg1.ssid.data.data, request->ssids->ssid, request->ssids->ssid_len);
-+		memcpy(msg1.ssid.data.data,
-+			request->ssids->ssid, request->ssids->ssid_len);
- 	} else {
- 		msg1.scantype.data = 0;
- 	}
-@@ -540,7 +543,9 @@ int prism2_connect(struct wiphy *wiphy, struct net_device *dev,
- 				goto exit;
- 			}
+ static int crcimage(struct imgchunk *fchunk, unsigned int nfchunks,
+ 	     struct s3crcrec *s3crc, unsigned int ns3crc);
+@@ -207,7 +207,8 @@ int prism2_fwtry(struct usb_device *udev, wlandevice_t *wlandev)
  
--			result = prism2_domibset_pstr32(wlandev, did, sme->key_len, (u8 *) sme->key);
-+			result = prism2_domibset_pstr32(wlandev,
-+							did, sme->key_len,
-+							(u8 *)sme->key);
- 			if (result)
- 				goto exit;
+ 	printk(KERN_INFO "prism2_usb: Checking for firmware %s\n",
+ 	       PRISM2_USB_FWFILE);
+-	if (request_ihex_firmware(&fw_entry, PRISM2_USB_FWFILE, &udev->dev) != 0) {
++	if (request_ihex_firmware(&fw_entry,
++				  PRISM2_USB_FWFILE, &udev->dev) != 0) {
+ 		printk(KERN_INFO
+ 		       "prism2_usb: Firmware not available, but not essential\n");
+ 		printk(KERN_INFO
+@@ -593,7 +594,8 @@ int mkpdrlist(struct pda *pda)
+ 	       le16_to_cpu(pda16[curroff + 1]) != HFA384x_PDR_END_OF_PDA) {
+ 		pda->rec[pda->nrec] = (hfa384x_pdrec_t *) &(pda16[curroff]);
  
-@@ -662,10 +667,11 @@ int prism2_get_tx_power(struct wiphy *wiphy, int *dbm)
- 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
- 	wlandevice_t *wlandev = priv->wlandev;
- 	struct p80211msg_dot11req_mibget msg;
--	p80211item_uint32_t *mibitem = (p80211item_uint32_t *) &msg.mibattribute.data;
-+	p80211item_uint32_t *mibitem;
- 	int result;
- 	int err = 0;
- 
-+	mibitem = (p80211item_uint32_t *) &msg.mibattribute.data;
- 	msg.msgcode = DIDmsg_dot11req_mibget;
- 	mibitem->did =
- 	    DIDmib_dot11phy_dot11PhyTxPowerTable_dot11CurrentTxPowerLevel;
-@@ -689,7 +695,8 @@ exit:
- /* Interface callback functions, passing data back up to the cfg80211 layer */
- void prism2_connect_result(wlandevice_t *wlandev, u8 failed)
+-		if (le16_to_cpu(pda->rec[pda->nrec]->code) == HFA384x_PDR_NICID) {
++		if (le16_to_cpu(pda->rec[pda->nrec]->code) ==
++		    HFA384x_PDR_NICID) {
+ 			memcpy(&nicid, &pda->rec[pda->nrec]->data.nicid,
+ 			       sizeof(nicid));
+ 			nicid.id = le16_to_cpu(nicid.id);
+@@ -655,7 +657,7 @@ int mkpdrlist(struct pda *pda)
+ *	~0	failure
+ ----------------------------------------------------------------*/
+ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
+-	      struct s3plugrec *s3plug, unsigned int ns3plug, struct pda * pda)
++	      struct s3plugrec *s3plug, unsigned int ns3plug, struct pda *pda)
  {
--	u16 status = failed ? WLAN_STATUS_UNSPECIFIED_FAILURE : WLAN_STATUS_SUCCESS;
-+	u16 status = failed ?
-+		     WLAN_STATUS_UNSPECIFIED_FAILURE : WLAN_STATUS_SUCCESS;
- 
- 	cfg80211_connect_result(wlandev->netdev, wlandev->bssid,
- 				NULL, 0, NULL, 0, status, GFP_KERNEL);
-@@ -732,7 +739,8 @@ struct wiphy *wlan_create_wiphy(struct device *dev, wlandevice_t *wlandev)
- {
- 	struct wiphy *wiphy;
- 	struct prism2_wiphy_private *priv;
--	wiphy = wiphy_new(&prism2_usb_cfg_ops, sizeof(struct prism2_wiphy_private));
-+
-+	wiphy = wiphy_new(&prism2_usb_cfg_ops, sizeof(*priv));
- 	if (!wiphy)
- 		return NULL;
- 
+ 	int result = 0;
+ 	int i;			/* plug index */
 -- 
 1.7.9.5
 
