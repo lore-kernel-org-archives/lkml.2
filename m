@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761469Ab2FEDlZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:41:25 -0400
+	id S1761498Ab2FEDlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:41:32 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:43604 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2FEDlX (ORCPT
+	with ESMTP id S1761484Ab2FEDl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:41:23 -0400
+	Mon, 4 Jun 2012 23:41:29 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         fengguang.wu@intel.com, hughd@google.com, akpm@linux-foundation.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/10] block: allocate io_context upfront
-Date: Mon,  4 Jun 2012 20:40:56 -0700
-Message-Id: <1338867660-4689-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/10] block: prepare for multiple request_lists
+Date: Mon,  4 Jun 2012 20:40:59 -0700
+Message-Id: <1338867660-4689-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1338867660-4689-1-git-send-email-tj@kernel.org>
 References: <1338867660-4689-1-git-send-email-tj@kernel.org>
@@ -23,130 +23,344 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block layer very lazy allocation of ioc.  It waits until the moment
-ioc is absolutely necessary; unfortunately, that time could be inside
-queue lock and __get_request() performs unlock - try alloc - retry
-dancing.
+Request allocation is about to be made per-blkg meaning that there'll
+be multiple request lists.
 
-Just allocate it up-front on entry to block layer.  We're not saving
-the rain forest by deferring it to the last possible moment and
-complicating things unnecessarily.
+* Make queue full state per request_list.  blk_*queue_full() functions
+  are renamed to blk_*rl_full() and takes @rl instead of @q.
 
-This patch is to prepare for further updates to request allocation
-path.
+* Rename blk_init_free_list() to blk_init_rl() and make it take @rl
+  instead of @q.  Also add @gfp_mask parameter.
+
+* Add blk_exit_rl() instead of destroying rl directly from
+  blk_release_queue().
+
+* Add request_list->q and make request alloc/free functions -
+  blk_free_request(), [__]freed_request(), __get_request() - take @rl
+  instead of @q.
+
+This patch doesn't introduce any functional difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-core.c     |   42 +++++++++++++++---------------------------
- block/blk-throttle.c |    3 ---
- 2 files changed, 15 insertions(+), 30 deletions(-)
+ block/blk-core.c       |   56 ++++++++++++++++++++++++++---------------------
+ block/blk-sysfs.c      |   12 ++++------
+ block/blk.h            |    3 ++
+ include/linux/blkdev.h |   32 +++++++++++++++------------
+ 4 files changed, 57 insertions(+), 46 deletions(-)
 
 diff --git a/block/blk-core.c b/block/blk-core.c
-index 9b25d73..ada4bc0 100644
+index 8149c76..0fbd233 100644
 --- a/block/blk-core.c
 +++ b/block/blk-core.c
-@@ -842,15 +842,11 @@ static struct request *__get_request(struct request_queue *q, int rw_flags,
+@@ -504,13 +504,13 @@ void blk_cleanup_queue(struct request_queue *q)
+ }
+ EXPORT_SYMBOL(blk_cleanup_queue);
+ 
+-static int blk_init_free_list(struct request_queue *q)
++int blk_init_rl(struct request_list *rl, struct request_queue *q,
++		gfp_t gfp_mask)
  {
- 	struct request *rq;
- 	struct request_list *rl = &q->rq;
--	struct elevator_type *et;
--	struct io_context *ioc;
-+	struct elevator_type *et = q->elevator->type;
-+	struct io_context *ioc = rq_ioc(bio);
- 	struct io_cq *icq = NULL;
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
--	bool retried = false;
- 	int may_queue;
--retry:
--	et = q->elevator->type;
--	ioc = rq_ioc(bio);
+-	struct request_list *rl = &q->rq;
+-
+ 	if (unlikely(rl->rq_pool))
+ 		return 0;
  
- 	if (unlikely(blk_queue_dead(q)))
++	rl->q = q;
+ 	rl->count[BLK_RW_SYNC] = rl->count[BLK_RW_ASYNC] = 0;
+ 	rl->starved[BLK_RW_SYNC] = rl->starved[BLK_RW_ASYNC] = 0;
+ 	init_waitqueue_head(&rl->wait[BLK_RW_SYNC]);
+@@ -518,13 +518,19 @@ static int blk_init_free_list(struct request_queue *q)
+ 
+ 	rl->rq_pool = mempool_create_node(BLKDEV_MIN_RQ, mempool_alloc_slab,
+ 					  mempool_free_slab, request_cachep,
+-					  GFP_KERNEL, q->node);
++					  gfp_mask, q->node);
+ 	if (!rl->rq_pool)
+ 		return -ENOMEM;
+ 
+ 	return 0;
+ }
+ 
++void blk_exit_rl(struct request_list *rl)
++{
++	if (rl->rq_pool)
++		mempool_destroy(rl->rq_pool);
++}
++
+ struct request_queue *blk_alloc_queue(gfp_t gfp_mask)
+ {
+ 	return blk_alloc_queue_node(gfp_mask, -1);
+@@ -666,7 +672,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	if (!q)
  		return NULL;
-@@ -862,20 +858,6 @@ retry:
- 	if (rl->count[is_sync]+1 >= queue_congestion_on_threshold(q)) {
- 		if (rl->count[is_sync]+1 >= q->nr_requests) {
- 			/*
--			 * We want ioc to record batching state.  If it's
--			 * not already there, creating a new one requires
--			 * dropping queue_lock, which in turn requires
--			 * retesting conditions to avoid queue hang.
--			 */
--			if (!ioc && !retried) {
--				spin_unlock_irq(q->queue_lock);
--				create_io_context(gfp_mask, q->node);
--				spin_lock_irq(q->queue_lock);
--				retried = true;
--				goto retry;
--			}
--
--			/*
- 			 * The queue will fill after this allocation, so set
- 			 * it as full, and mark this process as "batching".
+ 
+-	if (blk_init_free_list(q))
++	if (blk_init_rl(&q->rq, q, GFP_KERNEL))
+ 		return NULL;
+ 
+ 	q->request_fn		= rfn;
+@@ -708,15 +714,15 @@ bool blk_get_queue(struct request_queue *q)
+ }
+ EXPORT_SYMBOL(blk_get_queue);
+ 
+-static inline void blk_free_request(struct request_queue *q, struct request *rq)
++static inline void blk_free_request(struct request_list *rl, struct request *rq)
+ {
+ 	if (rq->cmd_flags & REQ_ELVPRIV) {
+-		elv_put_request(q, rq);
++		elv_put_request(rl->q, rq);
+ 		if (rq->elv.icq)
+ 			put_io_context(rq->elv.icq->ioc);
+ 	}
+ 
+-	mempool_free(rq, q->rq.rq_pool);
++	mempool_free(rq, rl->rq_pool);
+ }
+ 
+ /*
+@@ -753,9 +759,9 @@ static void ioc_set_batching(struct request_queue *q, struct io_context *ioc)
+ 	ioc->last_waited = jiffies;
+ }
+ 
+-static void __freed_request(struct request_queue *q, int sync)
++static void __freed_request(struct request_list *rl, int sync)
+ {
+-	struct request_list *rl = &q->rq;
++	struct request_queue *q = rl->q;
+ 
+ 	if (rl->count[sync] < queue_congestion_off_threshold(q))
+ 		blk_clear_queue_congested(q, sync);
+@@ -764,7 +770,7 @@ static void __freed_request(struct request_queue *q, int sync)
+ 		if (waitqueue_active(&rl->wait[sync]))
+ 			wake_up(&rl->wait[sync]);
+ 
+-		blk_clear_queue_full(q, sync);
++		blk_clear_rl_full(rl, sync);
+ 	}
+ }
+ 
+@@ -772,9 +778,9 @@ static void __freed_request(struct request_queue *q, int sync)
+  * A request has just been released.  Account for it, update the full and
+  * congestion status, wake up any waiters.   Called under q->queue_lock.
+  */
+-static void freed_request(struct request_queue *q, unsigned int flags)
++static void freed_request(struct request_list *rl, unsigned int flags)
+ {
+-	struct request_list *rl = &q->rq;
++	struct request_queue *q = rl->q;
+ 	int sync = rw_is_sync(flags);
+ 
+ 	q->nr_rqs[sync]--;
+@@ -782,10 +788,10 @@ static void freed_request(struct request_queue *q, unsigned int flags)
+ 	if (flags & REQ_ELVPRIV)
+ 		q->nr_rqs_elvpriv--;
+ 
+-	__freed_request(q, sync);
++	__freed_request(rl, sync);
+ 
+ 	if (unlikely(rl->starved[sync ^ 1]))
+-		__freed_request(q, sync ^ 1);
++		__freed_request(rl, sync ^ 1);
+ }
+ 
+ /*
+@@ -825,7 +831,7 @@ static struct io_context *rq_ioc(struct bio *bio)
+ 
+ /**
+  * __get_request - get a free request
+- * @q: request_queue to allocate request from
++ * @rl: request list to allocate from
+  * @rw_flags: RW and SYNC flags
+  * @bio: bio to allocate request for (can be %NULL)
+  * @gfp_mask: allocation mask
+@@ -837,11 +843,11 @@ static struct io_context *rq_ioc(struct bio *bio)
+  * Returns %NULL on failure, with @q->queue_lock held.
+  * Returns !%NULL on success, with @q->queue_lock *not held*.
+  */
+-static struct request *__get_request(struct request_queue *q, int rw_flags,
++static struct request *__get_request(struct request_list *rl, int rw_flags,
+ 				     struct bio *bio, gfp_t gfp_mask)
+ {
++	struct request_queue *q = rl->q;
+ 	struct request *rq;
+-	struct request_list *rl = &q->rq;
+ 	struct elevator_type *et = q->elevator->type;
+ 	struct io_context *ioc = rq_ioc(bio);
+ 	struct io_cq *icq = NULL;
+@@ -863,9 +869,9 @@ static struct request *__get_request(struct request_queue *q, int rw_flags,
  			 * This process will be allowed to complete a batch of
-@@ -942,12 +924,8 @@ retry:
- 	/* init elvpriv */
- 	if (rw_flags & REQ_ELVPRIV) {
- 		if (unlikely(et->icq_cache && !icq)) {
--			create_io_context(gfp_mask, q->node);
--			ioc = rq_ioc(bio);
--			if (!ioc)
--				goto fail_elvpriv;
--
--			icq = ioc_create_icq(ioc, q, gfp_mask);
-+			if (ioc)
-+				icq = ioc_create_icq(ioc, q, gfp_mask);
- 			if (!icq)
- 				goto fail_elvpriv;
- 		}
-@@ -1058,7 +1036,6 @@ retry:
- 	 * to allocate at least one request, and up to a big batch of them
- 	 * for a small period time.  See ioc_batching, ioc_set_batching
- 	 */
--	create_io_context(GFP_NOIO, q->node);
- 	ioc_set_batching(q, current->io_context);
+ 			 * requests, others will be blocked.
+ 			 */
+-			if (!blk_queue_full(q, is_sync)) {
++			if (!blk_rl_full(rl, is_sync)) {
+ 				ioc_set_batching(q, ioc);
+-				blk_set_queue_full(q, is_sync);
++				blk_set_rl_full(rl, is_sync);
+ 			} else {
+ 				if (may_queue != ELV_MQUEUE_MUST
+ 						&& !ioc_batching(q, ioc)) {
+@@ -915,7 +921,7 @@ static struct request *__get_request(struct request_queue *q, int rw_flags,
+ 	spin_unlock_irq(q->queue_lock);
  
- 	spin_lock_irq(q->queue_lock);
-@@ -1073,6 +1050,9 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
- 
- 	BUG_ON(rw != READ && rw != WRITE);
- 
-+	/* create ioc upfront */
-+	create_io_context(gfp_mask, q->node);
-+
- 	spin_lock_irq(q->queue_lock);
- 	rq = get_request(q, rw, NULL, gfp_mask);
+ 	/* allocate and init request */
+-	rq = mempool_alloc(q->rq.rq_pool, gfp_mask);
++	rq = mempool_alloc(rl->rq_pool, gfp_mask);
  	if (!rq)
-@@ -1685,6 +1665,14 @@ generic_make_request_checks(struct bio *bio)
- 		goto end_io;
- 	}
+ 		goto fail_alloc;
  
-+	/*
-+	 * Various block parts want %current->io_context and lazy ioc
-+	 * allocation ends up trading a lot of pain for a small amount of
-+	 * memory.  Just allocate it upfront.  This may fail and block
-+	 * layer knows how to live with it.
-+	 */
-+	create_io_context(GFP_ATOMIC, q->node);
-+
- 	if (blk_throtl_bio(q, bio))
- 		return false;	/* throttled, will be resubmitted later */
+@@ -979,7 +985,7 @@ fail_alloc:
+ 	 * queue, but this is pretty rare.
+ 	 */
+ 	spin_lock_irq(q->queue_lock);
+-	freed_request(q, rw_flags);
++	freed_request(rl, rw_flags);
  
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index 5b06595..e287c19 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -1123,9 +1123,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
- 		goto out;
- 	}
- 
--	/* bio_associate_current() needs ioc, try creating */
--	create_io_context(GFP_ATOMIC, q->node);
--
  	/*
- 	 * A throtl_grp pointer retrieved under rcu can be used to access
- 	 * basic fields like stats and io rates. If a group has no rules,
+ 	 * in the very unlikely event that allocation failed and no
+@@ -1016,7 +1022,7 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 	struct request_list *rl = &q->rq;
+ 	struct request *rq;
+ retry:
+-	rq = __get_request(q, rw_flags, bio, gfp_mask);
++	rq = __get_request(&q->rq, rw_flags, bio, gfp_mask);
+ 	if (rq)
+ 		return rq;
+ 
+@@ -1216,8 +1222,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
+ 		BUG_ON(!list_empty(&req->queuelist));
+ 		BUG_ON(!hlist_unhashed(&req->hash));
+ 
+-		blk_free_request(q, req);
+-		freed_request(q, flags);
++		blk_free_request(&q->rq, req);
++		freed_request(&q->rq, flags);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(__blk_put_request);
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index aa41b47..234ce7c 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -66,16 +66,16 @@ queue_requests_store(struct request_queue *q, const char *page, size_t count)
+ 		blk_clear_queue_congested(q, BLK_RW_ASYNC);
+ 
+ 	if (rl->count[BLK_RW_SYNC] >= q->nr_requests) {
+-		blk_set_queue_full(q, BLK_RW_SYNC);
++		blk_set_rl_full(rl, BLK_RW_SYNC);
+ 	} else {
+-		blk_clear_queue_full(q, BLK_RW_SYNC);
++		blk_clear_rl_full(rl, BLK_RW_SYNC);
+ 		wake_up(&rl->wait[BLK_RW_SYNC]);
+ 	}
+ 
+ 	if (rl->count[BLK_RW_ASYNC] >= q->nr_requests) {
+-		blk_set_queue_full(q, BLK_RW_ASYNC);
++		blk_set_rl_full(rl, BLK_RW_ASYNC);
+ 	} else {
+-		blk_clear_queue_full(q, BLK_RW_ASYNC);
++		blk_clear_rl_full(rl, BLK_RW_ASYNC);
+ 		wake_up(&rl->wait[BLK_RW_ASYNC]);
+ 	}
+ 	spin_unlock_irq(q->queue_lock);
+@@ -476,7 +476,6 @@ static void blk_release_queue(struct kobject *kobj)
+ {
+ 	struct request_queue *q =
+ 		container_of(kobj, struct request_queue, kobj);
+-	struct request_list *rl = &q->rq;
+ 
+ 	blk_sync_queue(q);
+ 
+@@ -489,8 +488,7 @@ static void blk_release_queue(struct kobject *kobj)
+ 		elevator_exit(q->elevator);
+ 	}
+ 
+-	if (rl->rq_pool)
+-		mempool_destroy(rl->rq_pool);
++	blk_exit_rl(&q->rq);
+ 
+ 	if (q->queue_tags)
+ 		__blk_queue_free_tags(q);
+diff --git a/block/blk.h b/block/blk.h
+index 85f6ae4..a134231 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -18,6 +18,9 @@ static inline void __blk_get_queue(struct request_queue *q)
+ 	kobject_get(&q->kobj);
+ }
+ 
++int blk_init_rl(struct request_list *rl, struct request_queue *q,
++		gfp_t gfp_mask);
++void blk_exit_rl(struct request_list *rl);
+ void init_request_from_bio(struct request *req, struct bio *bio);
+ void blk_rq_bio_prep(struct request_queue *q, struct request *rq,
+ 			struct bio *bio);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 0c6f527..d16d29f 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -46,7 +46,12 @@ struct blkcg_gq;
+ struct request;
+ typedef void (rq_end_io_fn)(struct request *, int);
+ 
++#define BLK_RL_SYNCFULL		(1U << 0)
++#define BLK_RL_ASYNCFULL	(1U << 1)
++
+ struct request_list {
++	struct request_queue	*q;	/* the queue this rl belongs to */
++
+ 	/*
+ 	 * count[], starved[], and wait[] are indexed by
+ 	 * BLK_RW_SYNC/BLK_RW_ASYNC
+@@ -55,6 +60,7 @@ struct request_list {
+ 	int			starved[2];
+ 	mempool_t		*rq_pool;
+ 	wait_queue_head_t	wait[2];
++	unsigned int		flags;
+ };
+ 
+ /*
+@@ -562,27 +568,25 @@ static inline bool rq_is_sync(struct request *rq)
+ 	return rw_is_sync(rq->cmd_flags);
+ }
+ 
+-static inline int blk_queue_full(struct request_queue *q, int sync)
++static inline bool blk_rl_full(struct request_list *rl, bool sync)
+ {
+-	if (sync)
+-		return test_bit(QUEUE_FLAG_SYNCFULL, &q->queue_flags);
+-	return test_bit(QUEUE_FLAG_ASYNCFULL, &q->queue_flags);
++	unsigned int flag = sync ? BLK_RL_SYNCFULL : BLK_RL_ASYNCFULL;
++
++	return rl->flags & flag;
+ }
+ 
+-static inline void blk_set_queue_full(struct request_queue *q, int sync)
++static inline void blk_set_rl_full(struct request_list *rl, bool sync)
+ {
+-	if (sync)
+-		queue_flag_set(QUEUE_FLAG_SYNCFULL, q);
+-	else
+-		queue_flag_set(QUEUE_FLAG_ASYNCFULL, q);
++	unsigned int flag = sync ? BLK_RL_SYNCFULL : BLK_RL_ASYNCFULL;
++
++	rl->flags |= flag;
+ }
+ 
+-static inline void blk_clear_queue_full(struct request_queue *q, int sync)
++static inline void blk_clear_rl_full(struct request_list *rl, bool sync)
+ {
+-	if (sync)
+-		queue_flag_clear(QUEUE_FLAG_SYNCFULL, q);
+-	else
+-		queue_flag_clear(QUEUE_FLAG_ASYNCFULL, q);
++	unsigned int flag = sync ? BLK_RL_SYNCFULL : BLK_RL_ASYNCFULL;
++
++	rl->flags &= ~flag;
+ }
+ 
+ 
 -- 
 1.7.7.3
 
