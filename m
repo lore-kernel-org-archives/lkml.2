@@ -1,107 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758415Ab2FEOio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 10:38:44 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:17154 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab2FEOil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 10:38:41 -0400
-Message-ID: <4FCE19DA.1070802@siemens.com>
-Date: Tue, 05 Jun 2012 16:38:18 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752678Ab2FEOkX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 10:40:23 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51533 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab2FEOkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 10:40:21 -0400
+Message-ID: <4FCE1A51.3040407@gmail.com>
+Date: Tue, 05 Jun 2012 10:40:17 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Alexander Graf <agraf@suse.de>, kvm <kvm@vger.kernel.org>
-Subject: Re: [PATCH] PCI: Mark INTx masking support of Chelsio T310 10GbE
- NIC as broken
-References: <4FBF90E5.8030800@siemens.com>
-In-Reply-To: <4FBF90E5.8030800@siemens.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Minchan Kim <minchan@kernel.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [PATCH v9] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
+ type pageblocks
+References: <201206041543.56917.b.zolnierkie@samsung.com> <4FCD18FD.5030307@gmail.com> <4FCD6806.7070609@kernel.org> <4FCD713D.3020100@kernel.org> <4FCD8C99.3010401@gmail.com> <4FCDA1B4.9050301@kernel.org>
+In-Reply-To: <4FCDA1B4.9050301@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-05-25 16:02, Jan Kiszka wrote:
-> According to Alexey, the T310 does not properly support INTx masking as
-> it fails to keep the PCI_STATUS_INTERRUPT bit updated once the interrupt
-> is masked. Mark this adapter as broken so that pci_intx_mask_supported
-> won't report it as compatible.
-> 
-> Reported-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
-> ---
-> 
-> Alexey, please test if this catches your case correctly.
+(6/5/12 2:05 AM), Minchan Kim wrote:
+> On 06/05/2012 01:35 PM, KOSAKI Motohiro wrote:
+>
+>>>>> Minchan, are you interest this patch? If yes, can you please rewrite
+>>>>> it?
+>>>>
+>>>> Can do it but I want to give credit to Bartlomiej.
+>>>> Bartlomiej, if you like my patch, could you resend it as formal patch
+>>>> after you do broad testing?
+>>>>
+>>>> Frankly speaking, I don't want to merge it without any data which
+>>>> prove it's really good for real practice.
+>>>>
+>>>> When the patch firstly was submitted, it wasn't complicated so I was
+>>>> okay at that time but it has been complicated
+>>>> than my expectation. So if Andrew might pass the decision to me, I'm
+>>>> totally NACK if author doesn't provide
+>>>> any real data or VOC of some client.
+>>
+>> I agree. And you don't need to bother this patch if you are not interest
+>> this one. I'm sorry.
+>
+>
+> Never mind.
+>
+>> Let's throw it away until the author send us data.
+>>
+>
+> I guess it's hard to make such workload to prove it's useful normally.
+> But we can't make sure there isn't such workload in the world.
+> So I hope listen VOC. At least, Mel might require it.
+>
+> If anyone doesn't support it, I hope let's add some vmstat like stuff for proving
+> this patch's effect. If we can't see the benefit through vmstat, we can deprecate
+> it later.
 
-Alexey? Ping for testing.
+Eek, bug we can not deprecate the vmstat. I hope to make good decision _before_
+inclusion. ;-)
 
-Jan
 
-> 
->  drivers/pci/pci.c    |    3 +++
->  drivers/pci/quirks.c |   12 ++++++++++++
->  include/linux/pci.h  |    2 ++
->  3 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index 8f16900..3a1aeb5 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -2876,6 +2876,9 @@ bool pci_intx_mask_supported(struct pci_dev *dev)
->  	bool mask_supported = false;
->  	u16 orig, new;
->  
-> +	if (dev->broken_intx_masking)
-> +		return false;
-> +
->  	pci_cfg_access_lock(dev);
->  
->  	pci_read_config_word(dev, PCI_COMMAND, &orig);
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 2a75216..151e174 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2929,6 +2929,18 @@ static void __devinit disable_igfx_irq(struct pci_dev *dev)
->  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x0102, disable_igfx_irq);
->  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_INTEL, 0x010a, disable_igfx_irq);
->  
-> +/*
-> + * Some devices may pass our check in pci_intx_mask_supported if
-> + * PCI_COMMAND_INTX_DISABLE works though they actually do not properly
-> + * support this feature.
-> + */
-> +static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
-> +{
-> +	dev->broken_intx_masking = 1;
-> +}
-> +DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
-> +			quirk_broken_intx_masking);
-> +
->  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
->  			  struct pci_fixup *end)
->  {
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 17b7b5b..c7cfd73 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -324,6 +324,8 @@ struct pci_dev {
->  	unsigned int    is_hotplug_bridge:1;
->  	unsigned int    __aer_firmware_first_valid:1;
->  	unsigned int	__aer_firmware_first:1;
-> +	unsigned int	broken_intx_masking:1;	/* device's INTx masking
-> +						   support is not working */
->  	pci_dev_flags_t dev_flags;
->  	atomic_t	enable_cnt;	/* pci_enable_device has been called */
->  
+>>> +static bool can_rescue_unmovable_pageblock(struct page *page, bool
+>>> need_lrulock)
+>>> +{
+>>> +    struct zone *zone;
+>>> +    unsigned long pfn, start_pfn, end_pfn;
+>>> +    struct page *start_page, *end_page, *cursor_page;
+>>> +    bool lru_locked = false;
+>>> +
+>>> +    zone = page_zone(page);
+>>> +    pfn = page_to_pfn(page);
+>>> +    start_pfn = pfn&  ~(pageblock_nr_pages - 1);
+>>> +    end_pfn = start_pfn + pageblock_nr_pages - 1;
+>>> +
+>>> +    start_page = pfn_to_page(start_pfn);
+>>> +    end_page = pfn_to_page(end_pfn);
+>>> +
+>>> +    for (cursor_page = start_page, pfn = start_pfn; cursor_page<=
+>>> end_page;
+>>> +        pfn++, cursor_page++) {
+>>>
+>>> -/* Returns true if the page is within a block suitable for migration
+>>> to */
+>>> -static bool suitable_migration_target(struct page *page)
+>>> +        if (!pfn_valid_within(pfn))
+>>> +            continue;
+>>> +
+>>> +        /* Do not deal with pageblocks that overlap zones */
+>>> +        if (page_zone(cursor_page) != zone)
+>>> +            goto out;
+>>> +
+>>> +        if (PageBuddy(cursor_page)) {
+>>> +            unsigned long order = page_order(cursor_page);
+>>> +
+>>> +            pfn += (1<<  order) - 1;
+>>> +            cursor_page += (1<<  order) - 1;
+>>> +            continue;
+>>> +        } else if (page_count(cursor_page) == 0) {
+>>> +            continue;
+>>
+>> Can we assume freed tail page always have page_count()==0? if yes, why
+>> do we
+>> need dangerous PageBuddy(cursor_page) check? ok, but this may be harmless.
+>
+> page_count check is for pcp pages.
 
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+Right. but my point was, I doubt we can do buddy walk w/o zone->lock.
+
+
+> Am I missing your point?
+>
+>
+>> But if no, this code is seriously dangerous. think following scenario,
+>>
+>> 1) cursor page points free page
+>>
+>>      +----------------+------------------+
+>>      | free (order-1) |  used (order-1)  |
+>>      +----------------+------------------+
+>>      |
+>>     cursor
+>>
+>> 2) moved cursor
+>>
+>>      +----------------+------------------+
+>>      | free (order-1) |  used (order-1)  |
+>>      +----------------+------------------+
+>>                       |
+>>                       cursor
+>>
+>> 3) neighbor block was freed
+>>
+>>
+>>      +----------------+------------------+
+>>      | free (order-2)                    |
+>>      +----------------+------------------+
+>>                       |
+>>                       cursor
+>>
+>> now, cursor points to middle of free block.
+>
+>> Anyway, I recommend to avoid dangerous no zone->lock game and change
+>> can_rescue_unmovable_pageblock() is only called w/ zone->lock. I have
+>
+>
+>
+> I can't understand your point.
+> If the page is middle of free block, what's the problem in can_rescue_unmovable_pageblock
+> at first trial of can_rescue_xxx?
+
+I'm not sure. but other all pfn scanning code carefully avoid to touch a middle of free pages
+block. (also they take zone->lock anytime)
+
+
+> I think we can stabilize it in second trial of can_rescue_unmovable_pageblock with zone->lock.
+>
+>> no seen any worth to include this high complex for mere minor optimization.
+>
+>>
+>
+>>
+>>> +        } else if (PageLRU(cursor_page)) {
+>>> +            if (!need_lrulock)
+>>> +                continue;
+>>> +            else if (lru_locked)
+>>> +                continue;
+>>> +            else {
+>>> +                spin_lock(&zone->lru_lock);
+>>
+>> Hmm...
+>> I don't like to take lru_lock. 1) Until now, we carefully avoid to take
+>> both zone->lock and zone->lru_lock. they are both performance critical
+>> lock. And I think pageblock migratetype don't need strictly correct. It
+>> is only optimization of anti fragmentation. Why do we need take it?
+>
+> movable_block has unmovable page can make regression of anti-fragmentation.
+> So I did it. I agree it's a sort of optimization.
+> If others don't want it at the cost of regression anti-fragmentation, we can remove the lock.
+
+ok.
+
+
+>
+>>
+>>
+>>> +                lru_locked = true;
+>>> +                if (PageLRU(page))
+>>> +                    continue;
+>>> +            }
+>>> +        }
+>>> +
+>>> +        goto out;
+>>> +    }
+>>> +
+>>
+>> Why don't we need to release lru_lock when returning true.
+>
+>
+> Because my brain has gone. :(
+
+Never mind.
+
+
