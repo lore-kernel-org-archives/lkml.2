@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab2FEQN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:13:59 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:33876
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194Ab2FEQN5 (ORCPT
+	id S1754047Ab2FEQOy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:14:54 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51059 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab2FEQOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:13:57 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -13
-X-BigFish: VS-13(zzbb2dI9371I168aJ1432N98dKzz1202hzz8275dhz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCE303D.9090801@freescale.com>
-Date: Tue, 5 Jun 2012 11:13:49 -0500
-From: Scott Wood <scottwood@freescale.com>
+	Tue, 5 Jun 2012 12:14:52 -0400
+Message-ID: <4FCE3078.1030008@wwwdotorg.org>
+Date: Tue, 05 Jun 2012 10:14:48 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 3/5] powerpc/85xx: add sleep and deep sleep support
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-3-git-send-email-chenhui.zhao@freescale.com> <4FC93A1B.8060209@freescale.com> <20120604111206.GB20676@localhost.localdomain> <4FCD3D9E.9010509@freescale.com> <20120605113530.GC22427@localhost.localdomain>
-In-Reply-To: <20120605113530.GC22427@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: khali@linux-fr.org, w.sang@pengutronix.de, ben-linux@fluff.org,
+        olof@lixom.net, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 0/4] i2c: tegra: Bug fixes, cleanups and M_NOSTART support
+References: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.5pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 06:35 AM, Zhao Chenhui wrote:
-> On Mon, Jun 04, 2012 at 05:58:38PM -0500, Scott Wood wrote:
->> On 06/04/2012 06:12 AM, Zhao Chenhui wrote:
->>> On Fri, Jun 01, 2012 at 04:54:35PM -0500, Scott Wood wrote:
->>>> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
->>>>> diff --git a/arch/powerpc/include/asm/cacheflush.h b/arch/powerpc/include/asm/cacheflush.h
->>>>> index 94ec20a..baa000c 100644
->>>>> --- a/arch/powerpc/include/asm/cacheflush.h
->>>>> +++ b/arch/powerpc/include/asm/cacheflush.h
->>>>> @@ -33,6 +33,11 @@ extern void flush_dcache_page(struct page *page);
->>>>>  #if defined(CONFIG_FSL_BOOKE) || defined(CONFIG_6xx)
->>>>>  extern void __flush_disable_L1(void);
->>>>>  #endif
->>>>> +#if defined(CONFIG_FSL_BOOKE)
->>>>> +extern void flush_dcache_L1(void);
->>>>> +#else
->>>>> +#define flush_dcache_L1()	do { } while (0)
->>>>> +#endif
->>>>
->>>> It doesn't seem right to no-op this on other platforms.
->>>
->>> The pmc_suspend_enter() in fsl_pmc.c used by mpc85xx and mpc86xx,
->>> but flush_dcache_L1() have no definition in mpc86xx platform.
->>> I will write flush_dcache_L1() for mpc86xx platform.
->>
->> How about only calling the function when it's needed?  If we didn't need
->> an L1 flush here on 86xx before, why do we need it now?
-> 
-> How about using CONFIG_PPC_85xx to gard it, like this.
-> 
-> 	case PM_SUSPEND_STANDBY:
-> 		local_irq_disable();
-> #ifdef CONFIG_PPC_85xx
-> 		flush_dcache_L1();
-> #endif
-> 		setbits32(&pmc_regs->powmgtcsr, POWMGTCSR_SLP);
+On 06/05/2012 07:09 AM, Laxman Dewangan wrote:
+> This patch series having the:
+> - Handling of late register write due to Tegra PPSB design.
+> - support for I2C_M_NOSTART
+> - Use devm_* for all allocation.
 
-We don't support building 85xx/86xx in the same kernel and likely never
-will, so this is OK.
+The series,
 
->>>> Can we introduce a symbol that specifically means pre-e500mc e500,
->>>> rather than using negative logic?
->>>>
->>>> I think something like CONFIG_PPC_E500_V1_V2 has been proposed before.
->>>
->>> Agree. But CONFIG_PPC_E500_V1_V2 haven't been merged.
->>
->> Has the concept been NACKed, or just forgotten?  If the latter, you
->> could include it in this patchset.
->>
->> -Scott
-> 
-> In patchwork, it's state is "Superseded".
-> http://patchwork.ozlabs.org/patch/124284/
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
 
-I still think there's value in adding such a symbol.
+Note that patch 4 touches context adjacent to Prashant's "i2c: tegra:
+Add clk_prepare/clk_unprepare" patch, which I hope to take through the
+Tegra tree since it's a requirement for the Tegra common clock
+conversion. I don't think this will cause any significant conflict, but
+perhaps it's worth resolving it explicitly.
 
--Scott
+Wolfram, perhaps we should put these 4 patches and Prashan'ts into their
+own topic branch so that you can merge it into the I2C tree, and I can
+merge it into the Tegra tree too? Or, I can take everything through
+Tegra if you want, and ack it.
 
+Laxman, do you expect any more I2C-related changes this kernel cycle?
