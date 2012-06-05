@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761883Ab2FELQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:16:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33702 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab2FELQE (ORCPT
+	id S933935Ab2FELRz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:17:55 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:52789
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752951Ab2FELRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:16:04 -0400
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Bhupesh SHARMA <bhupesh.sharma@st.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Date: Tue, 05 Jun 2012 13:19:26 +0200
-Message-ID: <3650428.HarNR9HfNF@harkonnen>
-User-Agent: KMail/4.8.3 (Linux/3.3.7-1.fc17.x86_64; KDE/4.8.3; x86_64; ; )
-In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
-References: <4FC135C6.5030206@grandegger.com> <1677842.Pq7naXsvrI@harkonnen> <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
+	Tue, 5 Jun 2012 07:17:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
+Date: Tue, 5 Jun 2012 19:18:23 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
+Message-ID: <20120605111823.GB22427@localhost.localdomain>
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
+ <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com>
+ <4FC933BF.1020901@freescale.com>
+ <20120604110444.GA20676@localhost.localdomain>
+ <4FCCE32F.1060301@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FCCE32F.1060301@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In some of these SoC's the C_CAN registers which are essentially
-> 16-bit or 32-bit registers are aligned always to a 32-bit boundary
-> (i.e. even a 16-bit register is aligned to 32-bit boundary).
+On Mon, Jun 04, 2012 at 11:32:47AM -0500, Scott Wood wrote:
+> On 06/04/2012 06:04 AM, Zhao Chenhui wrote:
+> > On Fri, Jun 01, 2012 at 04:27:27PM -0500, Scott Wood wrote:
+> >> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+> >>> -#ifdef CONFIG_KEXEC
+> >>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
+> >>
+> >> Let's not grow lists like this.  Is there any harm in building it
+> >> unconditionally?
+> >>
+> >> -Scott
+> > 
+> > We need this ifdef. We only set give_timebase/take_timebase
+> > when CONFIG_KEXEC or CONFIG_HOTPLUG_CPU is defined.
 > 
-> So, I had to implement two variants of the read/write reg routines. I
-> am not sure your SoC implementation needs them. If it does, I will
-> categorize it as flaky as well :)
+> If we really need this to be a compile-time decision, make a new symbol
+> for it, but I really think this should be decided at runtime.  Just
+> because we have kexec or hotplug support enabled doesn't mean that's
+> actually what we're doing at the moment.
+> 
+> -Scott
 
-My implementation is align to 32, but I'm trying to make a generic PCI 
-wrapper (some other could be aligned to 16)
- 
-> See above. There was a reason for keeping these routines in
-> c_can_platform.c Simply put, every platform having a Bosch C_CAN
-> module can have it's own implementation of the bus (for example you
-> use PCI) and register bank layout (16-bit or 32-bit aligned).
+If user does not enable kexec or hotplug, these codes are redundant.
+So use CONFIG_KEXEC and CONFIG_HOTPLUG_CPU to gard them.
 
-I don't understand the reason to keep these functions in 
-c_can_platform.c . Two generic read/write functions could be written 
-into c_can.c by using a shift value (0 if aligned to 16, 1 if aligned to 
-32) as I showed in the previous mail:
+-Chenhui
 
-> > static u16 c_can_read_reg(struct c_can_priv *priv, enum reg index)
-> > {
-> > 
-> > 	return readw(priv->base + (priv->regs[index] << priv->offset));
-> > 
-> > }
-> > static void c_can_write_reg(struct c_can_priv *priv, enum reg index,
-> > 
-> > 						u16 val)
-> > 
-> > {
-> > 
-> > 	writew(val, priv->base + (priv->regs[index] << priv->offset));
-> > 
-> > }
-
-Every platform having a Bosch C_CAN/D_CAN can specify its shift value (0 
-or 1) and it's done.
-
--- 
-Federico Vaga
