@@ -1,319 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761317Ab2FEBq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 21:46:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43460 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757497Ab2FEBq6 (ORCPT
+	id S1761350Ab2FEBtd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 21:49:33 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54849 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761331Ab2FEBtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 21:46:58 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FCD648E.90709@jp.fujitsu.com>
-Date: Tue, 05 Jun 2012 10:44:46 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V7 07/14] mm/page_cgroup: Make page_cgroup point to the
- cgroup rather than the mem_cgroup
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Jun 2012 21:49:31 -0400
+From: Andrew Armenia <andrew@asquaredlabs.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Armenia <andrew@asquaredlabs.com>
+Subject: [PATCH 3/3] i2c-piix4: support aux SMBus on AMD chipsets
+Date: Mon,  4 Jun 2012 21:49:24 -0400
+Message-Id: <1338860964-10803-4-git-send-email-andrew@asquaredlabs.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <1338860964-10803-1-git-send-email-andrew@asquaredlabs.com>
+References: <20120604091643.208956fe@endymion.delvare>
+ <1338860964-10803-1-git-send-email-andrew@asquaredlabs.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/05/30 23:38), Aneesh Kumar K.V wrote:
-> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
-> 
-> We will use it later to make page_cgroup track the hugetlb cgroup information.
-> 
-> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
-> ---
->   include/linux/mmzone.h      |    2 +-
->   include/linux/page_cgroup.h |    8 ++++----
->   init/Kconfig                |    4 ++++
->   mm/Makefile                 |    3 ++-
->   mm/memcontrol.c             |   42 +++++++++++++++++++++++++-----------------
->   5 files changed, 36 insertions(+), 23 deletions(-)
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 2427706..2483cc5 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -1052,7 +1052,7 @@ struct mem_section {
-> 
->   	/* See declaration of similar field in struct zone */
->   	unsigned long *pageblock_flags;
-> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> +#ifdef CONFIG_PAGE_CGROUP
->   	/*
->   	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
->   	 * section. (see memcontrol.h/page_cgroup.h about this.)
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index a88cdba..7bbfe37 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -12,7 +12,7 @@ enum {
->   #ifndef __GENERATING_BOUNDS_H
->   #include<generated/bounds.h>
-> 
-> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> +#ifdef CONFIG_PAGE_CGROUP
->   #include<linux/bit_spinlock.h>
-> 
->   /*
-> @@ -24,7 +24,7 @@ enum {
->    */
->   struct page_cgroup {
->   	unsigned long flags;
-> -	struct mem_cgroup *mem_cgroup;
-> +	struct cgroup *cgroup;
->   };
-> 
+Some AMD chipsets, such as the SP5100, have an auxiliary SMBus with a second
+set of registers. This patch adds support for the SP5100 and should work on
+similar chipsets. Tested on ASUS KCMA-D8 motherboard.
 
-This patch seems very bad.
+Signed-off-by: Andrew Armenia <andrew@asquaredlabs.com>
+---
+ drivers/i2c/busses/i2c-piix4.c |   83 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 76 insertions(+), 7 deletions(-)
 
-  - What is the performance impact to memcg ? Doesn't this add extra overheads 
-    to memcg lookup ?
-  - Hugetlb reuquires much more smaller number of tracking information rather
-    than memcg requires. I guess you can record the information into page->private
-    if you want.
-  - This may prevent us from the work 'reducing size of page_cgroup'
-
-So, strong Nack to this. I guess you can use page->private or some entries in
-struct page, you have many pages per accounting units. Please make an effort
-to avoid using page_cgroup.
-
-Thanks,
--Kame
-
-
-
->   void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
-> @@ -82,7 +82,7 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
->   	bit_spin_unlock(PCG_LOCK,&pc->flags);
->   }
-> 
-> -#else /* CONFIG_CGROUP_MEM_RES_CTLR */
-> +#else /* CONFIG_PAGE_CGROUP */
->   struct page_cgroup;
-> 
->   static inline void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
-> @@ -102,7 +102,7 @@ static inline void __init page_cgroup_init_flatmem(void)
->   {
->   }
-> 
-> -#endif /* CONFIG_CGROUP_MEM_RES_CTLR */
-> +#endif /* CONFIG_PAGE_CGROUP */
-> 
->   #include<linux/swap.h>
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 81816b8..1363203 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -687,10 +687,14 @@ config RESOURCE_COUNTERS
->   	  This option enables controller independent resource accounting
->   	  infrastructure that works with cgroups.
-> 
-> +config PAGE_CGROUP
-> +       bool
-> +
->   config CGROUP_MEM_RES_CTLR
->   	bool "Memory Resource Controller for Control Groups"
->   	depends on RESOURCE_COUNTERS
->   	select MM_OWNER
-> +	select PAGE_CGROUP
->   	help
->   	  Provides a memory resource controller that manages both anonymous
->   	  memory and page cache. (See Documentation/cgroups/memory.txt)
-> diff --git a/mm/Makefile b/mm/Makefile
-> index a156285..a70f9a9 100644
-> --- a/mm/Makefile
-> +++ b/mm/Makefile
-> @@ -47,7 +47,8 @@ obj-$(CONFIG_FS_XIP) += filemap_xip.o
->   obj-$(CONFIG_MIGRATION) += migrate.o
->   obj-$(CONFIG_QUICKLIST) += quicklist.o
->   obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
-> -obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
-> +obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o
-> +obj-$(CONFIG_PAGE_CGROUP) += page_cgroup.o
->   obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
->   obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
->   obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index ac35bcc..6df019b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -864,6 +864,8 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
-> 
->   struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont)
->   {
-> +	if (!cont)
-> +		return NULL;
->   	return container_of(cgroup_subsys_state(cont,
->   				mem_cgroup_subsys_id), struct mem_cgroup,
->   				css);
-> @@ -1097,7 +1099,7 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
->   		return&zone->lruvec;
-> 
->   	pc = lookup_page_cgroup(page);
-> -	memcg = pc->mem_cgroup;
-> +	memcg = mem_cgroup_from_cont(pc->cgroup);
-> 
->   	/*
->   	 * Surreptitiously switch any uncharged offlist page to root:
-> @@ -1108,8 +1110,10 @@ struct lruvec *mem_cgroup_page_lruvec(struct page *page, struct zone *zone)
->   	 * under page_cgroup lock: between them, they make all uses
->   	 * of pc->mem_cgroup safe.
->   	 */
-> -	if (!PageLRU(page)&&  !PageCgroupUsed(pc)&&  memcg != root_mem_cgroup)
-> -		pc->mem_cgroup = memcg = root_mem_cgroup;
-> +	if (!PageLRU(page)&&  !PageCgroupUsed(pc)&&  memcg != root_mem_cgroup) {
-> +		memcg = root_mem_cgroup;
-> +		pc->cgroup = memcg->css.cgroup;
-> +	}
-> 
->   	mz = page_cgroup_zoneinfo(memcg, page);
->   	return&mz->lruvec;
-> @@ -1889,12 +1893,14 @@ static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
->   void __mem_cgroup_begin_update_page_stat(struct page *page,
->   				bool *locked, unsigned long *flags)
->   {
-> +	struct cgroup *cgroup;
->   	struct mem_cgroup *memcg;
->   	struct page_cgroup *pc;
-> 
->   	pc = lookup_page_cgroup(page);
->   again:
-> -	memcg = pc->mem_cgroup;
-> +	cgroup = pc->cgroup;
-> +	memcg = mem_cgroup_from_cont(cgroup);
->   	if (unlikely(!memcg || !PageCgroupUsed(pc)))
->   		return;
->   	/*
-> @@ -1907,7 +1913,7 @@ again:
->   		return;
-> 
->   	move_lock_mem_cgroup(memcg, flags);
-> -	if (memcg != pc->mem_cgroup || !PageCgroupUsed(pc)) {
-> +	if (cgroup != pc->cgroup || !PageCgroupUsed(pc)) {
->   		move_unlock_mem_cgroup(memcg, flags);
->   		goto again;
->   	}
-> @@ -1923,7 +1929,7 @@ void __mem_cgroup_end_update_page_stat(struct page *page, unsigned long *flags)
->   	 * lock is held because a routine modifies pc->mem_cgroup
->   	 * should take move_lock_page_cgroup().
->   	 */
-> -	move_unlock_mem_cgroup(pc->mem_cgroup, flags);
-> +	move_unlock_mem_cgroup(mem_cgroup_from_cont(pc->cgroup), flags);
->   }
-> 
->   void mem_cgroup_update_page_stat(struct page *page,
-> @@ -1936,7 +1942,7 @@ void mem_cgroup_update_page_stat(struct page *page,
->   	if (mem_cgroup_disabled())
->   		return;
-> 
-> -	memcg = pc->mem_cgroup;
-> +	memcg = mem_cgroup_from_cont(pc->cgroup);
->   	if (unlikely(!memcg || !PageCgroupUsed(pc)))
->   		return;
-> 
-> @@ -2444,7 +2450,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->   	pc = lookup_page_cgroup(page);
->   	lock_page_cgroup(pc);
->   	if (PageCgroupUsed(pc)) {
-> -		memcg = pc->mem_cgroup;
-> +		memcg = mem_cgroup_from_cont(pc->cgroup);
->   		if (memcg&&  !css_tryget(&memcg->css))
->   			memcg = NULL;
->   	} else if (PageSwapCache(page)) {
-> @@ -2491,14 +2497,15 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->   		zone = page_zone(page);
->   		spin_lock_irq(&zone->lru_lock);
->   		if (PageLRU(page)) {
-> -			lruvec = mem_cgroup_zone_lruvec(zone, pc->mem_cgroup);
-> +			lruvec = mem_cgroup_zone_lruvec(zone,
-> +					mem_cgroup_from_cont(pc->cgroup));
->   			ClearPageLRU(page);
->   			del_page_from_lru_list(page, lruvec, page_lru(page));
->   			was_on_lru = true;
->   		}
->   	}
-> 
-> -	pc->mem_cgroup = memcg;
-> +	pc->cgroup = memcg->css.cgroup;
->   	/*
->   	 * We access a page_cgroup asynchronously without lock_page_cgroup().
->   	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
-> @@ -2511,7 +2518,8 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
-> 
->   	if (lrucare) {
->   		if (was_on_lru) {
-> -			lruvec = mem_cgroup_zone_lruvec(zone, pc->mem_cgroup);
-> +			lruvec = mem_cgroup_zone_lruvec(zone,
-> +					mem_cgroup_from_cont(pc->cgroup));
->   			VM_BUG_ON(PageLRU(page));
->   			SetPageLRU(page);
->   			add_page_to_lru_list(page, lruvec, page_lru(page));
-> @@ -2601,7 +2609,7 @@ static int mem_cgroup_move_account(struct page *page,
->   	lock_page_cgroup(pc);
-> 
->   	ret = -EINVAL;
-> -	if (!PageCgroupUsed(pc) || pc->mem_cgroup != from)
-> +	if (!PageCgroupUsed(pc) || pc->cgroup != from->css.cgroup)
->   		goto unlock;
-> 
->   	move_lock_mem_cgroup(from,&flags);
-> @@ -2616,7 +2624,7 @@ static int mem_cgroup_move_account(struct page *page,
->   	mem_cgroup_charge_statistics(from, anon, -nr_pages);
-> 
->   	/* caller should have done css_get */
-> -	pc->mem_cgroup = to;
-> +	pc->cgroup = to->css.cgroup;
->   	mem_cgroup_charge_statistics(to, anon, nr_pages);
->   	/*
->   	 * We charges against "to" which may not have any tasks. Then, "to"
-> @@ -2937,7 +2945,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
-> 
->   	lock_page_cgroup(pc);
-> 
-> -	memcg = pc->mem_cgroup;
-> +	memcg = mem_cgroup_from_cont(pc->cgroup);
-> 
->   	if (!PageCgroupUsed(pc))
->   		goto unlock_out;
-> @@ -3183,7 +3191,7 @@ int mem_cgroup_prepare_migration(struct page *page,
->   	pc = lookup_page_cgroup(page);
->   	lock_page_cgroup(pc);
->   	if (PageCgroupUsed(pc)) {
-> -		memcg = pc->mem_cgroup;
-> +		memcg = mem_cgroup_from_cont(pc->cgroup);
->   		css_get(&memcg->css);
->   		/*
->   		 * At migrating an anonymous page, its mapcount goes down
-> @@ -3328,7 +3336,7 @@ void mem_cgroup_replace_page_cache(struct page *oldpage,
->   	/* fix accounting on old pages */
->   	lock_page_cgroup(pc);
->   	if (PageCgroupUsed(pc)) {
-> -		memcg = pc->mem_cgroup;
-> +		memcg = mem_cgroup_from_cont(pc->cgroup);
->   		mem_cgroup_charge_statistics(memcg, false, -1);
->   		ClearPageCgroupUsed(pc);
->   	}
-> @@ -5135,7 +5143,7 @@ static enum mc_target_type get_mctgt_type(struct vm_area_struct *vma,
->   		 * mem_cgroup_move_account() checks the pc is valid or not under
->   		 * the lock.
->   		 */
-> -		if (PageCgroupUsed(pc)&&  pc->mem_cgroup == mc.from) {
-> +		if (PageCgroupUsed(pc)&&  pc->cgroup == mc.from->css.cgroup) {
->   			ret = MC_TARGET_PAGE;
->   			if (target)
->   				target->page = page;
-
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index 8a87b3f..972b604 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -25,7 +25,8 @@
+ 	AMD Hudson-2
+ 	SMSC Victory66
+ 
+-   Note: we assume there can only be one device, with one SMBus interface.
++   Note: we assume there can only be one device, with one or two SMBus
++   interfaces.
+ */
+ 
+ #include <linux/module.h>
+@@ -66,6 +67,7 @@
+ #define SMBSHDW1	0x0D4
+ #define SMBSHDW2	0x0D5
+ #define SMBREV		0x0D6
++#define SMBAUXBA	0x058
+ 
+ /* Other settings */
+ #define MAX_TIMEOUT	500
+@@ -130,6 +132,8 @@ struct i2c_piix4_adapdata {
+ 	unsigned short smba;
+ };
+ 
++static void piix4_adap_remove(struct i2c_adapter *adap);
++
+ static int __devinit piix4_setup(struct pci_dev *PIIX4_dev,
+ 				const struct pci_device_id *id,
+ 				unsigned short *smba)
+@@ -300,6 +304,45 @@ static int __devinit piix4_setup_sb800(struct pci_dev *PIIX4_dev,
+ 	return 0;
+ }
+ 
++static int __devinit piix4_setup_aux(struct pci_dev *PIIX4_dev,
++				const struct pci_device_id *id,
++				unsigned short base_reg_addr,
++				unsigned short *smba)
++{
++	/* Set up auxiliary SMBus controllers found on some AMD
++	 * chipsets e.g. SP5100 */
++	unsigned short piix4_smba;
++
++	/* Read address of auxiliary SMBus controller */
++	pci_read_config_word(PIIX4_dev, base_reg_addr, &piix4_smba);
++	piix4_smba &= 0xffe0;
++
++	if (piix4_smba == 0) {
++		dev_err(&PIIX4_dev->dev, "Aux SMBus base address "
++			"uninitialized - upgrade BIOS\n");
++		return -ENODEV;
++	}
++
++	if (acpi_check_region(piix4_smba, SMBIOSIZE, piix4_driver.name))
++		return -ENODEV;
++
++	if (!request_region(piix4_smba, SMBIOSIZE, piix4_driver.name)) {
++		dev_err(&PIIX4_dev->dev, "Aux SMBus region 0x%x already"
++			" in use!\n", piix4_smba);
++		return -EBUSY;
++	}
++
++	dev_info(&PIIX4_dev->dev,
++		"Auxiliary SMBus Host Controller at 0x%x\n",
++		piix4_smba
++	);
++
++	*smba = piix4_smba;
++
++	return 0;
++}
++
++
+ static int piix4_transaction(unsigned short piix4_smba)
+ {
+ 	int temp;
+@@ -505,6 +548,7 @@ static DEFINE_PCI_DEVICE_TABLE(piix4_ids) = {
+ MODULE_DEVICE_TABLE (pci, piix4_ids);
+ 
+ static struct i2c_adapter *piix4_main_adapter;
++static struct i2c_adapter *piix4_aux_adapter;
+ 
+ /* register piix4 I2C adapter at the given base address */
+ static int piix4_add_adapter(struct pci_dev *dev, unsigned short smba,
+@@ -562,9 +606,33 @@ static int __devinit piix4_probe(struct pci_dev *dev,
+ 		retval = piix4_setup(dev, id, &smba);
+ 
+ 	if (retval)
+-		return retval;
++		goto error;
++
++	retval = piix4_add_adapter(dev, smba, &piix4_main_adapter);
++	if (retval)
++		goto error;
+ 
+-	return piix4_add_adapter(dev, smba, &piix4_main_adapter);
++	/* check for AMD SP5100 (maybe others) with aux SMBus port */
++	if (dev->vendor == PCI_VENDOR_ID_ATI &&
++	    dev->device == PCI_DEVICE_ID_ATI_SBX00_SMBUS &&
++		dev->revision == 0x3d) {
++
++		retval = piix4_setup_aux(dev, id, SMBAUXBA, &smba);
++		if (retval)
++			goto error;
++
++		retval = piix4_add_adapter(dev, smba, &piix4_aux_adapter);
++		if (retval)
++			goto error;
++	}
++
++	return 0;
++
++error:
++	/* clean up any adapters that were already added */
++	piix4_adap_remove(piix4_main_adapter);
++	piix4_adap_remove(piix4_aux_adapter);
++	return retval;
+ }
+ 
+ /* Remove the adapter and its associated IO region */
+@@ -572,6 +640,9 @@ static void piix4_adap_remove(struct i2c_adapter *adap)
+ {
+ 	struct i2c_piix4_adapdata *adapdata;
+ 
++	if (adap == NULL)
++		return;
++
+ 	adapdata = (struct i2c_piix4_adapdata *)i2c_get_adapdata(adap);
+ 	if (adapdata->smba) {
+ 		i2c_del_adapter(adap);
+@@ -585,10 +656,8 @@ static void piix4_adap_remove(struct i2c_adapter *adap)
+ 
+ static void __devexit piix4_remove(struct pci_dev *dev)
+ {
+-	if (piix4_main_adapter) {
+-		piix4_adap_remove(piix4_main_adapter);
+-		piix4_main_adapter = NULL;
+-	}
++	piix4_adap_remove(piix4_main_adapter);
++	piix4_adap_remove(piix4_aux_adapter);
+ }
+ 
+ static struct pci_driver piix4_driver = {
+-- 
+1.7.10
 
