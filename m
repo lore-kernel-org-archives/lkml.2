@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab2FERoU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:44:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3211 "EHLO mga01.intel.com"
+	id S1755612Ab2FERpD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:45:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20238 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754883Ab2FERoS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:44:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="161357225"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-Thread-Topic: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-Thread-Index: AQHNQoAPFj9sktPv9UGlpY91mwdZJJbrDNOAgAAGFYCAAEURgIAAdQ+AgACMaICAAAIPgIAAApCAgAAAWQD//6AhUA==
-Date: Tue, 5 Jun 2012 17:44:11 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
-	 <alpine.LFD.2.02.1206042203590.3086@ionos>
-	 <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
-	 <1338881971.28282.150.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
-	 <1338912565.2749.9.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
- <1338913190.2749.10.camel@twins>
-In-Reply-To: <1338913190.2749.10.camel@twins>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755500Ab2FERpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 13:45:01 -0400
+Date: Tue, 5 Jun 2012 13:44:54 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: oomkillers gone wild.
+Message-ID: <20120605174454.GA23867@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Rientjes <rientjes@google.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+References: <20120604152710.GA1710@redhat.com>
+ <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Like what? Offline is nothing more than a C state on x86. 
+On Mon, Jun 04, 2012 at 04:30:57PM -0700, David Rientjes wrote:
+ > On Mon, 4 Jun 2012, Dave Jones wrote:
+ > 
+ > > we picked this..
+ > > 
+ > > [21623.066911] [  588]     0   588    22206        1   2       0             0 dhclient
+ > > 
+ > > over say..
+ > > 
+ > > [21623.116597] [ 7092]  1000  7092  1051124    31660   3       0             0 trinity-child3
+ > > 
+ > > What went wrong here ?
+ > > 
+ > > And why does that score look so.. weird.
+ > > 
+ > 
+ > It sounds like it's because pid 588 has uid=0 and the adjustment for root 
+ > processes is causing an overflow.  I assume this fixes it?
 
-Offline is a bigger hammer than idle.
+Still doesn't seem right..
 
-When a core is idle it may take an interrupt which wakes it up to use power.
-The scheduler may assign a process to run on it, which will wake it up to use power.
+eg..
 
-When a core is offline we take extra steps (re-routing interrupts, telling the
-scheduler it is not available for work) to make sure it STAYS in that low
-power state.
+[42309.542776] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+..
+[42309.553933] [  500]    81   500     5435        1   4     -13          -900 dbus-daemon
+..
+[42309.597531] [ 9054]  1000  9054   528677    14540   3       0             0 trinity-child3
+..
 
--Tony
+[42309.643057] Out of memory: Kill process 500 (dbus-daemon) score 511952 or sacrifice child
+[42309.643620] Killed process 500 (dbus-daemon) total-vm:21740kB, anon-rss:0kB, file-rss:4kB
+
+and a slew of similar 'wrong process' death spiral kills follows..
+
+
+	Dave
+
