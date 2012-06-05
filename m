@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab2FESSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:18:23 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:9513 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755906Ab2FESSW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:18:22 -0400
-Message-ID: <4FCE4D67.1030309@micron.com>
-Date: Tue, 5 Jun 2012 11:18:15 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756012Ab2FESSg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:18:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:43543 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754565Ab2FESSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 14:18:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108170825"
+Message-ID: <4FCE4D24.5040307@linux.intel.com>
+Date: Tue, 05 Jun 2012 11:17:08 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 1/2] mtip32xx: Remove 'registers' and 'flags' from sysfs
-References: <4FCD0FC7.9010105@micron.com> <20120605093314.GC21560@kroah.com>
-In-Reply-To: <20120605093314.GC21560@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Hitoshi Mitake <h.mitake@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michel Lespinasse <walken@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex
+ wait"
+References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com> <4FB52636.3040604@linux.intel.com> <CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com> <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
+In-Reply-To: <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18948.005
-X-TM-AS-Result: No--15.282300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/5/2012 2:33 AM, Greg KH wrote:
 
-> On Mon, Jun 04, 2012 at 12:43:03PM -0700, Asai Thambi S P wrote:
+
+On 05/20/2012 02:37 AM, Hitoshi Mitake wrote:
+> On Sun, May 20, 2012 at 5:32 PM, Hitoshi Mitake <h.mitake@gmail.com> wrote:
+>> On Fri, May 18, 2012 at 1:24 AM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>> On 05/17/2012 08:21 AM, Hitoshi Mitake wrote:
+>>>> Hi Ingo, Eric and Darren,
+>>>> (CCed perf and futex folks)
+>>>>
+>>>> I wrote this patch for adding new subsystem "futex" and its suite "wait" to perf
+>>>> bench on tip/master. This is based on futextest by Darren Hart.
+>>>>
+>>>> Could you allow me to import your source code of futextest to perf bench, Darren?
+>>>>
+>>>
+>>> I do have some concerns I'd like to address first.
+>>>
+>>> What is advantage of incorporating this into perf as opposed to running
+>>> it with perf?
 >>
->> This patch removes entries 'registers' and 'flags' from sysfs. Updated ABI file
->> to reflect this change.
+>> The main and direct advantage is that perf bench can share useful
+>> utilities stored under tools/perf/util/ directory e.g. parse-options[ch].
 >>
->> Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 > 
-> Much nicer, thanks for doing this:
+> BTW, I often feel parse-options.[ch] of perf (this was come from git,
+> right?) is very useful not only for perf and git but also other
+> projects. So I think these stuff are worth independence as a
+> library. If the library contains unified feature for parsing and
+> evaluating configuration files, the hell of managing configurable
+> options will be reduced. e.g. I often use "strace -e open <command>"
+> to detect configuration files read by the <command>...
 > 
-> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> I thought that if perf bench can be independent from perf with such
+> efforts, it can be smaller sized and statically linked binary. From my
+> experience, this will be good for embedded systems people.
 > 
-> But, one question on a different sysfs file:
+> This independence also has risk: less people can find it or is
+> attracted even if it stays in the kernel tree (e.g. tools/bench/). But
+> it seems that very few people know about perf bench, so this will not
+> be a serious problem ;)
 > 
->>  What:           /sys/block/rssd*/status
->>  Date:           April 2012
->>  KernelVersion:  3.4
->>  Contact:        Asai Thambi S P <asamymuthupa@micron.com>
->>  Description:    This is a read-only file. Indicates the status of the device.
-> 
-> What "status" is this showing?  Why is this a sysfs file?  Who
-> needs/wants it?
+> I'd like to hear your opinion.
 
+I haven't been involved with perf tools/bench so I haven't really formed
+an opinion. Ingo and Arnaldo, would either of you care to weigh in on
+the pros/cons of merging futextest into perf?
 
-This shows the device status - online, write_protect or thermal_shutdown. This
-would be used by management application.
-
-> 
-> Also, if you really want to properly create sysfs files, use the default
-> attributes for the driver.  As it is, you are creating them after
-> userspace is notified about the device showing up, which races with the
-> creation of your additional file(s).  Use the properly driver core field
-> to have the core create, and remove them, automatically, which saves you
-> code, and fixes bugs you didn't realize you had :)
- 
-
-I have not thought about this. Thanks for the insight. I will look into it.
-
---
-Regards,
-Asai Thambi
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
