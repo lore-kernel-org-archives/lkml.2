@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934294Ab2FENgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:36:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17652 "EHLO mx1.redhat.com"
+	id S934301Ab2FENiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:38:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44746 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934239Ab2FENgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:36:51 -0400
+	id S932189Ab2FENiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 09:38:08 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87ipf73lsi.fsf@rustcorp.com.au>
-References: <87ipf73lsi.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <26029.1337960539@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
+In-Reply-To: <1338896342.4044.117.camel@falcor>
+References: <1338896342.4044.117.camel@falcor> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <26029.1337960539@redhat.com> <87ipf73lsi.fsf@rustcorp.com.au> <1338814071.4044.19.camel@falcor> <87wr3min4b.fsf@rustcorp.com.au>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
 Cc: dhowells@redhat.com, kyle@mcmartin.ca, dmitry.kasatkin@intel.com,
-        zohar@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, Tim Abbott <tabbott@ksplice.com>
 Subject: Re: [PATCH 00/23] Crypto keys and module signing
-Date: Tue, 05 Jun 2012 14:35:56 +0100
-Message-ID: <18581.1338903356@redhat.com>
+Date: Tue, 05 Jun 2012 14:37:54 +0100
+Message-ID: <18630.1338903474@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-> > If you prefer to have userspace extract the module signature and pass it in
-> > uargs, here's a tree that will do that:
-> > 
-> > 	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/modsign-uarg
-> 
-> OK, there's merit in this approach: it certainly moves the argument
-> about how to encode the signature out of my backyard :)
+> As the signature would be stored as an extended attribute, we wouldn't
+> need to pass it.  Unfortunately not all filesystems have xattr support,
+> nor do all of the package installation mechanims.  The benefit of
+> storing the signature as an extended attribute, however, is that there
+> is a consistent mechanism for verifying file data integrity for all
+> files, not only ELF.
 
-Not really.  The signature still has to be created by the kernel build.  It's
-just that you no longer have to care about the trade off when it comes to
-parsing it.
-
-> Should we just bite the bullet and create a new syscall:
-> 
-> SYSCALL_DEFINE5(init_module2, void __user *, umod,
-> 		unsigned long, len, const char __user *, uargs,
->                 unsigned int, siglen, const char __user *, sig)
-> 
-> But I'm easily swayed if you prefer the current approach.
-
-"The current approach" being to attach signature to the blob?  Or to pass the
-signature separately but in the uargs?
-
-I would very much prefer to keep the signature in the blob and have the kernel
-extract it as there's no particular need for it to be detached - even if you
-are using IMA.
-
-However, I don't think an extra syscall would hurt particularly - except that
-it uses up more space in the syscall table...  It would, however, be smaller
-in the signature verification department as the signature neither needs
-decoding from uargs nor extracting from the blob.
+We also want to be able to do module signature verification with CONFIG_IMA=n.
 
 David
