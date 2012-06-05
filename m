@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab2FEK2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:28:21 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50135 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933155Ab2FEK2P (ORCPT
+	id S1761777Ab2FEK2E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:28:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43184 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761760Ab2FEK2A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:28:15 -0400
-X-AuditID: b753bd60-92fc6ba000002ea5-77-4fcddf3d9381
-X-AuditID: b753bd60-92fc6ba000002ea5-77-4fcddf3d9381
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 5/9] kprobes: Inverse taking of module_mutex with
- kprobe_mutex
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 05 Jun 2012 19:28:14 +0900
-Message-ID: <20120605102814.27845.21047.stgit@localhost.localdomain>
-In-Reply-To: <20120605102734.27845.43401.stgit@localhost.localdomain>
-References: <20120605102734.27845.43401.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 5 Jun 2012 06:28:00 -0400
+Message-ID: <1338892071.28282.157.camel@twins>
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jun 2012 12:27:51 +0200
+In-Reply-To: <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
+	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
+	 <1338891271.28282.155.camel@twins>
+	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Tue, 2012-06-05 at 12:21 +0200, Stephane Eranian wrote:
+> I agree with the first part of the patch in intel_try_alt_er(), we
+> should not touch
+> the actual event struct. But I am still unclear about the reg->alloc part.
 
-Currently module_mutex is taken before kprobe_mutex, but this
-can cause issues when we have kprobes register ftrace, as the ftrace
-mutex is taken before enabling a tracepoint, which currently takes
-the module mutex.
+reg->alloc is part of the actual event.
 
-If module_mutex is taken before kprobe_mutex, then we can not
-have kprobes use the ftrace infrastructure.
+Thing is, the patch is horridly ugly.. while I agree that changing event
+state isn't good, special casing all that code isn't good either.
 
-There seems to be no reason that the kprobe_mutex can't be taken
-before the module_mutex. Running lockdep shows that it is safe
-among the kernels I've run.
-
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-
- kernel/kprobes.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index c62b854..7a8a122 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -561,9 +561,9 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
- {
- 	LIST_HEAD(free_list);
- 
-+	mutex_lock(&kprobe_mutex);
- 	/* Lock modules while optimizing kprobes */
- 	mutex_lock(&module_mutex);
--	mutex_lock(&kprobe_mutex);
- 
- 	/*
- 	 * Step 1: Unoptimize kprobes and collect cleaned (unused and disarmed)
-@@ -586,8 +586,8 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
- 	/* Step 4: Free cleaned kprobes after quiesence period */
- 	do_free_cleaned_kprobes(&free_list);
- 
--	mutex_unlock(&kprobe_mutex);
- 	mutex_unlock(&module_mutex);
-+	mutex_unlock(&kprobe_mutex);
- 
- 	/* Step 5: Kick optimizer again if needed */
- 	if (!list_empty(&optimizing_list) || !list_empty(&unoptimizing_list))
-
+I was looking at cloning the events for validate_group() as well, but so
+far that's not turning out too pretty either.
