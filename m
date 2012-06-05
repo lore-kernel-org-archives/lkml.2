@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699Ab2FEWrp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 18:47:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35403 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab2FEWro (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 18:47:44 -0400
-Date: Tue, 5 Jun 2012 15:47:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [PATCH] fcntl: Add F_GETOWNER_UIDS option v3
-Message-Id: <20120605154743.53d494e6.akpm@linux-foundation.org>
-In-Reply-To: <20120605082512.GC15171@moon>
-References: <20120605082512.GC15171@moon>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753364Ab2FEWtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 18:49:36 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58793 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751545Ab2FEWtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 18:49:35 -0400
+Message-ID: <1338936572.5780.29.camel@joe2Laptop>
+Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, alsa-devel@alsa-project.org,
+        Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 05 Jun 2012 15:49:32 -0700
+In-Reply-To: <20120605151754.a794ac7c.akpm@linux-foundation.org>
+References: <cover.1338889066.git.joe@perches.com>
+	 <20120605142826.d92316a0.akpm@linux-foundation.org>
+	 <1338934303.5780.8.camel@joe2Laptop>
+	 <20120605151754.a794ac7c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jun 2012 12:25:12 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-
-> When we restore file descriptors we would like
-> them to look exactly as they were at dumping time.
+On Tue, 2012-06-05 at 15:17 -0700, Andrew Morton wrote:
+> On Tue, 05 Jun 2012 15:11:43 -0700
+> Joe Perches <joe@perches.com> wrote:
 > 
-> With help of fcntl it's almost possible, the missing
-> snippet is file owners UIDs.
+> > On Tue, 2012-06-05 at 14:28 -0700, Andrew Morton wrote:
+> > > Unfortunately the <n> thing is part of the kernel ABI:
+> > > 
+> > > 	echo "<4>foo" > /dev/kmsg
+> > 
+> > Which works the same way it did before.
 > 
-> To be able to read their values the F_GETOWNER_UIDS
-> is introduced.
+> I didn't say it didn't.
 > 
-> This option is valid iif CONFIG_CHECKPOINT_RESTORE
-> is turned on, otherwise returning -EINVAL.
+> What I did say is that echo "\0014">/dev/kmsg will subvert the intent
+> of the new logging code.  Or might.  But you just ignored all that,
+> forcing me to repeat myself, irritatedly.
 
-um, OK.
+It works the same way before and after the patch.
 
-But we still have
+Any write to /dev/kmsg without a KERN_<LEVEL>
+emits at (1 << 3) + KERN_DEFAULT.
 
-c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-num_exe_file_vmas-removal.patch
-c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-add-minimal-address-test-to-pr_set_mm.patch
-c-r-prctl-add-ability-to-get-clear_tid_address.patch
-c-r-prctl-drop-vma-flags-test-on-pr_set_mm_-stack-data-assignment.patch
+Writes with <n> values >= 8 are emitted at
+that level.
 
-floating about unmerged due to various unresolved issues.  Can we
-please get all that stuff nailed down before working on new things?
 
