@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758348Ab2FEOhI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 10:37:08 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:22502 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756337Ab2FEOhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 10:37:05 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: phkCf0YVM1nzDCw67I2R8M1egUfVZOVa0nd9yI.G32ct0_0
- 3F4Hv5_UET_nyRftavEcPVfWV4pF_K9qrg5t2dBgi9GPUMTHn2Z_6JPeProT
- Xd9EXNBSH.Skp8DGdakVY7_MikXxgG2.fa4h6lgbj0TyUBO3PYL5bZYw60tD
- 0egTNlEm06SZjFFpjVXSU1_b7hIPE5PB9AMTFGfP1JxWQsgniE369q1ohbp5
- 8xvVogrzqcXZcOpZhTKDFVGrCAiUel49DpNlVSwOQ8AGu6WO41TLWXj6Kfr1
- vc9rhPD0aVT1szsgyTYtdHltCFyhWTcZc_6PrmOimnJcQWwj4jRO9WSqi.2C
- NxB4O5WoyfOv4HDpp58EnZJimj_lNZWsvD7x36n3_xM2Pd27052v.DMIbP7W
- RJFM7rdtRI1kK2xpgK_xsPIJaiPWOWgZW_1Pm
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 5 Jun 2012 09:36:57 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-cc: Pekka Enberg <penberg@kernel.org>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 3/5] vmevent: Refresh vmstats before sampling
-In-Reply-To: <1338553446-22292-3-git-send-email-anton.vorontsov@linaro.org>
-Message-ID: <alpine.DEB.2.00.1206050934330.26918@router.home>
-References: <20120601122118.GA6128@lizard> <1338553446-22292-3-git-send-email-anton.vorontsov@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758163Ab2FEOii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 10:38:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27502 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab2FEOih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 10:38:37 -0400
+Message-ID: <4FCE19E9.2080109@redhat.com>
+Date: Tue, 05 Jun 2012 17:38:33 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>
+Subject: [GIT PULL] KVM fix for 3.5-rc1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jun 2012, Anton Vorontsov wrote:
+Linus,
 
-> On SMP, kernel updates vmstats only once per second, which makes vmevent
-> unusable. Let's fix it by updating vmstats before sampling.
+Please pull from
 
-Well this may increase your accuracy but there is no guarantee that an
-update to vm counters will not happen immediately after you have refreshed
-the counters for one processor or the other.
+  git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
 
-Also please consider the impact that a IPI broadcast will have on latency
-of other processors and to the function that is currently executing.
+to receive a one-liner fix for a buffer overflow:
 
-We just went through a round of getting rid of IPI broadcast because they
-create OS noise on processors.
+  KVM: Fix buffer overflow in kvm_set_irq() (2012-06-05 16:39:58 +0300)
 
+----------------------------------------------------------------
+Avi Kivity (1):
+      KVM: Fix buffer overflow in kvm_set_irq()
+
+ virt/kvm/irq_comm.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+-- 
+error compiling committee.c: too many arguments to function
