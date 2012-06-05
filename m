@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761463Ab2FEJgP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:36:15 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37776 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab2FEJgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:36:13 -0400
-Message-ID: <4FCDD308.8070204@gmail.com>
-Date: Tue, 05 Jun 2012 13:36:08 +0400
-From: George Shuklin <george.shuklin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120530 Thunderbird/13.0
+	id S1761533Ab2FEJgm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:36:42 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:57162 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754202Ab2FEJgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:36:40 -0400
+X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jun 2012 05:36:38 EDT
+Message-ID: <4FCDD315.502@free.fr>
+Date: Tue, 05 Jun 2012 11:36:21 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Casey Schaufler <casey@schaufler-ca.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Why minor is still 8 bit?
-References: <4FCC0E6D.9000206@gmail.com>  <20120604013504.GU30000@ZenIV.linux.org.uk> <4FCC3151.1040503@gmail.com>  <4FCCDE2B.3020306@schaufler-ca.com> <4FCD0591.2050504@gmail.com>  <4FCD5869.8000306@zytor.com> <4FCD5BF3.30707@gmail.com> <1338888208.4971.30.camel@x61.thuisdomein>
-In-Reply-To: <1338888208.4971.30.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Glauber Costa <glommer@parallels.com>
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
+        kir@parallels.com, Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] allow a task to join a pid namespace
+References: <1338816828-25312-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1338816828-25312-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.06.2012 13:23, Paul Bolle wrote:
-> On Tue, 2012-06-05 at 05:08 +0400, George Shuklin wrote:
->> Anyway, using LVM to provide logical volumes to customers seems be fine
->> (at least by name). But that limitation for minor is breaking whole idea.
-> man 8 vgcreate reads (in part):
->      -l, --maxlogicalvolumes MaxLogicalVolumes
->          Sets the maximum number of logical volumes allowed in this
->          volume group. The setting can be changed with vgchange. For
->          volume groups with metadata in lvm1 format, the limit and
->          default value is 255. If the metadata uses lvm2 format, the
->          default value is 0 which removes this restriction: there is then
->          no limit.
->
-> Doesn't that option work for you (assuming you're not stuck on lvm1
-> format)? If not, where do things go wrong?
->
-> (Note that I never worry about this limit, since I never use more than a
-> handful of logical volumes per volume group.)
->
-This is a limitaiton of LMV itself. I'm talking about making those LV 
-active (visible in system). When you trying to activate too much LV, you 
-will get 'device io ctl failed' message.
+On 06/04/2012 03:33 PM, Glauber Costa wrote:
+> Currently, it is possible for a process  to join existing
+> net, uts and ipc namespaces. This patch allows a process to join an
+> existing pid namespace as well.
+> 
+> For that to remain sane, some restrictions are made in the calling process:
+> 
+> * It needs to be in the parent namespace of the namespace it wants to jump to
+> * It needs to sit in its own session and group as a leader.
+> 
+> The rationale for that, is that people want to trigger actions in a Container
+> from the outside. For instance, mainstream linux recently gained the ability
+> to safely reboot a container. It would be desirable, however, that this
+> action is triggered from an admin in the outside world, very much like a
+> power switch in a physical box.
+> 
+> This would also allow us to connect a console to the container, provide a
+> repair mode for setups without networking (or with a broken one), etc.
+
+Hi Glauber,
+
+I am in favor of this patch but I think the pidns support won't be
+complete and some corner-cases are not handled.
+
+May be you can look at Eric's patchset [1] where, IMO, everything is
+taken into account. Some of the patches may be already upstream.
+
+Thanks
+  -- Daniel
+
+[1]
+http://git.kernel.org/?p=linux/kernel/git/ebiederm/linux-namespace-control-devel.git;a=summary
