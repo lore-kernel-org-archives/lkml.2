@@ -1,129 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab2FEQtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:49:43 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:54593
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754507Ab2FEQtm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:49:42 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dI9371I542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ahbe9i)
-From: Li Yang-R58472 <r58472@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>
-CC: Zhao Chenhui-B35336 <B35336@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>
-Subject: RE: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
- event source
-Thread-Topic: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
- event source
-Thread-Index: AQHNL2y7r6BvQOIl+0qohWyrm5d/spbmezkAgAQGN4CAAL/KgP//5sXggAE4vAD//6+5cA==
-Date: Tue, 5 Jun 2012 16:49:37 +0000
-Message-ID: <94F013E7935FF44C83EBE7784D62AD3F093360C1@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
- <1336737235-15370-4-git-send-email-chenhui.zhao@freescale.com>
- <4FC93D74.3090200@freescale.com>
- <20120604113609.GC20676@localhost.localdomain>
- <4FCD3E8B.30805@freescale.com>
- <94F013E7935FF44C83EBE7784D62AD3F09335D27@039-SN2MPN1-022.039d.mgd.msft.net>
- <4FCE2FB8.9080307@freescale.com>
-In-Reply-To: <4FCE2FB8.9080307@freescale.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [221.222.175.186]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754601Ab2FEQtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:49:47 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36374 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab2FEQto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 12:49:44 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Glauber Costa <glommer@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, kir@parallels.com,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+References: <1338816828-25312-1-git-send-email-glommer@parallels.com>
+Date: Tue, 05 Jun 2012 09:49:33 -0700
+In-Reply-To: <1338816828-25312-1-git-send-email-glommer@parallels.com>
+	(Glauber Costa's message of "Mon, 4 Jun 2012 17:33:48 +0400")
+Message-ID: <8762b5aele.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/bql1OEmgyL37dql1nuwBuB+rJ0Os3ZiU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_08 obfuscated drug references
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Glauber Costa <glommer@parallels.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] allow a task to join a pid namespace
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Glauber Costa <glommer@parallels.com> writes:
 
+> Currently, it is possible for a process  to join existing
+> net, uts and ipc namespaces. This patch allows a process to join an
+> existing pid namespace as well.
+>
+> For that to remain sane, some restrictions are made in the calling process:
+>
+> * It needs to be in the parent namespace of the namespace it wants to jump to
+> * It needs to sit in its own session and group as a leader.
+>
+> The rationale for that, is that people want to trigger actions in a Container
+> from the outside. For instance, mainstream linux recently gained the ability
+> to safely reboot a container. It would be desirable, however, that this
+> action is triggered from an admin in the outside world, very much like a
+> power switch in a physical box.
+>
+> This would also allow us to connect a console to the container, provide a
+> repair mode for setups without networking (or with a broken one), etc.
+>
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
+> CC: Serge Hallyn <serge.hallyn@canonical.com>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> CC: Michael Kerrisk <mtk.manpages@gmail.com>
+> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  fs/proc/namespaces.c    |    3 ++
+>  include/linux/proc_fs.h |    1 +
+>  kernel/pid_namespace.c  |   76 +++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 80 insertions(+)
+>
+> diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+> index 0d9e23a..6b52af5 100644
+> --- a/fs/proc/namespaces.c
+> +++ b/fs/proc/namespaces.c
+> @@ -24,6 +24,9 @@ static const struct proc_ns_operations *ns_entries[] = {
+>  #ifdef CONFIG_IPC_NS
+>  	&ipcns_operations,
+>  #endif
+> +#ifdef CONFIG_PID_NS
+> +	&pidns_operations,
+> +#endif
+>  };
+>  
+>  static const struct file_operations ns_file_operations = {
+> diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+> index 3fd2e87..acaafcd 100644
+> --- a/include/linux/proc_fs.h
+> +++ b/include/linux/proc_fs.h
+> @@ -251,6 +251,7 @@ struct proc_ns_operations {
+>  extern const struct proc_ns_operations netns_operations;
+>  extern const struct proc_ns_operations utsns_operations;
+>  extern const struct proc_ns_operations ipcns_operations;
+> +extern const struct proc_ns_operations pidns_operations;
+>  
+>  union proc_op {
+>  	int (*proc_get_link)(struct dentry *, struct path *);
+> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> index 57bc1fd..c4555b9d 100644
+> --- a/kernel/pid_namespace.c
+> +++ b/kernel/pid_namespace.c
+> @@ -258,3 +258,79 @@ static __init int pid_namespaces_init(void)
+>  }
+>  
+>  __initcall(pid_namespaces_init);
+> +
+> +static void *pidns_get(struct task_struct *task)
+> +{
+> +	struct pid_namespace *pid = NULL;
+> +	struct nsproxy *nsproxy;
+> +
+> +	rcu_read_lock();
+> +	nsproxy = task_nsproxy(task);
+> +	if (nsproxy)
+> +		pid = get_pid_ns(nsproxy->pid_ns);
+> +	rcu_read_unlock();
+> +
+> +	return pid;
+> +}
+> +
+> +static void pidns_put(void *ns)
+> +{
+> +	put_pid_ns(ns);
+> +}
+> +
+> +/*
+> + * pid_ns' callback for setns
+> + *
+> + * this call switches current's pid_ns from nsproxy to ns.
+> + * In order to do that successfully, we need to create a new pid living
+> + * in the new namespace, and attach_pid() it.
+> + *
+> + * Because we don't want to deal with processes leaving their current
+> + * namespace or being duplicate, it is mandatory that the namespace
+> + * we're switching from is the parent of the namespace we are switching to.
+> + * This is because in this scenario, a view of the pid exists there anyway.
+> + *
+> + * Caller must be group and session leader. This restriction guarantees
+> + * that we won't mess with more than we should, like the controlling terminal
+> + * in our host namespace, and ambiguities about who is the child reaper.
+> + */
+> +static int pidns_install(struct nsproxy *nsproxy, void *_ns)
+> +{
+> +	struct pid *newpid;
+> +	struct pid_namespace *ns = _ns;
+> +
+> +	if (is_container_init(current))
+> +		return -EINVAL;
+> +
+> +	if (nsproxy->pid_ns != ns->parent)
+> +		return -EPERM;
+> +
+> +	if (task_pgrp(current) !=  task_pid(current))
+> +		return -EPERM;
+> +
+> +	if (task_session(current) !=  task_pid(current))
+> +		return -EPERM;
+> +
+> +	newpid = alloc_pid(ns);
+> +	if (!newpid)
+> +		return -ENOMEM;
+> +
+> +	put_pid_ns(nsproxy->pid_ns);
+> +	nsproxy->pid_ns = get_pid_ns(ns);
+> +
+> +	write_lock_irq(&tasklist_lock);
+> +	change_pid(current, PIDTYPE_PID, newpid);
+> +	change_pid(current, PIDTYPE_PGID, newpid);
+> +	change_pid(current, PIDTYPE_SID, newpid);
+> +	write_unlock_irq(&tasklist_lock);
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Wednesday, June 06, 2012 12:12 AM
-> To: Li Yang-R58472
-> Cc: Wood Scott-B07421; Zhao Chenhui-B35336; linuxppc-dev@lists.ozlabs.org;
-> linux-kernel@vger.kernel.org; galak@kernel.crashing.org
-> Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
-> event source
-> 
-> On 06/04/2012 11:08 PM, Li Yang-R58472 wrote:
-> >
-> >
-> >> -----Original Message-----
-> >> From: Wood Scott-B07421
-> >> Sent: Tuesday, June 05, 2012 7:03 AM
-> >> To: Zhao Chenhui-B35336
-> >> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
-> >> galak@kernel.crashing.org; Li Yang-R58472
-> >> Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as
-> >> wakeup event source
-> >>
-> >> On 06/04/2012 06:36 AM, Zhao Chenhui wrote:
-> >>> On Fri, Jun 01, 2012 at 05:08:52PM -0500, Scott Wood wrote:
-> >>>> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
-> >>>>> +int mpc85xx_pmc_set_wake(struct platform_device *pdev, bool
-> >>>>> +enable)
-> >>>>
-> >>>> Why does it have to be a platform_device?  Would a bare device_node
-> >> work
-> >>>> here?  If it's for stuff like device_may_wakeup() that could be in
-> >>>> a platform_device wrapper function.
-> >>>
-> >>> It does not have to be a platform_device. I think it can be a struct
-> >> device.
-> >>
-> >> Why does it even need that?  The low level mechanism for influencing
-> >> PMCDR should only need a device node, not a Linux device struct.
-> >
-> > It does no harm to pass the device structure and makes more sense for
-> object oriented interface design.
-> 
-> It does do harm if you don't have a device structure to pass, if for some
-> reason you found the device by directly looking for it rather than going
-> through the device model.
+This part where you are changing the pid on an existing process
+to something different is flat out wrong.
 
-Whether or not a device is a wakeup source not only depends on the SoC specification but also the configuration and current state for the device.  I only expect the device driver to have this knowledge and call this function rather than some standalone platform code.  Therefore I don't think your concern matters.
- 
-> 
-> >>>> Who is setting can_wakeup for these devices?
-> >>>
-> >>> The device driver is responsible to set can_wakeup.
-> >>
-> >> How would the device driver know how to set it?  Wouldn't this depend
-> >> on the particular SoC and low power mode?
-> >
-> > It is based on the "fsl,magic-packet" and "fsl,wake-on-filer" device
-> tree properties.
-> 
-> fsl,magic-packet was a mistake.  It is equivalent to checking the
-> compatible for etsec.  It does not convey any information about whether
+The practical issues include processes sending signals will no longer
+find this process, not handling multithreaded processes and glibc
+caching getpid and getting totally confusedl, and those are just
+off the top of my head.
 
-It can be described either by explicit feature property or by the compatible.  I don't think it is a problem that we choose one against another.
+We do need to figure out a practical way of entering a pid namespace.
 
-> the eTSEC is still active in a given low power mode.
-
-Whether or not the eTSEC is still active in both sleep and deep sleep is only depending on if we set it to be a wakeup source.  If it behaves differently for low power modes in the future, we could address that by adding additional property.
-
-> 
-> How is fsl,wake-os-filer relevant to this decision?  When will it be set
-> but not fsl,magic-packet?
-
-I mean either fsl,magic-packet or fsl,wake-on-filer shows it can be a wakeup source.  Currently we don't have an SoC to have wake-on-filer while not wake-on-magic.  But I think it's better to consider both as they are independent features.
-
-> 
-> What about devices other than ethernet?  What about differences between
-> ordinary sleep and deep sleep?
-
-There is no difference for sleep and deep sleep for all wakeup sources currently.  We can address the problem if it is not the case in the future.
-
-Leo
-
+Eric
