@@ -1,166 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2FEQPM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:15:12 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:33204 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab2FEQPJ (ORCPT
+	id S1754053Ab2FEQQI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:16:08 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:2719
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753449Ab2FEQQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:15:09 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>
-References: <20120605082512.GC15171@moon>
-Date: Tue, 05 Jun 2012 09:14:58 -0700
-In-Reply-To: <20120605082512.GC15171@moon> (Cyrill Gorcunov's message of "Tue,
-	5 Jun 2012 12:25:12 +0400")
-Message-ID: <87lik1ag71.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Tue, 5 Jun 2012 12:16:06 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FCE30B8.2070902@freescale.com>
+Date: Tue, 5 Jun 2012 11:15:52 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19a+ll+Uhw5c8X5t3ZrwvyiOVHA7vN/udQ=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Cyrill Gorcunov <gorcunov@openvz.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] fcntl: Add F_GETOWNER_UIDS option v3
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com> <4FC933BF.1020901@freescale.com> <20120604110444.GA20676@localhost.localdomain> <4FCCE32F.1060301@freescale.com> <20120605111823.GB22427@localhost.localdomain>
+In-Reply-To: <20120605111823.GB22427@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyrill Gorcunov <gorcunov@openvz.org> writes:
+On 06/05/2012 06:18 AM, Zhao Chenhui wrote:
+> On Mon, Jun 04, 2012 at 11:32:47AM -0500, Scott Wood wrote:
+>> On 06/04/2012 06:04 AM, Zhao Chenhui wrote:
+>>> On Fri, Jun 01, 2012 at 04:27:27PM -0500, Scott Wood wrote:
+>>>> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+>>>>> -#ifdef CONFIG_KEXEC
+>>>>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
+>>>>
+>>>> Let's not grow lists like this.  Is there any harm in building it
+>>>> unconditionally?
+>>>>
+>>>> -Scott
+>>>
+>>> We need this ifdef. We only set give_timebase/take_timebase
+>>> when CONFIG_KEXEC or CONFIG_HOTPLUG_CPU is defined.
+>>
+>> If we really need this to be a compile-time decision, make a new symbol
+>> for it, but I really think this should be decided at runtime.  Just
+>> because we have kexec or hotplug support enabled doesn't mean that's
+>> actually what we're doing at the moment.
+>>
+>> -Scott
+> 
+> If user does not enable kexec or hotplug, these codes are redundant.
+> So use CONFIG_KEXEC and CONFIG_HOTPLUG_CPU to gard them.
 
-> When we restore file descriptors we would like
-> them to look exactly as they were at dumping time.
->
-> With help of fcntl it's almost possible, the missing
-> snippet is file owners UIDs.
->
-> To be able to read their values the F_GETOWNER_UIDS
-> is introduced.
->
-> This option is valid iif CONFIG_CHECKPOINT_RESTORE
-> is turned on, otherwise returning -EINVAL.
+My point is that these lists tend to grow and be a maintenance pain.
+For small things it's often better to not worry about saving a few
+bytes.  For larger things that need to be conditional, define a new
+symbol rather than growing ORed lists like this.
 
-You want to use from_kuid_munged instead of from_kuid as you are going
-directly to userspace, and to userspace for an unmapped uid we want
-to say 65534 aka nobody instead of -1.
+-Scott
 
-> v3:
->  - rebased on Eric's kuids
-
-To be clear this is based on my patchset that has been merged into
-v3.5-rc1.
-
-Eric
-
-
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> CC: "Eric W. Biederman" <ebiederm@xmission.com>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: "Serge E. Hallyn" <serge@hallyn.com>
-> CC: Oleg Nesterov <oleg@redhat.com>
-> CC: Pavel Emelyanov <xemul@parallels.com>
-> ---
->  fs/fcntl.c                  |   29 +++++++++++++++++++++++++++++
->  include/asm-generic/fcntl.h |    4 ++++
->  security/selinux/hooks.c    |    1 +
->  3 files changed, 34 insertions(+)
->
-> Index: linux-2.6.git/fs/fcntl.c
-> ===================================================================
-> --- linux-2.6.git.orig/fs/fcntl.c
-> +++ linux-2.6.git/fs/fcntl.c
-> @@ -20,6 +20,7 @@
->  #include <linux/signal.h>
->  #include <linux/rcupdate.h>
->  #include <linux/pid_namespace.h>
-> +#include <linux/user_namespace.h>
->  
->  #include <asm/poll.h>
->  #include <asm/siginfo.h>
-> @@ -340,6 +341,31 @@ static int f_getown_ex(struct file *filp
->  	return ret;
->  }
->  
-> +#ifdef CONFIG_CHECKPOINT_RESTORE
-> +static int f_getowner_uids(struct file *filp, unsigned long arg)
-> +{
-> +	struct user_namespace *user_ns = current_user_ns();
-> +	uid_t * __user dst = (void * __user)arg;
-> +	uid_t src[2];
-> +	int err;
-> +
-> +	read_lock(&filp->f_owner.lock);
-> +	src[0] = from_kuid(user_ns, filp->f_owner.uid);
-> +	src[1] = from_kuid(user_ns, filp->f_owner.euid);
-> +	read_unlock(&filp->f_owner.lock);
-> +
-> +	err  = put_user(src[0], &dst[0]);
-> +	err |= put_user(src[1], &dst[1]);
-> +
-> +	return err;
-> +}
-> +#else
-> +static int f_getowner_uids(struct file *filp, unsigned long arg)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif
-> +
->  static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
->  		struct file *filp)
->  {
-> @@ -396,6 +422,9 @@ static long do_fcntl(int fd, unsigned in
->  	case F_SETOWN_EX:
->  		err = f_setown_ex(filp, arg);
->  		break;
-> +	case F_GETOWNER_UIDS:
-> +		err = f_getowner_uids(filp, arg);
-> +		break;
->  	case F_GETSIG:
->  		err = filp->f_owner.signum;
->  		break;
-> Index: linux-2.6.git/include/asm-generic/fcntl.h
-> ===================================================================
-> --- linux-2.6.git.orig/include/asm-generic/fcntl.h
-> +++ linux-2.6.git/include/asm-generic/fcntl.h
-> @@ -120,6 +120,10 @@
->  #define F_GETOWN_EX	16
->  #endif
->  
-> +#ifndef F_GETOWNER_UIDS
-> +#define F_GETOWNER_UIDS	17
-> +#endif
-> +
->  #define F_OWNER_TID	0
->  #define F_OWNER_PID	1
->  #define F_OWNER_PGRP	2
-> Index: linux-2.6.git/security/selinux/hooks.c
-> ===================================================================
-> --- linux-2.6.git.orig/security/selinux/hooks.c
-> +++ linux-2.6.git/security/selinux/hooks.c
-> @@ -3181,6 +3181,7 @@ static int selinux_file_fcntl(struct fil
->  	case F_GETFL:
->  	case F_GETOWN:
->  	case F_GETSIG:
-> +	case F_GETOWNER_UIDS:
->  		/* Just check FD__USE permission */
->  		err = file_has_perm(cred, file, 0);
->  		break;
