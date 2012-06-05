@@ -1,318 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab2FESDh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:03:37 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:44227 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753513Ab2FESDe (ORCPT
+	id S1755834Ab2FESFY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:05:24 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:17269 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753513Ab2FESFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:03:34 -0400
-Message-ID: <4FCE49EE.2070703@micron.com>
-Date: Tue, 5 Jun 2012 11:03:26 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 14:05:23 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -16
+X-BigFish: VS-16(zzbb2dI9371I542M1432N98dKzz1202hzz8275dhz2dh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FCE4A5A.3020603@freescale.com>
+Date: Tue, 5 Jun 2012 13:05:14 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 2/2] mtip32xx: Create debugfs entries for troubleshooting
-References: <4FCD1002.2060203@micron.com> <4FCDB29F.8060107@kernel.dk>
-In-Reply-To: <4FCDB29F.8060107@kernel.dk>
+To: Li Yang-R58472 <r58472@freescale.com>
+CC: Wood Scott-B07421 <B07421@freescale.com>,
+        Zhao Chenhui-B35336 <B35336@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "galak@kernel.crashing.org" <galak@kernel.crashing.org>
+Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup event
+ source
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-4-git-send-email-chenhui.zhao@freescale.com> <4FC93D74.3090200@freescale.com> <20120604113609.GC20676@localhost.localdomain> <4FCD3E8B.30805@freescale.com> <94F013E7935FF44C83EBE7784D62AD3F09335D27@039-SN2MPN1-022.039d.mgd.msft.net> <4FCE2FB8.9080307@freescale.com> <94F013E7935FF44C83EBE7784D62AD3F093360C1@039-SN2MPN1-022.039d.mgd.msft.net>
+In-Reply-To: <94F013E7935FF44C83EBE7784D62AD3F093360C1@039-SN2MPN1-022.039d.mgd.msft.net>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18948.005
-X-TM-AS-Result: No--13.542700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/5/2012 12:17 AM, Jens Axboe wrote:
-
-> On 06/04/2012 09:44 PM, Asai Thambi S P wrote:
->> @@ -4062,10 +4210,20 @@ static int __init mtip_init(void)
->>  	}
->>  	mtip_major = error;
->>  
->> +	if (!dfs_parent) {
->> +		dfs_parent = debugfs_create_dir("rssd", NULL);
->> +		if (IS_ERR_OR_NULL(dfs_parent)) {
->> +			printk(KERN_WARNING "Error creating debugfs parent\n");
->> +			dfs_parent = NULL;
->> +		}
->> +	}
->> +
+On 06/05/2012 11:49 AM, Li Yang-R58472 wrote:
 > 
-> Why would dfs_parent ever be non-NULL here?
 > 
-> Apart from that, looks fine.
+>> -----Original Message-----
+>> From: Wood Scott-B07421
+>> Sent: Wednesday, June 06, 2012 12:12 AM
+>> To: Li Yang-R58472
+>> Cc: Wood Scott-B07421; Zhao Chenhui-B35336; linuxppc-dev@lists.ozlabs.org;
+>> linux-kernel@vger.kernel.org; galak@kernel.crashing.org
+>> Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
+>> event source
+>>
+>> On 06/04/2012 11:08 PM, Li Yang-R58472 wrote:
+>>>
+>>>
+>>>> -----Original Message-----
+>>>> From: Wood Scott-B07421
+>>>> Sent: Tuesday, June 05, 2012 7:03 AM
+>>>> To: Zhao Chenhui-B35336
+>>>> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
+>>>> galak@kernel.crashing.org; Li Yang-R58472
+>>>> Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as
+>>>> wakeup event source
+>>>>
+>>>> On 06/04/2012 06:36 AM, Zhao Chenhui wrote:
+>>>>> On Fri, Jun 01, 2012 at 05:08:52PM -0500, Scott Wood wrote:
+>>>>>> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+>>>>>>> +int mpc85xx_pmc_set_wake(struct platform_device *pdev, bool
+>>>>>>> +enable)
+>>>>>>
+>>>>>> Why does it have to be a platform_device?  Would a bare device_node
+>>>> work
+>>>>>> here?  If it's for stuff like device_may_wakeup() that could be in
+>>>>>> a platform_device wrapper function.
+>>>>>
+>>>>> It does not have to be a platform_device. I think it can be a struct
+>>>> device.
+>>>>
+>>>> Why does it even need that?  The low level mechanism for influencing
+>>>> PMCDR should only need a device node, not a Linux device struct.
+>>>
+>>> It does no harm to pass the device structure and makes more sense for
+>> object oriented interface design.
+>>
+>> It does do harm if you don't have a device structure to pass, if for some
+>> reason you found the device by directly looking for it rather than going
+>> through the device model.
 > 
+> Whether or not a device is a wakeup source not only depends on the
+> SoC specification but also the configuration and current state for
+> the device.  I only expect the device driver to have this knowledge
+> and call this function rather than some standalone platform code.
+> Therefore I don't think your concern matters.
 
-I moved this part from mtip_hw_debugfs_init(), dfs_parent will not be NULL here.
+First, I think it's bad API to force the passing of a higher level
+object when a lower level object would suffice (and there are no
+legitimate future-proofing or abstraction reasons for hiding the lower
+level object).
 
-Thanks Jens. Fixed and redid this patch.
+But regardless, the entity you call a "device driver" may or may not use
+the standard driver model (e.g. look at PCI root complexes), and your
+assumption about what platform code knows may or may not be correct.  I
+could just as well say that only platform code knows about the SoC
+clock/power routing during a given low power state.
 
-Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
----
- drivers/block/mtip32xx/mtip32xx.c |  160 ++++++++++++++++++++++++++++++++++++-
- drivers/block/mtip32xx/mtip32xx.h |    4 +
- 2 files changed, 163 insertions(+), 1 deletions(-)
+>>>>>> Who is setting can_wakeup for these devices?
+>>>>>
+>>>>> The device driver is responsible to set can_wakeup.
+>>>>
+>>>> How would the device driver know how to set it?  Wouldn't this depend
+>>>> on the particular SoC and low power mode?
+>>>
+>>> It is based on the "fsl,magic-packet" and "fsl,wake-on-filer" device
+>> tree properties.
+>>
+>> fsl,magic-packet was a mistake.  It is equivalent to checking the
+>> compatible for etsec.  It does not convey any information about whether
+> 
+> It can be described either by explicit feature property or by the
+> compatible.  I don't think it is a problem that we choose one against
+> another.
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index b6e95b9..be79d88 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -37,6 +37,7 @@
- #include <linux/kthread.h>
- #include <../drivers/ata/ahci.h>
- #include <linux/export.h>
-+#include <linux/debugfs.h>
- #include "mtip32xx.h"
- 
- #define HW_CMD_SLOT_SZ		(MTIP_MAX_COMMAND_SLOTS * 32)
-@@ -85,6 +86,7 @@ static int instance;
-  * allocated in mtip_init().
-  */
- static int mtip_major;
-+static struct dentry *dfs_parent;
- 
- static DEFINE_SPINLOCK(rssd_index_lock);
- static DEFINE_IDA(rssd_index_ida);
-@@ -2574,6 +2576,120 @@ static ssize_t mtip_hw_show_status(struct device *dev,
- 
- static DEVICE_ATTR(status, S_IRUGO, mtip_hw_show_status, NULL);
- 
-+static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
-+				  size_t len, loff_t *offset)
-+{
-+	struct driver_data *dd =  (struct driver_data *)f->private_data;
-+	char buf[MTIP_DFS_MAX_BUF_SIZE];
-+	u32 group_allocated;
-+	int size = *offset;
-+	int n;
-+
-+	if (!len || size)
-+		return 0;
-+
-+	if (size < 0)
-+		return -EINVAL;
-+
-+	size += sprintf(&buf[size], "H/ S ACTive      : [ 0x");
-+
-+	for (n = dd->slot_groups-1; n >= 0; n--)
-+		size += sprintf(&buf[size], "%08X ",
-+					 readl(dd->port->s_active[n]));
-+
-+	size += sprintf(&buf[size], "]\n");
-+	size += sprintf(&buf[size], "H/ Command Issue : [ 0x");
-+
-+	for (n = dd->slot_groups-1; n >= 0; n--)
-+		size += sprintf(&buf[size], "%08X ",
-+					readl(dd->port->cmd_issue[n]));
-+
-+	size += sprintf(&buf[size], "]\n");
-+	size += sprintf(&buf[size], "H/ Completed     : [ 0x");
-+
-+	for (n = dd->slot_groups-1; n >= 0; n--)
-+		size += sprintf(&buf[size], "%08X ",
-+				readl(dd->port->completed[n]));
-+
-+	size += sprintf(&buf[size], "]\n");
-+	size += sprintf(&buf[size], "H/ PORT IRQ STAT : [ 0x%08X ]\n",
-+				readl(dd->port->mmio + PORT_IRQ_STAT));
-+	size += sprintf(&buf[size], "H/ HOST IRQ STAT : [ 0x%08X ]\n",
-+				readl(dd->mmio + HOST_IRQ_STAT));
-+	size += sprintf(&buf[size], "\n");
-+
-+	size += sprintf(&buf[size], "L/ Allocated     : [ 0x");
-+
-+	for (n = dd->slot_groups-1; n >= 0; n--) {
-+		if (sizeof(long) > sizeof(u32))
-+			group_allocated =
-+				dd->port->allocated[n/2] >> (32*(n&1));
-+		else
-+			group_allocated = dd->port->allocated[n];
-+		size += sprintf(&buf[size], "%08X ", group_allocated);
-+	}
-+	size += sprintf(&buf[size], "]\n");
-+
-+	size += sprintf(&buf[size], "L/ Commands in Q : [ 0x");
-+
-+	for (n = dd->slot_groups-1; n >= 0; n--) {
-+		if (sizeof(long) > sizeof(u32))
-+			group_allocated =
-+				dd->port->cmds_to_issue[n/2] >> (32*(n&1));
-+		else
-+			group_allocated = dd->port->cmds_to_issue[n];
-+		size += sprintf(&buf[size], "%08X ", group_allocated);
-+	}
-+	size += sprintf(&buf[size], "]\n");
-+
-+	*offset = size <= len ? size : len;
-+	size = copy_to_user(ubuf, buf, *offset);
-+	if (size)
-+		return -EFAULT;
-+
-+	return *offset;
-+}
-+
-+static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
-+				  size_t len, loff_t *offset)
-+{
-+	struct driver_data *dd =  (struct driver_data *)f->private_data;
-+	char buf[MTIP_DFS_MAX_BUF_SIZE];
-+	int size = *offset;
-+
-+	if (!len || size)
-+		return 0;
-+
-+	if (size < 0)
-+		return -EINVAL;
-+
-+	size += sprintf(&buf[size], "Flag-port : [ %08lX ]\n",
-+							dd->port->flags);
-+	size += sprintf(&buf[size], "Flag-dd   : [ %08lX ]\n",
-+							dd->dd_flag);
-+
-+	*offset = size <= len ? size : len;
-+	size = copy_to_user(ubuf, buf, *offset);
-+	if (size)
-+		return -EFAULT;
-+
-+	return *offset;
-+}
-+
-+static const struct file_operations mtip_regs_fops = {
-+	.owner  = THIS_MODULE,
-+	.open   = simple_open,
-+	.read   = mtip_hw_read_registers,
-+	.llseek = no_llseek,
-+};
-+
-+static const struct file_operations mtip_flags_fops = {
-+	.owner  = THIS_MODULE,
-+	.open   = simple_open,
-+	.read   = mtip_hw_read_flags,
-+	.llseek = no_llseek,
-+};
-+
- /*
-  * Create the sysfs related attributes.
-  *
-@@ -2615,6 +2731,34 @@ static int mtip_hw_sysfs_exit(struct driver_data *dd, struct kobject *kobj)
- 	return 0;
- }
- 
-+static int mtip_hw_debugfs_init(struct driver_data *dd)
-+{
-+	if (!dfs_parent)
-+		return -1;
-+
-+	dd->dfs_node = debugfs_create_dir(dd->disk->disk_name, dfs_parent);
-+	if (IS_ERR_OR_NULL(dd->dfs_node)) {
-+		dev_warn(&dd->pdev->dev,
-+			"Error creating node %s under debugfs\n",
-+						dd->disk->disk_name);
-+		dd->dfs_node = NULL;
-+		return -1;
-+	}
-+
-+	debugfs_create_file("flags", S_IRUGO, dd->dfs_node, dd,
-+							&mtip_flags_fops);
-+	debugfs_create_file("registers", S_IRUGO, dd->dfs_node, dd,
-+							&mtip_regs_fops);
-+
-+	return 0;
-+}
-+
-+static void mtip_hw_debugfs_exit(struct driver_data *dd)
-+{
-+	debugfs_remove_recursive(dd->dfs_node);
-+}
-+
-+
- /*
-  * Perform any init/resume time hardware setup
-  *
-@@ -3640,6 +3784,7 @@ skip_create_disk:
- 		mtip_hw_sysfs_init(dd, kobj);
- 		kobject_put(kobj);
- 	}
-+	mtip_hw_debugfs_init(dd);
- 
- 	if (dd->mtip_svc_handler) {
- 		set_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag);
-@@ -3665,6 +3810,8 @@ start_service_thread:
- 	return rv;
- 
- kthread_run_error:
-+	mtip_hw_debugfs_exit(dd);
-+
- 	/* Delete our gendisk. This also removes the device from /dev */
- 	del_gendisk(dd->disk);
- 
-@@ -3715,6 +3862,7 @@ static int mtip_block_remove(struct driver_data *dd)
- 			kobject_put(kobj);
- 		}
- 	}
-+	mtip_hw_debugfs_exit(dd);
- 
- 	/*
- 	 * Delete our gendisk structure. This also removes the device
-@@ -4062,10 +4210,18 @@ static int __init mtip_init(void)
- 	}
- 	mtip_major = error;
- 
-+	dfs_parent = debugfs_create_dir("rssd", NULL);
-+	if (IS_ERR_OR_NULL(dfs_parent)) {
-+		printk(KERN_WARNING "Error creating debugfs parent\n");
-+		dfs_parent = NULL;
-+	}
-+
- 	/* Register our PCI operations. */
- 	error = pci_register_driver(&mtip_pci_driver);
--	if (error)
-+	if (error) {
-+		debugfs_remove(dfs_parent);
- 		unregister_blkdev(mtip_major, MTIP_DRV_NAME);
-+	}
- 
- 	return error;
- }
-@@ -4082,6 +4238,8 @@ static int __init mtip_init(void)
-  */
- static void __exit mtip_exit(void)
- {
-+	debugfs_remove_recursive(dfs_parent);
-+
- 	/* Release the allocated major block device number. */
- 	unregister_blkdev(mtip_major, MTIP_DRV_NAME);
- 
-diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
-index b2c88da..0c15d70 100644
---- a/drivers/block/mtip32xx/mtip32xx.h
-+++ b/drivers/block/mtip32xx/mtip32xx.h
-@@ -111,6 +111,8 @@
-  #define dbg_printk(format, arg...)
- #endif
- 
-+#define MTIP_DFS_MAX_BUF_SIZE 1024
-+
- #define __force_bit2int (unsigned int __force)
- 
- enum {
-@@ -447,6 +449,8 @@ struct driver_data {
- 	unsigned long dd_flag; /* NOTE: use atomic bit operations on this */
- 
- 	struct task_struct *mtip_svc_handler; /* task_struct of svc thd */
-+
-+	struct dentry *dfs_node;
- };
- 
- #endif
--- 
-1.7.1
+I do think it's a problem, because it's unnecessarily complicated, and
+more error prone (we probably didn't have fsl,magic-packet on all the
+SoCs that support it before the .dtsi refactoring).  But my point was
+that it says nothing about whether the eTSEC will still be functioning
+during a low power state.
+
+>> the eTSEC is still active in a given low power mode.
+> 
+> Whether or not the eTSEC is still active in both sleep and deep sleep
+> is only depending on if we set it to be a wakeup source.
+
+Only because we happen to support eTSEC as a wakeup source on all SoCs.
+
+> If it behaves differently for low power modes in the future, we could
+> address that by adding additional property.
+> 
+>>
+>> How is fsl,wake-os-filer relevant to this decision?  When will it be set
+>> but not fsl,magic-packet?
+> 
+> I mean either fsl,magic-packet or fsl,wake-on-filer shows it can be a
+> wakeup source.  Currently we don't have an SoC to have wake-on-filer
+> while not wake-on-magic.  But I think it's better to consider both as
+> they are independent features.
+
+You're not willing to consider an SoC where waking on eTSEC is
+unsupported, but you're willing to consider an eTSEC that has
+wake-on-filer but magic packet support has for some reason been dropped?
+
+>> What about devices other than ethernet?  What about differences between
+>> ordinary sleep and deep sleep?
+> 
+> There is no difference for sleep and deep sleep for all wakeup sources currently.
+
+I recall being able to wake an mpc85xx chip (maybe mpc8544?) from
+ordinary sleep using the DUART (even though the manual suggests that
+only external interrupts can be used -- not even eTSEC).  You can't do
+that in deep sleep.
+
+You ignored "what about devices other than ethernet".
+
+-Scott
 
