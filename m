@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab2FEPvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 11:51:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56910 "EHLO
+	id S1753622Ab2FEPvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 11:51:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56916 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab2FEPve (ORCPT
+	with ESMTP id S1753578Ab2FEPvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 11:51:34 -0400
-Date: Tue, 5 Jun 2012 08:46:10 -0700
+	Tue, 5 Jun 2012 11:51:45 -0400
+Date: Tue, 5 Jun 2012 08:51:27 -0700
 From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
-Message-ID: <tip-46ce7fbfdbe0be6aaf0e816331aac08a74a00e5a@git.kernel.org>
+Message-ID: <tip-8feb8e896d77439146d2e2ab3d0ab55bb5baf5fc@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, schwidefsky@de.ibm.com,
-        srivatsa.bhat@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
-        tglx@linutronix.de, yong.zhang0@gmail.com
+        akpm@linux-foundation.org, peterz@infradead.org,
+        srivatsa.bhat@linux.vnet.ibm.com, yong.zhang0@gmail.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        schwidefsky@de.ibm.com, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, heiko.carstens@de.ibm.com,
-        yong.zhang0@gmail.com, tglx@linutronix.de
-In-Reply-To: <1338275765-3217-5-git-send-email-yong.zhang0@gmail.com>
-References: <1338275765-3217-5-git-send-email-yong.zhang0@gmail.com>
+        peterz@infradead.org, srivatsa.bhat@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, yong.zhang0@gmail.com, tglx@linutronix.de
+In-Reply-To: <1338275765-3217-11-git-send-email-yong.zhang0@gmail.com>
+References: <1338275765-3217-11-git-send-email-yong.zhang0@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] S390: Smp: remove call to ipi_call_lock()/
- ipi_call_unlock()
-Git-Commit-ID: 46ce7fbfdbe0be6aaf0e816331aac08a74a00e5a
+Subject: [tip:smp/hotplug] smp: Remove ipi_call_lock[_irq]()/
+ ipi_call_unlock[_irq]()
+Git-Commit-ID: 8feb8e896d77439146d2e2ab3d0ab55bb5baf5fc
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,28 +31,21 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 05 Jun 2012 08:46:16 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 05 Jun 2012 08:51:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46ce7fbfdbe0be6aaf0e816331aac08a74a00e5a
-Gitweb:     http://git.kernel.org/tip/46ce7fbfdbe0be6aaf0e816331aac08a74a00e5a
+Commit-ID:  8feb8e896d77439146d2e2ab3d0ab55bb5baf5fc
+Gitweb:     http://git.kernel.org/tip/8feb8e896d77439146d2e2ab3d0ab55bb5baf5fc
 Author:     Yong Zhang <yong.zhang0@gmail.com>
-AuthorDate: Tue, 29 May 2012 15:15:59 +0800
+AuthorDate: Tue, 29 May 2012 15:16:05 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 5 Jun 2012 17:27:12 +0200
+CommitDate: Tue, 5 Jun 2012 17:27:14 +0200
 
-S390: Smp: remove call to ipi_call_lock()/ipi_call_unlock()
+smp: Remove ipi_call_lock[_irq]()/ipi_call_unlock[_irq]()
 
-ipi_call_lock/unlock() lock resp. unlock call_function.lock. This lock
-protects only the call_function data structure itself, but it's
-completely unrelated to cpu_online_mask. The mask to which the IPIs
-are sent is calculated before call_function.lock is taken in
-smp_call_function_many(), so the locking around set_cpu_online() is
-pointless and can be removed.
-
-[ tglx: Massaged changelog ]
+There is no user of those APIs anymore, just remove it.
 
 Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
 Cc: ralf@linux-mips.org
@@ -62,30 +54,59 @@ Cc: david.daney@cavium.com
 Cc: nikunj@linux.vnet.ibm.com
 Cc: paulmck@linux.vnet.ibm.com
 Cc: axboe@kernel.dk
-Cc: peterz@infradead.org
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
-Link: http://lkml.kernel.org/r/1338275765-3217-5-git-send-email-yong.zhang0@gmail.com
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1338275765-3217-11-git-send-email-yong.zhang0@gmail.com
 Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Acked-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/s390/kernel/smp.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ include/linux/smp.h |    4 ----
+ kernel/smp.c        |   20 --------------------
+ 2 files changed, 0 insertions(+), 24 deletions(-)
 
-diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
-index 15cca26..8dca9c2 100644
---- a/arch/s390/kernel/smp.c
-+++ b/arch/s390/kernel/smp.c
-@@ -717,9 +717,7 @@ static void __cpuinit smp_start_secondary(void *cpuvoid)
- 	init_cpu_vtimer();
- 	pfault_init();
- 	notify_cpu_starting(smp_processor_id());
--	ipi_call_lock();
- 	set_cpu_online(smp_processor_id(), true);
--	ipi_call_unlock();
- 	local_irq_enable();
- 	/* cpu_idle will call schedule for us */
- 	cpu_idle();
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 717fb74..a34d4f1 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -90,10 +90,6 @@ void kick_all_cpus_sync(void);
+ void __init call_function_init(void);
+ void generic_smp_call_function_single_interrupt(void);
+ void generic_smp_call_function_interrupt(void);
+-void ipi_call_lock(void);
+-void ipi_call_unlock(void);
+-void ipi_call_lock_irq(void);
+-void ipi_call_unlock_irq(void);
+ #else
+ static inline void call_function_init(void) { }
+ #endif
+diff --git a/kernel/smp.c b/kernel/smp.c
+index d0ae5b2..29dd40a 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -581,26 +581,6 @@ int smp_call_function(smp_call_func_t func, void *info, int wait)
+ 	return 0;
+ }
+ EXPORT_SYMBOL(smp_call_function);
+-
+-void ipi_call_lock(void)
+-{
+-	raw_spin_lock(&call_function.lock);
+-}
+-
+-void ipi_call_unlock(void)
+-{
+-	raw_spin_unlock(&call_function.lock);
+-}
+-
+-void ipi_call_lock_irq(void)
+-{
+-	raw_spin_lock_irq(&call_function.lock);
+-}
+-
+-void ipi_call_unlock_irq(void)
+-{
+-	raw_spin_unlock_irq(&call_function.lock);
+-}
+ #endif /* USE_GENERIC_SMP_HELPERS */
+ 
+ /* Setup configured maximum number of CPUs to activate */
