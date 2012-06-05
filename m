@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934186Ab2FENNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:13:45 -0400
+	id S934188Ab2FENOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:14:06 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:48161 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757807Ab2FENLJ (ORCPT
+	with ESMTP id S934093Ab2FENLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:11:09 -0400
+	Tue, 5 Jun 2012 09:11:03 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com,
-        mszeredi@suse.cz, Sage Weil <sage@newdream.net>
-Subject: [PATCH 13/21] ceph: remove unused arg from ceph_lookup_open()
-Date: Tue,  5 Jun 2012 15:10:24 +0200
-Message-Id: <1338901832-14049-14-git-send-email-miklos@szeredi.hu>
+        mszeredi@suse.cz
+Subject: [PATCH 11/21] fuse: implement i_op->atomic_open()
+Date: Tue,  5 Jun 2012 15:10:22 +0200
+Message-Id: <1338901832-14049-12-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
 References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
@@ -24,66 +24,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-What was the purpose of this?
+Add an ->atomic_open implementation which replaces the atomic open+create
+operation implemented via ->create.  No functionality is changed.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-CC: Sage Weil <sage@newdream.net>
 ---
- fs/ceph/dir.c   |    4 ++--
- fs/ceph/file.c  |    3 +--
- fs/ceph/super.h |    3 +--
- 3 files changed, 4 insertions(+), 6 deletions(-)
+ fs/fuse/dir.c |   94 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 67 insertions(+), 27 deletions(-)
 
-diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
-index 3e8094b..c4b7832 100644
---- a/fs/ceph/dir.c
-+++ b/fs/ceph/dir.c
-@@ -599,7 +599,7 @@ static struct dentry *ceph_lookup(struct inode *dir, struct dentry *dentry,
- 	    (nd->flags & LOOKUP_OPEN) &&
- 	    !(nd->intent.open.flags & O_CREAT)) {
- 		int mode = nd->intent.open.create_mode & ~current->fs->umask;
--		return ceph_lookup_open(dir, dentry, nd, mode, 1);
-+		return ceph_lookup_open(dir, dentry, nd, mode);
- 	}
- 
- 	/* can we conclude ENOENT locally? */
-@@ -710,7 +710,7 @@ static int ceph_create(struct inode *dir, struct dentry *dentry, umode_t mode,
- 
- 	if (nd) {
- 		BUG_ON((nd->flags & LOOKUP_OPEN) == 0);
--		dentry = ceph_lookup_open(dir, dentry, nd, mode, 0);
-+		dentry = ceph_lookup_open(dir, dentry, nd, mode);
- 		/* hrm, what should i do here if we get aliased? */
- 		if (IS_ERR(dentry))
- 			return PTR_ERR(dentry);
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 988d4f3..4bf9773 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -219,8 +219,7 @@ out:
-  *  path_lookup_create -> LOOKUP_OPEN|LOOKUP_CREATE
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index df5ac04..b0063d3 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -369,8 +369,9 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
+  * If the filesystem doesn't support this, then fall back to separate
+  * 'mknod' + 'open' requests.
   */
- struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
--				struct nameidata *nd, int mode,
--				int locked_dir)
-+				struct nameidata *nd, int mode)
+-static int fuse_create_open(struct inode *dir, struct dentry *entry,
+-			    umode_t mode, struct nameidata *nd)
++static struct file *fuse_create_open(struct inode *dir, struct dentry *entry,
++				     struct opendata *od, unsigned flags,
++				     umode_t mode)
  {
- 	struct ceph_fs_client *fsc = ceph_sb_to_client(dir->i_sb);
- 	struct ceph_mds_client *mdsc = fsc->mdsc;
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index fc35036..8471db9 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -807,8 +807,7 @@ extern int ceph_copy_from_page_vector(struct page **pages,
- extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
- extern int ceph_open(struct inode *inode, struct file *file);
- extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
--				       struct nameidata *nd, int mode,
--				       int locked_dir);
-+				       struct nameidata *nd, int mode);
- extern int ceph_release(struct inode *inode, struct file *filp);
+ 	int err;
+ 	struct inode *inode;
+@@ -382,14 +383,11 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+ 	struct fuse_entry_out outentry;
+ 	struct fuse_file *ff;
+ 	struct file *file;
+-	int flags = nd->intent.open.flags;
+-
+-	if (fc->no_create)
+-		return -ENOSYS;
  
- /* dir.c */
+ 	forget = fuse_alloc_forget();
++	err = -ENOMEM;
+ 	if (!forget)
+-		return -ENOMEM;
++		goto out_err;
+ 
+ 	req = fuse_get_req(fc);
+ 	err = PTR_ERR(req);
+@@ -428,11 +426,8 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+ 	req->out.args[1].value = &outopen;
+ 	fuse_request_send(fc, req);
+ 	err = req->out.h.error;
+-	if (err) {
+-		if (err == -ENOSYS)
+-			fc->no_create = 1;
++	if (err)
+ 		goto out_free_ff;
+-	}
+ 
+ 	err = -EIO;
+ 	if (!S_ISREG(outentry.attr.mode) || invalid_nodeid(outentry.nodeid))
+@@ -448,28 +443,78 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
+ 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
+ 		fuse_sync_release(ff, flags);
+ 		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
+-		return -ENOMEM;
++		err = -ENOMEM;
++		goto out_err;
+ 	}
+ 	kfree(forget);
+ 	d_instantiate(entry, inode);
+ 	fuse_change_entry_timeout(entry, &outentry);
+ 	fuse_invalidate_attr(dir);
+-	file = lookup_instantiate_filp(nd, entry, generic_file_open);
++	file = finish_open(od, entry, generic_file_open);
+ 	if (IS_ERR(file)) {
+ 		fuse_sync_release(ff, flags);
+-		return PTR_ERR(file);
++	} else {
++		file->private_data = fuse_file_get(ff);
++		fuse_finish_open(inode, file);
+ 	}
+-	file->private_data = fuse_file_get(ff);
+-	fuse_finish_open(inode, file);
+-	return 0;
++	return file;
+ 
+- out_free_ff:
++out_free_ff:
+ 	fuse_file_free(ff);
+- out_put_request:
++out_put_request:
+ 	fuse_put_request(fc, req);
+- out_put_forget_req:
++out_put_forget_req:
+ 	kfree(forget);
+-	return err;
++out_err:
++	return ERR_PTR(err);
++}
++
++static int fuse_mknod(struct inode *, struct dentry *, umode_t, dev_t);
++static struct file *fuse_atomic_open(struct inode *dir, struct dentry *entry,
++				     struct opendata *od, unsigned flags,
++				     umode_t mode, bool *created)
++{
++	int err;
++	struct fuse_conn *fc = get_fuse_conn(dir);
++	struct file *file;
++	struct dentry *res = NULL;
++
++	if (d_unhashed(entry)) {
++		res = fuse_lookup(dir, entry, NULL);
++		if (IS_ERR(res))
++			return ERR_CAST(res);
++
++		if (res)
++			entry = res;
++	}
++
++	if (!(flags & O_CREAT) || entry->d_inode)
++		goto no_open;
++
++	/* Only creates */
++	*created = true;
++
++	if (fc->no_create)
++		goto mknod;
++
++	file = fuse_create_open(dir, entry, od, flags, mode);
++	if (PTR_ERR(file) == -ENOSYS) {
++		fc->no_create = 1;
++		goto mknod;
++	}
++out_dput:
++	dput(res);
++	return file;
++
++mknod:
++	err = fuse_mknod(dir, entry, mode, 0);
++	if (err) {
++		file = ERR_PTR(err);
++		goto out_dput;
++	}
++no_open:
++	finish_no_open(od, res);
++	return NULL;
+ }
+ 
+ /*
+@@ -573,12 +618,6 @@ static int fuse_mknod(struct inode *dir, struct dentry *entry, umode_t mode,
+ static int fuse_create(struct inode *dir, struct dentry *entry, umode_t mode,
+ 		       struct nameidata *nd)
+ {
+-	if (nd) {
+-		int err = fuse_create_open(dir, entry, mode, nd);
+-		if (err != -ENOSYS)
+-			return err;
+-		/* Fall back on mknod */
+-	}
+ 	return fuse_mknod(dir, entry, mode, 0);
+ }
+ 
+@@ -1637,6 +1676,7 @@ static const struct inode_operations fuse_dir_inode_operations = {
+ 	.link		= fuse_link,
+ 	.setattr	= fuse_setattr,
+ 	.create		= fuse_create,
++	.atomic_open	= fuse_atomic_open,
+ 	.mknod		= fuse_mknod,
+ 	.permission	= fuse_permission,
+ 	.getattr	= fuse_getattr,
 -- 
 1.7.7
 
