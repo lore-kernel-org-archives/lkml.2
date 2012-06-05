@@ -1,99 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab2FEL6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:58:41 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35422 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338Ab2FEL6j (ORCPT
+	id S933947Ab2FEMAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 08:00:47 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:36132 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755943Ab2FEMAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:58:39 -0400
-X-IronPort-AV: E=Sophos;i="4.75,718,1330905600"; 
-   d="scan'208";a="12838043"
-Date: Tue, 5 Jun 2012 12:58:32 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
-In-Reply-To: <87ehpuqam8.fsf@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com> <87ehpuqam8.fsf@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 5 Jun 2012 08:00:45 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] fuse updates for 3.5
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Date: Tue, 05 Jun 2012 14:01:29 +0200
+Message-ID: <87vcj6hsrq.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jun 2012, Nikunj A Dadhania wrote:
-> On Tue, 5 Jun 2012 11:48:02 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
-> > 
-> > I am also interested in introducing HAVE_RCU_TABLE_FREE on x86 for Xen.
-> > Maybe we can pull our efforts together :-)
-> > 
-> > Giving a look at this patch, it doesn't look like it is introducing
-> > CONFIG_HAVE_RCU_TABLE_FREE anywhere under arch/x86.
-> > How is the user supposed to set it?
-> >
-> I am doing that in the next patch only for KVM-ParavirtTLB flush, as
-> there is a bug in this implementation that patch [7/7] fixes.
-> 
-> Refer following thread for details:
-> http://mid.gmane.org/1337254086.4281.26.camel@twins
-> http://mid.gmane.org/1337273959.4281.62.camel@twins
+Linus,
 
-Thanks, somehow I missed the 7/7 patch.
+Please pull from
 
->From the Xen POV, your patch is fine because we'll just select
-PARAVIRT_TLB_FLUSH on CONFIG_XEN (see appended patch for completeness).
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
 
-The main difference between the two approaches is that a kernel with
-PARAVIRT_TLB_FLUSH and/or CONFIG_XEN enabled is going to have
-HAVE_RCU_TABLE_FREE even when running on native.
+to receive the following changes.
 
-Are you proposing this series for 3.5?
-If not (because it depends on ticketlocks and KVM Paravirt Spinlock
-patches), could you extract patch 6/7 and 7/7 and send them out
-separately?
-I am saying this because Xen needs the HAVE_RCU_TABLE_FREE fix even if
-pv ticketlock are not accepted. This is an outstanding bug for us
-unfortunately.
+Thanks,
+Miklos
 
 ---
+Anatol Pomozov (1):
+      fuse: add FALLOCATE operation
 
-xen: select PARAVIRT_TLB_FLUSH if SMP
+Miklos Szeredi (2):
+      fuse: optimize fallocate on permanent failure
+      fuse: fix blksize calculation
 
-At the moment get_user_pages_fast is unsafe on Xen, because it relies on
-the fact that flush_tlb_others sends an IPI to flush the tlb but
-xen_flush_tlb_others doesn't send any IPIs and always returns
-succesfully and immediately.
+Pavel Shilovsky (1):
+      fuse: fix stat call on 32 bit platforms
 
-Select PARAVIRT_TLB_FLUSH, that enables an RCU lock to protect this kind
-of software pagetable walks (also see HAVE_RCU_TABLE_FREE and
-include/asm-generic/tlb.h).
+Peter Huewe (1):
+      fuse: Convert to kstrtoul_from_user
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index fdce49c..18c9876 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -6,6 +6,7 @@ config XEN
- 	bool "Xen guest support"
- 	select PARAVIRT
- 	select PARAVIRT_CLOCK
-+	select PARAVIRT_TLB_FLUSH if SMP
- 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
- 	depends on X86_CMPXCHG && X86_TSC
- 	help
+---
+ fs/fuse/control.c    |   10 ++--------
+ fs/fuse/dir.c        |   11 ++++++++++-
+ fs/fuse/file.c       |   40 ++++++++++++++++++++++++++++++++++++++++
+ fs/fuse/fuse_i.h     |    6 ++++++
+ fs/fuse/inode.c      |   17 ++++++++++++++++-
+ include/linux/fuse.h |   14 +++++++++++++-
+ 6 files changed, 87 insertions(+), 11 deletions(-)
