@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761250Ab2FEAEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 20:04:05 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:34863 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935Ab2FEAEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 20:04:04 -0400
-Date: Mon, 4 Jun 2012 17:03:56 -0700
-From: Kees Cook <keescook@chromium.org>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        dm-devel@redhat.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group
- 1904, 32254 clusters in bitmap, 32258 in gd
-Message-ID: <20120605000356.GM29466@outflux.net>
-References: <471046920.20120604234941@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <471046920.20120604234941@eikelenboom.it>
-Organization: Outflux
-X-HELO: www.outflux.net
+	id S1761234Ab2FEAUN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 20:20:13 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43149 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752429Ab2FEAUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 20:20:11 -0400
+Message-ID: <1338855610.20167.2.camel@joe2Laptop>
+Subject: [PATCH] MAINTAINERS: whitespace only
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 04 Jun 2012 17:20:10 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Remove trailing spaces at EOL.
+Always use a tab after the type :
 
-On Mon, Jun 04, 2012 at 11:49:41PM +0200, Sander Eikelenboom wrote:
-> I have enabled some debug options, this is from around when the error occurs (kernel: [  950.610126] EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1699, 32254 clusters in bitmap, 32258 in gd)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Today I've finally managed to bisect this to here:
-[fd034a84e1ea5c8c8d159cd2089c32e792c269b0] ext4: split out ext4_free_blocks_after_init()
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 55f0fda..a3c9b62 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1077,7 +1077,7 @@ F:	drivers/media/video/s5p-fimc/
+ ARM/SAMSUNG S5P SERIES Multi Format Codec (MFC) SUPPORT
+ M:	Kyungmin Park <kyungmin.park@samsung.com>
+ M:	Kamil Debski <k.debski@samsung.com>
+-M:     Jeongtae Park <jtp.park@samsung.com>
++M:	Jeongtae Park <jtp.park@samsung.com>
+ L:	linux-arm-kernel@lists.infradead.org
+ L:	linux-media@vger.kernel.org
+ S:	Maintained
+@@ -1743,10 +1743,10 @@ F:	include/linux/can/platform/
+ CAPABILITIES
+ M:	Serge Hallyn <serge.hallyn@canonical.com>
+ L:	linux-security-module@vger.kernel.org
+-S:	Supported	
++S:	Supported
+ F:	include/linux/capability.h
+ F:	security/capability.c
+-F:	security/commoncap.c 
++F:	security/commoncap.c
+ F:	kernel/capability.c
+ 
+ CELL BROADBAND ENGINE ARCHITECTURE
+@@ -2146,11 +2146,11 @@ S:	Orphan
+ F:	drivers/net/wan/pc300*
+ 
+ CYTTSP TOUCHSCREEN DRIVER
+-M:      Javier Martinez Canillas <javier@dowhile0.org>
+-L:      linux-input@vger.kernel.org
+-S:      Maintained
+-F:      drivers/input/touchscreen/cyttsp*
+-F:      include/linux/input/cyttsp.h
++M:	Javier Martinez Canillas <javier@dowhile0.org>
++L:	linux-input@vger.kernel.org
++S:	Maintained
++F:	drivers/input/touchscreen/cyttsp*
++F:	include/linux/input/cyttsp.h
+ 
+ DAMA SLAVE for AX.25
+ M:	Joerg Reuter <jreuter@yaina.de>
+@@ -5169,7 +5169,7 @@ S:	Maintained
+ F:	drivers/firmware/pcdp.*
+ 
+ PCI ERROR RECOVERY
+-M:     Linas Vepstas <linasvepstas@gmail.com>
++M:	Linas Vepstas <linasvepstas@gmail.com>
+ L:	linux-pci@vger.kernel.org
+ S:	Supported
+ F:	Documentation/PCI/pci-error-recovery.txt
 
-If I revert all the "ext4:" patches in 3.2 up to and including that one,
-I get normal behavior again.
 
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
