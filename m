@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab2FETCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:02:49 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:43957 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab2FETCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:02:47 -0400
+	id S1751393Ab2FETEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 15:04:08 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46095 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751087Ab2FETEG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 15:04:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAHGf_=qDy79cvHX3ym7RvkX7q9+2TDKhgtBHVj6+XHORczj94A@mail.gmail.com>
-References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
- <CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com>
- <alpine.DEB.2.00.1205301328550.31768@router.home> <20120530184638.GU27374@one.firstfloor.org>
- <alpine.DEB.2.00.1205301349230.31768@router.home> <20120530193234.GV27374@one.firstfloor.org>
- <alpine.DEB.2.00.1205301441350.31768@router.home> <CAHGf_=ooVunBpSdBRCnO1uOoswqxcSy7Xf8xVcgEUGA2fXdcTA@mail.gmail.com>
- <20120530201042.GY27374@one.firstfloor.org> <CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com>
- <alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm> <alpine.DEB.2.00.1206010850430.6302@router.home>
- <alpine.DEB.2.02.1206011230170.17976@asgard.lang.hm> <CAHGf_=qDy79cvHX3ym7RvkX7q9+2TDKhgtBHVj6+XHORczj94A@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 5 Jun 2012 12:02:25 -0700
-X-Google-Sender-Auth: 9rKarOEe3KtuD9KteQ--kFPiFcU
-Message-ID: <CA+55aFx6s34ss=5tjD4DT7X0WKRZfEsdk1ZiE-fkL3qao27z-A@mail.gmail.com>
-Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: david@lang.hm, Christoph Lameter <cl@linux.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@google.com>,
-        Dave Jones <davej@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        stable@vger.kernel.org, hughd@google.com, sivanich@sgi.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4FCE3DE3.9060805@gmail.com>
+References: <4FCE25C6.2080601@gmail.com>
+	<1338912052.2749.2.camel@twins>
+	<1338912312.2749.6.camel@twins>
+	<4FCE3DE3.9060805@gmail.com>
+Date: Tue, 5 Jun 2012 21:04:04 +0200
+Message-ID: <CABPqkBSR6VCypKXoArPpvKBEpkY0MaPUmLnL7J0tOqgi8WAYzw@mail.gmail.com>
+Subject: Re: git bisect and perf
+From: Stephane Eranian <eranian@google.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm coming back to this email thread, because I didn't apply the
-series due to all the ongoing discussion and hoping that somebody
-would put changelog fixes and ack notices etc together.
+On Tue, Jun 5, 2012 at 7:12 PM, David Ahern <dsahern@gmail.com> wrote:
+> On 6/5/12 10:05 AM, Peter Zijlstra wrote:
+>>
+>> On Tue, 2012-06-05 at 18:00 +0200, Peter Zijlstra wrote:
+>>>
+>>> On Tue, 2012-06-05 at 09:29 -0600, David Ahern wrote:
+>>>>
+>>>> I am trying find out when (ie. which commit) the pebs feature
+>>>> actually
+>>>> started working on a westmere system
+>>>
+>>>
+>>> What do you mean with working? The whole cycles:pp thing is magic and
+>>> unrelated to 'regular' PEBS stuff.
+>
+>
+> :p requires PEBS?
+>
+>
+>> .35 would indeed be the version we
+>>>
+>>> introduced PEBS support and it should actually work.
+>
+>
+> I'm referring to cycles:p
+>
+> model name      : Intel(R) Xeon(R) CPU           E5620  @ 2.40GHz
+That's not as helpful as /proc/cpuinfo. I suspect this is a Westmere
+system, isn't it?
 
-I'd also really like to know that the people who saw the problem that
-caused the current single patch (that this series reverts) would test
-the whole series. Maybe that happened and I didn't notice it in the
-threads, but I don't think so.
-
-In fact, right now I'm assuming that the series will eventually come
-to me through Andrew. Andrew, correct?
-
-                       Linus
+> Fedora 14, 2.6.35.14-106.fc14.x86_64 (few perf_event* differences from
+> 2.6.35.14).
+>
+> # perf record -e cycles:p -v -- sleep 1
+>
+>  Warning:  ... trying to fall back to cpu-clock-ticks
+>
+> ...
+>
+> Cycles is supported; it's the :p that is not. perf userspace only recently
+> gained the knowledge for discriminating the two. Using perf from
+> acme/perf/urgent:
+>
+> # /tmp/pbuild/perf record -e cycles:p -v -- sleep 1
+>
+>  Error: sys_perf_event_open() syscall returned with 28 (No space left on
+> device).  /bin/dmesg may provide additional information.
+>
+> I chased this to intel_pebs_constraints() returning &emptyconstraint which
+> has a weight of 0 (validate_event -> intel_get_event_constraints ->
+> intel_pebs_constraints).
+>
+>
+>
+>>>
+>>> But if you're looking for the cycles:pp stuff (commit 7639dae0ca1)
+>>> that's .38-rc1-ish.
+>>
+>>
+>> So on kernels pre that commit you could still do:
+>>
+>>   perf record -e r108000c0:pp
+>
+>
+> Indeed that works on the F14 kernel.
+>
+> David
