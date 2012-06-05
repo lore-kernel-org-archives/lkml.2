@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934313Ab2FENiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:38:20 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48351 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab2FENiS (ORCPT
+	id S934323Ab2FENkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:40:05 -0400
+Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3951 "EHLO
+	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934131Ab2FENkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:38:18 -0400
+	Tue, 5 Jun 2012 09:40:03 -0400
+Message-ID: <4FCE0BFB.3010703@spin.net.au>
+Date: Tue, 05 Jun 2012 23:39:07 +1000
+From: Chris Jones <chrisjones@spin.net.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120422 Firefox/12.0 SeaMonkey/2.9
 MIME-Version: 1.0
-In-Reply-To: <1338903164.28282.177.camel@twins>
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
-	<CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
-	<CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
-	<1338891271.28282.155.camel@twins>
-	<CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
-	<1338892071.28282.157.camel@twins>
-	<CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
-	<1338898024.28282.160.camel@twins>
-	<1338899999.28282.164.camel@twins>
-	<CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
-	<1338901490.28282.167.camel@twins>
-	<CABPqkBRF_2LXE-54tLMBnQgLKbKyR9qo+4VohQiOchpqe1pgyw@mail.gmail.com>
-	<1338903164.28282.177.camel@twins>
-Date: Tue, 5 Jun 2012 15:38:16 +0200
-Message-ID: <CABPqkBQ0OM__Ny9N9ZunKc2nCoqBH+cFY91CUH19xNUbM5NmGw@mail.gmail.com>
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org
+Subject: Re: Powerpc continued support?
+References: <4FCDA403.6070801@spin.net.au> <CA+5PVA4K51q=A9wA5kEHBzQ-01MrFZ5-uW3Qi4EvhVftk6acwA@mail.gmail.com>
+In-Reply-To: <CA+5PVA4K51q=A9wA5kEHBzQ-01MrFZ5-uW3Qi4EvhVftk6acwA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-comcen-MailScanner-Information: Please contact the ISP for more information
+X-comcen-MailScanner: Found to be clean
+X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-2.092, required 4, AWL 0.41, BAYES_00 -2.60, RDNS_NONE 0.10)
+X-comcen-MailScanner-From: chrisjones@spin.net.au
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 3:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2012-06-05 at 15:31 +0200, Stephane Eranian wrote:
->> Looks nicer, still missing this little piece + is_fake definition and
->> setting is allocate_fakecpuc())
->>
-> Yeah, just send out something more complete -- although only built
-> tested.
->
-> This was just seeing how the intel_try_alt_er() stuff could be done
-> saner.
+Josh Boyer wrote:
+> On Tue, Jun 5, 2012 at 2:15 AM, Chris Jones<chrisjones@spin.net.au>  wrote:
+>> I am just thinking about Powerpc support in the kernel. Are there any plans
+>> to remove its support? And if so, how much space would be saved by its
+>> removal or at least disablement of Powerpc specific modules?
+> No plans to remove it at all.  It's one of the more active architecture
+> ports Linux has.  Why on earth would it be removed?
+Sure, fair enough. I had no idea it was still so popular. But I can 
+understand that if there's continued use, then there would be obvious 
+reasons for continued support of the arch.
 
-Will try it on my systems. Though it appears the patch has some
-^M all over.
-Thanks for looking into this today.
+>
+>> Is it worth looking into this for a custom kernel?
+> Sure... whatever floats your boat I guess.
+
+Something I might look into for custom kernel I suppose.
+
+
+Regards
+
+Chris Jones
