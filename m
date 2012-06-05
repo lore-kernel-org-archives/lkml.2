@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab2FEL51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:57:27 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40229 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754338Ab2FEL5Z convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:57:25 -0400
+	id S1756226Ab2FEL6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:58:41 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35422 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab2FEL6j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 07:58:39 -0400
+X-IronPort-AV: E=Sophos;i="4.75,718,1330905600"; 
+   d="scan'208";a="12838043"
+Date: Tue, 5 Jun 2012 12:58:32 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <87ehpuqam8.fsf@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com> <87ehpuqam8.fsf@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1338210316-12299-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-References: <CAHp75Vc3sut7R7FF=xHQ0-3HaydPBh86sNnzRjKP8+ow=SOfLg@mail.gmail.com>
-	<1338210316-12299-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-Date: Tue, 5 Jun 2012 14:57:23 +0300
-Message-ID: <CAMXE1-q+Cn0DHqyLFe19ej3z3B2ptdS28H2qKRXJBhpOLaFdEQ@mail.gmail.com>
-Subject: Re: [PATCHv3] vsprintf: Add %pMR for Bluetooth MAC address
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: linux-bluetooth@vger.kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, adobriyan@gmail.com,
-        andriy.shevchenko@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+On Tue, 5 Jun 2012, Nikunj A Dadhania wrote:
+> On Tue, 5 Jun 2012 11:48:02 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > 
+> > I am also interested in introducing HAVE_RCU_TABLE_FREE on x86 for Xen.
+> > Maybe we can pull our efforts together :-)
+> > 
+> > Giving a look at this patch, it doesn't look like it is introducing
+> > CONFIG_HAVE_RCU_TABLE_FREE anywhere under arch/x86.
+> > How is the user supposed to set it?
+> >
+> I am doing that in the next patch only for KVM-ParavirtTLB flush, as
+> there is a bug in this implementation that patch [7/7] fixes.
+> 
+> Refer following thread for details:
+> http://mid.gmane.org/1337254086.4281.26.camel@twins
+> http://mid.gmane.org/1337273959.4281.62.camel@twins
 
-On Mon, May 28, 2012 at 4:05 PM, Andrei Emeltchenko
-<Andrei.Emeltchenko.news@gmail.com> wrote:
-> From: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
->
-> Bluetooth uses mostly LE byte order which is reversed for visual
-> interpretation. Currently in Bluetooth in use unsafe batostr function.
->
-> This is slightly modified version of Joe Perches <joe@perches.com>
-> patch (sent Sat, Dec 4, 2010).
->
-> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@intel.com>
-> ---
->        v3: removed extra variable index
->        v2: changed bluetooth to reversed, syntax fixes
->
->  lib/vsprintf.c |   23 +++++++++++++++++++----
->  1 file changed, 19 insertions(+), 4 deletions(-)
->
-> diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-> index abbabec..55052fa 100644
-> --- a/lib/vsprintf.c
-> +++ b/lib/vsprintf.c
-> @@ -559,15 +559,28 @@ char *mac_address_string(char *buf, char *end, u8 *addr,
->        char *p = mac_addr;
->        int i;
->        char separator;
-> +       bool reversed = false;
->
-> -       if (fmt[1] == 'F') {            /* FDDI canonical format */
-> +       switch (fmt[1]) {
-> +       case 'F':
->                separator = '-';
-> -       } else {
-> +               break;
-> +
-> +       case 'R':
-> +               reversed = true;
-> +               /* fall through */
-> +
-> +       default:
->                separator = ':';
-> +               break;
->        }
->
->        for (i = 0; i < 6; i++) {
-> -               p = hex_byte_pack(p, addr[i]);
-> +               if (reversed)
-> +                       p = hex_byte_pack(p, addr[5 - i]);
-> +               else
-> +                       p = hex_byte_pack(p, addr[i]);
-> +
->                if (fmt[0] == 'M' && i != 5)
->                        *p++ = separator;
->        }
-> @@ -830,6 +843,7 @@ int kptr_restrict __read_mostly;
->  * - 'm' For a 6-byte MAC address, it prints the hex address without colons
->  * - 'MF' For a 6-byte MAC FDDI address, it prints the address
->  *       with a dash-separated hex notation
-> + * - '[mM]R For a 6-byte MAC address, Reverse order (Bluetooth)
->  * - 'I' [46] for IPv4/IPv6 addresses printed in the usual way
->  *       IPv4 uses dot-separated decimal without leading 0's (1.2.3.4)
->  *       IPv6 uses colon separated network-order 16 bit hex with leading 0's
-> @@ -890,7 +904,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
->                return resource_string(buf, end, ptr, spec, fmt);
->        case 'M':                       /* Colon separated: 00:01:02:03:04:05 */
->        case 'm':                       /* Contiguous: 000102030405 */
-> -                                       /* [mM]F (FDDI, bit reversed) */
-> +                                       /* [mM]F (FDDI) */
-> +                                       /* [mM]R (Reverse order; Bluetooth) */
->                return mac_address_string(buf, end, ptr, spec, fmt);
->        case 'I':                       /* Formatted IP supported
->                                         * 4:   1.2.3.4
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks, somehow I missed the 7/7 patch.
+
+>From the Xen POV, your patch is fine because we'll just select
+PARAVIRT_TLB_FLUSH on CONFIG_XEN (see appended patch for completeness).
+
+The main difference between the two approaches is that a kernel with
+PARAVIRT_TLB_FLUSH and/or CONFIG_XEN enabled is going to have
+HAVE_RCU_TABLE_FREE even when running on native.
+
+Are you proposing this series for 3.5?
+If not (because it depends on ticketlocks and KVM Paravirt Spinlock
+patches), could you extract patch 6/7 and 7/7 and send them out
+separately?
+I am saying this because Xen needs the HAVE_RCU_TABLE_FREE fix even if
+pv ticketlock are not accepted. This is an outstanding bug for us
+unfortunately.
+
+---
+
+xen: select PARAVIRT_TLB_FLUSH if SMP
+
+At the moment get_user_pages_fast is unsafe on Xen, because it relies on
+the fact that flush_tlb_others sends an IPI to flush the tlb but
+xen_flush_tlb_others doesn't send any IPIs and always returns
+succesfully and immediately.
+
+Select PARAVIRT_TLB_FLUSH, that enables an RCU lock to protect this kind
+of software pagetable walks (also see HAVE_RCU_TABLE_FREE and
+include/asm-generic/tlb.h).
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index fdce49c..18c9876 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -6,6 +6,7 @@ config XEN
+ 	bool "Xen guest support"
+ 	select PARAVIRT
+ 	select PARAVIRT_CLOCK
++	select PARAVIRT_TLB_FLUSH if SMP
+ 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
+ 	depends on X86_CMPXCHG && X86_TSC
+ 	help
