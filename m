@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753028Ab2FEPhM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 11:37:12 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:45334 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751037Ab2FEPhK (ORCPT
+	id S1753102Ab2FEPig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 11:38:36 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42604 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2FEPif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 11:37:10 -0400
-From: Federico Fuga <fuga@studiofuga.com>
-Cc: fuga@studiofuga.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] MTD: add JEDEC ID for w25q32dw to chip table
-Date: Tue,  5 Jun 2012 17:37:01 +0200
-Message-Id: <1338910621-3843-1-git-send-email-fuga@studiofuga.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1338900917.2507.50.camel@sauron.fi.intel.com>
-References: <1338900917.2507.50.camel@sauron.fi.intel.com>
-X-Identified-User: {2354:box484.bluehost.com:happycac:studiofuga.com} {sentby:smtp auth 95.241.194.105 authed with fuga+studiofuga.com}
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 5 Jun 2012 11:38:35 -0400
+Date: Tue, 5 Jun 2012 08:19:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: automount hangs during boot somewhere in rcu_barrier.
+Message-ID: <20120605151930.GG2388@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20120603113236.GW2311@redhat.com>
+ <20120604031549.GE2357@linux.vnet.ibm.com>
+ <20120604074803.GA23670@redhat.com>
+ <20120604100925.GC23670@redhat.com>
+ <20120604145432.GA2490@linux.vnet.ibm.com>
+ <20120605094658.GI580@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605094658.GI580@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060515-2398-0000-0000-0000073903ED
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "ing. Federico Fuga" <fuga@studiofuga.com>
+On Tue, Jun 05, 2012 at 12:46:58PM +0300, Gleb Natapov wrote:
+> On Mon, Jun 04, 2012 at 07:54:32AM -0700, Paul E. McKenney wrote:
+> > On Mon, Jun 04, 2012 at 01:09:25PM +0300, Gleb Natapov wrote:
+> > > On Mon, Jun 04, 2012 at 10:48:03AM +0300, Gleb Natapov wrote:
+> > > > On Sun, Jun 03, 2012 at 08:15:49PM -0700, Paul E. McKenney wrote:
+> > > > > Hmmm...  Could you please try disabling CONFIG_RCU_FAST_NO_HZ?  If that
+> > > > > makes the problem go away, I have some patches 3.6-targeted patches
+> > > > > for you.
+> > > > Will report back.
+> > > > 
+> > > Do not see any problems with the option disabled.
+> > 
+> > OK, then you are probably being bitten by the same bug that was biting
+> > Pascal and Heiko.  Could you please apply the following series from -rcu?
+> > 
+> > 	bf7757c3 (Merge commit 'v3.4-rc6' into HEAD)
+> > 	edc17350 (RCU_FAST_NO_HZ detection of callback adoption)
+> > 	8e03a88e (Update RCU_FAST_NO_HZ tracing for lazy callbacks)
+> > 	f2298c63 (Move RCU_FAST_NO_HZ per-CPU variables to rcu_dynticks structure)
+> > 	05cc0fc9 (Precompute RCU_FAST_NO_HZ timer offsets)
+> > 	477fca01 (Dump only the current CPU's buffers for idle-entry/exit warnings)
+> > 	f29075fb (The rcu_needs_cpu() function is not a quiescent state)
+> > 
+> > Of these, 05cc0fc9 (Precompute RCU_FAST_NO_HZ timer offsets) is likely
+> > to be the most relevant.  The -rcu tree may be found at:
+> > 
+> > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> > 
+> > Please let me know if you have any trouble pulling this series.
+> > 
+> The problem is gone with the series + enabling CONFIG_RCU_FAST_NO_HZ
+> back.
 
-Adds JEDEC ID for the 1.8V version of WinBond w25q32
+Very good!!!
 
-Signed-off-by: Federico Fuga <fuga@studiofuga.com>
----
- drivers/mtd/devices/m25p80.c |    1 +
- 1 file changed, 1 insertion(+)
+Maybe I should be submitting this series to 3.5 rather than 3.6?
 
-diff --git a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
-index 7c60ddd..9d16890 100644
---- a/drivers/mtd/devices/m25p80.c
-+++ b/drivers/mtd/devices/m25p80.c
-@@ -757,6 +757,7 @@ static const struct spi_device_id m25p_ids[] = {
- 	{ "w25x16", INFO(0xef3015, 0, 64 * 1024,  32, SECT_4K) },
- 	{ "w25x32", INFO(0xef3016, 0, 64 * 1024,  64, SECT_4K) },
- 	{ "w25q32", INFO(0xef4016, 0, 64 * 1024,  64, SECT_4K) },
-+	{ "w25q32dw", INFO(0xef6016, 0, 64 * 1024,  64, SECT_4K) },
- 	{ "w25x64", INFO(0xef3017, 0, 64 * 1024, 128, SECT_4K) },
- 	{ "w25q64", INFO(0xef4017, 0, 64 * 1024, 128, SECT_4K) },
- 
--- 
-1.7.9.5
+							Thanx, Paul
 
