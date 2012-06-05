@@ -1,133 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab2FEOw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 10:52:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14282 "EHLO mx1.redhat.com"
+	id S1752599Ab2FEOxH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 10:53:07 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:39828 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901Ab2FEOwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 10:52:55 -0400
-Date: Tue, 5 Jun 2012 16:51:23 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Hillf Danton <dhillf@gmail.com>,
-        Dan Smith <danms@us.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Paul Turner <pjt@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Mike Galbraith <efault@gmx.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Bharata B Rao <bharata.rao@gmail.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 13/35] autonuma: add page structure fields
-Message-ID: <20120605145123.GG21339@redhat.com>
-References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
- <1337965359-29725-14-git-send-email-aarcange@redhat.com>
- <1338297385.26856.74.camel@twins>
- <4FC4D58A.50800@redhat.com>
- <1338303251.26856.94.camel@twins>
- <4FC5D973.3080108@gmail.com>
- <1338368763.26856.207.camel@twins>
- <20120530134953.GD21339@redhat.com>
- <1338488339.28384.106.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338488339.28384.106.camel@twins>
+	id S1750810Ab2FEOw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 10:52:59 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
+        Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        handai.szj@gmail.com, Andrew.Phillips@lmax.com,
+        Serge Hallyn <serge.hallyn@canonical.com>
+Subject: [PATCH v4 0/4] per cgroup cpu statistics
+Date: Tue,  5 Jun 2012 18:49:37 +0400
+Message-Id: <1338907781-20904-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.10.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Thu, May 31, 2012 at 08:18:59PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-05-30 at 15:49 +0200, Andrea Arcangeli wrote:
-> > 
-> > I'm thinking about it but probably reducing the page_autonuma to one
-> > per pmd is going to be the simplest solution considering by default we
-> > only track the pmd anyway. 
-> 
-> Do also consider that some archs have larger base page size. So their
-> effective PMD size is increased as well.
+This is the 4th version of this per-cgroup statistics. My aim with that is
+to provide userspace with the necessary tools to export a view of /proc/stat
+inside a container, so tools like top would work. 
 
-With a larger PAGE_SIZE like 64k I doubt this would be a concern, it's
-just 4k is too small.
+I believe this version merges all the comments from Peter and Paul. Let me know
+if I forgot any of them.
 
-Now I did a number of cleanups and already added a number of comments,
-I'll write proper badly needed docs on the autonuma_balance() function
-ASAP, but at least a number of cleanups are already committed in the
-autonuma branch of my git tree.
+I now reuse put_prev_task to account for nr_switches, so no extra walks are added.
+For that, I had to add another parameter to the function, but I hope this is
+acceptable. Please note that this parameter would still be needed even if
+Peter's patch that merges put_prev_task behavior inside pick_next_task.
 
->From my side, the thing that annoys me the most at the moment is the
-page_autonuma size.
+This is because the previous class may live in a different class and we may
+have to call it anyway. In which case a hint like this would be needed.
+I believe this to be orthogonal to the work you are doing.
 
-So I gave more thought about the idea outlined above but well I gave
-up in less than a minute of thinking what I could run into doing
-that. The fact we do pmd tracking in knuma_scand by default (possible
-to disable with sysfs) is irrelevant. Unless I'm only going to track
-THP pages, 1 page_autonuma per pmd won't work, when the pmd_numa fault
-triggers it's all nonlinear on whatever scattered 4k page is pointed
-by the pte, not shared pagecache especially.
+Peter: the patch that adds exec_clock to rt was removed. That was my bad, it
+was intended to be part of the series that unifies cpu and cpuacct for the
+comounted case. I have them together in my tree, and I made the cut in the wrong
+place. It is not needed here.
 
-I kept thinking more on it, I should have now figured how to reduce
-the page_autonuma to 12 bytes per 4k page on both 32bit and 64bit
-without losing information (no code written yet but this one should
-work). I just couldn't shrink it below 12 bytes without going into
-ridiculous high and worthless complexities.
+Let me know what you think of this.
 
-After this change AutoNUMA will bail out if any of the two below
-conditions is true:
+v4:
+* read_seq_string used instead of read_map. This is because the
+  buffer can get very big, and that's easier to fix by using seq_string
+* idle time no longer exported. It can be derived from userspace easily
+* "steal" changed to "wait", since steal is more our interpretation of it
+* nr_switches now being accounted as we walk the tree in put_prev_task, so no
+  new hierarchy walks are being inserted.
+v3:
+* completely reworked nr_switches gathering
+* separated per-se sleep_start to be more clear about it
 
-1) MAX_NUMNODES >= 65536
-2) any NUMA node pgdat.node_spanned_pages >= 16TB/PAGE_SIZE
 
-That means AutoNUMA will disengage itself automatically on boot on x86
-NUMA systems with more than 1152921504606846976 of ram, that's 60bit
-of physical address space and no x86 CPU even gets that far in terms
-of physical address space.
+Glauber Costa (4):
+  account guest time per-cgroup as well.
+  expose fine-grained per-cpu data for cpuacct stats
+  mark whenever put_prev_task is called from context_switch
+  expose per-taskgroup schedstats in cgroup
 
-Other archs requiring more memory than that, will hopefully have a
-PAGE_SIZE > 4KB (in turn doubling up the per-node limit of ram at
-every doubling of the PAGE_SIZE without having to increase the size of
-the page_autonuma even on 64bit from 12bytes).
+ include/linux/sched.h    |    2 +-
+ kernel/sched/core.c      |  178 +++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sched/fair.c      |   28 +++++++-
+ kernel/sched/idle_task.c |    2 +-
+ kernel/sched/rt.c        |    6 +-
+ kernel/sched/sched.h     |    5 ++
+ kernel/sched/stop_task.c |    2 +-
+ 7 files changed, 207 insertions(+), 16 deletions(-)
 
-A packed 12 bytes per page should be all I need (maybe some arch with
-alignment troubles may prefer to make it a 16 bytes, but on x86 packed
-should work). So on x86 that's 0.29% of RAM used for autonuma and only
-spent when booting on NUMA hardware (and trivial to get rid of by
-passing "noatuonuma" on the command line).
+-- 
+1.7.10.2
 
-If I leave the anti false sharing last_nid information in the page
-structure plus a pointer to a dynamic structure, that would be still
-about 12 bytes. So I rather spend those 12 bytes to avoid having to
-point to a dynamic object which in fact would waste even more memory
-in addition to the 12 bytes of pointer+last_nid.
-
-The details of the solution:
-
-struct page_autonuma {
-    short autonuma_last_nid;
-    short autonuma_migrate_nid;
-    unsigned int pfn_offset_next;
-    unsigned int pfn_offset_prev;
-} __attribute__((packed));
-
-page_autonuma can only point to a page that belongs to the same node
-(page_autonuma is queued into the
-NODE_DATA(autonuma_migrate_nid)->autonuma_migrate_head[src_nid]) where
-src_nid is the source node that page_autonuma belongs to, so all pages
-in the autonuma_migrate_head[src_nid] lru must come from the same
-src_nid. So the next page_autonuma in the list will be
-lookup_page_autonuma(pfn_to_page(NODE_DATA(src_nid)->node_start_pfn +
-page_autonuma->pfn_offset_next)) etc..
-
-Of course all list_add/del must be hardcoded specially for this, but
-it's not a conceptually difficult solution, just we can't use list.h
-and stright pointers anymore and some conversion must happen.
