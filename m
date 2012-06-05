@@ -1,102 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761523Ab2FEDnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:43:24 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:52357 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761428Ab2FEDnU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:43:20 -0400
-From: Bhupesh SHARMA <bhupesh.sharma@st.com>
-To: Federico Vaga <federico.vaga@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 5 Jun 2012 11:42:50 +0800
-Subject: RE: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Thread-Topic: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Thread-Index: Ac1CcQt4psk9IY2KQNqBGybfcWb7HgAWwjqw
-Message-ID: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
-References: <4FC135C6.5030206@grandegger.com>
- <1338816766-7089-2-git-send-email-federico.vaga@gmail.com>
- <20120604165619.15ba43bf@pyramind.ukuu.org.uk> <1677842.Pq7naXsvrI@harkonnen>
-In-Reply-To: <1677842.Pq7naXsvrI@harkonnen>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1761421Ab2FEDtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:49:01 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:36958 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1761366Ab2FEDtA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 23:49:00 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+L6uI3Ea2LTrJnQ/Y1m2XL8qN1LDnum79vZ+AT8N
+	bVViYaARACCTbc
+Message-ID: <1338868135.7356.5.camel@marge.simpson.net>
+Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
+ calculating perf mult
+From: Mike Galbraith <efault@gmx.de>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 05 Jun 2012 05:48:55 +0200
+In-Reply-To: <4FCCD6B7.4030703@linux.intel.com>
+References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
+	 <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
+	 <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
+	 <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
+	 <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-can-owner@vger.kernel.org [mailto:linux-can-
-> owner@vger.kernel.org] On Behalf Of Federico Vaga
-> Sent: Monday, June 04, 2012 10:16 PM
-> To: Alan Cox
-> Cc: Wolfgang Grandegger; Marc Kleine-Budde; Giancarlo ASNAGHI; Alan
-> Cox; Alessandro Rubini; linux-can@vger.kernel.org;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-> 
-> > > +static u16 c_can_pci_read_reg_aligned_to_16bit(struct c_can_priv
-> > > *priv, +						void *reg)
-> >
-> > I'm a bit worried this function name might be too short ;)
-> 
-> I know :) I was inspired by the same function in c_can_platform.c
+On Mon, 2012-06-04 at 08:39 -0700, Arjan van de Ven wrote:
 
-There was a purpose to keeping these long function names when I wrote
-the c_can_platform driver initially. These were kept to support the 
-SoCs (even the flaky ones) which I could trace at that time and used C_CAN controllers
-(e.g. Hynix, ST's SPEAr eMPUs, etc..) and had different register bank layouts.
+> if there is a lot of idle, load can be low or high; load is more than
+> just cpu usage. it includes waiting for resources and mutexes etc.
 
-In some of these SoC's the C_CAN registers which are essentially 16-bit or 32-bit
-registers are aligned always to a 32-bit boundary (i.e. even a 16-bit register
-is aligned to 32-bit boundary).
+05:40:42 up 39 min, 20 users,  load average: 0.63, 0.53, 0.42
+root     pts/11    05:03    5:05   6:16   0.00s /bin/sh /root/bin/tbench.sh 1 400
 
-So, I had to implement two variants of the read/write reg routines. I am not sure your SoC implementation needs them.
-If it does, I will categorize it as flaky as well :)
- 
-> About these function I suggest to move them into c_can.c because they
-> are the same for c_can_platform.c and c_can_pci.c Then add a new field
-> c_can_priv->offset which can be used to shift the register offset
-> coherently with the memory alignment. Finally, remove c_can_priv-
-> >read_reg and c_can_priv->write_reg and use internal c_can.c function
-> to
-> read and write registers.
+Like scheduling something cross core that is close to being synchronous.
 
-See above. There was a reason for keeping these routines in c_can_platform.c
-Simply put, every platform having a Bosch C_CAN module can have it's own implementation
-of the bus (for example you use PCI) and register bank layout (16-bit or 32-bit aligned).
+-Mike
 
-I would suggest to keep the same arrangement.
-
-> static u16 c_can_read_reg(struct c_can_priv *priv, enum reg index)
-> {
-> 	return readw(priv->base + (priv->regs[index] << priv->offset));
-> }
-> static void c_can_write_reg(struct c_can_priv *priv, enum reg index,
-> 						u16 val)
-> {
-> 	writew(val, priv->base + (priv->regs[index] << priv->offset));
-> }
-> 
-> 
-> If it's ok, I can made a patch for this in the next days.
-> 
-
-[snip..]
-
-
-Regards,
-Bhupesh
