@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab2FEOgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 10:36:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59450 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752855Ab2FEOgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 10:36:39 -0400
-Date: Tue, 5 Jun 2012 15:36:37 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm radeon fixes + new pci ids.
-Message-ID: <alpine.DEB.2.00.1206051535280.32686@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758224Ab2FEOgs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 10:36:48 -0400
+Received: from mga05.intel.com ([192.55.52.89]:58232 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758092Ab2FEOgm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 10:36:42 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-158993614-1338906997=:32686"
+In-Reply-To: <18630.1338903474@redhat.com>
+References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
+	<26029.1337960539@redhat.com>
+	<87ipf73lsi.fsf@rustcorp.com.au>
+	<1338814071.4044.19.camel@falcor>
+	<87wr3min4b.fsf@rustcorp.com.au>
+	<1338896342.4044.117.camel@falcor>
+	<18630.1338903474@redhat.com>
+Date: Tue, 5 Jun 2012 17:36:41 +0300
+Message-ID: <CALLzPKYpAJ4AtiWJgDiqbJnJa-UUCChdv=bUJAwB0iV4=WVoMg@mail.gmail.com>
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, kyle@mcmartin.ca,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, Tim Abbott <tabbott@ksplice.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Tue, Jun 5, 2012 at 4:37 PM, David Howells <dhowells@redhat.com> wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>
+>> As the signature would be stored as an extended attribute, we wouldn't
+>> need to pass it. Â Unfortunately not all filesystems have xattr support,
+>> nor do all of the package installation mechanims. Â The benefit of
+>> storing the signature as an extended attribute, however, is that there
+>> is a consistent mechanism for verifying file data integrity for all
+>> files, not only ELF.
+>
+> We also want to be able to do module signature verification with CONFIG_IMA=n.
 
---29444707-158993614-1338906997=:32686
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Sure. In the patchset I sent some time ago, signature verification
+does not require CONFIG_IMA=y.
+modprobe reads signature from xattr or .sig file and pass it as kernel
+module parameter.
 
-
-Hi Linus,
-
-this is just radeon fixes and a bunch of new PCI ids.
-The fixes are for a deadlock, an audio regression, and a couple of audio 
-fixes.
-
-Dave.
-
-The following changes since commit 99becf1328d8d71dd6f4480e3591d7dcdb389e57:
-
-  Pull 'for-linus' branches of git://git.kernel.org/pub/scm/linux/kernel/git/viro/{signal,vfs} (2012-06-04 15:09:08 -0700)
-
-are available in the git repository at:
+- Dmitry
 
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 7aaa61b3476462b69f1ac7669fcca8d608ce3cb5:
-
-  drm/radeon/kms: add new SI PCI ids (2012-06-05 15:11:12 +0100)
-
-----------------------------------------------------------------
-Alex Deucher (6):
-      drm/radeon: make audio_init consistent across asics
-      drm/radeon: fix gpu_init on si
-      drm/radeon/kms: add new Trinity PCI ids
-      drm/radeon/kms: add new Palm, Sumo PCI ids
-      drm/radeon/kms: add new BTC PCI ids
-      drm/radeon/kms: add new SI PCI ids
-
-Christian König (1):
-      drm/radeon: fix vm deadlocks on cayman
-
-Rafa³ Mi³ecki (2):
-      drm/radeon/audio: don't hardcode CRTC id
-      drm/radeon/hdmi: don't set SEND_MAX_PACKETS bit
-
- drivers/gpu/drm/radeon/ni.c          |   21 +-
- drivers/gpu/drm/radeon/r600.c        |   15 +-
- drivers/gpu/drm/radeon/r600_audio.c  |    5 +-
- drivers/gpu/drm/radeon/r600_hdmi.c   |    1 -
- drivers/gpu/drm/radeon/radeon.h      |    5 +-
- drivers/gpu/drm/radeon/radeon_gart.c |   19 +-
- drivers/gpu/drm/radeon/radeon_kms.c  |    2 +-
- drivers/gpu/drm/radeon/rs600.c       |   12 +-
- drivers/gpu/drm/radeon/rs690.c       |   12 +-
- drivers/gpu/drm/radeon/rv770.c       |   18 +-
- drivers/gpu/drm/radeon/si.c          |  477 ++++++++++++----------------------
- drivers/gpu/drm/radeon/sid.h         |   19 ++
- include/drm/drm_pciids.h             |   17 +-
- 13 files changed, 255 insertions(+), 368 deletions(-)
---29444707-158993614-1338906997=:32686--
+>
+> David
