@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab2FETqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:46:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37087 "EHLO
+	id S1752046Ab2FETte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 15:49:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37096 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2FETqN convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750887Ab2FETtc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:46:13 -0400
-Message-ID: <1338925555.2749.33.camel@twins>
+	Tue, 5 Jun 2012 15:49:32 -0400
+Message-ID: <1338925756.2749.36.camel@twins>
 Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
  nmi
 From: Peter Zijlstra <peterz@infradead.org>
@@ -21,7 +21,7 @@ Cc: "Luck, Tony" <tony.luck@intel.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
         linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
         linux-pm <linux-pm@vger.kernel.org>,
         "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 05 Jun 2012 21:45:55 +0200
+Date: Tue, 05 Jun 2012 21:49:16 +0200
 In-Reply-To: <alpine.LFD.2.02.1206052106440.3086@ionos>
 References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
 	  <alpine.LFD.2.02.1206042203590.3086@ionos>
@@ -42,13 +42,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2012-06-05 at 21:43 +0200, Thomas Gleixner wrote:
-> My idea of the stateful hotplug is to have a state which just gets rid
-> of the interrupts, timers and some other crap (mostly IPIs) but allows
-> an ad hoc resurrection of the cpu. 
+> Vs. the interrupt/timer/other crap madness:
 > 
-> Ideally the state transition would be driven by the load-balancer.
-> 
-No that's retarded.. Just make it a proper idle state, don't go muck
-about with hotplug from the load-balancer.
+>  - We really don't want to have an interrupt balancer in the kernel
+>    again, but we need a mechanism to prevent the user space balancer
+>    trainwreck from ruining the power saving party.
+
+What's wrong with having an interrupt balancer tied to the scheduler
+which optimistically tries to avoid interrupting nohz/isolated/idle
+cpus?
+
+>  - The timer issue is mostly solved by the existing nohz stuff
+>    (plus/minus the few bugs in there).
+
+Its not.. if you create an isolated domain there's no way to expel
+existing timers from there.
+
+>  - The other details (silly IPIs) and cross CPU timer arming) are way
+>    easier to solve by a proper prohibitive state than by chasing that
+>    nonsense all over the tree forever. 
+
+But we need to solve all that without a prohibitibe state anyway for the
+isolation stuff to be useful.
 
 
