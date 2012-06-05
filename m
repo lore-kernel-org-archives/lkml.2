@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885Ab2FEUyr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 16:54:47 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:50726 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751184Ab2FEUyp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 16:54:45 -0400
+	id S1752912Ab2FEU5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 16:57:24 -0400
+Received: from li158-162.members.linode.com ([173.230.148.162]:52093 "EHLO
+	strelka.plastictigers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab2FEU5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 16:57:22 -0400
+Date: Tue, 5 Jun 2012 16:57:21 -0400
+From: Marc Butler <marc@plastictigers.com>
+To: Sagar Dharia <sdharia@codeaurora.org>
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org, kheitke@codeaurora.org,
+        gclemson@audience.com, broonie@opensource.wolfsonmicro.com,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rob@landley.net, grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        ohad@wizery.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
+        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
+        ak@linux.intel.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
+Message-ID: <20120605205721.GA20560@plastictigers.com>
+References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <4FCE5AD1.6040705@gmx.de>
-References: <1337013111-7732-1-git-send-email-tartler@cs.fau.de> <4FCE5AD1.6040705@gmx.de>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Wed, 6 Jun 2012 04:54:23 +0800
-Message-ID: <CAMPhdO-s0h7ttnApv4ZE++XeOSfOdwh6n-F1dwOhL0qcpmSTGA@mail.gmail.com>
-Subject: Re: [PATCH] mbxfb: unbreak compilation with CONFIG_FB_MBX_DEBUG
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: tartler@cs.fau.de, Arnd Bergmann <arnd@arndb.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@lists.cs.fau.de, Reinhard Tartler <siretart@tauware.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 3:15 AM, Florian Tobias Schandinat
-<FlorianSchandinat@gmx.de> wrote:
-> Hi,
->
-> On 05/14/2012 04:31 PM, tartler@cs.fau.de wrote:
->> From: Reinhard Tartler <siretart@tauware.de>
->>
->> This patch adds missing function prototypes.
->>
->> Signed-off-by: Reinhard Tartler <tartler@cs.fau.de>
->> ---
->>  drivers/video/mbx/mbxfb.c |    3 +++
->>  1 file changed, 3 insertions(+)
->>
->> This patch was found with tools developed in the VAMOS project:
->> http://www4.cs.fau.de/Research/VAMOS/
->>
->> TBH, I'm not sure if this is the correct solution. However, I'd
->> appreciate if someone could confirm that this is a real bug.
->>
->>
->> diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
->> index 6ce3416..c2200ec 100644
->> --- a/drivers/video/mbx/mbxfb.c
->> +++ b/drivers/video/mbx/mbxfb.c
->> @@ -878,6 +878,9 @@ static int mbxfb_resume(struct platform_device *dev)
->>  #ifndef CONFIG_FB_MBX_DEBUG
->>  #define mbxfb_debugfs_init(x)        do {} while(0)
->>  #define mbxfb_debugfs_remove(x)      do {} while(0)
->> +#else
->> +void mbxfb_debugfs_init(struct fb_info *fbi);
->> +void mbxfb_debugfs_remove(struct fb_info *fbi);
->
-> I don't agree. checkpatch complains
-> WARNING: externs should be avoided in .c files
-> #71: FILE: drivers/video/mbx/mbxfb.c:882:
-> +void mbxfb_debugfs_init(struct fb_info *fbi);
->
-> And in drivers/video/mbx/mbxdebugfs.c
-> static void __devinit mbxfb_debugfs_init(struct fb_info *fbi)
-> static void __devexit mbxfb_debugfs_remove(struct fb_info *fbi)
->
-> So even if you want to ignore the checkpatch warning (which I could
-> understand for just 2 includes even if headers are certainly better)
-> you'd have to remove the static at the implementation and for
-> consistency include the __devinit/exit in your prototypes.
+The patch below fixes an bug where devices that have not be matched
+to a driver will result in a segv when the bus is shutdown.
 
-That actually made a very good point, and I seriously doubt whether the
-mbxfb_debugfs_* thing has ever been tested. Instead of making them
-public, I see a chance maybe we could remove them completely instead.
+I am not sure what the policy on patches-on-patches is, it just
+doesn't seem workable. So I this will be the first and last. Instead I
+am maintaing a git repository that tracks Linus's tree:
 
->
->>  #endif
->>
->>  #define res_size(_r) (((_r)->end - (_r)->start) + 1)
->
->
-> Best regards,
->
-> Florian Tobias Schandinat
+git://git.plastictigers.com/slimbus.git
+
+or it can be browsed via the web:
+
+http://git.plastictigers.com/
+
+Currently there are 3 branches:
+
+slimbus-rfc-patch   : the original rfc patch (for reference)
+slimbus-patch       : the current patch (as posted by Sagar)
+slimbus-patch-fixes : slimbus-patch + fixes (like the one below)
+
+There will likely be a couple of new branches in the future.
+
+If anyone has a suggestion on a better way of doing this I am all
+ears.
+
+---
+ drivers/slimbus/slimbus.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/slimbus/slimbus.c b/drivers/slimbus/slimbus.c
+index 6d20241..673222c 100644
+--- a/drivers/slimbus/slimbus.c
++++ b/drivers/slimbus/slimbus.c
+@@ -125,6 +125,9 @@ static void slim_device_shutdown(struct device *dev)
+ 	struct slim_device *slim_dev;
+ 	struct slim_driver *driver;
+ 
++	if (!dev->driver)
++		return;
++
+ 	if (dev->type == &slim_dev_type)
+ 		slim_dev = to_slim_device(dev);
+ 	else
+-- 
+1.7.7
+
