@@ -1,155 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934280Ab2FENe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:34:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51786 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934115Ab2FENe0 (ORCPT
+	id S934288Ab2FENf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:35:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46192 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934115Ab2FENfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:34:26 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regmap: Implement support for wake IRQs
-Date: Tue,  5 Jun 2012 14:34:24 +0100
-Message-Id: <1338903264-25753-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10
+	Tue, 5 Jun 2012 09:35:25 -0400
+Date: Tue, 5 Jun 2012 15:35:21 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com, bp@amd64.org,
+        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel
+ machines
+In-Reply-To: <4FCDF1C8.9020007@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1206051503560.3086@ionos>
+References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de> <4FCC1F7C.5000008@linux.intel.com> <alpine.LFD.2.02.1206042158200.3086@ionos> <4FCDF1C8.9020007@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1653951612-1338903322=:3086"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow chips to provide a bank of registers for controlling the wake state
-in a similar fashion to the masks and propagate the wake count to the
-parent interrupt controller.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+--8323328-1653951612-1338903322=:3086
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 5 Jun 2012, Chen Gong wrote:
+> 于 2012/6/5 4:01, Thomas Gleixner 写道:
+> > On Mon, 4 Jun 2012, Chen Gong wrote:
+> >  static void mce_timer_fn(unsigned long data)
+> >  {
+> > ...
+> > +	/* Might have become 0 after CMCI storm subsided */
+> > +	if (iv) {
+> > +		t->expires = jiffies + iv;
+> > +		add_timer_on(t, smp_processor_id());
+> > +	}
+> > +}
+> 
+> I've found under some conditions, *t* is pending on the timer tree, so
+> add_timer_on will crash the whole system. Furthermore, if this timer
+
+How should that happen? This is the timer callback function, which is
+called from the timer code when the timer expired. It CANNOT be
+pending at that point. The add_timer_on() in mce_timer_kick() might
+cause that BUG to trigger, but definitely not the one here in the
+timer callback.
+
+> function triggers "WARN_ON(smp_processor_id() != data);", this timer
+
+What causes the timer to be added on the wrong CPU in the first place?
+The WARN_ON meriliy detects it after the fact.
+
+> will be added on the other CPU, which means it loses the chance to
+> decrement *cmci_storm_on_cpus* to zero to reenable the CMCI. Maybe
+> this situation happens seldomly, but once it happens, CMCI will never
+> be actived again after it is disabled.
+> 
+> > +void mce_timer_kick(unsigned long interval)
+> > +{
+> > +	struct timer_list *t = &__get_cpu_var(mce_timer);
+> > +	unsigned long when = jiffies + interval;
+> > +	unsigned long iv = __this_cpu_read(mce_next_interval);
+> > +
+> > +	if (time_before(when, t->expires) && timer_pending(t)) {
+> > +		mod_timer(t, when);
+> > +	} else if (!mce_next_interval) {
+> > +		t->expires = round_jiffies(jiffies + iv);
+> > +		add_timer_on(t, smp_processor_id());
+> 
+> I've changed "else if (!mce_next_interval)" to "else if (iv)", but
+
+  else if (!iv) perhaps ?
+
+> I still think it is not right. Imaging *when* is after t->expires and
+> this timer is pending on the timer tree, so it will hit *else if*
+> if iv is not zero(common situations), again, add_timer_on will trigger
+> BUG_ON because this timer is pending.
+
+See above. Aside of that I rewrote the code to be more clear. See
+delta patch below.
+ 
+> >  static void intel_threshold_interrupt(void)
+> >  {
+> > +	if (cmci_storm_detect())
+> > +		return;
+> >  	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
+> >  	mce_notify_irq();
+> >  }
+> 
+> I think cmci_storm_detect should be placed in the machine_check_poll,
+> not out of it. Because machine_check_poll it the core execution logic
+> for CMCI handling, in the meanwhile, poll timer and mce-inject module
+> call machine_check_poll at any time. If poll timer or mce-inject run
+> too quickly, the CMCI handler has trouble. Whereas, if
+> cmci_storm_detect is in the machine_check_poll, this kind of possibility
+> can be avoid.
+
+No, it's wrong to put it into machine_check_poll(). 
+
+machine_check_poll() is a generic functionality which has nothing to
+do with CMCI storms. That CMCI storm/poll stuff is intel specific and
+therefor the detection logic is in the intel specific interrupt
+handler and nowhere else.
+
+Thanks,
+
+	tglx
 ---
- drivers/base/regmap/regmap-irq.c |   47 ++++++++++++++++++++++++++++++++++++++
- include/linux/regmap.h           |    2 ++
- 2 files changed, 49 insertions(+)
+ arch/x86/kernel/cpu/mcheck/mce.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/regmap/regmap-irq.c b/drivers/base/regmap/regmap-irq.c
-index 8e94e0e..a897346 100644
---- a/drivers/base/regmap/regmap-irq.c
-+++ b/drivers/base/regmap/regmap-irq.c
-@@ -29,9 +29,13 @@ struct regmap_irq_chip_data {
- 	int irq_base;
- 	struct irq_domain *domain;
+Index: linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/mcheck/mce.c
++++ linux-2.6/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1305,13 +1305,14 @@ void mce_timer_kick(unsigned long interv
+ 	unsigned long when = jiffies + interval;
+ 	unsigned long iv = __this_cpu_read(mce_next_interval);
  
-+	int irq;
-+	int wake_count;
-+
- 	unsigned int *status_buf;
- 	unsigned int *mask_buf;
- 	unsigned int *mask_buf_def;
-+	unsigned int *wake_buf;
- 
- 	unsigned int irq_reg_stride;
- };
-@@ -71,6 +75,16 @@ static void regmap_irq_sync_unlock(struct irq_data *data)
- 				d->chip->mask_base + (i * map->reg_stride));
- 	}
- 
-+	/* If we've changed our wakeup count propagate it to the parent */
-+	if (d->wake_count < 0)
-+		for (i = d->wake_count; i < 0; i++)
-+			irq_set_irq_wake(d->irq, 0);
-+	else if (d->wake_count > 0)
-+		for (i = 0; i < d->wake_count; i++)
-+			irq_set_irq_wake(d->irq, 1);
-+
-+	d->wake_count = 0;
-+
- 	mutex_unlock(&d->lock);
- }
- 
-@@ -92,12 +106,35 @@ static void regmap_irq_disable(struct irq_data *data)
- 	d->mask_buf[irq_data->reg_offset / map->reg_stride] |= irq_data->mask;
- }
- 
-+static int regmap_irq_set_wake(struct irq_data *data, unsigned int on)
-+{
-+	struct regmap_irq_chip_data *d = irq_data_get_irq_chip_data(data);
-+	struct regmap *map = d->map;
-+	const struct regmap_irq *irq_data = irq_to_regmap_irq(d, data->hwirq);
-+
-+	if (!d->chip->wake_base)
-+		return -EINVAL;
-+
-+	if (on) {
-+		d->wake_buf[irq_data->reg_offset / map->reg_stride]
-+			&= ~irq_data->mask;
-+		d->wake_count++;
+-	if (time_before(when, t->expires) && timer_pending(t)) {
+-		mod_timer(t, when);
+-	} else if (!mce_next_interval) {
+-		t->expires = round_jiffies(jiffies + iv);
++	if (timer_pending(t)) {
++		if (time_before(when, t->expires))
++			mod_timer(t, when);
 +	} else {
-+		d->wake_buf[irq_data->reg_offset / map->reg_stride]
-+			|= irq_data->mask;
-+		d->wake_count--;
-+	}
-+
-+	return 0;
-+}
-+
- static struct irq_chip regmap_irq_chip = {
- 	.name			= "regmap",
- 	.irq_bus_lock		= regmap_irq_lock,
- 	.irq_bus_sync_unlock	= regmap_irq_sync_unlock,
- 	.irq_disable		= regmap_irq_disable,
- 	.irq_enable		= regmap_irq_enable,
-+	.irq_set_wake		= regmap_irq_set_wake,
- };
++		t->expires = round_jiffies(jiffies + when);
+ 		add_timer_on(t, smp_processor_id());
+ 	}
+-	if (interval < iv)
++	if (interval > iv)
+ 		__this_cpu_write(mce_next_interval, iv);
+ }
  
- static irqreturn_t regmap_irq_thread(int irq, void *d)
-@@ -240,6 +277,14 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- 	if (!d->mask_buf_def)
- 		goto err_alloc;
- 
-+	if (chip->wake_base) {
-+		d->wake_buf = kzalloc(sizeof(unsigned int) * chip->num_regs,
-+				      GFP_KERNEL);
-+		if (!d->wake_buf)
-+			goto err_alloc;
-+	}
-+
-+	d->irq = irq;
- 	d->map = map;
- 	d->chip = chip;
- 	d->irq_base = irq_base;
-@@ -294,6 +339,7 @@ int regmap_add_irq_chip(struct regmap *map, int irq, int irq_flags,
- err_domain:
- 	/* Should really dispose of the domain but... */
- err_alloc:
-+	kfree(d->wake_buf);
- 	kfree(d->mask_buf_def);
- 	kfree(d->mask_buf);
- 	kfree(d->status_buf);
-@@ -315,6 +361,7 @@ void regmap_del_irq_chip(int irq, struct regmap_irq_chip_data *d)
- 
- 	free_irq(irq, d);
- 	/* We should unmap the domain but... */
-+	kfree(d->wake_buf);
- 	kfree(d->mask_buf_def);
- 	kfree(d->mask_buf);
- 	kfree(d->status_buf);
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index f9b624c..4c9e642 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -244,6 +244,7 @@ struct regmap_irq {
-  * @status_base: Base status register address.
-  * @mask_base:   Base mask register address.
-  * @ack_base:    Base ack address.  If zero then the chip is clear on read.
-+ * @wake_base:   Base address for wake enables.  If zero unsupported.
-  * @irq_reg_stride:  Stride to use for chips where registers are not contiguous.
-  *
-  * @num_regs:    Number of registers in each control bank.
-@@ -257,6 +258,7 @@ struct regmap_irq_chip {
- 	unsigned int status_base;
- 	unsigned int mask_base;
- 	unsigned int ack_base;
-+	unsigned int wake_base;
- 	unsigned int irq_reg_stride;
- 
- 	int num_regs;
--- 
-1.7.10
-
+--8323328-1653951612-1338903322=:3086--
