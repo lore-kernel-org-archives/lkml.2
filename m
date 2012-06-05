@@ -1,69 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761539Ab2FEJio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:38:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52789 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758120Ab2FEJim convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:38:42 -0400
+	id S1761581Ab2FEJiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:38:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44663 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761535Ab2FEJiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:38:46 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <balbi@ti.com>
+Subject: [PATCH 1/5] usb: musb: move work_struct(otg_notifier_work) from core to omap glue
+Date: Tue, 5 Jun 2012 15:08:34 +0530
+Message-ID: <1338889118-10032-2-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1338889118-10032-1-git-send-email-kishon@ti.com>
+References: <1338889118-10032-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20120605091858.GA20917@kroah.com>
-References: <1338886747-28088-1-git-send-email-ming.lei@canonical.com>
-	<20120605091858.GA20917@kroah.com>
-Date: Tue, 5 Jun 2012 17:38:39 +0800
-Message-ID: <CACVXFVObp-DYjBGBiVjDdmD6P-bsh-xO79fxSxGqDWbRyk0Anw@mail.gmail.com>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit 712d8e fixed pm_runtime calls while atomic by using a work queue.
+While the issue and the work queue implementation is specific to omap
+(omap2430.c), the work_struct is defined as a member of struct musb
+(musb_core.h). Hence moved the work_struct from musb_core to omap
+glue.
 
-On Tue, Jun 5, 2012 at 5:18 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Tue, Jun 05, 2012 at 04:59:07PM +0800, Ming Lei wrote:
->> Firstly, .shutdown callback may touch a uninitialized hardware
->> if dev->driver is set and .probe is not completed.
->
-> When would that ever happen?
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/musb/musb_core.h |    2 --
+ drivers/usb/musb/omap2430.c  |   24 +++++++++++++++---------
+ 2 files changed, 15 insertions(+), 11 deletions(-)
 
-It may happen when someone plugs a device, then run 'shutdown' immediately.
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index f4a40f0..dbcdeea 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -327,7 +327,6 @@ struct musb {
+ 
+ 	irqreturn_t		(*isr)(int, void *);
+ 	struct work_struct	irq_work;
+-	struct work_struct	otg_notifier_work;
+ 	u16			hwvers;
+ 
+ /* this hub status bit is reserved by USB 2.0 and not seen by usbcore */
+@@ -373,7 +372,6 @@ struct musb {
+ 	u16			int_tx;
+ 
+ 	struct usb_phy		*xceiv;
+-	u8			xceiv_event;
+ 
+ 	int nIrq;
+ 	unsigned		irq_wake:1;
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index e279cf3..f40c805 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -41,6 +41,8 @@
+ struct omap2430_glue {
+ 	struct device		*dev;
+ 	struct platform_device	*musb;
++	u8			xceiv_event;
++	struct work_struct	omap_musb_mailbox_work;
+ };
+ #define glue_to_musb(g)		platform_get_drvdata(g->musb)
+ 
+@@ -226,22 +228,26 @@ static inline void omap2430_low_level_init(struct musb *musb)
+ static int musb_otg_notifications(struct notifier_block *nb,
+ 		unsigned long event, void *unused)
+ {
+-	struct musb	*musb = container_of(nb, struct musb, nb);
++	struct musb		*musb = container_of(nb, struct musb, nb);
++	struct device		*dev = musb->controller;
++	struct omap2430_glue	*glue = dev_get_drvdata(dev->parent);
+ 
+-	musb->xceiv_event = event;
+-	schedule_work(&musb->otg_notifier_work);
++	glue->xceiv_event = event;
++	schedule_work(&glue->omap_musb_mailbox_work);
+ 
+ 	return NOTIFY_OK;
+ }
+ 
+-static void musb_otg_notifier_work(struct work_struct *data_notifier_work)
++static void omap_musb_mailbox_work(struct work_struct *data_notifier_work)
+ {
+-	struct musb *musb = container_of(data_notifier_work, struct musb, otg_notifier_work);
++	struct omap2430_glue *glue = container_of(data_notifier_work,
++		struct omap2430_glue, omap_musb_mailbox_work);
++	struct musb *musb = glue_to_musb(glue);
+ 	struct device *dev = musb->controller;
+ 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
+ 	struct omap_musb_board_data *data = pdata->board_data;
+ 
+-	switch (musb->xceiv_event) {
++	switch (glue->xceiv_event) {
+ 	case USB_EVENT_ID:
+ 		dev_dbg(musb->controller, "ID GND\n");
+ 
+@@ -298,8 +304,6 @@ static int omap2430_musb_init(struct musb *musb)
+ 		return -ENODEV;
+ 	}
+ 
+-	INIT_WORK(&musb->otg_notifier_work, musb_otg_notifier_work);
+-
+ 	status = pm_runtime_get_sync(dev);
+ 	if (status < 0) {
+ 		dev_err(dev, "pm_runtime_get_sync FAILED %d\n", status);
+@@ -388,7 +392,6 @@ static void omap2430_musb_disable(struct musb *musb)
+ static int omap2430_musb_exit(struct musb *musb)
+ {
+ 	del_timer_sync(&musb_idle_timer);
+-	cancel_work_sync(&musb->otg_notifier_work);
+ 
+ 	omap2430_low_level_exit(musb);
+ 	usb_put_phy(musb->xceiv);
+@@ -441,6 +444,8 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, glue);
+ 
++	INIT_WORK(&glue->omap_musb_mailbox_work, omap_musb_mailbox_work);
++
+ 	ret = platform_device_add_resources(musb, pdev->resource,
+ 			pdev->num_resources);
+ 	if (ret) {
+@@ -478,6 +483,7 @@ static int __devexit omap2430_remove(struct platform_device *pdev)
+ {
+ 	struct omap2430_glue		*glue = platform_get_drvdata(pdev);
+ 
++	cancel_work_sync(&glue->omap_musb_mailbox_work);
+ 	platform_device_del(glue->musb);
+ 	platform_device_put(glue->musb);
+ 	kfree(glue);
+-- 
+1.7.5.4
 
->
->> Secondly, device_shutdown() may dereference a null pointer to cause
->> oops when dev->driver is cleared after it is checked in device_shutdown().
->
-> Again, when would that happen?  A new device/driver being added to the
-> system as it is being shutdown?
-
-It is usually that someone presses 'power off' button and unplugs
-its usb devices or pci/e devices, maybe together with a new plug.
-
-In such case, the oops may be triggered.
-
->
-> Has anyone ever hit that before?
-
-Looks someone has reported it, I also can trigger it
-with some delay added in device_shutdown.
-
->
-> Is this really needed?
-
-In case that it is triggered, oops will prevent system from being
-shutdown, and it should be a big problem.
-
-IMO, we can avoid it without much change and side effect, so
-looks worthy the change.
-
-Thanks,
---
-Ming Lei
