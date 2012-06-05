@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab2FEXJV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:09:21 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:38971 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab2FEXJT (ORCPT
+	id S1753757Ab2FEXJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:09:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35500 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753684Ab2FEXJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:09:19 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, Oleg Nesterov <oleg@redhat.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-References: <20120605082512.GC15171@moon>
-	<20120605154743.53d494e6.akpm@linux-foundation.org>
-Date: Tue, 05 Jun 2012 16:09:09 -0700
-In-Reply-To: <20120605154743.53d494e6.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Tue, 5 Jun 2012 15:47:43 -0700")
-Message-ID: <877gvl4aqy.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19x2oKRRNOdkSlxWS+LjA2gms5BjWcokjU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
-	*      [URIs: linux-foundation.org]
-	* -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] fcntl: Add F_GETOWNER_UIDS option v3
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Tue, 5 Jun 2012 19:09:34 -0400
+Date: Tue, 5 Jun 2012 16:09:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        alsa-devel@alsa-project.org, Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
+Message-Id: <20120605160933.6fd5bc90.akpm@linux-foundation.org>
+In-Reply-To: <1338936900.1157.3.camel@mop>
+References: <cover.1338889066.git.joe@perches.com>
+	<20120605142826.d92316a0.akpm@linux-foundation.org>
+	<1338936900.1157.3.camel@mop>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Wed, 06 Jun 2012 00:55:00 +0200
+Kay Sievers <kay@vrfy.org> wrote:
 
-> um, OK.
->
-> But we still have
->
-> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-update-after-mm-num_exe_file_vmas-removal.patch
-> c-r-prctl-add-ability-to-set-new-mm_struct-exe_file-add-minimal-address-test-to-pr_set_mm.patch
-> c-r-prctl-add-ability-to-get-clear_tid_address.patch
-> c-r-prctl-drop-vma-flags-test-on-pr_set_mm_-stack-data-assignment.patch
->
-> floating about unmerged due to various unresolved issues.  Can we
-> please get all that stuff nailed down before working on new things?
+> On Tue, 2012-06-05 at 14:28 -0700, Andrew Morton wrote:
+> 
+> > devkmsg_writev() does weird and wonderful things with
+> > facilities/levels.  That function incorrectly returns "success" when
+> > copy_from_user() faults, btw.
+> 
+> Oh. Better?
+> 
+> Thanks,
+> Kay
+> 
+> 
+> From: Kay Sievers <kay@vrfy.org>
+> Subject: kmsg: /dev/kmsg - properly return possible copy_from_user() failure
+> 
+> Reported-By: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Kay Sievers <kay@vrfy.org
+> ---
+>  printk.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 32462d2..6bdacab 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -365,8 +365,10 @@ static ssize_t devkmsg_writev(struct kiocb *iocb, const struct iovec *iv,
+>  
+>  	line = buf;
+>  	for (i = 0; i < count; i++) {
+> -		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len))
+> +		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len)) {
+> +			ret = -EFAULT;
+>  			goto out;
+> +		}
+>  		line += iv[i].iov_len;
+>  	}
 
-Andrew I understand the frustration but in fairness this patch is just
-as old as the patches you are talking about.   Cyrill just finished
-resolving the unresolved isssues with this one,  aka a conflict with
-user namespace support.
+Strictly speaking, when write() encounters an error it should return
+number-of-bytes-written, or an errno if it wrote zero bytes.  So
+something like
 
-Now I do agree that we need to finish the rest of these things.
+--- a/kernel/printk.c~a
++++ a/kernel/printk.c
+@@ -355,7 +355,7 @@ static ssize_t devkmsg_writev(struct kio
+ 	int level = default_message_loglevel;
+ 	int facility = 1;	/* LOG_USER */
+ 	size_t len = iov_length(iv, count);
+-	ssize_t ret = len;
++	ssize_t ret;
+ 
+ 	if (len > LOG_LINE_MAX)
+ 		return -EINVAL;
+@@ -365,8 +365,12 @@ static ssize_t devkmsg_writev(struct kio
+ 
+ 	line = buf;
+ 	for (i = 0; i < count; i++) {
+-		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len))
++		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len)) {
++			ret = line - buf;
++			if (!ret)
++				ret = -EFAULT;
+ 			goto out;
++		}
+ 		line += iv[i].iov_len;
+ 	}
+ 
+@@ -396,6 +400,7 @@ static ssize_t devkmsg_writev(struct kio
+ 	line[len] = '\0';
+ 
+ 	printk_emit(facility, level, NULL, 0, "%s", line);
++	ret = 0;
+ out:
+ 	kfree(buf);
+ 	return ret;
+_
 
-Eric
