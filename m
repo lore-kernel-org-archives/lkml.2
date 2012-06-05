@@ -1,204 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab2FEFYV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 01:24:21 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47543 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752113Ab2FEFYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 01:24:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="161067163"
-Message-ID: <1338873853.6824.76.camel@yhuang-dev>
-Subject: Re: [PATCH -v4 2/2] PCIe: Add PCIe runtime D3cold support
-From: Huang Ying <ying.huang@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, ming.m.lin@intel.com,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        Zheng Yan <zheng.z.yan@intel.com>
-Date: Tue, 05 Jun 2012 13:24:13 +0800
-In-Reply-To: <201206020110.28487.rjw@sisk.pl>
-References: <1337305725-10482-1-git-send-email-ying.huang@intel.com>
-	 <201205312101.39919.rjw@sisk.pl> <1338517542.6824.44.camel@yhuang-dev>
-	 <201206020110.28487.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1+b1 
+	id S1757676Ab2FEGF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 02:05:26 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52844 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab2FEGFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 02:05:25 -0400
+X-AuditID: 9c93016f-b7c3cae000001954-87-4fcda19e1df5
+Message-ID: <4FCDA1B4.9050301@kernel.org>
+Date: Tue, 05 Jun 2012 15:05:40 +0900
+From: Minchan Kim <minchan@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: undisclosed-recipients:";
+	Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	undisclosed-recipients:;Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+						^-missing end of address
+Subject: Re: [PATCH v9] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
+ type pageblocks
+References: <201206041543.56917.b.zolnierkie@samsung.com> <4FCD18FD.5030307@gmail.com> <4FCD6806.7070609@kernel.org> <4FCD713D.3020100@kernel.org> <4FCD8C99.3010401@gmail.com>
+In-Reply-To: <4FCD8C99.3010401@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-06-02 at 01:10 +0200, Rafael J. Wysocki wrote:
-> On Friday, June 01, 2012, Huang Ying wrote:
-> > On Thu, 2012-05-31 at 21:01 +0200, Rafael J. Wysocki wrote:
-> > > On Thursday, May 31, 2012, Huang Ying wrote:
-> > > > On Wed, 2012-05-30 at 23:49 +0200, Rafael J. Wysocki wrote:
-> > > > > On Tuesday, May 22, 2012, Rafael J. Wysocki wrote:
-> > > > > > On Friday, May 18, 2012, Huang Ying wrote:
-> > > > > > > This patch adds runtime D3cold support to PCIe bus.  D3cold is the
-> > > > > > > deepest power saving state for PCIe devices.  Where the main PCIe link
-> > > > > > > will be powered off totally, so before the PCIe main link is powered
-> > > > > > > on again, you can not access the device, even the configuration space,
-> > > > > > > which is still accessible in D3hot.  Because the main PCIe link is not
-> > > > > > > available, the PCI PM registers can not be used to put device into/out
-> > > > > > > of D3cold state, that will be done by platform logic such as ACPI
-> > > > > > > _PR3.
-> > > > > > > 
-> > > > > > > To support remote wake up in D3cold, aux power is supplied, and a
-> > > > > > > side-band pin: WAKE# is used to notify remote wake up event, the pin
-> > > > > > > is usually connected to platform logic such as ACPI GPE.  This is
-> > > > > > > quite different with other power saving states, where remote wake up
-> > > > > > > is notified via PME message through the PCIe main link.
-> > > > > > > 
-> > > > > > > PCIe devices in plug-in slot usually has no direct platform logic, for
-> > > > > > > example, there is usually no ACPI _PR3 for them.  The D3cold support
-> > > > > > > for these devices can be done via the PCIe port connected to it.  When
-> > > > > > > power on/off the PCIe port, the corresponding PCIe devices are powered
-> > > > > > > on/off too.  And the remote wake up event from PCIe device will be
-> > > > > > > notified to the corresponding PCIe port.
-> > > > > > > 
-> > > > > > > The PCI subsystem D3cold support and corresponding ACPI platform
-> > > > > > > support is implemented in the patch.  Including the support for PCIe
-> > > > > > > devices in plug-in slot.
-> > > > > > > 
-> > > > > > > For more information about PCIe D3cold and corresponding ACPI support,
-> > > > > > > please refer to:
-> > > > > > > 
-> > > > > > > - PCI Express Base Specification Revision 2.0
-> > > > > > > - Advanced Configuration and Power Interface Specification Revision 5.0
-> > > > > > > 
-> > > > > > > Originally-by: Zheng Yan <zheng.z.yan@intel.com>
-> > > > > > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > > > > 
-> > > > > > Reviewed-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > > > > 
-> > > > > On a second thought ...
-> > > > > 
-> > > > > > > ---
-> > > > > > >  drivers/pci/pci-acpi.c         |   23 +++++++-
-> > > > > > >  drivers/pci/pci-driver.c       |    3 +
-> > > > > > >  drivers/pci/pci-sysfs.c        |   29 ++++++++++
-> > > > > > >  drivers/pci/pci.c              |  110 +++++++++++++++++++++++++++++++++++++----
-> > > > > > >  drivers/pci/pci.h              |    1 
-> > > > > > >  drivers/pci/pcie/portdrv_pci.c |   44 ++++++++++++++--
-> > > > > > >  include/linux/pci.h            |   16 ++++-
-> > > > > > >  7 files changed, 205 insertions(+), 21 deletions(-)
-> > > > > > > 
-> > > > > > > --- a/drivers/pci/pci-acpi.c
-> > > > > > > +++ b/drivers/pci/pci-acpi.c
-> > > > > > > @@ -48,6 +48,12 @@ static void pci_acpi_wake_dev(acpi_handl
-> > > > > > >  	if (event != ACPI_NOTIFY_DEVICE_WAKE || !pci_dev)
-> > > > > > >  		return;
-> > > > > > >  
-> > > > > > > +	if (pci_dev->current_state == PCI_D3cold) {
-> > > > > > > +		pci_wakeup_event(pci_dev);
-> > > > > > > +		pm_runtime_resume(&pci_dev->dev);
-> > > > > > > +		return;
-> > > > > > > +	}
-> > > > > > > +
-> > > > > > >  	if (!pci_dev->pm_cap || !pci_dev->pme_support
-> > > > > > >  	     || pci_check_pme_status(pci_dev)) {
-> > > > > > >  		if (pci_dev->pme_poll)
-> > > > > > > @@ -187,10 +193,13 @@ acpi_status pci_acpi_remove_pm_notifier(
-> > > > > > >  
-> > > > > > >  static pci_power_t acpi_pci_choose_state(struct pci_dev *pdev)
-> > > > > > >  {
-> > > > > > > -	int acpi_state;
-> > > > > > > +	int acpi_state, d_max;
-> > > > > > >  
-> > > > > > > -	acpi_state = acpi_pm_device_sleep_state(&pdev->dev, NULL,
-> > > > > > > -						ACPI_STATE_D3);
-> > > > > 
-> > > > > I wonder what tree this patch is against?  The code above doesn't seem to
-> > > > > be present in the current mainline.
-> > > > 
-> > > > As stated in [PATCH -v4 0/2], This patchset is based on:
-> > > > 
-> > > > [PATCH -v2] ACPI, PM, Specify lowest allowed state for device sleep
-> > > > state
-> > > > 
-> > > > Which is sent to LKML separately.
-> > > 
-> > > I see.
-> > > 
-> > > Can you post the latest version of that patch, please?
-> > > 
-> > > Besides, this hunk of the $subject patch:
-> > > 
-> > > > @@ -731,8 +791,8 @@ int pci_set_power_state(struct pci_dev *
-> > > >       int error;
-> > > >  
-> > > >       /* bound the state we're entering */
-> > > > -     if (state > PCI_D3hot)
-> > > > -             state = PCI_D3hot;
-> > > > +     if (state > PCI_D3cold)
-> > > > +             state = PCI_D3cold;
-> > > >       else if (state < PCI_D0)
-> > > >               state = PCI_D0;
-> > > >       else if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-> > > > @@ -747,10 +807,15 @@ int pci_set_power_state(struct pci_dev *
-> > > >  
-> > > >       /* This device is quirked not to be put into D3, so
-> > > >          don't put it in D3 */
-> > > > -     if (state == PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
-> > > > +     if (state >= PCI_D3hot && (dev->dev_flags & PCI_DEV_FLAGS_NO_D3))
-> > > >               return 0;
-> > > >  
-> > > > -     error = pci_raw_set_power_state(dev, state);
-> > > > +     /*
-> > > > +      * To put device in D3cold, we put device into D3hot in native
-> > > > +      * way, then put device into D3cold with platform ops
-> > > > +      */
-> > > > +     error = pci_raw_set_power_state(dev, state > PCI_D3hot ?
-> > > > +                                     PCI_D3hot : state);
-> > > >  
-> > > >       if (!__pci_complete_power_transition(dev, state))
-> > > >               error = 0;
-> > > 
-> > > should be merged separately, because it will affect suspend/hibernation code
-> > > paths.  Namely, it will change the behavior in such a way that some devices
-> > > put into D3hot previously will be put into D3cold now during system suspend.
-> > 
-> > Yes.  This patch enables both runtime D3cold and D3cold during system
-> > suspend.  How about separate this patch into the following patches?
-> > 
-> > - Add d3cold disable logic, including flags: no_d3cold, d3cold_allowed,
-> > runtime_d3cold, and disable runtime d3cold (because part of runtime
-> > d3cold support will be enabled by system d3cold support).
-> > 
-> > - system d3cold support for PCIe port
-> > 
-> > - system d3cold support in PCI core
-> > 
-> > - runtime d3cold support for PCIe port
-> > 
-> > - runtime d3cold support in PCI core
+On 06/05/2012 01:35 PM, KOSAKI Motohiro wrote:
+
+>>>> Minchan, are you interest this patch? If yes, can you please rewrite
+>>>> it?
+>>>
+>>> Can do it but I want to give credit to Bartlomiej.
+>>> Bartlomiej, if you like my patch, could you resend it as formal patch
+>>> after you do broad testing?
+>>>
+>>> Frankly speaking, I don't want to merge it without any data which
+>>> prove it's really good for real practice.
+>>>
+>>> When the patch firstly was submitted, it wasn't complicated so I was
+>>> okay at that time but it has been complicated
+>>> than my expectation. So if Andrew might pass the decision to me, I'm
+>>> totally NACK if author doesn't provide
+>>> any real data or VOC of some client.
 > 
-> Sounds good in principle.
-
-Thought it again.
-
-If my understanding were correct, in most cases, The value to put
-devices into D3cold during system suspend/hibernate may be questionable.
-Because after Linux put the devices into lower power state,  the
-firmware may put devices into D3cold state before entering system
-suspend state.
-
-So, I think maybe we can just constrain the target state to D3hot in
-pci_set_power_state() if system suspend/hibernate is ongoing
-(dev->runtime_d3cold is not set).  That is something as follow:
-
-/* D3cold during system suspend/hibernate is not supported yet */
-if (dev->runtime_d3cold && state >= PCI_D3cold)
-	state = PCI_D3cold;
-else if (state > PCI_D3hot)
-	state = PCI_D3hot;
-
-This way, we can just make some minor change to this patch and maybe
-work on D3cold during system suspend/hibernate after some discussion.
-
-Best Regards,
-Huang Ying
+> I agree. And you don't need to bother this patch if you are not interest
+> this one. I'm sorry.
 
 
+Never mind.
+
+> Let's throw it away until the author send us data.
+> 
+
+I guess it's hard to make such workload to prove it's useful normally.
+But we can't make sure there isn't such workload in the world.
+So I hope listen VOC. At least, Mel might require it.
+
+If anyone doesn't support it, I hope let's add some vmstat like stuff for proving
+this patch's effect. If we can't see the benefit through vmstat, we can deprecate
+it later.
+
+>>> 1) Any comment?
+>>>
+>>> Anyway, I fixed some bugs and clean up something I found during review.
+>>>
+>>> Minor thing.
+>>> 1. change smt_result naming - I never like such long non-consistent
+>>> naming. How about this?
+>>> 2. fix can_rescue_unmovable_pageblock
+>>>     2.1 pfn valid check for page_zone
+>>>
+>>> Major thing.
+>>>
+>>>     2.2 add lru_lock for stablizing PageLRU
+>>>         If we don't hold lru_lock, there is possibility that
+>>> unmovable(non-LRU) page can put in movable pageblock.
+>>>         It can make compaction/CMA's regression. But there is a
+>>> concern about deadlock between lru_lock and lock.
+>>>         As I look the code, I can't find allocation trial with
+>>> holding lru_lock so it might be safe(but not sure,
+>>>         I didn't test it. It need more careful review/testing) but it
+>>> makes new locking dependency(not sure, too.
+>>>         We already made such rule but I didn't know that until now
+>>> ;-) ) Why I thought so is we can allocate
+>>>         GFP_ATOMIC with holding lru_lock, logically which might be
+>>> crazy idea.
+>>>
+>>>     2.3 remove zone->lock in first phase.
+>>>         We do rescue unmovable pageblock by 2-phase. In first-phase,
+>>> we just peek pages so we don't need locking.
+>>>         If we see non-stablizing value, it would be caught by 2-phase
+>>> with needed lock or
+>>>         can_rescue_unmovable_pageblock can return out of loop by
+>>> stale page_order(cursor_page).
+>>>         It couldn't make unmovable pageblock to movable but we can do
+>>> it next time, again.
+>>>         It's not critical.
+>>>
+>>> 2) Any comment?
+>>>
+>>> Now I can't inline the code so sorry but attach patch.
+>>> It's not a formal patch/never tested.
+>>>
+>>
+>>
+>> Attached patch has a BUG in can_rescue_unmovable_pageblock.
+>> Resend. I hope it is fixed.
+>>
+>>
+>>
+>>
+>>
+>> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+>> index 51a90b7..e988037 100644
+>> --- a/include/linux/compaction.h
+>> +++ b/include/linux/compaction.h
+>> @@ -1,6 +1,8 @@
+>>  #ifndef _LINUX_COMPACTION_H
+>>  #define _LINUX_COMPACTION_H
+>>
+>> +#include <linux/node.h>
+>> +
+>>  /* Return values for compact_zone() and try_to_compact_pages() */
+>>  /* compaction didn't start as it was not possible or direct reclaim
+>> was more suitable */
+>>  #define COMPACT_SKIPPED        0
+>> @@ -11,6 +13,23 @@
+>>  /* The full zone was compacted */
+>>  #define COMPACT_COMPLETE    3
+>>
+>> +/*
+>> + * compaction supports three modes
+>> + *
+>> + * COMPACT_ASYNC_MOVABLE uses asynchronous migration and only scans
+>> + *    MIGRATE_MOVABLE pageblocks as migration sources and targets.
+>> + * COMPACT_ASYNC_UNMOVABLE uses asynchronous migration and only scans
+>> + *    MIGRATE_MOVABLE pageblocks as migration sources.
+>> + *    MIGRATE_UNMOVABLE pageblocks are scanned as potential migration
+>> + *    targets and convers them to MIGRATE_MOVABLE if possible
+>> + * COMPACT_SYNC uses synchronous migration and scans all pageblocks
+>> + */
+>> +enum compact_mode {
+>> +    COMPACT_ASYNC_MOVABLE,
+>> +    COMPACT_ASYNC_UNMOVABLE,
+>> +    COMPACT_SYNC,
+>> +};
+>> +
+>>  #ifdef CONFIG_COMPACTION
+>>  extern int sysctl_compact_memory;
+>>  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+>> diff --git a/mm/compaction.c b/mm/compaction.c
+>> index 7ea259d..dd02f25 100644
+>> --- a/mm/compaction.c
+>> +++ b/mm/compaction.c
+>> @@ -236,7 +236,7 @@ isolate_migratepages_range(struct zone *zone,
+>> struct compact_control *cc,
+>>       */
+>>      while (unlikely(too_many_isolated(zone))) {
+>>          /* async migration should just abort */
+>> -        if (!cc->sync)
+>> +        if (cc->mode != COMPACT_SYNC)
+>>              return 0;
+>>
+>>          congestion_wait(BLK_RW_ASYNC, HZ/10);
+>> @@ -304,7 +304,8 @@ isolate_migratepages_range(struct zone *zone,
+>> struct compact_control *cc,
+>>           * satisfies the allocation
+>>           */
+>>          pageblock_nr = low_pfn >> pageblock_order;
+>> -        if (!cc->sync && last_pageblock_nr != pageblock_nr &&
+>> +        if (cc->mode != COMPACT_SYNC &&
+>> +            last_pageblock_nr != pageblock_nr &&
+>>              !migrate_async_suitable(get_pageblock_migratetype(page))) {
+>>              low_pfn += pageblock_nr_pages;
+>>              low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
+>> @@ -325,7 +326,7 @@ isolate_migratepages_range(struct zone *zone,
+>> struct compact_control *cc,
+>>              continue;
+>>          }
+>>
+>> -        if (!cc->sync)
+>> +        if (cc->mode != COMPACT_SYNC)
+>>              mode |= ISOLATE_ASYNC_MIGRATE;
+>>
+>>          lruvec = mem_cgroup_page_lruvec(page, zone);
+>> @@ -360,27 +361,121 @@ isolate_migratepages_range(struct zone *zone,
+>> struct compact_control *cc,
+>>
+>>  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
+>>  #ifdef CONFIG_COMPACTION
+>> +/*
+>> + * Returns true if MIGRATE_UNMOVABLE pageblock can be successfully
+>> + * converted to MIGRATE_MOVABLE type, false otherwise.
+>> + */
+>> +static bool can_rescue_unmovable_pageblock(struct page *page, bool
+>> need_lrulock)
+>> +{
+>> +    struct zone *zone;
+>> +    unsigned long pfn, start_pfn, end_pfn;
+>> +    struct page *start_page, *end_page, *cursor_page;
+>> +    bool lru_locked = false;
+>> +
+>> +    zone = page_zone(page);
+>> +    pfn = page_to_pfn(page);
+>> +    start_pfn = pfn & ~(pageblock_nr_pages - 1);
+>> +    end_pfn = start_pfn + pageblock_nr_pages - 1;
+>> +
+>> +    start_page = pfn_to_page(start_pfn);
+>> +    end_page = pfn_to_page(end_pfn);
+>> +
+>> +    for (cursor_page = start_page, pfn = start_pfn; cursor_page <=
+>> end_page;
+>> +        pfn++, cursor_page++) {
+>>
+>> -/* Returns true if the page is within a block suitable for migration
+>> to */
+>> -static bool suitable_migration_target(struct page *page)
+>> +        if (!pfn_valid_within(pfn))
+>> +            continue;
+>> +
+>> +        /* Do not deal with pageblocks that overlap zones */
+>> +        if (page_zone(cursor_page) != zone)
+>> +            goto out;
+>> +
+>> +        if (PageBuddy(cursor_page)) {
+>> +            unsigned long order = page_order(cursor_page);
+>> +
+>> +            pfn += (1 << order) - 1;
+>> +            cursor_page += (1 << order) - 1;
+>> +            continue;
+>> +        } else if (page_count(cursor_page) == 0) {
+>> +            continue;
+> 
+> Can we assume freed tail page always have page_count()==0? if yes, why
+> do we
+> need dangerous PageBuddy(cursor_page) check? ok, but this may be harmless.
+> 
+
+
+page_count check is for pcp pages.
+Am I missing your point?
+
+> But if no, this code is seriously dangerous. think following scenario,
+> 
+> 1) cursor page points free page
+> 
+>     +----------------+------------------+
+>     | free (order-1) |  used (order-1)  |
+>     +----------------+------------------+
+>     |
+>    cursor
+> 
+> 2) moved cursor
+> 
+>     +----------------+------------------+
+>     | free (order-1) |  used (order-1)  |
+>     +----------------+------------------+
+>                      |
+>                      cursor
+> 
+> 3) neighbor block was freed
+> 
+> 
+>     +----------------+------------------+
+>     | free (order-2)                    |
+>     +----------------+------------------+
+>                      |
+>                      cursor
+> 
+> now, cursor points to middle of free block.
+> 
+
+> 
+
+> Anyway, I recommend to avoid dangerous no zone->lock game and change
+> can_rescue_unmovable_pageblock() is only called w/ zone->lock. I have
+
+
+
+I can't understand your point.
+If the page is middle of free block, what's the problem in can_rescue_unmovable_pageblock
+at first trial of can_rescue_xxx?
+I think we can stabilize it in second trial of can_rescue_unmovable_pageblock with zone->lock.
+
+> no seen any worth to include this high complex for mere minor optimization.
+
+> 
+
+> 
+>> +        } else if (PageLRU(cursor_page)) {
+>> +            if (!need_lrulock)
+>> +                continue;
+>> +            else if (lru_locked)
+>> +                continue;
+>> +            else {
+>> +                spin_lock(&zone->lru_lock);
+> 
+> Hmm...
+> I don't like to take lru_lock. 1) Until now, we carefully avoid to take
+> both zone->lock and zone->lru_lock. they are both performance critical
+> lock. And I think pageblock migratetype don't need strictly correct. It
+> is only optimization of anti fragmentation. Why do we need take it?
+> 
+
+
+movable_block has unmovable page can make regression of anti-fragmentation.
+So I did it. I agree it's a sort of optimization.
+If others don't want it at the cost of regression anti-fragmentation, we can remove the lock.
+
+> 
+> 
+>> +                lru_locked = true;
+>> +                if (PageLRU(page))
+>> +                    continue;
+>> +            }
+>> +        }
+>> +
+>> +        goto out;
+>> +    }
+>> +
+> 
+> Why don't we need to release lru_lock when returning true.
+
+
+Because my brain has gone. :(
+
+-- 
+Kind regards,
+Minchan Kim
