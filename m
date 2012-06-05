@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2FESVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:21:04 -0400
-Received: from mail127.messagelabs.com ([216.82.250.115]:11057 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755394Ab2FESVB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:21:01 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-3.tower-127.messagelabs.com!1338920454!7569630!20
-X-Originating-IP: [216.166.12.32]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: ni_mio_common.c: local functions should be static
-Date: Tue, 5 Jun 2012 11:20:21 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1755907Ab2FES1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:27:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58663 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab2FES1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 14:27:23 -0400
+Date: Tue, 5 Jun 2012 21:27:00 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: automount hangs during boot somewhere in rcu_barrier.
+Message-ID: <20120605182700.GN20236@redhat.com>
+References: <20120603113236.GW2311@redhat.com>
+ <20120604031549.GE2357@linux.vnet.ibm.com>
+ <20120604074803.GA23670@redhat.com>
+ <20120604100925.GC23670@redhat.com>
+ <20120604145432.GA2490@linux.vnet.ibm.com>
+ <20120605094658.GI580@redhat.com>
+ <20120605151930.GG2388@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201206051120.22177.hartleys@visionengravers.com>
+In-Reply-To: <20120605151930.GG2388@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Local functions should be marked static to prevent them from
-being exposed globally.
+On Tue, Jun 05, 2012 at 08:19:30AM -0700, Paul E. McKenney wrote:
+> On Tue, Jun 05, 2012 at 12:46:58PM +0300, Gleb Natapov wrote:
+> > On Mon, Jun 04, 2012 at 07:54:32AM -0700, Paul E. McKenney wrote:
+> > > On Mon, Jun 04, 2012 at 01:09:25PM +0300, Gleb Natapov wrote:
+> > > > On Mon, Jun 04, 2012 at 10:48:03AM +0300, Gleb Natapov wrote:
+> > > > > On Sun, Jun 03, 2012 at 08:15:49PM -0700, Paul E. McKenney wrote:
+> > > > > > Hmmm...  Could you please try disabling CONFIG_RCU_FAST_NO_HZ?  If that
+> > > > > > makes the problem go away, I have some patches 3.6-targeted patches
+> > > > > > for you.
+> > > > > Will report back.
+> > > > > 
+> > > > Do not see any problems with the option disabled.
+> > > 
+> > > OK, then you are probably being bitten by the same bug that was biting
+> > > Pascal and Heiko.  Could you please apply the following series from -rcu?
+> > > 
+> > > 	bf7757c3 (Merge commit 'v3.4-rc6' into HEAD)
+> > > 	edc17350 (RCU_FAST_NO_HZ detection of callback adoption)
+> > > 	8e03a88e (Update RCU_FAST_NO_HZ tracing for lazy callbacks)
+> > > 	f2298c63 (Move RCU_FAST_NO_HZ per-CPU variables to rcu_dynticks structure)
+> > > 	05cc0fc9 (Precompute RCU_FAST_NO_HZ timer offsets)
+> > > 	477fca01 (Dump only the current CPU's buffers for idle-entry/exit warnings)
+> > > 	f29075fb (The rcu_needs_cpu() function is not a quiescent state)
+> > > 
+> > > Of these, 05cc0fc9 (Precompute RCU_FAST_NO_HZ timer offsets) is likely
+> > > to be the most relevant.  The -rcu tree may be found at:
+> > > 
+> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> > > 
+> > > Please let me know if you have any trouble pulling this series.
+> > > 
+> > The problem is gone with the series + enabling CONFIG_RCU_FAST_NO_HZ
+> > back.
+> 
+> Very good!!!
+> 
+> Maybe I should be submitting this series to 3.5 rather than 3.6?
+> 
+As it stands now I cannot use kernels with CONFIG_RCU_FAST_NO_HZ
+enabled. May be disabling it is a good enough workaround for poor souls
+like me, but I doubt distros can enable it with known problems like
+that.
 
-This quiets the following sparse warnings:
+Thanks you for your promptly response!
 
-warning: symbol 'ni_release_gpct_mite_channel' was not declared. Should it be static?
-warning: symbol 'ni_prime_channelgain_list' was not declared. Should it be static?
-
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
-
-diff --git a/drivers/staging/comedi/drivers/ni_mio_common.c b/drivers/staging/comedi/drivers/ni_mio_common.c
-index fd232bc..3b3a0b1 100644
---- a/drivers/staging/comedi/drivers/ni_mio_common.c
-+++ b/drivers/staging/comedi/drivers/ni_mio_common.c
-@@ -644,7 +644,7 @@ static void ni_release_ao_mite_channel(struct comedi_device *dev)
- #endif /*  PCIDMA */
- }
- 
--void ni_release_gpct_mite_channel(struct comedi_device *dev,
-+static void ni_release_gpct_mite_channel(struct comedi_device *dev,
- 				  unsigned gpct_index)
- {
- #ifdef PCIDMA
-@@ -1880,7 +1880,7 @@ static int ni_ai_insn_read(struct comedi_device *dev,
- 	return insn->n;
- }
- 
--void ni_prime_channelgain_list(struct comedi_device *dev)
-+static void ni_prime_channelgain_list(struct comedi_device *dev)
- {
- 	int i;
- 	devpriv->stc_writew(dev, AI_CONVERT_Pulse, AI_Command_1_Register);
+--
+			Gleb.
