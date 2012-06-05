@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761653Ab2FEJjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:39:36 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:44572 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761546Ab2FEJje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:39:34 -0400
-Message-ID: <4FCDD346.9090008@parallels.com>
-Date: Tue, 5 Jun 2012 13:37:10 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1761662Ab2FEJjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:39:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45244 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761546Ab2FEJjo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:39:44 -0400
+Date: Tue, 5 Jun 2012 11:39:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chen Gong <gong.chen@linux.intel.com>
+cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix the MCE poll timer logic
+In-Reply-To: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com>
+Message-ID: <alpine.LFD.2.02.1206051139180.3086@ionos>
+References: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, <kir@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] allow a task to join a pid namespace
-References: <1338816828-25312-1-git-send-email-glommer@parallels.com> <4FCDD315.502@free.fr>
-In-Reply-To: <4FCDD315.502@free.fr>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 01:36 PM, Daniel Lezcano wrote:
-> On 06/04/2012 03:33 PM, Glauber Costa wrote:
->> Currently, it is possible for a process  to join existing
->> net, uts and ipc namespaces. This patch allows a process to join an
->> existing pid namespace as well.
->>
->> For that to remain sane, some restrictions are made in the calling process:
->>
->> * It needs to be in the parent namespace of the namespace it wants to jump to
->> * It needs to sit in its own session and group as a leader.
->>
->> The rationale for that, is that people want to trigger actions in a Container
->> from the outside. For instance, mainstream linux recently gained the ability
->> to safely reboot a container. It would be desirable, however, that this
->> action is triggered from an admin in the outside world, very much like a
->> power switch in a physical box.
->>
->> This would also allow us to connect a console to the container, provide a
->> repair mode for setups without networking (or with a broken one), etc.
->
-> Hi Glauber,
->
-> I am in favor of this patch but I think the pidns support won't be
-> complete and some corner-cases are not handled.
->
-> May be you can look at Eric's patchset [1] where, IMO, everything is
-> taken into account. Some of the patches may be already upstream.
->
-> Thanks
->    -- Daniel
+On Tue, 5 Jun 2012, Chen Gong wrote:
 
-I don't remember seeing such patchset in the mailing lists, but that 
-might be my fault, due to traffic...
+> In commit 82f7af09 (x86/mce: Cleanup timer mess), Thomas just forgot
+> the "/ 2" there while cleaning up.
+> 
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
 
-I'll take a look. If it does what I need, I can just drop this.
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-Thanks
+
+> ---
+>  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+> index 0a687fd..a97f3c4 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
+> @@ -1274,7 +1274,7 @@ static void mce_timer_fn(unsigned long data)
+>  	 */
+>  	iv = __this_cpu_read(mce_next_interval);
+>  	if (mce_notify_irq())
+> -		iv = max(iv, (unsigned long) HZ/100);
+> +		iv = max(iv / 2, (unsigned long) HZ/100);
+>  	else
+>  		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
+>  	__this_cpu_write(mce_next_interval, iv);
+> -- 
+> 1.7.10
+> 
+> 
