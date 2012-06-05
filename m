@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab2FETuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:50:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34652 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab2FETuU (ORCPT
+	id S1752163Ab2FETum (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 15:50:42 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14836 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab2FETuk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:50:20 -0400
-Date: Tue, 5 Jun 2012 12:50:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>
-Subject: Re: linux-next: Tree for Apr 12
-Message-Id: <20120605125019.dca1fd02.akpm@linux-foundation.org>
-In-Reply-To: <1338864128.17933.2.camel@localhost>
-References: <20120412145931.9ec6f2b51655071795d60d1d@canb.auug.org.au>
-	<20120412142415.564710b8.akpm@linux-foundation.org>
-	<20120604150455.7a80b311.akpm@linux-foundation.org>
-	<1338849977.2860.9.camel@localhost>
-	<1338864128.17933.2.camel@localhost>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Jun 2012 15:50:40 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 188.77.103.10
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1//af7o6EOadTA4GhAkSihA
+Date: Tue, 5 Jun 2012 21:50:34 +0200
+From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
+To: reiserfs-devel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Two hangs on reiserfs, linux 3.3.6
+Message-ID: <20120605195034.GY1927@vicerveza.homeunix.net>
+References: <20120604222208.GP1927@vicerveza.homeunix.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20120604222208.GP1927@vicerveza.homeunix.net>
+X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Jun 2012 22:42:08 -0400
-Eric Paris <eparis@redhat.com> wrote:
-
-> > I really do not want to revert this and feel that the only right fix is
-> > going to be to update your selinux policy to allow this new check.  I'd
-> > rather not allow (whatever program) to truncate() files willy-nilly (in
-> > violation of the intentions of selinux policy)
-> > 
-> > I'm sorry I never saw it sooner.  We've had it in RHEL for even longer
-> > than the 3 months it's been in -next.  I think the 'right' fix is going
-> > to have to be an update to SELinux policy (for your long dead system, if
-> > you give me the denial I can build you a new policy) rather than leaving
-> > the potential security hole in mainline...
+On Tue, Jun 05, 2012 at 12:22:08AM +0200, Lluís Batlle i Rossell wrote:
+> Hello,
 > 
-> Andrew sent me his audit log and it didn't show anything.  But it got me
-> thinking.  Now I think this actually is a code bug.  Andrew, can you
-> test this?
+> I use reiserfs since years and never saw it hang... but in this computer, that
+> has two reiserfs on soft RAID1, I've seen two hangs this week.
 > 
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 2e7bd67..20a4315 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -2758,7 +2758,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
->  			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
->  		return dentry_has_perm(cred, dentry, FILE__SETATTR);
->  
-> -	if (ia_valid & ATTR_SIZE)
-> +	if ((ia_valid & ATTR_SIZE) && selinux_policycap_openperm)
->  		av |= FILE__OPEN;
->  
->  	return dentry_has_perm(cred, dentry, av);
+> Here are the sysrq 'w' I could get from dmesg from the two situations, I hope
+> they can help finding out what can this be. All the system works (rootfs on
+> btrfs, two data reiserfs on softraid1), but attempts to use the reiserfs trees
+> end up in hanged processes.
+> 
+> http://viric.name/tmp/hang/nispro-dmesg-hang-reiserfs.txt.gz
+> 
+> http://viric.name/tmp/hang/nispro-dmesg-hang-reiserfs2.txt.gz - this, a few
+> minutes ago, includes all since boot.
 
-That fixed it.
+Third hang, some minutes ago. Only two processes stuck.
+http://viric.name/tmp/hang/nispro-dmesg-hang-reiserfs3.txt
+
+I think I'm moving away from reiserfs.
