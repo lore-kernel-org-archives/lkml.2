@@ -1,42 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200Ab2FEWGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 18:06:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45471 "EHLO mga02.intel.com"
+	id S1753191Ab2FEWIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 18:08:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:33708 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764Ab2FEWGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 18:06:48 -0400
+	id S1751117Ab2FEWIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 18:08:13 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="153375205"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] x86/mce regression fix
-Date: Tue, 05 Jun 2012 15:06:48 -0700
-Message-Id: <4fce82f8371247cc@agluck-desktop.sc.intel.com>
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108256707"
+Message-ID: <4FCE8307.3050901@linux.intel.com>
+Date: Tue, 05 Jun 2012 15:07:03 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Feng Tang <feng.tang@intel.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
+Subject: Re: [RFC PATCH] pch_uart: Add eg20t_port lock field, avoid recursive
+ spinlocks
+References: <8854635ac5471f8671b93c65e3663eb1cb204c9d.1338454156.git.dvhart@linux.intel.com> <CANKRQnhZErpvcsRW3ukNzY0_zv4x=5OzQ-sr+aeuxL63=tQ=4A@mail.gmail.com> <4FC90BAD.3080606@linux.intel.com>
+In-Reply-To: <4FC90BAD.3080606@linux.intel.com>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 82f7af09e6fb58fb725c850d725d5e8780a9bec2:
 
-  x86/mce: Cleanup timer mess (2012-05-30 14:40:01 -0700)
 
-are available in the git repository at:
+On 06/01/2012 11:36 AM, Darren Hart wrote:
+> 
+> 
+> On 06/01/2012 01:30 AM, Tomoya MORINAGA wrote:
+>> On Thu, May 31, 2012 at 5:54 PM, Darren Hart <dvhart@linux.intel.com> wrote:
+>>> @@ -1376,7 +1379,8 @@ static void pch_uart_set_termios(struct uart_port *port,
+>>>
+>>>        baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
+>>>
+>>> -       spin_lock_irqsave(&port->lock, flags);
+>>> +       spin_lock_irqsave(&priv->lock, flags);
+>>> +       spin_lock(&port->lock);
+>>>
+>>>        uart_update_timeout(port, termios->c_cflag, baud);
+>>>        rtn = pch_uart_hal_set_line(priv, baud, parity, bits, stb);
+>>> @@ -1389,7 +1393,8 @@ static void pch_uart_set_termios(struct uart_port *port,
+>>>                tty_termios_encode_baud_rate(termios, baud, baud);
+>>>
+>>>  out:
+>>> -       spin_unlock_irqrestore(&port->lock, flags);
+>>> +       spin_unlock(&port->lock);
+>>> +       spin_unlock_irqrestore(&priv->lock, flags);
+>>>  }
+>>
+>> Are both port->lock and priv->lock really necessary ?
+> 
+> The priv lock protects the pch_uart_hal* calls and the io access.
+> 
+> The port lock protects the uart_update_timeout call. I'm assuming the
+> 8250.c driver is correct in holding the port lock before making this
+> call and making other modifcations to the port struct.
+> 
+> So yes, I believe both are required. The port->lock was used as the lock
+> to protect the private data in the interrupt handler,
+> pch_uart_interrupt. If we could avoid holding that lock across the
+> entire function, limiting it to just around the pch_uart_hal calls
+> (perhaps by adding it to the hal calls and adding lockless __pch_uart*
+> calls) we could avoid the recursive lock that occurs with handle_rx. I
+> still think a priv-lock is a good idea though, even if just to clarify
+> what is being protected.
+> 
+> Thoughts?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-mce
+Are there still concerns about the additional lock? I'll resend V2
+tomorrow with the single whitespace fix if I don't hear anything back today.
 
-for you to fetch changes up to c2238f10e0c34a85a2a555c8a197316d1ca3fb7e:
+Thanks,
 
-  x86/mce: Fix the MCE poll timer logic (2012-06-05 10:15:07 -0700)
+Darren
 
-----------------------------------------------------------------
-Typo/thinko in a cleanup caused a semantic change. Fix it.
+> 
+>>
+>>
+>>> @@ -1572,7 +1578,9 @@ pch_console_write(struct console *co, const char *s, unsigned int count)
+>>>
+>>>        if (locked)
+>>>                spin_unlock(&priv->port.lock);
+>>> +       spin_unlock(&priv->lock);
+>>>        local_irq_restore(flags);
+>>> +
+>>>  }
+>>
+>> Looks spare blank line.
+> 
+> Thanks, will fix for V2 after this discussion wraps up.
+> 
+>>
+>> thanks.
+> 
 
-----------------------------------------------------------------
-Chen Gong (1):
-      x86/mce: Fix the MCE poll timer logic
-
- arch/x86/kernel/cpu/mcheck/mce.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
