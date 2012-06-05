@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760041Ab2FEI0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 04:26:53 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:58415 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757973Ab2FEI0v (ORCPT
+	id S1760123Ab2FEIbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 04:31:15 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29130 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757344Ab2FEIbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 04:26:51 -0400
-X-AuditID: 9c93016f-b7c3cae000001954-2b-4fcdc2c9a838
-Message-ID: <4FCDC2E1.4080004@kernel.org>
-Date: Tue, 05 Jun 2012 17:27:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 04:31:12 -0400
+Date: Tue, 5 Jun 2012 11:31:03 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: comedi: cb_pcidas64: Fixed an if-statement
+ check
+Message-ID: <20120605083102.GC4400@mwanda>
+References: <1338229715-2730-1-git-send-email-dimitrios.semitsoglou@gmail.com>
+ <1338241905-24327-1-git-send-email-dimitrios.semitsoglou@gmail.com>
+ <1338241905-24327-2-git-send-email-dimitrios.semitsoglou@gmail.com>
+ <20120605034318.GA28810@kroah.com>
+ <20120605081751.GA25855@remilia>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: leonid.moiseichuk@nokia.com
-CC: penberg@kernel.org, cbouatmailru@gmail.com, kosaki.motohiro@gmail.com,
-        john.stultz@linaro.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 0/5] Some vmevent fixes...
-References: <CAOJsxLHQcDZSHJZg+zbptqmT9YY0VTkPd+gG_zgMzs+HaV_cyA@mail.gmail.com> <CAHGf_=q1nbu=3cnfJ4qXwmngMPB-539kg-DFN2FJGig8+dRaNw@mail.gmail.com> <CAOJsxLFAavdDbiLnYRwe+QiuEHSD62+Sz6LJTk+c3J9gnLVQ_w@mail.gmail.com> <CAHGf_=pSLfAue6AR5gi5RQ7xvgTxpZckA=Ja1fO1AkoO1o_DeA@mail.gmail.com> <CAOJsxLG1+zhOKgi2Rg1eSoXSCU8QGvHVED_EefOOLP-6JbMDkg@mail.gmail.com> <20120601122118.GA6128@lizard> <alpine.LFD.2.02.1206032125320.1943@tux.localdomain> <4FCC7592.9030403@kernel.org>	<20120604113811.GA4291@lizard> <20120604121722.GA2768@barrios>	<20120604133527.GA13650@lizard> <CAOJsxLHkzubReaR0utB4xdage0Omb4r=jhXCLwXQ8XOSct4LGg@mail.gmail.com> <4FCDBC8E.1000705@kernel.org> <CAOJsxLHOdnQKSfLqFG4hdabhuwhHt+HqKGerP23YuNQc4TZS_g@mail.gmail.com> <84FF21A720B0874AA94B46D76DB98269045EBBD8@008-AM1MPN1-003.mgdnok.nokia.com>
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045EBBD8@008-AM1MPN1-003.mgdnok.nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605081751.GA25855@remilia>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 05:16 PM, leonid.moiseichuk@nokia.com wrote:
+On Tue, Jun 05, 2012 at 11:17:51AM +0300, Dimitrios Semitsoglou-Tsiapos wrote:
+> On Mon, Jun 04, 2012 at 08:43:18PM -0700, Greg KH wrote:
+> > On Tue, May 29, 2012 at 12:51:45AM +0300, Dimitrios Semitsoglou-Tsiapos wrote:
+> > > Fixed in if-statemnt responsible for a sanity check inside the
+> > > prep_ao_dma function.
+> > > 
+> > > Signed-off-by: Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
+> > > ---
+> > >  drivers/staging/comedi/drivers/cb_pcidas64.c |    4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+> > > index 6f7fd99..a2e6f96 100644
+> > > --- a/drivers/staging/comedi/drivers/cb_pcidas64.c
+> > > +++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+> > > @@ -3392,8 +3392,8 @@ static int prep_ao_dma(struct comedi_device *dev, const struct comedi_cmd *cmd)
+> > >  	num_bytes = load_ao_dma_buffer(dev, cmd);
+> > >  	if (num_bytes == 0)
+> > >  		return -1;
+> > > -	if (num_bytes >= DMA_BUFFER_SIZE) ;
+> > > -	load_ao_dma(dev, cmd);
+> > > +	if (num_bytes >= DMA_BUFFER_SIZE)
+> > > +		load_ao_dma(dev, cmd);
+> > 
+> > Are you sure about this change?  I think someone forgot to include an
+> > error check here, the driver was working with this function always being
+> > called, and now you only do it for the extreme case.
+> > 
+> > Have you checked it somehow?
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> You are correct. I had misread load_ao_dma's loop as a while loop.
+> I'm afraid I did not have a way to test this and it does seem that it
+> should *not* be included.
 
->> -----Original Message-----
->> From: penberg@gmail.com [mailto:penberg@gmail.com] On Behalf Of ext
->> Pekka Enberg
->> Sent: 05 June, 2012 11:02
->> To: Minchan Kim
-> ...
->>> Next concern is that periodic timer of implementation.
->>> I think it would add direct hook in vmscan.c rather than peeking raw
->>> vmstat periodically by timer so we can control more fine-grained way
->> without unnecessary overhead.
->>
->> If the hooks are clean and it doesn't hurt the  !CONFIG_VMEVENT case, I'm
->> completely OK with that.
-> 
-> On the previous iteration hooking vm was pointed as very bad idea, so in my version I installed shrinker to handle cases when we have memory pressure.
-> Using deferred timer with adequate timeout (0.250 ms or larger) fully suitable for userspace and produce adequate overhead 
-> -> by nature such API should not be 100% accurate, anyhow applications cannot handle situation as good as kernel can provide, 0.5MB space accuracy, 100ms is maximum user-space require for 64-1024MB devices.
-> 
+It's hard to say, I think your patch is probably correct.  It sort
+of matches the do while loop in load_ao_dma().  But it's best if
+someone could test this.
 
+regards,
+dan carpenter
 
-I didn't follow previous iteration you mentioned so I don't know the history.
-I think it's a not good idea if LMN(low memory notifier) is needed by only embedded world.
-Maybe in that case, we might control it enough by only vmstat events but now we know many folks want it
-so we are trying to make it general.
-IMHO, for meeting various requirement, vmstat raw event isn't enough so we need direct hook in vmscan
-and should abstract it to some levels.
-Of course, VM guys should maintain it to work best as VM algorithm are changing.
-
--- 
-Kind regards,
-Minchan Kim
