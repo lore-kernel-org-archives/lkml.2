@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab2FEXkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:40:20 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39662 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753563Ab2FEXkS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:40:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <1338939316.11962.3.camel@joe2Laptop>
-References: <cover.1338889066.git.joe@perches.com> <20120605142826.d92316a0.akpm@linux-foundation.org>
- <1338934303.5780.8.camel@joe2Laptop> <20120605151754.a794ac7c.akpm@linux-foundation.org>
- <1338936572.5780.29.camel@joe2Laptop> <20120605162910.caccb0d4.akpm@linux-foundation.org>
- <1338939316.11962.3.camel@joe2Laptop>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 6 Jun 2012 01:39:57 +0200
-Message-ID: <CAPXgP13J+8-dPpZkSfh9sM3xXujC2Rb9tJaOvGoEPghgdr8jiw@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753886Ab2FEXlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:41:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28428 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753315Ab2FEXlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 19:41:46 -0400
+Date: Tue, 5 Jun 2012 19:41:33 -0400
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip v2 3/9] ftrace/x86: Support SAVE_REGS feature on i386
+Message-ID: <20120605234133.GD11575@redhat.com>
+References: <20120605102734.27845.43401.stgit@localhost.localdomain> <20120605102802.27845.49309.stgit@localhost.localdomain> <1338928666.13348.538.camel@gandalf.stny.rr.com> <20120605212411.GC11575@redhat.com> <1338939470.13348.541.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338939470.13348.541.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 1:35 AM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2012-06-05 at 16:29 -0700, Andrew Morton wrote:
->> What about writes starting with \001n?  AFACIT, that will be stripped
->> away and the printk level will be altered.  This is new behavior.
->
-> Nope.
->
-> # echo "\001Hello Andrew" > /dev/kmsg
-> /dev/kmsg has
-> 12,774,2462339252;\001Hello Andrew
+Hi -
 
-Try "echo -e"? The stuff is copied verbatim otherwise.
+> > That would be the way for a kprobe to modify variables/values that
+> > happen to be in the registers.  In systemtap, for example:
+> > # stap -g -e 'probe kernel.function("foo") { $bar = 1 }'
+>
+> And why would we want to allow this?
+> Modifying variables with probes is another way to lead to disaster. [...]
+> What real world example leads to external sources modifying internal
+> core variables? With the obvious exception of rootkits.
 
-Kay
+Among others, systemtap has been successfully used for fault injection
+for development/testing, as well as band-aids for kernel security
+vulnerabilities, where a small change of state can improve the state
+of the system.  Obviously, this functionality is restricted to highly
+privileged users.
+
+- FChE
