@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754598Ab2FEEvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 00:51:09 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47991 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752219Ab2FEEvH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 00:51:07 -0400
+	id S1755367Ab2FEE75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 00:59:57 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:42265 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab2FEE74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 00:59:56 -0400
+Date: Mon, 4 Jun 2012 23:59:50 -0500
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Victor Miasnikov <vvm@tut.by>
+Cc: Greg KH <gregkh@linuxfoundation.org>, KY Srinivasan <kys@microsoft.com>,
+        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mike Sterling <Mike.Sterling@microsoft.com>
+Subject: Re: [PATCH 2/2] ata_piix: defer disks to the Hyper-V drivers by
+ default
+Message-ID: <20120605045950.GB3118@burratino>
+References: <20120527010903.GA18244@kroah.com>
+ <B4A84D892D5742FE83F71F788F6EAF48@local.st.by>
+ <20120528203518.GA12623@kroah.com>
+ <5EBD7E368EFE4B5CABF4AC528058A4DB@local.st.by>
+ <20120601092017.GE22821@kroah.com>
+ <59CBCFF13ABD41B682835DD5E4851BC1@local.st.by>
+ <20120601162629.GA11812@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF90710C295@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20120602012249.GA7783@kroah.com>
+ <ACB4012399AF4F20A8DAECA154E96ED3@local.st.by>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQV7jpBWkcXy2vgixnxx2fhid28Wj0iHAhGkVVdQn6epNQ@mail.gmail.com>
-References: <1337754877-19759-1-git-send-email-yinghai@kernel.org>
- <CAE9FiQXx_x9M5ncLk4DyL8heYQTcsHZt2JofFMjPfUd4mympeA@mail.gmail.com>
- <CAE9FiQX=ECg5BmKm7B2ua_rZ6bOsceeHNsfFQRWBbNZx+8sBfw@mail.gmail.com>
- <20120525043651.GA1391@google.com> <CAE9FiQXvYH4zCqp_uOb2nw7jvm8B=q3yx1tCjJUT+PkdymYEuw@mail.gmail.com>
- <CAE9FiQW0rm2_sKdSCWs3TfatJB9yHwvmvt9_vBYMtOq_YBbmfw@mail.gmail.com>
- <20120525193716.GA8817@google.com> <CAE9FiQWrZaBpT1fzC_-mSBfDd4AKGrdGomPxVNSU-SFPrVNvOw@mail.gmail.com>
- <CAErSpo7d+zn-qgWKcbro7yneXRtmZQCOHi+kiGzYUTfs+aiF4g@mail.gmail.com>
- <CAE9FiQUWWO75WP3gYRwYbyO_ZiWwyjKnzMxOGhfjY4H98w2Hbw@mail.gmail.com>
- <CAErSpo46fCCFCijNfMzGYP__pP6hkPFurMS=1=wSAZsg5z0-Lg@mail.gmail.com>
- <CAE9FiQWUrkKEpLmEn9kzkKOtEtX7-R8shdVSKGgSyHezKpzJCw@mail.gmail.com>
- <4FC50E09.4000204@zytor.com> <CAE9FiQUtio=dut3A9+jCcsgUWEeNYcpqLP6RpqGOZUfPPAtHWw@mail.gmail.com>
- <4FC51D79.6010804@zytor.com> <CAE9FiQUWMAdU5jtKfq1_=1E-574gW-Afo8Pby49mUFQYFrs9Pw@mail.gmail.com>
- <4FC536A5.6020600@zytor.com> <CAE9FiQXi23-mY6p2Dr1EJmukhTSPxvBGtjvQ8wyJYPDS+6o5ZA@mail.gmail.com>
- <CAErSpo67h_mdZtoEn-W_OOXZ8m7gs3g6Q25kte285ZX=2FKf+A@mail.gmail.com> <CAE9FiQV7jpBWkcXy2vgixnxx2fhid28Wj0iHAhGkVVdQn6epNQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 4 Jun 2012 21:50:42 -0700
-Message-ID: <CAErSpo7ivA4NpTv8jT=sxe9qAEZZ89qm6km+WBGq1UZK1Uhz8A@mail.gmail.com>
-Subject: Re: [PATCH 02/11] PCI: Try to allocate mem64 above 4G at first
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
-        Tony Luck <tony.luck@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ACB4012399AF4F20A8DAECA154E96ED3@local.st.by>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 4, 2012 at 7:37 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Sun, Jun 3, 2012 at 6:05 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Fri, Jun 1, 2012 at 4:30 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Tue, May 29, 2012 at 1:50 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>
->>>> The bus-side address space should not be more than 32 bits no matter
->>>> what.  As Bjorn indicates, you seem to be mixing up bus and cpu
->>>> addresses all over the place.
->>>
->>> please check update patches that is using converted pci bus address
->>> for boundary checking.
+Hi,
+
+Victor Miasnikov wrote:
+
+> + see tranlate from Russian language issue described by Maksim Kramarenko:
+> http://lists.debian.org/debian-russian/2012/01/msg00324.html
+
+>> Correct, that is loaded without error, sleep and wake, for a small exception:
 >>
->> What problem does this fix?  There's significant risk that this
->> allocation change  will make us trip over something, so it must fix
->> something to make it worth considering.
->
-> If we do not enable that, we would not find the problem.
+>> At the conclusion of the system through the halt or when sending a
+>> signal shutdown by ACPI to power down the console fell errors:
+>> http://www.k-max.name/wp-content/uploads/2012/01/hyper-v.png
+[That image shows the message
 
-Sorry, that didn't make any sense to me.  I'm hoping you will point us
-to a bug report that is fixed by this patch.
+  exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+  ata1.00: failed command: STANDBY IMMEDIATE
+]
+>> Errors do not interfere with work, but sneaking suspicion about
+>> future problems with the hard drive ...
+[...]
+>> in general, the source of the problem as follows:
+>> After [VVM: turn On in kernel source]  Hyper-V modules [compile and
+>> start use], a hard disk was determined as 2 with the same UUID.
+[...]
+>> connected to a drive:
+>> http://www.k-max.name/wp-content/uploads/2012/01/hdd-e1327750214479.png
+>> it is defined as a 2:
+>> http://www.k-max.name/wp-content/uploads/2012/01/2hdd.png
+>> Naturally, the same UUID:
+>> http://www.k-max.name/wp-content/uploads/2012/01/blkid.png
+>> That's what tells us the directory / dev:
+>> http://www.k-max.name/wp-content/uploads/2012/01/uuid.png
 
-> On one my test setup that _CRS does state 64bit resource range,
-> but when I clear some device resource manually and let kernel allocate
-> high, just then find out those devices does not work with drivers.
-> It turns out _CRS have more big range than what the chipset setting states.
-> with fixing in BIOS, allocate high is working now on that platform.
+Thanks --- I think this is what Greg was asking for.
 
-I didn't understand this either, sorry.  Are you saying that this
-patch helps us work around a BIOS defect?
+If I understand correctly, the problem is that ata_piix and hv_storvsc
+both claim the (virtual) hard disk.  That sounds worth fixing.  The
+patch works by making ata_piix skip the disk during enumeration if
+hv_storvsc is enabled as a built-in driver or module.
 
->> Steve's problem doesn't count because that's a "pci=nocrs" case that
->> will always require special handling.
->
-> but pci=nocrs is still supported, even some systems does not work with
-> pci=use_crs
->
->> A general solution is not
->> possible without a BIOS change (to describe >4GB apertures) or a
->> native host bridge driver (to discover >4GB apertures from the
->> hardware).  These patches only make Steve's machine work by accident
->> -- they make us put the video device above 4GB, and we're just lucky
->> that the host bridge claims that region.
->
-> Some bios looks enabling the non-stated range default to legacy chain.
-> Some bios does not do that. only stated range count.
-> So with pci=nocrs we still have some chance to get allocate high working.
+A workaround is to blacklist the ata_piix module.  However, that means
+losing access to CD and DVD drives which are exposed by ata_piix and
+not hv_storvsc.
 
-The patch as proposed changes behavior for all systems, whether we're
-using _CRS or not (in fact, it even changes the behavior for non-x86
-systems).  The only case we know of where it fixes something is
-Steve's system, where he already has to use "pci=nocrs" in order for
-it to help.  My point is that it would be safer to leave things as
-they are for everybody, and merely ask Steve to use "pci=nocrs
-pci=alloc_high" or something similar.
-
->> One possibility is some sort of boot-time option to force a PCI device
->> to a specified address.  That would be useful for debugging as well as
->> for Steve's machine.
->
-> yeah, how about
->
-> pci=alloc_high
->
-> and default to disabled ?
-
-I was actually thinking of something more specific, e.g., a way to
-place one device at an exact address.  I've implemented that a couple
-times already for testing various things.  But maybe a more general
-option like "pci=alloc_high" would make sense, too.
-
-Linux has a long history of allocating bottom-up.  Windows has a long
-history of allocating top-down.  You're proposing a third alternative,
-allocating bottom-up starting at 4GB for 64-bit BARs.  If we change
-this area, I would prefer something that follows Windows because I
-think it will be closer to what's been tested by Windows.  Do you
-think your alternative is better?
+Hoping that clarifies,
+Jonathan
