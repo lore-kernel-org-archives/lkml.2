@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab2FES1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:27:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58663 "EHLO mx1.redhat.com"
+	id S1755923Ab2FESel (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:34:41 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:54066 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab2FES1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:27:23 -0400
-Date: Tue, 5 Jun 2012 21:27:00 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: automount hangs during boot somewhere in rcu_barrier.
-Message-ID: <20120605182700.GN20236@redhat.com>
-References: <20120603113236.GW2311@redhat.com>
- <20120604031549.GE2357@linux.vnet.ibm.com>
- <20120604074803.GA23670@redhat.com>
- <20120604100925.GC23670@redhat.com>
- <20120604145432.GA2490@linux.vnet.ibm.com>
- <20120605094658.GI580@redhat.com>
- <20120605151930.GG2388@linux.vnet.ibm.com>
+	id S1754680Ab2FESek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 14:34:40 -0400
+Date: Tue, 5 Jun 2012 13:34:39 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: relax_domain_level boot parameter has no effect
+Message-ID: <20120605183439.GA16819@sgi.com>
+References: <20120601210348.GA22471@sgi.com> <1338824262.28282.87.camel@twins> <20120604181614.GA22172@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120605151930.GG2388@linux.vnet.ibm.com>
+In-Reply-To: <20120604181614.GA22172@sgi.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 08:19:30AM -0700, Paul E. McKenney wrote:
-> On Tue, Jun 05, 2012 at 12:46:58PM +0300, Gleb Natapov wrote:
-> > On Mon, Jun 04, 2012 at 07:54:32AM -0700, Paul E. McKenney wrote:
-> > > On Mon, Jun 04, 2012 at 01:09:25PM +0300, Gleb Natapov wrote:
-> > > > On Mon, Jun 04, 2012 at 10:48:03AM +0300, Gleb Natapov wrote:
-> > > > > On Sun, Jun 03, 2012 at 08:15:49PM -0700, Paul E. McKenney wrote:
-> > > > > > Hmmm...  Could you please try disabling CONFIG_RCU_FAST_NO_HZ?  If that
-> > > > > > makes the problem go away, I have some patches 3.6-targeted patches
-> > > > > > for you.
-> > > > > Will report back.
-> > > > > 
-> > > > Do not see any problems with the option disabled.
+On Mon, Jun 04, 2012 at 01:16:14PM -0500, Dimitri Sivanich wrote:
+> On Mon, Jun 04, 2012 at 05:37:42PM +0200, Peter Zijlstra wrote:
+> > On Fri, 2012-06-01 at 16:03 -0500, Dimitri Sivanich wrote:
+> > > I noticed (and verified) that the relax_domain_level boot parameter does not
+> > > get processed because sched_domain_level_max is 0 at the time that
+> > > setup_relax_domain_level() is run.
 > > > 
-> > > OK, then you are probably being bitten by the same bug that was biting
-> > > Pascal and Heiko.  Could you please apply the following series from -rcu?
+> > > int sched_domain_level_max;
 > > > 
-> > > 	bf7757c3 (Merge commit 'v3.4-rc6' into HEAD)
-> > > 	edc17350 (RCU_FAST_NO_HZ detection of callback adoption)
-> > > 	8e03a88e (Update RCU_FAST_NO_HZ tracing for lazy callbacks)
-> > > 	f2298c63 (Move RCU_FAST_NO_HZ per-CPU variables to rcu_dynticks structure)
-> > > 	05cc0fc9 (Precompute RCU_FAST_NO_HZ timer offsets)
-> > > 	477fca01 (Dump only the current CPU's buffers for idle-entry/exit warnings)
-> > > 	f29075fb (The rcu_needs_cpu() function is not a quiescent state)
+> > > static int __init setup_relax_domain_level(char *str)
+> > > {
+> > >         unsigned long val;
 > > > 
-> > > Of these, 05cc0fc9 (Precompute RCU_FAST_NO_HZ timer offsets) is likely
-> > > to be the most relevant.  The -rcu tree may be found at:
+> > >         val = simple_strtoul(str, NULL, 0);
+> > >         if (val < sched_domain_level_max)
+> > >                 default_relax_domain_level = val;
 > > > 
-> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> > > 
-> > > Please let me know if you have any trouble pulling this series.
-> > > 
-> > The problem is gone with the series + enabling CONFIG_RCU_FAST_NO_HZ
-> > back.
+> > >         return 1;
+> > > }
+> > > __setup("relax_domain_level=", setup_relax_domain_level);
+> > 
+> > Ah indeed.. this has been so for a while I guess.
 > 
-> Very good!!!
+> On a very related note, the sched_relax_domain_level setting in cpuset
+> doesn't appear to work correctly either (if I'm interpreting all of this
+> correctly).
 > 
-> Maybe I should be submitting this series to 3.5 rather than 3.6?
+> The reason is that the build_sched_domain() routine calls the
+> set_domain_attribute() routine prior to setting the sd->level, however,
+> the set_domain_attribute() routine relies on the sd->level to decide whether
+> idle load balancing will be off/on.
 > 
-As it stands now I cannot use kernels with CONFIG_RCU_FAST_NO_HZ
-enabled. May be disabling it is a good enough workaround for poor souls
-like me, but I doubt distros can enable it with known problems like
-that.
+> static void set_domain_attribute(struct sched_domain *sd,
+> ..
+> ==>     if (request < sd->level) {
+>                 /* turn off idle balance on this domain */
+> ..
+> ..
+> struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
+> ..
+> ==>     set_domain_attribute(sd, attr);
+>         cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
+>         if (child) {
+> ==>             sd->level = child->level + 1;
+>                 sched_domain_level_max = max(sched_domain_level_max, sd->level);
+> 
+> 
+> > What are you using this knob for?
+> 
+> I was poking around for different ways to turn off idle load balancing when
+> I ran into all of this.
 
-Thanks you for your promptly response!
-
---
-			Gleb.
+I'll submit a patch shortly that should return these back to what appears to
+be their intended functionality.
