@@ -1,208 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753220Ab2FEVfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 17:35:33 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:54133 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172Ab2FEVfb (ORCPT
+	id S1753184Ab2FEVh3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 17:37:29 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:49887 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879Ab2FEVh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 17:35:31 -0400
-Date: Tue, 5 Jun 2012 23:35:27 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, zheng.z.yan@linux.intel.com
-Subject: Re: [PATCH] perf, x86: Fix Intel shared extra MSR allocation
-Message-ID: <20120605213527.GA5019@quad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Jun 2012 17:37:27 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Fabio Baltieri <fabio.baltieri@gmail.com>,
+        Shuah Khan <shuahkhan@gmail.com>
+Subject: [PATCH v2 1/2] led: add oneshot trigger
+Date: Tue,  5 Jun 2012 23:38:58 +0200
+Message-Id: <1338932339-1660-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add oneshot trigger to blink a led with configurable parameters via
+sysfs.
 
-Zheng Yan reported that event group validation can wreck event state
-when Intel extra_reg allocation changes event state.
-
-Validation shouldn't change any persistent state. Cloning events in
-validate_{event,group}() isn't really pretty either, so add a few
-special cases to avoid modifying the event state.
-
-The code is restructured to minimize the special case impact.
-
-Reported-by: Zheng Yan <zheng.z.yan@linux.intel.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>
 ---
+Hi all,
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e049d6d..cb60838 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1496,6 +1496,7 @@ static struct cpu_hw_events *allocate_fake_cpuc(void)
- 		if (!cpuc->shared_regs)
- 			goto error;
- 	}
-+	cpuc->is_fake = 1;
- 	return cpuc;
- error:
- 	free_fake_cpuc(cpuc);
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 6638aaf..83794d8 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -117,6 +117,7 @@ struct cpu_hw_events {
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
+that's my v2 of the ledtrig-oneshot trigger, with the correction suggested from
+Shuah in the original thread.  These include some unnecessary initialization
+and use of the new "activated" flag.
+
+I've kept the name to "oneshot" as I think it suits the role of the trigger as
+example/test for the led_blink_set_oneshot function but I have expanded a bit
+the Kconfig description to better identify the trigger's usage.
+
+About the namespace question, I think that naming the parameters delay_on and
+delay_off is ok as they have the same meaning as timer's ones (they also
+uses the same internal fields after all...).
+
+Also, I added a default set of delay_{on,off} to 100ms on activation, so that
+the trigger starts with a valid configuration, like ledtrig-timer does.
+
+Anything else that should be changed?
+
+Fabio
+
+ drivers/leds/Kconfig           |  14 +++
+ drivers/leds/Makefile          |   1 +
+ drivers/leds/ledtrig-oneshot.c | 198 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 213 insertions(+)
+ create mode 100644 drivers/leds/ledtrig-oneshot.c
+
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index 04cb8c8..1f151fb 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -443,6 +443,20 @@ config LEDS_TRIGGER_TIMER
  
- 	unsigned int		group_flag;
-+	int			is_fake;
+ 	  If unsure, say Y.
  
- 	/*
- 	 * Intel DebugStore bits
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 166546e..76a2bd2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1119,27 +1119,33 @@ intel_bts_constraints(struct perf_event *event)
- 	return NULL;
- }
- 
--static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
-+static int intel_alt_er(int idx)
- {
- 	if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
--		return false;
-+		return idx;
- 
--	if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
-+	if (idx == EXTRA_REG_RSP_0)
-+		return EXTRA_REG_RSP_1;
++config LEDS_TRIGGER_ONESHOT
++	tristate "LED One-shot Trigger"
++	depends on LEDS_TRIGGERS
++	help
++	  This allows LEDs to blink in one-shot pulses with parameters
++	  controlled via sysfs.  It's useful to notify the user on
++	  sporadic events, when there are no clear begin and end trap points,
++	  or on dense events, where this blinks the LED at constant rate if
++	  rearmed continuously.
 +
-+	if (idx == EXTRA_REG_RSP_1)
-+		return EXTRA_REG_RSP_0;
++	  It also shows how to use the led_blink_set_oneshot() function.
 +
-+	return idx;
++	  If unsure, say Y.
++
+ config LEDS_TRIGGER_IDE_DISK
+ 	bool "LED IDE Disk Trigger"
+ 	depends on IDE_GD_ATA
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index f8958cd..9112d51 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+ 
+ # LED Triggers
+ obj-$(CONFIG_LEDS_TRIGGER_TIMER)	+= ledtrig-timer.o
++obj-$(CONFIG_LEDS_TRIGGER_ONESHOT)	+= ledtrig-oneshot.o
+ obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK)	+= ledtrig-ide-disk.o
+ obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT)	+= ledtrig-heartbeat.o
+ obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT)	+= ledtrig-backlight.o
+diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
+new file mode 100644
+index 0000000..1aacdfe
+--- /dev/null
++++ b/drivers/leds/ledtrig-oneshot.c
+@@ -0,0 +1,198 @@
++/*
++ * One-shot LED Trigger
++ *
++ * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
++ *
++ * Based on ledtrig-timer.c by Richard Purdie <rpurdie@openedhand.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/ctype.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
++
++#define DEFAULT_DELAY 100
++
++struct oneshot_trig_data {
++	unsigned int invert;
++};
++
++static ssize_t led_shot(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
++
++	led_blink_set_oneshot(led_cdev,
++			&led_cdev->blink_delay_on, &led_cdev->blink_delay_off,
++			oneshot_data->invert);
++
++	/* content is ignored */
++	return size;
++}
++static ssize_t led_invert_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
++
++	return sprintf(buf, "%u\n", oneshot_data->invert);
 +}
 +
-+static void intel_fixup_er(struct perf_event *event, int idx)
++static ssize_t led_invert_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
 +{
-+	if (idx == EXTRA_REG_RSP_0) {
- 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
- 		event->hw.config |= 0x01bb;
- 		event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
- 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
--	} else if (event->hw.extra_reg.idx == EXTRA_REG_RSP_1) {
-+	} else if (idx == EXTRA_REG_RSP_1) {
- 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
- 		event->hw.config |= 0x01b7;
- 		event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
- 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
- 	}
--
--	if (event->hw.extra_reg.idx == orig_idx)
--		return false;
--
--	return true;
- }
- 
- /*
-@@ -1157,14 +1163,19 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 	struct event_constraint *c = &emptyconstraint;
- 	struct er_account *era;
- 	unsigned long flags;
--	int orig_idx = reg->idx;
-+	int idx = reg->idx;
- 
--	/* already allocated shared msr */
--	if (reg->alloc)
--		return NULL; /* call x86_get_event_constraint() */
-+	/*
-+	 * reg->alloc can be set due to existing state, so for fake cpuc
-+	 * we need to ignore this, otherwise we might fail to allocate
-+	 * proper fake state for this extra reg constraint. Also see
-+	 * the comment below.
-+	*/
-+	if (reg->alloc && !cpuc->is_fake)
-+		return NULL; /* call x86_get_event_constraints() */
- 
- again:
--	era = &cpuc->shared_regs->regs[reg->idx];
-+	era = &cpuc->shared_regs->regs[idx];
- 	/*
- 	 * we use spin_lock_irqsave() to avoid lockdep issues when
- 	 * passing a fake cpuc
-@@ -1172,6 +1183,27 @@ again:
- 	raw_spin_lock_irqsave(&era->lock, flags);
- 
- 	if (!atomic_read(&era->ref) || era->config == reg->config) {
-+		/*
-+		 * If its a fake cpuc -- as per validate_{group,event}() we
-+		 * shouldn't touch event state and we can avoid doing so
-+		 * since both will only call get_event_constraints() once
-+		 * on each event, this avoids the need for reg->alloc.
-+		 *
-+		 * Not doing the ER fixup will only result in era->reg being
-+		 * wrong, but since we won't actually try and program hardware
-+		 * this isn't a problem either.
-+		 */
-+		if (!cpuc->is_fake) {
-+			if (idx != reg->idx)
-+				intel_fixup_er(event, idx);
-+			/*
-+			 * x86_schedule_events() calls get_event_constraints()
-+			 * multiple times on events in the case of incremental
-+			 * scheduling(). reg->alloc ensures we only do the ER
-+			 * allocation once.
-+			 */
-+			reg->alloc = 1;
-+		}
- 
- 		/* lock in msr value */
- 		era->config = reg->config;
-@@ -1180,18 +1212,19 @@ again:
- 		/* one more user */
- 		atomic_inc(&era->ref);
- 
--		/* no need to reallocate during incremental event scheduling */
--		reg->alloc = 1;
--
- 		/*
- 		 * need to call x86_get_event_constraint()
- 		 * to check if associated event has constraints
- 		 */
- 		c = NULL;
--	} else if (intel_try_alt_er(event, orig_idx)) {
--		raw_spin_unlock_irqrestore(&era->lock, flags);
--		goto again;
-+	} else {
-+		idx = intel_alt_er(idx);
-+		if (idx != reg->idx) {
-+			raw_spin_unlock_irqrestore(&era->lock, flags);
-+			goto again;
-+		}
- 	}
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
++	unsigned long state;
++	int ret;
 +
- 	raw_spin_unlock_irqrestore(&era->lock, flags);
- 
- 	return c;
-@@ -1204,11 +1237,14 @@ __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
- 	struct er_account *era;
- 
- 	/*
--	 * only put constraint if extra reg was actually
--	 * allocated. Also takes care of event which do
--	 * not use an extra shared reg
-+	 * Only put constraint if extra reg was actually allocated. Also takes
-+	 * care of event which do not use an extra shared reg.
-+	 *
-+	 * Also, if this is a fake cpuc we shouldn't touch any event state
-+	 * (reg->alloc) and we don't care about leaving inconsistent cpuc state
-+	 * either since it'll be thrown out.
- 	 */
--	if (!reg->alloc)
-+	if (!reg->alloc || cpuc->is_fake)
- 		return;
- 
- 	era = &cpuc->shared_regs->regs[reg->idx];
++	ret = kstrtoul(buf, 0, &state);
++	if (ret)
++		return ret;
++
++	oneshot_data->invert = !!state;
++
++	return size;
++}
++
++static ssize_t led_delay_on_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%lu\n", led_cdev->blink_delay_on);
++}
++
++static ssize_t led_delay_on_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	unsigned long state;
++	int ret;
++
++	ret = kstrtoul(buf, 0, &state);
++	if (ret)
++		return ret;
++
++	led_cdev->blink_delay_on = state;
++
++	return size;
++}
++static ssize_t led_delay_off_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%lu\n", led_cdev->blink_delay_off);
++}
++
++static ssize_t led_delay_off_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	unsigned long state;
++	int ret;
++
++	ret = kstrtoul(buf, 0, &state);
++	if (ret)
++		return ret;
++
++	led_cdev->blink_delay_off = state;
++
++	return size;
++}
++
++static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
++static DEVICE_ATTR(delay_off, 0644, led_delay_off_show, led_delay_off_store);
++static DEVICE_ATTR(invert, 0644, led_invert_show, led_invert_store);
++static DEVICE_ATTR(shot, 0200, NULL, led_shot);
++
++static void oneshot_trig_activate(struct led_classdev *led_cdev)
++{
++	struct oneshot_trig_data *oneshot_data;
++	int rc;
++
++	oneshot_data = kzalloc(sizeof(*oneshot_data), GFP_KERNEL);
++	if (!oneshot_data)
++		return;
++
++	led_cdev->trigger_data = oneshot_data;
++
++	rc = device_create_file(led_cdev->dev, &dev_attr_delay_on);
++	if (rc)
++		goto err_out_trig_data;
++	rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
++	if (rc)
++		goto err_out_delayon;
++	rc = device_create_file(led_cdev->dev, &dev_attr_invert);
++	if (rc)
++		goto err_out_delayoff;
++	rc = device_create_file(led_cdev->dev, &dev_attr_shot);
++	if (rc)
++		goto err_out_invert;
++
++	led_cdev->blink_delay_on = DEFAULT_DELAY;
++	led_cdev->blink_delay_off = DEFAULT_DELAY;
++
++	led_cdev->activated = true;
++
++	return;
++
++err_out_invert:
++	device_remove_file(led_cdev->dev, &dev_attr_invert);
++err_out_delayoff:
++	device_remove_file(led_cdev->dev, &dev_attr_delay_off);
++err_out_delayon:
++	device_remove_file(led_cdev->dev, &dev_attr_delay_on);
++err_out_trig_data:
++	kfree(led_cdev->trigger_data);
++}
++
++static void oneshot_trig_deactivate(struct led_classdev *led_cdev)
++{
++	struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
++
++	if (led_cdev->activated) {
++		device_remove_file(led_cdev->dev, &dev_attr_delay_on);
++		device_remove_file(led_cdev->dev, &dev_attr_delay_off);
++		device_remove_file(led_cdev->dev, &dev_attr_invert);
++		device_remove_file(led_cdev->dev, &dev_attr_shot);
++		kfree(oneshot_data);
++		led_cdev->activated = false;
++	}
++
++	/* Stop blinking */
++	led_brightness_set(led_cdev, LED_OFF);
++}
++
++static struct led_trigger oneshot_led_trigger = {
++	.name     = "oneshot",
++	.activate = oneshot_trig_activate,
++	.deactivate = oneshot_trig_deactivate,
++};
++
++static int __init oneshot_trig_init(void)
++{
++	return led_trigger_register(&oneshot_led_trigger);
++}
++
++static void __exit oneshot_trig_exit(void)
++{
++	led_trigger_unregister(&oneshot_led_trigger);
++}
++
++module_init(oneshot_trig_init);
++module_exit(oneshot_trig_exit);
++
++MODULE_AUTHOR("Fabio Baltieri <fabio.baltieri@gmail.com>");
++MODULE_DESCRIPTION("One-shot LED trigger");
++MODULE_LICENSE("GPL");
+-- 
+1.7.10.2.520.g6a4a482.dirty
+
