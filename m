@@ -1,88 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab2FEPfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 11:35:54 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55391 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab2FEPfw (ORCPT
+	id S1752925Ab2FEPfs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 11:35:48 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50175 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab2FEPfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 11:35:52 -0400
-Message-ID: <4FCE2747.3050308@gmail.com>
-Date: Tue, 05 Jun 2012 23:35:35 +0800
-From: Jiang Liu <liuj97@gmail.com>
+	Tue, 5 Jun 2012 11:35:30 -0400
+Message-ID: <4FCE273B.50809@nasza-klasa.pl>
+Date: Tue, 05 Jun 2012 17:35:23 +0200
+From: =?UTF-8?B?TGVzxYJhdyBLb3BlxIc=?= <leslaw.kopec@nasza-klasa.pl>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1206042203590.3086@ionos>
-In-Reply-To: <alpine.LFD.2.02.1206042203590.3086@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?QW5kZXJzIEJvc3Ryw7Zt?= <anders@netinsight.net>
+CC: dsmythies@telus.net, jrnieder@gmail.com, linux-kernel@vger.kernel.org,
+        aman@tmm1.net, a.p.zijlstra@chello.nl, tglx@linutronix.de
+Subject: Re: [3.2.16 -> 3.2.17 regression] High reported CPU load when idle
+References: <20120523215359.GA19798@burratino> <20120524214516.GB1158@burratino> <000c01cd3e70$b651dd10$22f59730$@net> <20120530.165426.1421117300206344483.anders@netinsight.net>
+In-Reply-To: <20120530.165426.1421117300206344483.anders@netinsight.net>
+X-Enigmail-Version: 1.5pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig0EF820407E0FDBB2ACF83FD8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-	It's a great idea to use state machine to implement cpu online/offline.
-Actually we are trying to split the cpu online/offline flow into several stages
-so we could do error recover easily when hot-plugging physical processors.
-	Thanks!
-	Gerry
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig0EF820407E0FDBB2ACF83FD8
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On 06/05/2012 04:11 AM, Thomas Gleixner wrote:
-> On Mon, 4 Jun 2012, Fenghua Yu wrote:
-> 
->> From: Fenghua Yu <fenghua.yu@intel.com>
->>
->> Since offline CPU is in wmait or hlt if mwait feature is not available, it can
->> be waken up by writing to monitored memory range or via nmi.
->>
->> Compared to current INIT, INIT, STARTUP wake up sequence, waking up offline CPU
->> is faster via wmait or nmi. This is especially useful when offline CPU for
->> power saving and shorter waking up time is desired. On one tested desktop
->> machine, waking up time via mwait or nmi is reduced to 23% of waking up time
->> via INIT. Waking up time is measured from the beginning of store_online() to
->> the beginning of cpu_idle() after the CPU is waken up.
->>
->> Waking up offline CPU via mwait or nmi is also useful to support BSP offline/
->> online because offline BSP can not be waken up by the INIT's sequence. The BSP
->> offline/online patchset will be sent out seperately.
-> 
-> I understand what you are trying to do, though I completely disagree
-> with the solution.
-> 
-> The main problem of the current hotplug code is that it is an all or
-> nothing approach. You have to tear down the whole thing completely
-> instead of just taking it out of the usable set of cpus.
-> 
-> I'm working on a proper state machine driven online/offline sequence,
-> where you can put the cpu into an intermediate state which avoids
-> bringing it down completely. This is enough to get the full
-> powersaving benefits w/o having to go through all the synchronization
-> states of a full online/offline. That will shorten the onlining time
-> of an previously offlined cpu to almost nothing.
-> 
-> I really want to avoid adding more bandaids to the hotplug code before
-> we have sorted out the existing horror.
-> 
-> Thanks,
-> 
-> 	tglx
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On 05/30/2012 04:54 PM, Anders Bostr=C3=B6m wrote:
 
+>  DS> This statement: "Starting with 3.2.17-1, the CPU load accounting i=
+s broken when the computer is idle. The CPU load is reported as >0.50 whe=
+n idle. 3.2.16-1 don't suffer from this problem."
+>  DS> In my opinion has the following mistakes:
+>  DS> . The computer is not actually idle. If it was actually idle the r=
+eported load average would be 0.
+>=20
+> Well, I tested in single user mode, with very few processes running,
+> mostly init, getty, bash and top (+ a lot of kernel threads). And
+> 3.2.17 reported a load of >0.5 . Under the same conditions 3.2.16
+> typically reports 0.01 or 0.00 .
+
+I've tried to reproduce the problem, but haven't had much luck. I've
+tested vanilla and Debian kernels versions 3.2.16 and 3.2.17. Load on an
+idle or slightly busy system is the same across all versions.
+
+vanilla 3.2.16		0.15 0.07 0.06
+vanilla 3.2.17		0.17 0.11 0.13
+Debian 3.2.16-1		0.13 0.07 0.05
+Debian 3.2.17-1		0.10 0.09 0.11
+
+When the system is completely idle load drops to 0. I've also tried
+3.2.17 with 556061b00c9f, but it makes no difference and in comparison
+to plain 3.2.17 load is the same even on a busy system.
+
+I can't explain why we're getting different results on the same kernels.
+If you'd like more details just ask.
+
+--=20
+Les=C5=82aw Kope=C4=87
+
+
+--------------enig0EF820407E0FDBB2ACF83FD8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk/OJzsACgkQNZJfI+JDs2Lz8wCffCqIX/xfyjepItgi8yu03QLD
+OyYAn05c6laPzMX1CwbfgSQ+gxaotn34
+=F1jZ
+-----END PGP SIGNATURE-----
+
+--------------enig0EF820407E0FDBB2ACF83FD8--
