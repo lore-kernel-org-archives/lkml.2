@@ -1,154 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761511Ab2FEDnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:43:12 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40588 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761428Ab2FEDnH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:43:07 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <4FCD7FBB.1000304@jp.fujitsu.com>
-Date: Tue, 05 Jun 2012 12:40:43 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1761523Ab2FEDnY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:43:24 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:52357 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761428Ab2FEDnU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 23:43:20 -0400
+From: Bhupesh SHARMA <bhupesh.sharma@st.com>
+To: Federico Vaga <federico.vaga@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
+        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 5 Jun 2012 11:42:50 +0800
+Subject: RE: [PATCH RFC] c_can_pci: generic module for c_can on PCI
+Thread-Topic: [PATCH RFC] c_can_pci: generic module for c_can on PCI
+Thread-Index: Ac1CcQt4psk9IY2KQNqBGybfcWb7HgAWwjqw
+Message-ID: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
+References: <4FC135C6.5030206@grandegger.com>
+ <1338816766-7089-2-git-send-email-federico.vaga@gmail.com>
+ <20120604165619.15ba43bf@pyramind.ukuu.org.uk> <1677842.Pq7naXsvrI@harkonnen>
+In-Reply-To: <1677842.Pq7naXsvrI@harkonnen>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
-        akpm@linux-foundation.org, hannes@cmpxchg.org,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH -V7 07/14] mm/page_cgroup: Make page_cgroup point to the
- cgroup rather than the mem_cgroup
-References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FCD648E.90709@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87ehpu8o5z.fsf@skywalker.in.ibm.com>
-In-Reply-To: <87ehpu8o5z.fsf@skywalker.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/05 11:53), Aneesh Kumar K.V wrote:
-> Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  writes:
->
->> (2012/05/30 23:38), Aneesh Kumar K.V wrote:
->>> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
->>>
->>> We will use it later to make page_cgroup track the hugetlb cgroup information.
->>>
->>> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
->>> ---
->>>    include/linux/mmzone.h      |    2 +-
->>>    include/linux/page_cgroup.h |    8 ++++----
->>>    init/Kconfig                |    4 ++++
->>>    mm/Makefile                 |    3 ++-
->>>    mm/memcontrol.c             |   42 +++++++++++++++++++++++++-----------------
->>>    5 files changed, 36 insertions(+), 23 deletions(-)
->>>
->>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
->>> index 2427706..2483cc5 100644
->>> --- a/include/linux/mmzone.h
->>> +++ b/include/linux/mmzone.h
->>> @@ -1052,7 +1052,7 @@ struct mem_section {
->>>
->>>    	/* See declaration of similar field in struct zone */
->>>    	unsigned long *pageblock_flags;
->>> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
->>> +#ifdef CONFIG_PAGE_CGROUP
->>>    	/*
->>>    	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
->>>    	 * section. (see memcontrol.h/page_cgroup.h about this.)
->>> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
->>> index a88cdba..7bbfe37 100644
->>> --- a/include/linux/page_cgroup.h
->>> +++ b/include/linux/page_cgroup.h
->>> @@ -12,7 +12,7 @@ enum {
->>>    #ifndef __GENERATING_BOUNDS_H
->>>    #include<generated/bounds.h>
->>>
->>> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
->>> +#ifdef CONFIG_PAGE_CGROUP
->>>    #include<linux/bit_spinlock.h>
->>>
->>>    /*
->>> @@ -24,7 +24,7 @@ enum {
->>>     */
->>>    struct page_cgroup {
->>>    	unsigned long flags;
->>> -	struct mem_cgroup *mem_cgroup;
->>> +	struct cgroup *cgroup;
->>>    };
->>>
->>
->> This patch seems very bad.
->
-> I had to change that to
->
-> struct page_cgroup {
-> 	unsigned long flags;
-> 	struct cgroup_subsys_state *css;
-> };
->
-> to get memcg to work. We end up changing css.cgroup on cgroupfs mount/umount.
->
-Hmm, then pointer to memcg can be calculated by this *css.
-Ok to this.
+> -----Original Message-----
+> From: linux-can-owner@vger.kernel.org [mailto:linux-can-
+> owner@vger.kernel.org] On Behalf Of Federico Vaga
+> Sent: Monday, June 04, 2012 10:16 PM
+> To: Alan Cox
+> Cc: Wolfgang Grandegger; Marc Kleine-Budde; Giancarlo ASNAGHI; Alan
+> Cox; Alessandro Rubini; linux-can@vger.kernel.org;
+> netdev@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
+> 
+> > > +static u16 c_can_pci_read_reg_aligned_to_16bit(struct c_can_priv
+> > > *priv, +						void *reg)
+> >
+> > I'm a bit worried this function name might be too short ;)
+> 
+> I know :) I was inspired by the same function in c_can_platform.c
 
->>
->>    - What is the performance impact to memcg ? Doesn't this add extra overheads
->>      to memcg lookup ?
->
-> Considering that we are stashing cgroup_subsys_state, it should be a
-> simple addition. I haven't measured the exact numbers. Do you have any
-> suggestion on the tests I can run ?
->
+There was a purpose to keeping these long function names when I wrote
+the c_can_platform driver initially. These were kept to support the 
+SoCs (even the flaky ones) which I could trace at that time and used C_CAN controllers
+(e.g. Hynix, ST's SPEAr eMPUs, etc..) and had different register bank layouts.
 
-copy-on-write, parallel page fault, file creation/deletion etc..
+In some of these SoC's the C_CAN registers which are essentially 16-bit or 32-bit
+registers are aligned always to a 32-bit boundary (i.e. even a 16-bit register
+is aligned to 32-bit boundary).
+
+So, I had to implement two variants of the read/write reg routines. I am not sure your SoC implementation needs them.
+If it does, I will categorize it as flaky as well :)
+ 
+> About these function I suggest to move them into c_can.c because they
+> are the same for c_can_platform.c and c_can_pci.c Then add a new field
+> c_can_priv->offset which can be used to shift the register offset
+> coherently with the memory alignment. Finally, remove c_can_priv-
+> >read_reg and c_can_priv->write_reg and use internal c_can.c function
+> to
+> read and write registers.
+
+See above. There was a reason for keeping these routines in c_can_platform.c
+Simply put, every platform having a Bosch C_CAN module can have it's own implementation
+of the bus (for example you use PCI) and register bank layout (16-bit or 32-bit aligned).
+
+I would suggest to keep the same arrangement.
+
+> static u16 c_can_read_reg(struct c_can_priv *priv, enum reg index)
+> {
+> 	return readw(priv->base + (priv->regs[index] << priv->offset));
+> }
+> static void c_can_write_reg(struct c_can_priv *priv, enum reg index,
+> 						u16 val)
+> {
+> 	writew(val, priv->base + (priv->regs[index] << priv->offset));
+> }
+> 
+> 
+> If it's ok, I can made a patch for this in the next days.
+> 
+
+[snip..]
 
 
->>    - Hugetlb reuquires much more smaller number of tracking information rather
->>      than memcg requires. I guess you can record the information into page->private
->>      if you want.
->
-> So If we end up tracking page cgroup in struct page all these extra over
-> head will go away. And in most case we would have both memcg and hugetlb
-> enabled by default.
->
->>    - This may prevent us from the work 'reducing size of page_cgroup'
->>
->
-> by reducing you mean moving struct page_cgroup info to struct page
-> itself ? If so this should not have any impact right ?
-
-I'm not sure but....doesn't this change bring impact to rules around
-(un)lock_page_cgroup() and pc->memcg overwriting algorithm ?
-Let me think....but maybe discussing without patch was wrong. sorry.
-
->Most of the requirement of hugetlb should be similar to memcg.
->
-Yes and No. hugetlb just requires 1/HUGEPAGE_SIZE of tracking information.
-So, as Michal pointed out, if the user _really_ want to avoid
-overheads of memcg, the effect cgroup_disable=memory should be kept.
-If you use page_cgroup, you cannot save memory by the boot option.
-
-This makes the points 'creating hugetlb only subsys for avoiding memcg overheads'
-unclear. You don't need tracking information per page and it can be dynamically
-allocated. Or please range-tracking as Michal proposed.
-
->> So, strong Nack to this. I guess you can use page->private or some entries in
->> struct page, you have many pages per accounting units. Please make an effort
->> to avoid using page_cgroup.
->>
->
-> HugeTLB already use page->private of compound page head to track subpool
-> pointer. So we won't be able to use page->private.
->
-
-You can use other pages than head/tails.
-For example,I think you have 512 pages per 2M pages.
-
-
-Thanks,
--Kame
-
-
-
+Regards,
+Bhupesh
