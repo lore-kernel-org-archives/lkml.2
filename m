@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab2FEXN7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:13:59 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54029 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab2FEXN5 (ORCPT
+	id S1753470Ab2FEXWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:22:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56219 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab2FEXWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:13:57 -0400
-Date: Wed, 6 Jun 2012 01:13:52 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
-        "Luck\\, Tony" <tony.luck@intel.com>,
-        "Yu\\, Fenghua" <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha\\, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick\\, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
-Message-ID: <20120605231352.GF27374@one.firstfloor.org>
-References: <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com> <1338912565.2749.9.camel@twins> <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com> <1338913190.2749.10.camel@twins> <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com> <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos> <m2ipf5jx27.fsf@firstfloor.org> <alpine.LFD.2.02.1206052305370.3086@ionos> <alpine.LFD.2.02.1206052318420.3086@ionos>
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 19:22:22 -0400
+Date: Wed, 6 Jun 2012 08:22:10 +0900
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Borislav Petkov <bp@amd64.org>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Grant Likely <grant.likely@secretlab.ca>, qemu-devel@nongnu.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, systemtap@sourceware.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, Cam Macdonell <cam@cs.ualberta.ca>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Subject: Re: [Qemu-devel] [RFC PATCH 1/2] ivring: Add a ring-buffer driver on
+ IVShmem
+Message-ID: <20120605232210.GA8858@kroah.com>
+References: <20120605104954.15442.62695.stgit@ltc189.sdl.hitachi.co.jp>
+ <20120605130117.15479.32680.stgit@ltc189.sdl.hitachi.co.jp>
+ <20120605131031.GF13495@aftab.osrc.amd.com>
+ <4FCE902A.3060603@codemonkey.ws>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1206052318420.3086@ionos>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <4FCE902A.3060603@codemonkey.ws>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And aside of the above requirements it should add the ability to deal
-> with the fact that aside of server workloads this needs to be able to
-> cope with appplications in the embedded/mobile space which know more
-> about the future system state than the scheduler itself.
+On Wed, Jun 06, 2012 at 07:03:06AM +0800, Anthony Liguori wrote:
+> On 06/05/2012 09:10 PM, Borislav Petkov wrote:
+> >On Tue, Jun 05, 2012 at 10:01:17PM +0900, Yoshihiro YUNOMAE wrote:
+> >>This patch adds a ring-buffer driver for IVShmem device, a virtual RAM device in
+> >>QEMU. This driver can be used as a ring-buffer for kernel logging or tracing of
+> >>a guest OS by recording kernel programing or SystemTap.
+> >>
+> >>This ring-buffer driver is implemented very simple. First 4kB of shared memory
+> >>region is control structure of a ring-buffer. In this region, some values for
+> >>managing the ring-buffer is stored such as bits and mask of whole memory size,
+> >>writing position, threshold value for notification to a reader on a host OS.
+> >>This region is used by the reader to know writing position. Then, "total
+> >>memory size - 4kB" equals to usable memory region for recording data.
+> >>This ring-buffer driver records any data from start to end of the writable
+> >>memory region.
+> >>
+> >>When writing size exceeds a threshold value, this driver can notify a reader
+> >>to read data by using writel(). As this later patch, reader does not have any
+> >>function for receiving the notification. This notification feature will be used
+> >>near the future.
+> >>
+> >>As a writer records data in this ring-buffer, spinlock function is used to
+> >>avoid competing by some writers in multi CPU environment. Not to use spinlock,
+> >>lockless ring-buffer like as ftrace and one ring-buffer one CPU will be
+> >>implemented near the future.
+> >
+> >Yet another ring buffer?
+> >
+> >We already have an ftrace and perf ring buffer, can't you use one of those?
+> 
+> Not to mention virtio :-)
+> 
+> Why not just make a virtio device for this kind of thing?
 
-Well solving world hunger in one try is hard. Baby steps are easier.
+Yeah, that's exactly what I was thinking, why reinvent things again?
 
-What I think would be useful short term is a clean mechanism for drivers
-to lock a interrupt onto a CPU, without irqbalanced touching it. 
-This would be mainly for MSI-X drivers to spread their interrupts properly
-and give better performance out of the box.
-
-Another short term case is the power aware interrupt routing now on recent 
-Intel CPUs.  In this case the interrupt needs logical focus to multiple CPUs 
-and the hardware makes the decision (essentially it does power aware load 
-balancing in hardware). Again nobody else should touch it.
-
-Then maybe this mechanism could be extended with a power aware 
-software solution with some input from the load balancer like you suggested. 
-I don't have a firm picture on how exactly it should work.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+greg k-h
