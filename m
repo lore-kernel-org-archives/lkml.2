@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761419Ab2FENKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:10:18 -0400
+	id S1761830Ab2FENKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:10:36 -0400
 Received: from mail-bk0-f46.google.com ([209.85.214.46]:46637 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757899Ab2FENKP (ORCPT
+	with ESMTP id S1761722Ab2FENKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:10:15 -0400
+	Tue, 5 Jun 2012 09:10:31 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com,
         mszeredi@suse.cz
-Subject: [PATCH 03/21] vfs: do_last(): common slow lookup
-Date: Tue,  5 Jun 2012 15:10:14 +0200
-Message-Id: <1338901832-14049-4-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 05/21] vfs: lookup_open(): expand lookup_hash()
+Date: Tue,  5 Jun 2012 15:10:16 +0200
+Message-Id: <1338901832-14049-6-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
 References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
@@ -24,55 +24,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Make the slow lookup part of O_CREAT and non-O_CREAT opens common.
-
-This allows atomic_open to be hooked into the slow lookup part.
+Copy __lookup_hash() into lookup_open().  The next patch will insert the atomic
+open call just before the real lookup.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/namei.c |   27 +++++----------------------
- 1 files changed, 5 insertions(+), 22 deletions(-)
+ fs/namei.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
 diff --git a/fs/namei.c b/fs/namei.c
-index 73e824c..0a56b61 100644
+index 1153476..cd20ddc 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2241,30 +2241,13 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 			symlink_ok = 1;
- 		/* we _can_ be in RCU mode here */
- 		error = lookup_fast(nd, &nd->last, path, &inode);
--		if (unlikely(error)) {
--			if (error < 0)
--				goto exit;
--
--			BUG_ON(nd->inode != dir->d_inode);
--
--			mutex_lock(&dir->d_inode->i_mutex);
--			dentry = __lookup_hash(&nd->last, dir, nd);
--			mutex_unlock(&dir->d_inode->i_mutex);
--			error = PTR_ERR(dentry);
--			if (IS_ERR(dentry))
--				goto exit;
--			path->mnt = nd->path.mnt;
--			path->dentry = dentry;
--			error = follow_managed(path, nd->flags);
--			if (unlikely(error < 0))
--				goto exit_dput;
-+		if (likely(!error))
-+			goto finish_lookup;
+@@ -2200,14 +2200,24 @@ static struct file *lookup_open(struct nameidata *nd, struct path *path,
+ 				int *want_write, bool *created)
+ {
+ 	struct dentry *dir = nd->path.dentry;
++	struct inode *dir_inode = dir->d_inode;
+ 	struct dentry *dentry;
+ 	int error;
++	bool need_lookup;
  
--			if (error)
--				nd->flags |= LOOKUP_JUMPED;
-+		if (error < 0)
-+			goto exit;
+ 	*created = false;
+-	dentry = lookup_hash(nd);
++	dentry = lookup_dcache(&nd->last, dir, nd, &need_lookup);
+ 	if (IS_ERR(dentry))
+ 		return ERR_CAST(dentry);
  
--			inode = path->dentry->d_inode;
--		}
--		goto finish_lookup;
-+		BUG_ON(nd->inode != dir->d_inode);
- 	} else {
- 		/* create side of things */
- 		/*
++	if (need_lookup) {
++		BUG_ON(dentry->d_inode);
++
++		dentry = lookup_real(dir_inode, dentry, nd);
++		if (IS_ERR(dentry))
++			return ERR_CAST(dentry);
++	}
++
+ 	/* Negative dentry, just create the file */
+ 	if (!dentry->d_inode && (op->open_flag & O_CREAT)) {
+ 		umode_t mode = op->mode;
 -- 
 1.7.7
 
