@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab2FEKie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:38:34 -0400
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49834 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932671Ab2FEKid (ORCPT
+	id S1761755Ab2FEKiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:38:50 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44034 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754175Ab2FEKit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:38:33 -0400
+	Tue, 5 Jun 2012 06:38:49 -0400
+Date: Tue, 5 Jun 2012 11:38:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Chris Ball <cjb@laptop.org>, Linus Walleij <linus.walleij@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Mattias WALLIN <mattias.wallin@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, sameo@linux.intel.com,
+        grant.likely@secretlab.ca, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 08/22] regulator: Change ab8500 match names to reflect
+ Device Tree
+Message-ID: <20120605103846.GQ23408@opensource.wolfsonmicro.com>
+References: <20120530100302.GD9947@opensource.wolfsonmicro.com>
+ <CAF2Aj3gZMF9ev9B46rBM+aY-srwthef09ad2CWfuXXFHmqqAjA@mail.gmail.com>
+ <20120530121547.GJ9947@opensource.wolfsonmicro.com>
+ <4FC63632.4030504@linaro.org>
+ <20120530151119.GN9947@opensource.wolfsonmicro.com>
+ <4FC63B39.6040905@linaro.org>
+ <20120530164152.GP9947@opensource.wolfsonmicro.com>
+ <4FC846CC.20801@linaro.org>
+ <20120601084850.GJ24139@opensource.wolfsonmicro.com>
+ <4FCDDFFC.3000902@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1338892071.28282.157.camel@twins>
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
-	<CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
-	<CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
-	<1338891271.28282.155.camel@twins>
-	<CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
-	<1338892071.28282.157.camel@twins>
-Date: Tue, 5 Jun 2012 12:38:31 +0200
-Message-ID: <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7a4X6VOqfbl9xMrG"
+Content-Disposition: inline
+In-Reply-To: <4FCDDFFC.3000902@linaro.org>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 12:27 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Tue, 2012-06-05 at 12:21 +0200, Stephane Eranian wrote:
->> I agree with the first part of the patch in intel_try_alt_er(), we
->> should not touch
->> the actual event struct. But I am still unclear about the reg->alloc part.
->
-> reg->alloc is part of the actual event.
->
-Ok, I missed that (despite writing some of that code ;-<)
 
-> Thing is, the patch is horridly ugly.. while I agree that changing event
-> state isn't good, special casing all that code isn't good either.
+--7a4X6VOqfbl9xMrG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Yeah, not pretty.
+On Tue, Jun 05, 2012 at 11:31:24AM +0100, Lee Jones wrote:
+> On 01/06/12 09:48, Mark Brown wrote:
 
->
-> I was looking at cloning the events for validate_group() as well, but so
-> far that's not turning out too pretty either.
+> >What makes you say the two are equivalent?  The former is a reference
+> >from a consumer device to a named regulator while the latter is a
+> >reference from a regulator to a named consumer.
 
-How about we add a field or flag to cpuc to tell it's fake, and then in
-try_alt_er() and __intel_shared_reg_get_constraints() we avoid touching
-live struct (like reg->alloc) if fake==1. I think he was trying to do the same
-with the core_id == -1 test.
+> I mean they both link regulator<->consumer and apply the name "vmmc"
+> to the supply, or am I missing something / getting confused?
+
+You're missing something - note what I say above about the direction the
+mapping is done in, and consider what happens if we've got two of the
+same PMIC down in a system.
+
+--7a4X6VOqfbl9xMrG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPzeGkAAoJEBus8iNuMP3dMd8P/jzYk3RCYJj51m7y3Nk0z9MO
+5OmSld7Xc4QnJA+hSTXQ4VOeXHstVrE/aKFUFDzIM/7X0kv/xXlNwyr/Ot/fA+JG
+FvNPBMq51iM4T9kS6L2qtWxYpYJjIgmfi0IAX9e6k14rmP4gRVCZRuqmq6PckceD
+fe80WfuYQwJb5rrSy2ma8INM92u5ooM7dhN3Q90wWiWwd2Yw2dA3z9iHfSMoaBj2
+Zkrm7EcDHZTyjFD25udEVu9Qf+nWsXIt5Td+gd9bDwkqa2yHkXW9uAlo2opuB6LE
+5fPel5w7R8toOztR1udsMf5WqDZfYq8BTf/LDMui+GsU//QA0Zlaz3iFfhnn24v5
+a0MfoayWAhwiY5bYD1ixYUhJglJQlwl7S/eXLtVEvVPNbzOCE9d67908cBNxRiA0
+FYRhDnFa0PdpTVuyqLivPrkOWa5eU03sVQt7KSfAmGad2WRmwT8WunWVBKHagDST
+ho5DntAOVfvBZLuExTPyLEzlDrr6eO5AAIv4zZlVF1ccNmzVhSdMndloIKYyS1JS
+RCO1FzhhDgyqioY708C5URknzDgpZ8ocAZRjPfI3WlFqxEXHMVzp+dxCABXSVEAc
+gf5ThX+r3FjRzrEolw/+ItVYnymCLfAyirt/4LUBL1srkyhK7TSmQC5KSDqBp2ei
+eUJlSpa57Vj4vjkg2gy7
+=gGTp
+-----END PGP SIGNATURE-----
+
+--7a4X6VOqfbl9xMrG--
