@@ -1,155 +1,577 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab2FEEIb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 00:08:31 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:8634
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751725Ab2FEEI3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 00:08:29 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -15
-X-BigFish: VS-15(zzbb2dI9371I542M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ahbe9i)
-From: Li Yang-R58472 <r58472@freescale.com>
-To: Wood Scott-B07421 <B07421@freescale.com>,
-        Zhao Chenhui-B35336 <B35336@freescale.com>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>
-Subject: RE: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
- event source
-Thread-Topic: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
- event source
-Thread-Index: AQHNL2y7r6BvQOIl+0qohWyrm5d/spbmezkAgAQGN4CAAL/KgP//5sXg
-Date: Tue, 5 Jun 2012 04:08:25 +0000
-Message-ID: <94F013E7935FF44C83EBE7784D62AD3F09335D27@039-SN2MPN1-022.039d.mgd.msft.net>
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
- <1336737235-15370-4-git-send-email-chenhui.zhao@freescale.com>
- <4FC93D74.3090200@freescale.com>
- <20120604113609.GC20676@localhost.localdomain> <4FCD3E8B.30805@freescale.com>
-In-Reply-To: <4FCD3E8B.30805@freescale.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.83]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753626Ab2FEEfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 00:35:46 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:50218 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab2FEEfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 00:35:43 -0400
+Message-ID: <4FCD8C99.3010401@gmail.com>
+Date: Tue, 05 Jun 2012 00:35:37 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Minchan Kim <minchan@kernel.org>
+CC: undisclosed-recipients:";
+	KOSAKI Motohiro" <kosaki.motohiro@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	undisclosed-recipients:;KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+						^-missing end of address
+Subject: Re: [PATCH v9] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
+ type pageblocks
+References: <201206041543.56917.b.zolnierkie@samsung.com> <4FCD18FD.5030307@gmail.com> <4FCD6806.7070609@kernel.org> <4FCD713D.3020100@kernel.org>
+In-Reply-To: <4FCD713D.3020100@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> Minchan, are you interest this patch? If yes, can you please rewrite it?
+>>
+>> Can do it but I want to give credit to Bartlomiej.
+>> Bartlomiej, if you like my patch, could you resend it as formal patch after you do broad testing?
+>>
+>> Frankly speaking, I don't want to merge it without any data which prove it's really good for real practice.
+>>
+>> When the patch firstly was submitted, it wasn't complicated so I was okay at that time but it has been complicated
+>> than my expectation. So if Andrew might pass the decision to me, I'm totally NACK if author doesn't provide
+>> any real data or VOC of some client.
+
+I agree. And you don't need to bother this patch if you are not interest this one. I'm sorry.
+Let's throw it away until the author send us data.
 
 
-> -----Original Message-----
-> From: Wood Scott-B07421
-> Sent: Tuesday, June 05, 2012 7:03 AM
-> To: Zhao Chenhui-B35336
-> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org;
-> galak@kernel.crashing.org; Li Yang-R58472
-> Subject: Re: [PATCH v5 4/5] fsl_pmc: Add API to enable device as wakeup
-> event source
-> 
-> On 06/04/2012 06:36 AM, Zhao Chenhui wrote:
-> > On Fri, Jun 01, 2012 at 05:08:52PM -0500, Scott Wood wrote:
-> >> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
-> >>> Add APIs for setting wakeup source and lossless Ethernet in low power
-> modes.
-> >>> These APIs can be used by wake-on-packet feature.
-> >>>
-> >>> Signed-off-by: Dave Liu <daveliu@freescale.com>
-> >>> Signed-off-by: Li Yang <leoli@freescale.com>
-> >>> Signed-off-by: Jin Qing <b24347@freescale.com>
-> >>> Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-> >>> ---
-> >>>  arch/powerpc/sysdev/fsl_pmc.c |   71
-> ++++++++++++++++++++++++++++++++++++++++-
-> >>>  arch/powerpc/sysdev/fsl_soc.h |    9 +++++
-> >>>  2 files changed, 79 insertions(+), 1 deletions(-)
-> >>>
-> >>> diff --git a/arch/powerpc/sysdev/fsl_pmc.c
-> b/arch/powerpc/sysdev/fsl_pmc.c
-> >>> index 1dc6e9e..c1170f7 100644
-> >>> --- a/arch/powerpc/sysdev/fsl_pmc.c
-> >>> +++ b/arch/powerpc/sysdev/fsl_pmc.c
-> >>> @@ -34,6 +34,7 @@ struct pmc_regs {
-> >>>  	__be32 powmgtcsr;
-> >>>  #define POWMGTCSR_SLP		0x00020000
-> >>>  #define POWMGTCSR_DPSLP		0x00100000
-> >>> +#define POWMGTCSR_LOSSLESS	0x00400000
-> >>>  	__be32 res3[2];
-> >>>  	__be32 pmcdr;
-> >>>  };
-> >>> @@ -43,6 +44,74 @@ static unsigned int pmc_flag;
-> >>>
-> >>>  #define PMC_SLEEP	0x1
-> >>>  #define PMC_DEEP_SLEEP	0x2
-> >>> +#define PMC_LOSSLESS	0x4
-> >>> +
-> >>> +/**
-> >>> + * mpc85xx_pmc_set_wake - enable devices as wakeup event source
-> >>> + * @pdev: platform device affected
-> >>> + * @enable: True to enable event generation; false to disable
-> >>> + *
-> >>> + * This enables the device as a wakeup event source, or disables it.
-> >>> + *
-> >>> + * RETURN VALUE:
-> >>> + * 0 is returned on success
-> >>> + * -EINVAL is returned if device is not supposed to wake up the
-> system
-> >>> + * Error code depending on the platform is returned if both the
-> platform and
-> >>> + * the native mechanism fail to enable the generation of wake-up
-> events
-> >>> + */
-> >>> +int mpc85xx_pmc_set_wake(struct platform_device *pdev, bool enable)
-> >>
-> >> Why does it have to be a platform_device?  Would a bare device_node
-> work
-> >> here?  If it's for stuff like device_may_wakeup() that could be in a
-> >> platform_device wrapper function.
-> >
-> > It does not have to be a platform_device. I think it can be a struct
-> device.
-> 
-> Why does it even need that?  The low level mechanism for influencing
-> PMCDR should only need a device node, not a Linux device struct.
+>> 1) Any comment?
+>>
+>> Anyway, I fixed some bugs and clean up something I found during review.
+>>
+>> Minor thing.
+>> 1. change smt_result naming - I never like such long non-consistent naming. How about this?
+>> 2. fix can_rescue_unmovable_pageblock
+>>     2.1 pfn valid check for page_zone
+>>
+>> Major thing.
+>>
+>>     2.2 add lru_lock for stablizing PageLRU
+>>         If we don't hold lru_lock, there is possibility that unmovable(non-LRU) page can put in movable pageblock.
+>>         It can make compaction/CMA's regression. But there is a concern about deadlock between lru_lock and lock.
+>>         As I look the code, I can't find allocation trial with holding lru_lock so it might be safe(but not sure,
+>>         I didn't test it. It need more careful review/testing) but it makes new locking dependency(not sure, too.
+>>         We already made such rule but I didn't know that until now ;-) ) Why I thought so is we can allocate
+>>         GFP_ATOMIC with holding lru_lock, logically which might be crazy idea.
+>>
+>>     2.3 remove zone->lock in first phase.
+>>         We do rescue unmovable pageblock by 2-phase. In first-phase, we just peek pages so we don't need locking.
+>>         If we see non-stablizing value, it would be caught by 2-phase with needed lock or
+>>         can_rescue_unmovable_pageblock can return out of loop by stale page_order(cursor_page).
+>>         It couldn't make unmovable pageblock to movable but we can do it next time, again.
+>>         It's not critical.
+>>
+>> 2) Any comment?
+>>
+>> Now I can't inline the code so sorry but attach patch.
+>> It's not a formal patch/never tested.
+>>
+>
+>
+> Attached patch has a BUG in can_rescue_unmovable_pageblock.
+> Resend. I hope it is fixed.
+>
+>
+>
+>
+>
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index 51a90b7..e988037 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -1,6 +1,8 @@
+>  #ifndef _LINUX_COMPACTION_H
+>  #define _LINUX_COMPACTION_H
+>
+> +#include <linux/node.h>
+> +
+>  /* Return values for compact_zone() and try_to_compact_pages() */
+>  /* compaction didn't start as it was not possible or direct reclaim was more suitable */
+>  #define COMPACT_SKIPPED		0
+> @@ -11,6 +13,23 @@
+>  /* The full zone was compacted */
+>  #define COMPACT_COMPLETE	3
+>
+> +/*
+> + * compaction supports three modes
+> + *
+> + * COMPACT_ASYNC_MOVABLE uses asynchronous migration and only scans
+> + *    MIGRATE_MOVABLE pageblocks as migration sources and targets.
+> + * COMPACT_ASYNC_UNMOVABLE uses asynchronous migration and only scans
+> + *    MIGRATE_MOVABLE pageblocks as migration sources.
+> + *    MIGRATE_UNMOVABLE pageblocks are scanned as potential migration
+> + *    targets and convers them to MIGRATE_MOVABLE if possible
+> + * COMPACT_SYNC uses synchronous migration and scans all pageblocks
+> + */
+> +enum compact_mode {
+> +	COMPACT_ASYNC_MOVABLE,
+> +	COMPACT_ASYNC_UNMOVABLE,
+> +	COMPACT_SYNC,
+> +};
+> +
+>  #ifdef CONFIG_COMPACTION
+>  extern int sysctl_compact_memory;
+>  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 7ea259d..dd02f25 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -236,7 +236,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  	 */
+>  	while (unlikely(too_many_isolated(zone))) {
+>  		/* async migration should just abort */
+> -		if (!cc->sync)
+> +		if (cc->mode != COMPACT_SYNC)
+>  			return 0;
+>
+>  		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> @@ -304,7 +304,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  		 * satisfies the allocation
+>  		 */
+>  		pageblock_nr = low_pfn >> pageblock_order;
+> -		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
+> +		if (cc->mode != COMPACT_SYNC &&
+> +		    last_pageblock_nr != pageblock_nr &&
+>  		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
+>  			low_pfn += pageblock_nr_pages;
+>  			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
+> @@ -325,7 +326,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>  			continue;
+>  		}
+>
+> -		if (!cc->sync)
+> +		if (cc->mode != COMPACT_SYNC)
+>  			mode |= ISOLATE_ASYNC_MIGRATE;
+>
+>  		lruvec = mem_cgroup_page_lruvec(page, zone);
+> @@ -360,27 +361,121 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
+>
+>  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
+>  #ifdef CONFIG_COMPACTION
+> +/*
+> + * Returns true if MIGRATE_UNMOVABLE pageblock can be successfully
+> + * converted to MIGRATE_MOVABLE type, false otherwise.
+> + */
+> +static bool can_rescue_unmovable_pageblock(struct page *page, bool need_lrulock)
+> +{
+> +	struct zone *zone;
+> +	unsigned long pfn, start_pfn, end_pfn;
+> +	struct page *start_page, *end_page, *cursor_page;
+> +	bool lru_locked = false;
+> +
+> +	zone = page_zone(page);
+> +	pfn = page_to_pfn(page);
+> +	start_pfn = pfn & ~(pageblock_nr_pages - 1);
+> +	end_pfn = start_pfn + pageblock_nr_pages - 1;
+> +
+> +	start_page = pfn_to_page(start_pfn);
+> +	end_page = pfn_to_page(end_pfn);
+> +
+> +	for (cursor_page = start_page, pfn = start_pfn; cursor_page <= end_page;
+> +		pfn++, cursor_page++) {
+>
+> -/* Returns true if the page is within a block suitable for migration to */
+> -static bool suitable_migration_target(struct page *page)
+> +		if (!pfn_valid_within(pfn))
+> +			continue;
+> +
+> +		/* Do not deal with pageblocks that overlap zones */
+> +		if (page_zone(cursor_page) != zone)
+> +			goto out;
+> +
+> +		if (PageBuddy(cursor_page)) {
+> +			unsigned long order = page_order(cursor_page);
+> +
+> +			pfn += (1 << order) - 1;
+> +			cursor_page += (1 << order) - 1;
+> +			continue;
+> +		} else if (page_count(cursor_page) == 0) {
+> +			continue;
 
-It does no harm to pass the device structure and makes more sense for object oriented interface design. 
+Can we assume freed tail page always have page_count()==0? if yes, why do we
+need dangerous PageBuddy(cursor_page) check? ok, but this may be harmless.
 
-> 
-> >> Where does this get called from?  I don't see an example user in this
-> >> patchset.
-> >
-> > It will be used by a gianfar related patch. I plan to submit that patch
-> > after these patches accepted.
-> 
-> It would be nice to see how this is used when reviewing this.
-> 
-> >>> +{
-> >>> +	int ret = 0;
-> >>> +	struct device_node *clk_np;
-> >>> +	u32 *prop;
-> >>> +	u32 pmcdr_mask;
-> >>> +
-> >>> +	if (!pmc_regs) {
-> >>> +		pr_err("%s: PMC is unavailable\n", __func__);
-> >>> +		return -ENODEV;
-> >>> +	}
-> >>> +
-> >>> +	if (enable && !device_may_wakeup(&pdev->dev))
-> >>> +		return -EINVAL;
-> >>
-> >> Who is setting can_wakeup for these devices?
-> >
-> > The device driver is responsible to set can_wakeup.
-> 
-> How would the device driver know how to set it?  Wouldn't this depend on
-> the particular SoC and low power mode?
+But if no, this code is seriously dangerous. think following scenario,
 
-It is based on the "fsl,magic-packet" and "fsl,wake-on-filer" device tree properties.
+1) cursor page points free page
 
-Leo
+     +----------------+------------------+
+     | free (order-1) |  used (order-1)  |
+     +----------------+------------------+
+     |
+    cursor
+
+2) moved cursor
+
+     +----------------+------------------+
+     | free (order-1) |  used (order-1)  |
+     +----------------+------------------+
+                      |
+                      cursor
+
+3) neighbor block was freed
+
+
+     +----------------+------------------+
+     | free (order-2)                    |
+     +----------------+------------------+
+                      |
+                      cursor
+
+now, cursor points to middle of free block.
+
+
+Anyway, I recommend to avoid dangerous no zone->lock game and change
+can_rescue_unmovable_pageblock() is only called w/ zone->lock. I have
+no seen any worth to include this high complex for mere minor optimization.
+
+
+> +		} else if (PageLRU(cursor_page)) {
+> +			if (!need_lrulock)
+> +				continue;
+> +			else if (lru_locked)
+> +				continue;
+> +			else {
+> +				spin_lock(&zone->lru_lock);
+
+Hmm...
+I don't like to take lru_lock. 1) Until now, we carefully avoid to take
+both zone->lock and zone->lru_lock. they are both performance critical
+lock. And I think pageblock migratetype don't need strictly correct. It
+is only optimization of anti fragmentation. Why do we need take it?
+
+
+
+> +				lru_locked = true;
+> +				if (PageLRU(page))
+> +					continue;
+> +			}
+> +		}
+> +
+> +		goto out;
+> +	}
+> +
+
+Why don't we need to release lru_lock when returning true.
+
+
+> +	return true;
+> +out:
+> +	if (lru_locked)
+> +		spin_unlock(&zone->lru_lock);
+> +
+> +	return false;
+> +}
+> +
+> +static void rescue_unmovable_pageblock(struct page *page)
+> +{
+> +	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+> +	move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
+> +}
+> +
+> +/*
+> + * MIGRATE_TARGET : good for migration target
+> + * RESCUE_UNMOVABLE_TARTET : good only if we can rescue the unmovable pageblock.
+> + * UNMOVABLE_TARGET : can't migrate because it's a page in unmovable pageblock.
+> + * SKIP_TARGET : can't migrate another reasons.
+> + */
+> +enum smt_result {
+> +	MIGRATE_TARGET,
+> +	RESCUE_UNMOVABLE_TARGET,
+> +	UNMOVABLE_TARGET,
+> +	SKIP_TARGET,
+> +};
+> +
+> +/*
+> + * Returns MIGRATE_TARGET if the page is within a block
+> + * suitable for migration to, UNMOVABLE_TARGET if the page
+> + * is within a MIGRATE_UNMOVABLE block, SKIP_TARGET otherwise.
+> + */
+> +static enum smt_result suitable_migration_target(struct page *page,
+> +			      struct compact_control *cc, bool need_lrulock)
+>  {
+>
+>  	int migratetype = get_pageblock_migratetype(page);
+>
+>  	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
+>  	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
+> -		return false;
+> +		return SKIP_TARGET;
+>
+>  	/* If the page is a large free page, then allow migration */
+>  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+> -		return true;
+> +		return MIGRATE_TARGET;
+>
+>  	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
+> -	if (migrate_async_suitable(migratetype))
+> -		return true;
+> +	if (cc->mode != COMPACT_ASYNC_UNMOVABLE &&
+> +	    migrate_async_suitable(migratetype))
+> +		return MIGRATE_TARGET;
+> +
+> +	if (cc->mode == COMPACT_ASYNC_MOVABLE &&
+> +	    migratetype == MIGRATE_UNMOVABLE)
+> +		return UNMOVABLE_TARGET;
+> +
+> +	if (cc->mode != COMPACT_ASYNC_MOVABLE &&
+> +	    migratetype == MIGRATE_UNMOVABLE &&
+> +	    can_rescue_unmovable_pageblock(page, need_lrulock))
+> +		return RESCUE_UNMOVABLE_TARGET;
+>
+>  	/* Otherwise skip the block */
+> -	return false;
+> +	return SKIP_TARGET;
+>  }
+>
+>  /*
+> @@ -414,6 +509,13 @@ static void isolate_freepages(struct zone *zone,
+>  	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+>
+>  	/*
+> +	 * isolate_freepages() may be called more than once during
+> +	 * compact_zone_order() run and we want only the most recent
+> +	 * count.
+> +	 */
+> +	cc->nr_unmovable_pageblock = 0;
+> +
+> +	/*
+>  	 * Isolate free pages until enough are available to migrate the
+>  	 * pages on cc->migratepages. We stop searching if the migrate
+>  	 * and free page scanners meet or enough free pages are isolated.
+> @@ -421,6 +523,7 @@ static void isolate_freepages(struct zone *zone,
+>  	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
+>  					pfn -= pageblock_nr_pages) {
+>  		unsigned long isolated;
+> +		enum smt_result ret;
+>
+>  		if (!pfn_valid(pfn))
+>  			continue;
+> @@ -437,9 +540,12 @@ static void isolate_freepages(struct zone *zone,
+>  			continue;
+>
+>  		/* Check the block is suitable for migration */
+> -		if (!suitable_migration_target(page))
+> +		ret = suitable_migration_target(page, cc, false);
+> +		if (ret != MIGRATE_TARGET && ret != RESCUE_UNMOVABLE_TARGET) {
+> +			if (ret == UNMOVABLE_TARGET)
+> +				cc->nr_unmovable_pageblock++;
+>  			continue;
+> -
+> +		}
+>  		/*
+>  		 * Found a block suitable for isolating free pages from. Now
+>  		 * we disabled interrupts, double check things are ok and
+> @@ -448,12 +554,16 @@ static void isolate_freepages(struct zone *zone,
+>  		 */
+>  		isolated = 0;
+>  		spin_lock_irqsave(&zone->lock, flags);
+> -		if (suitable_migration_target(page)) {
+> +		ret = suitable_migration_target(page, cc, true);
+> +		if (ret == MIGRATE_TARGET || ret == RESCUE_UNMOVABLE_TARGET) {
+> +			if (ret == RESCUE_UNMOVABLE_TARGET)
+> +				rescue_unmovable_pageblock(page);
+>  			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
+>  			isolated = isolate_freepages_block(pfn, end_pfn,
+>  							   freelist, false);
+>  			nr_freepages += isolated;
+> -		}
+> +		} else if (ret == UNMOVABLE_TARGET)
+> +			cc->nr_unmovable_pageblock++;
+>  		spin_unlock_irqrestore(&zone->lock, flags);
+>
+>  		/*
+> @@ -685,8 +795,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>
+>  		nr_migrate = cc->nr_migratepages;
+>  		err = migrate_pages(&cc->migratepages, compaction_alloc,
+> -				(unsigned long)cc, false,
+> -				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
+> +			(unsigned long)&cc->freepages, false,
+> +			(cc->mode == COMPACT_SYNC) ? MIGRATE_SYNC_LIGHT
+> +						      : MIGRATE_ASYNC);
+>  		update_nr_listpages(cc);
+>  		nr_remaining = cc->nr_migratepages;
+>
+> @@ -715,7 +826,8 @@ out:
+>
+>  static unsigned long compact_zone_order(struct zone *zone,
+>  				 int order, gfp_t gfp_mask,
+> -				 bool sync)
+> +				 enum compact_mode mode,
+> +				 unsigned long *nr_pageblocks_skipped)
+>  {
+>  	struct compact_control cc = {
+>  		.nr_freepages = 0,
+> @@ -723,12 +835,17 @@ static unsigned long compact_zone_order(struct zone *zone,
+>  		.order = order,
+>  		.migratetype = allocflags_to_migratetype(gfp_mask),
+>  		.zone = zone,
+> -		.sync = sync,
+> +		.mode = mode,
+>  	};
+> +	unsigned long rc;
+> +
+>  	INIT_LIST_HEAD(&cc.freepages);
+>  	INIT_LIST_HEAD(&cc.migratepages);
+>
+> -	return compact_zone(zone, &cc);
+> +	rc = compact_zone(zone, &cc);
+> +	*nr_pageblocks_skipped = cc.nr_unmovable_pageblock;
+> +
+> +	return rc;
+>  }
+>
+>  int sysctl_extfrag_threshold = 500;
+> @@ -753,6 +870,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  	struct zoneref *z;
+>  	struct zone *zone;
+>  	int rc = COMPACT_SKIPPED;
+> +	unsigned long nr_pageblocks_skipped;
+> +	enum compact_mode mode;
+>
+>  	/*
+>  	 * Check whether it is worth even starting compaction. The order check is
+> @@ -769,12 +888,22 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  								nodemask) {
+>  		int status;
+>
+> -		status = compact_zone_order(zone, order, gfp_mask, sync);
+> +		mode = sync ? COMPACT_SYNC : COMPACT_ASYNC_MOVABLE;
+> +retry:
+> +		status = compact_zone_order(zone, order, gfp_mask, mode,
+> +						&nr_pageblocks_skipped);
+>  		rc = max(status, rc);
+>
+>  		/* If a normal allocation would succeed, stop compacting */
+>  		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0, 0))
+>  			break;
+> +
+> +		if (rc == COMPACT_COMPLETE && mode == COMPACT_ASYNC_MOVABLE) {
+> +			if (nr_pageblocks_skipped) {
+> +				mode = COMPACT_ASYNC_UNMOVABLE;
+> +				goto retry;
+> +			}
+> +		}
+>  	}
+>
+>  	return rc;
+> @@ -808,7 +937,7 @@ static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+>  			if (ok && cc->order > zone->compact_order_failed)
+>  				zone->compact_order_failed = cc->order + 1;
+>  			/* Currently async compaction is never deferred. */
+> -			else if (!ok && cc->sync)
+> +			else if (!ok && cc->mode == COMPACT_SYNC)
+>  				defer_compaction(zone, cc->order);
+>  		}
+>
+> @@ -823,7 +952,7 @@ int compact_pgdat(pg_data_t *pgdat, int order)
+>  {
+>  	struct compact_control cc = {
+>  		.order = order,
+> -		.sync = false,
+> +		.mode = COMPACT_ASYNC_MOVABLE,
+>  	};
+>
+>  	return __compact_pgdat(pgdat, &cc);
+> @@ -833,7 +962,7 @@ static int compact_node(int nid)
+>  {
+>  	struct compact_control cc = {
+>  		.order = -1,
+> -		.sync = true,
+> +		.mode = COMPACT_SYNC,
+>  	};
+>
+>  	return __compact_pgdat(NODE_DATA(nid), &cc);
+> diff --git a/mm/internal.h b/mm/internal.h
+> index 2ba87fb..061fde7 100644
+> --- a/mm/internal.h
+> +++ b/mm/internal.h
+> @@ -94,6 +94,9 @@ extern void putback_lru_page(struct page *page);
+>  /*
+>   * in mm/page_alloc.c
+>   */
+> +extern void set_pageblock_migratetype(struct page *page, int migratetype);
+> +extern int move_freepages_block(struct zone *zone, struct page *page,
+> +				int migratetype);
+>  extern void __free_pages_bootmem(struct page *page, unsigned int order);
+>  extern void prep_compound_page(struct page *page, unsigned long order);
+>  #ifdef CONFIG_MEMORY_FAILURE
+> @@ -101,6 +104,7 @@ extern bool is_free_buddy_page(struct page *page);
+>  #endif
+>
+>  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
+> +#include <linux/compaction.h>
+>
+>  /*
+>   * in mm/compaction.c
+> @@ -119,11 +123,14 @@ struct compact_control {
+>  	unsigned long nr_migratepages;	/* Number of pages to migrate */
+>  	unsigned long free_pfn;		/* isolate_freepages search base */
+>  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
+> -	bool sync;			/* Synchronous migration */
+> +	enum compact_mode mode;		/* Compaction mode */
+>
+>  	int order;			/* order a direct compactor needs */
+>  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
+>  	struct zone *zone;
+> +
+> +	/* Number of UNMOVABLE destination pageblocks skipped during scan */
+> +	unsigned long nr_unmovable_pageblock;
+>  };
+>
+>  unsigned long
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 476ae3e..d40e4c7 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -219,7 +219,7 @@ EXPORT_SYMBOL(nr_online_nodes);
+>
+>  int page_group_by_mobility_disabled __read_mostly;
+>
+> -static void set_pageblock_migratetype(struct page *page, int migratetype)
+> +void set_pageblock_migratetype(struct page *page, int migratetype)
+>  {
+>
+>  	if (unlikely(page_group_by_mobility_disabled))
+> @@ -954,8 +954,8 @@ static int move_freepages(struct zone *zone,
+>  	return pages_moved;
+>  }
+>
+> -static int move_freepages_block(struct zone *zone, struct page *page,
+> -				int migratetype)
+> +int move_freepages_block(struct zone *zone, struct page *page,
+> +			 int migratetype)
+>  {
+>  	unsigned long start_pfn, end_pfn;
+>  	struct page *start_page, *end_page;
+> @@ -5651,7 +5651,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+>  		.nr_migratepages = 0,
+>  		.order = -1,
+>  		.zone = page_zone(pfn_to_page(start)),
+> -		.sync = true,
+> +		.mode = COMPACT_SYNC,
+>  	};
+>  	INIT_LIST_HEAD(&cc.migratepages);
+>
+
 
