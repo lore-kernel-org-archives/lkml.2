@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab2FEVx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 17:53:29 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41803 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab2FEVx1 convert rfc822-to-8bit (ORCPT
+	id S1752832Ab2FEWBf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 18:01:35 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:47467 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab2FEWBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 17:53:27 -0400
+	Tue, 5 Jun 2012 18:01:33 -0400
+Date: Tue, 5 Jun 2012 15:00:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
+Message-ID: <20120605220059.GV2388@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+ <1338912565.2749.9.camel@twins>
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
+ <1338913190.2749.10.camel@twins>
+ <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+ <1338918625.2749.29.camel@twins>
+ <alpine.LFD.2.02.1206052106440.3086@ionos>
+ <1338925756.2749.36.camel@twins>
+ <20120605212947.GA8686@linux.vnet.ibm.com>
+ <1338932241.2749.62.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20120605142826.d92316a0.akpm@linux-foundation.org>
-References: <cover.1338889066.git.joe@perches.com> <20120605142826.d92316a0.akpm@linux-foundation.org>
-From: Kay Sievers <kay@vrfy.org>
-Date: Tue, 5 Jun 2012 23:53:02 +0200
-Message-ID: <CAPXgP10J-3L3P-u9-6nGSHXj_+++Wq=5ysr72yPYrSA05QzoNg@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338932241.2749.62.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060522-5518-0000-0000-000004F18E2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 11:28 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue,  5 Jun 2012 02:46:29 -0700
-> Joe Perches <joe@perches.com> wrote:
->
->> KERN_<LEVEL> currently takes up 3 bytes.
->> Shrink the kernel size by using an ASCII SOH and then the level byte.
->> Remove the need for KERN_CONT.
->> Convert directly embedded uses of <.> to KERN_<LEVEL>
->
-> What an epic patchset.  I guess that saving a byte per printk does make
-> the world a better place, and forcibly ensuring that nothing is
-> dependent upon the internal format of the KERN_foo strings is nice.
->
->
-> Unfortunately the <n> thing is part of the kernel ABI:
->
->        echo "<4>foo" > /dev/kmsg
->
-> devkmsg_writev() does weird and wonderful things with
-> facilities/levels.  That function incorrectly returns "success" when
-> copy_from_user() faults, btw.  It also babbles on about LOG_USER and
-> LOG_KERN without ever defining these things.  I guess they're
-> userspace-only concepts and are hardwired to 0 and 1 in the kernel.  Or
-> not.
+On Tue, Jun 05, 2012 at 11:37:21PM +0200, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 14:29 -0700, Paul E. McKenney wrote:
+> > OK, I'll bite...  Why not just use CPU hotplug to expel the timers?
+> 
+> Currently? Can you say: 'kstopmachine'?
 
-It's as old as BSD, defined by syslog(3), used by glibc. The whole
-<%u> prefix notation and the LOG_* names come from there.
+So if CPU hotplug (or whatever you want to call it) stops using
+kstopmachine, you are OK with it?
 
-The kernel is just user/facility == 0, so it never really was apparent
-that the whole concept has more than a log level in that number.
+> But its also a question of interface and naming. Do you want to have to
+> iterate all cpus in your isolated set, do you want to bring them down
+> far enough to physically unplug. Ideally no to both.
 
-Userspace syslog defines these pretty stupid numbers:
-  /* facility codes */
-  #define LOG_KERN        (0<<3)  /* kernel messages */
-  #define LOG_USER        (1<<3)  /* random user-level messages */
-  #define LOG_MAIL        (2<<3)  /* mail system */
-  #define LOG_DAEMON      (3<<3)  /* system daemons */
-  #define LOG_AUTH        (4<<3)  /* security/authorization messages */
-  #define LOG_SYSLOG      (5<<3)  /* messages generated internally by syslogd */
-  #define LOG_LPR         (6<<3)  /* line printer subsystem */
-  #define LOG_NEWS        (7<<3)  /* network news subsystem */
-  #define LOG_UUCP        (8<<3)  /* UUCP subsystem */
-  #define LOG_CRON        (9<<3)  /* clock daemon */
-  #define LOG_AUTHPRIV    (10<<3) /* security/authorization messages
-(private) */
-  #define LOG_FTP         (11<<3) /* ftp daemon */
+For many use cases, it is indeed not necessary to get to a point where
+the CPUs could be physically removed from the system.  But CPU-failure
+use cases would need the CPU to be fully deactivated.  And many of the
+hardware guys tell me that the CPU-failure case will be getting more
+common, though I sure hope that they are wrong.
 
-but it *can* still all be pretty useful, and people *can* get creative
-with facility numbers if they want to, as we have like 13 bits at the
-moment to use for the facility which is stored in the kernel log
-buffer. :)
+> If you don't bring them down far enough to unplug, should you still be
+> calling it hotplug?
 
-/dev/kmsg just enforces LOG_USER, if userspace tries to inject stuff
-with LOG_KERN, which it should not be allowed. The non-LOG_KERN number
-itself has not much meaning it just says: "this is not from the
-kernel" which is important to keep in the message.
+I am not too worried about what it is called.  Though "banish to monastery"
+would probably be going too far in the other direction.
 
-Als, dmesg(1) has a -k option, that filters out all userspace-injected stuff.
+> Ideally I think there'd be a file in your cpuset which if opened and
+> written to will flush all pending bits (timers, workqueues, the lot) and
+> return when this is done (and maybe provide O_ASYNC writes to not wait
+> for completion).
 
-> So what to do about /dev/kmsg?  I'd say "nothing": we retain "<n>" as
-> the externally-presented kernel format for a facility level, and the
-> fact that the kernel internally uses a different encoding is hidden
-> from userspace.
+The mobile guys probably are not too worried about bulk operations yet
+because they don't have that many CPUs, but it might be useful elsewhere.
 
-Yeah, I think so.
+							Thanx, Paul
 
-Yeah, we strip the <>  at printk() time, add the <> back at output
-time; they are not stored internally anymore, so that should not
-affect the current behaviour.
-
-> And if the user does
->
->        echo "\0014foo" > /dev/kmsg
->
-> then I guess we should pass it straight through, retaining the \0014.
-> But from my reading of your code, this doesn't work - vprintk_emit()
-> will go ahead and strip and interpret the \0014, evading the stuff
-> which devkmsg_writev() did.
-
-We should make it not accept faked prefixes, yes. It should be
-impossible to let messages look like they originated from the kernel,
-just like the current code enforces a non-LOG_KERN <> prefix.
-
-Kay
