@@ -1,146 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761592Ab2FEJj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:39:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44670 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758120Ab2FEJis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:38:48 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <balbi@ti.com>
-Subject: [PATCH 5/5] drivers: usb: otg: twl: use devres API to allocate resources
-Date: Tue, 5 Jun 2012 15:08:38 +0530
-Message-ID: <1338889118-10032-6-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1338889118-10032-1-git-send-email-kishon@ti.com>
-References: <1338889118-10032-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1761565Ab2FEJqt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:46:49 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:51672 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754401Ab2FEJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:46:48 -0400
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 0/8] Rework KERN_<LEVEL>
+Date: Tue,  5 Jun 2012 02:46:29 -0700
+Message-Id: <cover.1338889066.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-used devres API while allocating memory resource in twl4030 and twl6030
-so that these resources are released automatically on driver detach.
+KERN_<LEVEL> currently takes up 3 bytes.
+Shrink the kernel size by using an ASCII SOH and then the level byte.
+Remove the need for KERN_CONT.
+Convert directly embedded uses of <.> to KERN_<LEVEL>
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/otg/twl4030-usb.c |   15 +++------------
- drivers/usb/otg/twl6030-usb.c |   16 +++-------------
- 2 files changed, 6 insertions(+), 25 deletions(-)
+Joe Perches (8):
+  printk: Add generic functions to find KERN_<LEVEL> headers
+  printk: Add kern_levels.h to make KERN_<LEVEL> available for asm use
+  arch: Remove direct definitions of KERN_<LEVEL> uses
+  btrfs: Use printk_get_level and printk_skip_level, add __printf, fix fallout
+  sound: Use printk_get_level and printk_skip_level
+  staging: wlags49_h2: Remove direct declarations of KERN_<LEVEL> prefixes
+  printk: Convert the format for KERN_<LEVEL> to a 2 byte pattern
+  printk: Remove the now unnecessary "C" annotation for KERN_CONT
 
-diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
-index 03368c3..49b127a 100644
---- a/drivers/usb/otg/twl4030-usb.c
-+++ b/drivers/usb/otg/twl4030-usb.c
-@@ -589,15 +589,13 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
--	twl = kzalloc(sizeof *twl, GFP_KERNEL);
-+	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
- 	if (!twl)
- 		return -ENOMEM;
- 
--	otg = kzalloc(sizeof *otg, GFP_KERNEL);
--	if (!otg) {
--		kfree(twl);
-+	otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
-+	if (!otg)
- 		return -ENOMEM;
--	}
- 
- 	twl->dev		= &pdev->dev;
- 	twl->irq		= platform_get_irq(pdev, 0);
-@@ -621,8 +619,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 	err = twl4030_usb_ldo_init(twl);
- 	if (err) {
- 		dev_err(&pdev->dev, "ldo init failed\n");
--		kfree(otg);
--		kfree(twl);
- 		return err;
- 	}
- 	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
-@@ -646,8 +642,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
- 	if (status < 0) {
- 		dev_dbg(&pdev->dev, "can't get IRQ %d, err %d\n",
- 			twl->irq, status);
--		kfree(otg);
--		kfree(twl);
- 		return status;
- 	}
- 
-@@ -691,9 +685,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
- 	regulator_put(twl->usb1v8);
- 	regulator_put(twl->usb3v1);
- 
--	kfree(twl->phy.otg);
--	kfree(twl);
--
- 	return 0;
- }
- 
-diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
-index 66cfea7..600c27a 100644
---- a/drivers/usb/otg/twl6030-usb.c
-+++ b/drivers/usb/otg/twl6030-usb.c
-@@ -395,15 +395,13 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	struct device *dev = &pdev->dev;
- 	pdata = dev->platform_data;
- 
--	twl = kzalloc(sizeof *twl, GFP_KERNEL);
-+	twl = devm_kzalloc(dev, sizeof *twl, GFP_KERNEL);
- 	if (!twl)
- 		return -ENOMEM;
- 
--	otg = kzalloc(sizeof *otg, GFP_KERNEL);
--	if (!otg) {
--		kfree(twl);
-+	otg = devm_kzalloc(dev, sizeof *otg, GFP_KERNEL);
-+	if (!otg)
- 		return -ENOMEM;
--	}
- 
- 	twl->dev		= &pdev->dev;
- 	twl->irq1		= platform_get_irq(pdev, 0);
-@@ -430,8 +428,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 	err = twl6030_usb_ldo_init(twl);
- 	if (err) {
- 		dev_err(&pdev->dev, "ldo init failed\n");
--		kfree(otg);
--		kfree(twl);
- 		return err;
- 	}
- 	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
-@@ -450,8 +446,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
- 			twl->irq1, status);
- 		device_remove_file(twl->dev, &dev_attr_vbus);
--		kfree(otg);
--		kfree(twl);
- 		return status;
- 	}
- 
-@@ -463,8 +457,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
- 			twl->irq2, status);
- 		free_irq(twl->irq1, twl);
- 		device_remove_file(twl->dev, &dev_attr_vbus);
--		kfree(otg);
--		kfree(twl);
- 		return status;
- 	}
- 
-@@ -495,8 +487,6 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
- 	pdata->phy_exit(twl->dev);
- 	device_remove_file(twl->dev, &dev_attr_vbus);
- 	cancel_work_sync(&twl->set_vbus_work);
--	kfree(twl->phy.otg);
--	kfree(twl);
- 
- 	return 0;
- }
+ arch/arm/lib/io-acorn.S              |    3 +-
+ arch/arm/vfp/vfphw.S                 |    7 +++--
+ arch/frv/kernel/kernel_thread.S      |    2 +-
+ drivers/staging/wlags49_h2/hcf.c     |    8 +++---
+ drivers/staging/wlags49_h2/wl_main.c |    4 +-
+ fs/btrfs/ctree.h                     |   13 ++++++++++
+ fs/btrfs/disk-io.c                   |    2 +-
+ fs/btrfs/relocation.c                |    2 +-
+ fs/btrfs/super.c                     |   41 +++++++++++++++++++++++++++++-----
+ include/linux/kern_levels.h          |   25 ++++++++++++++++++++
+ include/linux/printk.h               |   41 +++++++++++++++++++--------------
+ kernel/printk.c                      |   14 +++++++----
+ sound/core/misc.c                    |   13 +++++++---
+ 13 files changed, 130 insertions(+), 45 deletions(-)
+ create mode 100644 include/linux/kern_levels.h
+
 -- 
-1.7.5.4
+1.7.8.111.gad25c.dirty
 
