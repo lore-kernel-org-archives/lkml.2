@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761818Ab2FEKsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:48:37 -0400
-Received: from smtp-01.mandic.com.br ([200.225.81.132]:38074 "EHLO
-	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761786Ab2FEKsf (ORCPT
+	id S1761825Ab2FEKtP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:49:15 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44674 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761718Ab2FEKtO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:48:35 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jun 2012 06:48:35 EDT
-Message-ID: <4FCDE270.1020906@cesarb.net>
-Date: Tue, 05 Jun 2012 07:41:52 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 06:49:14 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>, linux-mm@kvack.org
-Subject: frontswap: is frontswap_init called from swapoff safe?
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4FCDE2ED.8010501@gmx.de>
+References: <4FCD28E4.3090409@gmx.de>
+	<4FCDE2ED.8010501@gmx.de>
+Date: Tue, 5 Jun 2012 12:49:12 +0200
+Message-ID: <CAFLxGvyNsJuavwsom_h14JJu7RBRhfs0AT85GftfRDCv8PrBWA@mail.gmail.com>
+Subject: Re: commit 0fc9d10 : chroot under kernel 3.4.x core dumps
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I was looking at the swapfile.c parts of the recently-merged frontswap, 
-and noticed that frontswap_init can be called from swapoff when 
-try_to_unuse fails.
+On Tue, Jun 5, 2012 at 12:43 PM, Toralf Förster <toralf.foerster@gmx.de> wrote:
+> In the rare cases, where the chroot doesn't crash, all subsequent
+> commands cores instead. Furthermore it seems, that the boinc grid
+> software has problems too under kernel 3.4.1.
+> All kernel 3.3.x works fine.
+>
+> I bisected it to :
+>
+> commit 0fc9d1040313047edf6a39fd4d7c7defdca97c62
+> Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Date:   Wed Mar 28 14:42:54 2012 -0700
+>
+>    radix-tree: use iterators in find_get_pages* functions
 
-This looks odd to me. Whether it is safe or not depends on what 
-frontswap_ops.init does, but the comment for __frontswap_init ("Called 
-when a swap device is swapon'd") and the function name itself seem to 
-imply it should be called only for swapon, not when relinking the 
-swap_info after a failed swapoff.
-
-In particular, if frontswap_ops.init assumes the swap map is empty, it 
-would break, since as far as I know when try_to_unuse fails there are 
-still pages in the swap.
-
-(By the way, the comment above enable_swap_info at sys_swapoff needs to 
-be updated to also explain why reading p->frontswap_map outside the lock 
-is safe at that point, like it does for p->prio and p->swap_map.)
+After reverting commit 0fc9d1 chroot() works fine again?
+(Just to make sure that the bisect is valid)
 
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Thanks,
+//richard
