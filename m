@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761234Ab2FEAUN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 20:20:13 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43149 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752429Ab2FEAUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 20:20:11 -0400
-Message-ID: <1338855610.20167.2.camel@joe2Laptop>
-Subject: [PATCH] MAINTAINERS: whitespace only
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 04 Jun 2012 17:20:10 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932766Ab2FEAVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 20:21:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:36245 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761255Ab2FEAUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 20:20:39 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?utf-8?Q?Beno=C3=AEt_Th=C3=A9baudeau?= 
+	<benoit.thebaudeau@advansee.com>,
+        Pawel Moll <pawel.moll@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: init: multi param parsing regression since 3.4
+In-Reply-To: <CA+55aFwJj5t6zS_pgD3kMemRWkUkSoWWHey84pJegSRfnzXNzA@mail.gmail.com>
+References: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com> <87ipf71ytx.fsf@rustcorp.com.au> <CA+55aFwJj5t6zS_pgD3kMemRWkUkSoWWHey84pJegSRfnzXNzA@mail.gmail.com>
+User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 05 Jun 2012 09:47:49 +0930
+Message-ID: <878vg2k3wy.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove trailing spaces at EOL.
-Always use a tab after the type :
+On Mon, 4 Jun 2012 13:39:27 -0700, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Sun, Jun 3, 2012 at 9:32 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >
+> > Subject: module_param: stop double-calling parameters.
+> > From: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> Rusy, should I take this (with the ubi/build.c part removed) from the
+> email - along with the initcall debug printk removals - or can I just
+> expect to get a pull request with these things?
+> 
+>                 Linus
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+I like to spin this stuff for a day through linux-next, which should be
+happening right now.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 55f0fda..a3c9b62 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1077,7 +1077,7 @@ F:	drivers/media/video/s5p-fimc/
- ARM/SAMSUNG S5P SERIES Multi Format Codec (MFC) SUPPORT
- M:	Kyungmin Park <kyungmin.park@samsung.com>
- M:	Kamil Debski <k.debski@samsung.com>
--M:     Jeongtae Park <jtp.park@samsung.com>
-+M:	Jeongtae Park <jtp.park@samsung.com>
- L:	linux-arm-kernel@lists.infradead.org
- L:	linux-media@vger.kernel.org
- S:	Maintained
-@@ -1743,10 +1743,10 @@ F:	include/linux/can/platform/
- CAPABILITIES
- M:	Serge Hallyn <serge.hallyn@canonical.com>
- L:	linux-security-module@vger.kernel.org
--S:	Supported	
-+S:	Supported
- F:	include/linux/capability.h
- F:	security/capability.c
--F:	security/commoncap.c 
-+F:	security/commoncap.c
- F:	kernel/capability.c
- 
- CELL BROADBAND ENGINE ARCHITECTURE
-@@ -2146,11 +2146,11 @@ S:	Orphan
- F:	drivers/net/wan/pc300*
- 
- CYTTSP TOUCHSCREEN DRIVER
--M:      Javier Martinez Canillas <javier@dowhile0.org>
--L:      linux-input@vger.kernel.org
--S:      Maintained
--F:      drivers/input/touchscreen/cyttsp*
--F:      include/linux/input/cyttsp.h
-+M:	Javier Martinez Canillas <javier@dowhile0.org>
-+L:	linux-input@vger.kernel.org
-+S:	Maintained
-+F:	drivers/input/touchscreen/cyttsp*
-+F:	include/linux/input/cyttsp.h
- 
- DAMA SLAVE for AX.25
- M:	Joerg Reuter <jreuter@yaina.de>
-@@ -5169,7 +5169,7 @@ S:	Maintained
- F:	drivers/firmware/pcdp.*
- 
- PCI ERROR RECOVERY
--M:     Linas Vepstas <linasvepstas@gmail.com>
-+M:	Linas Vepstas <linasvepstas@gmail.com>
- L:	linux-pci@vger.kernel.org
- S:	Supported
- F:	Documentation/PCI/pci-error-recovery.txt
+But if you want to save me the trouble of a pull request, sure.
 
-
+Thanks,
+Rusty.
