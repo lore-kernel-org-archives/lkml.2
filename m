@@ -1,33 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2FEKZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:25:46 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:64352 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab2FEKZp (ORCPT
+	id S1761701Ab2FEK1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:27:46 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50057 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab2FEK1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:25:45 -0400
+	Tue, 5 Jun 2012 06:27:45 -0400
+X-AuditID: b753bd60-939c7ba000002ea5-9e-4fcddf1f3986
+X-AuditID: b753bd60-939c7ba000002ea5-9e-4fcddf1f3986
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -tip v2 0/9]ftrace,kprobes: Ftrace-based kprobe optimization
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Date: Tue, 05 Jun 2012 19:27:34 +0900
+Message-ID: <20120605102734.27845.43401.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Originating-IP: [93.172.31.133]
-In-Reply-To: <4FCD272E.1020300@codeaurora.org>
-References: <1338017791-9442-1-git-send-email-ohad@wizery.com>
- <1338017791-9442-2-git-send-email-ohad@wizery.com> <4FC5DD74.4030202@codeaurora.org>
- <CAK=WgbbwaMAnTGcivC9ZR8K-MtTqHAV3+BgUmk8WjCaayifJxw@mail.gmail.com> <4FCD272E.1020300@codeaurora.org>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 5 Jun 2012 13:25:24 +0300
-Message-ID: <CAK=WgbYbyc-xLwBeF7Sks4O=3k1QAmJLdYLL0fPdUA9hXC8bEQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] remoteproc: remove the now-redundant kref
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 12:22 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Option 1 is nicer and it also follows the model other subsystems have
-> put forth such as the input subsystem.
+Hi Steven,
 
-Sounds good, thanks!
+Here is the version 2 patches for kprobe-ftrace. Since I didn't
+touch ftrace part in this version, old gcc bug still be there.
+So, if you have another implementation, prease replace former 3
+patches in this series with your patch.
+
+In this version, I've fixed kprobe-ftrace recursion problem
+by initializing ftrace_ops filter correctly and registering/
+unregistering on-demand.
+
+This series of patches which allows kprobes to use ftrace
+for optimizing probing path if the probe on ftrace (mcount call).
+The optimization is transparently done by kprobes.
+
+Only if kprobe.break_handler is set, that probe can not be
+optimized with ftrace (nor put on ftrace). The reason why this
+limitation comes is that this break_handler may be used only
+from jprobes which changes ip address (for fetching the function
+arguments). In this series, ftrace doesn't allow to change regs->ip,
+since I don't want to make any non-essential trouble ;)
+
+After deep consideration, I've decided to remove "real_addr"
+method at this time, since it is hard to achieve complete
+transparency with the combination of jprobe and aggregated
+kprobes.
+And also, at least on x86, ftrace-based kprobes is available.
+
+Anyway, I can say jprobes is an out-dated probe because we 
+already has kprobe-tracer and perf-probe which allows us to
+get function arguments directly from kprobes. :)
+
+On the other hand, since kprobes has self-recursion check,
+it is safe if a probe is recursively hit, or hit a fault and
+call fault_handler.
+
+For using ftrace from kprobes, this series introduces two
+new interface for ftrace;
+
+ - ftrace_ops.regs_func, which is a callback handler
+   invoked with pt_regs as third argument. For enable
+   this feature, ftrace_ops.flags must set
+   FTRACE_OPS_FL_SAVE_REGS bit.
+ - ftrace_set_filter_ip(), which allows to set new
+   address-based filter instead of glob pattern.
+
+ftrace_ops.regs_func is still under discussion because older
+gcc doesn't support initalizing unnamed union member.
+
+In this version, I've removed notrace dependency from __kprobes.
+Instead, it just set filter correctly before adding ftrace_ops
+not to trace all functions.
+
+Changes in v2:
+ - Fix ftrace_ops registering right after setting its filter.
+ - Unregister ftrace_ops if there is no kprobe useing.
+ - Remove notrace dependency from __kprobes macro.
+
+Thank you,
+
+---
+
+Masami Hiramatsu (8):
+      kprobes/x86: ftrace based optimization for x86
+      kprobes: introduce ftrace based optimization
+      kprobes: Move locks into appropriate functions
+      kprobes: cleanup to separate probe-able check
+      ftrace: add ftrace_set_filter_ip() for address based filter
+      ftrace/x86: Support SAVE_REGS feature on i386
+      ftrace/x86-64: support SAVE_REGS feature on x86-64
+      ftrace: Add pt_regs acceptable trace callback
+
+Steven Rostedt (1):
+      kprobes: Inverse taking of module_mutex with kprobe_mutex
+
+
+ arch/x86/include/asm/ftrace.h  |    4 +
+ arch/x86/include/asm/kprobes.h |    1 
+ arch/x86/kernel/entry_32.S     |   64 +++++++++-
+ arch/x86/kernel/entry_64.S     |   38 +++++-
+ arch/x86/kernel/kprobes.c      |   48 ++++++++
+ include/linux/ftrace.h         |   24 ++++
+ include/linux/kprobes.h        |   27 ++++
+ kernel/kprobes.c               |  250 +++++++++++++++++++++++++++++-----------
+ kernel/trace/ftrace.c          |  103 ++++++++++++++--
+ 9 files changed, 458 insertions(+), 101 deletions(-)
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
