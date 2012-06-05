@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab2FEOxH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 10:53:07 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39828 "EHLO relay.sw.ru"
+	id S1752720Ab2FEOxU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 10:53:20 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:2765 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750810Ab2FEOw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 10:52:59 -0400
+	id S1750901Ab2FEOxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 10:53:06 -0400
 From: Glauber Costa <glommer@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 Cc: <cgroups@vger.kernel.org>, <devel@openvz.org>,
         Paul Turner <pjt@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Tejun Heo <tj@kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>,
         handai.szj@gmail.com, Andrew.Phillips@lmax.com,
-        Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [PATCH v4 0/4] per cgroup cpu statistics
-Date: Tue,  5 Jun 2012 18:49:37 +0400
-Message-Id: <1338907781-20904-1-git-send-email-glommer@parallels.com>
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v4 1/4] account guest time per-cgroup as well.
+Date: Tue,  5 Jun 2012 18:49:38 +0400
+Message-Id: <1338907781-20904-2-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.10.2
+In-Reply-To: <1338907781-20904-1-git-send-email-glommer@parallels.com>
+References: <1338907781-20904-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+We already track multiple tick statistics per-cgroup, using
+the task_group_account_field facility. This patch accounts
+guest_time in that manner as well.
 
-This is the 4th version of this per-cgroup statistics. My aim with that is
-to provide userspace with the necessary tools to export a view of /proc/stat
-inside a container, so tools like top would work. 
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Paul Turner <pjt@google.com>
+---
+ kernel/sched/core.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-I believe this version merges all the comments from Peter and Paul. Let me know
-if I forgot any of them.
-
-I now reuse put_prev_task to account for nr_switches, so no extra walks are added.
-For that, I had to add another parameter to the function, but I hope this is
-acceptable. Please note that this parameter would still be needed even if
-Peter's patch that merges put_prev_task behavior inside pick_next_task.
-
-This is because the previous class may live in a different class and we may
-have to call it anyway. In which case a hint like this would be needed.
-I believe this to be orthogonal to the work you are doing.
-
-Peter: the patch that adds exec_clock to rt was removed. That was my bad, it
-was intended to be part of the series that unifies cpu and cpuacct for the
-comounted case. I have them together in my tree, and I made the cut in the wrong
-place. It is not needed here.
-
-Let me know what you think of this.
-
-v4:
-* read_seq_string used instead of read_map. This is because the
-  buffer can get very big, and that's easier to fix by using seq_string
-* idle time no longer exported. It can be derived from userspace easily
-* "steal" changed to "wait", since steal is more our interpretation of it
-* nr_switches now being accounted as we walk the tree in put_prev_task, so no
-  new hierarchy walks are being inserted.
-v3:
-* completely reworked nr_switches gathering
-* separated per-se sleep_start to be more clear about it
-
-
-Glauber Costa (4):
-  account guest time per-cgroup as well.
-  expose fine-grained per-cpu data for cpuacct stats
-  mark whenever put_prev_task is called from context_switch
-  expose per-taskgroup schedstats in cgroup
-
- include/linux/sched.h    |    2 +-
- kernel/sched/core.c      |  178 +++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched/fair.c      |   28 +++++++-
- kernel/sched/idle_task.c |    2 +-
- kernel/sched/rt.c        |    6 +-
- kernel/sched/sched.h     |    5 ++
- kernel/sched/stop_task.c |    2 +-
- 7 files changed, 207 insertions(+), 16 deletions(-)
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 39eb601..220d416 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2717,8 +2717,6 @@ void account_user_time(struct task_struct *p, cputime_t cputime,
+ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 			       cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kcpustat_this_cpu->cpustat;
+-
+ 	/* Add guest time to process. */
+ 	p->utime += cputime;
+ 	p->utimescaled += cputime_scaled;
+@@ -2727,11 +2725,11 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 
+ 	/* Add guest time to cpustat. */
+ 	if (TASK_NICE(p) > 0) {
+-		cpustat[CPUTIME_NICE] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST_NICE] += (__force u64) cputime;
++		task_group_account_field(p, CPUTIME_NICE, (__force u64) cputime);
++		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+ 	} else {
+-		cpustat[CPUTIME_USER] += (__force u64) cputime;
+-		cpustat[CPUTIME_GUEST] += (__force u64) cputime;
++		task_group_account_field(p, CPUTIME_USER, (__force u64) cputime);
++		task_group_account_field(p, CPUTIME_GUEST, (__force u64) cputime);
+ 	}
+ }
+ 
 -- 
 1.7.10.2
 
