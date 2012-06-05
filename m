@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163Ab2FETum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:50:42 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14836 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087Ab2FETuk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:50:40 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 188.77.103.10
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1//af7o6EOadTA4GhAkSihA
-Date: Tue, 5 Jun 2012 21:50:34 +0200
-From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viric@viric.name>
-To: reiserfs-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Two hangs on reiserfs, linux 3.3.6
-Message-ID: <20120605195034.GY1927@vicerveza.homeunix.net>
-References: <20120604222208.GP1927@vicerveza.homeunix.net>
+	id S1752070Ab2FETvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 15:51:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45012 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750879Ab2FETva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 15:51:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="148585824"
+Message-ID: <4FCE6341.3080105@linux.intel.com>
+Date: Tue, 05 Jun 2012 12:51:29 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120604222208.GP1927@vicerveza.homeunix.net>
-X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>   <alpine.LFD.2.02.1206042203590.3086@ionos>   <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>   <1338881971.28282.150.camel@twins>   <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>  <1338912565.2749.9.camel@twins>   <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>   <1338913190.2749.10.camel@twins>   <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>  <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos> <1338925756.2749.36.camel@twins>
+In-Reply-To: <1338925756.2749.36.camel@twins>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 12:22:08AM +0200, Lluís Batlle i Rossell wrote:
-> Hello,
+On 6/5/2012 12:49 PM, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 21:43 +0200, Thomas Gleixner wrote:
+>> Vs. the interrupt/timer/other crap madness:
+>>
+>>  - We really don't want to have an interrupt balancer in the kernel
+>>    again, but we need a mechanism to prevent the user space balancer
+>>    trainwreck from ruining the power saving party.
 > 
-> I use reiserfs since years and never saw it hang... but in this computer, that
-> has two reiserfs on soft RAID1, I've seen two hangs this week.
-> 
-> Here are the sysrq 'w' I could get from dmesg from the two situations, I hope
-> they can help finding out what can this be. All the system works (rootfs on
-> btrfs, two data reiserfs on softraid1), but attempts to use the reiserfs trees
-> end up in hanged processes.
-> 
-> http://viric.name/tmp/hang/nispro-dmesg-hang-reiserfs.txt.gz
-> 
-> http://viric.name/tmp/hang/nispro-dmesg-hang-reiserfs2.txt.gz - this, a few
-> minutes ago, includes all since boot.
+> What's wrong with having an interrupt balancer tied to the scheduler
+> which optimistically tries to avoid interrupting nohz/isolated/idle
+> cpus?
 
-Third hang, some minutes ago. Only two processes stuck.
-http://viric.name/tmp/hang/nispro-dmesg-hang-reiserfs3.txt
+ideally threaded interrupts are like this.. we really should push for
+more usage of such and it all falls into place
 
-I think I'm moving away from reiserfs.
+
