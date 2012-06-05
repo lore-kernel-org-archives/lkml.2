@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761452Ab2FEJbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:31:08 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:35632 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516Ab2FEJbG (ORCPT
+	id S1761478Ab2FEJbO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:31:14 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39273 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761458Ab2FEJbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:31:06 -0400
-Message-ID: <4FCDD1A0.7040402@free.fr>
-Date: Tue, 05 Jun 2012 11:30:08 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 05:31:09 -0400
+Date: Tue, 5 Jun 2012 18:31:03 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Junxiao Bi <junxiao.bi@oracle.com>
+Cc: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org, jmoyer@redhat.com,
+        mfasheh@suse.com, jlbec@evilplan.org, bcrl@kvack.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        joe.jin@oracle.com, dave.kleikamp@oracle.com
+Subject: Re: [V2 PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+Message-ID: <20120605093103.GA21560@kroah.com>
+References: <1338881210-14863-1-git-send-email-junxiao.bi@oracle.com>
+ <1338881210-14863-2-git-send-email-junxiao.bi@oracle.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, devel@openvz.org, kir@parallels.com,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] allow a task to join a pid namespace
-References: <1338816828-25312-1-git-send-email-glommer@parallels.com> <20120604165117.GA13091@redhat.com>
-In-Reply-To: <20120604165117.GA13091@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338881210-14863-2-git-send-email-junxiao.bi@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 06:51 PM, Oleg Nesterov wrote:
-> On 06/04, Glauber Costa wrote:
->>
->> Currently, it is possible for a process  to join existing
->> net, uts and ipc namespaces. This patch allows a process to join an
->> existing pid namespace as well.
+On Tue, Jun 05, 2012 at 03:26:49PM +0800, Junxiao Bi wrote:
+> Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+> commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+> io flag is involved in it to serialize the unaligned aio. As
+> *private is not initialized in init_sync_kiocb() of do_sync_write(),
+> this unaligned io flag may be unexpectly set in an aligned dio.
+> And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+> to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+> will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
 > 
-> I can't understand this patch... but probably I missed something,
-> I never really understood setns.
+> Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+> ---
+>  include/linux/aio.h |    1 +
+>  1 file changed, 1 insertion(+)
 
-Hi Oleg,
+<formletter>
 
-let me clarify why is needed setns. In the world of container, setns
-allows to administrate the container from outside. One good example is
-to shutdown the container. The users setup their hosts with the init's
-services to startup the containers when the system starts, but they have
-no way to invoke 'shutdown' from inside the container when the system
-goes down except doing some trick with the signals. The setns syscall
-with the pid namespace support will allow to do that.
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-Also a complete setns support will allow to write some administrative
-tools to have a global view of the different separated resources running
-in several containers.
-
-For example, if you are the administrator of the host and you have
-hundred of containers running on it, you can use setns to run netstat
-within each container and build a view of the different network stack.
-The same applies for 'ps' or 'top'.
-
-Without setns, things are much more complicated and in some cases,
-impossible. For instance, you can run a daemon inside the container,
-send command to it and redirect its output to the fifo  but that
-increase the number of processes and has some limitations. Also that
-means the command you want to run is present in the container's FS.
-
-The setns syscall is highly needed for the VRF, where a single process
-can handle thousand of network namespaces and switch from a network
-namespace to another network namespace with one syscall. The usage of
-the file descriptors pins the namespace and prevent it from being
-destroyed when switching from one namespace to another.
-
-In other words, +1 for pid ns support with setns :)
-
-  -- Daniel
+</formletter>
