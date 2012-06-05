@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab2FESNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:13:13 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:46365 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755744Ab2FESNI convert rfc822-to-8bit (ORCPT
+	id S1755957Ab2FESSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:18:23 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:9513 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755906Ab2FESSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:13:08 -0400
+	Tue, 5 Jun 2012 14:18:22 -0400
+Message-ID: <4FCE4D67.1030309@micron.com>
+Date: Tue, 5 Jun 2012 11:18:15 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jLc6UW85TxA7ccA4e1u78hkTbSrWeBJE+oTXXQECPvtjg@mail.gmail.com>
-References: <4FCE3C18.4080302@amacapital.net>
-	<CAGXu5jLc6UW85TxA7ccA4e1u78hkTbSrWeBJE+oTXXQECPvtjg@mail.gmail.com>
-Date: Tue, 5 Jun 2012 13:13:05 -0500
-Message-ID: <CABqD9hYXKhX1=064DpbaBTAVd8-g43jKAPvtsbxEUTbgC1MPxg@mail.gmail.com>
-Subject: Re: Docs for PR_SET_NO_NEW_PRIVS
-From: Will Drewry <wad@chromium.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
-        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
-        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
-        markus@chromium.org, coreyb@linux.vnet.ibm.com, jmorris@namei.org,
-        linux-man@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 1/2] mtip32xx: Remove 'registers' and 'flags' from sysfs
+References: <4FCD0FC7.9010105@micron.com> <20120605093314.GC21560@kroah.com>
+In-Reply-To: <20120605093314.GC21560@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18948.005
+X-TM-AS-Result: No--15.282300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 12:33 PM, Kees Cook <keescook@chromium.org> wrote:
-> Hi,
->
-> As-is, this could probably live in
-> Documentation/security/no-new-privs.txt (maybe with some examples
-> added).
+On 6/5/2012 2:33 AM, Greg KH wrote:
 
-Or Documentation/prctl/no-new-privs.txt
+> On Mon, Jun 04, 2012 at 12:43:03PM -0700, Asai Thambi S P wrote:
+>>
+>> This patch removes entries 'registers' and 'flags' from sysfs. Updated ABI file
+>> to reflect this change.
+>>
+>> Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+> 
+> Much nicer, thanks for doing this:
+> 
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> But, one question on a different sysfs file:
+> 
+>>  What:           /sys/block/rssd*/status
+>>  Date:           April 2012
+>>  KernelVersion:  3.4
+>>  Contact:        Asai Thambi S P <asamymuthupa@micron.com>
+>>  Description:    This is a read-only file. Indicates the status of the device.
+> 
+> What "status" is this showing?  Why is this a sysfs file?  Who
+> needs/wants it?
 
-Just a decision between what it does and how you get to it, but I'd
-think either would make sense!
 
-> As for a manpage section, I think Michael Kerrisk would happily add a
-> section for PR_[SG]ET_NO_NEW_PRIVS to prctl if this could be
-> summarized into a paragraph or two.
->
-> (And this reminds me I should send an update for the seccomp section
-> in the prctl manpage too.)
+This shows the device status - online, write_protect or thermal_shutdown. This
+would be used by management application.
 
-Faster on the draw than me - thanks!
+> 
+> Also, if you really want to properly create sysfs files, use the default
+> attributes for the driver.  As it is, you are creating them after
+> userspace is notified about the device showing up, which races with the
+> creation of your additional file(s).  Use the properly driver core field
+> to have the core create, and remove them, automatically, which saves you
+> code, and fixes bugs you didn't realize you had :)
+ 
 
->
-> On Tue, Jun 5, 2012 at 10:04 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> Hi all-
->>
->> As promised (although belatedly), I wrote up some proposed documentation
->> for the no_new_privs feature.  What should I do with it?  I don't speak
->> groff/troff/whatever man pages are written in.
->>
->> I would be happy to license this text appropriately for whatever tree
->> it might end up in.  In the mean time, it's GPLv2+.
->>
->> --- cut here ---
->>
->> The execve system call can grant a newly-started program privileges
->> that its parent did not have.  The most obvious examples are
->> setuid/setgid programs and file capabilities.  To prevent the parent
->> program from gaining these privileges as well, the kernel and user
->> code must be careful to prevent the parent from doing anything that
->> could subvert the child.  For example:
->>
->>  - The dynamic loader handles LD_* environment variables differently
->> if a program is setuid.
->>  - chroot is disallowed to unprivileged processes, since it would
->> allow /etc/passwd to be replaced from the point of view of a process
->> that inherited chroot.
->>  - The exec code has special handling for ptrace.
->>
->> These are all ad-hoc fixes.  The no_new_privs bit (since Linux 3.5) is
->> a new, generic mechanism to make it safe for a process to modify its
->> execution environment in a manner that persists across execve.  Any
->> task can set no_new_privs.  Once the bit is set, it is inherited
->> across fork, clone, and execve and cannot be unset.  With no_new_privs
->> set, execve promises not to grant the privilege to do anything that
->> could not have been done without the execve call.  For example, the
->> setuid and setgid bits will no longer change the uid or gid; file
->> capabilities will not add to the permitted set, and LSMs will not
->> relax constraints after execve.
->>
->> Note that no_new_privs does not prevent privilege changes that do not
->> involve execve.  An appropriately privileged task can still call
->> setuid(2) and receive SCM_RIGHTS datagrams.
->>
->> There are two main use cases for no_new_privs so far:
->>
->>  - Filters installed for the seccomp mode 2 sandbox persist across
->> execve and can change the behavior of newly-executed programs.
->> Unprivileged users are therefore only allowed to install such filters
->> if no_new_privs is set.
->>
->>  - By itself, no_new_privs can be used to reduce the attack surface
->> available to an unprivileged user.  If everything running with a given
->> uid has no_new_privs set, then that uid will be unable to escalate its
->> privileges by directly attacking setuid, setgid, and fcap-using
->> binaries; it will need to compromise something without the
->> no_new_privs bit set first.
->>
->> In the future, other potentially dangerous kernel features could
->> become available to unprivileged tasks if no_new_privs is set.  In
->> principle, several options to unshare(2) and clone(2) would be safe
->> when no_new_privs is set, and no_new_privs + chroot is considerable
->> less dangerous than chroot by itself.
->>
->> --- cut here ---
->>
->> --Andy
->
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+I have not thought about this. Thanks for the insight. I will look into it.
+
+--
+Regards,
+Asai Thambi
