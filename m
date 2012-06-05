@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933971Ab2FENKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:10:44 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48161 "EHLO
+	id S934029Ab2FENKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:10:53 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46637 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932187Ab2FENKk (ORCPT
+	with ESMTP id S1757905Ab2FENKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:10:40 -0400
+	Tue, 5 Jun 2012 09:10:49 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@ZenIV.linux.org.uk
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com,
-        mszeredi@suse.cz
-Subject: [PATCH 06/21] vfs: add i_op->atomic_open()
-Date: Tue,  5 Jun 2012 15:10:17 +0200
-Message-Id: <1338901832-14049-7-git-send-email-miklos@szeredi.hu>
+        mszeredi@suse.cz, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH 07/21] nfs: implement i_op->atomic_open()
+Date: Tue,  5 Jun 2012 15:10:18 +0200
+Message-Id: <1338901832-14049-8-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
 References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
@@ -24,434 +24,277 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Add a new inode operation which is called on the last component of an open.
-Using this the filesystem can look up, possibly create and open the file in one
-atomic operation.  If it cannot perform this (e.g. the file type turned out to
-be wrong) it may signal this by returning NULL instead of an open struct file
-pointer.
-
-i_op->atomic_open() is only called if the last component is negative or needs
-lookup.  Handling cached positive dentries here doesn't add much value: these
-can be opened using f_op->open().  If the cached file turns out to be invalid,
-the open can be retried, this time using ->atomic_open() with a fresh dentry.
-
-For now leave the old way of using open intents in lookup and revalidate in
-place.  This will be removed once all the users are converted.
-
-David Howells noticed that if ->atomic_open() opens the file but does not create
-it, handle_truncate() will be called on it even if it is not a regular file.
-Fix this by checking the file type in this case too.
+Replace NFS4 specific ->lookup implementation with ->atomic_open impelementation
+and use the generic nfs_lookup for other lookups.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
- Documentation/filesystems/Locking |    4 +
- Documentation/filesystems/vfs.txt |   11 ++
- fs/internal.h                     |    5 +
- fs/namei.c                        |  203 ++++++++++++++++++++++++++++++++++++-
- fs/open.c                         |   42 ++++++++
- include/linux/fs.h                |    7 ++
- 6 files changed, 270 insertions(+), 2 deletions(-)
+ fs/nfs/dir.c |  183 +++++++++++++++++++++++++++++++---------------------------
+ 1 files changed, 97 insertions(+), 86 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 8e2da1e..8157488 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -62,6 +62,9 @@ ata *);
- 	int (*removexattr) (struct dentry *, const char *);
- 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start, u64 len);
- 	void (*update_time)(struct inode *, struct timespec *, int);
-+	struct file * (*atomic_open)(struct inode *, struct dentry *,
-+				struct opendata *, unsigned open_flag,
-+				umode_t create_mode, bool *created);
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index f430057..0d8c712 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -111,11 +111,15 @@ const struct inode_operations nfs3_dir_inode_operations = {
  
- locking rules:
- 	all may block
-@@ -89,6 +92,7 @@ listxattr:	no
- removexattr:	yes
- fiemap:		no
- update_time:	no
-+atomic_open:	yes
+ #ifdef CONFIG_NFS_V4
  
- 	Additionally, ->rmdir(), ->unlink() and ->rename() have ->i_mutex on
- victim.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index efd23f4..beb6e69 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -364,6 +364,9 @@ struct inode_operations {
- 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
- 	int (*removexattr) (struct dentry *, const char *);
- 	void (*update_time)(struct inode *, struct timespec *, int);
-+	struct file * (*atomic_open)(struct inode *, struct dentry *,
-+				struct opendata *, unsigned open_flag,
-+				umode_t create_mode, bool *created);
- };
- 
- Again, all methods are called without any locks being held, unless
-@@ -476,6 +479,14 @@ otherwise noted.
-   	an inode.  If this is not defined the VFS will update the inode itself
-   	and call mark_inode_dirty_sync.
- 
-+  atomic_open: called on the last component of an open.  Using this optional
-+  	method the filesystem can look up, possibly create and open the file in
-+  	one atomic operation.  If it cannot perform this (e.g. the file type
-+  	turned out to be wrong) it may signal this by returning NULL instead of
-+  	an open struct file pointer.  This method is only called if the last
-+  	component is negative or needs lookup.  Cached positive dentries are
-+  	still handled by f_op->open().
-+
- The Address Space Object
- ========================
- 
-diff --git a/fs/internal.h b/fs/internal.h
-index 18bc216..628907c 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -87,6 +87,11 @@ extern struct super_block *user_get_super(dev_t);
- struct nameidata;
- extern struct file *nameidata_to_filp(struct nameidata *);
- extern void release_open_intent(struct nameidata *);
-+struct opendata {
-+	struct dentry *dentry;
-+	struct vfsmount *mnt;
-+	struct file **filp;
-+};
- struct open_flags {
- 	int open_flag;
- 	umode_t mode;
-diff --git a/fs/namei.c b/fs/namei.c
-index cd20ddc..959ebb0 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2187,6 +2187,176 @@ static inline int open_to_namei_flags(int flag)
- 	return flag;
+-static struct dentry *nfs_atomic_lookup(struct inode *, struct dentry *, struct nameidata *);
+-static int nfs_open_create(struct inode *dir, struct dentry *dentry, umode_t mode, struct nameidata *nd);
++static struct file *nfs_atomic_open(struct inode *, struct dentry *,
++				    struct opendata *, unsigned, umode_t,
++				    bool *);
++static int nfs4_create(struct inode *dir, struct dentry *dentry,
++		       umode_t mode, struct nameidata *nd);
+ const struct inode_operations nfs4_dir_inode_operations = {
+-	.create		= nfs_open_create,
+-	.lookup		= nfs_atomic_lookup,
++	.create		= nfs4_create,
++	.lookup		= nfs_lookup,
++	.atomic_open	= nfs_atomic_open,
+ 	.link		= nfs_link,
+ 	.unlink		= nfs_unlink,
+ 	.symlink	= nfs_symlink,
+@@ -1403,120 +1407,132 @@ static int do_open(struct inode *inode, struct file *filp)
+ 	return 0;
  }
  
-+static int may_o_create(struct path *dir, struct dentry *dentry, umode_t mode)
-+{
-+	int error = security_path_mknod(dir, dentry, mode, 0);
-+	if (error)
-+		return error;
+-static int nfs_intent_set_file(struct nameidata *nd, struct nfs_open_context *ctx)
++static struct file *nfs_finish_open(struct nfs_open_context *ctx,
++				    struct dentry *dentry,
++				    struct opendata *od, unsigned open_flags)
+ {
+ 	struct file *filp;
+-	int ret = 0;
++	int err;
 +
-+	error = inode_permission(dir->dentry->d_inode, MAY_WRITE | MAY_EXEC);
-+	if (error)
-+		return error;
++	if (ctx->dentry != dentry) {
++		dput(ctx->dentry);
++		ctx->dentry = dget(dentry);
++	}
+ 
+ 	/* If the open_intent is for execute, we have an extra check to make */
+ 	if (ctx->mode & FMODE_EXEC) {
+-		ret = nfs_may_open(ctx->dentry->d_inode,
+-				ctx->cred,
+-				nd->intent.open.flags);
+-		if (ret < 0)
++		err = nfs_may_open(dentry->d_inode, ctx->cred, open_flags);
++		if (err < 0) {
++			filp = ERR_PTR(err);
+ 			goto out;
++		}
+ 	}
+-	filp = lookup_instantiate_filp(nd, ctx->dentry, do_open);
+-	if (IS_ERR(filp))
+-		ret = PTR_ERR(filp);
+-	else
 +
-+	return security_inode_create(dir->dentry->d_inode, dentry, mode);
-+}
++	filp = finish_open(od, dentry, do_open);
++	if (!IS_ERR(filp))
+ 		nfs_file_set_open_context(filp, ctx);
 +
-+static struct file *atomic_open(struct nameidata *nd, struct dentry *dentry,
-+				struct path *path, const struct open_flags *op,
-+				int *want_write, bool need_lookup,
-+				bool *created)
-+{
-+	struct inode *dir =  nd->path.dentry->d_inode;
-+	unsigned open_flag = open_to_namei_flags(op->open_flag);
-+	umode_t mode;
-+	int error;
-+	int acc_mode;
-+	struct opendata od;
+ out:
+ 	put_nfs_open_context(ctx);
+-	return ret;
++	return filp;
+ }
+ 
+-static struct dentry *nfs_atomic_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
++static struct file *nfs_atomic_open(struct inode *dir, struct dentry *dentry,
++				    struct opendata *od, unsigned open_flags,
++				    umode_t mode, bool *created)
+ {
+ 	struct nfs_open_context *ctx;
+-	struct iattr attr;
+-	struct dentry *res = NULL;
++	struct dentry *res;
++	struct iattr attr = { .ia_valid = ATTR_OPEN };
+ 	struct inode *inode;
+-	int open_flags;
 +	struct file *filp;
-+	int create_error = 0;
-+	struct dentry *const DENTRY_NOT_SET = (void *) -1UL;
-+
+ 	int err;
+ 
+-	dfprintk(VFS, "NFS: atomic_lookup(%s/%ld), %s\n",
++	/* Expect a negative dentry */
 +	BUG_ON(dentry->d_inode);
 +
-+	/* Don't create child dentry for a dead directory. */
-+	if (unlikely(IS_DEADDIR(dir))) {
-+		filp = ERR_PTR(-ENOENT);
-+		goto out;
-+	}
-+
-+	mode = op->mode & S_IALLUGO;
-+	if ((open_flag & O_CREAT) && !IS_POSIXACL(dir))
-+		mode &= ~current_umask();
-+
-+	if (open_flag & O_EXCL) {
-+		open_flag &= ~O_TRUNC;
-+		*created = true;
-+	}
-+
-+	/*
-+	 * Checking write permission is tricky, bacuse we don't know if we are
-+	 * going to actually need it: O_CREAT opens should work as long as the
-+	 * file exists.  But checking existence breaks atomicity.  The trick is
-+	 * to check access and if not granted clear O_CREAT from the flags.
-+	 *
-+	 * Another problem is returing the "right" error value (e.g. for an
-+	 * O_EXCL open we want to return EEXIST not EROFS).
-+	 */
-+	if ((open_flag & (O_CREAT | O_TRUNC)) ||
-+	    (open_flag & O_ACCMODE) != O_RDONLY) {
-+		error = mnt_want_write(nd->path.mnt);
-+		if (!error) {
-+			*want_write = 1;
-+		} else if (!(open_flag & O_CREAT)) {
++	dfprintk(VFS, "NFS: atomic_open(%s/%ld), %s\n",
+ 			dir->i_sb->s_id, dir->i_ino, dentry->d_name.name);
+ 
+-	/* Check that we are indeed trying to open this file */
+-	if (!is_atomic_open(nd))
++	/* NFS only supports OPEN on regular files */
++	if ((open_flags & O_DIRECTORY)) {
++		err = -ENOENT;
++		if (!d_unhashed(dentry)) {
 +			/*
-+			 * No O_CREATE -> atomicity not a requirement -> fall
-+			 * back to lookup + open
++			 * Hashed negative dentry with O_DIRECTORY: dentry was
++			 * revalidated and is fine, no need to perform lookup
++			 * again
 +			 */
++			goto out_err;
++		}
+ 		goto no_open;
+-
+-	if (dentry->d_name.len > NFS_SERVER(dir)->namelen) {
+-		res = ERR_PTR(-ENAMETOOLONG);
+-		goto out;
+ 	}
+ 
+-	/* Let vfs_create() deal with O_EXCL. Instantiate, but don't hash
+-	 * the dentry. */
+-	if (nd->flags & LOOKUP_EXCL) {
+-		d_instantiate(dentry, NULL);
+-		goto out;
+-	}
+-
+-	open_flags = nd->intent.open.flags;
+-	attr.ia_valid = ATTR_OPEN;
+-
+-	ctx = create_nfs_open_context(dentry, open_flags);
+-	res = ERR_CAST(ctx);
+-	if (IS_ERR(ctx))
+-		goto out;
++	err = -ENAMETOOLONG;
++	if (dentry->d_name.len > NFS_SERVER(dir)->namelen)
++		goto out_err;
+ 
+-	if (nd->flags & LOOKUP_CREATE) {
+-		attr.ia_mode = nd->intent.open.create_mode;
++	if (open_flags & O_CREAT) {
+ 		attr.ia_valid |= ATTR_MODE;
+-		attr.ia_mode &= ~current_umask();
+-	} else
+-		open_flags &= ~(O_EXCL | O_CREAT);
+-
++		attr.ia_mode = mode & ~current_umask();
++	}
+ 	if (open_flags & O_TRUNC) {
+ 		attr.ia_valid |= ATTR_SIZE;
+ 		attr.ia_size = 0;
+ 	}
+ 
+-	/* Open the file on the server */
++	ctx = create_nfs_open_context(dentry, open_flags);
++	err = PTR_ERR(ctx);
++	if (IS_ERR(ctx))
++		goto out_err;
++
+ 	nfs_block_sillyrename(dentry->d_parent);
+ 	inode = NFS_PROTO(dir)->open_context(dir, ctx, open_flags, &attr);
++	d_drop(dentry);
+ 	if (IS_ERR(inode)) {
+ 		nfs_unblock_sillyrename(dentry->d_parent);
+ 		put_nfs_open_context(ctx);
+-		switch (PTR_ERR(inode)) {
+-			/* Make a negative dentry */
+-			case -ENOENT:
+-				d_add(dentry, NULL);
+-				res = NULL;
+-				goto out;
+-			/* This turned out not to be a regular file */
+-			case -EISDIR:
+-			case -ENOTDIR:
++		err = PTR_ERR(inode);
++		switch (err) {
++		case -ENOENT:
++			d_add(dentry, NULL);
++			break;
++		case -EISDIR:
++		case -ENOTDIR:
 +			goto no_open;
-+		} else if (open_flag & (O_EXCL | O_TRUNC)) {
-+			/* Fall back and fail with the right error */
-+			create_error = error;
-+			goto no_open;
-+		} else {
-+			/* No side effects, safe to clear O_CREAT */
-+			create_error = error;
-+			open_flag &= ~O_CREAT;
-+		}
-+	}
++		case -ELOOP:
++			if (!(open_flags & O_NOFOLLOW))
+ 				goto no_open;
+-			case -ELOOP:
+-				if (!(nd->intent.open.flags & O_NOFOLLOW))
+-					goto no_open;
++			break;
+ 			/* case -EINVAL: */
+-			default:
+-				res = ERR_CAST(inode);
+-				goto out;
++		default:
++			break;
+ 		}
++		goto out_err;
+ 	}
+ 	res = d_add_unique(dentry, inode);
+-	nfs_unblock_sillyrename(dentry->d_parent);
+-	if (res != NULL) {
+-		dput(ctx->dentry);
+-		ctx->dentry = dget(res);
++	if (res != NULL)
+ 		dentry = res;
+-	}
+-	err = nfs_intent_set_file(nd, ctx);
+-	if (err < 0) {
+-		if (res != NULL)
+-			dput(res);
+-		return ERR_PTR(err);
+-	}
+-out:
 +
-+	if (open_flag & O_CREAT) {
-+		error = may_o_create(&nd->path, dentry, op->mode);
-+		if (error) {
-+			create_error = error;
-+			if (open_flag & O_EXCL)
-+				goto no_open;
-+			open_flag &= ~O_CREAT;
-+		}
-+	}
++	nfs_unblock_sillyrename(dentry->d_parent);
+ 	nfs_set_verifier(dentry, nfs_save_change_attribute(dir));
+-	return res;
 +
-+	if (nd->flags & LOOKUP_DIRECTORY)
-+		open_flag |= O_DIRECTORY;
++	filp = nfs_finish_open(ctx, dentry, od, open_flags);
 +
-+	od.dentry = DENTRY_NOT_SET;
-+	od.mnt = nd->path.mnt;
-+	od.filp = &nd->intent.open.file;
-+	filp = dir->i_op->atomic_open(dir, dentry, &od, open_flag, mode,
-+				      created);
-+	if (IS_ERR(filp)) {
-+		if (WARN_ON(od.dentry != DENTRY_NOT_SET))
-+			dput(od.dentry);
-+
-+		if (create_error && PTR_ERR(filp) == -ENOENT)
-+			filp = ERR_PTR(create_error);
-+		goto out;
-+	}
-+
-+	acc_mode = op->acc_mode;
-+	if (*created) {
-+		fsnotify_create(dir, dentry);
-+		acc_mode = MAY_OPEN;
-+	}
-+
-+	if (!filp) {
-+		if (WARN_ON(od.dentry == DENTRY_NOT_SET)) {
-+			filp = ERR_PTR(-EIO);
-+			goto out;
-+		}
-+		if (od.dentry) {
-+			dput(dentry);
-+			dentry = od.dentry;
-+		}
-+		goto looked_up;
-+	}
-+
-+	/*
-+	 * We didn't have the inode before the open, so check open permission
-+	 * here.
-+	 */
-+	error = may_open(&filp->f_path, acc_mode, open_flag);
-+	if (error)
-+		goto out_fput;
-+
-+	error = open_check_o_direct(filp);
-+	if (error)
-+		goto out_fput;
-+
-+out:
-+	dput(dentry);
++	dput(res);
 +	return filp;
 +
-+out_fput:
-+	fput(filp);
-+	filp = ERR_PTR(error);
-+	goto out;
++out_err:
++	return ERR_PTR(err);
 +
-+no_open:
-+	if (need_lookup) {
-+		dentry = lookup_real(dir, dentry, nd);
-+		if (IS_ERR(dentry))
-+			return ERR_CAST(dentry);
+ no_open:
+-	return nfs_lookup(dir, dentry, nd);
++	res = nfs_lookup(dir, dentry, NULL);
++	err = PTR_ERR(res);
++	if (IS_ERR(res))
++		goto out_err;
 +
-+		if (create_error) {
-+			int open_flag = op->open_flag;
-+
-+			filp = ERR_PTR(create_error);
-+			if ((open_flag & O_EXCL)) {
-+				if (!dentry->d_inode)
-+					goto out;
-+			} else if (!dentry->d_inode) {
-+				goto out;
-+			} else if ((open_flag & O_TRUNC) &&
-+				   S_ISREG(dentry->d_inode->i_mode)) {
-+				goto out;
-+			}
-+			/* will fail later, go on to get the right error */
-+		}
-+	}
-+looked_up:
-+	path->dentry = dentry;
-+	path->mnt = nd->path.mnt;
++	finish_no_open(od, res);
 +	return NULL;
-+}
-+
- /*
-  * Lookup, maybe create and open the last component
-  *
-@@ -2210,6 +2380,15 @@ static struct file *lookup_open(struct nameidata *nd, struct path *path,
- 	if (IS_ERR(dentry))
- 		return ERR_CAST(dentry);
+ }
  
-+	/* Cached positive dentry: will open in f_op->open */
-+	if (!need_lookup && dentry->d_inode)
-+		goto out_no_open;
-+
-+	if ((nd->flags & LOOKUP_OPEN) && dir_inode->i_op->atomic_open) {
-+		return atomic_open(nd, dentry, path, op, want_write,
-+				   need_lookup, created);
-+	}
-+
- 	if (need_lookup) {
- 		BUG_ON(dentry->d_inode);
+ static int nfs4_lookup_revalidate(struct dentry *dentry, struct nameidata *nd)
+@@ -1566,8 +1582,8 @@ no_open:
+ 	return nfs_lookup_revalidate(dentry, nd);
+ }
  
-@@ -2242,6 +2421,7 @@ static struct file *lookup_open(struct nameidata *nd, struct path *path,
- 		if (error)
- 			goto out_dput;
- 	}
-+out_no_open:
- 	path->dentry = dentry;
- 	path->mnt = nd->path.mnt;
- 	return NULL;
-@@ -2335,8 +2515,16 @@ retry_lookup:
- 	filp = lookup_open(nd, path, op, &want_write, &created);
- 	mutex_unlock(&dir->d_inode->i_mutex);
- 
--	if (IS_ERR(filp))
--		goto out;
-+	if (filp) {
-+		if (IS_ERR(filp))
-+			goto out;
+-static int nfs_open_create(struct inode *dir, struct dentry *dentry,
+-		umode_t mode, struct nameidata *nd)
++static int nfs4_create(struct inode *dir, struct dentry *dentry,
++		       umode_t mode, struct nameidata *nd)
+ {
+ 	struct nfs_open_context *ctx = NULL;
+ 	struct iattr attr;
+@@ -1591,19 +1607,14 @@ static int nfs_open_create(struct inode *dir, struct dentry *dentry,
+ 	error = NFS_PROTO(dir)->create(dir, dentry, &attr, open_flags, ctx);
+ 	if (error != 0)
+ 		goto out_put_ctx;
+-	if (nd) {
+-		error = nfs_intent_set_file(nd, ctx);
+-		if (error < 0)
+-			goto out_err;
+-	} else {
+-		put_nfs_open_context(ctx);
+-	}
 +
-+		if (created || !S_ISREG(filp->f_path.dentry->d_inode->i_mode))
-+			will_truncate = 0;
++	put_nfs_open_context(ctx);
 +
-+		audit_inode(pathname, filp->f_path.dentry);
-+		goto opened;
-+	}
- 
- 	if (created) {
- 		/* Don't check for write permission, don't truncate */
-@@ -2352,6 +2540,16 @@ retry_lookup:
- 	 */
- 	audit_inode(pathname, path->dentry);
- 
-+	/*
-+	 * If atomic_open() acquired write access it is dropped now due to
-+	 * possible mount and symlink following (this might be optimized away if
-+	 * necessary...)
-+	 */
-+	if (want_write) {
-+		mnt_drop_write(nd->path.mnt);
-+		want_write = 0;
-+	}
-+
- 	error = -EEXIST;
- 	if (open_flag & O_EXCL)
- 		goto exit_dput;
-@@ -2435,6 +2633,7 @@ common:
- 		retried = true;
- 		goto retry_lookup;
- 	}
-+opened:
- 	if (!IS_ERR(filp)) {
- 		error = ima_file_check(filp, op->acc_mode);
- 		if (error) {
-diff --git a/fs/open.c b/fs/open.c
-index d6c79a0..9d7e0dd 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -811,6 +811,48 @@ out_err:
- EXPORT_SYMBOL_GPL(lookup_instantiate_filp);
- 
- /**
-+ * finish_open - finish opening a file
-+ * @od: opaque open data
-+ * @dentry: pointer to dentry
-+ * @open: open callback
-+ *
-+ * This can be used to finish opening a file passed to i_op->atomic_open().
-+ *
-+ * If the open callback is set to NULL, then the standard f_op->open()
-+ * filesystem callback is substituted.
-+ */
-+struct file *finish_open(struct opendata *od, struct dentry *dentry,
-+			 int (*open)(struct inode *, struct file *))
-+{
-+	struct file *res;
-+
-+	mntget(od->mnt);
-+	dget(dentry);
-+
-+	res = do_dentry_open(dentry, od->mnt, *od->filp, open, current_cred());
-+	if (!IS_ERR(res))
-+		*od->filp = NULL;
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(finish_open);
-+
-+/**
-+ * finish_no_open - finish ->atomic_open() without opening the file
-+ *
-+ * @od: opaque open data
-+ * @dentry: dentry or NULL (as returned from ->lookup())
-+ *
-+ * This can be used to set the result of a successful lookup in ->atomic_open().
-+ * The filesystem's atomic_open() method shall return NULL after calling this.
-+ */
-+void finish_no_open(struct opendata *od, struct dentry *dentry)
-+{
-+	od->dentry = dentry;
-+}
-+EXPORT_SYMBOL(finish_no_open);
-+
-+/**
-  * nameidata_to_filp - convert a nameidata to an open filp.
-  * @nd: pointer to nameidata
-  * @flags: open flags
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 51978ed..19c699b 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -427,6 +427,7 @@ struct kstatfs;
- struct vm_area_struct;
- struct vfsmount;
- struct cred;
-+struct opendata;
- 
- extern void __init inode_init(void);
- extern void __init inode_init_early(void);
-@@ -1693,6 +1694,9 @@ struct inode_operations {
- 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start,
- 		      u64 len);
- 	int (*update_time)(struct inode *, struct timespec *, int);
-+	struct file * (*atomic_open)(struct inode *, struct dentry *,
-+				     struct opendata *, unsigned open_flag,
-+				     umode_t create_mode, bool *created);
- } ____cacheline_aligned;
- 
- struct seq_file;
-@@ -2061,6 +2065,9 @@ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
- 				 const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
- extern char * getname(const char __user *);
-+extern struct file *finish_open(struct opendata *od, struct dentry *dentry,
-+				int (*open)(struct inode *, struct file *));
-+extern void finish_no_open(struct opendata *od, struct dentry *dentry);
- 
- /* fs/ioctl.c */
+ 	return 0;
+ out_put_ctx:
+ 	put_nfs_open_context(ctx);
+ out_err_drop:
+ 	d_drop(dentry);
+-out_err:
+ 	return error;
+ }
  
 -- 
 1.7.7
