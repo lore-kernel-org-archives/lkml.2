@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2FEXWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:22:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:56219 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab2FEXWW (ORCPT
+	id S1753547Ab2FEXXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:23:46 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45335 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab2FEXXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:22:22 -0400
-Date: Wed, 6 Jun 2012 08:22:10 +0900
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Borislav Petkov <bp@amd64.org>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Grant Likely <grant.likely@secretlab.ca>, qemu-devel@nongnu.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, systemtap@sourceware.org,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com, Cam Macdonell <cam@cs.ualberta.ca>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: Re: [Qemu-devel] [RFC PATCH 1/2] ivring: Add a ring-buffer driver on
- IVShmem
-Message-ID: <20120605232210.GA8858@kroah.com>
-References: <20120605104954.15442.62695.stgit@ltc189.sdl.hitachi.co.jp>
- <20120605130117.15479.32680.stgit@ltc189.sdl.hitachi.co.jp>
- <20120605131031.GF13495@aftab.osrc.amd.com>
- <4FCE902A.3060603@codemonkey.ws>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCE902A.3060603@codemonkey.ws>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Jun 2012 19:23:44 -0400
+Date: Wed, 6 Jun 2012 00:27:25 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Denys Fedoryshchenko <denys@visp.net.lb>
+Cc: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: tty_insert_flip_string_fixed_flag, unable to handle kernel
+ NULL pointer dereference at 00000004
+Message-ID: <20120606002725.5fc9ffe9@pyramind.ukuu.org.uk>
+In-Reply-To: <43517e56ecce834d141078f1918eba15@visp.net.lb>
+References: <43517e56ecce834d141078f1918eba15@visp.net.lb>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 07:03:06AM +0800, Anthony Liguori wrote:
-> On 06/05/2012 09:10 PM, Borislav Petkov wrote:
-> >On Tue, Jun 05, 2012 at 10:01:17PM +0900, Yoshihiro YUNOMAE wrote:
-> >>This patch adds a ring-buffer driver for IVShmem device, a virtual RAM device in
-> >>QEMU. This driver can be used as a ring-buffer for kernel logging or tracing of
-> >>a guest OS by recording kernel programing or SystemTap.
-> >>
-> >>This ring-buffer driver is implemented very simple. First 4kB of shared memory
-> >>region is control structure of a ring-buffer. In this region, some values for
-> >>managing the ring-buffer is stored such as bits and mask of whole memory size,
-> >>writing position, threshold value for notification to a reader on a host OS.
-> >>This region is used by the reader to know writing position. Then, "total
-> >>memory size - 4kB" equals to usable memory region for recording data.
-> >>This ring-buffer driver records any data from start to end of the writable
-> >>memory region.
-> >>
-> >>When writing size exceeds a threshold value, this driver can notify a reader
-> >>to read data by using writel(). As this later patch, reader does not have any
-> >>function for receiving the notification. This notification feature will be used
-> >>near the future.
-> >>
-> >>As a writer records data in this ring-buffer, spinlock function is used to
-> >>avoid competing by some writers in multi CPU environment. Not to use spinlock,
-> >>lockless ring-buffer like as ftrace and one ring-buffer one CPU will be
-> >>implemented near the future.
-> >
-> >Yet another ring buffer?
-> >
-> >We already have an ftrace and perf ring buffer, can't you use one of those?
-> 
-> Not to mention virtio :-)
-> 
-> Why not just make a virtio device for this kind of thing?
+> [ 5350.556089]  [<c027adc4>] pty_write+0x2c/0x4c
+> [ 5350.556089]  [<c0277a44>] n_tty_write+0x24e/0x2d6
+> [ 5350.556089]  [<c0144a2b>] ? try_to_wake_up+0x18c/0x18c
 
-Yeah, that's exactly what I was thinking, why reinvent things again?
+Basically the other end hung up just as it went to write.
 
-greg k-h
+It's a known race. In the current codebase it's very hard to fix up nicely
+as we have to drop tty_lock during a pty close or we deadlock. It's very
+hard to hit but your environment sounds rather like my test case for it !
+
+It's one of a series of related bugs (another in n_gsm) that we can't fix
+elegantly until the tty locking is fixed - which has been pushed from 3.5
+hopefully to 3.6 assuming we can fix a couple of other locking problems
+first.
+
+What may reduce it a lot is to change pty_write to do
+
+
+	struct tty_struct *to = tty->link;
+
+	if (tty->stopped)
+		return 0;
+
+	if (to == NULL)
+		return -ENODEV;
+	to = tty_kref_get(to);
+	if (tty->link == NULL) {
+		tty_kref_put(to);
+		return -ENODEV;
+	}
+	if (c > 0) {
+		...
+	}
+	tty_kref_put(to);
+	return c;
+}
+
+Thats a pretty ugly bandaid but I'd be interested to know if it helps, as
+that would verify the race you are hitting is the one I think it is.
+
+Alan
