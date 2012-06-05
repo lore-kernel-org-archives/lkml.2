@@ -1,577 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab2FEEfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 00:35:46 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:50218 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab2FEEfn (ORCPT
+	id S1754113Ab2FEEkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 00:40:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35296 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab2FEEkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 00:35:43 -0400
-Message-ID: <4FCD8C99.3010401@gmail.com>
-Date: Tue, 05 Jun 2012 00:35:37 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 00:40:04 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Message-ID: <4FCD8D95.1060700@jp.fujitsu.com>
+Date: Tue, 05 Jun 2012 13:39:49 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: undisclosed-recipients:";
-	KOSAKI Motohiro" <kosaki.motohiro@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Cong Wang <amwang@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	undisclosed-recipients:;KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-						^-missing end of address
-Subject: Re: [PATCH v9] mm: compaction: handle incorrect MIGRATE_UNMOVABLE
- type pageblocks
-References: <201206041543.56917.b.zolnierkie@samsung.com> <4FCD18FD.5030307@gmail.com> <4FCD6806.7070609@kernel.org> <4FCD713D.3020100@kernel.org>
-In-Reply-To: <4FCD713D.3020100@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Toshi Kani <toshi.kani@hp.com>
+CC: lenb@kernel.org, linux-acpi@vger.kernel.org, bhelgaas@google.com,
+        shuahkhan@gmail.com, liuj97@gmail.com, andi@firstfloor.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 5/6] ACPI: Add _OST support for ACPI container hotplug
+References: <1337826324-16802-1-git-send-email-toshi.kani@hp.com> <1337826324-16802-6-git-send-email-toshi.kani@hp.com>
+In-Reply-To: <1337826324-16802-6-git-send-email-toshi.kani@hp.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Minchan, are you interest this patch? If yes, can you please rewrite it?
->>
->> Can do it but I want to give credit to Bartlomiej.
->> Bartlomiej, if you like my patch, could you resend it as formal patch after you do broad testing?
->>
->> Frankly speaking, I don't want to merge it without any data which prove it's really good for real practice.
->>
->> When the patch firstly was submitted, it wasn't complicated so I was okay at that time but it has been complicated
->> than my expectation. So if Andrew might pass the decision to me, I'm totally NACK if author doesn't provide
->> any real data or VOC of some client.
+Hi Toshi,
 
-I agree. And you don't need to bother this patch if you are not interest this one. I'm sorry.
-Let's throw it away until the author send us data.
-
-
->> 1) Any comment?
->>
->> Anyway, I fixed some bugs and clean up something I found during review.
->>
->> Minor thing.
->> 1. change smt_result naming - I never like such long non-consistent naming. How about this?
->> 2. fix can_rescue_unmovable_pageblock
->>     2.1 pfn valid check for page_zone
->>
->> Major thing.
->>
->>     2.2 add lru_lock for stablizing PageLRU
->>         If we don't hold lru_lock, there is possibility that unmovable(non-LRU) page can put in movable pageblock.
->>         It can make compaction/CMA's regression. But there is a concern about deadlock between lru_lock and lock.
->>         As I look the code, I can't find allocation trial with holding lru_lock so it might be safe(but not sure,
->>         I didn't test it. It need more careful review/testing) but it makes new locking dependency(not sure, too.
->>         We already made such rule but I didn't know that until now ;-) ) Why I thought so is we can allocate
->>         GFP_ATOMIC with holding lru_lock, logically which might be crazy idea.
->>
->>     2.3 remove zone->lock in first phase.
->>         We do rescue unmovable pageblock by 2-phase. In first-phase, we just peek pages so we don't need locking.
->>         If we see non-stablizing value, it would be caught by 2-phase with needed lock or
->>         can_rescue_unmovable_pageblock can return out of loop by stale page_order(cursor_page).
->>         It couldn't make unmovable pageblock to movable but we can do it next time, again.
->>         It's not critical.
->>
->> 2) Any comment?
->>
->> Now I can't inline the code so sorry but attach patch.
->> It's not a formal patch/never tested.
->>
->
->
-> Attached patch has a BUG in can_rescue_unmovable_pageblock.
-> Resend. I hope it is fixed.
->
->
->
->
->
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index 51a90b7..e988037 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -1,6 +1,8 @@
->  #ifndef _LINUX_COMPACTION_H
->  #define _LINUX_COMPACTION_H
->
-> +#include <linux/node.h>
-> +
->  /* Return values for compact_zone() and try_to_compact_pages() */
->  /* compaction didn't start as it was not possible or direct reclaim was more suitable */
->  #define COMPACT_SKIPPED		0
-> @@ -11,6 +13,23 @@
->  /* The full zone was compacted */
->  #define COMPACT_COMPLETE	3
->
-> +/*
-> + * compaction supports three modes
-> + *
-> + * COMPACT_ASYNC_MOVABLE uses asynchronous migration and only scans
-> + *    MIGRATE_MOVABLE pageblocks as migration sources and targets.
-> + * COMPACT_ASYNC_UNMOVABLE uses asynchronous migration and only scans
-> + *    MIGRATE_MOVABLE pageblocks as migration sources.
-> + *    MIGRATE_UNMOVABLE pageblocks are scanned as potential migration
-> + *    targets and convers them to MIGRATE_MOVABLE if possible
-> + * COMPACT_SYNC uses synchronous migration and scans all pageblocks
-> + */
-> +enum compact_mode {
-> +	COMPACT_ASYNC_MOVABLE,
-> +	COMPACT_ASYNC_UNMOVABLE,
-> +	COMPACT_SYNC,
-> +};
-> +
->  #ifdef CONFIG_COMPACTION
->  extern int sysctl_compact_memory;
->  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 7ea259d..dd02f25 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -236,7 +236,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  	 */
->  	while (unlikely(too_many_isolated(zone))) {
->  		/* async migration should just abort */
-> -		if (!cc->sync)
-> +		if (cc->mode != COMPACT_SYNC)
->  			return 0;
->
->  		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> @@ -304,7 +304,8 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  		 * satisfies the allocation
->  		 */
->  		pageblock_nr = low_pfn >> pageblock_order;
-> -		if (!cc->sync && last_pageblock_nr != pageblock_nr &&
-> +		if (cc->mode != COMPACT_SYNC &&
-> +		    last_pageblock_nr != pageblock_nr &&
->  		    !migrate_async_suitable(get_pageblock_migratetype(page))) {
->  			low_pfn += pageblock_nr_pages;
->  			low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
-> @@ -325,7 +326,7 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->  			continue;
->  		}
->
-> -		if (!cc->sync)
-> +		if (cc->mode != COMPACT_SYNC)
->  			mode |= ISOLATE_ASYNC_MIGRATE;
->
->  		lruvec = mem_cgroup_page_lruvec(page, zone);
-> @@ -360,27 +361,121 @@ isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
->
->  #endif /* CONFIG_COMPACTION || CONFIG_CMA */
->  #ifdef CONFIG_COMPACTION
-> +/*
-> + * Returns true if MIGRATE_UNMOVABLE pageblock can be successfully
-> + * converted to MIGRATE_MOVABLE type, false otherwise.
-> + */
-> +static bool can_rescue_unmovable_pageblock(struct page *page, bool need_lrulock)
-> +{
-> +	struct zone *zone;
-> +	unsigned long pfn, start_pfn, end_pfn;
-> +	struct page *start_page, *end_page, *cursor_page;
-> +	bool lru_locked = false;
-> +
-> +	zone = page_zone(page);
-> +	pfn = page_to_pfn(page);
-> +	start_pfn = pfn & ~(pageblock_nr_pages - 1);
-> +	end_pfn = start_pfn + pageblock_nr_pages - 1;
-> +
-> +	start_page = pfn_to_page(start_pfn);
-> +	end_page = pfn_to_page(end_pfn);
-> +
-> +	for (cursor_page = start_page, pfn = start_pfn; cursor_page <= end_page;
-> +		pfn++, cursor_page++) {
->
-> -/* Returns true if the page is within a block suitable for migration to */
-> -static bool suitable_migration_target(struct page *page)
-> +		if (!pfn_valid_within(pfn))
-> +			continue;
-> +
-> +		/* Do not deal with pageblocks that overlap zones */
-> +		if (page_zone(cursor_page) != zone)
-> +			goto out;
-> +
-> +		if (PageBuddy(cursor_page)) {
-> +			unsigned long order = page_order(cursor_page);
-> +
-> +			pfn += (1 << order) - 1;
-> +			cursor_page += (1 << order) - 1;
-> +			continue;
-> +		} else if (page_count(cursor_page) == 0) {
-> +			continue;
-
-Can we assume freed tail page always have page_count()==0? if yes, why do we
-need dangerous PageBuddy(cursor_page) check? ok, but this may be harmless.
-
-But if no, this code is seriously dangerous. think following scenario,
-
-1) cursor page points free page
-
-     +----------------+------------------+
-     | free (order-1) |  used (order-1)  |
-     +----------------+------------------+
-     |
-    cursor
-
-2) moved cursor
-
-     +----------------+------------------+
-     | free (order-1) |  used (order-1)  |
-     +----------------+------------------+
-                      |
-                      cursor
-
-3) neighbor block was freed
-
-
-     +----------------+------------------+
-     | free (order-2)                    |
-     +----------------+------------------+
-                      |
-                      cursor
-
-now, cursor points to middle of free block.
-
-
-Anyway, I recommend to avoid dangerous no zone->lock game and change
-can_rescue_unmovable_pageblock() is only called w/ zone->lock. I have
-no seen any worth to include this high complex for mere minor optimization.
-
-
-> +		} else if (PageLRU(cursor_page)) {
-> +			if (!need_lrulock)
-> +				continue;
-> +			else if (lru_locked)
-> +				continue;
-> +			else {
-> +				spin_lock(&zone->lru_lock);
-
-Hmm...
-I don't like to take lru_lock. 1) Until now, we carefully avoid to take
-both zone->lock and zone->lru_lock. they are both performance critical
-lock. And I think pageblock migratetype don't need strictly correct. It
-is only optimization of anti fragmentation. Why do we need take it?
-
-
-
-> +				lru_locked = true;
-> +				if (PageLRU(page))
-> +					continue;
-> +			}
-> +		}
-> +
-> +		goto out;
-> +	}
-> +
-
-Why don't we need to release lru_lock when returning true.
-
-
-> +	return true;
-> +out:
-> +	if (lru_locked)
-> +		spin_unlock(&zone->lru_lock);
-> +
-> +	return false;
-> +}
-> +
-> +static void rescue_unmovable_pageblock(struct page *page)
-> +{
-> +	set_pageblock_migratetype(page, MIGRATE_MOVABLE);
-> +	move_freepages_block(page_zone(page), page, MIGRATE_MOVABLE);
-> +}
-> +
-> +/*
-> + * MIGRATE_TARGET : good for migration target
-> + * RESCUE_UNMOVABLE_TARTET : good only if we can rescue the unmovable pageblock.
-> + * UNMOVABLE_TARGET : can't migrate because it's a page in unmovable pageblock.
-> + * SKIP_TARGET : can't migrate another reasons.
-> + */
-> +enum smt_result {
-> +	MIGRATE_TARGET,
-> +	RESCUE_UNMOVABLE_TARGET,
-> +	UNMOVABLE_TARGET,
-> +	SKIP_TARGET,
-> +};
-> +
-> +/*
-> + * Returns MIGRATE_TARGET if the page is within a block
-> + * suitable for migration to, UNMOVABLE_TARGET if the page
-> + * is within a MIGRATE_UNMOVABLE block, SKIP_TARGET otherwise.
-> + */
-> +static enum smt_result suitable_migration_target(struct page *page,
-> +			      struct compact_control *cc, bool need_lrulock)
->  {
->
->  	int migratetype = get_pageblock_migratetype(page);
->
->  	/* Don't interfere with memory hot-remove or the min_free_kbytes blocks */
->  	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
-> -		return false;
-> +		return SKIP_TARGET;
->
->  	/* If the page is a large free page, then allow migration */
->  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
-> -		return true;
-> +		return MIGRATE_TARGET;
->
->  	/* If the block is MIGRATE_MOVABLE or MIGRATE_CMA, allow migration */
-> -	if (migrate_async_suitable(migratetype))
-> -		return true;
-> +	if (cc->mode != COMPACT_ASYNC_UNMOVABLE &&
-> +	    migrate_async_suitable(migratetype))
-> +		return MIGRATE_TARGET;
-> +
-> +	if (cc->mode == COMPACT_ASYNC_MOVABLE &&
-> +	    migratetype == MIGRATE_UNMOVABLE)
-> +		return UNMOVABLE_TARGET;
-> +
-> +	if (cc->mode != COMPACT_ASYNC_MOVABLE &&
-> +	    migratetype == MIGRATE_UNMOVABLE &&
-> +	    can_rescue_unmovable_pageblock(page, need_lrulock))
-> +		return RESCUE_UNMOVABLE_TARGET;
->
->  	/* Otherwise skip the block */
-> -	return false;
-> +	return SKIP_TARGET;
->  }
->
->  /*
-> @@ -414,6 +509,13 @@ static void isolate_freepages(struct zone *zone,
->  	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
->
->  	/*
-> +	 * isolate_freepages() may be called more than once during
-> +	 * compact_zone_order() run and we want only the most recent
-> +	 * count.
-> +	 */
-> +	cc->nr_unmovable_pageblock = 0;
-> +
-> +	/*
->  	 * Isolate free pages until enough are available to migrate the
->  	 * pages on cc->migratepages. We stop searching if the migrate
->  	 * and free page scanners meet or enough free pages are isolated.
-> @@ -421,6 +523,7 @@ static void isolate_freepages(struct zone *zone,
->  	for (; pfn > low_pfn && cc->nr_migratepages > nr_freepages;
->  					pfn -= pageblock_nr_pages) {
->  		unsigned long isolated;
-> +		enum smt_result ret;
->
->  		if (!pfn_valid(pfn))
->  			continue;
-> @@ -437,9 +540,12 @@ static void isolate_freepages(struct zone *zone,
->  			continue;
->
->  		/* Check the block is suitable for migration */
-> -		if (!suitable_migration_target(page))
-> +		ret = suitable_migration_target(page, cc, false);
-> +		if (ret != MIGRATE_TARGET && ret != RESCUE_UNMOVABLE_TARGET) {
-> +			if (ret == UNMOVABLE_TARGET)
-> +				cc->nr_unmovable_pageblock++;
->  			continue;
+2012/05/24 11:25, Toshi Kani wrote:
+> Changed container_notify_cb() to call ACPI _OST method when ACPI
+> container hotplug operation has completed. Slightly restructured
+> the code with the same logic. The function sets eject_pending bit
+> for an eject request since it does not initiate hot-remove operation.
+> This bit is checked by the sysfs eject handler to determine if the
+> request is originated from an ACPI eject notification.
+> 
+> Signed-off-by: Toshi Kani<toshi.kani@hp.com>
+> ---
+>   drivers/acpi/container.c |   43 ++++++++++++++++++++++++++++---------------
+>   1 files changed, 28 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/acpi/container.c b/drivers/acpi/container.c
+> index 45cd03b..1f9f7d7 100644
+> --- a/drivers/acpi/container.c
+> +++ b/drivers/acpi/container.c
+> @@ -158,9 +158,7 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+>   	int result;
+>   	int present;
+>   	acpi_status status;
 > -
+> -
+> -	present = is_device_present(handle);
+> +	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
+> 
+>   	switch (type) {
+>   	case ACPI_NOTIFY_BUS_CHECK:
+> @@ -169,32 +167,47 @@ static void container_notify_cb(acpi_handle handle, u32 type, void *context)
+>   		printk(KERN_WARNING "Container driver received %s event\n",
+>   		       (type == ACPI_NOTIFY_BUS_CHECK) ?
+>   		       "ACPI_NOTIFY_BUS_CHECK" : "ACPI_NOTIFY_DEVICE_CHECK");
+> +
+> +		present = is_device_present(handle);
+>   		status = acpi_bus_get_device(handle,&device);
+> -		if (present) {
+> -			if (ACPI_FAILURE(status) || !device) {
+> -				result = container_device_add(&device, handle);
+> -				if (!result)
+> -					kobject_uevent(&device->dev.kobj,
+> -						       KOBJ_ONLINE);
+> -				else
+> -					printk(KERN_WARNING
+> -					       "Failed to add container\n");
+> -			}
+> -		} else {
+> +		if (!present) {
+>   			if (ACPI_SUCCESS(status)) {
+>   				/* device exist and this is a remove request */
+> +				device->flags.eject_pending = 1;
+>   				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> +				return;
+>   			}
+> +			break;
 > +		}
->  		/*
->  		 * Found a block suitable for isolating free pages from. Now
->  		 * we disabled interrupts, double check things are ok and
-> @@ -448,12 +554,16 @@ static void isolate_freepages(struct zone *zone,
->  		 */
->  		isolated = 0;
->  		spin_lock_irqsave(&zone->lock, flags);
-> -		if (suitable_migration_target(page)) {
-> +		ret = suitable_migration_target(page, cc, true);
-> +		if (ret == MIGRATE_TARGET || ret == RESCUE_UNMOVABLE_TARGET) {
-> +			if (ret == RESCUE_UNMOVABLE_TARGET)
-> +				rescue_unmovable_pageblock(page);
->  			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
->  			isolated = isolate_freepages_block(pfn, end_pfn,
->  							   freelist, false);
->  			nr_freepages += isolated;
-> -		}
-> +		} else if (ret == UNMOVABLE_TARGET)
-> +			cc->nr_unmovable_pageblock++;
->  		spin_unlock_irqrestore(&zone->lock, flags);
->
->  		/*
-> @@ -685,8 +795,9 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->
->  		nr_migrate = cc->nr_migratepages;
->  		err = migrate_pages(&cc->migratepages, compaction_alloc,
-> -				(unsigned long)cc, false,
-> -				cc->sync ? MIGRATE_SYNC_LIGHT : MIGRATE_ASYNC);
-> +			(unsigned long)&cc->freepages, false,
-> +			(cc->mode == COMPACT_SYNC) ? MIGRATE_SYNC_LIGHT
-> +						      : MIGRATE_ASYNC);
->  		update_nr_listpages(cc);
->  		nr_remaining = cc->nr_migratepages;
->
-> @@ -715,7 +826,8 @@ out:
->
->  static unsigned long compact_zone_order(struct zone *zone,
->  				 int order, gfp_t gfp_mask,
-> -				 bool sync)
-> +				 enum compact_mode mode,
-> +				 unsigned long *nr_pageblocks_skipped)
->  {
->  	struct compact_control cc = {
->  		.nr_freepages = 0,
-> @@ -723,12 +835,17 @@ static unsigned long compact_zone_order(struct zone *zone,
->  		.order = order,
->  		.migratetype = allocflags_to_migratetype(gfp_mask),
->  		.zone = zone,
-> -		.sync = sync,
-> +		.mode = mode,
->  	};
-> +	unsigned long rc;
 > +
->  	INIT_LIST_HEAD(&cc.freepages);
->  	INIT_LIST_HEAD(&cc.migratepages);
->
-> -	return compact_zone(zone, &cc);
-> +	rc = compact_zone(zone, &cc);
-> +	*nr_pageblocks_skipped = cc.nr_unmovable_pageblock;
+
+> +		if (!ACPI_FAILURE(status) || device)
+> +			break;
+
+The logic is not same as previous logic.
+I think the following logic is correct.
+
+		if (!ACPI_FAILURE(status) && device)
+			break;
+Thanks,
+Yasuaki Ishimatsu
+
 > +
-> +	return rc;
->  }
->
->  int sysctl_extfrag_threshold = 500;
-> @@ -753,6 +870,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  	struct zoneref *z;
->  	struct zone *zone;
->  	int rc = COMPACT_SKIPPED;
-> +	unsigned long nr_pageblocks_skipped;
-> +	enum compact_mode mode;
->
->  	/*
->  	 * Check whether it is worth even starting compaction. The order check is
-> @@ -769,12 +888,22 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  								nodemask) {
->  		int status;
->
-> -		status = compact_zone_order(zone, order, gfp_mask, sync);
-> +		mode = sync ? COMPACT_SYNC : COMPACT_ASYNC_MOVABLE;
-> +retry:
-> +		status = compact_zone_order(zone, order, gfp_mask, mode,
-> +						&nr_pageblocks_skipped);
->  		rc = max(status, rc);
->
->  		/* If a normal allocation would succeed, stop compacting */
->  		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0, 0))
->  			break;
+> +		result = container_device_add(&device, handle);
+> +		if (result) {
+> +			printk(KERN_WARNING "Failed to add container\n");
+> +			break;
+>   		}
 > +
-> +		if (rc == COMPACT_COMPLETE && mode == COMPACT_ASYNC_MOVABLE) {
-> +			if (nr_pageblocks_skipped) {
-> +				mode = COMPACT_ASYNC_UNMOVABLE;
-> +				goto retry;
-> +			}
-> +		}
->  	}
->
->  	return rc;
-> @@ -808,7 +937,7 @@ static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
->  			if (ok && cc->order > zone->compact_order_failed)
->  				zone->compact_order_failed = cc->order + 1;
->  			/* Currently async compaction is never deferred. */
-> -			else if (!ok && cc->sync)
-> +			else if (!ok && cc->mode == COMPACT_SYNC)
->  				defer_compaction(zone, cc->order);
->  		}
->
-> @@ -823,7 +952,7 @@ int compact_pgdat(pg_data_t *pgdat, int order)
->  {
->  	struct compact_control cc = {
->  		.order = order,
-> -		.sync = false,
-> +		.mode = COMPACT_ASYNC_MOVABLE,
->  	};
->
->  	return __compact_pgdat(pgdat, &cc);
-> @@ -833,7 +962,7 @@ static int compact_node(int nid)
->  {
->  	struct compact_control cc = {
->  		.order = -1,
-> -		.sync = true,
-> +		.mode = COMPACT_SYNC,
->  	};
->
->  	return __compact_pgdat(NODE_DATA(nid), &cc);
-> diff --git a/mm/internal.h b/mm/internal.h
-> index 2ba87fb..061fde7 100644
-> --- a/mm/internal.h
-> +++ b/mm/internal.h
-> @@ -94,6 +94,9 @@ extern void putback_lru_page(struct page *page);
->  /*
->   * in mm/page_alloc.c
->   */
-> +extern void set_pageblock_migratetype(struct page *page, int migratetype);
-> +extern int move_freepages_block(struct zone *zone, struct page *page,
-> +				int migratetype);
->  extern void __free_pages_bootmem(struct page *page, unsigned int order);
->  extern void prep_compound_page(struct page *page, unsigned long order);
->  #ifdef CONFIG_MEMORY_FAILURE
-> @@ -101,6 +104,7 @@ extern bool is_free_buddy_page(struct page *page);
->  #endif
->
->  #if defined CONFIG_COMPACTION || defined CONFIG_CMA
-> +#include <linux/compaction.h>
->
->  /*
->   * in mm/compaction.c
-> @@ -119,11 +123,14 @@ struct compact_control {
->  	unsigned long nr_migratepages;	/* Number of pages to migrate */
->  	unsigned long free_pfn;		/* isolate_freepages search base */
->  	unsigned long migrate_pfn;	/* isolate_migratepages search base */
-> -	bool sync;			/* Synchronous migration */
-> +	enum compact_mode mode;		/* Compaction mode */
->
->  	int order;			/* order a direct compactor needs */
->  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
->  	struct zone *zone;
+> +		kobject_uevent(&device->dev.kobj, KOBJ_ONLINE);
+> +		ost_code = ACPI_OST_SC_SUCCESS;
+>   		break;
 > +
-> +	/* Number of UNMOVABLE destination pageblocks skipped during scan */
-> +	unsigned long nr_unmovable_pageblock;
->  };
->
->  unsigned long
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 476ae3e..d40e4c7 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -219,7 +219,7 @@ EXPORT_SYMBOL(nr_online_nodes);
->
->  int page_group_by_mobility_disabled __read_mostly;
->
-> -static void set_pageblock_migratetype(struct page *page, int migratetype)
-> +void set_pageblock_migratetype(struct page *page, int migratetype)
->  {
->
->  	if (unlikely(page_group_by_mobility_disabled))
-> @@ -954,8 +954,8 @@ static int move_freepages(struct zone *zone,
->  	return pages_moved;
->  }
->
-> -static int move_freepages_block(struct zone *zone, struct page *page,
-> -				int migratetype)
-> +int move_freepages_block(struct zone *zone, struct page *page,
-> +			 int migratetype)
->  {
->  	unsigned long start_pfn, end_pfn;
->  	struct page *start_page, *end_page;
-> @@ -5651,7 +5651,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
->  		.nr_migratepages = 0,
->  		.order = -1,
->  		.zone = page_zone(pfn_to_page(start)),
-> -		.sync = true,
-> +		.mode = COMPACT_SYNC,
->  	};
->  	INIT_LIST_HEAD(&cc.migratepages);
->
+>   	case ACPI_NOTIFY_EJECT_REQUEST:
+>   		if (!acpi_bus_get_device(handle,&device)&&  device) {
+> +			device->flags.eject_pending = 1;
+>   			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
+> +			return;
+>   		}
+>   		break;
+> +
+>   	default:
+> -		break;
+> +		/* non-hotplug event; possibly handled by other handler */
+> +		return;
+>   	}
+> +
+> +	/* Inform firmware that the hotplug operation has completed */
+> +	(void) acpi_evaluate_hotplug_ost(handle, type, ost_code, NULL);
+>   	return;
+>   }
+> 
 
 
