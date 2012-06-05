@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab2FEPwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 11:52:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56919 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab2FEPwM (ORCPT
+	id S1753591Ab2FEP6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 11:58:50 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:51839
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752582Ab2FEP6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 11:52:12 -0400
-Date: Tue, 5 Jun 2012 08:50:34 -0700
-From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
-Message-ID: <tip-72ec61a9e8347375e37c05e23511173d8451c3d4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        tglx@linutronix.de, yong.zhang0@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        yong.zhang0@gmail.com, tglx@linutronix.de
-In-Reply-To: <1338275765-3217-10-git-send-email-yong.zhang0@gmail.com>
-References: <1338275765-3217-10-git-send-email-yong.zhang0@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:smp/hotplug] POWERPC: Smp: remove call to ipi_call_lock()/
- ipi_call_unlock()
-Git-Commit-ID: 72ec61a9e8347375e37c05e23511173d8451c3d4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 5 Jun 2012 11:58:49 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
+Message-ID: <4FCE2CB1.5090308@freescale.com>
+Date: Tue, 5 Jun 2012 10:58:41 -0500
+From: Scott Wood <scottwood@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 05 Jun 2012 08:50:41 -0700 (PDT)
+To: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 5/5] powerpc/85xx: add support to JOG feature using
+ cpufreq interface
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-5-git-send-email-chenhui.zhao@freescale.com> <4FC950AF.90007@freescale.com> <20120605105929.GA22427@localhost.localdomain>
+In-Reply-To: <20120605105929.GA22427@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  72ec61a9e8347375e37c05e23511173d8451c3d4
-Gitweb:     http://git.kernel.org/tip/72ec61a9e8347375e37c05e23511173d8451c3d4
-Author:     Yong Zhang <yong.zhang0@gmail.com>
-AuthorDate: Tue, 29 May 2012 15:16:04 +0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 5 Jun 2012 17:27:13 +0200
+On 06/05/2012 05:59 AM, Zhao Chenhui wrote:
+> On Fri, Jun 01, 2012 at 06:30:55PM -0500, Scott Wood wrote:
+>> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+>>> The jog mode frequency transition process on the MPC8536 is similar to
+>>> the deep sleep process. The driver need save the CPU state and restore
+>>> it after CPU warm reset.
+>>>
+>>> Note:
+>>>  * The I/O peripherals such as PCIe and eTSEC may lose packets during
+>>>    the jog mode frequency transition.
+>>
+>> That might be acceptable for eTSEC, but it is not acceptable to lose
+>> anything on PCIe.  Especially not if you're going to make this "default y".
+> 
+> It is a hardware limitation.
 
-POWERPC: Smp: remove call to ipi_call_lock()/ipi_call_unlock()
+Then make sure jog isn't used if PCIe is used.
 
-ipi_call_lock/unlock() lock resp. unlock call_function.lock. This lock
-protects only the call_function data structure itself, but it's
-completely unrelated to cpu_online_mask. The mask to which the IPIs
-are sent is calculated before call_function.lock is taken in
-smp_call_function_many(), so the locking around set_cpu_online() is
-pointless and can be removed.
+Maybe you could do something with the suspend infrastructure, but this
+is sufficiently heavyweight that transitions should be manually
+requested, not triggered by the automatic cpufreq governor.
 
-[ tglx: Massaged changelog ]
+Does this apply to p1022, or just mpc8536?
 
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: ralf@linux-mips.org
-Cc: sshtylyov@mvista.com
-Cc: david.daney@cavium.com
-Cc: nikunj@linux.vnet.ibm.com
-Cc: paulmck@linux.vnet.ibm.com
-Cc: axboe@kernel.dk
-Cc: peterz@infradead.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
-Link: http://lkml.kernel.org/r/1338275765-3217-10-git-send-email-yong.zhang0@gmail.com
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/powerpc/kernel/smp.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+> Peripherals in the platform will not be operating
+> during the jog mode frequency transition process.
 
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index e4cb343..e1417c4 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -571,7 +571,6 @@ void __devinit start_secondary(void *unused)
- 	if (system_state == SYSTEM_RUNNING)
- 		vdso_data->processorCount++;
- #endif
--	ipi_call_lock();
- 	notify_cpu_starting(cpu);
- 	set_cpu_online(cpu, true);
- 	/* Update sibling maps */
-@@ -601,7 +600,6 @@ void __devinit start_secondary(void *unused)
- 		of_node_put(np);
- 	}
- 	of_node_put(l2_cache);
--	ipi_call_unlock();
- 
- 	local_irq_enable();
- 
+What ensures this?
+
+-Scott
+
