@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761688Ab2FEKPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:15:18 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40910 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756394Ab2FEKPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:15:16 -0400
-Date: Tue, 5 Jun 2012 11:15:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: lrg@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: max8649: fix missing regmap in rdev
-Message-ID: <20120605101514.GK23408@opensource.wolfsonmicro.com>
-References: <1338891010-24805-1-git-send-email-haojian.zhuang@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mGCtrYeZ202LI9ZG"
-Content-Disposition: inline
-In-Reply-To: <1338891010-24805-1-git-send-email-haojian.zhuang@gmail.com>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1761679Ab2FEKQh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:16:37 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:1255 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756469Ab2FEKQf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 06:16:35 -0400
+Message-ID: <1338891389.4971.45.camel@x61.thuisdomein>
+Subject: [PATCH v2] ARM: mach-shmobile: set i2c_board_info.type once
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Date: Tue, 05 Jun 2012 12:16:29 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8BIT
+Mime-Version: 1.0
+X-OriginalArrivalTime: 05 Jun 2012 10:16:29.0263 (UTC) FILETIME=[45BE1DF0:01CD4304]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+tsc_device (of struct i2cboard_info) has its "type" member set to
+"tsc2007" twice. First through the I2C_BOARD_INFO macro and then
+directly. Drop the superfluous second instance.
 
---mGCtrYeZ202LI9ZG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) v1 was called "Drop superfluous setting of i2c_board_info.type". v2
+drops the mach-imx bits. Those were already fixed with a patch called
+"ARM: imx: only specify i2c device type once" by Uwe Kleine-König.
+Sascha Hauer has committed that patch to some unknown to me branch.
+Rebased onto v3.5-rc1.
 
-On Tue, Jun 05, 2012 at 06:10:10PM +0800, Haojian Zhuang wrote:
-> In probe(), rdev->regmap must be assigned.
->=20
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+1) Still entirely untested. I'm unsure what toolchain is needed to
+compile this and I'm certain that I don't have the hardware.
 
-Applied for 3.5, it's not needed in -next as the regulator API will do
-the lookup automatically from the device.
+ arch/arm/mach-shmobile/board-ap4evb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
---mGCtrYeZ202LI9ZG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/arm/mach-shmobile/board-ap4evb.c b/arch/arm/mach-shmobile/board-ap4evb.c
+index ace6024..b9f3122 100644
+--- a/arch/arm/mach-shmobile/board-ap4evb.c
++++ b/arch/arm/mach-shmobile/board-ap4evb.c
+@@ -1197,7 +1197,6 @@ static struct tsc2007_platform_data tsc2007_info = {
+ 
+ static struct i2c_board_info tsc_device = {
+ 	I2C_BOARD_INFO("tsc2007", 0x48),
+-	.type		= "tsc2007",
+ 	.platform_data	= &tsc2007_info,
+ 	/*.irq is selected on ap4evb_init */
+ };
+-- 
+1.7.7.6
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPzdwoAAoJEBus8iNuMP3dlAgP/2lzSAGTAzZKKTU2pYowiw2w
-uP3I3p/PzGTh3zHsDYlYULBLj2aYo+OnW+EiSHvC48tzT6Edsq/Mj8LSO/dJtrql
-rG+nA98WNSOwkvM9wKnGA+I2zvnEuVbG9eNDhUD4emxeQA+6fovFdBKCt+f/E3U9
-B1M6OAjqZmOgbZeDg4XC4CIANJq/e8xpRFGwsXIaxmdqffdzVpH9PDR0OHNyPdzk
-VEerDCUGM7tSD6Uzw91w/jCJg14ftQBsKnsyZ0vKugWIwFz5cftkY0YgMvVCyRme
-yGHcNw8mbGWJ7+xcpkYsLePN5IxGOe5NnNcnTslnmzesAwZuQlVNGqGCBAhopVpd
-XWn8Ag+GrhZGxpJBu+vech4C+eEM9GBGVRdfUs4crx4EqxMd4pJDJoYHqtUxnu7z
-ptEbwKbgS9jGgAHyDrsErG/kMkhEWlmeGKh6O9/PrzRBgsEBJvFCSvEm/OaoAxR0
-6lBBdaRnSvfGEAjUSpZJnthb4iX0uBZ5DtxU9nP68QkYd/2sR3N0g0V0NpdL8wvj
-Uj0iSCow13ANmT/Csz1OmxPFdMNIvyDN214md8cT7Y/vXh1wCjS0x11xcNrtR1OW
-6bHYb2iZsi/zxWi+GCtg30PB8mSfGY7kGaEE5Y9QJlw/lrKYZhQTWK9H2w12x09K
-mZfi9UrplA/0Dp0dbJYF
-=/9s/
------END PGP SIGNATURE-----
-
---mGCtrYeZ202LI9ZG--
