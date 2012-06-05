@@ -1,40 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab2FEXsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:48:23 -0400
+	id S1754012Ab2FEXsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:48:46 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:60309 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753881Ab2FEXsW (ORCPT
+	with ESMTP id S1753644Ab2FEXso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:48:22 -0400
+	Tue, 5 Jun 2012 19:48:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <4FCE8307.3050901@linux.intel.com>
-References: <8854635ac5471f8671b93c65e3663eb1cb204c9d.1338454156.git.dvhart@linux.intel.com>
-	<CANKRQnhZErpvcsRW3ukNzY0_zv4x=5OzQ-sr+aeuxL63=tQ=4A@mail.gmail.com>
-	<4FC90BAD.3080606@linux.intel.com>
-	<4FCE8307.3050901@linux.intel.com>
-Date: Wed, 6 Jun 2012 08:48:20 +0900
-Message-ID: <CANKRQnj5mxHLprMt4VMMa7sCwLZb=PAktnVVD1MZVkkUG4eLoA@mail.gmail.com>
-Subject: Re: [RFC PATCH] pch_uart: Add eg20t_port lock field, avoid recursive spinlocks
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1338939792.11962.4.camel@joe2Laptop>
+References: <cover.1338889066.git.joe@perches.com> <20120605142826.d92316a0.akpm@linux-foundation.org>
+ <1338934303.5780.8.camel@joe2Laptop> <20120605151754.a794ac7c.akpm@linux-foundation.org>
+ <1338936572.5780.29.camel@joe2Laptop> <20120605162910.caccb0d4.akpm@linux-foundation.org>
+ <1338939316.11962.3.camel@joe2Laptop> <CAPXgP13J+8-dPpZkSfh9sM3xXujC2Rb9tJaOvGoEPghgdr8jiw@mail.gmail.com>
+ <1338939792.11962.4.camel@joe2Laptop>
+From: Kay Sievers <kay@vrfy.org>
+Date: Wed, 6 Jun 2012 01:48:22 +0200
+Message-ID: <CAPXgP10DEsqtz9xbPUQ3xCwdFGTTYyTGSd7yEcU2vUr3SJ83Sw@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 6, 2012 at 7:07 AM, Darren Hart <dvhart@linux.intel.com> wrote:
-> Are there still concerns about the additional lock? I'll resend V2
-> tomorrow with the single whitespace fix if I don't hear anything back today.
+On Wed, Jun 6, 2012 at 1:43 AM, Joe Perches <joe@perches.com> wrote:
+> On Wed, 2012-06-06 at 01:39 +0200, Kay Sievers wrote:
 
-I understand your saying. Looks good.
-However, I am not expert of linux-uart core system.
-So, I'd like UART maintainer to give us your opinion.
+>> > # echo "\001Hello Andrew" > /dev/kmsg
+>> > /dev/kmsg has
+>> > 12,774,2462339252;\001Hello Andrew
+>>
+>> Try "echo -e"? The stuff is copied verbatim otherwise.
+>
+> # echo -e "\001Hello Kay" > /dev/kmsg
+> gives
+> 12,776,3046752764;\x01Hello Kay
 
-thanks.
-tomoya
+Don't you need two bytes to trigger the logic?
+
+Kay
