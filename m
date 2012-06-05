@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934229Ab2FENXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:23:42 -0400
-Received: from mta113.f1.k8.com.br ([187.73.32.185]:41929 "EHLO
-	mta113.f1.k8.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934090Ab2FENXk (ORCPT
+	id S934231Ab2FEN0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:26:44 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:6774 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934012Ab2FEN0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:23:40 -0400
-Message-ID: <1338902613.2792.16.camel@Thor>
-Subject: Re: [PATCH 1/1] net: add dev_loopback_xmit() to avoid duplicate code
-From: Michel Machado <michel@digirati.com.br>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jun 2012 09:23:33 -0400
-In-Reply-To: <1337782819.2779.20.camel@Thor>
-References: <1337782819.2779.20.camel@Thor>
-Organization: Digirati Internet
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 09:26:43 -0400
+X-IronPort-AV: E=Sophos;i="4.75,718,1330905600"; 
+   d="scan'208";a="12840105"
+Date: Tue, 5 Jun 2012 14:26:23 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <1338901688.28282.168.camel@twins>
+Message-ID: <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>  <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com>  <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com>  <87ehpuqam8.fsf@linux.vnet.ibm.com>  <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
+  <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I'm getting really tired of saying this.
->
->As I announced several days ago, it is absolutely not appropriate
->to submit patches other than bug fixes at this time because we are
->in the merge window and the net-next tree is frozen.
->
->And even once I do announce here that the net-next tree is open
->once more, and patches like this one are appropriate, you must
->indicate in the subject line which of the 'net' or 'net-next'
->tree you are targetting your patch at.
->
->Please pay attention to what's going on, and what state the networking
->development trees are in, before submitting changes.
+On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
+> > PeterZ, is 7/7 alright to be picked?
+> 
+> Yeah, I guess it is.. I haven't had time to rework my tlb series yet
+> though. But these two patches together should make it work for x86.
+> 
 
-I am sorry. I'm still new to this process, and I clearly haven't found
-my way yet. Accept my apology and consider that others making the same
-mistake are likely trying to find their ways as well. Rest sure that I
-do appreciate your time and work, I'll pay more attention on those time
-windows.
-
-Just to avoid bothering you further, should I resend this patch or not?
-I saw at the link below that it's already marked as "Deferred".
-
-http://patchwork.ozlabs.org/patch/160929/
-
-Is there a link where I can check the state (i.e. open, frozen) of 'net'
-and 'net-next' trees? I think keeping such page, and adding this link to
-Documentation/SubmittingPatches would reduce similar mistakes.
-
--- 
-[ ]'s
-Michel Machado
-
-
-
+Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
+3.6?
