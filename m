@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761489Ab2FEDmk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:42:40 -0400
+	id S1761441Ab2FEDlS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:41:18 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:43604 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761443Ab2FEDlV (ORCPT
+	with ESMTP id S1752849Ab2FEDlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:41:21 -0400
+	Mon, 4 Jun 2012 23:41:14 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         fengguang.wu@intel.com, hughd@google.com, akpm@linux-foundation.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/10] block: refactor get_request[_wait]()
-Date: Mon,  4 Jun 2012 20:40:55 -0700
-Message-Id: <1338867660-4689-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 02/10] blkcg: make root blkcg allocation use %GFP_KERNEL
+Date: Mon,  4 Jun 2012 20:40:52 -0700
+Message-Id: <1338867660-4689-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1338867660-4689-1-git-send-email-tj@kernel.org>
 References: <1338867660-4689-1-git-send-email-tj@kernel.org>
@@ -23,164 +23,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, there are two request allocation functions - get_request()
-and get_request_wait().  The former tries to allocate a request once
-and the latter keeps retrying until it succeeds.  The latter wraps the
-former and keeps retrying until allocation succeeds.
+Currently, blkcg_activate_policy() depends on %GFP_ATOMIC allocation
+from __blkg_lookup_create() for root blkcg creation.  This could make
+policy fail unnecessarily.
 
-The combination of two functions deliver fallible non-wait allocation,
-fallible wait allocation and unfailing wait allocation.  However,
-given that forward progress is guaranteed, fallible wait allocation
-isn't all that useful and in fact nobody uses it.
+Make blkg_alloc() take @gfp_mask, __blkg_lookup_create() take an
+optional @new_blkg for preallocated blkg, and blkcg_activate_policy()
+preload radix tree and preallocate blkg with %GFP_KERNEL before trying
+to create the root blkg.
 
-This patch simplifies the interface as follows.
-
-* get_request() is renamed to __get_request() and is only used by the
-  wrapper function.
-
-* get_request_wait() is renamed to get_request().  It now takes
-  @gfp_mask and retries iff it contains %__GFP_WAIT.
-
-This patch doesn't introduce any functional change and is to prepare
-for further updates to request allocation path.
+v2: __blkg_lookup_create() was returning %NULL on blkg alloc failure
+   instead of ERR_PTR() value.  Fixed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-core.c |   74 +++++++++++++++++++++++++----------------------------
- 1 files changed, 35 insertions(+), 39 deletions(-)
+ block/blk-cgroup.c |   59 +++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 43 insertions(+), 16 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 7465d89..9b25d73 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -824,7 +824,7 @@ static struct io_context *rq_ioc(struct bio *bio)
- }
- 
- /**
-- * get_request - get a free request
-+ * __get_request - get a free request
-  * @q: request_queue to allocate request from
-  * @rw_flags: RW and SYNC flags
-  * @bio: bio to allocate request for (can be %NULL)
-@@ -837,8 +837,8 @@ static struct io_context *rq_ioc(struct bio *bio)
-  * Returns %NULL on failure, with @q->queue_lock held.
-  * Returns !%NULL on success, with @q->queue_lock *not held*.
-  */
--static struct request *get_request(struct request_queue *q, int rw_flags,
--				   struct bio *bio, gfp_t gfp_mask)
-+static struct request *__get_request(struct request_queue *q, int rw_flags,
-+				     struct bio *bio, gfp_t gfp_mask)
- {
- 	struct request *rq;
- 	struct request_list *rl = &q->rq;
-@@ -1016,56 +1016,55 @@ rq_starved:
- }
- 
- /**
-- * get_request_wait - get a free request with retry
-+ * get_request - get a free request
-  * @q: request_queue to allocate request from
-  * @rw_flags: RW and SYNC flags
-  * @bio: bio to allocate request for (can be %NULL)
-+ * @gfp_mask: allocation mask
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index af61db0..cbeeb54 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -91,16 +91,18 @@ static void blkg_free(struct blkcg_gq *blkg)
+  * blkg_alloc - allocate a blkg
+  * @blkcg: block cgroup the new blkg is associated with
+  * @q: request_queue the new blkg is associated with
++ * @gfp_mask: allocation mask to use
   *
-- * Get a free request from @q.  This function keeps retrying under memory
-- * pressure and fails iff @q is dead.
-+ * Get a free request from @q.  If %__GFP_WAIT is set in @gfp_mask, this
-+ * function keeps retrying under memory pressure and fails iff @q is dead.
-  *
-  * Must be callled with @q->queue_lock held and,
-  * Returns %NULL on failure, with @q->queue_lock held.
-  * Returns !%NULL on success, with @q->queue_lock *not held*.
+  * Allocate a new blkg assocating @blkcg and @q.
   */
--static struct request *get_request_wait(struct request_queue *q, int rw_flags,
--					struct bio *bio)
-+static struct request *get_request(struct request_queue *q, int rw_flags,
-+				   struct bio *bio, gfp_t gfp_mask)
+-static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q)
++static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
++				   gfp_t gfp_mask)
  {
- 	const bool is_sync = rw_is_sync(rw_flags) != 0;
-+	DEFINE_WAIT(wait);
-+	struct request_list *rl = &q->rq;
- 	struct request *rq;
-+retry:
-+	rq = __get_request(q, rw_flags, bio, gfp_mask);
-+	if (rq)
-+		return rq;
+ 	struct blkcg_gq *blkg;
+ 	int i;
  
--	rq = get_request(q, rw_flags, bio, GFP_NOIO);
--	while (!rq) {
--		DEFINE_WAIT(wait);
--		struct request_list *rl = &q->rq;
--
--		if (unlikely(blk_queue_dead(q)))
--			return NULL;
--
--		prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
--				TASK_UNINTERRUPTIBLE);
-+	if (!(gfp_mask & __GFP_WAIT) || unlikely(blk_queue_dead(q)))
-+		return NULL;
+ 	/* alloc and init base part */
+-	blkg = kzalloc_node(sizeof(*blkg), GFP_ATOMIC, q->node);
++	blkg = kzalloc_node(sizeof(*blkg), gfp_mask, q->node);
+ 	if (!blkg)
+ 		return NULL;
  
--		trace_block_sleeprq(q, bio, rw_flags & 1);
-+	/* wait on @rl and retry */
-+	prepare_to_wait_exclusive(&rl->wait[is_sync], &wait,
-+				  TASK_UNINTERRUPTIBLE);
+@@ -117,7 +119,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q)
+ 			continue;
  
--		spin_unlock_irq(q->queue_lock);
--		io_schedule();
-+	trace_block_sleeprq(q, bio, rw_flags & 1);
+ 		/* alloc per-policy data and attach it to blkg */
+-		pd = kzalloc_node(pol->pd_size, GFP_ATOMIC, q->node);
++		pd = kzalloc_node(pol->pd_size, gfp_mask, q->node);
+ 		if (!pd) {
+ 			blkg_free(blkg);
+ 			return NULL;
+@@ -175,8 +177,13 @@ struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, struct request_queue *q)
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup);
  
--		/*
--		 * After sleeping, we become a "batching" process and
--		 * will be able to allocate at least one request, and
--		 * up to a big batch of them for a small period time.
--		 * See ioc_batching, ioc_set_batching
--		 */
--		create_io_context(GFP_NOIO, q->node);
--		ioc_set_batching(q, current->io_context);
-+	spin_unlock_irq(q->queue_lock);
-+	io_schedule();
++/*
++ * If @new_blkg is %NULL, this function tries to allocate a new one as
++ * necessary using %GFP_ATOMIC.  @new_blkg is always consumed on return.
++ */
+ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+-					     struct request_queue *q)
++					     struct request_queue *q,
++					     struct blkcg_gq *new_blkg)
+ {
+ 	struct blkcg_gq *blkg;
+ 	int ret;
+@@ -188,18 +195,24 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+ 	blkg = __blkg_lookup(blkcg, q);
+ 	if (blkg) {
+ 		rcu_assign_pointer(blkcg->blkg_hint, blkg);
+-		return blkg;
++		goto out_free;
+ 	}
  
--		spin_lock_irq(q->queue_lock);
--		finish_wait(&rl->wait[is_sync], &wait);
-+	/*
-+	 * After sleeping, we become a "batching" process and will be able
-+	 * to allocate at least one request, and up to a big batch of them
-+	 * for a small period time.  See ioc_batching, ioc_set_batching
-+	 */
-+	create_io_context(GFP_NOIO, q->node);
-+	ioc_set_batching(q, current->io_context);
+ 	/* blkg holds a reference to blkcg */
+-	if (!css_tryget(&blkcg->css))
+-		return ERR_PTR(-EINVAL);
++	if (!css_tryget(&blkcg->css)) {
++		blkg = ERR_PTR(-EINVAL);
++		goto out_free;
++	}
  
--		rq = get_request(q, rw_flags, bio, GFP_NOIO);
--	};
-+	spin_lock_irq(q->queue_lock);
-+	finish_wait(&rl->wait[is_sync], &wait);
+ 	/* allocate */
+-	ret = -ENOMEM;
+-	blkg = blkg_alloc(blkcg, q);
+-	if (unlikely(!blkg))
+-		goto err_put;
++	if (!new_blkg) {
++		new_blkg = blkg_alloc(blkcg, q, GFP_ATOMIC);
++		if (unlikely(!new_blkg)) {
++			blkg = ERR_PTR(-ENOMEM);
++			goto out_put;
++		}
++	}
++	blkg = new_blkg;
  
--	return rq;
-+	goto retry;
+ 	/* insert */
+ 	spin_lock(&blkcg->lock);
+@@ -212,10 +225,13 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+ 
+ 	if (!ret)
+ 		return blkg;
+-err_put:
++
++	blkg = ERR_PTR(ret);
++out_put:
+ 	css_put(&blkcg->css);
+-	blkg_free(blkg);
+-	return ERR_PTR(ret);
++out_free:
++	blkg_free(new_blkg);
++	return blkg;
  }
  
- struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
-@@ -1075,10 +1074,7 @@ struct request *blk_get_request(struct request_queue *q, int rw, gfp_t gfp_mask)
- 	BUG_ON(rw != READ && rw != WRITE);
- 
- 	spin_lock_irq(q->queue_lock);
--	if (gfp_mask & __GFP_WAIT)
--		rq = get_request_wait(q, rw, NULL);
--	else
--		rq = get_request(q, rw, NULL, gfp_mask);
-+	rq = get_request(q, rw, NULL, gfp_mask);
- 	if (!rq)
- 		spin_unlock_irq(q->queue_lock);
- 	/* q->queue_lock is unlocked at this point */
-@@ -1468,7 +1464,7 @@ get_rq:
- 	 * Grab a free request. This is might sleep but can not fail.
- 	 * Returns with the queue unlocked.
+ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
+@@ -227,7 +243,7 @@ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
  	 */
--	req = get_request_wait(q, rw_flags, bio);
-+	req = get_request(q, rw_flags, bio, GFP_NOIO);
- 	if (unlikely(!req)) {
- 		bio_endio(bio, -ENODEV);	/* @q is dead */
+ 	if (unlikely(blk_queue_bypass(q)))
+ 		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
+-	return __blkg_lookup_create(blkcg, q);
++	return __blkg_lookup_create(blkcg, q, NULL);
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup_create);
+ 
+@@ -727,19 +743,30 @@ int blkcg_activate_policy(struct request_queue *q,
+ 	struct blkcg_gq *blkg;
+ 	struct blkg_policy_data *pd, *n;
+ 	int cnt = 0, ret;
++	bool preloaded;
+ 
+ 	if (blkcg_policy_enabled(q, pol))
+ 		return 0;
+ 
++	/* preallocations for root blkg */
++	blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
++	if (!blkg)
++		return -ENOMEM;
++
++	preloaded = !radix_tree_preload(GFP_KERNEL);
++
+ 	blk_queue_bypass_start(q);
+ 
+ 	/* make sure the root blkg exists and count the existing blkgs */
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	rcu_read_lock();
+-	blkg = __blkg_lookup_create(&blkcg_root, q);
++	blkg = __blkg_lookup_create(&blkcg_root, q, blkg);
+ 	rcu_read_unlock();
+ 
++	if (preloaded)
++		radix_tree_preload_end();
++
+ 	if (IS_ERR(blkg)) {
+ 		ret = PTR_ERR(blkg);
  		goto out_unlock;
 -- 
 1.7.7.3
