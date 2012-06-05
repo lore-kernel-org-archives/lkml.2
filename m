@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933950Ab2FELXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:23:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39196 "EHLO mx1.redhat.com"
+	id S933970Ab2FELXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:23:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9708 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316Ab2FELXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:23:06 -0400
-Date: Tue, 5 Jun 2012 13:22:59 +0200
+	id S933635Ab2FELXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 07:23:22 -0400
+Date: Tue, 5 Jun 2012 13:23:15 +0200
 From: Alexander Gordeev <agordeev@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 0/8] x86: apic: Cleanup and improve four apic operations
-Message-ID: <20120605112255.GA11434@dhcp-26-207.brq.redhat.com>
+Subject: [PATCH 1/8] x86: apic: Trivial whitespace fixes
+Message-ID: <20120605112310.GA11443@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,44 +21,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is an attempt to make some implementations of four apic
-operations bit more sane and readable. It was booted with these apic drivers:
-flat/flat, flat/phys, bigsmp, x2apic/cluster.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+---
+ arch/x86/kernel/apic/apic_flat_64.c   |    2 +-
+ arch/x86/kernel/apic/io_apic.c        |    4 ++--
+ arch/x86/kernel/apic/x2apic_cluster.c |    2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
 
-- patches 2,3,4	get rid of duplicate implementation of apic operations
-- patch 5	tunes the way vectors are assigned
-- patch 6	makes minor improvement to the code
-- patches 7,8	are a continuation of 18374d8 commit
-
-Attached patches:
-  1/8 x86: apic: Trivial whitespace fixes
-  2/8 x86: apic: Factor out default target_cpus() operation
-  3/8 x86: apic: Factor out default cpu_mask_to_apicid() operations
-  4/8 x86: apic: Factor out default vector_allocation_domain() operations
-  5/8 x86: apic: Try to spread IRQ vectors to different priority levels
-  6/8 x86: apic: Avoid useless scanning thru a cpumask in
-    assign_irq_vector()
-  7/8 x86: apic: Make cpu_mask_to_apicid() operations return error code
-  8/8 x86: apic: Make cpu_mask_to_apicid() operations check cpu_online_mask
-
- arch/x86/include/asm/apic.h           |   75 +++++++++++++++++---
- arch/x86/include/asm/x2apic.h         |   18 -----
- arch/x86/kernel/apic/apic.c           |   31 ++++++++
- arch/x86/kernel/apic/apic_flat_64.c   |   78 ++------------------
- arch/x86/kernel/apic/apic_noop.c      |   10 ++--
- arch/x86/kernel/apic/apic_numachip.c  |   51 +------------
- arch/x86/kernel/apic/bigsmp_32.c      |   49 +------------
- arch/x86/kernel/apic/es7000_32.c      |   43 ++++--------
- arch/x86/kernel/apic/io_apic.c        |  124 +++++++++++++++++++++-----------
- arch/x86/kernel/apic/numaq_32.c       |   30 +++-----
- arch/x86/kernel/apic/probe_32.c       |   21 +-----
- arch/x86/kernel/apic/summit_32.c      |   41 ++++-------
- arch/x86/kernel/apic/x2apic_cluster.c |   34 ++++++----
- arch/x86/kernel/apic/x2apic_phys.c    |   40 +----------
- arch/x86/kernel/apic/x2apic_uv_x.c    |   44 ++++++------
- arch/x86/platform/uv/uv_irq.c         |    7 ++-
- 16 files changed, 291 insertions(+), 405 deletions(-)
-
+diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
+index 359b689..8ef4e15 100644
+--- a/arch/x86/kernel/apic/apic_flat_64.c
++++ b/arch/x86/kernel/apic/apic_flat_64.c
+@@ -92,7 +92,7 @@ static void flat_send_IPI_mask(const struct cpumask *cpumask, int vector)
+ }
+ 
+ static void
+- flat_send_IPI_mask_allbutself(const struct cpumask *cpumask, int vector)
++flat_send_IPI_mask_allbutself(const struct cpumask *cpumask, int vector)
+ {
+ 	unsigned long mask = cpumask_bits(cpumask)[0];
+ 	int cpu = smp_processor_id();
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index e88300d..1afedef 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1481,7 +1481,7 @@ static void setup_ioapic_irq(unsigned int irq, struct irq_cfg *cfg,
+ 		    cfg->vector, irq, attr->trigger, attr->polarity, dest);
+ 
+ 	if (setup_ioapic_entry(irq, &entry, dest, cfg->vector, attr)) {
+-		pr_warn("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
++		pr_warn("Failed to setup ioapic entry for ioapic %d, pin %d\n",
+ 			mpc_ioapic_id(attr->ioapic), attr->ioapic_pin);
+ 		__clear_irq_vector(irq, cfg);
+ 
+@@ -1584,7 +1584,7 @@ void setup_IO_APIC_irq_extra(u32 gsi)
+  * Set up the timer pin, possibly with the 8259A-master behind.
+  */
+ static void __init setup_timer_IRQ0_pin(unsigned int ioapic_idx,
+-					 unsigned int pin, int vector)
++					unsigned int pin, int vector)
+ {
+ 	struct IO_APIC_route_entry entry;
+ 
+diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
+index 48f3103..8f012b2 100644
+--- a/arch/x86/kernel/apic/x2apic_cluster.c
++++ b/arch/x86/kernel/apic/x2apic_cluster.c
+@@ -81,7 +81,7 @@ static void x2apic_send_IPI_mask(const struct cpumask *mask, int vector)
+ }
+ 
+ static void
+- x2apic_send_IPI_mask_allbutself(const struct cpumask *mask, int vector)
++x2apic_send_IPI_mask_allbutself(const struct cpumask *mask, int vector)
+ {
+ 	__x2apic_send_IPI_mask(mask, vector, APIC_DEST_ALLBUT);
+ }
 -- 
 1.7.7.6
 
