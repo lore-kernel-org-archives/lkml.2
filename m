@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951Ab2FEMvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 08:51:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18335 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752757Ab2FEMvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 08:51:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="153125060"
-Message-ID: <1338900917.2507.50.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] MTD: add JEDEC ID for w25q32wd to chip table
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "ing. Federico Fuga" <fuga@studiofuga.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jun 2012 15:55:17 +0300
-In-Reply-To: <1338900730.2507.49.camel@sauron.fi.intel.com>
-References: <1338478732-31992-1-git-send-email-fuga@studiofuga.com>
-	 <1338900730.2507.49.camel@sauron.fi.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-b2Pqr3kmW0lMDCF5K4Hu"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1757356Ab2FEMvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 08:51:55 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46450 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab2FEMvx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 08:51:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338899999.28282.164.camel@twins>
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
+	<CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+	<CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
+	<1338891271.28282.155.camel@twins>
+	<CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
+	<1338892071.28282.157.camel@twins>
+	<CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
+	<1338898024.28282.160.camel@twins>
+	<1338899999.28282.164.camel@twins>
+Date: Tue, 5 Jun 2012 14:51:52 +0200
+Message-ID: <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 5, 2012 at 2:39 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2012-06-05 at 14:07 +0200, Peter Zijlstra wrote:
+>> On Tue, 2012-06-05 at 12:38 +0200, Stephane Eranian wrote:
+>> > How about we add a field or flag to cpuc to tell it's fake, and then
+>> > in
+>> > try_alt_er() and __intel_shared_reg_get_constraints() we avoid
+>> > touching
+>> > live struct (like reg->alloc) if fake==1. I think he was trying to do
+>> > the same with the core_id == -1 test.
+>>
+>> We might have to do something like that, however I'm trying to figure
+>> out when that reg->alloc test in __intel_shared_reg_get_contraints() is
+>> useful.
+>>
+>> If it is useful in event scheduling, we cannot just leave it out in
+>> validate_group().
+>
+> OK, so x86_schedule_events() can call that multiple times on the same
+> event in case we keep adding events.. it needs the constraints of the
+> previous events as well, and in that case we skip the whole extra_reg
+> muck.
 
---=-b2Pqr3kmW0lMDCF5K4Hu
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+That reg->alloc is to avoid going through that shared MSR allocation
+code again because we already have a valid assignment. It helps with
+incremental scheduling of events (collect() -> schedule()).
+>
+> But for validate_group() we only do this once, so it should work. Nasty
+> though.
 
-On Tue, 2012-06-05 at 15:52 +0300, Artem Bityutskiy wrote:
-> > +	{ "w25q32wd", INFO(0xef6016, 0, 64 * 1024,  64, SECT_4K) },
->=20
-> It is w25q32wd, not w25q32wd.
+True, only one pass. So I think if you say in:
+__intel_shared_reg_put_constraints()
 
-Gr, "dw", not "wd".
+     if (!cpuc->is_fake)
+           reg->alloc = 1;
 
-http://www.nexflash.com/hq/enu/ProductAndSales/ProductLines/FlashMemory/Ser=
-ialFlash/W25Q32DW.htm
+That should do it given that:
 
---=20
-Best Regards,
-Artem Bityutskiy
+__intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
+                                   struct hw_perf_event_extra *reg)
+{
+        struct er_account *era;
+        if (!reg->alloc)
+                return;
 
---=-b2Pqr3kmW0lMDCF5K4Hu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+But then, if reg->alloc was already set to 1, you will have a problem
+if you leave
+it as is. So I think in __intel_shared_reg_put_constraints(), you still need:
 
-iQIcBAABAgAGBQJPzgG1AAoJECmIfjd9wqK0nYUP/iWs69HQaYDtJvxOm1uaTKtt
-XNyckYSRpxEFCS2uqsYrA/27xo98IYUeadtYaPwXeyxl9Ovqv61qJdUhgGeUfmXp
-jBnaitQeLsbajTaXb2OzdQVifg5m8BjbAO6Dpi4onCuXcARo/hCPTmTnZp/kdXv/
-IE8hPCI+m7yUsMesJbFcYw2pInNfi+NOFlHDa96RvUi4oGd6A3pK+hP1dzh2eFbI
-Zd3rAaVinU4WtiXznNc+S/M0RDVxQu8A2PEyXrhLgb5Q6G5vSjilXBrgzxgDiGgx
-hsDhnFzUsQ3YlbQ/4NahnP9+lgqZDBblug13+6sIjEuIxVdMMjey46ddCN4JbxHh
-yG1hNel5DTn/3pryzd8hSMyVkxDPCtOee3JYwEQz8bnLO+dUzKNsj9bw5kn8iAsk
-a1IkTW8MsZ4r5FO5p7sMj/127vz+vAH6BkpyyUvOonFUb748W7eh2Fj+PQcQUXaF
-Y6jBIC5O1r94IPWxearycGXnkrAwOw9UpkHZJCnubAGPzgnA1U9zId0NesoR8Dr1
-XdXpSnbKWwaTIQo2RA1XaBH3gu20xjO98euSn060JLIi3O4QufZ6h3A3NmmNnaLU
-z6pIDmXhDDzLfnqYbm8SsdA82l67LPlv9rHeDYExZBPY/e9ROLsSko5pyWDjHIIW
-LGfQuV+5fWn/SFVkj1xq
-=OZxw
------END PGP SIGNATURE-----
+__intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
+                                   struct hw_perf_event_extra *reg)
+{
+       if (!reg->alloc || cpuc->is_fake)
+          return;
 
---=-b2Pqr3kmW0lMDCF5K4Hu--
-
+Or something like that.
