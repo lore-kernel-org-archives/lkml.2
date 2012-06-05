@@ -1,59 +1,564 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761662Ab2FEJjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:39:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45244 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761546Ab2FEJjo (ORCPT
+	id S1761626Ab2FEJjb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:39:31 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35642 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761547Ab2FEJir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:39:44 -0400
-Date: Tue, 5 Jun 2012 11:39:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Chen Gong <gong.chen@linux.intel.com>
-cc: tony.luck@intel.com, bp@amd64.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix the MCE poll timer logic
-In-Reply-To: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com>
-Message-ID: <alpine.LFD.2.02.1206051139180.3086@ionos>
-References: <1338863702-9245-1-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 5 Jun 2012 05:38:47 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <balbi@ti.com>
+Subject: [PATCH 2/5] usb: musb: twl: use mailbox API to send VBUS or ID events
+Date: Tue, 5 Jun 2012 15:08:35 +0530
+Message-ID: <1338889118-10032-3-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1338889118-10032-1-git-send-email-kishon@ti.com>
+References: <1338889118-10032-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jun 2012, Chen Gong wrote:
+The atomic notifier from twl4030/twl6030 to notifiy VBUS and ID events,
+is replaced by a direct call to omap musb blue.
 
-> In commit 82f7af09 (x86/mce: Cleanup timer mess), Thomas just forgot
-> the "/ 2" there while cleaning up.
-> 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ drivers/usb/musb/omap2430.c   |   90 ++++++++++++++++++++++++++---------------
+ drivers/usb/otg/twl4030-usb.c |   42 +++++++++----------
+ drivers/usb/otg/twl6030-usb.c |   47 +++++++++------------
+ include/linux/usb/musb-omap.h |   30 ++++++++++++++
+ 4 files changed, 128 insertions(+), 81 deletions(-)
+ create mode 100644 include/linux/usb/musb-omap.h
 
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index f40c805..7139e57 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -34,6 +34,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/err.h>
++#include <linux/usb/musb-omap.h>
+ 
+ #include "musb_core.h"
+ #include "omap2430.h"
+@@ -41,11 +42,13 @@
+ struct omap2430_glue {
+ 	struct device		*dev;
+ 	struct platform_device	*musb;
+-	u8			xceiv_event;
++	enum omap_musb_vbus_id_status status;
+ 	struct work_struct	omap_musb_mailbox_work;
+ };
+ #define glue_to_musb(g)		platform_get_drvdata(g->musb)
+ 
++struct omap2430_glue		*_glue;
++
+ static struct timer_list musb_idle_timer;
+ 
+ static void musb_do_idle(unsigned long _musb)
+@@ -225,50 +228,54 @@ static inline void omap2430_low_level_init(struct musb *musb)
+ 	musb_writel(musb->mregs, OTG_FORCESTDBY, l);
+ }
+ 
+-static int musb_otg_notifications(struct notifier_block *nb,
+-		unsigned long event, void *unused)
++void omap_musb_mailbox(enum omap_musb_vbus_id_status status)
+ {
+-	struct musb		*musb = container_of(nb, struct musb, nb);
+-	struct device		*dev = musb->controller;
+-	struct omap2430_glue	*glue = dev_get_drvdata(dev->parent);
++	struct omap2430_glue	*glue = _glue;
++	struct musb		*musb = glue_to_musb(glue);
+ 
+-	glue->xceiv_event = event;
+-	schedule_work(&glue->omap_musb_mailbox_work);
++	glue->status = status;
++	if (!musb) {
++		dev_err(glue->dev, "musb core is not yet ready\n");
++		return;
++	}
+ 
+-	return NOTIFY_OK;
++	schedule_work(&glue->omap_musb_mailbox_work);
+ }
++EXPORT_SYMBOL_GPL(omap_musb_mailbox);
+ 
+-static void omap_musb_mailbox_work(struct work_struct *data_notifier_work)
++static void omap_musb_set_mailbox(struct omap2430_glue *glue)
+ {
+-	struct omap2430_glue *glue = container_of(data_notifier_work,
+-		struct omap2430_glue, omap_musb_mailbox_work);
+ 	struct musb *musb = glue_to_musb(glue);
+ 	struct device *dev = musb->controller;
+ 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
+ 	struct omap_musb_board_data *data = pdata->board_data;
+ 
+-	switch (glue->xceiv_event) {
+-	case USB_EVENT_ID:
+-		dev_dbg(musb->controller, "ID GND\n");
++	switch (glue->status) {
++	case OMAP_MUSB_ID_GROUND:
++		dev_dbg(dev, "ID GND\n");
+ 
++		musb->xceiv->last_event = USB_EVENT_ID;
+ 		if (!is_otg_enabled(musb) || musb->gadget_driver) {
+-			pm_runtime_get_sync(musb->controller);
++			pm_runtime_get_sync(dev);
+ 			usb_phy_init(musb->xceiv);
+ 			omap2430_musb_set_vbus(musb, 1);
+ 		}
+ 		break;
+ 
+-	case USB_EVENT_VBUS:
+-		dev_dbg(musb->controller, "VBUS Connect\n");
++	case OMAP_MUSB_VBUS_VALID:
++		dev_dbg(dev, "VBUS Connect\n");
+ 
++		musb->xceiv->last_event = USB_EVENT_VBUS;
+ 		if (musb->gadget_driver)
+-			pm_runtime_get_sync(musb->controller);
++			pm_runtime_get_sync(dev);
+ 		usb_phy_init(musb->xceiv);
+ 		break;
+ 
+-	case USB_EVENT_NONE:
+-		dev_dbg(musb->controller, "VBUS Disconnect\n");
++	case OMAP_MUSB_ID_FLOAT:
++	case OMAP_MUSB_VBUS_OFF:
++		dev_dbg(dev, "VBUS Disconnect\n");
+ 
++		musb->xceiv->last_event = USB_EVENT_NONE;
+ 		if (is_otg_enabled(musb) || is_peripheral_enabled(musb))
+ 			if (musb->gadget_driver) {
+ 				pm_runtime_mark_last_busy(musb->controller);
+@@ -282,15 +289,24 @@ static void omap_musb_mailbox_work(struct work_struct *data_notifier_work)
+ 		usb_phy_shutdown(musb->xceiv);
+ 		break;
+ 	default:
+-		dev_dbg(musb->controller, "ID float\n");
++		dev_dbg(dev, "ID float\n");
+ 	}
+ }
+ 
++
++static void omap_musb_mailbox_work(struct work_struct *mailbox_work)
++{
++	struct omap2430_glue *glue = container_of(mailbox_work,
++				struct omap2430_glue, omap_musb_mailbox_work);
++	omap_musb_set_mailbox(glue);
++}
++
+ static int omap2430_musb_init(struct musb *musb)
+ {
+ 	u32 l;
+ 	int status = 0;
+ 	struct device *dev = musb->controller;
++	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
+ 	struct musb_hdrc_platform_data *plat = dev->platform_data;
+ 	struct omap_musb_board_data *data = plat->board_data;
+ 
+@@ -330,14 +346,11 @@ static int omap2430_musb_init(struct musb *musb)
+ 			musb_readl(musb->mregs, OTG_INTERFSEL),
+ 			musb_readl(musb->mregs, OTG_SIMENABLE));
+ 
+-	musb->nb.notifier_call = musb_otg_notifications;
+-	status = usb_register_notifier(musb->xceiv, &musb->nb);
+-
+-	if (status)
+-		dev_dbg(musb->controller, "notification register failed\n");
+-
+ 	setup_timer(&musb_idle_timer, musb_do_idle, (unsigned long) musb);
+ 
++	if (glue->status != OMAP_MUSB_UNKNOWN)
++		omap_musb_set_mailbox(glue);
++
+ 	pm_runtime_put_noidle(musb->controller);
+ 	return 0;
+ 
+@@ -350,12 +363,13 @@ static void omap2430_musb_enable(struct musb *musb)
+ 	u8		devctl;
+ 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
+ 	struct device *dev = musb->controller;
++	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
+ 	struct musb_hdrc_platform_data *pdata = dev->platform_data;
+ 	struct omap_musb_board_data *data = pdata->board_data;
+ 
+-	switch (musb->xceiv->last_event) {
++	switch (glue->status) {
+ 
+-	case USB_EVENT_ID:
++	case OMAP_MUSB_ID_GROUND:
+ 		usb_phy_init(musb->xceiv);
+ 		if (data->interface_type != MUSB_INTERFACE_UTMI)
+ 			break;
+@@ -374,7 +388,7 @@ static void omap2430_musb_enable(struct musb *musb)
+ 		}
+ 		break;
+ 
+-	case USB_EVENT_VBUS:
++	case OMAP_MUSB_VBUS_VALID:
+ 		usb_phy_init(musb->xceiv);
+ 		break;
+ 
+@@ -385,7 +399,10 @@ static void omap2430_musb_enable(struct musb *musb)
+ 
+ static void omap2430_musb_disable(struct musb *musb)
+ {
+-	if (musb->xceiv->last_event)
++	struct device *dev = musb->controller;
++	struct omap2430_glue *glue = dev_get_drvdata(dev->parent);
++
++	if (glue->status != OMAP_MUSB_UNKNOWN)
+ 		usb_phy_shutdown(musb->xceiv);
+ }
+ 
+@@ -439,11 +456,18 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
+ 
+ 	glue->dev			= &pdev->dev;
+ 	glue->musb			= musb;
++	glue->status			= OMAP_MUSB_UNKNOWN;
+ 
+ 	pdata->platform_ops		= &omap2430_ops;
+ 
+ 	platform_set_drvdata(pdev, glue);
+ 
++	/*
++	 * REVISIT if we ever have two instances of the wrapper, we will be
++	 * in big trouble
++	 */
++	_glue	= glue;
++
+ 	INIT_WORK(&glue->omap_musb_mailbox_work, omap_musb_mailbox_work);
+ 
+ 	ret = platform_device_add_resources(musb, pdev->resource,
+@@ -552,7 +576,7 @@ static int __init omap2430_init(void)
+ {
+ 	return platform_driver_register(&omap2430_driver);
+ }
+-module_init(omap2430_init);
++subsys_initcall(omap2430_init);
+ 
+ static void __exit omap2430_exit(void)
+ {
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index f8139b3..05dc659 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -33,11 +33,11 @@
+ #include <linux/io.h>
+ #include <linux/delay.h>
+ #include <linux/usb/otg.h>
++#include <linux/usb/musb-omap.h>
+ #include <linux/usb/ulpi.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/err.h>
+-#include <linux/notifier.h>
+ #include <linux/slab.h>
+ 
+ /* Register defines */
+@@ -159,7 +159,7 @@ struct twl4030_usb {
+ 	enum twl4030_usb_mode	usb_mode;
+ 
+ 	int			irq;
+-	u8			linkstat;
++	enum omap_musb_vbus_id_status linkstat;
+ 	bool			vbus_supplied;
+ 	u8			asleep;
+ 	bool			irq_enabled;
+@@ -246,10 +246,11 @@ twl4030_usb_clear_bits(struct twl4030_usb *twl, u8 reg, u8 bits)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
++static enum omap_musb_vbus_id_status
++	twl4030_usb_linkstat(struct twl4030_usb *twl)
+ {
+ 	int	status;
+-	int	linkstat = USB_EVENT_NONE;
++	enum omap_musb_vbus_id_status linkstat = OMAP_MUSB_UNKNOWN;
+ 	struct usb_otg *otg = twl->phy.otg;
+ 
+ 	twl->vbus_supplied = false;
+@@ -273,24 +274,22 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
+                         twl->vbus_supplied = true;
+ 
+ 		if (status & BIT(2))
+-			linkstat = USB_EVENT_ID;
++			linkstat = OMAP_MUSB_ID_GROUND;
+ 		else
+-			linkstat = USB_EVENT_VBUS;
++			linkstat = OMAP_MUSB_VBUS_VALID;
+ 	} else
+-		linkstat = USB_EVENT_NONE;
++		linkstat = OMAP_MUSB_VBUS_OFF;
+ 
+ 	dev_dbg(twl->dev, "HW_CONDITIONS 0x%02x/%d; link %d\n",
+ 			status, status, linkstat);
+ 
+-	twl->phy.last_event = linkstat;
+-
+ 	/* REVISIT this assumes host and peripheral controllers
+ 	 * are registered, and that both are active...
+ 	 */
+ 
+ 	spin_lock_irq(&twl->lock);
+ 	twl->linkstat = linkstat;
+-	if (linkstat == USB_EVENT_ID) {
++	if (linkstat == OMAP_MUSB_ID_GROUND) {
+ 		otg->default_a = true;
+ 		twl->phy.state = OTG_STATE_A_IDLE;
+ 	} else {
+@@ -501,10 +500,10 @@ static DEVICE_ATTR(vbus, 0444, twl4030_usb_vbus_show, NULL);
+ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ {
+ 	struct twl4030_usb *twl = _twl;
+-	int status;
++	enum omap_musb_vbus_id_status status;
+ 
+ 	status = twl4030_usb_linkstat(twl);
+-	if (status >= 0) {
++	if (status > 0) {
+ 		/* FIXME add a set_power() method so that B-devices can
+ 		 * configure the charger appropriately.  It's not always
+ 		 * correct to consume VBUS power, and how much current to
+@@ -516,13 +515,13 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ 		 * USB_LINK_VBUS state.  musb_hdrc won't care until it
+ 		 * starts to handle softconnect right.
+ 		 */
+-		if (status == USB_EVENT_NONE)
++		if (status == OMAP_MUSB_VBUS_OFF ||
++				status == OMAP_MUSB_ID_FLOAT)
+ 			twl4030_phy_suspend(twl, 0);
+ 		else
+ 			twl4030_phy_resume(twl);
+ 
+-		atomic_notifier_call_chain(&twl->phy.notifier, status,
+-				twl->phy.otg->gadget);
++		omap_musb_mailbox(twl->linkstat);
+ 	}
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ 
+@@ -531,11 +530,12 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
+ 
+ static void twl4030_usb_phy_init(struct twl4030_usb *twl)
+ {
+-	int status;
++	enum omap_musb_vbus_id_status status;
+ 
+ 	status = twl4030_usb_linkstat(twl);
+-	if (status >= 0) {
+-		if (status == USB_EVENT_NONE) {
++	if (status > 0) {
++		if (status == OMAP_MUSB_VBUS_OFF ||
++				status == OMAP_MUSB_ID_FLOAT) {
+ 			__twl4030_phy_power(twl, 0);
+ 			twl->asleep = 1;
+ 		} else {
+@@ -543,8 +543,7 @@ static void twl4030_usb_phy_init(struct twl4030_usb *twl)
+ 			twl->asleep = 0;
+ 		}
+ 
+-		atomic_notifier_call_chain(&twl->phy.notifier, status,
+-				twl->phy.otg->gadget);
++		omap_musb_mailbox(twl->linkstat);
+ 	}
+ 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
+ }
+@@ -613,6 +612,7 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	twl->usb_mode		= pdata->usb_mode;
+ 	twl->vbus_supplied	= false;
+ 	twl->asleep		= 1;
++	twl->linkstat		= OMAP_MUSB_UNKNOWN;
+ 
+ 	twl->phy.dev		= twl->dev;
+ 	twl->phy.label		= "twl4030";
+@@ -639,8 +639,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
+ 		dev_warn(&pdev->dev, "could not create sysfs file\n");
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
+-
+ 	/* Our job is to use irqs and status from the power module
+ 	 * to keep the transceiver disabled when nothing's connected.
+ 	 *
+diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
+index dbee00a..6c75883 100644
+--- a/drivers/usb/otg/twl6030-usb.c
++++ b/drivers/usb/otg/twl6030-usb.c
+@@ -26,10 +26,10 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/usb/otg.h>
++#include <linux/usb/musb-omap.h>
+ #include <linux/i2c/twl.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/err.h>
+-#include <linux/notifier.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ 
+@@ -100,7 +100,7 @@ struct twl6030_usb {
+ 
+ 	int			irq1;
+ 	int			irq2;
+-	u8			linkstat;
++	enum omap_musb_vbus_id_status linkstat;
+ 	u8			asleep;
+ 	bool			irq_enabled;
+ 	bool			vbus_enable;
+@@ -147,7 +147,7 @@ static int twl6030_phy_init(struct usb_phy *x)
+ 	dev  = twl->dev;
+ 	pdata = dev->platform_data;
+ 
+-	if (twl->linkstat == USB_EVENT_ID)
++	if (twl->linkstat == OMAP_MUSB_ID_GROUND)
+ 		pdata->phy_power(twl->dev, 1, 1);
+ 	else
+ 		pdata->phy_power(twl->dev, 0, 1);
+@@ -235,13 +235,13 @@ static ssize_t twl6030_usb_vbus_show(struct device *dev,
+ 	spin_lock_irqsave(&twl->lock, flags);
+ 
+ 	switch (twl->linkstat) {
+-	case USB_EVENT_VBUS:
++	case OMAP_MUSB_VBUS_VALID:
+ 	       ret = snprintf(buf, PAGE_SIZE, "vbus\n");
+ 	       break;
+-	case USB_EVENT_ID:
++	case OMAP_MUSB_ID_GROUND:
+ 	       ret = snprintf(buf, PAGE_SIZE, "id\n");
+ 	       break;
+-	case USB_EVENT_NONE:
++	case OMAP_MUSB_VBUS_OFF:
+ 	       ret = snprintf(buf, PAGE_SIZE, "none\n");
+ 	       break;
+ 	default:
+@@ -257,7 +257,7 @@ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
+ {
+ 	struct twl6030_usb *twl = _twl;
+ 	struct usb_otg *otg = twl->phy.otg;
+-	int status;
++	enum omap_musb_vbus_id_status status = OMAP_MUSB_UNKNOWN;
+ 	u8 vbus_state, hw_state;
+ 
+ 	hw_state = twl6030_readb(twl, TWL6030_MODULE_ID0, STS_HW_CONDITIONS);
+@@ -268,22 +268,20 @@ static irqreturn_t twl6030_usb_irq(int irq, void *_twl)
+ 		if (vbus_state & VBUS_DET) {
+ 			regulator_enable(twl->usb3v3);
+ 			twl->asleep = 1;
+-			status = USB_EVENT_VBUS;
++			status = OMAP_MUSB_VBUS_VALID;
+ 			otg->default_a = false;
+ 			twl->phy.state = OTG_STATE_B_IDLE;
+ 			twl->linkstat = status;
+-			twl->phy.last_event = status;
+-			atomic_notifier_call_chain(&twl->phy.notifier,
+-						status, otg->gadget);
++			omap_musb_mailbox(status);
+ 		} else {
+-			status = USB_EVENT_NONE;
+-			twl->linkstat = status;
+-			twl->phy.last_event = status;
+-			atomic_notifier_call_chain(&twl->phy.notifier,
+-						status, otg->gadget);
+-			if (twl->asleep) {
+-				regulator_disable(twl->usb3v3);
+-				twl->asleep = 0;
++			if (twl->linkstat != OMAP_MUSB_UNKNOWN) {
++				status = OMAP_MUSB_VBUS_OFF;
++				twl->linkstat = status;
++				omap_musb_mailbox(status);
++				if (twl->asleep) {
++					regulator_disable(twl->usb3v3);
++					twl->asleep = 0;
++				}
+ 			}
+ 		}
+ 	}
+@@ -296,7 +294,7 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
+ {
+ 	struct twl6030_usb *twl = _twl;
+ 	struct usb_otg *otg = twl->phy.otg;
+-	int status = USB_EVENT_NONE;
++	enum omap_musb_vbus_id_status status = OMAP_MUSB_UNKNOWN;
+ 	u8 hw_state;
+ 
+ 	hw_state = twl6030_readb(twl, TWL6030_MODULE_ID0, STS_HW_CONDITIONS);
+@@ -308,13 +306,11 @@ static irqreturn_t twl6030_usbotg_irq(int irq, void *_twl)
+ 		twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_CLR, 0x1);
+ 		twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_SET,
+ 								0x10);
+-		status = USB_EVENT_ID;
++		status = OMAP_MUSB_ID_GROUND;
+ 		otg->default_a = true;
+ 		twl->phy.state = OTG_STATE_A_IDLE;
+ 		twl->linkstat = status;
+-		twl->phy.last_event = status;
+-		atomic_notifier_call_chain(&twl->phy.notifier, status,
+-							otg->gadget);
++		omap_musb_mailbox(status);
+ 	} else  {
+ 		twl6030_writeb(twl, TWL_MODULE_USB, USB_ID_INT_EN_HI_CLR,
+ 								0x10);
+@@ -419,6 +415,7 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
+ 	twl->irq1		= platform_get_irq(pdev, 0);
+ 	twl->irq2		= platform_get_irq(pdev, 1);
+ 	twl->features		= pdata->features;
++	twl->linkstat		= OMAP_MUSB_UNKNOWN;
+ 
+ 	twl->phy.dev		= twl->dev;
+ 	twl->phy.label		= "twl6030";
+@@ -449,8 +446,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
+ 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
+ 		dev_warn(&pdev->dev, "could not create sysfs file\n");
+ 
+-	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
+-
+ 	INIT_WORK(&twl->set_vbus_work, otg_set_vbus_work);
+ 
+ 	twl->irq_enabled = true;
+diff --git a/include/linux/usb/musb-omap.h b/include/linux/usb/musb-omap.h
+new file mode 100644
+index 0000000..7774c59
+--- /dev/null
++++ b/include/linux/usb/musb-omap.h
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (C) 2011-2012 by Texas Instruments
++ *
++ * The Inventra Controller Driver for Linux is free software; you
++ * can redistribute it and/or modify it under the terms of the GNU
++ * General Public License version 2 as published by the Free Software
++ * Foundation.
++ */
++
++#ifndef __MUSB_OMAP_H__
++#define __MUSB_OMAP_H__
++
++enum omap_musb_vbus_id_status {
++	OMAP_MUSB_UNKNOWN = 0,
++	OMAP_MUSB_ID_GROUND,
++	OMAP_MUSB_ID_FLOAT,
++	OMAP_MUSB_VBUS_VALID,
++	OMAP_MUSB_VBUS_OFF,
++};
++
++#if (defined(CONFIG_USB_MUSB_OMAP2PLUS) || \
++				defined(CONFIG_USB_MUSB_OMAP2PLUS_MODULE))
++void omap_musb_mailbox(enum omap_musb_vbus_id_status status);
++#else
++static inline void omap_musb_mailbox(enum omap_musb_vbus_id_status status)
++{
++}
++#endif
++
++#endif	/* __MUSB_OMAP_H__ */
+-- 
+1.7.5.4
 
-
-> ---
->  arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 0a687fd..a97f3c4 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1274,7 +1274,7 @@ static void mce_timer_fn(unsigned long data)
->  	 */
->  	iv = __this_cpu_read(mce_next_interval);
->  	if (mce_notify_irq())
-> -		iv = max(iv, (unsigned long) HZ/100);
-> +		iv = max(iv / 2, (unsigned long) HZ/100);
->  	else
->  		iv = min(iv * 2, round_jiffies_relative(check_interval * HZ));
->  	__this_cpu_write(mce_next_interval, iv);
-> -- 
-> 1.7.10
-> 
-> 
