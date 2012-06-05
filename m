@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab2FEQQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:16:08 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:2719
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753449Ab2FEQQG (ORCPT
+	id S1754104Ab2FEQQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:16:34 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3427 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab2FEQQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:16:06 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCE30B8.2070902@freescale.com>
-Date: Tue, 5 Jun 2012 11:15:52 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 12:16:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6733"; a="195619875"
+Message-ID: <4FCE30D6.7060102@codeaurora.org>
+Date: Tue, 05 Jun 2012 09:16:22 -0700
+From: David Collins <collinsd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
 MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 2/5] powerpc/85xx: add HOTPLUG_CPU support
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-2-git-send-email-chenhui.zhao@freescale.com> <4FC933BF.1020901@freescale.com> <20120604110444.GA20676@localhost.localdomain> <4FCCE32F.1060301@freescale.com> <20120605111823.GB22427@localhost.localdomain>
-In-Reply-To: <20120605111823.GB22427@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Rajendra Nayak <rnayak@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Supporting non-device tree consumers with device tree regulator drivers
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 06:18 AM, Zhao Chenhui wrote:
-> On Mon, Jun 04, 2012 at 11:32:47AM -0500, Scott Wood wrote:
->> On 06/04/2012 06:04 AM, Zhao Chenhui wrote:
->>> On Fri, Jun 01, 2012 at 04:27:27PM -0500, Scott Wood wrote:
->>>> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
->>>>> -#ifdef CONFIG_KEXEC
->>>>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_HOTPLUG_CPU)
->>>>
->>>> Let's not grow lists like this.  Is there any harm in building it
->>>> unconditionally?
->>>>
->>>> -Scott
->>>
->>> We need this ifdef. We only set give_timebase/take_timebase
->>> when CONFIG_KEXEC or CONFIG_HOTPLUG_CPU is defined.
->>
->> If we really need this to be a compile-time decision, make a new symbol
->> for it, but I really think this should be decided at runtime.  Just
->> because we have kexec or hotplug support enabled doesn't mean that's
->> actually what we're doing at the moment.
->>
->> -Scott
-> 
-> If user does not enable kexec or hotplug, these codes are redundant.
-> So use CONFIG_KEXEC and CONFIG_HOTPLUG_CPU to gard them.
+Hello,
 
-My point is that these lists tend to grow and be a maintenance pain.
-For small things it's often better to not worry about saving a few
-bytes.  For larger things that need to be conditional, define a new
-symbol rather than growing ORed lists like this.
+I was wondering if a mechanism currently exists which allows regulator
+devices which have probed via device tree to support regulator consumer
+drivers which have probed via a board file (and thus have no associated
+device tree device_node).  It seems that the current setup is such that if
+a regulator driver probes via a board file device, then it will be passed
+a struct regulator_init_data pointer containing a consumer_supplies list
+via platform_data.  This allows the regulator driver to support consumers
+that are probed via device tree nodes or via a board file.  However, if a
+regulator driver probes via a device tree node, then it will only be
+accessible to consumer drivers which have nodes in device tree and which
+specify their own foo-supply=<&regulator_phandle>; mappings.  When a
+regulator device is probed via device tree, the consumer_supplies pointer
+is left null by of_get_regulator_init_data().  This seems to make
+regulators probed via device tree nodes inaccessible to non-device tree
+consumers.
 
--Scott
+In the long term, this problem should go away of its own accord.  However,
+in the short term, many systems are converting over to using device tree.
+ Therefore, we are left with a situation currently where some regulator
+consumer drivers are being probed via device tree and some are being
+probed via board file devices within a single platform.  If the regulator
+driver supporting the consumer drivers is converted to use device tree and
+probed via device tree, then the non-device tree consumer drivers will not
+be able to make use of the regulator devices.
 
+Would it be possible to add a new binding that is handled inside of
+of_get_regulator_init_data() or of_get_regulation_constraints() that
+provides a means to directly specify regulator_init_data.consumer_supplies
+entries?  Is there some other mechanism that could be used instead to
+handle the mapping?
+
+One potentially binding could be:
+regulator-consumer-supplies = "supply_name1", "device_name1",
+"supply_name2", "device_name2", ...
+
+Thank you,
+David Collins
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
