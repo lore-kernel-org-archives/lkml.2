@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934041Ab2FEMAx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 08:00:53 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:42125 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933965Ab2FEMAu (ORCPT
+	id S1756991Ab2FEMHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 08:07:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44495 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756362Ab2FEMHO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 08:00:50 -0400
-Message-ID: <4FCDF4C8.2090403@mvista.com>
-Date: Tue, 05 Jun 2012 16:00:08 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: gregkh@linuxfoundation.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org, balbi@ti.com
-Subject: Re: [PATCH 1/5] usb: musb: move work_struct(otg_notifier_work) from
- core to omap glue
-References: <1338889118-10032-1-git-send-email-kishon@ti.com> <1338889118-10032-2-git-send-email-kishon@ti.com>
-In-Reply-To: <1338889118-10032-2-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Jun 2012 08:07:14 -0400
+Message-ID: <1338898024.28282.160.camel@twins>
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jun 2012 14:07:04 +0200
+In-Reply-To: <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
+	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
+	 <1338891271.28282.155.camel@twins>
+	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
+	 <1338892071.28282.157.camel@twins>
+	 <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Tue, 2012-06-05 at 12:38 +0200, Stephane Eranian wrote:
+> How about we add a field or flag to cpuc to tell it's fake, and then
+> in
+> try_alt_er() and __intel_shared_reg_get_constraints() we avoid
+> touching
+> live struct (like reg->alloc) if fake==1. I think he was trying to do
+> the same with the core_id == -1 test. 
 
-On 05-06-2012 13:38, Kishon Vijay Abraham I wrote:
+We might have to do something like that, however I'm trying to figure
+out when that reg->alloc test in __intel_shared_reg_get_contraints() is
+useful.
 
-> Commit 712d8e
-
-    Please also specify that commit's summary in parens.
-
-> fixed pm_runtime calls while atomic by using a work queue.
-> While the issue and the work queue implementation is specific to omap
-> (omap2430.c), the work_struct is defined as a member of struct musb
-> (musb_core.h). Hence moved the work_struct from musb_core to omap
-> glue.
-
-> Signed-off-by: Kishon Vijay Abraham I<kishon@ti.com>
-
-WBR, Sergei
+If it is useful in event scheduling, we cannot just leave it out in
+validate_group().
