@@ -1,170 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab2FEUXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 16:23:23 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:50882 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab2FEUXV (ORCPT
+	id S1752372Ab2FEU0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 16:26:03 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56554 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab2FEU0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 16:23:21 -0400
-From: Bryan Freed <bfreed@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, marco.stornelli@gmail.com,
-        grant.likely@secretlab.ca, anton.vorontsov@linaro.org,
-        Bryan Freed <bfreed@chromium.org>
-Subject: [PATCH v2] pstore/ram: Add ramoops support for the Flattened Device Tree.
-Date: Tue,  5 Jun 2012 13:23:13 -0700
-Message-Id: <1338927793-5096-1-git-send-email-bfreed@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 5 Jun 2012 16:26:00 -0400
+Date: Wed, 6 Jun 2012 05:25:55 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Asai Thambi S P <asamymuthupa@micron.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 1/2] mtip32xx: Remove 'registers' and 'flags' from sysfs
+Message-ID: <20120605202555.GA4727@kroah.com>
+References: <4FCD0FC7.9010105@micron.com>
+ <20120605093314.GC21560@kroah.com>
+ <4FCE4D67.1030309@micron.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCE4D67.1030309@micron.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When called with a non-zero of_node, fill out a new ramoops_platform_data
-with data from the specified Flattened Device Tree node.
-Update ramoops documentation with the new FDT interface.
+On Tue, Jun 05, 2012 at 11:18:15AM -0700, Asai Thambi S P wrote:
+> On 6/5/2012 2:33 AM, Greg KH wrote:
+> 
+> > On Mon, Jun 04, 2012 at 12:43:03PM -0700, Asai Thambi S P wrote:
+> >>
+> >> This patch removes entries 'registers' and 'flags' from sysfs. Updated ABI file
+> >> to reflect this change.
+> >>
+> >> Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> >> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+> > 
+> > Much nicer, thanks for doing this:
+> > 
+> > Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > But, one question on a different sysfs file:
+> > 
+> >>  What:           /sys/block/rssd*/status
+> >>  Date:           April 2012
+> >>  KernelVersion:  3.4
+> >>  Contact:        Asai Thambi S P <asamymuthupa@micron.com>
+> >>  Description:    This is a read-only file. Indicates the status of the device.
+> > 
+> > What "status" is this showing?  Why is this a sysfs file?  Who
+> > needs/wants it?
+> 
+> 
+> This shows the device status - online, write_protect or thermal_shutdown. This
+> would be used by management application.
 
-Signed-off-by: Bryan Freed <bfreed@chromium.org>
----
- Documentation/ramoops.txt |   19 +++++++++++++++-
- fs/pstore/ram.c           |   50 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+), 2 deletions(-)
+Is it used by a management application?  Shouldn't such a tool use the
+"standard" block device status files instead?  I thought we exported
+that information already in the /sys/block/* files.
 
-diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
-index 4ba7db2..9ed3ab7 100644
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -3,7 +3,7 @@ Ramoops oops/panic logger
- 
- Sergiu Iordache <sergiu@chromium.org>
- 
--Updated: 17 November 2011
-+Updated: 5 June 2012
- 
- 0. Introduction
- 
-@@ -37,7 +37,7 @@ corrupt, but usually it is restorable.
- 
- 2. Setting the parameters
- 
--Setting the ramoops parameters can be done in 2 different manners:
-+Setting the ramoops parameters can be done in 3 different manners:
-  1. Use the module parameters (which have the names of the variables described
-  as before).
-  2. Use a platform device and set the platform data. The parameters can then
-@@ -70,6 +70,21 @@ if (ret) {
- 	return ret;
- }
- 
-+ 3. Use the Flattened Device Tree to set the platform data.  For example:
-+  arch/arm/boot/dts/$BOARD.dts:
-+        ramoops {
-+                compatible = "ramoops";
-+                reg = <0x41f00000 0x00100000>;
-+                record-size = <0x00020000>;
-+                dump-oops = <1>;
-+                ecc = <0>;
-+        };
-+ The "reg = <0x41f00000 0x00100000>" line specifies a mem_size of 1MB at
-+  mem_address 0x41f00000.
-+ The "record-size = <0x00020000>" line specifies a record size of 128KB.
-+ The "dump-oops = <1>" line tells us to dump oopses as well as panics.
-+ The "ecc = <0>" line tells us to turn off ECC protection.
-+
- 3. Dump format
- 
- The data dump begins with a header, currently defined as "====" followed by a
-diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
-index 9123cce..1b44be3 100644
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -32,6 +32,7 @@
- #include <linux/platform_device.h>
- #include <linux/slab.h>
- #include <linux/pstore_ram.h>
-+#include <linux/of_address.h>
- 
- #define RAMOOPS_KERNMSG_HDR "===="
- #define MIN_MEM_SIZE 4096UL
-@@ -199,10 +200,44 @@ static struct ramoops_context oops_cxt = {
- 	},
- };
- 
-+static int __init of_ramoops_platform_data(struct device_node *node,
-+					struct ramoops_platform_data *pdata)
-+{
-+	const __be32 *addrp;
-+	const __be32 *prop;
-+	u64 size;
-+
-+	addrp = of_get_address(node, 0, &size, NULL);
-+	if (addrp == NULL)
-+		return -EINVAL;
-+	pdata->mem_address = of_translate_address(node, addrp);
-+	pdata->mem_size = size;
-+
-+	prop = of_get_property(node, "record-size", NULL);
-+	if (!prop)
-+		return -EINVAL;
-+	pdata->record_size = be32_to_cpup(prop);
-+
-+	prop = of_get_property(node, "dump-oops", NULL);
-+	if (!prop)
-+		pdata->dump_oops = 0;
-+	else
-+		pdata->dump_oops = be32_to_cpup(prop);
-+
-+	prop = of_get_property(node, "ecc", NULL);
-+	if (!prop)
-+		pdata->ecc = 0;
-+	else
-+		pdata->ecc = be32_to_cpup(prop);
-+
-+	return 0;
-+}
-+
- static int __init ramoops_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
- 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
-+	struct ramoops_platform_data of_pdata;
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
- 	int i;
-@@ -213,6 +248,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	if (cxt->max_count)
- 		goto fail_out;
- 
-+	if (pdev->dev.of_node) {
-+		if (of_ramoops_platform_data(pdev->dev.of_node, &of_pdata)) {
-+			pr_err("Invalid ramoops device tree data\n");
-+			goto fail_out;
-+		}
-+		pdata = &of_pdata;
-+	}
-+
- 	if (!pdata->mem_size || !pdata->record_size) {
- 		pr_err("The memory size and the record size must be "
- 			"non-zero\n");
-@@ -329,11 +372,18 @@ static int __exit ramoops_remove(struct platform_device *pdev)
- 	return -EBUSY;
- }
- 
-+static const struct of_device_id ramoops_of_match[] = {
-+	{ .compatible = "ramoops", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, ramoops_of_match);
-+
- static struct platform_driver ramoops_driver = {
- 	.remove		= __exit_p(ramoops_remove),
- 	.driver		= {
- 		.name	= "ramoops",
- 		.owner	= THIS_MODULE,
-+		.of_match_table = ramoops_of_match,
- 	},
- };
- 
--- 
-1.7.7.3
+thanks,
 
+greg k-h
