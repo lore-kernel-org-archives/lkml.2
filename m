@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab2FEXBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:01:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35057 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab2FEXB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:01:29 -0400
-Date: Wed, 6 Jun 2012 09:01:13 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        Sebastian Riemer <sebastian.riemer@profitbricks.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PULL REQUEST] md fixes for 3.5-rc
-Message-ID: <20120606090113.07c78064@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/dbfA5hYzufi4TAR0+cGkz6F"; protocol="application/pgp-signature"
+	id S1753506Ab2FEXDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:03:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:63190 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab2FEXDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 19:03:17 -0400
+Message-ID: <4FCE902A.3060603@codemonkey.ws>
+Date: Wed, 06 Jun 2012 07:03:06 +0800
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120329 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@amd64.org>
+CC: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Grant Likely <grant.likely@secretlab.ca>, qemu-devel@nongnu.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, systemtap@sourceware.org,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, Cam Macdonell <cam@cs.ualberta.ca>,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Subject: Re: [Qemu-devel] [RFC PATCH 1/2] ivring: Add a ring-buffer driver
+ on IVShmem
+References: <20120605104954.15442.62695.stgit@ltc189.sdl.hitachi.co.jp> <20120605130117.15479.32680.stgit@ltc189.sdl.hitachi.co.jp> <20120605131031.GF13495@aftab.osrc.amd.com>
+In-Reply-To: <20120605131031.GF13495@aftab.osrc.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/dbfA5hYzufi4TAR0+cGkz6F
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 06/05/2012 09:10 PM, Borislav Petkov wrote:
+> On Tue, Jun 05, 2012 at 10:01:17PM +0900, Yoshihiro YUNOMAE wrote:
+>> This patch adds a ring-buffer driver for IVShmem device, a virtual RAM device in
+>> QEMU. This driver can be used as a ring-buffer for kernel logging or tracing of
+>> a guest OS by recording kernel programing or SystemTap.
+>>
+>> This ring-buffer driver is implemented very simple. First 4kB of shared memory
+>> region is control structure of a ring-buffer. In this region, some values for
+>> managing the ring-buffer is stored such as bits and mask of whole memory size,
+>> writing position, threshold value for notification to a reader on a host OS.
+>> This region is used by the reader to know writing position. Then, "total
+>> memory size - 4kB" equals to usable memory region for recording data.
+>> This ring-buffer driver records any data from start to end of the writable
+>> memory region.
+>>
+>> When writing size exceeds a threshold value, this driver can notify a reader
+>> to read data by using writel(). As this later patch, reader does not have any
+>> function for receiving the notification. This notification feature will be used
+>> near the future.
+>>
+>> As a writer records data in this ring-buffer, spinlock function is used to
+>> avoid competing by some writers in multi CPU environment. Not to use spinlock,
+>> lockless ring-buffer like as ftrace and one ring-buffer one CPU will be
+>> implemented near the future.
+>
+> Yet another ring buffer?
+>
+> We already have an ftrace and perf ring buffer, can't you use one of those?
 
+Not to mention virtio :-)
 
-Hi Linus,
- a couple of little md fixes for 3.5.
-Thanks,
-NeilBrown
+Why not just make a virtio device for this kind of thing?
 
+Regards,
 
-The following changes since commit 1e2aec873ad6d16538512dbb96853caa1fa076af:
+Anthony Liguori
 
-  Merge branch 'generic-string-functions' (2012-05-26 16:57:16 -0700)
+>
 
-are available in the git repository at:
-
-
-  git://neil.brown.name/md/ tags/md-3.5-fixes
-
-for you to fetch changes up to aba336bd1d46d6b0404b06f6915ed76150739057:
-
-  md: raid1/raid10: fix problem with merge_bvec_fn (2012-05-31 15:56:30 +10=
-00)
-
-----------------------------------------------------------------
-md: 2 fixes for 3.5-rc
-
-One sparse-warning fix, one bigfix for 3.4-stable
-
-----------------------------------------------------------------
-Jim Kukunas (1):
-      lib/raid6: fix sparse warnings in recovery functions
-
-NeilBrown (1):
-      md: raid1/raid10: fix problem with merge_bvec_fn
-
- drivers/md/raid1.c      |    4 ++++
- drivers/md/raid10.c     |    4 ++++
- lib/raid6/recov.c       |    7 ++++---
- lib/raid6/recov_ssse3.c |    7 ++++---
- 4 files changed, 16 insertions(+), 6 deletions(-)
-
---Sig_/dbfA5hYzufi4TAR0+cGkz6F
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBT86PuTnsnt1WYoG5AQJDyQ//XdufTOXoRhRK4iOFGDa/k2MZJb/HgkIi
-xbD1yBypyd86JzdY6W+zGhZ4La+AeC8+uPRncrmLVmHyXIfPRNZtbWu9fIP9p1vU
-lZqA4FmCfhmMb3OBupelsj5/4RGCx2cUyBC/jgH4YoCw6sjJ4EbWX/TOoyWrvvzs
-iS6zjzpbnForUQynWQRKeaCjBknGYCBUaf5wAR12odxnl+N45FMHW4ic4ONjM3RJ
-SNMg22ZEXC0YK/JXKIykh568vH2c+L9l6/dik3uB7sr7BVmSmJdgApqEhDoRD2Xk
-05VMv/xB3/3Z5WDwDIda8xF7wcS0GpIcELRIqZjcBjmkeLVzvpJoBUWKbkEVWQYl
-8ERdv8ukheNtpaAjX+7/fOP2pobLbYBFmBnQPjxM8wM4qIj+EuVdJXAA9vpAswt/
-SRVleLkyfEM/G7UcSQgD4pr8HpSxmARrWw20QTnJhf/fzZIzUb4L94e/apTSesAF
-157rkJI8H5KcESsjuXRcVJSXRCQMOoA4v1KYk1shLKTz/E/S+dCaVVQEXwP0VolB
-5R92hZSjMWMmGR6uXB5XlB+BTZbF7nzOd5IMIAYmlrtPvVnIrm9dkMYr0jX443Vn
-jV+RTC2SPdvHNNncnCZT1kVc3UZ/nWlqRXvEaKxtja8OOVpDUqyKjwY7EtQjKbba
-TtnR/yOxnrc=
-=1RHl
------END PGP SIGNATURE-----
-
---Sig_/dbfA5hYzufi4TAR0+cGkz6F--
