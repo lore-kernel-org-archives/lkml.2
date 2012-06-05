@@ -1,113 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab2FEK5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:57:41 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62171 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab2FEK5i (ORCPT
+	id S933953Ab2FEK7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:59:09 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:6357
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933334Ab2FEK7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:57:38 -0400
+	Tue, 5 Jun 2012 06:59:07 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -11
+X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944hd25hf0ah)
+Date: Tue, 5 Jun 2012 18:59:29 +0800
+From: Zhao Chenhui <chenhui.zhao@freescale.com>
+To: Scott Wood <scottwood@freescale.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <galak@kernel.crashing.org>, <leoli@freescale.com>
+Subject: Re: [PATCH v5 5/5] powerpc/85xx: add support to JOG feature using
+ cpufreq interface
+Message-ID: <20120605105929.GA22427@localhost.localdomain>
+References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
+ <1336737235-15370-5-git-send-email-chenhui.zhao@freescale.com>
+ <4FC950AF.90007@freescale.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.31.133]
-In-Reply-To: <4FCD276A.80505@codeaurora.org>
-References: <1337687472-23009-1-git-send-email-ohad@wizery.com>
- <4FBDFC4A.1060602@codeaurora.org> <CAK=WgbaP5qSso_Eu=Oup4eqLDcorZ-qf=mysMKiEvOS=m7yLmg@mail.gmail.com>
- <4FCD276A.80505@codeaurora.org>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 5 Jun 2012 13:57:17 +0300
-Message-ID: <CAK=WgbZo-8GXY9bVYGk0XZvqKrdaJZWeNkK1FhRWnH5doGYLjA@mail.gmail.com>
-Subject: Re: [PATCH] remoteproc: block premature rproc booting
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4FC950AF.90007@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 12:23 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> I thought we wanted to allow both calls to proceed in parallel? If we
-> don't care about that
+On Fri, Jun 01, 2012 at 06:30:55PM -0500, Scott Wood wrote:
+> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
+> > Some 85xx silicons like MPC8536 and P1022 have a JOG feature, which provides
+> > a dynamic mechanism to lower or raise the CPU core clock at runtime.
+> 
+> Is there a reason P1023 isn't supported?
 
-Yeah, I don't think we do.
+P1023 support is deferred.
 
-> then "announcing" it once the firmware is found the first time sounds correct.
+> 
+> > This patch adds the support to change CPU frequency using the standard
+> > cpufreq interface. The ratio CORE to CCB can be 1:1(except MPC8536), 3:2,
+> > 2:1, 5:2, 3:1, 7:2 and 4:1.
+> > 
+> > Two CPU cores on P1022 must not in the low power state during the frequency
+> > transition. The driver uses a atomic counter to meet the requirement.
+> > 
+> > The jog mode frequency transition process on the MPC8536 is similar to
+> > the deep sleep process. The driver need save the CPU state and restore
+> > it after CPU warm reset.
+> > 
+> > Note:
+> >  * The I/O peripherals such as PCIe and eTSEC may lose packets during
+> >    the jog mode frequency transition.
+> 
+> That might be acceptable for eTSEC, but it is not acceptable to lose
+> anything on PCIe.  Especially not if you're going to make this "default y".
 
-I agree. Though this patch may be moot very soon due to:
+It is a hardware limitation. Peripherals in the platform will not be operating
+during the jog mode frequency transition process.
 
->> The main reason we kept the get/put interface was to make it easier
->> for you guys to adopt it, but I've been re-thinking lately whether we
->> really want that interface. It's a problematic interface with
->> non-negligible maintenance burden, and the code will be greatly
->> simplified without it.
->
-> If nobody in the kernel is using it why keep it?
+I can make it "default n".
 
-I was concerned that the non get/put interface might not suit
-everyone, and I planned to wait for another user or two to show up
-before I remove that interface.
+> 
+> 
+> > +static int mpc85xx_job_probe(struct platform_device *ofdev)
+> 
+> Job?
 
-Since MSM's PIL is based on a get/put interface, I actually hoped to
-see if you guys can adopt the new interface before we ditch the
-get/put one.
+Sorry, It should be "jog".
 
-> If MSM needs we can add it back when we move to rproc.
+> 
+> > +{
+> > +	struct device_node *np = ofdev->dev.of_node;
+> > +	unsigned int svr;
+> > +
+> > +	if (of_device_is_compatible(np, "fsl,mpc8536-guts")) {
+> > +		svr = mfspr(SPRN_SVR);
+> > +		if ((svr & 0x7fff) == 0x10) {
+> > +			pr_err("MPC8536 Rev 1.0 do not support JOG.\n");
+> > +			return -ENODEV;
+> > +		}
+> 
+> s/do not support JOG/does not support cpufreq/
+> 
+> > +		mpc85xx_freqs = mpc8536_freqs_table;
+> > +		set_pll = mpc8536_set_pll;
+> > +	} else if (of_device_is_compatible(np, "fsl,p1022-guts")) {
+> > +		mpc85xx_freqs = p1022_freqs_table;
+> > +		set_pll = p1022_set_pll;
+> > +	} else {
+> > +		return -ENODEV;
+> > +	}
+> > +
+> > +	sysfreq = fsl_get_sys_freq();
+> > +
+> > +	guts = of_iomap(np, 0);
+> > +	if (!guts)
+> > +		return -ENODEV;
+> > +
+> > +	max_pll[0] = get_pll(0);
+> > +	if (mpc85xx_freqs == p1022_freqs_table)
+> > +		max_pll[1] = get_pll(1);
+> > +
+> > +	pr_info("Freescale MPC85xx CPU frequency switching(JOG) driver\n");
+> > +
+> > +	return cpufreq_register_driver(&mpc85xx_cpufreq_driver);
+> > +}
+> > +
+> > +static int mpc85xx_jog_remove(struct platform_device *ofdev)
+> > +{
+> > +	iounmap(guts);
+> > +	cpufreq_unregister_driver(&mpc85xx_cpufreq_driver);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct of_device_id mpc85xx_jog_ids[] = {
+> > +	{ .compatible = "fsl,mpc8536-guts", },
+> > +	{ .compatible = "fsl,p1022-guts", },
+> > +	{}
+> > +};
+> > +
+> > +static struct platform_driver mpc85xx_jog_driver = {
+> > +	.driver = {
+> > +		.name = "mpc85xx_cpufreq_jog",
+> > +		.owner = THIS_MODULE,
+> > +		.of_match_table = mpc85xx_jog_ids,
+> > +	},
+> > +	.probe = mpc85xx_job_probe,
+> > +	.remove = mpc85xx_jog_remove,
+> > +};
+> 
+> Why is this a separate driver from fsl_pmc.c?
+> 
+> Only one driver can bind to a node through normal mechanisms -- you
+> don't get to take the entire guts node for this.
 
-Thanks - that's the kind of feedback I wanted to get.
+You are right. I will not bind this to the guts node.
 
-> I think we'll need to have some way to describe the resources in the
-> kernel when we register the rproc. We aren't going to be able to change
-> our firmware to have the resource section.
+> 
+> > +static int __init mpc85xx_jog_init(void)
+> > +{
+> > +	return platform_driver_register(&mpc85xx_jog_driver);
+> > +}
+> > +
+> > +static void __exit mpc85xx_jog_exit(void)
+> > +{
+> > +	platform_driver_unregister(&mpc85xx_jog_driver);
+> > +}
+> > +
+> > +module_init(mpc85xx_jog_init);
+> > +module_exit(mpc85xx_jog_exit);
+> > +
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_AUTHOR("Dave Liu <daveliu@freescale.com>");
+> > diff --git a/arch/powerpc/platforms/Kconfig b/arch/powerpc/platforms/Kconfig
+> > index a35ca44..445bedd 100644
+> > --- a/arch/powerpc/platforms/Kconfig
+> > +++ b/arch/powerpc/platforms/Kconfig
+> > @@ -204,6 +204,17 @@ config CPU_FREQ_PMAC64
+> >  	  This adds support for frequency switching on Apple iMac G5,
+> >  	  and some of the more recent desktop G5 machines as well.
+> >  
+> > +config MPC85xx_CPUFREQ
+> > +	bool "Support for Freescale MPC85xx CPU freq"
+> > +	depends on PPC_85xx && PPC32 && !PPC_E500MC
+> 
+> PPC32 is redundant given the !PPC_E500MC.
 
-What about using a separate file for the resource table ?
+Yes.
 
-That should be very easy to support, and may make life easier for you
-in the long term.
+> 
+> > index 8976534..401cac0 100644
+> > --- a/arch/powerpc/sysdev/fsl_soc.h
+> > +++ b/arch/powerpc/sysdev/fsl_soc.h
+> > @@ -62,5 +62,10 @@ void fsl_hv_halt(void);
+> >   * code can be compatible with both 32-bit & 36-bit.
+> >   */
+> >  extern void mpc85xx_enter_deep_sleep(u64 ccsrbar, u32 powmgtreq);
+> > +
+> > +static inline void mpc85xx_enter_jog(u64 ccsrbar, u32 powmgtreq)
+> > +{
+> > +	mpc85xx_enter_deep_sleep(ccsrbar, powmgtreq);
+> > +}
+> 
+> What value is this function adding over mpc85xx_enter_deep_sleep()?
 
-Resource tables tend to change in time, and hard coding it in the
-kernel doesn't sound ideal (both in terms of development overhead, and
-kernel-firmware backward and forward compatibility).
+Just an alias name. If this is improper, I could use mpc85xx_enter_deep_sleep() directly.
 
-> Getting to that point would require changing smd code to be more linux
-> device model friendly. We're exploring using virtio over smd (basically
-> virtqueues would replace smd APIs while we replace the vrings with smd
-> wire protocol).
+-Chenhui
 
-That sounds good.
-
-> If that works out then we'll be able to attach the smd
-> virtio device to the remote proc via some in kernel resource list.
-
-Please consider using an external file for the resource table. That
-should give you more flexibility and less overhead.
-
-> One sticking point has been the desire to shut down processors when
-> they're not in use and reclaim the memory. Also we would like to upgrade
-> the firmware without rebooting the phone. Do you have any plans for
-> that? It looks like the current design boots anything that is registered
-> and has a matching rpmsg driver. I suppose one solution is to use
-> modules but that looks like it disrupts other processors (I don't want
-> to rmmod all of rpmsg). We probably need some sort of shutdown/boot
-> mechanism that isn't driven entirely by the client drivers.
-
-Does the below work for you (sans the OMAP terminology ;) ?
-
-root@omap4430-panda:/sys/bus/platform/drivers/omap-rproc# echo
-omap-rproc.1 > unbind
-[  471.376556] remoteproc remoteproc0: releasing ipu_c0
-root@omap4430-panda:/sys/bus/platform/drivers/omap-rproc# echo
-omap-rproc.1 > bind
-[  478.219177] remoteproc remoteproc0: ipu_c0 is available
-[  478.224639] remoteproc remoteproc0: Note: remoteproc is still under
-development and considered experimental.
-[  478.235015] remoteproc remoteproc0: THE BINARY FORMAT IS NOT YET
-FINALIZED, and backward compatibility isn't yet guaranteed.
-[  478.325347] remoteproc remoteproc0: registered virtio0 (type 7)
-[  478.331848] remoteproc remoteproc0: registered virtio1 (type 3)
-
-This way user space can unbind a specific remote processor (which will
-also trigger unbinding the entire device hierarchy below it, i.e. all
-rpmsg/virtio devices).
-
-Thanks,
-Ohad.
