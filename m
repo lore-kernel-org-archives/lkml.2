@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab2FEP3P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 11:29:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52201 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab2FEP3O (ORCPT
+	id S1752859Ab2FEP3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 11:29:52 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47502 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752453Ab2FEP3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 11:29:14 -0400
-Message-ID: <4FCE25C6.2080601@gmail.com>
-Date: Tue, 05 Jun 2012 09:29:10 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 11:29:51 -0400
+Date: Tue, 5 Jun 2012 11:29:47 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: yoshihiro.yunomae.ez@hitachi.com
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Subject: ivring driver
+Message-ID: <20120605152947.GA21787@Krystal>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: git bisect and perf
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am trying find out when (ie. which commit) the pebs feature actually 
-started working on a westmere system and hitting a problem with git-bisect:
+Hi Yoshihiro,
 
-# git bisect start arch/x86/kernel/cpu/perf_event*
+I stumbled on your post on ivring (https://lkml.org/lkml/2012/6/5/143)
+for buffering trace data from guest to host. I notice that it would be
+very interesting to see a comparison of its performance against:
 
-# git bisect bad v2.6.35
+- ftrace ring buffer
+- perf ring buffer
+- lttng 2.0 ring buffer
+- lttng-ust 2.0 (user-space tracing) ring buffer
 
-# git bisect good v2.6.38
-Some good revs are not ancestor of the bad rev.
-git bisect cannot work properly in this case.
-Maybe you mistake good and bad revs?
+Comparing only with network-related mechanisms does not seem to provide
+a complete picture of where it stands wrt other ring buffers out there.
 
-Any ideas on why git bisect would not work?
+One of the metric we have used in the past is the number of nanoseconds
+it takes to write a single event, based on a test that writes lots of
+events into various buffer sizes, into flight recorder mode buffers
+(which overwrites oldest information on buffer full condition, with data
+collection to disk disabled, to remove I/O from the picture -- I/O can
+then be performed in "snapshot" mode, after some error condition is
+detected).
 
-David
+Best regards,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
