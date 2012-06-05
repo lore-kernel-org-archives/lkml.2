@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab2FEH1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 03:27:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31360 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab2FEH1j (ORCPT
+	id S1756146Ab2FEH1s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 03:27:48 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21927 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754889Ab2FEH1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 03:27:39 -0400
+	Tue, 5 Jun 2012 03:27:44 -0400
 From: Junxiao Bi <junxiao.bi@oracle.com>
 To: ocfs2-devel@oss.oracle.com, linux-aio@kvack.org
 Cc: jmoyer@redhat.com, mfasheh@suse.com, jlbec@evilplan.org, bcrl@kvack.org,
         linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        joe.jin@oracle.com, dave.kleikamp@oracle.com
-Subject: [V2]fix ocfs2 aio/dio writing process hang
-Date: Tue,  5 Jun 2012 15:26:48 +0800
-Message-Id: <1338881210-14863-1-git-send-email-junxiao.bi@oracle.com>
+        joe.jin@oracle.com, dave.kleikamp@oracle.com,
+        Junxiao Bi <junxiao.bi@oracle.com>
+Subject: [V2 PATCH 1/2] aio: make kiocb->private NUll in init_sync_kiocb()
+Date: Tue,  5 Jun 2012 15:26:49 +0800
+Message-Id: <1338881210-14863-2-git-send-email-junxiao.bi@oracle.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <1338881210-14863-1-git-send-email-junxiao.bi@oracle.com>
+References: <1338881210-14863-1-git-send-email-junxiao.bi@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ocfs2 uses kiocb.*private as a flag of unsigned long size. In
+commit a11f7e6 ocfs2: serialize unaligned aio, the unaligned
+io flag is involved in it to serialize the unaligned aio. As
+*private is not initialized in init_sync_kiocb() of do_sync_write(),
+this unaligned io flag may be unexpectly set in an aligned dio.
+And this will cause OCFS2_I(inode)->ip_unaligned_aio decreased
+to -1 in ocfs2_dio_end_io(), thus the following unaligned dio
+will hang forever at ocfs2_aiodio_wait() in ocfs2_file_aio_write().
 
-V2 changes:
-- update the patch header of the first patch to make it more clear.
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+---
+ include/linux/aio.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-
-This patch list fixes an issue about ocfs2 aio/dio write process hang.
-The call trace is like this:
-@  cat /proc/15913/stack
-@ [<ffffffffa06e1085>] ocfs2_aiodio_wait+0x85/0xc0 [ocfs2]
-@ [<ffffffffa06e3e39>] ocfs2_file_aio_write+0x99/0xa0 [ocfs2]
-@ [<ffffffff811ace97>] aio_rw_vect_retry+0x87/0x150
-@ [<ffffffff811aebd1>] aio_run_iocb+0x71/0x170
-@ [<ffffffff811af59b>] io_submit_one+0x1ab/0x280
-@ [<ffffffff811af77c>] do_io_submit+0x10c/0x1c0
-@ [<ffffffff811af840>] sys_io_submit+0x10/0x20
-@ [<ffffffff81509b42>] system_call_fastpath+0x16/0x1b
-@ [<ffffffffffffffff>] 0xffffffffffffffff
-
-
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 2314ad8..b1a520e 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -140,6 +140,7 @@ struct kiocb {
+ 		(x)->ki_dtor = NULL;			\
+ 		(x)->ki_obj.tsk = tsk;			\
+ 		(x)->ki_user_data = 0;                  \
++		(x)->private = NULL;			\
+ 	} while (0)
+ 
+ #define AIO_RING_MAGIC			0xa10a10a1
+-- 
+1.7.9.5
 
