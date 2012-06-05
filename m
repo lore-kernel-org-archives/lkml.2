@@ -1,68 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933905Ab2FEK3F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:29:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41109 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933304Ab2FEK3C (ORCPT
+	id S933551Ab2FEK2c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:28:32 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50171 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933390Ab2FEK23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:29:02 -0400
-Date: Tue, 5 Jun 2012 11:29:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to
- reflect Device Tree
-Message-ID: <20120605102900.GP23408@opensource.wolfsonmicro.com>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
- <1338353260-10097-10-git-send-email-lee.jones@linaro.org>
- <4FCDDE58.5010501@linaro.org>
+	Tue, 5 Jun 2012 06:28:29 -0400
+X-AuditID: b753bd60-911c3ba000002ea5-92-4fcddf439f7e
+X-AuditID: b753bd60-911c3ba000002ea5-92-4fcddf439f7e
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -tip v2 6/9] kprobes: cleanup to separate probe-able check
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Tue, 05 Jun 2012 19:28:20 +0900
+Message-ID: <20120605102820.27845.90133.stgit@localhost.localdomain>
+In-Reply-To: <20120605102734.27845.43401.stgit@localhost.localdomain>
+References: <20120605102734.27845.43401.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AwNVUpjOmSj7UnwZ"
-Content-Disposition: inline
-In-Reply-To: <4FCDDE58.5010501@linaro.org>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Separate probe-able address checking code from
+register_kprobe().
 
---AwNVUpjOmSj7UnwZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
 
-On Tue, Jun 05, 2012 at 11:24:24AM +0100, Lee Jones wrote:
+ kernel/kprobes.c |   82 ++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 45 insertions(+), 37 deletions(-)
 
-Don't top post!
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 7a8a122..6137fe3 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1313,67 +1313,80 @@ static inline int check_kprobe_rereg(struct kprobe *p)
+ 	return ret;
+ }
+ 
+-int __kprobes register_kprobe(struct kprobe *p)
++static __kprobes int check_kprobe_address_safe(struct kprobe *p,
++					       struct module **probed_mod)
+ {
+ 	int ret = 0;
+-	struct kprobe *old_p;
+-	struct module *probed_mod;
+-	kprobe_opcode_t *addr;
+-
+-	addr = kprobe_addr(p);
+-	if (IS_ERR(addr))
+-		return PTR_ERR(addr);
+-	p->addr = addr;
+-
+-	ret = check_kprobe_rereg(p);
+-	if (ret)
+-		return ret;
+ 
+ 	jump_label_lock();
+ 	preempt_disable();
++
++	/* Ensure it is not in reserved area nor out of text */
+ 	if (!kernel_text_address((unsigned long) p->addr) ||
+ 	    in_kprobes_functions((unsigned long) p->addr) ||
+ 	    ftrace_text_reserved(p->addr, p->addr) ||
+ 	    jump_label_text_reserved(p->addr, p->addr)) {
+ 		ret = -EINVAL;
+-		goto cannot_probe;
++		goto out;
+ 	}
+ 
+-	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
+-	p->flags &= KPROBE_FLAG_DISABLED;
+-
+-	/*
+-	 * Check if are we probing a module.
+-	 */
+-	probed_mod = __module_text_address((unsigned long) p->addr);
+-	if (probed_mod) {
+-		/* Return -ENOENT if fail. */
+-		ret = -ENOENT;
++	/* Check if are we probing a module */
++	*probed_mod = __module_text_address((unsigned long) p->addr);
++	if (*probed_mod) {
+ 		/*
+ 		 * We must hold a refcount of the probed module while updating
+ 		 * its code to prohibit unexpected unloading.
+ 		 */
+-		if (unlikely(!try_module_get(probed_mod)))
+-			goto cannot_probe;
++		if (unlikely(!try_module_get(*probed_mod))) {
++			ret = -ENOENT;
++			goto out;
++		}
+ 
+ 		/*
+ 		 * If the module freed .init.text, we couldn't insert
+ 		 * kprobes in there.
+ 		 */
+-		if (within_module_init((unsigned long)p->addr, probed_mod) &&
+-		    probed_mod->state != MODULE_STATE_COMING) {
+-			module_put(probed_mod);
+-			goto cannot_probe;
++		if (within_module_init((unsigned long)p->addr, *probed_mod) &&
++		    (*probed_mod)->state != MODULE_STATE_COMING) {
++			module_put(*probed_mod);
++			*probed_mod = NULL;
++			ret = -ENOENT;
+ 		}
+-		/* ret will be updated by following code */
+ 	}
++out:
+ 	preempt_enable();
+ 	jump_label_unlock();
+ 
++	return ret;
++}
++
++int __kprobes register_kprobe(struct kprobe *p)
++{
++	int ret;
++	struct kprobe *old_p;
++	struct module *probed_mod;
++	kprobe_opcode_t *addr;
++
++	/* Adjust probe address from symbol */
++	addr = kprobe_addr(p);
++	if (IS_ERR(addr))
++		return PTR_ERR(addr);
++	p->addr = addr;
++
++	ret = check_kprobe_rereg(p);
++	if (ret)
++		return ret;
++
++	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
++	p->flags &= KPROBE_FLAG_DISABLED;
+ 	p->nmissed = 0;
+ 	INIT_LIST_HEAD(&p->list);
+-	mutex_lock(&kprobe_mutex);
+ 
++	ret = check_kprobe_address_safe(p, &probed_mod);
++	if (ret)
++		return ret;
++
++	mutex_lock(&kprobe_mutex);
+ 	jump_label_lock(); /* needed to call jump_label_text_reserved() */
+ 
+ 	get_online_cpus();	/* For avoiding text_mutex deadlock. */
+@@ -1410,11 +1423,6 @@ out:
+ 		module_put(probed_mod);
+ 
+ 	return ret;
+-
+-cannot_probe:
+-	preempt_enable();
+-	jump_label_unlock();
+-	return ret;
+ }
+ EXPORT_SYMBOL_GPL(register_kprobe);
+ 
 
-> Are you sending this for -rc2?
-
-No, nothing about this looks like an urgent fix?
-
---AwNVUpjOmSj7UnwZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPzd9lAAoJEBus8iNuMP3d16oP/i11Jl/QpPjFhRaluSGYQFs7
-YQMuVnnrig36pwUE06JGu0vvrydKr8zXOA7a1UtYMdmGrRQnTf1XtfE9Jks0YsuV
-VNH6XS8g27gmGKFOdsD9rKb6oMyGLfF817u2EAboBx+ZErEHkQO4GQpy35jZTLk/
-sG680hd2JT4nNdAJ4U+azNwd9LuwYGhwRZqjJGvE72rWSfdmWb4OEo6Rv0knQsEu
-VFTl9T9Oqr3vUxcVNul5uKJYMnxZ1eYGHn2JT1tVthIBVGrDDMaT/wFWIrDfJrSF
-1AhbT2mxVXPDmZBDEGNsn51RNry5rdFaNWd18II4ywkVMNOjvvJXwiH2FK8RIJoZ
-8ptIYOAfd+R8HwdG2FKP5VAFDSRXvMErwJxTAW9297zXVuawhL8vgbGbVRh9Tt2R
-Jnx3qhRW2CVR1f5J/aZmcTYQwMOAWXus2wgs2Z/001bzO1z5yHU/Tma5qeeqFIOY
-uA94DoU+APx4VJLby2CCD+3T+peDYGZQhpChXoy2yPd3/jibgtHLidlAddiCTqDf
-dT3rKuEQNhZNS9gCATzQwEJkfyauyZIbNlHeQu+Y/MasShoTt9gv1XC7aEHuDxQq
-VbHijweSK7PzT/Kbn6BtZeW2Ne7K3v5dFSHgefjWn+XlRU7SNy4hqxTxBEta0j6F
-rP7bm8Ho6HnfV7pZbNLA
-=kjqU
------END PGP SIGNATURE-----
-
---AwNVUpjOmSj7UnwZ--
