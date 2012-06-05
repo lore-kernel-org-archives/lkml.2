@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761572Ab2FEJ5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:57:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:23834 "EHLO mga01.intel.com"
+	id S1761605Ab2FEKCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:02:23 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:38509 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166Ab2FEJ5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:57:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="174951565"
-Message-ID: <4FCDD78A.3070106@intel.com>
-Date: Tue, 05 Jun 2012 17:55:22 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1754457Ab2FEKCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 06:02:21 -0400
+Message-ID: <4FCDD8A0.1070608@parallels.com>
+Date: Tue, 5 Jun 2012 14:00:00 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Borislav Petkov <bp@alien8.de>,
-        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v5 2/2] x86 mce: use new printk recursion disabling interface
-References: <20120524061145.GA18284@liondog.tnic> <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com> <4FBF3295.7090608@intel.com> <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com> <1338165058.14538.209.camel@ymzhang.sh.intel.com> <4FC2E8CF.2040109@intel.com> <4FC2E944.6060903@intel.com> <20120604171202.GA8533@x1.osrc.amd.com> <1338856360.14538.220.camel@ymzhang.sh.intel.com> <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com>
-In-Reply-To: <4FCDD72A.9030701@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+CC: Serge Hallyn <serge.hallyn@canonical.com>, <kir@parallels.com>,
+        <Michael@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
+        <linux-kernel@vger.kernel.org>, Kerrisk <mtk.manpages@gmail.com>,
+        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
+        <devel@openvz.org>, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [Devel] Re: [PATCH] allow a task to join a pid namespace
+References: <1338816828-25312-1-git-send-email-glommer@parallels.com> <4FCDD315.502@free.fr> <4FCDD346.9090008@parallels.com>
+In-Reply-To: <4FCDD346.9090008@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+On 06/05/2012 01:37 PM, Glauber Costa wrote:
+> On 06/05/2012 01:36 PM, Daniel Lezcano wrote:
+>> On 06/04/2012 03:33 PM, Glauber Costa wrote:
+>>> Currently, it is possible for a process to join existing
+>>> net, uts and ipc namespaces. This patch allows a process to join an
+>>> existing pid namespace as well.
+>>>
+>>> For that to remain sane, some restrictions are made in the calling
+>>> process:
+>>>
+>>> * It needs to be in the parent namespace of the namespace it wants to
+>>> jump to
+>>> * It needs to sit in its own session and group as a leader.
+>>>
+>>> The rationale for that, is that people want to trigger actions in a
+>>> Container
+>>> from the outside. For instance, mainstream linux recently gained the
+>>> ability
+>>> to safely reboot a container. It would be desirable, however, that this
+>>> action is triggered from an admin in the outside world, very much like a
+>>> power switch in a physical box.
+>>>
+>>> This would also allow us to connect a console to the container,
+>>> provide a
+>>> repair mode for setups without networking (or with a broken one), etc.
+>>
+>> Hi Glauber,
+>>
+>> I am in favor of this patch but I think the pidns support won't be
+>> complete and some corner-cases are not handled.
+>>
+>> May be you can look at Eric's patchset [1] where, IMO, everything is
+>> taken into account. Some of the patches may be already upstream.
+>>
+>> Thanks
+>> -- Daniel
+>
+> I don't remember seeing such patchset in the mailing lists, but that
+> might be my fault, due to traffic...
+>
+> I'll take a look. If it does what I need, I can just drop this.
+>
 
-On x86 machines, some times MCE happens just when kernel calls printk
-to output some log info to serial console, while usually MCE module in
-kernel is used to print out some hardware error information, such like
-bad cache or bad memory bank. That causes printk recursion and printk
-would omit MCE printk output.
+Ok. In a quick look, it does not seem to go all the way. This is just by 
+reading, but your reboot patch, for instance, is unlikely to work with 
+that, since if it doesn't alter pid->level, things like task ns_of_pid 
+won't work.
 
-We hit it when running MTBF testing on Android ATOM mobiles.
+Running the test scripts I wrote for my testing of that patch also 
+doesn't seem to produce the expected result:
 
-Here in mce_panic, we choose to disable printk recursion to make sure
-MCE logs printed out.
+after doing setns, the pid won't show up in that namespace.
 
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+But I can work on top of that tree, may save a lot of work.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 2afcbd2..906e838 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -306,6 +306,7 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
- {
- 	int i, apei_err = 0;
- 
-+	printk_recursion_check_disable();
- 	if (!fake_panic) {
- 		/*
- 		 * Make sure only one CPU runs in machine check panic
-@@ -360,6 +361,7 @@ static void mce_panic(char *msg, struct mce *final, char *exp)
- 		panic(msg);
- 	} else
- 		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
-+	printk_recursion_check_enable();
- }
- 
- /* Support code for software error injection */
--- 
-1.7.1
-
+Eric, what are your plans for merging the content of that tree ?
