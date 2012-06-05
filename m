@@ -1,103 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934086Ab2FENEp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:04:45 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:34024 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757807Ab2FENEn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:04:43 -0400
-From: Bhupesh SHARMA <bhupesh.sharma@st.com>
-To: Federico Vaga <federico.vaga@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Giancarlo ASNAGHI <giancarlo.asnaghi@st.com>,
-        Alan Cox <alan@linux.intel.com>, Alessandro Rubini <rubini@gnudd.com>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 5 Jun 2012 21:04:21 +0800
-Subject: RE: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Thread-Topic: [PATCH RFC] c_can_pci: generic module for c_can on PCI
-Thread-Index: Ac1DDJmKJcBFxE1XQDSkDG1qxo/5QwADqWCw
-Message-ID: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4DFC@EAPEX1MAIL1.st.com>
-References: <4FC135C6.5030206@grandegger.com> <1677842.Pq7naXsvrI@harkonnen>
- <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
- <3650428.HarNR9HfNF@harkonnen>
-In-Reply-To: <3650428.HarNR9HfNF@harkonnen>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S934098Ab2FENFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:05:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37462 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932429Ab2FENFA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 09:05:00 -0400
+Message-ID: <1338901490.28282.167.camel@twins>
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jun 2012 15:04:50 +0200
+In-Reply-To: <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
+	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
+	 <1338891271.28282.155.camel@twins>
+	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
+	 <1338892071.28282.157.camel@twins>
+	 <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
+	 <1338898024.28282.160.camel@twins> <1338899999.28282.164.camel@twins>
+	 <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Federico Vaga [mailto:federico.vaga@gmail.com]
-> Sent: Tuesday, June 05, 2012 4:49 PM
-> To: Bhupesh SHARMA
-> Cc: Alan Cox; Wolfgang Grandegger; Marc Kleine-Budde; Giancarlo
-> ASNAGHI; Alan Cox; Alessandro Rubini; linux-can@vger.kernel.org;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
+On Tue, 2012-06-05 at 14:51 +0200, Stephane Eranian wrote:
+> So I think if you say in:
+> __intel_shared_reg_put_constraints()
 > 
-> > In some of these SoC's the C_CAN registers which are essentially
-> > 16-bit or 32-bit registers are aligned always to a 32-bit boundary
-> > (i.e. even a 16-bit register is aligned to 32-bit boundary).
-> >
-> > So, I had to implement two variants of the read/write reg routines. I
-> > am not sure your SoC implementation needs them. If it does, I will
-> > categorize it as flaky as well :)
+>      if (!cpuc->is_fake)
+>            reg->alloc = 1;
 > 
-> My implementation is align to 32, but I'm trying to make a generic PCI
-> wrapper (some other could be aligned to 16)
+> That should do it given that:
+> 
+> __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
+>                                    struct hw_perf_event_extra *reg)
+> {
+>         struct er_account *era;
+>         if (!reg->alloc)
+>                 return;
+> 
+> }
+> 
+> But then, if reg->alloc was already set to 1, you will have a problem
+> if you leave
+> it as is. So I think in __intel_shared_reg_put_constraints(), you still need:
+> 
+> __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
+>                                    struct hw_perf_event_extra *reg)
+> {
+>        if (!reg->alloc || cpuc->is_fake)
+>           return;
+> 
+> Or something like that. 
 
-So it means your implementation is also flaky and you are probably wasting HW memory
-space while integrating the Bosch C_CAN module in your SoC :)
+Right, and then something slightly less hideous for intel_try_alt_er().
 
-> > See above. There was a reason for keeping these routines in
-> > c_can_platform.c Simply put, every platform having a Bosch C_CAN
-> > module can have it's own implementation of the bus (for example you
-> > use PCI) and register bank layout (16-bit or 32-bit aligned).
-> 
-> I don't understand the reason to keep these functions in
-> c_can_platform.c . Two generic read/write functions could be written
-> into c_can.c by using a shift value (0 if aligned to 16, 1 if aligned
-> to
-> 32) as I showed in the previous mail:
-> 
-> > > static u16 c_can_read_reg(struct c_can_priv *priv, enum reg index)
-> > > {
-> > >
-> > > 	return readw(priv->base + (priv->regs[index] << priv->offset));
-> > >
-> > > }
-> > > static void c_can_write_reg(struct c_can_priv *priv, enum reg
-> index,
-> > >
-> > > 						u16 val)
-> > >
-> > > {
-> > >
-> > > 	writew(val, priv->base + (priv->regs[index] << priv->offset));
-> > >
-> > > }
-> 
-> Every platform having a Bosch C_CAN/D_CAN can specify its shift value
-> (0
-> or 1) and it's done.
-> 
+How does something like this look?
 
-I am not a big fan of adding platform specific flakes in any core file, that why we keep the platform
-file separate from the core ones. But I will left Marc and Wolfgang to further comment on the same.
+---
+ arch/x86/kernel/cpu/perf_event_intel.c |   43 +++++++++++++++++++++-----------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
 
-Regards,
-Bhupesh
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 166546e..a3b7eb3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1119,27 +1119,33 @@ intel_bts_constraints(struct perf_event *event)
+ 	return NULL;
+ }
+ 
+-static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
++static int intel_alt_er(int idx)
+ {
+ 	if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
+-		return false;
++		return idx;
+ 
+-	if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
++	if (idx == EXTRA_REG_RSP_0)
++		return EXTRA_REG_RSP_1;
++
++	if (idx == EXTRA_REG_RSP_1)
++		return EXTRA_REG_RSP_0;
++
++	return idx;
++}
++
++static void intel_fixup_er(struct perf_event *event, int idx)
++{
++	if (idx == EXTRA_REG_RSP_0) {
+ 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+ 		event->hw.config |= 0x01bb;
+ 		event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
+ 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
+-	} else if (event->hw.extra_reg.idx == EXTRA_REG_RSP_1) {
++	} else if (idx == EXTRA_REG_RSP_1) {
+ 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+ 		event->hw.config |= 0x01b7;
+ 		event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
+ 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+ 	}
+-
+-	if (event->hw.extra_reg.idx == orig_idx)
+-		return false;
+-
+-	return true;
+ }
+ 
+ /*
+@@ -1157,14 +1163,14 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+ 	struct event_constraint *c = &emptyconstraint;
+ 	struct er_account *era;
+ 	unsigned long flags;
+-	int orig_idx = reg->idx;
++	int idx = reg->idx;
+ 
+ 	/* already allocated shared msr */
+ 	if (reg->alloc)
+ 		return NULL; /* call x86_get_event_constraint() */
+ 
+ again:
+-	era = &cpuc->shared_regs->regs[reg->idx];
++	era = &cpuc->shared_regs->regs[idx];
+ 	/*
+ 	 * we use spin_lock_irqsave() to avoid lockdep issues when
+ 	 * passing a fake cpuc
+@@ -1181,16 +1187,23 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+ 		atomic_inc(&era->ref);
+ 
+ 		/* no need to reallocate during incremental event scheduling */
+-		reg->alloc = 1;
++		if (!cpuc->is_fake) {
++			if (idx != reg->idx)
++				intel_fixup_er(event, idx);
++			reg->alloc = 1;
++		}
+ 
+ 		/*
+ 		 * need to call x86_get_event_constraint()
+ 		 * to check if associated event has constraints
+ 		 */
+ 		c = NULL;
+-	} else if (intel_try_alt_er(event, orig_idx)) {
+-		raw_spin_unlock_irqrestore(&era->lock, flags);
+-		goto again;
++	} else {
++		idx = intel_alt_er(idx);
++		if (idx != reg->idx) {
++			raw_spin_unlock_irqrestore(&era->lock, flags);
++			goto again;
++		}
+ 	}
+ 	raw_spin_unlock_irqrestore(&era->lock, flags);
+ 
+
