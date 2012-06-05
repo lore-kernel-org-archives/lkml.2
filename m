@@ -1,139 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab2FEStc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:49:32 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:45233 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab2FESta convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:49:30 -0400
+	id S1751225Ab2FESwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:52:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37446 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810Ab2FESwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 14:52:45 -0400
+Date: Tue, 5 Jun 2012 14:52:39 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Rientjes <rientjes@google.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: oomkillers gone wild.
+Message-ID: <20120605185239.GA28172@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Rientjes <rientjes@google.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+References: <20120604152710.GA1710@redhat.com>
+ <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
+ <20120605174454.GA23867@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAN+gG=FSTxE9d8o4O6+kQHmyg9PdJK28x6=Gjpgr+_xppiRVbQ@mail.gmail.com>
-References: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
-	<alpine.LNX.2.00.1206051134020.5478@pobox.suse.cz>
-	<CAN+gG=FSTxE9d8o4O6+kQHmyg9PdJK28x6=Gjpgr+_xppiRVbQ@mail.gmail.com>
-Date: Tue, 5 Jun 2012 11:49:28 -0700
-Message-ID: <CAOY97Vbjzbv-=jOwxnKR-eBBtGv33aFWV3G3VQnBMVaxMkQYiQ@mail.gmail.com>
-Subject: Re: [PATCH] Add Support for Novatek Touchscreen
-From: Austin Hendrix <ahendrix@willowgarage.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120605174454.GA23867@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Jun 05, 2012 at 01:44:54PM -0400, Dave Jones wrote:
+ > On Mon, Jun 04, 2012 at 04:30:57PM -0700, David Rientjes wrote:
+ >  > On Mon, 4 Jun 2012, Dave Jones wrote:
+ >  > 
+ >  > > we picked this..
+ >  > > 
+ >  > > [21623.066911] [  588]     0   588    22206        1   2       0             0 dhclient
+ >  > > 
+ >  > > over say..
+ >  > > 
+ >  > > [21623.116597] [ 7092]  1000  7092  1051124    31660   3       0             0 trinity-child3
+ >  > > 
+ >  > > What went wrong here ?
+ >  > > 
+ >  > > And why does that score look so.. weird.
+ >  > > 
+ >  > 
+ >  > It sounds like it's because pid 588 has uid=0 and the adjustment for root 
+ >  > processes is causing an overflow.  I assume this fixes it?
+ > 
+ > Still doesn't seem right..
+ > 
+ > eg..
+ > 
+ > [42309.542776] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
+ > ..
+ > [42309.553933] [  500]    81   500     5435        1   4     -13          -900 dbus-daemon
+ > ..
+ > [42309.597531] [ 9054]  1000  9054   528677    14540   3       0             0 trinity-child3
+ > ..
+ > 
+ > [42309.643057] Out of memory: Kill process 500 (dbus-daemon) score 511952 or sacrifice child
+ > [42309.643620] Killed process 500 (dbus-daemon) total-vm:21740kB, anon-rss:0kB, file-rss:4kB
+ > 
+ > and a slew of similar 'wrong process' death spiral kills follows..
 
-Sorry about the line wrapping; I'll make sure my mail client deals with it
-properly in the future.
+So after manually killing all the greedy processes, and getting the box to stop oom-killing
+random things, it settled down. But I noticed something odd, that I think I also saw a few
+weeks ago..
 
-Comments inline.
+# free
+             total       used       free     shared    buffers     cached
+Mem:       3886296    3666924     219372          0       2904      20008
+-/+ buffers/cache:    3644012     242284
+Swap:      6029308      14488    6014820
 
-On Tue, Jun 5, 2012 at 3:52 AM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> Hi Austin, Jiri,
->
-> I'm a bit concerned about this patch. Though it's fine for pre-3.5
-> kernels, it does not fit into the 3.5 work.
-> The thing is that it's easier to backport this patch in it's current
-> form, so I don't know exactly the best way to tackle this.
+What's using up that memory ?
 
-I initially wrote this patch against 3.3, so I guess I'm not surprised that
-things have changed a bit since then. I can make another patch against 3.5 if
-that's the right thing to do.
+  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME 
+142524 142420  99%    9.67K  47510	  3   1520320K task_struct
+142560 142417  99%    1.75K   7920	 18    253440K signal_cache
+142428 142302  99%    1.19K   5478	 26    175296K task_xstate
+306064 289292  94%    0.36K   6956	 44    111296K debug_objects_cache
+143488 143306  99%    0.50K   4484	 32     71744K cred_jar
+142560 142421  99%    0.50K   4455       32     71280K task_delay_info
+150753 145021  96%    0.45K   4308	 35     68928K kmalloc-128
 
->
-> See comments inlined.
->
-> On Tue, Jun 5, 2012 at 11:34 AM, Jiri Kosina <jkosina@suse.cz> wrote:
->> On Mon, 4 Jun 2012, Austin Hendrix wrote:
->>
->>> Add support for a Novatek touchscreen panel as a generic HID multitouch
->>> panel.
->>>
->>> Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
->>> ---
->>>  hid-core.c       |    1 +
->>>  hid-ids.h        |    3 +++
->>>  hid-multitouch.c |    5 +++++
->>>  3 files changed, 9 insertions(+)
->>>
->>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->>> index 8e3a6b2..0d6dde1 100644
->>> --- a/drivers/hid/hid-core.c
->>> +++ b/drivers/hid/hid-core.c
->>> @@ -1605,6 +1605,7 @@ static const struct hid_device_id
->>> hid_have_special_driver[] = {
->>
->> Austin,
->>
->> thanks for the patch. Your mail client is corrupting (line-wrapping)
->> patches. Please fix that for your future submissions.
->>
->> I have now fixed that up manually and applied.
->>
->>>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
->>>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
->>>       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
->>> +     { HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_PCT) },
->
-> I don't think this should be included in 3.5-rc+ (the whole MT-related
-> devices has been removed from this list).
->
->>>       { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
->>>       { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
->>>       { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
->>> USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
->>> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
->>> index 9373f53..734a2b9 100644
->>> --- a/drivers/hid/hid-ids.h
->>> +++ b/drivers/hid/hid-ids.h
->>> @@ -564,6 +564,9 @@
->>>  #define USB_VENDOR_ID_NINTENDO               0x057e
->>>  #define USB_DEVICE_ID_NINTENDO_WIIMOTE       0x0306
->>>
->>> +#define USB_VENDOR_ID_NOVATEK                0x0603
->>> +#define USB_DEVICE_ID_NOVATK_PCT    0x0600
->>> +
->>>  #define USB_VENDOR_ID_NTRIG          0x1b96
->>>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
->>>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
->>> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
->>> index 6e3332a..fae08df 100644
->>> --- a/drivers/hid/hid-multitouch.c
->>> +++ b/drivers/hid/hid-multitouch.c
->>> @@ -951,6 +951,11 @@ static const struct hid_device_id mt_devices[] = {
->>>               MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
->>>                       USB_DEVICE_ID_PANABOARD_UBT880) },
->>>
->>> +     /* Novatek Panel */
->>> +     { .driver_data = MT_CLS_DEFAULT,
->>> +             HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
->>> +                     USB_DEVICE_ID_NOVATEK_PCT) },
->
-> Shouldn't we use MT_USB_DEVICE instead?
+Why so many task_structs ? There's only 128 processes running, and most of them
+are kernel threads.
 
-That does look like the hip thing to do in 3.5.
+/sys/kernel/slab/task_struct/alloc_calls shows..
 
--Austin
+ 142421 copy_process.part.21+0xbb/0x1790 age=8/19929576/48173720 pid=0-16867 cpus=0-7
 
->
-> Cheers,
-> Benjamin
->
->>> +
->>>       /* PenMount panels */
->>>       { .driver_data = MT_CLS_CONFIDENCE,
->>>               MT_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
->>>
->>
->> --
->> Jiri Kosina
->> SUSE Labs
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I get the impression that the oom-killer hasn't cleaned up properly after killing some of
+those forked processes.
+
+any thoughts ?
+
+	Dave
+
+
