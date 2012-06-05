@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093Ab2FENQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:16:40 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:36122 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760103Ab2FENKG (ORCPT
+	id S1760691Ab2FENRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:17:45 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:56198 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab2FENRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:10:06 -0400
-Date: Tue, 5 Jun 2012 15:10:31 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Cam Macdonell <cam@cs.ualberta.ca>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, qemu-devel@nongnu.org,
-        systemtap@sourceware.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: Re: [RFC PATCH 1/2] ivring: Add a ring-buffer driver on IVShmem
-Message-ID: <20120605131031.GF13495@aftab.osrc.amd.com>
-References: <20120605104954.15442.62695.stgit@ltc189.sdl.hitachi.co.jp>
- <20120605130117.15479.32680.stgit@ltc189.sdl.hitachi.co.jp>
+	Tue, 5 Jun 2012 09:17:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120605130117.15479.32680.stgit@ltc189.sdl.hitachi.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdb78NY=RmC7bXOKzmBkDHU=DdcJOvDY2uyQ0OPN_v5Rwg@mail.gmail.com>
+References: <1338261278-17962-1-git-send-email-festevam@gmail.com>
+	<CACRpkdb78NY=RmC7bXOKzmBkDHU=DdcJOvDY2uyQ0OPN_v5Rwg@mail.gmail.com>
+Date: Tue, 5 Jun 2012 10:17:42 -0300
+Message-ID: <CAOMZO5ABCpwucpUYRmW_xSmVWQWF=vUntxxWGhoHV0imHdA58w@mail.gmail.com>
+Subject: Re: [PATCH] drivers: pinctrl: Remove redefinition of 'pinctrl_provide_dummies'
+From: Fabio Estevam <festevam@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Shawn Guo <shawn.guo@linaro.org>, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 10:01:17PM +0900, Yoshihiro YUNOMAE wrote:
-> This patch adds a ring-buffer driver for IVShmem device, a virtual RAM device in
-> QEMU. This driver can be used as a ring-buffer for kernel logging or tracing of
-> a guest OS by recording kernel programing or SystemTap.
-> 
-> This ring-buffer driver is implemented very simple. First 4kB of shared memory
-> region is control structure of a ring-buffer. In this region, some values for
-> managing the ring-buffer is stored such as bits and mask of whole memory size,
-> writing position, threshold value for notification to a reader on a host OS.
-> This region is used by the reader to know writing position. Then, "total
-> memory size - 4kB" equals to usable memory region for recording data.
-> This ring-buffer driver records any data from start to end of the writable
-> memory region.
-> 
-> When writing size exceeds a threshold value, this driver can notify a reader
-> to read data by using writel(). As this later patch, reader does not have any
-> function for receiving the notification. This notification feature will be used
-> near the future.
-> 
-> As a writer records data in this ring-buffer, spinlock function is used to
-> avoid competing by some writers in multi CPU environment. Not to use spinlock,
-> lockless ring-buffer like as ftrace and one ring-buffer one CPU will be
-> implemented near the future.
+Linus,
 
-Yet another ring buffer?
+On Tue, Jun 5, 2012 at 9:48 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, May 29, 2012 at 5:14 AM, Fabio Estevam <festevam@gmail.com> wrote:
+>
+>> From: Fabio Estevam <fabio.estevam@freescale.com>
+>>
+>> For mxs_defconfig and imx_v6_v7_defconfig targets, the following
+>> build error is observed:
+>>
+>> drivers/pinctrl/core.c:87:6: error: redefinition of 'pinctrl_provide_dummies'
+>>
+>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>
+> Shawn, have a look at this too...
+>
+> Fabio, please use subject:
+> pinctrl: mxs: foo
 
-We already have an ftrace and perf ring buffer, can't you use one of those?
+This error does not show up in linux-next anymore, so please discard this patch.
 
--- 
-Regards/Gruss,
-Boris.
+Regards,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Fabio Estevam
