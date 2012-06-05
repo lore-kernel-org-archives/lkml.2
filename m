@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab2FEBHN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 21:07:13 -0400
-Received: from ozlabs.org ([203.10.76.45]:41859 "EHLO ozlabs.org"
+	id S932934Ab2FEBHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 21:07:12 -0400
+Received: from ozlabs.org ([203.10.76.45]:56926 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757497Ab2FEBHJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756862Ab2FEBHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jun 2012 21:07:09 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Josh Boyer <jwboyer@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Cc: David Howells <dhowells@redhat.com>, kyle@mcmartin.ca,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org
+        dmitry.kasatkin@intel.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        "Tim Abbott" <tabbott@ksplice.com>
 Subject: Re: [PATCH 00/23] Crypto keys and module signing
-In-Reply-To: <CA+5PVA4Trq-OEk6pwf5R4vr76zOSn=pmRJU=B6XHEzyOhS3UBw@mail.gmail.com>
-References: <8762blyedn.fsf@rustcorp.com.au> <87obpfxdpr.fsf@rustcorp.com.au> <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <7474.1337782847@redhat.com> <5107.1337868051@redhat.com> <87r4u6w58c.fsf@rustcorp.com.au> <CA+5PVA5qCiYNppOBihKfsqvyNWwBsBsyGD7SmJaphV_67HG1aQ@mail.gmail.com> <87lik33mi6.fsf@rustcorp.com.au> <CA+5PVA4Trq-OEk6pwf5R4vr76zOSn=pmRJU=B6XHEzyOhS3UBw@mail.gmail.com>
+In-Reply-To: <1338814071.4044.19.camel@falcor>
+References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk> <26029.1337960539@redhat.com> <87ipf73lsi.fsf@rustcorp.com.au> <1338814071.4044.19.camel@falcor>
 User-Agent: Notmuch/0.12 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 05 Jun 2012 09:53:30 +0930
-Message-ID: <8762b6k3nh.fsf@rustcorp.com.au>
+Date: Tue, 05 Jun 2012 10:35:56 +0930
+Message-ID: <87wr3min4b.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jun 2012 09:38:43 -0400, Josh Boyer <jwboyer@gmail.com> wrote:
-> On Sun, Jun 3, 2012 at 9:16 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > Mangling a module after it is signed is very odd, and odd things aren't
-> > nice for security features.  That's how we got here; I'm trying to move
-> > the oddness out of the verification path.
+On Mon, 04 Jun 2012 08:47:51 -0400, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Mon, 2012-06-04 at 11:01 +0930, Rusty Russell wrote:
+> > On Fri, 25 May 2012 16:42:19 +0100, David Howells <dhowells@redhat.com> wrote:
+> > > 
+> > > Hi Rusty,
+> > > 
+> > > If you prefer to have userspace extract the module signature and pass it in
+> > > uargs, here's a tree that will do that:
+> > > 
+> > > 	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/modsign-uarg
+> > 
+> > OK, there's merit in this approach: it certainly moves the argument
+> > about how to encode the signature out of my backyard :)
+> > 
+> > Should we just bite the bullet and create a new syscall:
+> > 
+> > SYSCALL_DEFINE5(init_module2, void __user *, umod,
+> > 		unsigned long, len, const char __user *, uargs,
+> >                 unsigned int, siglen, const char __user *, sig)
+> > 
+> > But I'm easily swayed if you prefer the current approach.
+> > 
+> > Thanks,
+> > Rusty.
 > 
-> It's unfortunate, yes.  The biggest case I can think of is splitting
-> the debug symbols out of the modules after they are built (David might
-> have other cases).  Perhaps we could upstream that as well and
-> organize it such that the modules are built, split for debuginfo, and
-> then signed?
+> If you're really considering creating a new syscall, then perhaps this
+> discussion should include passing the file descriptor instead of a
+> buffer and signature.  As I said https://lkml.org/lkml/2012/5/25/261, I
+> don't know the historical reasons for passing a buffer instead of the
+> file descriptor itself.  If the file descriptor was passed, it would
+> allow IMA-appraisal, which is in the process of being upstreamed, to
+> verify and enforce file data and metadata integrity like on the other
+> hooks open, execve, and mmap.
 
-That was my original suggestion.  Just prepare all the module variants
-at build time, and sign them all.
+It's flexible.  Compressed modules, for example.  And who knew if we
+would be runtime generating modules?  But I don't think even the ksplice
+guys generate modules on the fly for insertion.
 
-See: https://lkml.org/lkml/2011/12/10/16
+modprobe has --force-vermagic and --force-modversion, but frankly that
+could be replaced by a single "force" flag handed to the kernel.
+
+If there's real benefit, it could be done.  Do we still want a separate
+signature blob?
+
+SYSCALL_DEFINE5(init_module_fd,
+                int, fd,
+                unsigned int, flags,
+                const char *__user *, uargs,
+                unsigned int, siglen,
+                const char __user *, sig);
 
 Cheers,
 Rusty.
