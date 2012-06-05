@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761421Ab2FEDtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:49:01 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:36958 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1761366Ab2FEDtA (ORCPT
+	id S1752336Ab2FEEHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 00:07:07 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:44840 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2FEEHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:49:00 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+L6uI3Ea2LTrJnQ/Y1m2XL8qN1LDnum79vZ+AT8N
-	bVViYaARACCTbc
-Message-ID: <1338868135.7356.5.camel@marge.simpson.net>
-Subject: Re: [PATCH] cpuidle: menu: use nr_running instead of cpuload for
- calculating perf mult
-From: Mike Galbraith <efault@gmx.de>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vladimir Davydov <vdavydov@parallels.com>, Ingo Molnar <mingo@elte.hu>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+	Tue, 5 Jun 2012 00:07:05 -0400
+MIME-Version: 1.0
+In-Reply-To: <13429.1335863601@redhat.com>
+References: <4F7AFD55.8080500@gentoo.org>
+	<CABCEB8nkwhthkA+ge0Ts3bB8s2-GhPi7+XvteYZcDDW_WTk-Ew@mail.gmail.com>
+	<13429.1335863601@redhat.com>
+Date: Tue, 5 Jun 2012 09:37:04 +0530
+Message-ID: <CABCEB8kjNVSz2tLGR1nkr5yT_yeTtsBME6N6bthGmVC=YKHXrA@mail.gmail.com>
+Subject: Re: [PATCH] fs: cachefiles: Add support for large files in filesystem caching
+From: Suresh Jayaraman <sureshjayaram@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: justin <jlec@gentoo.org>, linux-cachefs@redhat.com,
         linux-kernel@vger.kernel.org
-Date: Tue, 05 Jun 2012 05:48:55 +0200
-In-Reply-To: <4FCCD6B7.4030703@linux.intel.com>
-References: <1338805485-10874-1-git-send-email-vdavydov@parallels.com>
-	 <1338805967.28282.12.camel@twins> <4FCCB486.4040905@linux.intel.com>
-	 <1338817519.28282.54.camel@twins> <4FCCBC97.8060101@linux.intel.com>
-	 <1338822509.28282.65.camel@twins> <4FCCD0CD.8080700@linux.intel.com>
-	 <1338823568.28282.79.camel@twins> <4FCCD6B7.4030703@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 08:39 -0700, Arjan van de Ven wrote:
+On Tue, May 1, 2012 at 2:43 PM, David Howells <dhowells@redhat.com> wrote:
+>
+> I've added Justin's patch to my queue.
+>
 
-> if there is a lot of idle, load can be low or high; load is more than
-> just cpu usage. it includes waiting for resources and mutexes etc.
+Hello David,
 
-05:40:42 up 39 min, 20 users,  load average: 0.63, 0.53, 0.42
-root     pts/11    05:03    5:05   6:16   0.00s /bin/sh /root/bin/tbench.sh 1 400
+I don't find this patch in linux-next, yet. Did you find any problem
+with this patch?
+Just trying to make sure it is not getting lost in the pile..
 
-Like scheduling something cross core that is close to being synchronous.
-
--Mike
-
+Thanks
+Suresh
