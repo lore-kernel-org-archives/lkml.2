@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab2FERXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:23:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52649 "EHLO mx1.redhat.com"
+	id S1755165Ab2FERYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:24:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40881 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753651Ab2FERXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:23:06 -0400
-Date: Tue, 5 Jun 2012 13:23:02 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        linux-fsdevel@vger.kernel.org,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: write-behind on streaming writes
-Message-ID: <20120605172302.GB28556@redhat.com>
-References: <20120528114124.GA6813@localhost>
- <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
- <20120529155759.GA11326@localhost>
- <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
- <20120530032129.GA7479@localhost>
+	id S1752157Ab2FERYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 13:24:38 -0400
+Message-ID: <4FCE40C3.5040902@redhat.com>
+Date: Tue, 05 Jun 2012 14:24:19 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120530032129.GA7479@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@amd64.org>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <borislav.petkov@amd.com>, linux-edac@vger.kernel.org
+Subject: Re: linux-next: Tree for Jun 5 (amd64_edac)
+References: <20120605133000.f2d21fb02881ef54a7bfe728@canb.auug.org.au> <4FCE333F.6060207@xenotime.net> <20120605171704.GP13495@aftab.osrc.amd.com>
+In-Reply-To: <20120605171704.GP13495@aftab.osrc.amd.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 11:21:29AM +0800, Fengguang Wu wrote:
-
-[..]
-> (2) comes from the use of _WAIT_ flags in
+Em 05-06-2012 14:17, Borislav Petkov escreveu:
+> On Tue, Jun 05, 2012 at 09:26:39AM -0700, Randy Dunlap wrote:
+>> On 06/04/2012 08:30 PM, Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> There will be no linux-next release tomorrow.
+>>>
+>>> Changes since 20120604:
+>>
+>>
+>>
+>> on x86_64:
+>>
+>> drivers/edac/amd64_edac_inj.o: In function `amd64_remove_sysfs_dbg_files':
+>> amd64_edac_inj.c:(.text+0x420): multiple definition of `amd64_remove_sysfs_dbg_files'
+>> drivers/edac/amd64_edac.o:amd64_edac.c:(.text+0x3d60): first defined here
+>> make[3]: *** [drivers/edac/amd64_edac_mod.o] Error 1
 > 
->         sync_file_range(..., SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+> Doesn't trigger on latest linus. But Mauro has a bunch of patches
+> touching these parts, can you try reverting if it is in linux-next, the
+> one below:
 > 
-> Each sync_file_range() syscall will submit 8MB write IO and wait for
-> completion. That means the async write IO queue constantly swing
-> between 0 and 8MB fillness at the frequency (100MBps / 8MB = 12.5ms).
-> So on every 12.5ms, the async IO queue runs empty, which gives any
-> pending read IO (from firefox etc.) a chance to be serviced. Nice
-> and sweet breaks!
+> commit faf20d4e226c53a963c384d36d8aa82c77be6dfb
+> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Date:   Wed Mar 21 14:00:44 2012 -0300
+> 
+>     amd64_edac: convert sysfs logic to use struct device
+>     
+>     Now that the EDAC core supports struct device, there's no sense
+>     on having any logic at the EDAC core to simulate it. So, instead
+>     of adding such logic there, change the logic at amd64_edac to
+>     use it.
+>     
+>     Reviewed-by: Aristeu Rozanski <arozansk@redhat.com>
+>     Cc: Doug Thompson <norsk5@yahoo.com>
+>     Cc: Borislav Petkov <borislav.petkov@amd.com>
+>     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> 
+> Thanks.
+> 
 
-I doubt that async IO queue is empty for 12.5ms. We wait for previous
-range to finish (index-1) and have already started the IO on next 8MB
-of pages. So effectively that should keep 8MB of async IO in
-queue (until and unless there are delays from user space side). So reason
-for latency improvement might be something else and not because async
-IO queue is empty for some time.
+It is probably just a Kconfig issue. I'll prepare a patch fixing it,
+posting it soon.
 
-Thanks
-Vivek
+Thanks,
+Mauro
+
