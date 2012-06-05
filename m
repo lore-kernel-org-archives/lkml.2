@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab2FEXfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:35:21 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59218 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753632Ab2FEXfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:35:20 -0400
-Message-ID: <1338939316.11962.3.camel@joe2Laptop>
-Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, alsa-devel@alsa-project.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 05 Jun 2012 16:35:16 -0700
-In-Reply-To: <20120605162910.caccb0d4.akpm@linux-foundation.org>
-References: <cover.1338889066.git.joe@perches.com>
-	 <20120605142826.d92316a0.akpm@linux-foundation.org>
-	 <1338934303.5780.8.camel@joe2Laptop>
-	 <20120605151754.a794ac7c.akpm@linux-foundation.org>
-	 <1338936572.5780.29.camel@joe2Laptop>
-	 <20120605162910.caccb0d4.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
+	id S1753834Ab2FEXfg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:35:36 -0400
+Received: from hosting.visp.net.lb ([194.146.153.11]:34125 "EHLO
+	hosting.visp.net.lb" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab2FEXff (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 19:35:35 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Date: Wed, 06 Jun 2012 02:35:31 +0300
+From: Denys Fedoryshchenko <denys@visp.net.lb>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: BUG: =?UTF-8?Q?tty=5Finsert=5Fflip=5Fstring=5Ffixed=5Fflag=2C?=
+ =?UTF-8?Q?=20unable=20to=20handle=20kernel=20NULL=20pointer=20dereference?=
+ =?UTF-8?Q?=20at=20=30=30=30=30=30=30=30=34?=
+In-Reply-To: <20120606002725.5fc9ffe9@pyramind.ukuu.org.uk>
+References: <43517e56ecce834d141078f1918eba15@visp.net.lb>
+ <20120606002725.5fc9ffe9@pyramind.ukuu.org.uk>
+Message-ID: <4e01636b65b2348fda3ef06b544a5201@visp.net.lb>
+User-Agent: VISP Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 16:29 -0700, Andrew Morton wrote:
-> What about writes starting with \001n?  AFACIT, that will be stripped
-> away and the printk level will be altered.  This is new behavior.
+On 2012-06-06 02:27, Alan Cox wrote:
+>> [ 5350.556089]  [<c027adc4>] pty_write+0x2c/0x4c
+>> [ 5350.556089]  [<c0277a44>] n_tty_write+0x24e/0x2d6
+>> [ 5350.556089]  [<c0144a2b>] ? try_to_wake_up+0x18c/0x18c
+>
+> Basically the other end hung up just as it went to write.
+>
+> It's a known race. In the current codebase it's very hard to fix up 
+> nicely
+> as we have to drop tty_lock during a pty close or we deadlock. It's 
+> very
+> hard to hit but your environment sounds rather like my test case for 
+> it !
+>
+> It's one of a series of related bugs (another in n_gsm) that we can't 
+> fix
+> elegantly until the tty locking is fixed - which has been pushed from 
+> 3.5
+> hopefully to 3.6 assuming we can fix a couple of other locking 
+> problems
+> first.
+>
+> What may reduce it a lot is to change pty_write to do
+>
+>
+> 	struct tty_struct *to = tty->link;
+>
+> 	if (tty->stopped)
+> 		return 0;
+>
+> 	if (to == NULL)
+> 		return -ENODEV;
+> 	to = tty_kref_get(to);
+> 	if (tty->link == NULL) {
+> 		tty_kref_put(to);
+> 		return -ENODEV;
+> 	}
+> 	if (c > 0) {
+> 		...
+> 	}
+> 	tty_kref_put(to);
+> 	return c;
+> }
+>
+> Thats a pretty ugly bandaid but I'd be interested to know if it 
+> helps, as
+> that would verify the race you are hitting is the one I think it is.
+Thank you a lot, i will try apply this.
+This crash are only few times per week, but i will try to see, if it 
+will help or change anything.
 
-Nope.
+>
+> Alan
 
-# echo "\001Hello Andrew" > /dev/kmsg
-/dev/kmsg has
-12,774,2462339252;\001Hello Andrew
 
-12 is 8 + KERN_DEFAULT
-
-# echo "<1>Hello Andrew" > /dev/kmsg
-/dev/kmsg has:
-9,775,2516023444;Hello Andrew
-
+---
+Denys Fedoryshchenko, Network Engineer, Virtual ISP S.A.L.
