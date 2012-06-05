@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761770Ab2FEKmW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:42:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761724Ab2FEKmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:42:18 -0400
-Date: Tue, 5 Jun 2012 12:41:25 +0200
-From: Karel Zak <kzak@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, jslaby@suse.cz,
-        user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, alan@linux.intel.com
-Subject: Re: um: TTY fixes (?)
-Message-ID: <20120605104125.GA14536@x2.net.home>
-References: <1338841657-30358-1-git-send-email-richard@nod.at>
- <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
- <4FCD4161.7060409@nod.at>
+	id S1761758Ab2FEKoF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:44:05 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:49786 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751387Ab2FEKoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 06:44:04 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/rVVFTRJjrlbxefcHcAU2LHUx9lyBv1apM3qSubb
+	BC/7x36bcOSCHK
+Message-ID: <4FCDE2ED.8010501@gmx.de>
+Date: Tue, 05 Jun 2012 12:43:57 +0200
+From: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120603 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCD4161.7060409@nod.at>
-User-Agent: Mutt/1.5.21 (2011-07-01)
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: commit 0fc9d10 : chroot under kernel 3.4.x core dumps
+References: <4FCD28E4.3090409@gmx.de>
+In-Reply-To: <4FCD28E4.3090409@gmx.de>
+X-Enigmail-Version: 1.5pre
+X-Forwarded-Message-Id: <4FCD28E4.3090409@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 01:14:41AM +0200, Richard Weinberger wrote:
-> Am 04.06.2012 23:17, schrieb Alan Cox:
-> >> 	On all other ttys login works but bash dies because of of -EIO.
-> >> 	After vhangup() the tty returns -EIO upon read()/write().
-> > 
-> > You can't re-open the tty because a process is holding on to it, not
-> > closing it and not killable. Fedora shouldn't be holding these devices
-> > open this way. The behaviour we have of refusing to reopen them why this
-> > is the case is both a) what the spec seems to say b) good security.
-> 
-> Hmm, there seems to be a bug in util-linux's login.
-> login-utils/login.c::init_tty() does:
-> ...
->        /* Kill processes left on this tty */
->         tcsetattr(0, TCSAFLUSH, &ttt);
-> 
->         signal(SIGHUP, SIG_IGN);        /* so vhangup() wont kill us */
->         vhangup();
->         signal(SIGHUP, SIG_DFL);
-> 
->         /* open stdin,stdout,stderr to the tty */
->         open_tty(cxt->tty_path);
-> 
->         /* restore tty modes */
->         tcsetattr(0, TCSAFLUSH, &tt);
-> ...
-> 
-> By calling vhangup() it kills all other programs on the current tty.
-> open_tty() opens the tty again but it's still open because stdin, stdout and stderr
-> belongs to it.
 
- open_tty() closes all the old file descriptors after tty open:
+When I try under kernel versions 3.4.[01] to chroot into a user mode
+linux image, I often get this :
 
-    vhangup();
-    ...
-	fd = open(tty, O_RDWR | O_NONBLOCK);
-    ...
++ mount -o loop /home/tfoerste/virtual/uml/gentoo_unstable /mnt/loop
++ mount -t proc none /mnt/loop/proc
++ mount -o bind /dev /mnt/loop/dev
++ mount -o bind /dev/pts /mnt/loop/dev/pts
++ mount -o bind /usr/portage /mnt/loop/usr/portage
++ mount -o bind /usr/local/portage /mnt/loop/usr/local/portage
++ mount -o bind /tmp/uml_portage /mnt/loop/var/tmp/portage
++ chroot /mnt/loop /bin/bash
+/home/tfoerste/workspace/bin/chr_uml.sh: line 55:  4143 Segmentation
+fault      (core dumped) chroot /mnt/loop /bin/bash
 
-	flags = fcntl(fd, F_GETFL);
-	flags &= ~O_NONBLOCK;
-	fcntl(fd, F_SETFL, flags);
 
-	for (i = 0; i < fd; i++)
-		close(i);
-	for (i = 0; i < 3; i++)
-		if (fd != i)
-			dup2(fd, i);
-	if (fd >= 3)
-		close(fd);
+The core file itself is only 400 KB in size and the back trace with gbd
+is meaningless :
 
-we use this for pretty long time (17+ years).
+Core was generated by `/bin/bash'.
+Program terminated with signal 11, Segmentation fault.
+#0  0xb75cac00 in ?? ()
+(gdb) bt
+#0  0xb75cac00 in ?? ()
+#1  0xb76f4ff4 in ?? ()
+Cannot access memory at address 0xffffffdc
 
-> If I add:
->         fclose(stdin);
->         fclose(stdout);
->         fclose(stderr);
-> before the call to vhangup() login works like charm. :-)
-> 
-> Karel, what do you think?
+In the rare cases, where the chroot doesn't crash, all subsequent
+commands cores instead. Furthermore it seems, that the boinc grid
+software has problems too under kernel 3.4.1.
+All kernel 3.3.x works fine.
 
- It's probably no problem to close all the file descriptors before
- vhangup(), but it would be nice to know why we need this change after
- 20 years :-)
+I bisected it to :
 
-    Karel
+commit 0fc9d1040313047edf6a39fd4d7c7defdca97c62
+Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date:   Wed Mar 28 14:42:54 2012 -0700
+
+    radix-tree: use iterators in find_get_pages* functions
+
 
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
