@@ -1,81 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761577Ab2FEJut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:50:49 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:52089 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758120Ab2FEJus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:50:48 -0400
-X-AuditID: b753bd60-996f1ba000000f6c-9e-4fcdd6757f8f
-X-AuditID: b753bd60-996f1ba000000f6c-9e-4fcdd6757f8f
-Message-ID: <4FCDD65B.6090402@hitachi.com>
-Date: Tue, 05 Jun 2012 18:50:19 +0900
-From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1761560Ab2FEJ4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:56:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63891 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755025Ab2FEJ4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:56:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="174951086"
+Message-ID: <4FCDD72A.9030701@intel.com>
+Date: Tue, 05 Jun 2012 17:53:46 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kees Cook <keescook@chromium.org>, Kevin Hilman <khilman@ti.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Prarit Bhargava <prarit@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Tejun Heo <tj@kernel.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH 0/4 V2] introduce: livedump
-References: <20120525091207.10256.18614.stgit@t3500.sdl.hitachi.co.jp> <20120604210912.GA18354@redhat.com>
-In-Reply-To: <20120604210912.GA18354@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Borislav Petkov <bp@alien8.de>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH v5 1/2] printk: add interface for disabling recursion check
+References: <20120524061145.GA18284@liondog.tnic> <20120524155611.b7aeff4d.akpm@linux-foundation.org> <1337905811.14538.206.camel@ymzhang.sh.intel.com> <4FBF3295.7090608@intel.com> <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com> <1338165058.14538.209.camel@ymzhang.sh.intel.com> <4FC2E8CF.2040109@intel.com> <4FC2E944.6060903@intel.com> <20120604171202.GA8533@x1.osrc.amd.com> <1338856360.14538.220.camel@ymzhang.sh.intel.com> <20120605081448.GA7097@liondog.tnic>
+In-Reply-To: <20120605081448.GA7097@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Vivek and Peter
+From: ShuoX Liu <shuox.liu@intel.com>
 
-Thank you for your replies.
+With some special scenario, such as Machine Check Exception happened
+in printk, we want to bypass printk recursion check to printk some
+important information. So we add these interfaces of printk.
 
-Yes, I agree that it is terrible to consume a half of memory only for
-this purpose.
+1) printk_recursion_check_disable() for disabling recursion check
+2) printk_recursion_check_enable() for enabling recursion check
 
-I think buffer size can be reduced by dumping memory to disk
-on-the-fly with buffer of limited size.
-However, this means that page fault(PF) handling may sleep if the
-buffer is temporarily full.
-It is never acceptable when PF happens in preempt_disable()ed path,
-but I think size of pages updated in the path is not much.
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ include/linux/printk.h |    3 +++
+ kernel/printk.c        |   17 ++++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-To reduce buffer size, we can introduce two types of buffers as below;
-(1)Buffer dedicated for non-preemptible path
-(2)Buffer for the rest
-
-If the first buffer is full, tracking updated pages partially fails.
-To avoid this, users need to allocate enough memory for this buffer.
-
-We don't need to care about the second buffer being full,
-because PF handling can wait for space by sleeping.
-
-Regards,
-Masanori
-
-Yokohama Research Laboratory,
-Hitachi, Ltd.
-
-
-On 2012/06/05 6:09, Vivek Goyal wrote:
-> On Fri, May 25, 2012 at 06:12:07PM +0900, YOSHIDA Masanori wrote:
->
-> [..]
->> (4) It allocates about 50% of physical RAM to store dumped pages. Currently
->>      Live Dump saves all dumped data on memory once, and after that a user
->>      becomes able to use the dumped data. Live Dump itself has no feature to
->>      save dumped data onto a disk or any other storage device.
->
-> People complain when kdump reserves 128M of memory when system crashes.
-> I am skeptical that reserving 50% of memory for livedumps is going to fly.
->
-> Thanks
-> Vivek
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..da48ec7 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -42,6 +42,9 @@ static inline void console_verbose(void)
+ 		console_loglevel = 15;
+ }
+ 
++void printk_recursion_check_disable(void);
++void printk_recursion_check_enable(void);
++
+ struct va_format {
+ 	const char *fmt;
+ 	va_list *va;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..0580f67 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -78,6 +78,19 @@ int console_printk[4] = {
+ int oops_in_progress;
+ EXPORT_SYMBOL(oops_in_progress);
+ 
++static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
++
++void printk_recursion_check_disable(void)
++{
++	atomic_inc(&recursion_check_disabled);
++}
++
++void printk_recursion_check_enable(void)
++{
++	WARN_ON(atomic_read(&recursion_check_disabled) < 1);
++	atomic_dec(&recursion_check_disabled);
++}
++
+ /*
+  * console_sem protects the console_drivers list, and also
+  * provides serialisation for access to the entire console
+@@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * recursion and return - but flag the recursion so that
+ 		 * it can be printed at the next appropriate moment:
+ 		 */
+-		if (!oops_in_progress && !lockdep_recursing(current)) {
++		if (!atomic_read(&recursion_check_disabled)
++			&& !oops_in_progress
++			&& !lockdep_recursing(current)) {
+ 			recursion_bug = 1;
+ 			goto out_restore_irqs;
+ 		}
+-- 
+1.7.1
 
