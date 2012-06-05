@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2FEREg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:04:36 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:54781 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754759Ab2FEREb (ORCPT
+	id S1754796Ab2FERI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:08:58 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:37555 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753366Ab2FERI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:04:31 -0400
-Message-ID: <4FCE3C18.4080302@amacapital.net>
-Date: Tue, 05 Jun 2012 10:04:24 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Tue, 5 Jun 2012 13:08:57 -0400
+Date: Tue, 5 Jun 2012 19:09:21 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Borislav Petkov <bp@amd64.org>, Christopher Yeoh <cyeoh@au1.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Will Drewry <wad@chromium.org>, linux-security-module@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
-        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, eparis@redhat.com,
-        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
-        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
-        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
-        keescook@chromium.org, jmorris@namei.org, linux-man@vger.kernel.org
-Subject: Docs for PR_SET_NO_NEW_PRIVS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] CMA: Do no enable it by default
+Message-ID: <20120605170921.GO13495@aftab.osrc.amd.com>
+References: <20120531153512.GK14515@aftab.osrc.amd.com>
+ <20120531154224.GL14515@aftab.osrc.amd.com>
+ <20120601110647.2c446aa7@rockpopper>
+ <20120605110541.GC13495@aftab.osrc.amd.com>
+ <CA+55aFxu9ZfbKuWdhmADreRS9wxzMyW9buoVkd=B4Yqi=bxbiw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxu9ZfbKuWdhmADreRS9wxzMyW9buoVkd=B4Yqi=bxbiw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all-
+On Tue, Jun 05, 2012 at 09:46:49AM -0700, Linus Torvalds wrote:
+> On Tue, Jun 5, 2012 at 4:05 AM, Borislav Petkov <bp@amd64.org> wrote:
+> >
+> > Besides, in the config option it says "... which allow a process with
+> > the correct privileges to directly read from or write to to another
+> > process's address space.", which, if the reading process has somehow
+> > gained privileges (as that never happens) is your security issue right
+> > there.
+> 
+> What?
+> 
+> It's using the same privileges as ptrace. If you are allowed to ptrace
+> somebody, there's no security issue.
 
-As promised (although belatedly), I wrote up some proposed documentation
-for the no_new_privs feature.  What should I do with it?  I don't speak
-groff/troff/whatever man pages are written in.
+It didn't sound to me like that from the text - to my paranoid mind this
+sounds like some process reading or writing some other process' address
+space and changing stuff arbitrarily.
 
-I would be happy to license this text appropriately for whatever tree
-it might end up in.  In the mean time, it's GPLv2+.
+Maybe the text should be made more soothing so that no alarms go off
+while reading it :-).
 
---- cut here ---
+> Also, the reason it's "default y" is that the feature actually made it
+> in earlier (with no config option at all).
 
-The execve system call can grant a newly-started program privileges
-that its parent did not have.  The most obvious examples are
-setuid/setgid programs and file capabilities.  To prevent the parent
-program from gaining these privileges as well, the kernel and user
-code must be careful to prevent the parent from doing anything that
-could subvert the child.  For example:
+I know, and it shouldn've been but it's too late now.
 
- - The dynamic loader handles LD_* environment variables differently
-if a program is setuid.
- - chroot is disallowed to unprivileged processes, since it would
-allow /etc/passwd to be replaced from the point of view of a process
-that inherited chroot.
- - The exec code has special handling for ptrace.
+> Now, I certainly agree that we could turn it off by default since
+> it's not that common, but at the same time none of your actual commit
+> comments make sense, so that would have to be fixed first.
 
-These are all ad-hoc fixes.  The no_new_privs bit (since Linux 3.5) is
-a new, generic mechanism to make it safe for a process to modify its
-execution environment in a manner that persists across execve.  Any
-task can set no_new_privs.  Once the bit is set, it is inherited
-across fork, clone, and execve and cannot be unset.  With no_new_privs
-set, execve promises not to grant the privilege to do anything that
-could not have been done without the execve call.  For example, the
-setuid and setgid bits will no longer change the uid or gid; file
-capabilities will not add to the permitted set, and LSMs will not
-relax constraints after execve.
+Sure, will do.
 
-Note that no_new_privs does not prevent privilege changes that do not
-involve execve.  An appropriately privileged task can still call
-setuid(2) and receive SCM_RIGHTS datagrams.
+-- 
+Regards/Gruss,
+Boris.
 
-There are two main use cases for no_new_privs so far:
-
- - Filters installed for the seccomp mode 2 sandbox persist across
-execve and can change the behavior of newly-executed programs.
-Unprivileged users are therefore only allowed to install such filters
-if no_new_privs is set.
-
- - By itself, no_new_privs can be used to reduce the attack surface
-available to an unprivileged user.  If everything running with a given
-uid has no_new_privs set, then that uid will be unable to escalate its
-privileges by directly attacking setuid, setgid, and fcap-using
-binaries; it will need to compromise something without the
-no_new_privs bit set first.
-
-In the future, other potentially dangerous kernel features could
-become available to unprivileged tasks if no_new_privs is set.  In
-principle, several options to unshare(2) and clone(2) would be safe
-when no_new_privs is set, and no_new_privs + chroot is considerable
-less dangerous than chroot by itself.
-
---- cut here ---
-
---Andy
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
