@@ -1,348 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab2FERS2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:18:28 -0400
-Received: from mail131.messagelabs.com ([216.82.242.99]:32117 "EHLO
-	mail131.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab2FERS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:18:27 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-15.tower-131.messagelabs.com!1338916645!24525859!40
-X-Originating-IP: [216.166.12.69]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: cleanup sysfs functions
-Date: Tue, 5 Jun 2012 10:18:02 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	id S1755193Ab2FERS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:18:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41734 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755051Ab2FERS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 13:18:57 -0400
+Date: Tue, 5 Jun 2012 13:18:51 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120605171851.GA28556@redhat.com>
+References: <20120528114124.GA6813@localhost>
+ <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
+ <20120529155759.GA11326@localhost>
+ <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
+ <20120530032129.GA7479@localhost>
+ <20120605010148.GE4347@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-ID: <201206051018.02735.hartleys@visionengravers.com>
+In-Reply-To: <20120605010148.GE4347@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the comedi sysfs functions a bit more concise by shortening
-some of the verbose variable names and reusing some of the
-variables that were used for intermediate calculations.
+On Tue, Jun 05, 2012 at 11:01:48AM +1000, Dave Chinner wrote:
+> On Wed, May 30, 2012 at 11:21:29AM +0800, Fengguang Wu wrote:
+> > Linus,
+> > 
+> > On Tue, May 29, 2012 at 10:35:46AM -0700, Linus Torvalds wrote:
+> > > On Tue, May 29, 2012 at 8:57 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> > > I just suspect that we'd be better off teaching upper levels about the
+> > > streaming. I know for a fact that if I do it by hand, system
+> > > responsiveness was *much* better, and IO throughput didn't go down at
+> > > all.
+> > 
+> > Your observation of better responsiveness may well be stemmed from
+> > these two aspects:
+> > 
+> > 1) lower dirty/writeback pages
+> > 2) the async write IO queue being drained constantly
+> > 
+> > (1) is obvious. For a mem=4G desktop, the default dirty limit can be
+> > up to (4096 * 20% = 819MB). While your smart writer effectively limits
+> > dirty/writeback pages to a dramatically lower 16MB.
+> > 
+> > (2) comes from the use of _WAIT_ flags in
+> > 
+> >         sync_file_range(..., SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+> > 
+> > Each sync_file_range() syscall will submit 8MB write IO and wait for
+> > completion. That means the async write IO queue constantly swing
+> > between 0 and 8MB fillness at the frequency (100MBps / 8MB = 12.5ms).
+> > So on every 12.5ms, the async IO queue runs empty, which gives any
+> > pending read IO (from firefox etc.) a chance to be serviced. Nice
+> > and sweet breaks!
+> > 
+> > I suspect (2) contributes *much more* than (1) to desktop responsiveness.
+> 
+> Almost certainly, especially with NCQ devices where even if the IO
+> scheduler preempts the write queue immediately, the device might
+> complete the outstanding 31 writes before servicing the read which
+> is issued as the 32nd command....
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CFQ does preempt async IO once sync IO gets queued.
 
----
+> 
+> So NCQ depth is going to play a part here as well.
 
- drivers/staging/comedi/comedi_fops.c |  202 ++++++++++++----------------------
- 1 files changed, 72 insertions(+), 130 deletions(-)
+Yes NCQ depth does contribute primarily to READ latencies in presence of
+async IO. I think disk drivers and disk firmware should also participate in 
+prioritizing READs over pending WRITEs to improve the situation.
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index 7677657..b3b86d4 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -172,28 +172,19 @@ static int resize_async_buffer(struct comedi_device *dev,
- 
- /* sysfs attribute files */
- 
--static const unsigned bytes_per_kibi = 1024;
--
- static ssize_t show_max_read_buffer_kb(struct device *dev,
- 				       struct device_attribute *attr, char *buf)
- {
--	ssize_t retval;
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned max_buffer_size_kb = 0;
--	struct comedi_subdevice *const read_subdevice =
--	    comedi_get_read_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_read_subdevice(info);
-+	unsigned int size = 0;
- 
- 	mutex_lock(&info->device->mutex);
--	if (read_subdevice &&
--	    (read_subdevice->subdev_flags & SDF_CMD_READ) &&
--	    read_subdevice->async) {
--		max_buffer_size_kb = read_subdevice->async->max_bufsize /
--		    bytes_per_kibi;
--	}
--	retval = snprintf(buf, PAGE_SIZE, "%i\n", max_buffer_size_kb);
-+	if (s && (s->subdev_flags & SDF_CMD_READ) && s->async)
-+		size = s->async->max_bufsize / 1024;
- 	mutex_unlock(&info->device->mutex);
- 
--	return retval;
-+	return snprintf(buf, PAGE_SIZE, "%i\n", size);
- }
- 
- static ssize_t store_max_read_buffer_kb(struct device *dev,
-@@ -201,52 +192,40 @@ static ssize_t store_max_read_buffer_kb(struct device *dev,
- 					const char *buf, size_t count)
- {
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned int new_max_size_kb;
--	unsigned int new_max_size;
--	int ret;
--	struct comedi_subdevice *const read_subdevice =
--	    comedi_get_read_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_read_subdevice(info);
-+	unsigned int size;
-+	int err;
- 
--	ret = kstrtouint(buf, 10, &new_max_size_kb);
--	if (ret)
--		return ret;
--	if (new_max_size_kb > (UINT_MAX / bytes_per_kibi))
-+	err = kstrtouint(buf, 10, &size);
-+	if (err)
-+		return err;
-+	if (size > (UINT_MAX / 1024))
- 		return -EINVAL;
--	new_max_size = new_max_size_kb * bytes_per_kibi;
-+	size *= 1024;
- 
- 	mutex_lock(&info->device->mutex);
--	if (read_subdevice == NULL ||
--	    (read_subdevice->subdev_flags & SDF_CMD_READ) == 0 ||
--	    read_subdevice->async == NULL) {
--		mutex_unlock(&info->device->mutex);
--		return -EINVAL;
--	}
--	read_subdevice->async->max_bufsize = new_max_size;
-+	if (s && (s->subdev_flags & SDF_CMD_READ) && s->async)
-+		s->async->max_bufsize = size;
-+	else
-+		err = -EINVAL;
- 	mutex_unlock(&info->device->mutex);
- 
--	return count;
-+	return err ? err : count;
- }
- 
- static ssize_t show_read_buffer_kb(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
--	ssize_t retval;
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned buffer_size_kb = 0;
--	struct comedi_subdevice *const read_subdevice =
--	    comedi_get_read_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_read_subdevice(info);
-+	unsigned int size = 0;
- 
- 	mutex_lock(&info->device->mutex);
--	if (read_subdevice &&
--	    (read_subdevice->subdev_flags & SDF_CMD_READ) &&
--	    read_subdevice->async) {
--		buffer_size_kb = read_subdevice->async->prealloc_bufsz /
--		    bytes_per_kibi;
--	}
--	retval = snprintf(buf, PAGE_SIZE, "%i\n", buffer_size_kb);
-+	if (s && (s->subdev_flags & SDF_CMD_READ) && s->async)
-+		size = s->async->prealloc_bufsz / 1024;
- 	mutex_unlock(&info->device->mutex);
- 
--	return retval;
-+	return snprintf(buf, PAGE_SIZE, "%i\n", size);
- }
- 
- static ssize_t store_read_buffer_kb(struct device *dev,
-@@ -254,57 +233,41 @@ static ssize_t store_read_buffer_kb(struct device *dev,
- 				    const char *buf, size_t count)
- {
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned int new_size_kb;
--	unsigned int new_size;
--	int retval;
--	int ret;
--	struct comedi_subdevice *const read_subdevice =
--	    comedi_get_read_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_read_subdevice(info);
-+	unsigned int size;
-+	int err;
- 
--	ret = kstrtouint(buf, 10, &new_size_kb);
--	if (ret)
--		return ret;
--	if (new_size_kb > (UINT_MAX / bytes_per_kibi))
-+	err = kstrtouint(buf, 10, &size);
-+	if (err)
-+		return err;
-+	if (size > (UINT_MAX / 1024))
- 		return -EINVAL;
--	new_size = new_size_kb * bytes_per_kibi;
-+	size *= 1024;
- 
- 	mutex_lock(&info->device->mutex);
--	if (read_subdevice == NULL ||
--	    (read_subdevice->subdev_flags & SDF_CMD_READ) == 0 ||
--	    read_subdevice->async == NULL) {
--		mutex_unlock(&info->device->mutex);
--		return -EINVAL;
--	}
--	retval = resize_async_buffer(info->device, read_subdevice,
--				     read_subdevice->async, new_size);
-+	if (s && (s->subdev_flags & SDF_CMD_READ) && s->async)
-+		err = resize_async_buffer(info->device, s, s->async, size);
-+	else
-+		err = -EINVAL;
- 	mutex_unlock(&info->device->mutex);
- 
--	if (retval < 0)
--		return retval;
--	return count;
-+	return err ? err : count;
- }
- 
- static ssize_t show_max_write_buffer_kb(struct device *dev,
- 					struct device_attribute *attr,
- 					char *buf)
- {
--	ssize_t retval;
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned max_buffer_size_kb = 0;
--	struct comedi_subdevice *const write_subdevice =
--	    comedi_get_write_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_write_subdevice(info);
-+	unsigned int size = 0;
- 
- 	mutex_lock(&info->device->mutex);
--	if (write_subdevice &&
--	    (write_subdevice->subdev_flags & SDF_CMD_WRITE) &&
--	    write_subdevice->async) {
--		max_buffer_size_kb = write_subdevice->async->max_bufsize /
--		    bytes_per_kibi;
--	}
--	retval = snprintf(buf, PAGE_SIZE, "%i\n", max_buffer_size_kb);
-+	if (s && (s->subdev_flags & SDF_CMD_WRITE) && s->async)
-+		size = s->async->max_bufsize / 1024;
- 	mutex_unlock(&info->device->mutex);
- 
--	return retval;
-+	return snprintf(buf, PAGE_SIZE, "%i\n", size);
- }
- 
- static ssize_t store_max_write_buffer_kb(struct device *dev,
-@@ -312,52 +275,40 @@ static ssize_t store_max_write_buffer_kb(struct device *dev,
- 					 const char *buf, size_t count)
- {
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned int new_max_size_kb;
--	unsigned int new_max_size;
--	int ret;
--	struct comedi_subdevice *const write_subdevice =
--	    comedi_get_write_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_write_subdevice(info);
-+	unsigned int size;
-+	int err;
- 
--	ret = kstrtouint(buf, 10, &new_max_size_kb);
--	if (ret)
--		return ret;
--	if (new_max_size_kb > (UINT_MAX / bytes_per_kibi))
-+	err = kstrtouint(buf, 10, &size);
-+	if (err)
-+		return err;
-+	if (size > (UINT_MAX / 1024))
- 		return -EINVAL;
--	new_max_size = new_max_size_kb * bytes_per_kibi;
-+	size *= 1024;
- 
- 	mutex_lock(&info->device->mutex);
--	if (write_subdevice == NULL ||
--	    (write_subdevice->subdev_flags & SDF_CMD_WRITE) == 0 ||
--	    write_subdevice->async == NULL) {
--		mutex_unlock(&info->device->mutex);
--		return -EINVAL;
--	}
--	write_subdevice->async->max_bufsize = new_max_size;
-+	if (s && (s->subdev_flags & SDF_CMD_WRITE) && s->async)
-+		s->async->max_bufsize = size;
-+	else
-+		err = -EINVAL;
- 	mutex_unlock(&info->device->mutex);
- 
--	return count;
-+	return err ? err : count;
- }
- 
- static ssize_t show_write_buffer_kb(struct device *dev,
- 				    struct device_attribute *attr, char *buf)
- {
--	ssize_t retval;
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned buffer_size_kb = 0;
--	struct comedi_subdevice *const write_subdevice =
--	    comedi_get_write_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_write_subdevice(info);
-+	unsigned int size = 0;
- 
- 	mutex_lock(&info->device->mutex);
--	if (write_subdevice &&
--	    (write_subdevice->subdev_flags & SDF_CMD_WRITE) &&
--	    write_subdevice->async) {
--		buffer_size_kb = write_subdevice->async->prealloc_bufsz /
--		    bytes_per_kibi;
--	}
--	retval = snprintf(buf, PAGE_SIZE, "%i\n", buffer_size_kb);
-+	if (s && (s->subdev_flags & SDF_CMD_WRITE) && s->async)
-+		size = s->async->prealloc_bufsz / 1024;
- 	mutex_unlock(&info->device->mutex);
- 
--	return retval;
-+	return snprintf(buf, PAGE_SIZE, "%i\n", size);
- }
- 
- static ssize_t store_write_buffer_kb(struct device *dev,
-@@ -365,34 +316,25 @@ static ssize_t store_write_buffer_kb(struct device *dev,
- 				     const char *buf, size_t count)
- {
- 	struct comedi_device_file_info *info = dev_get_drvdata(dev);
--	unsigned int new_size_kb;
--	unsigned int new_size;
--	int retval;
--	int ret;
--	struct comedi_subdevice *const write_subdevice =
--	    comedi_get_write_subdevice(info);
-+	struct comedi_subdevice *s = comedi_get_write_subdevice(info);
-+	unsigned int size;
-+	int err;
- 
--	ret = kstrtouint(buf, 10, &new_size_kb);
--	if (ret)
--		return ret;
--	if (new_size_kb > (UINT_MAX / bytes_per_kibi))
-+	err = kstrtouint(buf, 10, &size);
-+	if (err)
-+		return err;
-+	if (size > (UINT_MAX / 1024))
- 		return -EINVAL;
--	new_size = ((uint64_t) new_size_kb) * bytes_per_kibi;
-+	size *= 1024;
- 
- 	mutex_lock(&info->device->mutex);
--	if (write_subdevice == NULL ||
--	    (write_subdevice->subdev_flags & SDF_CMD_WRITE) == 0 ||
--	    write_subdevice->async == NULL) {
--		mutex_unlock(&info->device->mutex);
--		return -EINVAL;
--	}
--	retval = resize_async_buffer(info->device, write_subdevice,
--				     write_subdevice->async, new_size);
-+	if (s && (s->subdev_flags & SDF_CMD_WRITE) && s->async)
-+		err = resize_async_buffer(info->device, s, s->async, size);
-+	else
-+		err = -EINVAL;
- 	mutex_unlock(&info->device->mutex);
- 
--	if (retval < 0)
--		return retval;
--	return count;
-+	return err ? err : count;
- }
- 
- static struct device_attribute comedi_dev_attrs[] = {
+IO scheduler can only do so much. CFQ already tries hard to keep pending
+async queue depth low and that results in lower throughput many a times
+(as compared to deadline).
+
+In fact CFQ tries so hard to prioritize SYNC IO over async IO, that I have
+often heard cases of WRITEs being starved and people facing "task blocked
+for 120 second warnings".
+
+Thanks
+Vivek
