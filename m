@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134Ab2FEQQo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:16:44 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:52479 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754004Ab2FEQQl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:16:41 -0400
-Message-ID: <4FCE30DE.6090903@xenotime.net>
-Date: Tue, 05 Jun 2012 09:16:30 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Martin Pitt <martin.pitt@ubuntu.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Zeuthen <zeuthen@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH 1/1] [SCSI] scsi_debug: Add "removable" parameter
-References: <20120605072528.GE3043@piware.de> <20120605072737.GF3043@piware.de>
-In-Reply-To: <20120605072737.GF3043@piware.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S1754004Ab2FEQSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:18:44 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:55095 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194Ab2FEQSn convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Tue, 5 Jun 2012 12:18:43 -0400
+Message-Id: <4FCE4D800200007800088546@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 05 Jun 2012 17:18:40 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Sam Ravnborg" <sam@ravnborg.org>
+Cc: <x86@kernel.org>, "Don Zickus" <dzickus@redhat.com>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86,nmi: Fix section mismatch warnings on 32-bit
+References: <1338839763-11140-1-git-send-email-dzickus@redhat.com>
+ <4FCDDB7D0200007800088390@nat28.tlf.novell.com>
+ <20120605144734.GU32472@redhat.com>
+ <20120605161318.GA29751@merkur.ravnborg.org>
+In-Reply-To: <20120605161318.GA29751@merkur.ravnborg.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 12:27 AM, Martin Pitt wrote:
-
-> Add "removable" module parameter to set the "removable" attribute of any
-> subsequently created debug block device. It is a writable driver option, so
-> that you can switch between removable and "fixed" media block devices in
-> between the add_host calls.
+>>> On 05.06.12 at 18:13, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Tue, Jun 05, 2012 at 10:47:34AM -0400, Don Zickus wrote:
+>> On Tue, Jun 05, 2012 at 09:12:13AM +0100, Jan Beulich wrote:
+>> > >>> On 04.06.12 at 21:56, Don Zickus <dzickus@redhat.com> wrote:
+>> > > It was reported that compiling for 32-bit caused a bunch of section
+>> > > mismatch warnings:
+>> > > 
+>> > >  VDSOSYM arch/x86/vdso/vdso32-syms.lds
+>> > >   LD      arch/x86/vdso/built-in.o
+>> > >   LD      arch/x86/built-in.o
+>> > > WARNING: arch/x86/built-in.o(.data+0x5af0): Section mismatch in reference 
+>> > > from the variable
+>> > > test_nmi_ipi_callback_na.10451 to the function 
+>> > 
+>> > Did you check what this (compiler introduced) variable actually
+>> > represents? The problem clearly is that the compiler has no way
+>> > of knowing that data it generates referencing an __init function
+>> > would actually need to go into .init.data or alike.
+>> 
+>> I do not know enough about behind the scene compiler magic to track this
+>> down correctly.  So any insight/help is greatly appreciated. :-)
 > 
-> This is useful for being able to test the different behaviour/required
-> privileges in e. g. the udisks test suite.
-> 
-> Signed-off-by: Martin Pitt <martin.pitt@ubuntu.com>
-> Signed-off-by: David Zeuthen <zeuthen@gmail.com>
-> ---
->  drivers/scsi/scsi_debug.c |   35 ++++++++++++++++++++++++++++++++---
->  1 files changed, 32 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-> index 182d5a5..6eaa95e 100644
-> --- a/drivers/scsi/scsi_debug.c
-> +++ b/drivers/scsi/scsi_debug.c
-> @@ -109,6 +109,7 @@ static const char * scsi_debug_version_date = "20100324";
->  #define DEF_OPT_BLKS 64
->  #define DEF_PHYSBLK_EXP 0
->  #define DEF_PTYPE   0
-> +#define DEF_REMOVABLE 0
->  #define DEF_SCSI_LEVEL   5    /* INQUIRY, byte2 [5->SPC-3] */
->  #define DEF_SECTOR_SIZE 512
->  #define DEF_UNMAP_ALIGNMENT 0
-> @@ -180,6 +181,7 @@ static int scsi_debug_opt_blks = DEF_OPT_BLKS;
->  static int scsi_debug_opts = DEF_OPTS;
->  static int scsi_debug_physblk_exp = DEF_PHYSBLK_EXP;
->  static int scsi_debug_ptype = DEF_PTYPE; /* SCSI peripheral type (0==disk) */
-> +static int scsi_debug_removable = DEF_REMOVABLE;
->  static int scsi_debug_scsi_level = DEF_SCSI_LEVEL;
->  static int scsi_debug_sector_size = DEF_SECTOR_SIZE;
->  static int scsi_debug_virtual_gb = DEF_VIRTUAL_GB;
-> @@ -2754,6 +2755,7 @@ module_param_named(opt_blks, scsi_debug_opt_blks, int, S_IRUGO);
->  module_param_named(opts, scsi_debug_opts, int, S_IRUGO | S_IWUSR);
->  module_param_named(physblk_exp, scsi_debug_physblk_exp, int, S_IRUGO);
->  module_param_named(ptype, scsi_debug_ptype, int, S_IRUGO | S_IWUSR);
-> +module_param_named(removable, scsi_debug_removable, int, S_IRUGO | S_IWUSR);
->  module_param_named(scsi_level, scsi_debug_scsi_level, int, S_IRUGO);
->  module_param_named(sector_size, scsi_debug_sector_size, int, S_IRUGO);
->  module_param_named(unmap_alignment, scsi_debug_unmap_alignment, int, S_IRUGO);
-> @@ -2796,6 +2798,7 @@ MODULE_PARM_DESC(opt_blks, "optimal transfer length in block (def=64)");
->  MODULE_PARM_DESC(opts, "1->noise, 2->medium_err, 4->timeout, 8->recovered_err... (def=0)");
->  MODULE_PARM_DESC(physblk_exp, "physical block exponent (def=0)");
->  MODULE_PARM_DESC(ptype, "SCSI peripheral type(def=0[disk])");
-> +MODULE_PARM_DESC(removable, "claim to have removable media (def=0)");
->  MODULE_PARM_DESC(scsi_level, "SCSI level to simulate(def=5[SPC-3])");
->  MODULE_PARM_DESC(sector_size, "logical block size in bytes (def=512)");
->  MODULE_PARM_DESC(unmap_alignment, "lowest aligned thin provisioning lba (def=0)");
-> @@ -3205,6 +3208,25 @@ static ssize_t sdebug_map_show(struct device_driver *ddp, char *buf)
->  }
->  DRIVER_ATTR(map, S_IRUGO, sdebug_map_show, NULL);
->  
-> +static ssize_t sdebug_removable_show(struct device_driver *ddp,
-> +				     char *buf)
-> +{
-> +	return scnprintf(buf, PAGE_SIZE, "%d\n", scsi_debug_removable);
-> +}
-> +static ssize_t sdebug_removable_store(struct device_driver *ddp,
-> +				      const char *buf, size_t count)
-> +{
-> +	int n;
-> +
-> +	if ((count > 0) && (1 == sscanf(buf, "%d", &n)) && (n >= 0)) {
-> +		scsi_debug_removable = n;
-> +		return count;
-> +	}
-> +	return -EINVAL;
-> +}
-> +DRIVER_ATTR(removable, S_IRUGO | S_IWUSR, sdebug_removable_show,
-> +	    sdebug_removable_store);
-> +
->  
->  /* Note: The following function creates attribute files in the
->     /sys/bus/pseudo/drivers/scsi_debug directory. The advantage of these
-> @@ -3325,6 +3349,11 @@ static int __init scsi_debug_init(void)
->  		return -EINVAL;
->  	}
->  
-> +	if (scsi_debug_removable > 1) {
-> +		printk(KERN_ERR "scsi_debug_init: removable must be 0 or 1\n");
-> +		return -EINVAL;
-> +	}
-> +
+> We register a function annotated __init. And the normal use of this 
+> register()
+> is for functions that survive the init phase.
+> So drop the __init annotation on the function we register and the mismatch 
+> is fixed.
 
+But in the case here the function really is being used at init time
+only. Plus it still escapes me why there would be differences in
+behavior depending on bit-ness or compiler version.
 
-so why not make it a bool instead of an int value?
+Jan
 
-
->  	if (scsi_debug_dev_size_mb < 1)
->  		scsi_debug_dev_size_mb = 1;  /* force minimum 1 MB ramdisk */
->  	sz = (unsigned long)scsi_debug_dev_size_mb * 1048576;
-
-
-
--- 
-~Randy
