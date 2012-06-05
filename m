@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab2FEMkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 08:40:11 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55415 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab2FEMkJ convert rfc822-to-8bit (ORCPT
+	id S1756870Ab2FEMkq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 08:40:46 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60768 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab2FEMko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 08:40:09 -0400
-Message-ID: <1338899999.28282.164.camel@twins>
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jun 2012 14:39:59 +0200
-In-Reply-To: <1338898024.28282.160.camel@twins>
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
-	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
-	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
-	 <1338891271.28282.155.camel@twins>
-	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
-	 <1338892071.28282.157.camel@twins>
-	 <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
-	 <1338898024.28282.160.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 08:40:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <4FBD01A6.4080807@wwwdotorg.org>
+References: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
+	<4FBCF9F0.1010901@wwwdotorg.org>
+	<Pine.LNX.4.64.1205231659310.21980@axis700.grange>
+	<4FBD01A6.4080807@wwwdotorg.org>
+Date: Tue, 5 Jun 2012 14:40:43 +0200
+Message-ID: <CACRpkdbPe5jOmekPJBwryL5vkgUXsGyPijqDGqtYvK8AE6bCtw@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: add a pinctrl_mux_group_selected() function
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 14:07 +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-05 at 12:38 +0200, Stephane Eranian wrote:
-> > How about we add a field or flag to cpuc to tell it's fake, and then
-> > in
-> > try_alt_er() and __intel_shared_reg_get_constraints() we avoid
-> > touching
-> > live struct (like reg->alloc) if fake==1. I think he was trying to do
-> > the same with the core_id == -1 test. 
-> 
-> We might have to do something like that, however I'm trying to figure
-> out when that reg->alloc test in __intel_shared_reg_get_contraints() is
-> useful.
-> 
-> If it is useful in event scheduling, we cannot just leave it out in
-> validate_group().
+On Wed, May 23, 2012 at 5:26 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 05/23/2012 09:03 AM, Guennadi Liakhovetski wrote:
+>> On Wed, 23 May 2012, Stephen Warren wrote:
+>>
+>>> On 05/22/2012 04:23 PM, Guennadi Liakhovetski wrote:
+>>>> This patch adds a new function to allow clients to verify, whether a
+>>>> certain group is selected in the currently active setting or not.
+>>>>
+>>>> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+>>>> ---
+>>>>
+>>>> Maybe there is already a way to do this without adding a new function, I
+>>>> haven't found one, hence this patch.
+>>>
+>>> This function doesn't currently exist because it breaks the pinctrl
+>>> conceptual model, which is that devices ask pinctrl for certain settings
+>>> whenever they need them, rather than information flowing the other way.
+>>
+>> Well, yes, we could tra to ask for each thinkable configuration and see
+>> which one(s) succeed, but that doesn't seem very optimal either, even if
+>> we only have 3 possibilities for now.
+>>
+>>> What's the use case for this new functionality?
+>>
+>> It's MMC. MMC interfaces can use 1, 4, or 8 data lines, depending on the
+>> board configuration. The board knows, that it has, say, only 4 data lines
+>> routed to the interface, so, it specifies the respective pinctrl
+>> configuration as default. Now in the driver we have to know how many
+>> data-lines are connected.
 
-OK, so x86_schedule_events() can call that multiple times on the same
-event in case we keep adding events.. it needs the constraints of the
-previous events as well, and in that case we skip the whole extra_reg
-muck.
+I discussed the same scenario the other day, and I sort of understand
+this dilemma.
 
-But for validate_group() we only do this once, so it should work. Nasty
-though.
+It's popping up when using different default modes for the same
+device, the only one I've heard of is MMC that wants to be informed
+on how many bits of the bus it should use.
 
+[Stephen]
+> If using device tree, the bus-width property should be used. If not
+> using device tree, presumably you'd add an equivalent field to the
+> platform data.
+>
+> An alternative (only when not using DT, since there's already a property
+> for DT) is that the driver doesn't select pinctrl state "default", but
+> instead first looks for e.g. "8bit" and if found uses it, then falls
+> back to "4bit", then falls back to "1bit". Whichever state name is
+> defined indicates which bus width is available.
 
+But the DT approach seems to actually be less flexible than the old
+style platform data here, whereas the method mentioned last here
+can probe its way downward. DT just hardcodes it. But maybe this
+is usually what you want to do anyway.
 
+Yours,
+Linus Walleij
