@@ -1,104 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2FEQ5w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:57:52 -0400
-Received: from trent.utfs.org ([94.185.90.103]:41489 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab2FEQ5v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:57:51 -0400
-Date: Tue, 5 Jun 2012 09:57:42 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>, mcarlson@broadcom.com,
-        mchan@broadcom.com
-Subject: Re: tg3: transmit timed out, resetting
-In-Reply-To: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
-Message-ID: <alpine.DEB.2.01.1206050955380.5568@trent.utfs.org>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1754720Ab2FEQ7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:59:08 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:17290 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab2FEQ7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 12:59:04 -0400
+Date: Tue, 5 Jun 2012 12:49:57 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Jan Beulich <JBeulich@suse.com>, Russell King <linux@arm.linux.org.uk>,
+        yong.zhang0@gmail.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+        peterz@infradead.org, mingo@kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, akpm@linux-foundation.org,
+        nikunj@linux.vnet.ibm.com, paulmck@linux.vnet.ibm.com,
+        vatsa@linux.vnet.ibm.com, virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com, Ingo Molnar <mingo@redhat.com>,
+        rusty@rustcorp.com.au, rjw@sisk.pl, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Keir Fraser <keir@xen.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH 05/27] xen, cpu hotplug: Don't call
+ cpu_bringup() in xen_play_dead()
+Message-ID: <20120605164957.GA1997@phenom.dumpdata.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+ <20120601091124.31979.91984.stgit@srivatsabhat.in.ibm.com>
+ <4FC8D8E30200007800087D2B@nat28.tlf.novell.com>
+ <4FC8DC19.4000007@linux.vnet.ibm.com>
+ <4FC8FD9C0200007800087DF5@nat28.tlf.novell.com>
+ <4FCA5608.2010404@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FCA5608.2010404@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jun 2012 at 16:14, Christian Kujau wrote:
-> Hi,
+On Sat, Jun 02, 2012 at 11:36:00PM +0530, Srivatsa S. Bhat wrote:
+> On 06/01/2012 09:06 PM, Jan Beulich wrote:
 > 
-> on this Ideapad S10 the onboard Broadcom BCM5906M prints the warning 
-> below, once. From then on, the "transmit timed out, resetting" message 
-> repeats, every now and then.
+> >>>> On 01.06.12 at 17:13, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> > wrote:
+> >> On 06/01/2012 06:29 PM, Jan Beulich wrote:
+> >>
+> >>>>>> On 01.06.12 at 11:11, "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> >>> wrote:
+> >>>> xen_play_dead calls cpu_bringup() which looks weird, because xen_play_dead()
+> >>>> is invoked in the cpu down path, whereas cpu_bringup() (as the name 
+> >>>> suggests) is useful in the cpu bringup path.
+> >>>
+> >>> This might not be correct - the code as it is without this change is
+> >>> safe even when the vCPU gets onlined back later by an external
+> >>> entity (e.g. the Xen tool stack), and it would in that case resume
+> >>> at the return point of the VCPUOP_down hypercall. That might
+> >>> be a heritage from the original XenoLinux tree though, and be
+> >>> meaningless in pv-ops context - Jeremy, Konrad?
+> >>>
+> >>> Possibly it was bogus/unused even in that original tree - Keir?
+> >>>
+> >>
+> >>
+> >> Thanks for your comments Jan!
+> >>
+> >> In case this change is wrong, the other method I had in mind was to call
+> >> cpu_bringup_and_idle() in xen_play_dead(). (Even ARM does something similar,
+> >> in the sense that it runs the cpu bringup code including cpu_idle(), in the
+> >> cpu offline path, namely the cpu_die() function). Would that approach work
+> >> for xen as well? If yes, then we wouldn't have any issues to convert xen to
+> >> generic code.
+> > 
+> > No, that wouldn't work either afaict - the function is expected
+> > to return.
+> > 
 > 
-> This laptop is mounting 2 readonly NFS shares from a box in the same LAN 
-> and when scanning lots of files on these NFS shares, the transmit timeouts 
-> occur more often, I think. When there's sequential traffic (i.e. reading 
-> larger files from the NFS shares), fewer warnings occur. But this is just 
-> manual observation, I haven't been able to reproduce this reliably. 
-> However, there's constant traffic on the device (maybe ~700KB/s both tx 
-> and rx), so the messages occur pretty regularly.
 > 
-> I have reported the error against the Fedora 17 kernel [0] but it happens 
-> with a vanilla 3.4.0 too[1] - check out for full dmesg, .config and more.
-> 
-> I had a similar issue a while ago[2] and almost forgot about them. The 
-> laptop ran Ubuntu 10.04 (2.6.32) since then and the problem was gone, so 
-> I'd say 2.6.32 fixed it. Now the same laptop switched to Fedora, kernel 
-> 3.3.4 and the problem seems to be back again.
-> 
-> I'll try running with sg=off, as Matt suggested in [3] and report back.
+> Ok.. So, I would love to hear a confirmation about whether this patch (which
+> removes cpu_bringup() in xen_play_dead()) will break things or it is good as is.
 
-sg=off seems to help, no errors since I disabled it yesterday.
+I think it will break - are these patches available on some git tree to test them out?
 
-Any thoughts on this issue?
+> 
+> If its not correct, then we can probably make __cpu_post_online() return an int,
+> with the meaning:
+> 
+> 0 => success, go ahead and call cpu_idle()
+> non-zero => stop here, thanks for your services so far.. now leave the rest to me.
+> 
+> So all other archs will return 0, Xen will return non-zero, and it will handle
+> when to call cpu_idle() and when not to do so.
 
-Christian.
+The call-chain (this is taken from 41bd956de3dfdc3a43708fe2e0c8096c69064a1e):
 
-> Thanks,
-> Christian.
-> 
-> [0] https://bugzilla.redhat.com/show_bug.cgi?id=825123
-> [1] http://nerdbynature.de/bits/3.4.0/tg3/
-> [2] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00004.html
-> [3] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00317.html
-> 
-> ------------[ cut here ]------------
-> WARNING: at /opt/home/chrisk/dev/linux-2.6-git/net/sched/sch_generic.c:255 
-> dev_watchdog+0x1cc/0x1e0()
-> Hardware name: Lenovo          
-> NETDEV WATCHDOG: p2p1 (tg3): transmit queue 0 timed out
-> Modules linked in: acpi_cpufreq mperf freq_table nfs lockd sunrpc b43 
-> mac80211 cfg80211 ssb coretemp hwmon usb_storage [last unloaded: scsi_wait_scan]
-> Pid: 685, comm: FahCore_78 Not tainted 3.4.0-10151-g4fc3acf #8
-> Call Trace:
->  [<c102b299>] ? warn_slowpath_common+0x79/0xb0
->  [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
->  [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
->  [<c102b374>] ? warn_slowpath_fmt+0x34/0x40
->  [<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
->  [<c12d5320>] ? pfifo_fast_dequeue+0xe0/0xe0
->  [<c1035cf1>] ? run_timer_softirq+0xd1/0x1d0
->  [<c1031615>] ? __do_softirq+0x75/0x100
->  [<c10315a0>] ? remote_softirq_receive+0x20/0x20
->  <IRQ>  [<c10318a6>] ? irq_exit+0x66/0x90
->  [<c101b8d9>] ? smp_apic_timer_interrupt+0x59/0x90
->  [<c1360b35>] ? apic_timer_interrupt+0x31/0x38
->  [<c1360000>] ? rt_mutex_trylock+0x70/0x70
-> ---[ end trace 9de668a859ee5d6c ]---
-> tg3 0000:02:00.0: p2p1: transmit timed out, resetting
-> 
-> 
-> -- 
-> BOFH excuse #438:
-> 
-> sticky bit has come loose
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+    cpu_bringup_and_idle:
+     \- cpu_bringup
+      |   \-[preempt_disable]
+      |
+      |- cpu_idle
+           \- play_dead [assuming the user offlined the VCPU]
+           |     \
+           |     +- (xen_play_dead)
+           |          \- HYPERVISOR_VCPU_off [so VCPU is dead, once user
+           |          |                       onlines it starts from here]
+           |          \- cpu_bringup [preempt_disable]
+           |
+           +- preempt_enable_no_reschedule()
+           +- schedule()
+           \- preempt_enable()
 
--- 
-BOFH excuse #18:
+Which I think is a bit different from your use-case?
 
-excess surge protection
+> 
+> Might sound a bit ugly, but I don't see much other option. Suggestions are
+> appreciated!
+> 
+> Regards,
+> Srivatsa S. Bhat
