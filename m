@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab2FESKS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:10:18 -0400
-Received: from mail.sf-mail.de ([62.27.20.61]:47261 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513Ab2FESKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:10:16 -0400
-From: Rolf Eike Beer <eike-kernel@sf-tec.de>
-To: Martin Pitt <martin.pitt@ubuntu.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Zeuthen <zeuthen@gmail.com>, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH 0/1] Option for scsi_debug to fake removable devices
-Date: Tue, 05 Jun 2012 20:10:16 +0200
-Message-ID: <1647133.Oeh9OMjxKH@donald.sf-tec.de>
-User-Agent: KMail/4.8.3 (Linux/3.2.9-13-desktop; KDE/4.8.3; i686; ; )
-In-Reply-To: <20120605072528.GE3043@piware.de>
-References: <20120605072528.GE3043@piware.de>
+	id S1754420Ab2FESLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:11:34 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:54064 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459Ab2FESLd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 14:11:33 -0400
+Message-ID: <4FCE4BD0.8030703@micron.com>
+Date: Tue, 5 Jun 2012 11:11:28 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1603847.eTVbprOXxC"; micalg="pgp-sha1"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Sam Bradshaw <sbradshaw@micron.com>
+Subject: Re: [PATCH 2/2] mtip32xx: Create debugfs entries for troubleshooting
+References: <4FCD1002.2060203@micron.com> <4FCDB29F.8060107@kernel.dk> <4FCE49EE.2070703@micron.com>
+In-Reply-To: <4FCE49EE.2070703@micron.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-6.800.1017-18948.005
+X-TM-AS-Result: No--9.311700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 6/5/2012 11:03 AM, Asai Thambi S P wrote:
 
---nextPart1603847.eTVbprOXxC
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="ISO-8859-1"
+> On 6/5/2012 12:17 AM, Jens Axboe wrote:
+> 
+>> On 06/04/2012 09:44 PM, Asai Thambi S P wrote:
+>>> @@ -4062,10 +4210,20 @@ static int __init mtip_init(void)
+>>>  	}
+>>>  	mtip_major = error;
+>>>  
+>>> +	if (!dfs_parent) {
+>>> +		dfs_parent = debugfs_create_dir("rssd", NULL);
+>>> +		if (IS_ERR_OR_NULL(dfs_parent)) {
+>>> +			printk(KERN_WARNING "Error creating debugfs parent\n");
+>>> +			dfs_parent = NULL;
+>>> +		}
+>>> +	}
+>>> +
+>>
+>> Why would dfs_parent ever be non-NULL here?
+>>
+>> Apart from that, looks fine.
+>>
+> 
+> I moved this part from mtip_hw_debugfs_init(), dfs_parent will not be NULL here.
+> 
 
-Martin Pitt wrote:
 
-> I got a signoff from David Zeuthen (the primary udisks maintainer)
-> already, noted so in the patch.
+dfs_parent will be NULL here :)
 
-This is wrong. Signed-off would mean that he takes the patch and passed it on. 
-So what this really is as you as the original author push this out is either 
-Acked-by, Tested-by, Reviewed-by or something like that.
-
-Eike
---nextPart1603847.eTVbprOXxC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEABECAAYFAk/OS4gACgkQXKSJPmm5/E6h4QCfen1MoaDdShaXuB6prUS89ZXJ
-WBkAoI+XxT5dRkPzGgzfyQe9KpxBOKqf
-=DWNV
------END PGP SIGNATURE-----
-
---nextPart1603847.eTVbprOXxC--
-
+--
+Regards,
+Asai Thambi
