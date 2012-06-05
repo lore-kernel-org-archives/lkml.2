@@ -1,96 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758880Ab2FEG0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 02:26:41 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50930 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753693Ab2FEG0i (ORCPT
+	id S1759529Ab2FEGdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 02:33:42 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:41969 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab2FEGdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 02:26:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4FCDA69C.3040204@jp.fujitsu.com>
-Date: Tue, 05 Jun 2012 15:26:36 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 02:33:41 -0400
+Date: Mon, 4 Jun 2012 20:43:18 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging: comedi: cb_pcidas64: Fixed an if-statement
+ check
+Message-ID: <20120605034318.GA28810@kroah.com>
+References: <1338229715-2730-1-git-send-email-dimitrios.semitsoglou@gmail.com>
+ <1338241905-24327-1-git-send-email-dimitrios.semitsoglou@gmail.com>
+ <1338241905-24327-2-git-send-email-dimitrios.semitsoglou@gmail.com>
 MIME-Version: 1.0
-To: lenb@kernel.org, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI  : Implement ACPI_NOTIFY_EJECT_REQUEST for ACPI container
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338241905-24327-2-git-send-email-dimitrios.semitsoglou@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even if ACPI_NOTIFY_EJECT_REQUEST is notified to ACPI container, ACPI
-container just calls kobject_uevent(). The patch implements a function
-to remove all devices included in ACPI container.
+On Tue, May 29, 2012 at 12:51:45AM +0300, Dimitrios Semitsoglou-Tsiapos wrote:
+> Fixed in if-statemnt responsible for a sanity check inside the
+> prep_ao_dma function.
+> 
+> Signed-off-by: Dimitrios Semitsoglou-Tsiapos <dimitrios.semitsoglou@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/cb_pcidas64.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+> index 6f7fd99..a2e6f96 100644
+> --- a/drivers/staging/comedi/drivers/cb_pcidas64.c
+> +++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+> @@ -3392,8 +3392,8 @@ static int prep_ao_dma(struct comedi_device *dev, const struct comedi_cmd *cmd)
+>  	num_bytes = load_ao_dma_buffer(dev, cmd);
+>  	if (num_bytes == 0)
+>  		return -1;
+> -	if (num_bytes >= DMA_BUFFER_SIZE) ;
+> -	load_ao_dma(dev, cmd);
+> +	if (num_bytes >= DMA_BUFFER_SIZE)
+> +		load_ao_dma(dev, cmd);
 
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Are you sure about this change?  I think someone forgot to include an
+error check here, the driver was working with this function always being
+called, and now you only do it for the extreme case.
 
----
- drivers/acpi/container.c |   32 ++++++++++++++++++++++++++++++--
- 1 file changed, 30 insertions(+), 2 deletions(-)
+Have you checked it somehow?
 
-Index: linux-3.5-rc1/drivers/acpi/container.c
-===================================================================
---- linux-3.5-rc1.orig/drivers/acpi/container.c	2012-06-05 14:01:54.000000000 +0900
-+++ linux-3.5-rc1/drivers/acpi/container.c	2012-06-05 14:17:40.940836226 +0900
-@@ -123,6 +123,8 @@ static int acpi_container_remove(struct
- 	acpi_status status = AE_OK;
- 	struct acpi_container *pc = NULL;
+thanks,
 
-+	kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+
- 	pc = acpi_driver_data(device);
- 	kfree(pc);
- 	return status;
-@@ -152,6 +154,32 @@ static int container_device_add(struct a
- 	return result;
- }
-
-+static void container_device_remove(struct acpi_device *device,
-+				    acpi_handle handle)
-+{
-+	struct acpi_object_list arg_list;
-+	union acpi_object arg;
-+	int result;
-+	acpi_status status;
-+
-+	result = acpi_bus_trim(device, 1);
-+	if (result) {
-+		printk(KERN_WARNING "Removing contaier failed");
-+		return;
-+	}
-+
-+	arg_list.count = 1;
-+	arg_list.pointer = &arg;
-+	arg.type = ACPI_TYPE_INTEGER;
-+	arg.integer.value = 1;
-+
-+	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
-+	if (ACPI_FAILURE(status))
-+		printk(KERN_WARNING "Eject device failed\n");
-+
-+	return;
-+}
-+
- static void container_notify_cb(acpi_handle handle, u32 type, void *context)
- {
- 	struct acpi_device *device = NULL;
-@@ -183,13 +211,13 @@ static void container_notify_cb(acpi_han
- 		} else {
- 			if (ACPI_SUCCESS(status)) {
- 				/* device exist and this is a remove request */
--				kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+				container_device_remove(device, handle);
- 			}
- 		}
- 		break;
- 	case ACPI_NOTIFY_EJECT_REQUEST:
- 		if (!acpi_bus_get_device(handle, &device) && device) {
--			kobject_uevent(&device->dev.kobj, KOBJ_OFFLINE);
-+			container_device_remove(device, handle);
- 		}
- 		break;
- 	default:
-
+greg k-h
