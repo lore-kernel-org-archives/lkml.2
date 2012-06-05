@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab2FEQoV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:44:21 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40324 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752836Ab2FEQoT convert rfc822-to-8bit (ORCPT
+	id S1754471Ab2FEQqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:46:17 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:43054 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754285Ab2FEQqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:44:19 -0400
+	Tue, 5 Jun 2012 12:46:15 -0400
+Message-ID: <4FCE37CF.90902@xenotime.net>
+Date: Tue, 05 Jun 2012 09:46:07 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <4FCCD58B.30000@kernel.org>
-References: <4FCCD58B.30000@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 5 Jun 2012 09:43:57 -0700
-X-Google-Sender-Auth: pQpUcxc6a5vrZRozcvbdNnsOCnQ
-Message-ID: <CA+55aFzvj_0+kunG0fy1xDsTxrO-qBU7rg-6mpnFKoLq7XyROw@mail.gmail.com>
-Subject: Re: [GIT PULL] ACPI & Power Management Patches for Linux-3.5-rc1
-To: Len Brown <lenb@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-acpi <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
+CC: Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: serial: fix serial_txx9.c build warning/typo
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 4, 2012 at 8:34 AM, Len Brown <lenb@kernel.org> wrote:
->      Merge branch 'upstream' into bugfix-video
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-So I *think* this merge is a mismerge, but I want to verify with Alan.
+Fix kconfig symbol test to use "defined":
 
-I think the drivers/gpu/drm/gma500/psb_drv.c should be taken from
-current mainline: you commented out the call to
-"acpi_video_register()", and while it is true that both branches did
-comment that line out, mainline actually has further changes
-*afterwards* that put it back in again. Notably commit d839ede47a56
-("gma500: opregion and ACPI").
+drivers/tty/serial/serial_txx9.c: warning: "CONFIG_CONSOLE_POLL" is not defined [-Wundef]
 
-So I *think* that the resolution to that merge should have been to
-just take everything from mainline.
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/tty/serial/serial_txx9.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Alan? Can you check out the tree at
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux.git release
-
-or are you still busy with the queen?
-
-               Linus
+--- lnx-35-rc1.orig/drivers/tty/serial/serial_txx9.c
++++ lnx-35-rc1/drivers/tty/serial/serial_txx9.c
+@@ -466,7 +466,7 @@ static void serial_txx9_break_ctl(struct
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ }
+ 
+-#if defined(CONFIG_SERIAL_TXX9_CONSOLE) || (CONFIG_CONSOLE_POLL)
++#if defined(CONFIG_SERIAL_TXX9_CONSOLE) || defined(CONFIG_CONSOLE_POLL)
+ /*
+  *	Wait for transmitter & holding register to empty
+  */
