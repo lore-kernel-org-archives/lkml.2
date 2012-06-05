@@ -1,62 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753591Ab2FEP6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 11:58:50 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:51839
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752582Ab2FEP6t (ORCPT
+	id S1753684Ab2FEP7V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 11:59:21 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:34934 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab2FEP7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 11:58:49 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI9371I1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCE2CB1.5090308@freescale.com>
-Date: Tue, 5 Jun 2012 10:58:41 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 11:59:19 -0400
+Message-ID: <4FCE2CCE.9000900@openvz.org>
+Date: Tue, 05 Jun 2012 19:59:10 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.4) Gecko/20120517 Firefox/10.0.4 Iceape/2.7.4
 MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 5/5] powerpc/85xx: add support to JOG feature using
- cpufreq interface
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <1336737235-15370-5-git-send-email-chenhui.zhao@freescale.com> <4FC950AF.90007@freescale.com> <20120605105929.GA22427@localhost.localdomain>
-In-Reply-To: <20120605105929.GA22427@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+CC: Ondrej Zary <linux@rainbow-software.org>, Hugh Dickins <hughd@google.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, Hans de Bruin <jmdebruin@xmsnet.nl>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?Toralf_F=F6r?= =?ISO-8859-1?Q?ster?= 
+	<toralf.foerster@gmx.de>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>
+Subject: Re: [bisected commit 0fc9d10] NFS-server corruption with 3.4
+References: <201206051116.17711.linux@rainbow-software.org> <4FCE0A83.4050502@openvz.org> <201206051620.47925.linux@rainbow-software.org> <4FCE1D17.1080904@openvz.org> <87zk8h23wn.fsf@devron.myhome.or.jp> <4FCE2256.7010804@openvz.org>
+In-Reply-To: <4FCE2256.7010804@openvz.org>
+Content-Type: multipart/mixed;
+ boundary="------------080706050900010906060105"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 05:59 AM, Zhao Chenhui wrote:
-> On Fri, Jun 01, 2012 at 06:30:55PM -0500, Scott Wood wrote:
->> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
->>> The jog mode frequency transition process on the MPC8536 is similar to
->>> the deep sleep process. The driver need save the CPU state and restore
->>> it after CPU warm reset.
->>>
->>> Note:
->>>  * The I/O peripherals such as PCIe and eTSEC may lose packets during
->>>    the jog mode frequency transition.
+This is a multi-part message in MIME format.
+--------------080706050900010906060105
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+Proper fix in attachment.
+
+Konstantin Khlebnikov wrote:
+> OGAWA Hirofumi wrote:
+>> Konstantin Khlebnikov<khlebnikov@openvz.org>   writes:
 >>
->> That might be acceptable for eTSEC, but it is not acceptable to lose
->> anything on PCIe.  Especially not if you're going to make this "default y".
-> 
-> It is a hardware limitation.
+>>> Hmm, very interesting!
+>>> Please try this patch, it must fix the problem and print some numbers to debug.
+>>>
+>>
+>> I think the bug is in radix_tree_for_each_contig().
+>>
+>> radix_tree_next_slot() returns NULL if the slot was NULL (i.e. there is
+>> hole). But, slot == NULL is not meaning to stop iterate here. Actually,
+>> if slot is NULL, it gets next chunk.
+>>
+>> Bang.
+>
+> Yeah, you are right, I already found this too.
+> Currently I think how to fix this more accurately...
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Then make sure jog isn't used if PCIe is used.
 
-Maybe you could do something with the suspend infrastructure, but this
-is sufficiently heavyweight that transitions should be manually
-requested, not triggered by the automatic cpufreq governor.
+--------------080706050900010906060105
+Content-Type: text/plain;
+ name="radix-tree-fix-contiguous-iterator"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: attachment;
+ filename="radix-tree-fix-contiguous-iterator"
 
-Does this apply to p1022, or just mpc8536?
+radix-tree: fix contiguous iterator
 
-> Peripherals in the platform will not be operating
-> during the jog mode frequency transition process.
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 
-What ensures this?
+This patch fixes bug in macro radix_tree_for_each_contig().
+If radix_tree_next_slot() sees NULL in next slot it returns NULL, but following
+radix_tree_next_chunk() switches iterating into next chunk. As result iterating
+becomes non-contiguous and breaks vfs "splice" and all its users.
 
--Scott
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Reported-and-bisected-by: Hans de Bruin <jmdebruin@xmsnet.nl>
+Reported-and-bisected-by: Ondrej Zary <linux@rainbow-software.org>
+Reported-and-bisected-by: Toralf Förster <toralf.foerster@gmx.de>
+---
+ include/linux/radix-tree.h |    5 ++++-
+ lib/radix-tree.c           |    3 +++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 0d04cd6..ffc444c 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -368,8 +368,11 @@ radix_tree_next_slot(void **slot, struct radix_tree_iter *iter, unsigned flags)
+ 			iter->index++;
+ 			if (likely(*slot))
+ 				return slot;
+-			if (flags & RADIX_TREE_ITER_CONTIG)
++			if (flags & RADIX_TREE_ITER_CONTIG) {
++				/* forbid switching to the next chunk */
++				iter->next_index = 0;
+ 				break;
++			}
+ 		}
+ 	}
+ 	return NULL;
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 86516f5..3ac50dc 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -673,6 +673,9 @@ void **radix_tree_next_chunk(struct radix_tree_root *root,
+ 	 * during iterating; it can be zero only at the beginning.
+ 	 * And we cannot overflow iter->next_index in a single step,
+ 	 * because RADIX_TREE_MAP_SHIFT < BITS_PER_LONG.
++	 *
++	 * This condition also used by radix_tree_next_slot() to stop
++	 * contiguous iterating, and forbid swithing to the next chunk.
+ 	 */
+ 	index = iter->next_index;
+ 	if (!index && iter->index)
+
+--------------080706050900010906060105--
