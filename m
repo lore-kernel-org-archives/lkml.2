@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761397Ab2FEJYy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:24:54 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52338 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab2FEJYv (ORCPT
+	id S1761446Ab2FEJ01 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:26:27 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59323 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab2FEJ0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:24:51 -0400
+	Tue, 5 Jun 2012 05:26:25 -0400
 From: Wanpeng Li <liwp.linux@gmail.com>
 To: Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
@@ -22,9 +22,9 @@ Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
         Wanpeng Li <liwp.linux@gmail.com>,
         Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: [PATCH] remove no longer use of pdflush interface
-Date: Tue,  5 Jun 2012 17:24:36 +0800
-Message-Id: <1338888276-3341-1-git-send-email-liwp.linux@gmail.com>
+Subject: [PATCH v2] remove no longer use of pdflush interface
+Date: Tue,  5 Jun 2012 17:26:11 +0800
+Message-Id: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
