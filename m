@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab2FEJO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:14:29 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:57127 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab2FEJO1 (ORCPT
+	id S1759125Ab2FEJQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:16:46 -0400
+Received: from mail-1-out2.atlantis.sk ([80.94.52.71]:59236 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752494Ab2FEJQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:14:27 -0400
+	Tue, 5 Jun 2012 05:16:45 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+Subject: [bisected] NFS corruption with 3.4
+Date: Tue, 5 Jun 2012 11:16:17 +0200
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 5 Jun 2012 17:13:44 +0800
-Message-ID: <CANFwon17XNVcsSZsHmGtYnXtPuoGcNZgHtDUmZCvArVy8unkog@mail.gmail.com>
-Subject: KGTP (Linux Kernel debugger and tracer) 20120605 release(user task
- memory access and user task stack dump available now)
-To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>
-Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Disposition: inline
+X-Length: 1266
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201206051116.17711.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KGTP is a realtime and lightweight Linux debugger and tracer.
-To use it, you don't need patch or rebuild the Linux kernel. Just
-build KGTP module and insmod it is OK.
+Hello,
+I use NFS for deploying HDD images on new machines. My machine has 2nd network 
+card just for this, running DHCPD, TFTPD and kernel NFS server. The target 
+machine is set to boot from LAN and boots SystemRescueCD from my machine with 
+an autorun script that launches Partimage and deploys the HDD image (400 to 
+900 MB compressed).
 
-It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
-current machine or remote machine can debug and trace Linux through
-GDB tracepoint and some other functions without stopping the Linux
-Kernel.
-And even if the board doesn't have GDB on it and doesn't have
-interface for remote debug. It can debug the Linux Kernel using
-offline debug (See
-HOWTO#/sys/kernel/debug/gtpframe_and_offline_debug).
-KGTP supports X86-32, X86-64, MIPS and ARM.
-KGTP is tested on Linux kernel 2.6.18 to upstream.
-And it can work with Android (See
-http://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
+It worked fine for years, until now. With kernel 3.4, everyting 
+works only for the first time after boot (and not always). Next time (next 
+machine), partimage aborts almost immediately as it's probably unable to 
+decompress the image file. md5sum is different on my machine vs. on the 
+target (through NFS). Also SystemRescueCD boot aborts with md5 error 
+sometimes. Everything works fine after rebooting back to 3.3.
 
-Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
-http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
-about howto use KGTP.
+Bisection found this:
 
-Now, KGTP 20120605 release.
-You can get the package for it from
-http://kgtp.googlecode.com/files/kgtp_20120605.tar.bz2
-or
-svn co https://kgtp.googlecode.com/svn/tags/20120605
+0fc9d1040313047edf6a39fd4d7c7defdca97c62 is the first bad commit
+commit 0fc9d1040313047edf6a39fd4d7c7defdca97c62
+Author: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date:   Wed Mar 28 14:42:54 2012 -0700
 
-The main change of this release is:
-Add new function "Read memory of user space program directly".
-And use this function will not interrupt this task.
-Please goto http://code.google.com/p/kgtp/wiki/HOWTO#Read_memory_of_user_space_program_directly
-to get more info about it.
+    radix-tree: use iterators in find_get_pages* functions
 
-Add new function "collect stack (for backtrace) of user space program
-in tracepoint".
-With this function, you can get the stack dump of an user task from
-user space to Kernel space.
-Please goto http://code.google.com/p/kgtp/wiki/HOWTO#collect_stack_(for_backtrace)_of_user_space_program_in_tracepoin
-to get more info about it.
+Reverting this commit in 3.4 fixes the problem.
 
-Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
-about this release.
 
-According to the comments of Christoph, Geoff and Andi.  I make lite
-patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
-see it.
-
-Thanks,
-Hui
+-- 
+Ondrej Zary
