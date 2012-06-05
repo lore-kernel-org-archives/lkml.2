@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761456Ab2FEDlW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:41:22 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49586 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2FEDlT (ORCPT
+	id S1761485Ab2FEDl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:41:29 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43604 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761466Ab2FEDlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:41:19 -0400
+	Mon, 4 Jun 2012 23:41:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         fengguang.wu@intel.com, hughd@google.com, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        James Smart <james.smart@emulex.com>
-Subject: [PATCH 04/10] block: drop custom queue draining used by scsi_transport_{iscsi|fc}
-Date: Mon,  4 Jun 2012 20:40:54 -0700
-Message-Id: <1338867660-4689-5-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 07/10] blkcg: inline bio_blkcg() and friends
+Date: Mon,  4 Jun 2012 20:40:57 -0700
+Message-Id: <1338867660-4689-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1338867660-4689-1-git-send-email-tj@kernel.org>
 References: <1338867660-4689-1-git-send-email-tj@kernel.org>
@@ -25,166 +23,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-iscsi_remove_host() uses bsg_remove_queue() which implements custom
-queue draining.  fc_bsg_remove() open-codes mostly identical logic.
+Make bio_blkcg() and friends inline.  They all are very simple and
+used only in few places.
 
-The draining logic isn't correct in that blk_stop_queue() doesn't
-prevent new requests from being queued - it just stops processing, so
-nothing prevents new requests to be queued after the logic determines
-that the queue is drained.
-
-blk_cleanup_queue() now implements proper queue draining and these
-custom draining logics aren't necessary.  Drop them and use
-bsg_unregister_queue() + blk_cleanup_queue() instead.
+This patch is to prepare for further updates to request allocation
+path.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: James Smart <james.smart@emulex.com>
 ---
- block/bsg-lib.c                     |   53 -----------------------------------
- drivers/scsi/scsi_transport_fc.c    |   38 -------------------------
- drivers/scsi/scsi_transport_iscsi.c |    2 +-
- include/linux/bsg-lib.h             |    1 -
- 4 files changed, 1 insertions(+), 93 deletions(-)
+ block/blk-cgroup.c |   21 ---------------------
+ block/blk-cgroup.h |   26 ++++++++++++++++++++++----
+ 2 files changed, 22 insertions(+), 25 deletions(-)
 
-diff --git a/block/bsg-lib.c b/block/bsg-lib.c
-index 7ad49c8..deee61f 100644
---- a/block/bsg-lib.c
-+++ b/block/bsg-lib.c
-@@ -243,56 +243,3 @@ int bsg_setup_queue(struct device *dev, struct request_queue *q,
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(bsg_setup_queue);
--
--/**
-- * bsg_remove_queue - Deletes the bsg dev from the q
-- * @q:	the request_queue that is to be torn down.
-- *
-- * Notes:
-- *   Before unregistering the queue empty any requests that are blocked
-- */
--void bsg_remove_queue(struct request_queue *q)
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index cbeeb54..a48f35b 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -31,27 +31,6 @@ EXPORT_SYMBOL_GPL(blkcg_root);
+ 
+ static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
+ 
+-struct blkcg *cgroup_to_blkcg(struct cgroup *cgroup)
 -{
--	struct request *req; /* block request */
--	int counts; /* totals for request_list count and starved */
--
--	if (!q)
--		return;
--
--	/* Stop taking in new requests */
--	spin_lock_irq(q->queue_lock);
--	blk_stop_queue(q);
--
--	/* drain all requests in the queue */
--	while (1) {
--		/* need the lock to fetch a request
--		 * this may fetch the same reqeust as the previous pass
--		 */
--		req = blk_fetch_request(q);
--		/* save requests in use and starved */
--		counts = q->rq.count[0] + q->rq.count[1] +
--			 q->rq.starved[0] + q->rq.starved[1];
--		spin_unlock_irq(q->queue_lock);
--		/* any requests still outstanding? */
--		if (counts == 0)
--			break;
--
--		/* This may be the same req as the previous iteration,
--		 * always send the blk_end_request_all after a prefetch.
--		 * It is not okay to not end the request because the
--		 * prefetch started the request.
--		 */
--		if (req) {
--			/* return -ENXIO to indicate that this queue is
--			 * going away
--			 */
--			req->errors = -ENXIO;
--			blk_end_request_all(req, -ENXIO);
--		}
--
--		msleep(200); /* allow bsg to possibly finish */
--		spin_lock_irq(q->queue_lock);
--	}
--	bsg_unregister_queue(q);
+-	return container_of(cgroup_subsys_state(cgroup, blkio_subsys_id),
+-			    struct blkcg, css);
 -}
--EXPORT_SYMBOL_GPL(bsg_remove_queue);
-diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
-index 5797604..a9617ad 100644
---- a/drivers/scsi/scsi_transport_fc.c
-+++ b/drivers/scsi/scsi_transport_fc.c
-@@ -4130,45 +4130,7 @@ fc_bsg_rportadd(struct Scsi_Host *shost, struct fc_rport *rport)
- static void
- fc_bsg_remove(struct request_queue *q)
+-EXPORT_SYMBOL_GPL(cgroup_to_blkcg);
+-
+-static struct blkcg *task_blkcg(struct task_struct *tsk)
+-{
+-	return container_of(task_subsys_state(tsk, blkio_subsys_id),
+-			    struct blkcg, css);
+-}
+-
+-struct blkcg *bio_blkcg(struct bio *bio)
+-{
+-	if (bio && bio->bi_css)
+-		return container_of(bio->bi_css, struct blkcg, css);
+-	return task_blkcg(current);
+-}
+-EXPORT_SYMBOL_GPL(bio_blkcg);
+-
+ static bool blkcg_policy_enabled(struct request_queue *q,
+ 				 const struct blkcg_policy *pol)
  {
--	struct request *req; /* block request */
--	int counts; /* totals for request_list count and starved */
--
- 	if (q) {
--		/* Stop taking in new requests */
--		spin_lock_irq(q->queue_lock);
--		blk_stop_queue(q);
--
--		/* drain all requests in the queue */
--		while (1) {
--			/* need the lock to fetch a request
--			 * this may fetch the same reqeust as the previous pass
--			 */
--			req = blk_fetch_request(q);
--			/* save requests in use and starved */
--			counts = q->rq.count[0] + q->rq.count[1] +
--				q->rq.starved[0] + q->rq.starved[1];
--			spin_unlock_irq(q->queue_lock);
--			/* any requests still outstanding? */
--			if (counts == 0)
--				break;
--
--			/* This may be the same req as the previous iteration,
--			 * always send the blk_end_request_all after a prefetch.
--			 * It is not okay to not end the request because the
--			 * prefetch started the request.
--			 */
--			if (req) {
--				/* return -ENXIO to indicate that this queue is
--				 * going away
--				 */
--				req->errors = -ENXIO;
--				blk_end_request_all(req, -ENXIO);
--			}
--
--			msleep(200); /* allow bsg to possibly finish */
--			spin_lock_irq(q->queue_lock);
--		}
--
- 		bsg_unregister_queue(q);
- 		blk_cleanup_queue(q);
- 	}
-diff --git a/drivers/scsi/scsi_transport_iscsi.c b/drivers/scsi/scsi_transport_iscsi.c
-index 1cf640e..c737a16 100644
---- a/drivers/scsi/scsi_transport_iscsi.c
-+++ b/drivers/scsi/scsi_transport_iscsi.c
-@@ -575,7 +575,7 @@ static int iscsi_remove_host(struct transport_container *tc,
- 	struct iscsi_cls_host *ihost = shost->shost_data;
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 8ac457c..e74cce1 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -120,8 +120,6 @@ struct blkcg_policy {
  
- 	if (ihost->bsg_q) {
--		bsg_remove_queue(ihost->bsg_q);
-+		bsg_unregister_queue(ihost->bsg_q);
- 		blk_cleanup_queue(ihost->bsg_q);
- 	}
- 	return 0;
-diff --git a/include/linux/bsg-lib.h b/include/linux/bsg-lib.h
-index f55ab8c..4d0fb3d 100644
---- a/include/linux/bsg-lib.h
-+++ b/include/linux/bsg-lib.h
-@@ -67,7 +67,6 @@ void bsg_job_done(struct bsg_job *job, int result,
- int bsg_setup_queue(struct device *dev, struct request_queue *q, char *name,
- 		    bsg_job_fn *job_fn, int dd_job_size);
- void bsg_request_fn(struct request_queue *q);
--void bsg_remove_queue(struct request_queue *q);
- void bsg_goose_queue(struct request_queue *q);
+ extern struct blkcg blkcg_root;
  
- #endif
+-struct blkcg *cgroup_to_blkcg(struct cgroup *cgroup);
+-struct blkcg *bio_blkcg(struct bio *bio);
+ struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, struct request_queue *q);
+ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
+ 				    struct request_queue *q);
+@@ -160,6 +158,25 @@ int blkg_conf_prep(struct blkcg *blkcg, const struct blkcg_policy *pol,
+ void blkg_conf_finish(struct blkg_conf_ctx *ctx);
+ 
+ 
++static inline struct blkcg *cgroup_to_blkcg(struct cgroup *cgroup)
++{
++	return container_of(cgroup_subsys_state(cgroup, blkio_subsys_id),
++			    struct blkcg, css);
++}
++
++static inline struct blkcg *task_blkcg(struct task_struct *tsk)
++{
++	return container_of(task_subsys_state(tsk, blkio_subsys_id),
++			    struct blkcg, css);
++}
++
++static inline struct blkcg *bio_blkcg(struct bio *bio)
++{
++	if (bio && bio->bi_css)
++		return container_of(bio->bi_css, struct blkcg, css);
++	return task_blkcg(current);
++}
++
+ /**
+  * blkg_to_pdata - get policy private data
+  * @blkg: blkg of interest
+@@ -351,6 +368,7 @@ static inline void blkg_rwstat_reset(struct blkg_rwstat *rwstat)
+ #else	/* CONFIG_BLK_CGROUP */
+ 
+ struct cgroup;
++struct blkcg;
+ 
+ struct blkg_policy_data {
+ };
+@@ -361,8 +379,6 @@ struct blkcg_gq {
+ struct blkcg_policy {
+ };
+ 
+-static inline struct blkcg *cgroup_to_blkcg(struct cgroup *cgroup) { return NULL; }
+-static inline struct blkcg *bio_blkcg(struct bio *bio) { return NULL; }
+ static inline struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, void *key) { return NULL; }
+ static inline int blkcg_init_queue(struct request_queue *q) { return 0; }
+ static inline void blkcg_drain_queue(struct request_queue *q) { }
+@@ -374,6 +390,8 @@ static inline int blkcg_activate_policy(struct request_queue *q,
+ static inline void blkcg_deactivate_policy(struct request_queue *q,
+ 					   const struct blkcg_policy *pol) { }
+ 
++static inline struct blkcg *cgroup_to_blkcg(struct cgroup *cgroup) { return NULL; }
++static inline struct blkcg *bio_blkcg(struct bio *bio) { return NULL; }
+ static inline struct blkg_policy_data *blkg_to_pd(struct blkcg_gq *blkg,
+ 						  struct blkcg_policy *pol) { return NULL; }
+ static inline struct blkcg_gq *pd_to_blkg(struct blkg_policy_data *pd) { return NULL; }
 -- 
 1.7.7.3
 
