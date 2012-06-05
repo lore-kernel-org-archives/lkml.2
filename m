@@ -1,112 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754769Ab2FERJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:09:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52140 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752288Ab2FERJp (ORCPT
+	id S1754857Ab2FERMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:12:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43179 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753589Ab2FERMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:09:45 -0400
-Date: Tue, 5 Jun 2012 13:09:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ming Lei <ming.lei@canonical.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
-In-Reply-To: <CACVXFVMdidqhFE1AhenUi8VXbYhac492YdxsvPmVqcwmo=TrcA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1206051256130.1542-100000@iolanthe.rowland.org>
+	Tue, 5 Jun 2012 13:12:07 -0400
+Message-ID: <4FCE3DE3.9060805@gmail.com>
+Date: Tue, 05 Jun 2012 11:12:03 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: git bisect and perf
+References: <4FCE25C6.2080601@gmail.com> <1338912052.2749.2.camel@twins> <1338912312.2749.6.camel@twins>
+In-Reply-To: <1338912312.2749.6.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jun 2012, Ming Lei wrote:
+On 6/5/12 10:05 AM, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 18:00 +0200, Peter Zijlstra wrote:
+>> On Tue, 2012-06-05 at 09:29 -0600, David Ahern wrote:
+>>> I am trying find out when (ie. which commit) the pebs feature
+>>> actually
+>>> started working on a westmere system
+>>
+>> What do you mean with working? The whole cycles:pp thing is magic and
+>> unrelated to 'regular' PEBS stuff.
 
-> On Tue, Jun 5, 2012 at 10:47 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> >
-> > Avoid running probe, that's fine.  But avoiding remove can lead to
-> > problems, because the subsystem and the driver will no longer agree on
-> > who should manage the device.
-> 
-> After device_shutdown() has been called, the whole system will enter power down
-> or reset later, so it doesn't matter if who should manage the device.
+:p requires PEBS?
 
-Maybe.  But there might be quite some time between the shutdown call 
-and the eventual power-off or reboot.
+> .35 would indeed be the version we
+>> introduced PEBS support and it should actually work.
 
-> Also once shutdown callback is called for the device, looks its other callbacks
-> should not touch the device any more.
+I'm referring to cycles:p
 
-You shouldn't depend on that.  Shutdown methods generally put the 
-device into a state suitable for power-off or reboot; they don't often 
-guarantee that the driver won't change the state later on.
+model name	: Intel(R) Xeon(R) CPU           E5620  @ 2.40GHz
+Fedora 14, 2.6.35.14-106.fc14.x86_64 (few perf_event* differences from 
+2.6.35.14).
 
-On the whole, it might be easier just to hold the device lock during 
-the shutdown call.
+# perf record -e cycles:p -v -- sleep 1
 
-> >> @@ -1803,6 +1806,9 @@ void device_shutdown(void)
-> >>  {
-> >>       struct device *dev;
-> >>
-> >> +     ACCESS_ONCE(device_shutdown_started) = 1;
-> >
-> > This does not need to be ACCESS_ONCE.  ACCESS_ONCE is needed only in
-> > situations where the compiler might insert multiple reads or writes.
-> 
-> I have talked with Paul about the ACCESS_ONCE, and Paul thought it is needed
-> to prevent the compiler from doing byte-at-a-time stores.
+   Warning:  ... trying to fall back to cpu-clock-ticks
 
-Why on earth would a compiler change this into a byte-at-a-time store?  
-And even if it did, what problem would that cause?  Only one of the 
-bytes would be different from the original value.
+...
 
-> Maybe Paul has a detailed explanation about it.
+Cycles is supported; it's the :p that is not. perf userspace only 
+recently gained the knowledge for discriminating the two. Using perf 
+from acme/perf/urgent:
 
-> >>  static int really_probe(struct device *dev, struct device_driver *drv)
-> >>  {
-> >>       int ret = 0;
-> >> +     int idx;
-> >>
-> >> +     idx = srcu_read_lock(&driver_srcu);
-> >>       atomic_inc(&probe_count);
-> >> +     if (ACCESS_ONCE(device_shutdown_started))
-> >
-> > This doesn't need to be ACCESS_ONCE either.  If it would make you feel
-> 
-> Because the global variable of device_shutdown_started is not changed inside
-> the function, the compiler may put the above line after the line of
-> 'dev->driver = drv',
+# /tmp/pbuild/perf record -e cycles:p -v -- sleep 1
 
-No, it can't do that.  If the compiler moved this read farther down, 
-and as a result the CPU wrote to dev->driver when it shouldn't have, 
-the result would be incorrect (i.e., different from what would have 
-happened if the statement hadn't been moved).  Hence the compiler is 
-prohibited from making such an optimization.
+   Error: sys_perf_event_open() syscall returned with 28 (No space left 
+on device).  /bin/dmesg may provide additional information.
 
-> so introduce the ACCESS_ONCE to avoid the compiler optimization.
-> 
-> > better, you could write
-> >
-> >        if (rcu_dereference(&device_shutdown_started))
-> 
-> The usage of SRCU refers to the part 'Cleaning Up Safely' of the SRCU
-> paper 'Sleepable RCU'[1].  Also the patch doesn't call rcu_assign_pointer,
-> so rcu_dereference isn't needed.
+I chased this to intel_pebs_constraints() returning &emptyconstraint 
+which has a weight of 0 (validate_event -> intel_get_event_constraints 
+-> intel_pebs_constraints).
 
-True, it's not needed any more than ACCESS_ONCE is.
 
-> > As mentioned above, this is not good.  I don't know... maybe it won't
-> > ever cause any difficulties.
-> 
-> Looks same with above.
+>>
+>> But if you're looking for the cycles:pp stuff (commit 7639dae0ca1)
+>> that's .38-rc1-ish.
+>
+> So on kernels pre that commit you could still do:
+>
+>    perf record -e r108000c0:pp
 
-You could try going into an infinite loop here, but that's probably not 
-a good idea.
+Indeed that works on the F14 kernel.
 
-Alan Stern
-
+David
