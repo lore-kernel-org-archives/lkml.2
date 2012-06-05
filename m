@@ -1,215 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761446Ab2FEJ01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:26:27 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59323 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab2FEJ0Z (ORCPT
+	id S1761452Ab2FEJbI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:31:08 -0400
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:35632 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab2FEJbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:26:25 -0400
-From: Wanpeng Li <liwp.linux@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
-        David Howells <dhowells@redhat.com>,
-        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Michel Lespinasse <walken@google.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Wanpeng Li <liwp.linux@gmail.com>,
-        Wanpeng Li <liwp@linux.vnet.ibm.com>
-Subject: [PATCH v2] remove no longer use of pdflush interface
-Date: Tue,  5 Jun 2012 17:26:11 +0800
-Message-Id: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 5 Jun 2012 05:31:06 -0400
+Message-ID: <4FCDD1A0.7040402@free.fr>
+Date: Tue, 05 Jun 2012 11:30:08 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, devel@openvz.org, kir@parallels.com,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] allow a task to join a pid namespace
+References: <1338816828-25312-1-git-send-email-glommer@parallels.com> <20120604165117.GA13091@redhat.com>
+In-Reply-To: <20120604165117.GA13091@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wanpeng Li <liwp@linux.vnet.ibm.com>
+On 06/04/2012 06:51 PM, Oleg Nesterov wrote:
+> On 06/04, Glauber Costa wrote:
+>>
+>> Currently, it is possible for a process  to join existing
+>> net, uts and ipc namespaces. This patch allows a process to join an
+>> existing pid namespace as well.
+> 
+> I can't understand this patch... but probably I missed something,
+> I never really understood setns.
 
-------------------
+Hi Oleg,
 
-Change in v2:
+let me clarify why is needed setns. In the world of container, setns
+allows to administrate the container from outside. One good example is
+to shutdown the container. The users setup their hosts with the init's
+services to startup the containers when the system starts, but they have
+no way to invoke 'shutdown' from inside the container when the system
+goes down except doing some trick with the signals. The setns syscall
+with the pid namespace support will allow to do that.
 
-* add printk warning
-* add description in Documentation
+Also a complete setns support will allow to write some administrative
+tools to have a global view of the different separated resources running
+in several containers.
 
-------------------
+For example, if you are the administrator of the host and you have
+hundred of containers running on it, you can use setns to run netstat
+within each container and build a view of the different network stack.
+The same applies for 'ps' or 'top'.
 
-Signed-off-by: Wanpeng Li <liwp@linux.vnet.ibm.com>
----
- .../ABI/obsolete/proc-sys-vm-nr_pdflush_threads    |    5 +++++
- Documentation/feature-removal-schedule.txt         |    8 ++++++++
- Documentation/sysctl/vm.txt                        |   11 -----------
- fs/fs-writeback.c                                  |    5 -----
- include/linux/sysctl.h                             |    3 +++
- include/linux/writeback.h                          |    5 -----
- kernel/sysctl.c                                    |   18 +++++++++++++-----
- kernel/sysctl_binary.c                             |    2 +-
- 8 files changed, 30 insertions(+), 27 deletions(-)
- create mode 100644 Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
+Without setns, things are much more complicated and in some cases,
+impossible. For instance, you can run a daemon inside the container,
+send command to it and redirect its output to the fifo  but that
+increase the number of processes and has some limitations. Also that
+means the command you want to run is present in the container's FS.
 
-diff --git a/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads b/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
-new file mode 100644
-index 0000000..edbe548
---- /dev/null
-+++ b/Documentation/ABI/obsolete/proc-sys-vm-nr_pdflush_threads
-@@ -0,0 +1,5 @@
-+What:		/proc/sys/vm/nr_pdflush_threads
-+Date:		June 2012
-+Contact:	Wanpeng Li <liwp@linux.vnet.ibm.com>
-+Description: Since pdflush is replaced by per-BDI flusher, the interface of old pdflush
-+             exported in /proc/sys/vm/ should be removed.
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index e4b5775..7eea1ee 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,6 +6,14 @@ be removed from this file.
- 
- ---------------------------
- 
-+What: /proc/sys/vm/nr_pdflush_threads
-+When: 2012
-+Why: Since pdflush is deprecated, the interface exported in /proc/sys/vm/
-+     should be removed.
-+Who: Wanpeng Li <liwp@linux.vnet.ibm.com>
-+
-+---------------------------
-+
- What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
- When:	2012
- Why:	This optional sub-feature of APM is of dubious reliability,
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 96f0ee8..71c17d2 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -42,7 +42,6 @@ Currently, these files are in /proc/sys/vm:
- - mmap_min_addr
- - nr_hugepages
- - nr_overcommit_hugepages
--- nr_pdflush_threads
- - nr_trim_pages         (only if CONFIG_MMU=n)
- - numa_zonelist_order
- - oom_dump_tasks
-@@ -426,16 +425,6 @@ See Documentation/vm/hugetlbpage.txt
- 
- ==============================================================
- 
--nr_pdflush_threads
--
--The current number of pdflush threads.  This value is read-only.
--The value changes according to the number of dirty pages in the system.
--
--When necessary, additional pdflush threads are created, one per second, up to
--nr_pdflush_threads_max.
--
--==============================================================
--
- nr_trim_pages
- 
- This is available only on NOMMU kernels.
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 539f36c..30ddb8a 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -52,11 +52,6 @@ struct wb_writeback_work {
- 	struct completion *done;	/* set if the caller waits */
- };
- 
--/*
-- * We don't actually have pdflush, but this one is exported though /proc...
-- */
--int nr_pdflush_threads;
--
- /**
-  * writeback_in_progress - determine whether there is writeback in progress
-  * @bdi: the device's backing_dev_info structure.
-diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
-index c34b4c8..f25be74 100644
---- a/include/linux/sysctl.h
-+++ b/include/linux/sysctl.h
-@@ -964,6 +964,9 @@ extern int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int,
- 				      void __user *, size_t *, loff_t *);
- extern int proc_do_large_bitmap(struct ctl_table *, int,
- 				void __user *, size_t *, loff_t *);
-+extern int proc_deprecated(struct ctl_table *, int,
-+				void __user *, size_t *, loff_t *);
-+
- 
- /*
-  * Register a set of sysctl names by calling register_sysctl_table
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index a2b84f5..13b5df7 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -193,9 +193,4 @@ void tag_pages_for_writeback(struct address_space *mapping,
- 
- void account_page_redirty(struct page *page);
- 
--/* pdflush.c */
--extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl
--				   read-only. */
--
--
- #endif		/* WRITEBACK_H */
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4ab1187..1ab53cb 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1095,11 +1095,9 @@ static struct ctl_table vm_table[] = {
- 		.extra1		= &zero,
- 	},
- 	{
--		.procname	= "nr_pdflush_threads",
--		.data		= &nr_pdflush_threads,
--		.maxlen		= sizeof nr_pdflush_threads,
--		.mode		= 0444 /* read-only*/,
--		.proc_handler	= proc_dointvec,
-+		.procname       = "nr_pdflush_threads",
-+		.mode           = 0444 /* read-only */,
-+		.proc_handler   = proc_deprecated,
- 	},
- 	{
- 		.procname	= "swappiness",
-@@ -2505,6 +2503,15 @@ int proc_doulongvec_ms_jiffies_minmax(struct ctl_table *table, int write,
- 
- #endif /* CONFIG_PROC_SYSCTL */
- 
-+/* notice associated proc deprecated */
-+int proc_deprecated(struct ctl_table *table, int write,
-+		    void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	printk(KERN_WARNING "%s exported in /proc is deprecated\n",
-+			table->procname);
-+	return -ENOSYS;
-+}
-+
- /*
-  * No sense putting this after each symbol definition, twice,
-  * exception granted :-)
-@@ -2517,3 +2524,4 @@ EXPORT_SYMBOL(proc_dointvec_ms_jiffies);
- EXPORT_SYMBOL(proc_dostring);
- EXPORT_SYMBOL(proc_doulongvec_minmax);
- EXPORT_SYMBOL(proc_doulongvec_ms_jiffies_minmax);
-+EXPORT_SYMBOL(proc_deprecated);
-diff --git a/kernel/sysctl_binary.c b/kernel/sysctl_binary.c
-index a650694..65bdcf1 100644
---- a/kernel/sysctl_binary.c
-+++ b/kernel/sysctl_binary.c
-@@ -147,7 +147,7 @@ static const struct bin_table bin_vm_table[] = {
- 	{ CTL_INT,	VM_DIRTY_RATIO,			"dirty_ratio" },
- 	/* VM_DIRTY_WB_CS "dirty_writeback_centisecs" no longer used */
- 	/* VM_DIRTY_EXPIRE_CS "dirty_expire_centisecs" no longer used */
--	{ CTL_INT,	VM_NR_PDFLUSH_THREADS,		"nr_pdflush_threads" },
-+	/* VM_NR_PDFLUSH_THREADS "nr_pdflush_threads" no longer used */
- 	{ CTL_INT,	VM_OVERCOMMIT_RATIO,		"overcommit_ratio" },
- 	/* VM_PAGEBUF unused */
- 	/* VM_HUGETLB_PAGES "nr_hugepages" no longer used */
--- 
-1.7.9.5
+The setns syscall is highly needed for the VRF, where a single process
+can handle thousand of network namespaces and switch from a network
+namespace to another network namespace with one syscall. The usage of
+the file descriptors pins the namespace and prevent it from being
+destroyed when switching from one namespace to another.
 
+In other words, +1 for pid ns support with setns :)
+
+  -- Daniel
