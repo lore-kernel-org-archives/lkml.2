@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab2FEU5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 16:57:33 -0400
-Received: from mail-gh0-f174.google.com ([209.85.160.174]:56420 "EHLO
-	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab2FEU5a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 16:57:30 -0400
+	id S1752798Ab2FEU7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 16:59:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34787 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750764Ab2FEU7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 16:59:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108229230"
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, "Luck\, Tony" <tony.luck@intel.com>,
+        "Yu\, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha\, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick\, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+	<alpine.LFD.2.02.1206042203590.3086@ionos>
+	<1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
+	<1338881971.28282.150.camel@twins>
+	<3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+	<1338912565.2749.9.camel@twins>
+	<3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
+	<1338913190.2749.10.camel@twins>
+	<3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+	<1338918625.2749.29.camel@twins>
+	<alpine.LFD.2.02.1206052106440.3086@ionos>
+Date: Tue, 05 Jun 2012 13:58:08 -0700
+In-Reply-To: <alpine.LFD.2.02.1206052106440.3086@ionos> (Thomas Gleixner's
+	message of "Tue, 5 Jun 2012 21:43:53 +0200 (CEST)")
+Message-ID: <m2ipf5jx27.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20120530140444.GA10543@frolo.macqel>
-References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org>
-	<20120530102226.GA28628@frolo.macqel>
-	<CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
-	<20120530140444.GA10543@frolo.macqel>
-Date: Tue, 5 Jun 2012 22:57:29 +0200
-X-Google-Sender-Auth: lTgex80yLmK_O041XXmKWjZbLds
-Message-ID: <CAMuHMdW29QYN6XpBb9F3GGoJ-9frrD-00Wx=FchT9ALqW1LcPg@mail.gmail.com>
-Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(), and strnlen_user()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Philippe De Muyter <phdm@macqel.be>, Greg Ungerer <gerg@uclinux.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 30, 2012 at 4:04 PM, Philippe De Muyter <phdm@macqel.be> wrote:
-> On Wed, May 30, 2012 at 01:20:02PM +0200, Geert Uytterhoeven wrote:
->> On Wed, May 30, 2012 at 12:22 PM, Philippe De Muyter <phdm@macqel.be> wrote:
->> > On Tue, May 29, 2012 at 11:33:36PM +0200, Geert Uytterhoeven wrote:
->> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> >> ---
->> >> Do we also want
->> >>
->> >>     select HAVE_EFFICIENT_UNALIGNED_ACCESS if (!COLDFIRE && !M68000)
->> >
->> > Sorry, I did not follow what happened to unaligned accesses, but
->> > CPU32 family (at least 68340) crashes on unaligned accesses.
->>
->> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
+Thomas Gleixner <tglx@linutronix.de> writes:
 >
-> I have a local port here (but based on an ancient linux kernel, 2.6.2 IIRC)
+> Vs. the interrupt/timer/other crap madness:
 >
->> But Freescale's website confirms both 68340 and 68360 are CPU32.
->>
->> arch/m68k/include/asm/unaligned.h assumes CPU32 (CONFIG_MCPU32)
->> can do unaligned accesses:
->
-> That's not true.  Accessing a 16- or 32-bit word at an odd address
-> with a 68340 generates an Address Error Exception.  I remember
-> discovering a bug in the ppp kernel code because of that.
->
->>
->> #if defined(CONFIG_COLDFIRE) || defined(CONFIG_M68000)
->> #include <linux/unaligned/be_struct.h>
->> #include <linux/unaligned/le_byteshift.h>
->> #include <linux/unaligned/generic.h>
->>
->> #define get_unaligned   __get_unaligned_be
->> #define put_unaligned   __put_unaligned_be
->>
->> #else
->> /*
->>  * The m68k can do unaligned accesses itself.
->>  */
->> #include <linux/unaligned/access_ok.h>
->> #include <linux/unaligned/generic.h>
->>
->> #define get_unaligned   __get_unaligned_be
->> #define put_unaligned   __put_unaligned_be
->>
->> #endif
->>
->> Is this wrong?
->
-> I can't tell from reading just the lines above, but I think one should add
-> "|| defined(CONFIG_MCPU32)" at the end of the if condition.
+>  - We really don't want to have an interrupt balancer in the kernel
+>    again, but we need a mechanism to prevent the user space balancer
+>    trainwreck from ruining the power saving party.
 
-Greg?
+Why not? I think the kernel is exactly the right place for it.
+It's essentially a scheduling problem. Scheduling in user space
+is not a good idea.
 
-If more CPUs cannot handle unaligned accesses, I propose to add
-CONFIG_CPU_HAS_NO_UNALIGNED.
+With MSI-X the drivers just want a static setting. User space
+shouldn't mess with it. 
 
-> I also think that the Coldfire 5272 can do unaligned accesses, but I
-> cannot test that at the moment.
+Some of the workarounds for user space messing with it (like that
+interrupt rmap code) are really bad and just a workaround for doing the
+scheduling in the wrong place.
 
-Gr{oetje,eeting}s,
+For dynamic changes it should indeed by part of scheduling,
+following similar rules, with only high level policy input
+from userland.
 
-                        Geert
+-Andi
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+ak@linux.intel.com -- Speaking for myself only
