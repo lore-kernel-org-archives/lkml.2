@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933551Ab2FEK2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:28:32 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50171 "EHLO
+	id S933021Ab2FEK2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:28:13 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50117 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab2FEK23 (ORCPT
+	with ESMTP id S1761735Ab2FEK2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:28:29 -0400
-X-AuditID: b753bd60-911c3ba000002ea5-92-4fcddf439f7e
-X-AuditID: b753bd60-911c3ba000002ea5-92-4fcddf439f7e
+	Tue, 5 Jun 2012 06:28:10 -0400
+X-AuditID: b753bd60-939c7ba000002ea5-4e-4fcddf37972f
+X-AuditID: b753bd60-939c7ba000002ea5-4e-4fcddf37972f
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH -tip v2 6/9] kprobes: cleanup to separate probe-able check
+Subject: [PATCH -tip v2 4/9] ftrace: add ftrace_set_filter_ip() for address
+ based filter
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
@@ -21,8 +22,8 @@ Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         yrl.pp-manager.tt@hitachi.com,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Date: Tue, 05 Jun 2012 19:28:20 +0900
-Message-ID: <20120605102820.27845.90133.stgit@localhost.localdomain>
+Date: Tue, 05 Jun 2012 19:28:08 +0900
+Message-ID: <20120605102808.27845.67952.stgit@localhost.localdomain>
 In-Reply-To: <20120605102734.27845.43401.stgit@localhost.localdomain>
 References: <20120605102734.27845.43401.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -34,143 +35,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate probe-able address checking code from
-register_kprobe().
+Add a new filter update interface ftrace_set_filter_ip()
+to set ftrace filter by ip address, not only glob pattern.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
 
- kernel/kprobes.c |   82 ++++++++++++++++++++++++++++++------------------------
- 1 files changed, 45 insertions(+), 37 deletions(-)
+ include/linux/ftrace.h |    3 ++
+ kernel/trace/ftrace.c  |   59 ++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 60 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 7a8a122..6137fe3 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1313,67 +1313,80 @@ static inline int check_kprobe_rereg(struct kprobe *p)
- 	return ret;
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 11abe4e..f3c5487 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -263,6 +263,8 @@ struct dyn_ftrace {
+ };
+ 
+ int ftrace_force_update(void);
++int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
++			 int remove, int reset);
+ int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset);
+ int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+@@ -432,6 +434,7 @@ static inline int ftrace_text_reserved(void *start, void *end)
+  */
+ #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
+ #define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
++#define ftrace_set_filter_ip(ops, ip, remove, reset) ({ -ENODEV; })
+ #define ftrace_set_filter(ops, buf, len, reset) ({ -ENODEV; })
+ #define ftrace_set_notrace(ops, buf, len, reset) ({ -ENODEV; })
+ #define ftrace_free_filter(ops) do { } while (0)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 357b15b..3ce1219 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3175,8 +3175,27 @@ ftrace_notrace_write(struct file *file, const char __user *ubuf,
  }
  
--int __kprobes register_kprobe(struct kprobe *p)
-+static __kprobes int check_kprobe_address_safe(struct kprobe *p,
-+					       struct module **probed_mod)
- {
- 	int ret = 0;
--	struct kprobe *old_p;
--	struct module *probed_mod;
--	kprobe_opcode_t *addr;
--
--	addr = kprobe_addr(p);
--	if (IS_ERR(addr))
--		return PTR_ERR(addr);
--	p->addr = addr;
--
--	ret = check_kprobe_rereg(p);
--	if (ret)
--		return ret;
- 
- 	jump_label_lock();
- 	preempt_disable();
+ static int
+-ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+-		 int reset, int enable)
++ftrace_match_addr(struct ftrace_hash *hash, unsigned long ip, int remove)
++{
++	struct ftrace_func_entry *entry;
 +
-+	/* Ensure it is not in reserved area nor out of text */
- 	if (!kernel_text_address((unsigned long) p->addr) ||
- 	    in_kprobes_functions((unsigned long) p->addr) ||
- 	    ftrace_text_reserved(p->addr, p->addr) ||
- 	    jump_label_text_reserved(p->addr, p->addr)) {
- 		ret = -EINVAL;
--		goto cannot_probe;
-+		goto out;
- 	}
- 
--	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
--	p->flags &= KPROBE_FLAG_DISABLED;
--
--	/*
--	 * Check if are we probing a module.
--	 */
--	probed_mod = __module_text_address((unsigned long) p->addr);
--	if (probed_mod) {
--		/* Return -ENOENT if fail. */
--		ret = -ENOENT;
-+	/* Check if are we probing a module */
-+	*probed_mod = __module_text_address((unsigned long) p->addr);
-+	if (*probed_mod) {
- 		/*
- 		 * We must hold a refcount of the probed module while updating
- 		 * its code to prohibit unexpected unloading.
- 		 */
--		if (unlikely(!try_module_get(probed_mod)))
--			goto cannot_probe;
-+		if (unlikely(!try_module_get(*probed_mod))) {
-+			ret = -ENOENT;
-+			goto out;
-+		}
- 
- 		/*
- 		 * If the module freed .init.text, we couldn't insert
- 		 * kprobes in there.
- 		 */
--		if (within_module_init((unsigned long)p->addr, probed_mod) &&
--		    probed_mod->state != MODULE_STATE_COMING) {
--			module_put(probed_mod);
--			goto cannot_probe;
-+		if (within_module_init((unsigned long)p->addr, *probed_mod) &&
-+		    (*probed_mod)->state != MODULE_STATE_COMING) {
-+			module_put(*probed_mod);
-+			*probed_mod = NULL;
-+			ret = -ENOENT;
- 		}
--		/* ret will be updated by following code */
- 	}
-+out:
- 	preempt_enable();
- 	jump_label_unlock();
- 
-+	return ret;
++	if (!ftrace_location(ip))
++		return -EINVAL;
++
++	if (remove) {
++		entry = ftrace_lookup_ip(hash, ip);
++		if (!entry)
++			return -ENOENT;
++		free_hash_entry(hash, entry);
++		return 0;
++	}
++
++	return add_hash_entry(hash, ip);
 +}
 +
-+int __kprobes register_kprobe(struct kprobe *p)
-+{
-+	int ret;
-+	struct kprobe *old_p;
-+	struct module *probed_mod;
-+	kprobe_opcode_t *addr;
-+
-+	/* Adjust probe address from symbol */
-+	addr = kprobe_addr(p);
-+	if (IS_ERR(addr))
-+		return PTR_ERR(addr);
-+	p->addr = addr;
-+
-+	ret = check_kprobe_rereg(p);
-+	if (ret)
-+		return ret;
-+
-+	/* User can pass only KPROBE_FLAG_DISABLED to register_kprobe */
-+	p->flags &= KPROBE_FLAG_DISABLED;
- 	p->nmissed = 0;
- 	INIT_LIST_HEAD(&p->list);
--	mutex_lock(&kprobe_mutex);
++static int
++ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
++		unsigned long ip, int remove, int reset, int enable)
+ {
+ 	struct ftrace_hash **orig_hash;
+ 	struct ftrace_hash *hash;
+@@ -3205,6 +3224,11 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 		ret = -EINVAL;
+ 		goto out_regex_unlock;
+ 	}
++	if (ip) {
++		ret = ftrace_match_addr(hash, ip, remove);
++		if (ret < 0)
++			goto out_regex_unlock;
++	}
  
-+	ret = check_kprobe_address_safe(p, &probed_mod);
-+	if (ret)
-+		return ret;
-+
-+	mutex_lock(&kprobe_mutex);
- 	jump_label_lock(); /* needed to call jump_label_text_reserved() */
- 
- 	get_online_cpus();	/* For avoiding text_mutex deadlock. */
-@@ -1410,11 +1423,6 @@ out:
- 		module_put(probed_mod);
- 
+ 	mutex_lock(&ftrace_lock);
+ 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
+@@ -3221,6 +3245,37 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
  	return ret;
--
--cannot_probe:
--	preempt_enable();
--	jump_label_unlock();
--	return ret;
  }
- EXPORT_SYMBOL_GPL(register_kprobe);
  
++static int
++ftrace_set_addr(struct ftrace_ops *ops, unsigned long ip, int remove,
++		int reset, int enable)
++{
++	return ftrace_set_hash(ops, 0, 0, ip, remove, reset, enable);
++}
++
++/**
++ * ftrace_set_filter_ip - set a function to filter on in ftrace by address
++ * @ops - the ops to set the filter with
++ * @ip - the address to add to or remove from the filter.
++ * @remove - non zero to remove the ip from the filter
++ * @reset - non zero to reset all filters before applying this filter.
++ *
++ * Filters denote which functions should be enabled when tracing is enabled
++ * If @ip is NULL, it failes to update filter.
++ */
++int ftrace_set_filter_ip(struct ftrace_ops *ops, unsigned long ip,
++			 int remove, int reset)
++{
++	return ftrace_set_addr(ops, ip, remove, reset, 1);
++}
++EXPORT_SYMBOL_GPL(ftrace_set_filter_ip);
++
++static int
++ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
++		 int reset, int enable)
++{
++	return ftrace_set_hash(ops, buf, len, 0, 0, reset, enable);
++}
++
+ /**
+  * ftrace_set_filter - set a function to filter on in ftrace
+  * @ops - the ops to set the filter with
 
