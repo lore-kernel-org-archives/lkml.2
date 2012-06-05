@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761614Ab2FEJja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:39:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41887 "EHLO arroyo.ext.ti.com"
+	id S1761592Ab2FEJj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:39:28 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44670 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761548Ab2FEJir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:38:47 -0400
+	id S1758120Ab2FEJis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:38:48 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>, <kishon@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <balbi@ti.com>
-Subject: [PATCH 4/5] usb: musb: omap: use devres API to allocate resources
-Date: Tue, 5 Jun 2012 15:08:37 +0530
-Message-ID: <1338889118-10032-5-git-send-email-kishon@ti.com>
+Subject: [PATCH 5/5] drivers: usb: otg: twl: use devres API to allocate resources
+Date: Tue, 5 Jun 2012 15:08:38 +0530
+Message-ID: <1338889118-10032-6-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1338889118-10032-1-git-send-email-kishon@ti.com>
 References: <1338889118-10032-1-git-send-email-kishon@ti.com>
@@ -22,94 +22,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-used devres API while allocating memory resource and while getting
-usb phy so that these resources are released automatically on driver
-detach.
+used devres API while allocating memory resource in twl4030 and twl6030
+so that these resources are released automatically on driver detach.
 
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/usb/musb/omap2430.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/usb/otg/twl4030-usb.c |   15 +++------------
+ drivers/usb/otg/twl6030-usb.c |   16 +++-------------
+ 2 files changed, 6 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 24d1cd5..f895d99 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -319,7 +319,7 @@ static int omap2430_musb_init(struct musb *musb)
- 	 * up through ULPI.  TWL4030-family PMICs include one,
- 	 * which needs a driver, drivers aren't always needed.
- 	 */
--	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-+	musb->xceiv = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
- 	if (!musb->xceiv) {
- 		pr_err("HS USB OTG: no transceiver configured\n");
- 		return -ENODEV;
-@@ -416,7 +416,6 @@ static int omap2430_musb_exit(struct musb *musb)
- 	del_timer_sync(&musb_idle_timer);
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 03368c3..49b127a 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -589,15 +589,13 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
  
- 	omap2430_low_level_exit(musb);
--	usb_put_phy(musb->xceiv);
+-	twl = kzalloc(sizeof *twl, GFP_KERNEL);
++	twl = devm_kzalloc(&pdev->dev, sizeof *twl, GFP_KERNEL);
+ 	if (!twl)
+ 		return -ENOMEM;
  
+-	otg = kzalloc(sizeof *otg, GFP_KERNEL);
+-	if (!otg) {
+-		kfree(twl);
++	otg = devm_kzalloc(&pdev->dev, sizeof *otg, GFP_KERNEL);
++	if (!otg)
+ 		return -ENOMEM;
+-	}
+ 
+ 	twl->dev		= &pdev->dev;
+ 	twl->irq		= platform_get_irq(pdev, 0);
+@@ -621,8 +619,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	err = twl4030_usb_ldo_init(twl);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "ldo init failed\n");
+-		kfree(otg);
+-		kfree(twl);
+ 		return err;
+ 	}
+ 	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
+@@ -646,8 +642,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
+ 	if (status < 0) {
+ 		dev_dbg(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 			twl->irq, status);
+-		kfree(otg);
+-		kfree(twl);
+ 		return status;
+ 	}
+ 
+@@ -691,9 +685,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
+ 	regulator_put(twl->usb1v8);
+ 	regulator_put(twl->usb3v1);
+ 
+-	kfree(twl->phy.otg);
+-	kfree(twl);
+-
  	return 0;
  }
-@@ -443,7 +442,7 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 	struct omap2430_glue		*glue;
- 	int				ret = -ENOMEM;
  
--	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
-+	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
- 	if (!glue) {
- 		dev_err(&pdev->dev, "failed to allocate glue context\n");
- 		goto err0;
-@@ -452,7 +451,7 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 	musb = platform_device_alloc("musb-hdrc", -1);
- 	if (!musb) {
- 		dev_err(&pdev->dev, "failed to allocate musb device\n");
--		goto err1;
-+		goto err0;
+diff --git a/drivers/usb/otg/twl6030-usb.c b/drivers/usb/otg/twl6030-usb.c
+index 66cfea7..600c27a 100644
+--- a/drivers/usb/otg/twl6030-usb.c
++++ b/drivers/usb/otg/twl6030-usb.c
+@@ -395,15 +395,13 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	pdata = dev->platform_data;
+ 
+-	twl = kzalloc(sizeof *twl, GFP_KERNEL);
++	twl = devm_kzalloc(dev, sizeof *twl, GFP_KERNEL);
+ 	if (!twl)
+ 		return -ENOMEM;
+ 
+-	otg = kzalloc(sizeof *otg, GFP_KERNEL);
+-	if (!otg) {
+-		kfree(twl);
++	otg = devm_kzalloc(dev, sizeof *otg, GFP_KERNEL);
++	if (!otg)
+ 		return -ENOMEM;
+-	}
+ 
+ 	twl->dev		= &pdev->dev;
+ 	twl->irq1		= platform_get_irq(pdev, 0);
+@@ -430,8 +428,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
+ 	err = twl6030_usb_ldo_init(twl);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "ldo init failed\n");
+-		kfree(otg);
+-		kfree(twl);
+ 		return err;
+ 	}
+ 	usb_add_phy(&twl->phy, USB_PHY_TYPE_USB2);
+@@ -450,8 +446,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 			twl->irq1, status);
+ 		device_remove_file(twl->dev, &dev_attr_vbus);
+-		kfree(otg);
+-		kfree(twl);
+ 		return status;
  	}
  
- 	musb->dev.parent		= &pdev->dev;
-@@ -479,13 +478,13 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 			pdev->num_resources);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to add resources\n");
--		goto err2;
-+		goto err1;
+@@ -463,8 +457,6 @@ static int __devinit twl6030_usb_probe(struct platform_device *pdev)
+ 			twl->irq2, status);
+ 		free_irq(twl->irq1, twl);
+ 		device_remove_file(twl->dev, &dev_attr_vbus);
+-		kfree(otg);
+-		kfree(twl);
+ 		return status;
  	}
  
- 	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to add platform_data\n");
--		goto err2;
-+		goto err1;
- 	}
- 
- 	pm_runtime_enable(&pdev->dev);
-@@ -493,16 +492,13 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
- 	ret = platform_device_add(musb);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register musb device\n");
--		goto err2;
-+		goto err1;
- 	}
- 
- 	return 0;
- 
--err2:
--	platform_device_put(musb);
--
- err1:
--	kfree(glue);
-+	platform_device_put(musb);
- 
- err0:
- 	return ret;
-@@ -515,7 +511,6 @@ static int __devexit omap2430_remove(struct platform_device *pdev)
- 	cancel_work_sync(&glue->omap_musb_mailbox_work);
- 	platform_device_del(glue->musb);
- 	platform_device_put(glue->musb);
--	kfree(glue);
+@@ -495,8 +487,6 @@ static int __exit twl6030_usb_remove(struct platform_device *pdev)
+ 	pdata->phy_exit(twl->dev);
+ 	device_remove_file(twl->dev, &dev_attr_vbus);
+ 	cancel_work_sync(&twl->set_vbus_work);
+-	kfree(twl->phy.otg);
+-	kfree(twl);
  
  	return 0;
  }
