@@ -1,73 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab2FEKmG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:42:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55408 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751387Ab2FEKmE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:42:04 -0400
-Date: Tue, 5 Jun 2012 11:42:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, arnd@arndb.de,
-        linus.walleij@stericsson.com, grant.likely@secretlab.ca,
-        cjb@laptop.org, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/22] regulator: Change db8500-prcmu match names to
- reflect Device Tree
-Message-ID: <20120605104201.GR23408@opensource.wolfsonmicro.com>
-References: <1338353260-10097-1-git-send-email-lee.jones@linaro.org>
- <1338353260-10097-10-git-send-email-lee.jones@linaro.org>
- <4FCDDE58.5010501@linaro.org>
- <20120605102900.GP23408@opensource.wolfsonmicro.com>
- <4FCDE0A4.8070107@linaro.org>
+	id S1761770Ab2FEKmW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:42:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6113 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761724Ab2FEKmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 06:42:18 -0400
+Date: Tue, 5 Jun 2012 12:41:25 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, jslaby@suse.cz,
+        user-mode-linux-devel@lists.sourceforge.net,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, alan@linux.intel.com
+Subject: Re: um: TTY fixes (?)
+Message-ID: <20120605104125.GA14536@x2.net.home>
+References: <1338841657-30358-1-git-send-email-richard@nod.at>
+ <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
+ <4FCD4161.7060409@nod.at>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aH/0uqREc1VzwMkO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4FCDE0A4.8070107@linaro.org>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4FCD4161.7060409@nod.at>
+User-Agent: Mutt/1.5.21 (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 05, 2012 at 01:14:41AM +0200, Richard Weinberger wrote:
+> Am 04.06.2012 23:17, schrieb Alan Cox:
+> >> 	On all other ttys login works but bash dies because of of -EIO.
+> >> 	After vhangup() the tty returns -EIO upon read()/write().
+> > 
+> > You can't re-open the tty because a process is holding on to it, not
+> > closing it and not killable. Fedora shouldn't be holding these devices
+> > open this way. The behaviour we have of refusing to reopen them why this
+> > is the case is both a) what the spec seems to say b) good security.
+> 
+> Hmm, there seems to be a bug in util-linux's login.
+> login-utils/login.c::init_tty() does:
+> ...
+>        /* Kill processes left on this tty */
+>         tcsetattr(0, TCSAFLUSH, &ttt);
+> 
+>         signal(SIGHUP, SIG_IGN);        /* so vhangup() wont kill us */
+>         vhangup();
+>         signal(SIGHUP, SIG_DFL);
+> 
+>         /* open stdin,stdout,stderr to the tty */
+>         open_tty(cxt->tty_path);
+> 
+>         /* restore tty modes */
+>         tcsetattr(0, TCSAFLUSH, &tt);
+> ...
+> 
+> By calling vhangup() it kills all other programs on the current tty.
+> open_tty() opens the tty again but it's still open because stdin, stdout and stderr
+> belongs to it.
 
---aH/0uqREc1VzwMkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+ open_tty() closes all the old file descriptors after tty open:
 
-On Tue, Jun 05, 2012 at 11:34:12AM +0100, Lee Jones wrote:
+    vhangup();
+    ...
+	fd = open(tty, O_RDWR | O_NONBLOCK);
+    ...
 
-> >>Are you sending this for -rc2?
+	flags = fcntl(fd, F_GETFL);
+	flags &= ~O_NONBLOCK;
+	fcntl(fd, F_SETFL, flags);
 
-> >No, nothing about this looks like an urgent fix?
+	for (i = 0; i < fd; i++)
+		close(i);
+	for (i = 0; i < 3; i++)
+		if (fd != i)
+			dup2(fd, i);
+	if (fd >= 3)
+		close(fd);
 
-> Well without it all regulator requests from DT will fail.
+we use this for pretty long time (17+ years).
 
-Oh, ffs.  Why wasn't this mentioned when the patch was posted, and how
-were the original patches tested?
+> If I add:
+>         fclose(stdin);
+>         fclose(stdout);
+>         fclose(stderr);
+> before the call to vhangup() login works like charm. :-)
+> 
+> Karel, what do you think?
 
---aH/0uqREc1VzwMkO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ It's probably no problem to close all the file descriptors before
+ vhangup(), but it would be nice to know why we need this change after
+ 20 years :-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+    Karel
 
-iQIcBAEBAgAGBQJPzeJWAAoJEBus8iNuMP3dBIEP/0zzFhnlYgZoJ4nwfvEi9n2I
-FpK4YDvYUW62Ml1UKUjYrEWWbiOJVYiAXNVyhEdAWtjLqzsgAYjt9mvpfP2mKYdw
-UiCLs9aLgNZBvIK+a4PRMM442qrZjIbSJJtIE8eOHv1L66oQ5u20uX+2pnwMul5W
-FUQ365vNI/wjgBsQnDA0huIV+gQlp7LYlL4xU6jeGlpzxsW8xIlkULL7MRrN6UBD
-yFNhiOvEnXmOxOUOy1hR2CmJG0bUYsCseak/FNUiuu5MofhdkibF2KpqhtYq3chx
-xbkBVXeYLanBEL5xcN6roWv2vOnylL09O7lJFWY5AUyF9z07zjcDUSEKAe5/wVmc
-Un7gfUbitizOwiDQuvHhgnFqZIlUbAIxeviDFZwtqaDf1hHWWDCyx9F4VVLXyvq5
-1dsnwSEqTmn437SSuSLDt1cITyad7NZpoBwIo6AbB8yCRPiQ+yw4QwXO+LCoFac9
-ghpKZUKSnExwVNs8PUUqGhe96+ciHxcJW5ntwbDRL1CEsnMpvMUehy+gEVicAsJA
-lL/4OrKFn9cQJL92ZI8grdlYDVJjDV5WA6vTBa2QdaPm54V3hgrQI/+dPMc5jEwZ
-XGHy/tqU3SwLj34kRdEv2929xeIls62A0rwPESOSLWQ+2fIX1RDlKHGkiG3QnMHD
-prXu4MFO6jgIaojXqmIu
-=e3aF
------END PGP SIGNATURE-----
-
---aH/0uqREc1VzwMkO--
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
