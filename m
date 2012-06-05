@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323Ab2FENkF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:40:05 -0400
-Received: from smtp.syd.comcen.com.au ([203.23.236.77]:3951 "EHLO
-	smtp.syd.comcen.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934131Ab2FENkD (ORCPT
+	id S934306Ab2FENlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:41:37 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18459 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934089Ab2FENlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:40:03 -0400
-Message-ID: <4FCE0BFB.3010703@spin.net.au>
-Date: Tue, 05 Jun 2012 23:39:07 +1000
-From: Chris Jones <chrisjones@spin.net.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120422 Firefox/12.0 SeaMonkey/2.9
+	Tue, 5 Jun 2012 09:41:35 -0400
+X-IronPort-AV: E=Sophos;i="4.75,718,1330905600"; 
+   d="scan'208";a="12840461"
+Date: Tue, 5 Jun 2012 14:41:18 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <1338903092.28282.176.camel@twins>
+Message-ID: <alpine.DEB.2.02.1206051439410.6030@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>   <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com>   <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com>   <87ehpuqam8.fsf@linux.vnet.ibm.com>   <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
+  <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins>  <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com> <1338903092.28282.176.camel@twins>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Powerpc continued support?
-References: <4FCDA403.6070801@spin.net.au> <CA+5PVA4K51q=A9wA5kEHBzQ-01MrFZ5-uW3Qi4EvhVftk6acwA@mail.gmail.com>
-In-Reply-To: <CA+5PVA4K51q=A9wA5kEHBzQ-01MrFZ5-uW3Qi4EvhVftk6acwA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-comcen-MailScanner-Information: Please contact the ISP for more information
-X-comcen-MailScanner: Found to be clean
-X-comcen-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=-2.092, required 4, AWL 0.41, BAYES_00 -2.60, RDNS_NONE 0.10)
-X-comcen-MailScanner-From: chrisjones@spin.net.au
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josh Boyer wrote:
-> On Tue, Jun 5, 2012 at 2:15 AM, Chris Jones<chrisjones@spin.net.au>  wrote:
->> I am just thinking about Powerpc support in the kernel. Are there any plans
->> to remove its support? And if so, how much space would be saved by its
->> removal or at least disablement of Powerpc specific modules?
-> No plans to remove it at all.  It's one of the more active architecture
-> ports Linux has.  Why on earth would it be removed?
-Sure, fair enough. I had no idea it was still so popular. But I can 
-understand that if there's continued use, then there would be obvious 
-reasons for continued support of the arch.
+On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 14:26 +0100, Stefano Stabellini wrote:
+> > On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> > > On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
+> > > > PeterZ, is 7/7 alright to be picked?
+> > > 
+> > > Yeah, I guess it is.. I haven't had time to rework my tlb series yet
+> > > though. But these two patches together should make it work for x86.
+> > > 
+> > 
+> > Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
+> > 3.6?
+> 
+> I wouldn't rush this stuff, but if you're up for it and can convince
+> Linus that its all peachy you can try ;-)
+> 
 
->
->> Is it worth looking into this for a custom kernel?
-> Sure... whatever floats your boat I guess.
-
-Something I might look into for custom kernel I suppose.
-
-
-Regards
-
-Chris Jones
+Fair enough, I think I'll let Konrad make this call :-)
