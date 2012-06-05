@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933611Ab2FELFS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:05:18 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:35535 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761853Ab2FELFR (ORCPT
+	id S933886Ab2FELJd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:09:33 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:34189 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753892Ab2FELJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:05:17 -0400
-Date: Tue, 5 Jun 2012 13:05:41 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Christopher Yeoh <cyeoh@au1.ibm.com>
-Cc: Borislav Petkov <bp@amd64.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH] CMA: Do no enable it by default
-Message-ID: <20120605110541.GC13495@aftab.osrc.amd.com>
-References: <20120531153512.GK14515@aftab.osrc.amd.com>
- <20120531154224.GL14515@aftab.osrc.amd.com>
- <20120601110647.2c446aa7@rockpopper>
+	Tue, 5 Jun 2012 07:09:32 -0400
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "peterz\@infradead.org" <peterz@infradead.org>,
+        "mingo\@elte.hu" <mingo@elte.hu>,
+        "mtosatti\@redhat.com" <mtosatti@redhat.com>,
+        "avi\@redhat.com" <avi@redhat.com>,
+        "raghukt\@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86\@kernel.org" <x86@kernel.org>,
+        "jeremy\@goop.org" <jeremy@goop.org>,
+        "vatsa\@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa\@zytor.com" <hpa@zytor.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/24.0.95.1 (x86_64-unknown-linux-gnu)
+Date: Tue, 05 Jun 2012 16:38:47 +0530
+Message-ID: <87ehpuqam8.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120601110647.2c446aa7@rockpopper>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+x-cbid: 12060511-8256-0000-0000-000002CD99BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Tue, 5 Jun 2012 12:52:01 +0200
-Subject: [PATCH] CMA: Do no enable it by default
+On Tue, 5 Jun 2012 11:48:02 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> 
+> I am also interested in introducing HAVE_RCU_TABLE_FREE on x86 for Xen.
+> Maybe we can pull our efforts together :-)
+> 
+> Giving a look at this patch, it doesn't look like it is introducing
+> CONFIG_HAVE_RCU_TABLE_FREE anywhere under arch/x86.
+> How is the user supposed to set it?
+>
+I am doing that in the next patch only for KVM-ParavirtTLB flush, as
+there is a bug in this implementation that patch [7/7] fixes.
 
+Refer following thread for details:
+http://mid.gmane.org/1337254086.4281.26.camel@twins
+http://mid.gmane.org/1337273959.4281.62.camel@twins
 
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Tue, 5 Jun 2012 12:52:01 +0200
-Subject: [PATCH] CMA: Do no enable it by default
+Regards
+Nikunj
 
-CROSS_MEMORY_ATTACH is a MPI feature which shouldn't be enabled by
-default on every linux system simply because the majority of users do
-not need it.
-
-Besides, in the config option it says "... which allow a process with
-the correct privileges to directly read from or write to to another
-process's address space.", which, if the reading process has somehow
-gained privileges (as that never happens) is your security issue right
-there.
-
-So disable it - people who really need that normally know what they're
-doing and also know how to enable it.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- mm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 82fed4eb2b6f..3b6347cf4c06 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -352,7 +352,7 @@ endchoice
- config CROSS_MEMORY_ATTACH
- 	bool "Cross Memory Support"
- 	depends on MMU
--	default y
-+	default n
- 	help
- 	  Enabling this option adds the system calls process_vm_readv and
- 	  process_vm_writev which allow a process with the correct privileges
--- 
-1.7.11.rc1
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
