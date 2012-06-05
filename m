@@ -1,42 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761777Ab2FEK2E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:28:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43184 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761760Ab2FEK2A convert rfc822-to-8bit (ORCPT
+	id S933609Ab2FEK2e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:28:34 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50152 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933155Ab2FEK21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:28:00 -0400
-Message-ID: <1338892071.28282.157.camel@twins>
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jun 2012 12:27:51 +0200
-In-Reply-To: <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
-	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
-	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
-	 <1338891271.28282.155.camel@twins>
-	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 06:28:27 -0400
+X-AuditID: b753bd60-978eeba000000f6c-c0-4fcddf49d3d1
+X-AuditID: b753bd60-978eeba000000f6c-c0-4fcddf49d3d1
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH -tip v2 7/9] kprobes: Move locks into appropriate functions
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Date: Tue, 05 Jun 2012 19:28:26 +0900
+Message-ID: <20120605102826.27845.81689.stgit@localhost.localdomain>
+In-Reply-To: <20120605102734.27845.43401.stgit@localhost.localdomain>
+References: <20120605102734.27845.43401.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 12:21 +0200, Stephane Eranian wrote:
-> I agree with the first part of the patch in intel_try_alt_er(), we
-> should not touch
-> the actual event struct. But I am still unclear about the reg->alloc part.
+Break a big critical region into fine-grained pieces at
+registering kprobe path. This helps us to solve circular
+locking dependency when introducing ftrace-based kprobes.
 
-reg->alloc is part of the actual event.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
 
-Thing is, the patch is horridly ugly.. while I agree that changing event
-state isn't good, special casing all that code isn't good either.
+ kernel/kprobes.c |   63 ++++++++++++++++++++++++++++++++++++------------------
+ 1 files changed, 42 insertions(+), 21 deletions(-)
 
-I was looking at cloning the events for validate_group() as well, but so
-far that's not turning out too pretty either.
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 6137fe3..9e47f44 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -759,20 +759,28 @@ static __kprobes void try_to_optimize_kprobe(struct kprobe *p)
+ 	struct kprobe *ap;
+ 	struct optimized_kprobe *op;
+ 
++	/* For preparing optimization, jump_label_text_reserved() is called */
++	jump_label_lock();
++	mutex_lock(&text_mutex);
++
+ 	ap = alloc_aggr_kprobe(p);
+ 	if (!ap)
+-		return;
++		goto out;
+ 
+ 	op = container_of(ap, struct optimized_kprobe, kp);
+ 	if (!arch_prepared_optinsn(&op->optinsn)) {
+ 		/* If failed to setup optimizing, fallback to kprobe */
+ 		arch_remove_optimized_kprobe(op);
+ 		kfree(op);
+-		return;
++		goto out;
+ 	}
+ 
+ 	init_aggr_kprobe(ap, p);
+-	optimize_kprobe(ap);
++	optimize_kprobe(ap);	/* This just kicks optimizer thread */
++
++out:
++	mutex_unlock(&text_mutex);
++	jump_label_unlock();
+ }
+ 
+ #ifdef CONFIG_SYSCTL
+@@ -1144,12 +1152,6 @@ static int __kprobes add_new_kprobe(struct kprobe *ap, struct kprobe *p)
+ 	if (p->post_handler && !ap->post_handler)
+ 		ap->post_handler = aggr_post_handler;
+ 
+-	if (kprobe_disabled(ap) && !kprobe_disabled(p)) {
+-		ap->flags &= ~KPROBE_FLAG_DISABLED;
+-		if (!kprobes_all_disarmed)
+-			/* Arm the breakpoint again. */
+-			__arm_kprobe(ap);
+-	}
+ 	return 0;
+ }
+ 
+@@ -1189,11 +1191,22 @@ static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+ 	int ret = 0;
+ 	struct kprobe *ap = orig_p;
+ 
++	/* For preparing optimization, jump_label_text_reserved() is called */
++	jump_label_lock();
++	/*
++	 * Get online CPUs to avoid text_mutex deadlock.with stop machine,
++	 * which is invoked by unoptimize_kprobe() in add_new_kprobe()
++	 */
++	get_online_cpus();
++	mutex_lock(&text_mutex);
++
+ 	if (!kprobe_aggrprobe(orig_p)) {
+ 		/* If orig_p is not an aggr_kprobe, create new aggr_kprobe. */
+ 		ap = alloc_aggr_kprobe(orig_p);
+-		if (!ap)
+-			return -ENOMEM;
++		if (!ap) {
++			ret = -ENOMEM;
++			goto out;
++		}
+ 		init_aggr_kprobe(ap, orig_p);
+ 	} else if (kprobe_unused(ap))
+ 		/* This probe is going to die. Rescue it */
+@@ -1213,7 +1226,7 @@ static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+ 			 * free aggr_probe. It will be used next time, or
+ 			 * freed by unregister_kprobe.
+ 			 */
+-			return ret;
++			goto out;
+ 
+ 		/* Prepare optimized instructions if possible. */
+ 		prepare_optimized_kprobe(ap);
+@@ -1228,7 +1241,20 @@ static int __kprobes register_aggr_kprobe(struct kprobe *orig_p,
+ 
+ 	/* Copy ap's insn slot to p */
+ 	copy_kprobe(ap, p);
+-	return add_new_kprobe(ap, p);
++	ret = add_new_kprobe(ap, p);
++
++out:
++	mutex_unlock(&text_mutex);
++	put_online_cpus();
++	jump_label_unlock();
++
++	if (ret == 0 && kprobe_disabled(ap) && !kprobe_disabled(p)) {
++		ap->flags &= ~KPROBE_FLAG_DISABLED;
++		if (!kprobes_all_disarmed)
++			/* Arm the breakpoint again. */
++			arm_kprobe(ap);
++	}
++	return ret;
+ }
+ 
+ static int __kprobes in_kprobes_functions(unsigned long addr)
+@@ -1387,10 +1413,6 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		return ret;
+ 
+ 	mutex_lock(&kprobe_mutex);
+-	jump_label_lock(); /* needed to call jump_label_text_reserved() */
+-
+-	get_online_cpus();	/* For avoiding text_mutex deadlock. */
+-	mutex_lock(&text_mutex);
+ 
+ 	old_p = get_kprobe(p->addr);
+ 	if (old_p) {
+@@ -1399,7 +1421,9 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		goto out;
+ 	}
+ 
++	mutex_lock(&text_mutex);	/* Avoiding text modification */
+ 	ret = arch_prepare_kprobe(p);
++	mutex_unlock(&text_mutex);
+ 	if (ret)
+ 		goto out;
+ 
+@@ -1408,15 +1432,12 @@ int __kprobes register_kprobe(struct kprobe *p)
+ 		       &kprobe_table[hash_ptr(p->addr, KPROBE_HASH_BITS)]);
+ 
+ 	if (!kprobes_all_disarmed && !kprobe_disabled(p))
+-		__arm_kprobe(p);
++		arm_kprobe(p);
+ 
+ 	/* Try to optimize kprobe */
+ 	try_to_optimize_kprobe(p);
+ 
+ out:
+-	mutex_unlock(&text_mutex);
+-	put_online_cpus();
+-	jump_label_unlock();
+ 	mutex_unlock(&kprobe_mutex);
+ 
+ 	if (probed_mod)
+
