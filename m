@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761465Ab2FEJdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:33:21 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42870 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab2FEJdT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:33:19 -0400
-Date: Tue, 5 Jun 2012 18:33:14 +0900
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Asai Thambi S P <asamymuthupa@micron.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Bradshaw <sbradshaw@micron.com>
-Subject: Re: [PATCH 1/2] mtip32xx: Remove 'registers' and 'flags' from sysfs
-Message-ID: <20120605093314.GC21560@kroah.com>
-References: <4FCD0FC7.9010105@micron.com>
+	id S1761503Ab2FEJes (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:34:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43865 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753371Ab2FEJeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:34:46 -0400
+Date: Tue, 5 Jun 2012 11:34:39 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Austin Hendrix <ahendrix@willowgarage.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Support for Novatek Touchscreen
+In-Reply-To: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1206051134020.5478@pobox.suse.cz>
+References: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4FCD0FC7.9010105@micron.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 12:43:03PM -0700, Asai Thambi S P wrote:
+On Mon, 4 Jun 2012, Austin Hendrix wrote:
+
+> Add support for a Novatek touchscreen panel as a generic HID multitouch
+> panel.
 > 
-> This patch removes entries 'registers' and 'flags' from sysfs. Updated ABI file
-> to reflect this change.
+> Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
+> ---
+>  hid-core.c       |    1 +
+>  hid-ids.h        |    3 +++
+>  hid-multitouch.c |    5 +++++
+>  3 files changed, 9 insertions(+)
 > 
-> Reported-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 8e3a6b2..0d6dde1 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1605,6 +1605,7 @@ static const struct hid_device_id
+> hid_have_special_driver[] = {
 
-Much nicer, thanks for doing this:
+Austin,
 
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+thanks for the patch. Your mail client is corrupting (line-wrapping) 
+patches. Please fix that for your future submissions.
 
-But, one question on a different sysfs file:
+I have now fixed that up manually and applied.
 
->  What:           /sys/block/rssd*/status
->  Date:           April 2012
->  KernelVersion:  3.4
->  Contact:        Asai Thambi S P <asamymuthupa@micron.com>
->  Description:    This is a read-only file. Indicates the status of the device.
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_PCT) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
+> USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+> index 9373f53..734a2b9 100644
+> --- a/drivers/hid/hid-ids.h
+> +++ b/drivers/hid/hid-ids.h
+> @@ -564,6 +564,9 @@
+>  #define USB_VENDOR_ID_NINTENDO		0x057e
+>  #define USB_DEVICE_ID_NINTENDO_WIIMOTE	0x0306
+> 
+> +#define USB_VENDOR_ID_NOVATEK		0x0603
+> +#define USB_DEVICE_ID_NOVATEK_PCT	0x0600
+> +
+>  #define USB_VENDOR_ID_NTRIG		0x1b96
+>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
+>  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
+> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
+> index 6e3332a..fae08df 100644
+> --- a/drivers/hid/hid-multitouch.c
+> +++ b/drivers/hid/hid-multitouch.c
+> @@ -951,6 +951,11 @@ static const struct hid_device_id mt_devices[] = {
+>  		MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
+>  			USB_DEVICE_ID_PANABOARD_UBT880) },
+> 
+> +	/* Novatek Panel */
+> +	{ .driver_data = MT_CLS_DEFAULT,
+> +		HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
+> +			USB_DEVICE_ID_NOVATEK_PCT) },
+> +
+>  	/* PenMount panels */
+>  	{ .driver_data = MT_CLS_CONFIDENCE,
+>  		MT_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
+> 
 
-What "status" is this showing?  Why is this a sysfs file?  Who
-needs/wants it?
-
-Also, if you really want to properly create sysfs files, use the default
-attributes for the driver.  As it is, you are creating them after
-userspace is notified about the device showing up, which races with the
-creation of your additional file(s).  Use the properly driver core field
-to have the core create, and remove them, automatically, which saves you
-code, and fixes bugs you didn't realize you had :)
-
-thanks,
-
-greg k-h
+-- 
+Jiri Kosina
+SUSE Labs
