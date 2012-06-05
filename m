@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761290Ab2FEBZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 21:25:53 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56252 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757358Ab2FEBZw (ORCPT
+	id S1761326Ab2FEB0K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 21:26:10 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46477 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761312Ab2FEB0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 21:25:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <878vg2k3wy.fsf@rustcorp.com.au>
-References: <1170056063.1844670.1338571611538.JavaMail.root@advansee.com>
- <87ipf71ytx.fsf@rustcorp.com.au> <CA+55aFwJj5t6zS_pgD3kMemRWkUkSoWWHey84pJegSRfnzXNzA@mail.gmail.com>
- <878vg2k3wy.fsf@rustcorp.com.au>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 4 Jun 2012 18:25:30 -0700
-X-Google-Sender-Auth: E69wIaQNAGCbmP6FWh5DPOPW18s
-Message-ID: <CA+55aFxC_b_+nWmge-KuxLt-Kq-ho9YyR-_=Uy-hZbAma_wNcw@mail.gmail.com>
-Subject: Re: init: multi param parsing regression since 3.4
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: =?ISO-8859-1?Q?Beno=EEt_Th=E9baudeau?= 
-	<benoit.thebaudeau@advansee.com>,
-        Pawel Moll <pawel.moll@arm.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Jun 2012 21:26:07 -0400
+Date: Tue, 5 Jun 2012 11:25:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        M R Swami Reddy <MR.Swami.Reddy@ti.com>,
+        Vishwas A Deshpande <vishwas.a.deshpande@ti.com>
+Subject: linux-next: build failure after merge of the sound-asoc tree
+Message-Id: <20120605112557.61c2aaea05db2684cecb9835@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta7 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__5_Jun_2012_11_25_57_+1000_mHBbspSv.==+vEmo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 4, 2012 at 5:17 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->
-> I like to spin this stuff for a day through linux-next, which should be
-> happening right now.
+--Signature=_Tue__5_Jun_2012_11_25_57_+1000_mHBbspSv.==+vEmo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Good.
+Hi all,
 
-> But if you want to save me the trouble of a pull request, sure.
+After merging the sound-asoc tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-No, I just wanted to make sure I can forget about these threads..
+make[4]: *** No rule to make target `sound/soc/codecs/snd-soc-isabelle.c', =
+needed by `sound/soc/codecs/snd-soc-isabelle.o'.  Stop.
 
-       Linus
+Caused by commit 4567db1722aa ("ASoC: Support TI Isabelle Audio
+driver").  Was this ever built?
+
+I have used the sound-asoc tree from next-20120601 again for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__5_Jun_2012_11_25_57_+1000_mHBbspSv.==+vEmo
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPzWAlAAoJEECxmPOUX5FEdHEP/3trRGMgFHTzCM7gPMK8r68r
+SA4+wlqsHiS2aosVbtGJuRWkE5mpC29+8FlaL4YvFQZtt/IJE/jpsZZ2BqxrW3Vy
+7UVmMChG+StCZc26wyo8Se2saoZXjz9NidV8nNOdqf/4qDnP/K5+cD2nEJCKcYbT
+S9KzCdJtKcapK850JNEm2dtPjwrskBazxVadRvIAtnACBvDUzym30rCqI4dKVU/c
+oRW51hiJX5Q/M3Q8eRnZUk855MFv8vPZ6YOJHtioq66FkDU8AmRUk2M6G8xFIXT1
+4Tes5oFrAN+qCDdubJogMQNJxxGeEr4hMpCw1H0oSu+DQoNjgloKhLqOaMj1Jq/z
+EgqE/RTffb6RYnYOZ2GR/wF9x5Jd62rqV1XV1bP5tl2TXo5kCQs1ApAQ1fmAZniQ
+EtHK/j+14+8erA4PS3RnRAai685w0btpRS+/63+ZGWrILoEOBUCOcMctO0dP9Emc
+lSDrrAN2ykc/cl/+vt9xlLHb9q20Fisk/SVi751J8F9OmmfzT7xZky8E1IJJEt0E
+nbMQD2w8PrJGrgz62Nex71BZ4Iwvm+2wShap4bMssOHZX/+kQhzDUrkrMeIaf2pc
+XFo8+w1OeKSFzvwmA6cWEy5A7ZyT42fanXtLL647jQX3VOpOjvELD3Hp171K/XoQ
+sOJzs/w9ZYBxSH30YaMe
+=QKqL
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__5_Jun_2012_11_25_57_+1000_mHBbspSv.==+vEmo--
