@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab2FEQHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:07:51 -0400
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:43754
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753906Ab2FEQHt (ORCPT
+	id S1753852Ab2FEQJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:09:48 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48669 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2FEQJq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:07:49 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -13
-X-BigFish: VS-13(zzbb2dI9371I168aJ1432N98dKzz1202hzzz2dh2a8h668h839hd25he5bhf0ah)
-Message-ID: <4FCE2ECD.4050107@freescale.com>
-Date: Tue, 5 Jun 2012 11:07:41 -0500
-From: Scott Wood <scottwood@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>,
-        Matthew McClintock <msm@freescale.com>
-Subject: Re: [PATCH v5 1/5] powerpc/85xx: implement hardware timebase sync
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com> <4FC8E250.9090000@freescale.com> <20120605090831.GA21929@localhost.localdomain>
-In-Reply-To: <20120605090831.GA21929@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+	Tue, 5 Jun 2012 12:09:46 -0400
+Message-ID: <1338912565.2749.9.camel@twins>
+Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yu, Fenghua" <fenghua.yu@intel.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 05 Jun 2012 18:09:25 +0200
+In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+	 <alpine.LFD.2.02.1206042203590.3086@ionos>
+	 <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
+	 <1338881971.28282.150.camel@twins>
+	 <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 04:08 AM, Zhao Chenhui wrote:
-> On Fri, Jun 01, 2012 at 10:40:00AM -0500, Scott Wood wrote:
->> I know you say this is for dual-core chips only, but it would be nice if
->> you'd write this in a way that doesn't assume that (even if the
->> corenet-specific timebase freezing comes later).
+On Tue, 2012-06-05 at 16:02 +0000, Yu, Fenghua wrote:
 > 
-> At this point, I have not thought about how to implement the cornet-specific timebase freezing.
+> Users can consolidate processes on a few online CPU's and offline the
+> rest when workload is light. 
 
-I wasn't asking you to.  I was asking you to not have logic that breaks
-with more than 2 CPUs.
+No they can't, hotplug is a root only op.
 
->> Do we need an isync after setting the timebase, to ensure it's happened
->> before we enable the timebase?  Likewise, do we need a readback after
->> disabling the timebase to ensure it's disabled before we read the
->> timebase in give_timebase?
-> 
-> I checked the e500 core manual (Chapter 2.16 Synchronization Requirements for SPRs).
-> Only some SPR registers need an isync. The timebase registers do not.
+> This consolidation can save more power and have better performance
+> than idling CPU's because hot cache in online CPU's and offline CPU's
+> can be allocated in same package. 
 
-I don't trust that, and the consequences of having the sync be imperfect
-are too unpleasant to chance it.
-
-> I did a readback in mpc85xx_timebase_freeze().
-
-Sorry, missed that somehow.
-
->>> +#ifdef CONFIG_KEXEC
->>> +	np = of_find_matching_node(NULL, guts_ids);
->>> +	if (np) {
->>> +		guts = of_iomap(np, 0);
->>> +		smp_85xx_ops.give_timebase = mpc85xx_give_timebase;
->>> +		smp_85xx_ops.take_timebase = mpc85xx_take_timebase;
->>> +		of_node_put(np);
->>> +	} else {
->>> +		smp_85xx_ops.give_timebase = smp_generic_give_timebase;
->>> +		smp_85xx_ops.take_timebase = smp_generic_take_timebase;
->>> +	}
->>
->> Do not use smp_generic_give/take_timebase, ever.  If you don't have the
->> guts node, then just assume the timebase is already synced.
->>
->> -Scott
-> 
-> smp_generic_give/take_timebase is the default in KEXEC before.
-
-That was a mistake.
-
-> If do not set them, it may make KEXEC fail on other platforms.
-
-What platforms?
-
--Scott
-
+Yeah, or you fix the load-balancer to do this.
