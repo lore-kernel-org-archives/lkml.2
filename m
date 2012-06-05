@@ -1,138 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761859Ab2FELEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:04:54 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60772 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab2FELEx (ORCPT
+	id S933611Ab2FELFS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:05:18 -0400
+Received: from s15943758.onlinehome-server.info ([217.160.130.188]:35535 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761853Ab2FELFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:04:53 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: gregkh@linuxfoundation.org, sjenning@linux.vnet.ibm.com,
-        dan.magenheimer@oracle.com, konrad.wilk@oracle.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [PATCH] zcache: don't limit number of pools per client
-Date: Tue,  5 Jun 2012 13:05:52 +0200
-Message-Id: <1338894352-23054-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
+	Tue, 5 Jun 2012 07:05:17 -0400
+Date: Tue, 5 Jun 2012 13:05:41 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Christopher Yeoh <cyeoh@au1.ibm.com>
+Cc: Borislav Petkov <bp@amd64.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH] CMA: Do no enable it by default
+Message-ID: <20120605110541.GC13495@aftab.osrc.amd.com>
+References: <20120531153512.GK14515@aftab.osrc.amd.com>
+ <20120531154224.GL14515@aftab.osrc.amd.com>
+ <20120601110647.2c446aa7@rockpopper>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120601110647.2c446aa7@rockpopper>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the amount of pools each client can use is limited to 16, this is
-and arbitrary limit which isn't really required by current implementation.
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Tue, 5 Jun 2012 12:52:01 +0200
+Subject: [PATCH] CMA: Do no enable it by default
 
-This patch removes that limit and uses IDR to do sparse mapping of pools
-in each client.
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+From: Borislav Petkov <borislav.petkov@amd.com>
+Date: Tue, 5 Jun 2012 12:52:01 +0200
+Subject: [PATCH] CMA: Do no enable it by default
+
+CROSS_MEMORY_ATTACH is a MPI feature which shouldn't be enabled by
+default on every linux system simply because the majority of users do
+not need it.
+
+Besides, in the config option it says "... which allow a process with
+the correct privileges to directly read from or write to to another
+process's address space.", which, if the reading process has somehow
+gained privileges (as that never happens) is your security issue right
+there.
+
+So disable it - people who really need that normally know what they're
+doing and also know how to enable it.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/staging/zcache/zcache-main.c |   41 +++++++++++++++++++--------------
- 1 files changed, 24 insertions(+), 17 deletions(-)
+ mm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 784c796..b068bd8 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -53,15 +53,13 @@
- 	(__GFP_FS | __GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC)
- #endif
- 
--#define MAX_POOLS_PER_CLIENT 16
--
- #define MAX_CLIENTS 16
- #define LOCAL_CLIENT ((uint16_t)-1)
- 
- MODULE_LICENSE("GPL");
- 
- struct zcache_client {
--	struct tmem_pool *tmem_pools[MAX_POOLS_PER_CLIENT];
-+	struct idr tmem_pools;
- 	struct zs_pool *zspool;
- 	bool allocated;
- 	atomic_t refcount;
-@@ -949,11 +947,9 @@ static struct tmem_pool *zcache_get_pool_by_id(uint16_t cli_id, uint16_t poolid)
- 			goto out;
- 		atomic_inc(&cli->refcount);
- 	}
--	if (poolid < MAX_POOLS_PER_CLIENT) {
--		pool = cli->tmem_pools[poolid];
--		if (pool != NULL)
--			atomic_inc(&pool->refcount);
--	}
-+	pool = idr_find(&cli->tmem_pools, poolid);
-+	if (pool != NULL)
-+		atomic_inc(&pool->refcount);
- out:
- 	return pool;
- }
-@@ -987,6 +983,7 @@ int zcache_new_client(uint16_t cli_id)
- 	cli->zspool = zs_create_pool("zcache", ZCACHE_GFP_MASK);
- 	if (cli->zspool == NULL)
- 		goto out;
-+	idr_init(&cli->tmem_pools);
- #endif
- 	ret = 0;
- out:
-@@ -1673,10 +1670,10 @@ static int zcache_destroy_pool(int cli_id, int pool_id)
- 	if (cli == NULL)
- 		goto out;
- 	atomic_inc(&cli->refcount);
--	pool = cli->tmem_pools[pool_id];
-+	pool = idr_find(&cli->tmem_pools, pool_id);
- 	if (pool == NULL)
- 		goto out;
--	cli->tmem_pools[pool_id] = NULL;
-+	idr_remove(&cli->tmem_pools, pool_id);
- 	/* wait for pool activity on other cpus to quiesce */
- 	while (atomic_read(&pool->refcount) != 0)
- 		;
-@@ -1696,6 +1693,7 @@ static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
- 	int poolid = -1;
- 	struct tmem_pool *pool;
- 	struct zcache_client *cli = NULL;
-+	int r;
- 
- 	if (cli_id == LOCAL_CLIENT)
- 		cli = &zcache_host;
-@@ -1710,20 +1708,29 @@ static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
- 		goto out;
- 	}
- 
--	for (poolid = 0; poolid < MAX_POOLS_PER_CLIENT; poolid++)
--		if (cli->tmem_pools[poolid] == NULL)
--			break;
--	if (poolid >= MAX_POOLS_PER_CLIENT) {
--		pr_info("zcache: pool creation failed: max exceeded\n");
-+retry:
-+	r = idr_pre_get(&cli->tmem_pools, GFP_ATOMIC);
-+	if (r != 1) {
-+		kfree(pool);
-+		pr_info("zcache: pool creation failed: out of memory\n");
-+		goto out;
-+	}
-+	r = idr_get_new(&cli->tmem_pools, pool, &poolid);
-+	switch (r) {
-+	case 0:
-+		break;
-+	case -EAGAIN:
-+		goto retry;
-+	default:
-+		pr_info("zcache: pool creation failed: error %d\n", r);
- 		kfree(pool);
--		poolid = -1;
- 		goto out;
- 	}
-+
- 	atomic_set(&pool->refcount, 0);
- 	pool->client = cli;
- 	pool->pool_id = poolid;
- 	tmem_new_pool(pool, flags);
--	cli->tmem_pools[poolid] = pool;
- 	pr_info("zcache: created %s tmem pool, id=%d, client=%d\n",
- 		flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
- 		poolid, cli_id);
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 82fed4eb2b6f..3b6347cf4c06 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -352,7 +352,7 @@ endchoice
+ config CROSS_MEMORY_ATTACH
+ 	bool "Cross Memory Support"
+ 	depends on MMU
+-	default y
++	default n
+ 	help
+ 	  Enabling this option adds the system calls process_vm_readv and
+ 	  process_vm_writev which allow a process with the correct privileges
 -- 
-1.7.8.6
+1.7.11.rc1
 
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
