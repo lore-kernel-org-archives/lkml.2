@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab2FECSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 22:18:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17166 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173Ab2FECSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 22:18:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="174821945"
-Message-ID: <4FCD6C67.9050103@linux.intel.com>
-Date: Tue, 05 Jun 2012 10:18:15 +0800
-From: "Yan, Zheng" <zheng.z.yan@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: "Yan, Zheng" <zheng.z.yan@intel.com>, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
-References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com> <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com> <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com> <CABPqkBRA0Z-oZfSgdyurtW0=KUbuGJ+uFqiVKiwbt9Wpk1Ph7w@mail.gmail.com>
-In-Reply-To: <CABPqkBRA0Z-oZfSgdyurtW0=KUbuGJ+uFqiVKiwbt9Wpk1Ph7w@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1761320Ab2FEC17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 22:27:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13872 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757680Ab2FEC15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 22:27:57 -0400
+X-Authority-Analysis: v=2.0 cv=D8PF24tj c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=XQbtiDEiEegA:10 a=jIxPWWKfvXQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ayC55rCoAAAA:8 a=VwQbUJbxAAAA:8 a=TVbs_bi3kavZjbBWH68A:9 a=PUjeQqilurYA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Ql5RvfvZTJA6iwSd:21 a=2ZDeOC9QpsxXrtaw:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1338863274.13348.530.camel@gandalf.stny.rr.com>
+Subject: [PATCH] powerpc/ftrace: Do not trace restore_interrupts()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, stable@kernel.org
+Date: Mon, 04 Jun 2012 22:27:54 -0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 09:12 PM, Stephane Eranian wrote:
-> On Fri, Jun 1, 2012 at 4:11 PM, Yan, Zheng <zheng.z.yan@linux.intel.com> wrote:
->> On Fri, Jun 1, 2012 at 5:35 PM, Stephane Eranian <eranian@google.com> wrote:
->>> On Fri, Jun 1, 2012 at 5:20 AM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->>>> From: "Yan, Zheng" <zheng.z.yan@intel.com>
->>>>
->>>> intel_shared_reg_get/put_constraints() can be indirectly called
->>>> by validate_group(). In that case, they should avoid modifying
->>>> the perf_event date structure because the event can be already
->>>> in active state. Otherwise the shared extra msr's reference
->>>> count will be left in inconsistent state.
->>>>
->>> I understand the problem but I am wondering if you actually saw
->>> it in real life. The reason I am asking is because  of the way
->>> validate_group() collects the events and how they are added
->>> to sibling_list. The new event is added at the tail. Thus it will
->>> come last, and will get to __intel_shared_reg_get_constraints()
->>> last, thus I am wondering if it can really modify the programming
->>> on the existing events.
->>
->> The real problem is from __intel_shared_reg_put_constraints(). it set
->> reg->alloc to 0 and decreases fake_cpuc->shared_regs->regs[reg->idx]'s
->> reference count. Later when deleting the event,  put_constraints() will find
->> reg->alloc is 0 and it won't decrease the shared msr's reference count.
->>
->> Run 'perf stat --group -a -C 0 -e LLC-loads -e LLC-stores sleep 1" on
->> Nehalem can trigger the bug.
->>
-> And what do you see in this particular example?
-The offcore_rsp msr's reference count are left in inconsistent state. It means
-we can only use the msr for LLC-loads event after that. Any other events that
-require programming the offcore_rsp msr will fail.
+As I was adding code that affects all archs, I started testing function
+tracer against PPC64 and found that it currently locks up with 3.4
+kernel. I figured it was due to tracing a function that shouldn't be, so
+I went through the following process to bisect to find the culprit:
 
-> 
-> I'd like to see the results via libpfm4 and /perf_examples/syst_count:
-> $ sudo ./syst_count -e offcore_response_0:dmnd_data_rd
-> -eoffcore_response_0:dmnd_rfo  -p -d 10 -c 0
-> 
-This does not use the event group feature. do you mean
-./syst_count -e offcore_response_0:dmnd_data_rd,offcore_response_0:dmnd_rfo -p -d 10 -c 0.
+ cat /debug/tracing/available_filter_functions > t
+ num=`wc -l t`
+ sed -ne "1,${num}p" t > t1
+ let num=num+1
+ sed -ne "${num},$p" t > t2
+ cat t1 > /debug/tracing/set_ftrace_filter
+ echo function /debug/tracing/current_tracer
+ <failed? bisect t1, if not bisect t2>
 
-After apply my patch, the above command fails on Nehalem. Because there is no offcore_rsp1.
+It finally came down to this function: restore_interrupts()
 
-Regards
-Yan, Zheng
+I'm not sure why this locks up the system. It just seems to prevent
+scheduling from occurring. Interrupts seem to still work, as I can ping
+the box. But all user processes freeze.
+
+When restore_interrupts() is not traced, function tracing works fine.
+
+Cc: stable@kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 641da9e..64eec59 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -277,7 +277,7 @@ EXPORT_SYMBOL(arch_local_irq_restore);
+  * NOTE: This is called with interrupts hard disabled but not marked
+  * as such in paca->irq_happened, so we need to resync this.
+  */
+-void restore_interrupts(void)
++void notrace restore_interrupts(void)
+ {
+ 	if (irqs_disabled()) {
+ 		local_paca->irq_happened |= PACA_IRQ_HARD_DIS;
+
+
