@@ -1,36 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934284Ab2FENbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:31:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46075 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934255Ab2FENbx convert rfc822-to-8bit (ORCPT
+	id S934260Ab2FENcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:32:54 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42228 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934202Ab2FENcw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:31:53 -0400
-Message-ID: <1338903092.28282.176.camel@twins>
-Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+	Tue, 5 Jun 2012 09:32:52 -0400
+Message-ID: <1338903164.28282.177.camel@twins>
+Subject: Re: [PATCH] perf: Fix intel shared extra msr allocation
 From: Peter Zijlstra <peterz@infradead.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "mtosatti@redhat.com" <mtosatti@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
-        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Tue, 05 Jun 2012 15:31:32 +0200
-In-Reply-To: <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com>
-References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com>
-	  <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com>
-	  <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com>
-	  <87ehpuqam8.fsf@linux.vnet.ibm.com>
-	  <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
-	 <878vg1rjts.fsf@linux.vnet.ibm.com> <1338901688.28282.168.camel@twins>
-	 <alpine.DEB.2.02.1206051422500.6030@kaball.uk.xensource.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: "Yan, Zheng" <zheng.z.yan@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jun 2012 15:32:44 +0200
+In-Reply-To: <CABPqkBRF_2LXE-54tLMBnQgLKbKyR9qo+4VohQiOchpqe1pgyw@mail.gmail.com>
+References: <1338520856-21020-1-git-send-email-zheng.z.yan@intel.com>
+	 <CABPqkBScjC5fJbTc1rYtbtRqOCyJ+7QUbdE32DgMcffBAGJNVw@mail.gmail.com>
+	 <CAAM7YAkYgUjwQptYvyeVawzcD5x4c-bTT_=+6AMyUb+-6HoMuQ@mail.gmail.com>
+	 <1338891271.28282.155.camel@twins>
+	 <CABPqkBSv8CbMzUiRsN2uOF1v6rFTpzhQqNbo7OKe-nzsus0GDg@mail.gmail.com>
+	 <1338892071.28282.157.camel@twins>
+	 <CABPqkBSqLpa4X-WbR0PkouYvhODT78r3pxWq70=PTj1j=a307Q@mail.gmail.com>
+	 <1338898024.28282.160.camel@twins> <1338899999.28282.164.camel@twins>
+	 <CABPqkBRCMAnPH3UW0=afMw4-YXgwQ5D-NLMEtnNWde_Tzh3aew@mail.gmail.com>
+	 <1338901490.28282.167.camel@twins>
+	 <CABPqkBRF_2LXE-54tLMBnQgLKbKyR9qo+4VohQiOchpqe1pgyw@mail.gmail.com>
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Mailer: Evolution 3.2.2- 
@@ -39,17 +34,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 14:26 +0100, Stefano Stabellini wrote:
-> On Tue, 5 Jun 2012, Peter Zijlstra wrote:
-> > On Tue, 2012-06-05 at 18:34 +0530, Nikunj A Dadhania wrote:
-> > > PeterZ, is 7/7 alright to be picked?
-> > 
-> > Yeah, I guess it is.. I haven't had time to rework my tlb series yet
-> > though. But these two patches together should make it work for x86.
-> > 
+On Tue, 2012-06-05 at 15:31 +0200, Stephane Eranian wrote:
+> Looks nicer, still missing this little piece + is_fake definition and
+> setting is allocate_fakecpuc())
 > 
-> Good. Do you think they are OK for 3.5-rc2? Or is it better to wait for
-> 3.6?
+Yeah, just send out something more complete -- although only built
+tested.
 
-I wouldn't rush this stuff, but if you're up for it and can convince
-Linus that its all peachy you can try ;-)
+This was just seeing how the intel_try_alt_er() stuff could be done
+saner.
