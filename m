@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab2FERt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:49:26 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41933 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523Ab2FERtY (ORCPT
+	id S1755703Ab2FERuv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:50:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58548 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab2FERut convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:49:24 -0400
-Message-ID: <4FCE466A.3050202@linux.vnet.ibm.com>
-Date: Tue, 05 Jun 2012 23:18:26 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jan Beulich <JBeulich@suse.com>, Russell King <linux@arm.linux.org.uk>,
-        yong.zhang0@gmail.com, Jeremy Fitzhardinge <jeremy@goop.org>,
-        peterz@infradead.org, mingo@kernel.org, x86@kernel.org,
-        akpm@linux-foundation.org, nikunj@linux.vnet.ibm.com,
-        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>, rusty@rustcorp.com.au, rjw@sisk.pl,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Keir Fraser <keir@xen.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH 05/27] xen, cpu hotplug: Don't call cpu_bringup()
- in xen_play_dead()
-References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091124.31979.91984.stgit@srivatsabhat.in.ibm.com> <4FC8D8E30200007800087D2B@nat28.tlf.novell.com> <4FC8DC19.4000007@linux.vnet.ibm.com> <4FC8FD9C0200007800087DF5@nat28.tlf.novell.com> <4FCA5608.2010404@linux.vnet.ibm.com> <alpine.LFD.2.02.1206051921320.3086@ionos>
-In-Reply-To: <alpine.LFD.2.02.1206051921320.3086@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12060517-9574-0000-0000-0000030E7E83
+	Tue, 5 Jun 2012 13:50:49 -0400
+Message-ID: <1338918625.2749.29.camel@twins>
+Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Tue, 05 Jun 2012 19:50:25 +0200
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
+	 <alpine.LFD.2.02.1206042203590.3086@ionos>
+	 <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
+	 <1338881971.28282.150.camel@twins>
+	 <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
+	 <1338912565.2749.9.camel@twins>
+	 <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
+	 <1338913190.2749.10.camel@twins>
+	 <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.2- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 11:10 PM, Thomas Gleixner wrote:
+On Tue, 2012-06-05 at 17:44 +0000, Luck, Tony wrote:
+> > Like what? Offline is nothing more than a C state on x86. 
+> 
+> Offline is a bigger hammer than idle.
+> 
+> When a core is idle it may take an interrupt which wakes it up to use power.
+> The scheduler may assign a process to run on it, which will wake it up to use power.
+> 
+> When a core is offline we take extra steps (re-routing interrupts, telling the
+> scheduler it is not available for work) to make sure it STAYS in that low
+> power state.
 
-> On Sat, 2 Jun 2012, Srivatsa S. Bhat wrote:
->> Ok.. So, I would love to hear a confirmation about whether this patch (which
->> removes cpu_bringup() in xen_play_dead()) will break things or it is good as is.
->>
->> If its not correct, then we can probably make __cpu_post_online() return an int,
->> with the meaning:
->>
->> 0 => success, go ahead and call cpu_idle()
->> non-zero => stop here, thanks for your services so far.. now leave the rest to me.
->>
->> So all other archs will return 0, Xen will return non-zero, and it will handle
->> when to call cpu_idle() and when not to do so.
->>
->> Might sound a bit ugly, but I don't see much other option. Suggestions are
->> appreciated!
-> 
-> Yes, it's butt ugly. 
-> 
-> You are tripping over the main misconception of the current hotplug
-> code: It's asymetric.
-> 
-> So people added warts and workarounds like the xen one. What you are
-> proposing is another wart and workaround.
-> 
-> The real way to avoid it, is to have the symetric state machine in
-> place first and then convert everything to that instead of introducing
-> an intermediate state which resembles the existing state.
-> 
-> One of the main things we need to do to make it symetric is to kill
-> the play_dead() thing in the idle loop and make idle a function which
-> returns on cpu_should_die().
-> 
-> Give me a day or two and I get you a working version of that. (Up is
-> functional, just down refuses to play along)
-> 
+You also wreck cpusets, cpu affinity and you need some userspace crap to
+poll state trying to figure out when to wake up again.
 
+(And yes, I've heard stories about userspace hotplug daemons that cause
+machine wakeups themselves and were a main source of power usage at some
+point).
 
-Oh great! So, then I'll wait for your patches and then adapt this patchset
-to your model then. Let me know if I can help out with something..
+All the timer/interrupt nonsense needs to be fixed anyhow, the HPC and
+RT people want isolation anyway.
 
-Regards,
-Srivatsa S. Bhat
-
+So shouldn't we all start by fixing the entire
+load-balancer/timer/interrupt madness before we start swinging stupid
+big hammers around that break half the interfaces we have?
