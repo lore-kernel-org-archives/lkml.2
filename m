@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761533Ab2FEJgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:36:42 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:57162 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754202Ab2FEJgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:36:40 -0400
-X-Greylist: delayed 369 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jun 2012 05:36:38 EDT
-Message-ID: <4FCDD315.502@free.fr>
-Date: Tue, 05 Jun 2012 11:36:21 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1761544Ab2FEJhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:37:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45224 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758132Ab2FEJhD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:37:03 -0400
+Date: Tue, 5 Jun 2012 11:36:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Peter Zijlstra <peterz@infradead.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+In-Reply-To: <87zk8iioam.fsf@rustcorp.com.au>
+Message-ID: <alpine.LFD.2.02.1206051135260.3086@ionos>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com> <alpine.LFD.2.02.1206042203590.3086@ionos> <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, devel@openvz.org,
-        kir@parallels.com, Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] allow a task to join a pid namespace
-References: <1338816828-25312-1-git-send-email-glommer@parallels.com>
-In-Reply-To: <1338816828-25312-1-git-send-email-glommer@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2012 03:33 PM, Glauber Costa wrote:
-> Currently, it is possible for a process  to join existing
-> net, uts and ipc namespaces. This patch allows a process to join an
-> existing pid namespace as well.
+On Tue, 5 Jun 2012, Rusty Russell wrote:
+> On Mon, 04 Jun 2012 22:33:21 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2012-06-04 at 22:11 +0200, Thomas Gleixner wrote:
+> > 
+> > > I understand what you are trying to do, though I completely disagree
+> > > with the solution.
+> > > 
+> > > The main problem of the current hotplug code is that it is an all or
+> > > nothing approach. You have to tear down the whole thing completely
+> > > instead of just taking it out of the usable set of cpus.
+> > > 
+> > > I'm working on a proper state machine driven online/offline sequence,
+> > > where you can put the cpu into an intermediate state which avoids
+> > > bringing it down completely. This is enough to get the full
+> > > powersaving benefits w/o having to go through all the synchronization
+> > > states of a full online/offline. That will shorten the onlining time
+> > > of an previously offlined cpu to almost nothing.
+> > > 
+> > > I really want to avoid adding more bandaids to the hotplug code before
+> > > we have sorted out the existing horror.
+> > 
+> > Its far worse.. you shouldn't _ever_ care about hotplug latency unless
+> > you've got absolutely braindead hardware. We all now ARM has been
+> > particularly creative here, but is Intel now trying to trump ARM at
+> > stupid?
 > 
-> For that to remain sane, some restrictions are made in the calling process:
+> I disagree.  Deactivating a cpu for power saving is halfway to hotplug
+> anyway.  I'd rather unify the two cases, where we can specify how dead a
+> CPU should be, than have individual archs and boards do random hacks.
 > 
-> * It needs to be in the parent namespace of the namespace it wants to jump to
-> * It needs to sit in its own session and group as a leader.
+> It also gives us a great excuse to audit and neaten various of the
+> hotplug cpu callbacks; most of the ones I've looked at have been racy :(
 > 
-> The rationale for that, is that people want to trigger actions in a Container
-> from the outside. For instance, mainstream linux recently gained the ability
-> to safely reboot a container. It would be desirable, however, that this
-> action is triggered from an admin in the outside world, very much like a
-> power switch in a physical box.
+> The ones which simply want to keep per-cpu stats can be given a nice
+> helper with two simple callbacks: one to empty stats for a going-away
+> cpu, and (maybe) one to restore them.
 > 
-> This would also allow us to connect a console to the container, provide a
-> repair mode for setups without networking (or with a broken one), etc.
+> The per-cpu kthreads should no longer get torn down and recreated, and
+> doing it via a separate notifier function is ugly and error-prone.  My
+> plan is a "bool kthread_cpu_going(void)" and then a "void
+> kthread_cpu_can_go(void)", so kthreads can do:
+> 
+>         if (kthread_cpu_going()) {
+>                 /* Do any cleanup we need. */
+>                 ...
+> 
+>                 /* This returns when CPU comes back. */
+>                 kthread_cpu_can_go();
+>         }
+> 
+> Yeah, we should probably have the kthread exit inside
+> kthread_cpu_can_go() if they stop the kthread, but that's a detail.
 
-Hi Glauber,
+I have an implementation of that already. Need to polish and post. If
+my day would have more than 24 hours....
 
-I am in favor of this patch but I think the pidns support won't be
-complete and some corner-cases are not handled.
+Thanks,
 
-May be you can look at Eric's patchset [1] where, IMO, everything is
-taken into account. Some of the patches may be already upstream.
-
-Thanks
-  -- Daniel
-
-[1]
-http://git.kernel.org/?p=linux/kernel/git/ebiederm/linux-namespace-control-devel.git;a=summary
+	tglx
