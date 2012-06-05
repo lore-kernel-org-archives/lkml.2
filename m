@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530Ab2FETPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:15:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:59623 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750898Ab2FETPi (ORCPT
+	id S1751622Ab2FETRP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 15:17:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34543 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898Ab2FETRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:15:38 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+byUA94kWbeQI8UWbhSJdoqKbJVpL1YlVnWhqiwZ
-	npEgntWcXMeaJ8
-Message-ID: <4FCE5AD1.6040705@gmx.de>
-Date: Tue, 05 Jun 2012 19:15:29 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120506 Icedove/3.0.11
-MIME-Version: 1.0
-To: tartler@cs.fau.de
-CC: Eric Miao <eric.y.miao@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@lists.cs.fau.de, Reinhard Tartler <siretart@tauware.de>
-Subject: Re: [PATCH] mbxfb: unbreak compilation with CONFIG_FB_MBX_DEBUG
-References: <1337013111-7732-1-git-send-email-tartler@cs.fau.de>
-In-Reply-To: <1337013111-7732-1-git-send-email-tartler@cs.fau.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Jun 2012 15:17:13 -0400
+Date: Tue, 5 Jun 2012 12:17:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, david@lang.hm,
+        Christoph Lameter <cl@linux.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@google.com>, Dave Jones <davej@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, stable@vger.kernel.org, hughd@google.com,
+        sivanich@sgi.com
+Subject: Re: [PATCH 0/6] mempolicy memory corruption fixlet
+Message-Id: <20120605121711.bb392118.akpm@linux-foundation.org>
+In-Reply-To: <CA+55aFx6s34ss=5tjD4DT7X0WKRZfEsdk1ZiE-fkL3qao27z-A@mail.gmail.com>
+References: <1338368529-21784-1-git-send-email-kosaki.motohiro@gmail.com>
+	<CA+55aFzoVQ29C-AZYx=G62LErK+7HuTCpZhvovoyS0_KTGGZQg@mail.gmail.com>
+	<alpine.DEB.2.00.1205301328550.31768@router.home>
+	<20120530184638.GU27374@one.firstfloor.org>
+	<alpine.DEB.2.00.1205301349230.31768@router.home>
+	<20120530193234.GV27374@one.firstfloor.org>
+	<alpine.DEB.2.00.1205301441350.31768@router.home>
+	<CAHGf_=ooVunBpSdBRCnO1uOoswqxcSy7Xf8xVcgEUGA2fXdcTA@mail.gmail.com>
+	<20120530201042.GY27374@one.firstfloor.org>
+	<CAHGf_=r_ZMKNx+VriO6822otF=U_huj7uxoc5GM-2DEVryKxNQ@mail.gmail.com>
+	<alpine.DEB.2.02.1205311744280.17976@asgard.lang.hm>
+	<alpine.DEB.2.00.1206010850430.6302@router.home>
+	<alpine.DEB.2.02.1206011230170.17976@asgard.lang.hm>
+	<CAHGf_=qDy79cvHX3ym7RvkX7q9+2TDKhgtBHVj6+XHORczj94A@mail.gmail.com>
+	<CA+55aFx6s34ss=5tjD4DT7X0WKRZfEsdk1ZiE-fkL3qao27z-A@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 5 Jun 2012 12:02:25 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On 05/14/2012 04:31 PM, tartler@cs.fau.de wrote:
-> From: Reinhard Tartler <siretart@tauware.de>
+> I'm coming back to this email thread, because I didn't apply the
+> series due to all the ongoing discussion and hoping that somebody
+> would put changelog fixes and ack notices etc together.
 > 
-> This patch adds missing function prototypes.
+> I'd also really like to know that the people who saw the problem that
+> caused the current single patch (that this series reverts) would test
+> the whole series. Maybe that happened and I didn't notice it in the
+> threads, but I don't think so.
 > 
-> Signed-off-by: Reinhard Tartler <tartler@cs.fau.de>
-> ---
->  drivers/video/mbx/mbxfb.c |    3 +++
->  1 file changed, 3 insertions(+)
+> In fact, right now I'm assuming that the series will eventually come
+> to me through Andrew. Andrew, correct?
 > 
-> This patch was found with tools developed in the VAMOS project:
-> http://www4.cs.fau.de/Research/VAMOS/
-> 
-> TBH, I'm not sure if this is the correct solution. However, I'd
-> appreciate if someone could confirm that this is a real bug.
-> 
-> 
-> diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
-> index 6ce3416..c2200ec 100644
-> --- a/drivers/video/mbx/mbxfb.c
-> +++ b/drivers/video/mbx/mbxfb.c
-> @@ -878,6 +878,9 @@ static int mbxfb_resume(struct platform_device *dev)
->  #ifndef CONFIG_FB_MBX_DEBUG
->  #define mbxfb_debugfs_init(x)	do {} while(0)
->  #define mbxfb_debugfs_remove(x)	do {} while(0)
-> +#else
-> +void mbxfb_debugfs_init(struct fb_info *fbi);
-> +void mbxfb_debugfs_remove(struct fb_info *fbi);
 
-I don't agree. checkpatch complains
-WARNING: externs should be avoided in .c files
-#71: FILE: drivers/video/mbx/mbxfb.c:882:
-+void mbxfb_debugfs_init(struct fb_info *fbi);
+yup.
 
-And in drivers/video/mbx/mbxdebugfs.c
-static void __devinit mbxfb_debugfs_init(struct fb_info *fbi)
-static void __devexit mbxfb_debugfs_remove(struct fb_info *fbi)
-
-So even if you want to ignore the checkpatch warning (which I could
-understand for just 2 includes even if headers are certainly better)
-you'd have to remove the static at the implementation and for
-consistency include the __devinit/exit in your prototypes.
-
->  #endif
->  
->  #define res_size(_r) (((_r)->end - (_r)->start) + 1)
-
-
-Best regards,
-
-Florian Tobias Schandinat
+I expect there will be a v2 series (at least).  It's unclear what
+we'll be doing with [2/6]: whether the patch will be reworked, or
+whether Andi misunderstood its effects?
