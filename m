@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761732Ab2FEKWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 06:22:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45398 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761717Ab2FEKVp (ORCPT
+	id S932730Ab2FEKX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 06:23:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39396 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab2FEKXZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 06:21:45 -0400
-Date: Tue, 5 Jun 2012 11:21:43 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
-        Anuj Aggarwal <anuj.aggarwal@ti.com>
-Subject: Re: [PATCH] regulator: tps6507x: Remove unused min_uV and max_uV
- from struct tps_info
-Message-ID: <20120605102143.GM23408@opensource.wolfsonmicro.com>
-References: <1338856792.4166.1.camel@phoenix>
+	Tue, 5 Jun 2012 06:23:25 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C01fF7hLGvN0zd9s"
-Content-Disposition: inline
-In-Reply-To: <1338856792.4166.1.camel@phoenix>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120605035833.GA16700@kroah.com>
+References: <1337520702-22961-1-git-send-email-devendra.aaru@gmail.com>
+	<20120605035833.GA16700@kroah.com>
+Date: Tue, 5 Jun 2012 15:53:25 +0530
+Message-ID: <CAHdPZaNf2BL9pfYm-0-e9ij7UqpwmT_fYnex1fDr-Ce+3vjz=A@mail.gmail.com>
+Subject: Re: [PATCH] staging/wlan-ng: Fix the checkpatch warnings
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Greg,
 
---C01fF7hLGvN0zd9s
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the review.
 
-On Tue, Jun 05, 2012 at 08:39:52AM +0800, Axel Lin wrote:
-> The min_uV and max_uV are not used in this driver.
-> For table based voltage mappings, we can get min_uV and max_uV by
-> info->table[0] and info->table[table_len -1].
-> Thus remove min_uV and max_uV from struct tps_info.
+On Tue, Jun 5, 2012 at 9:28 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sun, May 20, 2012 at 07:01:42PM +0530, Devendra Naga wrote:
+>> Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+>> ---
+>>  drivers/staging/wlan-ng/cfg80211.c |   27 +++++++++++++++++++--------
+>>  1 file changed, 19 insertions(+), 8 deletions(-)
+>
+>
+> Ok, you sent me 5 patches, all with the same subject (except for 3 of
+> them you used x/3, which was nice, but you duplicated 3/3 for some
+> reason.)
+>
+No i actually copy pasted your name wrongly, so i resent it again with
+correct name.
+> I can't accept that, please be more specific in your subject: line.
+>
+> Also, in the body, say exactly what checkpatch warnings you fixed, and,
+> if you fixed more than one type of warning, that might indicate that you
+> should break the patch up into different parts.
+>
+Ok. so similar changes constitute a patch, and if the change differs a
+new patch should be there.
+> So, I've dropped all 5 patches you've sent me, please redo and resend.
+>
+Thanks, i will redo again.
+> thanks,
+>
+> greg k-h
 
-Applied, thanks.
-
---C01fF7hLGvN0zd9s
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPzd2wAAoJEBus8iNuMP3dO9YP/jP++VHcLhNisFrM9qgE/Bz5
-9GdUjGpFuIBnwUe9gv+eMAThWk4KD5EB7yStZMjg/boItK/1iPS5ffw3ZkTMsLca
-WZ7KbnWDRZbBAeyySAxHXGP6uuqSYOxU6GZpZRl5yV8wEt9qowNFRF25oQaSNU+C
-R8KxsscCSjh7yw5+7UvAliiqCPbPqnzouHf4tQjP/8nM3o1CzUDdtGzrL50HLIuz
-TJWb0W2WTuUaN2cCxBcc0L8BJGEajcNrXASbQAcRpY6yjpnd9wNr0Yq5cwl/56X8
-93b4ZZwo8myNqgZesyI+27nyoZ7+KVj/rNy3wTbqN/li/3V0iHX6L16oKc+5sdXi
-MnN0Lh8Ry6AJgf/s3m9XKSwd0CO2yKMdVwzoAB3kxvF7wyvrz66AJJgk3doEbDxF
-BWO+McjJu+rMB5bKgjYzn4AHuYyjGe4HZlLIHEnh3YNz7mn6Cm9EnOjl82roQ65z
-raMi/Qm0s838f+Ylq2LcLEYXp1PU9OCqBC7ee8Cik/NvpxBgcZ2BQMA9Te/6iKpX
-L4LVUL3biQJYB0a3aYogAEDzFBK1BvR1w++sK8AXtriBIPlRbfqsCIvKZyho3Jg8
-yDaXBNeNZs1uExKnToqrkCVNHATrEUG7t4VcBoq9Sr2AoL7R1I5n0cRJuRCXZMyX
-ERC+kwWpRJM/2Xmr1g9a
-=YWvy
------END PGP SIGNATURE-----
-
---C01fF7hLGvN0zd9s--
+Thanks,
+Devendra.
