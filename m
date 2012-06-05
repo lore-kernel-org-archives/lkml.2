@@ -1,180 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab2FEJIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:08:10 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:33864
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752139Ab2FEJIH (ORCPT
+	id S1753397Ab2FEJO3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:14:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:57127 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751761Ab2FEJO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:08:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -13
-X-BigFish: VS-13(zzbb2dI9371I168aJ1432N98dKzz1202hzzz2dh2a8h668h839h944hd25hf0ah)
-Date: Tue, 5 Jun 2012 17:08:31 +0800
-From: Zhao Chenhui <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <galak@kernel.crashing.org>, <leoli@freescale.com>
-Subject: Re: [PATCH v5 1/5] powerpc/85xx: implement hardware timebase sync
-Message-ID: <20120605090831.GA21929@localhost.localdomain>
-References: <1336737235-15370-1-git-send-email-chenhui.zhao@freescale.com>
- <4FC8E250.9090000@freescale.com>
+	Tue, 5 Jun 2012 05:14:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4FC8E250.9090000@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.net
+From: Hui Zhu <teawater@gmail.com>
+Date: Tue, 5 Jun 2012 17:13:44 +0800
+Message-ID: <CANFwon17XNVcsSZsHmGtYnXtPuoGcNZgHtDUmZCvArVy8unkog@mail.gmail.com>
+Subject: KGTP (Linux Kernel debugger and tracer) 20120605 release(user task
+ memory access and user task stack dump available now)
+To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
+        kgtp <kgtp@freelists.org>
+Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
+        Steven <mqyoung@gmail.com>, colyli@gmail.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Geoff Levand <geoff@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Geunsik Lim <leemgs1@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 01, 2012 at 10:40:00AM -0500, Scott Wood wrote:
-> On 05/11/2012 06:53 AM, Zhao Chenhui wrote:
-> >  #ifdef CONFIG_KEXEC
-> > +static struct ccsr_guts __iomem *guts;
-> > +static u64 timebase;
-> > +static int tb_req;
-> > +static int tb_valid;
-> > +
-> > +static void mpc85xx_timebase_freeze(int freeze)
-> 
-> Why is this under CONFIG_KEXEC?  It'll also be needed for CPU hotplug.
+KGTP is a realtime and lightweight Linux debugger and tracer.
+To use it, you don't need patch or rebuild the Linux kernel. Just
+build KGTP module and insmod it is OK.
 
-Yes, the timebase sync is also needed for CPU hotplug, but this patch is unrelated to CPU hotplug.
-I added CONFIG_HOTPLUG_CPU in the next patch.
+It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
+current machine or remote machine can debug and trace Linux through
+GDB tracepoint and some other functions without stopping the Linux
+Kernel.
+And even if the board doesn't have GDB on it and doesn't have
+interface for remote debug. It can debug the Linux Kernel using
+offline debug (See
+HOWTO#/sys/kernel/debug/gtpframe_and_offline_debug).
+KGTP supports X86-32, X86-64, MIPS and ARM.
+KGTP is tested on Linux kernel 2.6.18 to upstream.
+And it can work with Android (See
+http://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
 
-> 
-> > +{
-> > +	unsigned int mask;
-> > +
-> > +	if (!guts)
-> > +		return;
-> > +
-> > +	mask = CCSR_GUTS_DEVDISR_TB0 | CCSR_GUTS_DEVDISR_TB1;
-> > +	if (freeze)
-> > +		setbits32(&guts->devdisr, mask);
-> > +	else
-> > +		clrbits32(&guts->devdisr, mask);
-> > +
-> > +	in_be32(&guts->devdisr);
-> > +}
-> > +
-> > +static void mpc85xx_give_timebase(void)
-> > +{
-> > +	unsigned long flags;
-> > +
-> > +	local_irq_save(flags);
-> > +
-> > +	while (!tb_req)
-> > +		barrier();
-> > +	tb_req = 0;
-> > +
-> > +	mpc85xx_timebase_freeze(1);
-> > +	timebase = get_tb();
-> > +	mb();
-> > +	tb_valid = 1;
-> > +
-> > +	while (tb_valid)
-> > +		barrier();
-> > +
-> > +	mpc85xx_timebase_freeze(0);
-> > +
-> > +	local_irq_restore(flags);
-> > +}
-> > +
-> > +static void mpc85xx_take_timebase(void)
-> > +{
-> > +	unsigned long flags;
-> > +
-> > +	local_irq_save(flags);
-> > +
-> > +	tb_req = 1;
-> > +	while (!tb_valid)
-> > +		barrier();
-> > +
-> > +	set_tb(timebase >> 32, timebase & 0xffffffff);
-> > +	mb();
-> > +	tb_valid = 0;
-> > +
-> > +	local_irq_restore(flags);
-> > +}
-> 
-> I know you say this is for dual-core chips only, but it would be nice if
-> you'd write this in a way that doesn't assume that (even if the
-> corenet-specific timebase freezing comes later).
+Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
+http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
+about howto use KGTP.
 
-At this point, I have not thought about how to implement the cornet-specific timebase freezing.
+Now, KGTP 20120605 release.
+You can get the package for it from
+http://kgtp.googlecode.com/files/kgtp_20120605.tar.bz2
+or
+svn co https://kgtp.googlecode.com/svn/tags/20120605
 
-> 
-> Do we need an isync after setting the timebase, to ensure it's happened
-> before we enable the timebase?  Likewise, do we need a readback after
-> disabling the timebase to ensure it's disabled before we read the
-> timebase in give_timebase?
+The main change of this release is:
+Add new function "Read memory of user space program directly".
+And use this function will not interrupt this task.
+Please goto http://code.google.com/p/kgtp/wiki/HOWTO#Read_memory_of_user_space_program_directly
+to get more info about it.
 
-I checked the e500 core manual (Chapter 2.16 Synchronization Requirements for SPRs).
-Only some SPR registers need an isync. The timebase registers do not.
+Add new function "collect stack (for backtrace) of user space program
+in tracepoint".
+With this function, you can get the stack dump of an user task from
+user space to Kernel space.
+Please goto http://code.google.com/p/kgtp/wiki/HOWTO#collect_stack_(for_backtrace)_of_user_space_program_in_tracepoin
+to get more info about it.
 
-I did a readback in mpc85xx_timebase_freeze().
+Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
+about this release.
 
-> 
-> >  atomic_t kexec_down_cpus = ATOMIC_INIT(0);
-> >  
-> >  void mpc85xx_smp_kexec_cpu_down(int crash_shutdown, int secondary)
-> > @@ -228,6 +286,20 @@ smp_85xx_setup_cpu(int cpu_nr)
-> >  		doorbell_setup_this_cpu();
-> >  }
-> >  
-> > +#ifdef CONFIG_KEXEC
-> > +static const struct of_device_id guts_ids[] = {
-> > +	{ .compatible = "fsl,mpc8572-guts", },
-> > +	{ .compatible = "fsl,mpc8560-guts", },
-> > +	{ .compatible = "fsl,mpc8536-guts", },
-> > +	{ .compatible = "fsl,p1020-guts", },
-> > +	{ .compatible = "fsl,p1021-guts", },
-> > +	{ .compatible = "fsl,p1022-guts", },
-> > +	{ .compatible = "fsl,p1023-guts", },
-> > +	{ .compatible = "fsl,p2020-guts", },
-> > +	{},
-> > +};
-> > +#endif
-> 
-> MPC8560 and MPC8536 are single-core...
+According to the comments of Christoph, Geoff and Andi.  I make lite
+patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
+see it.
 
-Thanks. I will remove them.
-
-> 
-> Also please use a more specific name, such as e500v2_smp_guts_ids or
-> mpc85xx_smp_guts_ids -- when corenet support is added it will likely be
-> in the same file.
-> 
-> >  void __init mpc85xx_smp_init(void)
-> >  {
-> >  	struct device_node *np;
-> > @@ -249,6 +321,19 @@ void __init mpc85xx_smp_init(void)
-> >  		smp_85xx_ops.cause_ipi = doorbell_cause_ipi;
-> >  	}
-> >  
-> > +#ifdef CONFIG_KEXEC
-> > +	np = of_find_matching_node(NULL, guts_ids);
-> > +	if (np) {
-> > +		guts = of_iomap(np, 0);
-> > +		smp_85xx_ops.give_timebase = mpc85xx_give_timebase;
-> > +		smp_85xx_ops.take_timebase = mpc85xx_take_timebase;
-> > +		of_node_put(np);
-> > +	} else {
-> > +		smp_85xx_ops.give_timebase = smp_generic_give_timebase;
-> > +		smp_85xx_ops.take_timebase = smp_generic_take_timebase;
-> > +	}
-> 
-> Do not use smp_generic_give/take_timebase, ever.  If you don't have the
-> guts node, then just assume the timebase is already synced.
-> 
-> -Scott
-
-smp_generic_give/take_timebase is the default in KEXEC before.
-If do not set them, it may make KEXEC fail on other platforms.
-
--Chenhui
-
-
+Thanks,
+Hui
