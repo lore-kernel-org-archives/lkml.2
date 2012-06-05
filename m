@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab2FERDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:03:54 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:54352 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754759Ab2FERDw (ORCPT
+	id S1754831Ab2FEREg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:04:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:54781 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754759Ab2FEREb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:03:52 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/7woR1zTT7zpnNOI6nCPy5294sIR+G39oXfLOpqy
-	ab7NGKVuCe1gRO
-Message-ID: <4FCE3BF2.2030608@gmx.de>
-Date: Tue, 05 Jun 2012 19:03:46 +0200
-From: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120603 Thunderbird/12.0.1
+	Tue, 5 Jun 2012 13:04:31 -0400
+Message-ID: <4FCE3C18.4080302@amacapital.net>
+Date: Tue, 05 Jun 2012 10:04:24 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Hugh Dickins <hughd@google.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, Hans de Bruin <jmdebruin@xmsnet.nl>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>
-Subject: Re: [bisected commit 0fc9d10] NFS-server corruption with 3.4
-References: <201206051116.17711.linux@rainbow-software.org> <4FCE0A83.4050502@openvz.org> <201206051620.47925.linux@rainbow-software.org> <4FCE1D17.1080904@openvz.org> <87zk8h23wn.fsf@devron.myhome.or.jp> <4FCE2256.7010804@openvz.org> <4FCE2CCE.9000900@openvz.org>
-In-Reply-To: <4FCE2CCE.9000900@openvz.org>
-X-Enigmail-Version: 1.5pre
+        Will Drewry <wad@chromium.org>, linux-security-module@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-doc@vger.kernel.org,
+        kernel-hardening@lists.openwall.com, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, eparis@redhat.com,
+        serge.hallyn@canonical.com, djm@mindrot.org, scarybeasts@gmail.com,
+        indan@nul.nu, pmoore@redhat.com, corbet@lwn.net,
+        eric.dumazet@gmail.com, markus@chromium.org, coreyb@linux.vnet.ibm.com,
+        keescook@chromium.org, jmorris@namei.org, linux-man@vger.kernel.org
+Subject: Docs for PR_SET_NO_NEW_PRIVS
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 05:59 PM, Konstantin Khlebnikov wrote:
-> Proper fix in attachment.
-> 
-That fixes solves the chroot issue I had have - tested at top of
-v3.5-rc1-37-g99becf1
+Hi all-
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+As promised (although belatedly), I wrote up some proposed documentation
+for the no_new_privs feature.  What should I do with it?  I don't speak
+groff/troff/whatever man pages are written in.
+
+I would be happy to license this text appropriately for whatever tree
+it might end up in.  In the mean time, it's GPLv2+.
+
+--- cut here ---
+
+The execve system call can grant a newly-started program privileges
+that its parent did not have.  The most obvious examples are
+setuid/setgid programs and file capabilities.  To prevent the parent
+program from gaining these privileges as well, the kernel and user
+code must be careful to prevent the parent from doing anything that
+could subvert the child.  For example:
+
+ - The dynamic loader handles LD_* environment variables differently
+if a program is setuid.
+ - chroot is disallowed to unprivileged processes, since it would
+allow /etc/passwd to be replaced from the point of view of a process
+that inherited chroot.
+ - The exec code has special handling for ptrace.
+
+These are all ad-hoc fixes.  The no_new_privs bit (since Linux 3.5) is
+a new, generic mechanism to make it safe for a process to modify its
+execution environment in a manner that persists across execve.  Any
+task can set no_new_privs.  Once the bit is set, it is inherited
+across fork, clone, and execve and cannot be unset.  With no_new_privs
+set, execve promises not to grant the privilege to do anything that
+could not have been done without the execve call.  For example, the
+setuid and setgid bits will no longer change the uid or gid; file
+capabilities will not add to the permitted set, and LSMs will not
+relax constraints after execve.
+
+Note that no_new_privs does not prevent privilege changes that do not
+involve execve.  An appropriately privileged task can still call
+setuid(2) and receive SCM_RIGHTS datagrams.
+
+There are two main use cases for no_new_privs so far:
+
+ - Filters installed for the seccomp mode 2 sandbox persist across
+execve and can change the behavior of newly-executed programs.
+Unprivileged users are therefore only allowed to install such filters
+if no_new_privs is set.
+
+ - By itself, no_new_privs can be used to reduce the attack surface
+available to an unprivileged user.  If everything running with a given
+uid has no_new_privs set, then that uid will be unable to escalate its
+privileges by directly attacking setuid, setgid, and fcap-using
+binaries; it will need to compromise something without the
+no_new_privs bit set first.
+
+In the future, other potentially dangerous kernel features could
+become available to unprivileged tasks if no_new_privs is set.  In
+principle, several options to unshare(2) and clone(2) would be safe
+when no_new_privs is set, and no_new_privs + chroot is considerable
+less dangerous than chroot by itself.
+
+--- cut here ---
+
+--Andy
