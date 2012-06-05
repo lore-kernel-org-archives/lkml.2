@@ -1,285 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2FELgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:36:00 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:33967 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab2FELf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:35:59 -0400
-Message-ID: <4FCDEE8E.8000005@parallels.com>
-Date: Tue, 5 Jun 2012 15:33:34 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-CC: <linux-kernel@vger.kernel.org>, <cgroups@vger.kernel.org>,
-        <devel@openvz.org>, <kir@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] allow a task to join a pid namespace
-References: <1338816828-25312-1-git-send-email-glommer@parallels.com> <4FCDD315.502@free.fr>
-In-Reply-To: <4FCDD315.502@free.fr>
-Content-Type: multipart/mixed;
-	boundary="------------030509020909040506050907"
+	id S1755240Ab2FELkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:40:41 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:52369 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155Ab2FELki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 07:40:38 -0400
+Message-ID: <1338896342.4044.117.camel@falcor>
+Subject: Re: [PATCH 00/23] Crypto keys and module signing
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: David Howells <dhowells@redhat.com>, kyle@mcmartin.ca,
+        dmitry.kasatkin@intel.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        Tim Abbott <tabbott@ksplice.com>
+Date: Tue, 05 Jun 2012 07:39:02 -0400
+In-Reply-To: <87wr3min4b.fsf@rustcorp.com.au>
+References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
+	 <26029.1337960539@redhat.com> <87ipf73lsi.fsf@rustcorp.com.au>
+	 <1338814071.4044.19.camel@falcor> <87wr3min4b.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060511-3270-0000-0000-000006E98CA3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------030509020909040506050907
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+On Tue, 2012-06-05 at 10:35 +0930, Rusty Russell wrote:
+> On Mon, 04 Jun 2012 08:47:51 -0400, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > On Mon, 2012-06-04 at 11:01 +0930, Rusty Russell wrote:
+> > > On Fri, 25 May 2012 16:42:19 +0100, David Howells <dhowells@redhat.com> wrote:
+> > > > 
+> > > > Hi Rusty,
+> > > > 
+> > > > If you prefer to have userspace extract the module signature and pass it in
+> > > > uargs, here's a tree that will do that:
+> > > > 
+> > > > 	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/modsign-uarg
+> > > 
+> > > OK, there's merit in this approach: it certainly moves the argument
+> > > about how to encode the signature out of my backyard :)
+> > > 
+> > > Should we just bite the bullet and create a new syscall:
+> > > 
+> > > SYSCALL_DEFINE5(init_module2, void __user *, umod,
+> > > 		unsigned long, len, const char __user *, uargs,
+> > >                 unsigned int, siglen, const char __user *, sig)
+> > > 
+> > > But I'm easily swayed if you prefer the current approach.
+> > > 
+> > > Thanks,
+> > > Rusty.
+> > 
+> > If you're really considering creating a new syscall, then perhaps this
+> > discussion should include passing the file descriptor instead of a
+> > buffer and signature.  As I said https://lkml.org/lkml/2012/5/25/261, I
+> > don't know the historical reasons for passing a buffer instead of the
+> > file descriptor itself.  If the file descriptor was passed, it would
+> > allow IMA-appraisal, which is in the process of being upstreamed, to
+> > verify and enforce file data and metadata integrity like on the other
+> > hooks open, execve, and mmap.
+> 
+> It's flexible.  Compressed modules, for example.  And who knew if we
+> would be runtime generating modules?  But I don't think even the ksplice
+> guys generate modules on the fly for insertion.
+> 
+> modprobe has --force-vermagic and --force-modversion, but frankly that
+> could be replaced by a single "force" flag handed to the kernel.
+> 
+> If there's real benefit, it could be done.  Do we still want a separate
+> signature blob?
+> 
+> SYSCALL_DEFINE5(init_module_fd,
+>                 int, fd,
+>                 unsigned int, flags,
+>                 const char *__user *, uargs,
+>                 unsigned int, siglen,
+>                 const char __user *, sig);
 
-On 06/05/2012 01:36 PM, Daniel Lezcano wrote:
-> On 06/04/2012 03:33 PM, Glauber Costa wrote:
->> Currently, it is possible for a process  to join existing
->> net, uts and ipc namespaces. This patch allows a process to join an
->> existing pid namespace as well.
->>
->> For that to remain sane, some restrictions are made in the calling process:
->>
->> * It needs to be in the parent namespace of the namespace it wants to jump to
->> * It needs to sit in its own session and group as a leader.
->>
->> The rationale for that, is that people want to trigger actions in a Container
->> from the outside. For instance, mainstream linux recently gained the ability
->> to safely reboot a container. It would be desirable, however, that this
->> action is triggered from an admin in the outside world, very much like a
->> power switch in a physical box.
->>
->> This would also allow us to connect a console to the container, provide a
->> repair mode for setups without networking (or with a broken one), etc.
->
-> Hi Glauber,
->
-> I am in favor of this patch but I think the pidns support won't be
-> complete and some corner-cases are not handled.
->
-> May be you can look at Eric's patchset [1] where, IMO, everything is
-> taken into account. Some of the patches may be already upstream.
->
-> Thanks
->    -- Daniel
->
+As the signature would be stored as an extended attribute, we wouldn't
+need to pass it.  Unfortunately not all filesystems have xattr support,
+nor do all of the package installation mechanims.  The benefit of
+storing the signature as an extended attribute, however, is that there
+is a consistent mechanism for verifying file data integrity for all
+files, not only ELF.
 
-Daniel,
+Mimi
 
-Please let me know what you think of the attached patch. It is ontop of 
-Eric's tree that you pointed me to, but I am not really using any of its 
-functionality, so this would be equally doable in current mainline 
-kernel - but I wanted to make sure it integrates well with what Eric is 
-doing as well.
-
-It is a bit wasteful space-wise, but this approach pretty much 
-guarantees we don't need to update pointers anywhere - therefore, 
-totally lock-free. pid->level is only updated after 
-switch_task_namespaces(), so every call before that will see correct 
-information up to the previous level.
-
-
-
---------------030509020909040506050907
-Content-Type: text/x-patch;
-	name="0001-pid_ns-expand-the-current-pid-namespace-to-a-new-nam.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename*0="0001-pid_ns-expand-the-current-pid-namespace-to-a-new-nam.pa";
-	filename*1="tch"
-
->From 1192e0ff3c854f4690d44fadccbc575fff653578 Mon Sep 17 00:00:00 2001
-From: Glauber Costa <glommer@parallels.com>
-Date: Tue, 5 Jun 2012 15:23:12 +0400
-Subject: [PATCH] pid_ns: expand the current pid namespace to a new namespace
-
-install pid_ns doesn't go as far as needed. Things like
-ns_of_pid() will rely on the current level to get to the
-right task. So when attaching a task to a new pid namespace,
-we need to make sure the upid vector grows as needed, and the
-level updated accordingly
-
-To do that, this patch leaves room for one more upid at the end
-of the structure at all times. It also stores the original level so
-we know afterwards which cache to free from.
-
-Although this is, of course, a bit wasteful, it has the advantage
-that we never need to touch the existing struct pid, nor the existing
-upid vectors. That would be racy in nature, and may require us to pick
-locks here and there - which seems to me like a big no.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
----
- include/linux/pid.h    |    3 +++
- kernel/nsproxy.c       |    2 ++
- kernel/pid.c           |   54 +++++++++++++++++++++++++++++++++++++++++++++++-
- kernel/pid_namespace.c |   30 +++++++++++++++++++++++++--
- 4 files changed, 86 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/pid.h b/include/linux/pid.h
-index b152d44..2f01763 100644
---- a/include/linux/pid.h
-+++ b/include/linux/pid.h
-@@ -58,6 +58,7 @@ struct pid
- {
- 	atomic_t count;
- 	unsigned int level;
-+	unsigned int orig_level;
- 	/* lists of tasks that use this pid */
- 	struct hlist_head tasks[PIDTYPE_MAX];
- 	struct rcu_head rcu;
-@@ -121,6 +122,8 @@ int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
- 
- extern struct pid *alloc_pid(struct pid_namespace *ns);
- extern void free_pid(struct pid *pid);
-+extern int expand_pid(struct pid *pid, struct pid_namespace *ns);
-+extern void  update_expanded_pid(struct task_struct *task);
- 
- /*
-  * ns_of_pid() returns the pid namespace in which the specified pid was
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index b956079..9851f11 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -267,6 +267,8 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
- 		goto out;
- 	}
- 	switch_task_namespaces(tsk, new_nsproxy);
-+	if (nstype == CLONE_NEWPID)
-+		update_expanded_pid(current);
- out:
- 	fput(file);
- 	return err;
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 8c51c26..f2b1bd7 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -247,7 +247,7 @@ void put_pid(struct pid *pid)
- 	if (!pid)
- 		return;
- 
--	ns = pid->numbers[pid->level].ns;
-+	ns = pid->numbers[pid->orig_level].ns;
- 	if ((atomic_read(&pid->count) == 1) ||
- 	     atomic_dec_and_test(&pid->count)) {
- 		kmem_cache_free(ns->pid_cachep, pid);
-@@ -306,6 +306,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
- 
- 	get_pid_ns(ns);
- 	pid->level = ns->level;
-+	pid->orig_level = ns->level;
- 	atomic_set(&pid->count, 1);
- 	for (type = 0; type < PIDTYPE_MAX; ++type)
- 		INIT_HLIST_HEAD(&pid->tasks[type]);
-@@ -329,6 +330,57 @@ out_free:
- 	goto out;
- }
- 
-+int expand_pid(struct pid *pid, struct pid_namespace *ns)
-+{
-+	int i, nr;
-+	struct pid_namespace *tmp;
-+	struct upid *upid;
-+
-+	if  ((ns->level - pid->orig_level) > 1)
-+		return -EINVAL;
-+
-+	if (ns->parent != pid->numbers[pid->orig_level].ns)
-+		return -EINVAL;
-+
-+	tmp = ns;
-+	for (i = ns->level; i > pid->level; i--) {
-+		if (ns->dead)
-+			goto out_free;
-+		nr = alloc_pidmap(tmp);
-+		if (nr < 0)
-+			goto out_free;
-+
-+		pid->numbers[i].nr = nr;
-+		pid->numbers[i].ns = tmp;
-+		tmp = tmp->parent;
-+	}
-+
-+	upid = pid->numbers + ns->level;
-+	spin_lock_irq(&pidmap_lock);
-+	for (i = ns->level; i > pid->level; i--) {
-+		upid = &pid->numbers[i];
-+		hlist_add_head_rcu(&upid->pid_chain,
-+				&pid_hash[pid_hashfn(upid->nr, upid->ns)]);
-+	}
-+	spin_unlock_irq(&pidmap_lock);
-+
-+	return 0;
-+
-+out_free:
-+	while (++i <= ns->level)
-+		free_pidmap(pid->numbers + i);
-+
-+	return -ENOMEM;
-+}
-+
-+void update_expanded_pid(struct task_struct *task)
-+{
-+	struct pid *pid;
-+	pid = get_task_pid(task, PIDTYPE_PID);
-+
-+	pid->level++;
-+}
-+
- struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
- {
- 	struct hlist_node *elem;
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 79bf459..0f3a521 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -49,8 +49,12 @@ static struct kmem_cache *create_pid_cachep(int nr_ids)
- 		goto err_alloc;
- 
- 	snprintf(pcache->name, sizeof(pcache->name), "pid_%d", nr_ids);
-+	/*
-+	 * nr_ids - 1 would provide room for upids up to the right level.
-+	 * We leave room for one in the end for usage with setns.
-+	 */
- 	cachep = kmem_cache_create(pcache->name,
--			sizeof(struct pid) + (nr_ids - 1) * sizeof(struct upid),
-+			sizeof(struct pid) + (nr_ids) * sizeof(struct upid),
- 			0, SLAB_HWCACHE_ALIGN, NULL);
- 	if (cachep == NULL)
- 		goto err_cachep;
-@@ -244,8 +248,30 @@ static void pidns_put(void *ns)
- 	put_pid_ns(ns);
- }
- 
--static int pidns_install(struct nsproxy *nsproxy, void *ns)
-+static int pidns_install(struct nsproxy *nsproxy, void *_ns)
- {
-+	int ret = 0;
-+	struct pid *pid;
-+	struct pid_namespace *ns = _ns;
-+
-+	rcu_read_lock();
-+	pid = task_pid(current);
-+	rcu_read_unlock();
-+
-+	if (is_container_init(current) || (get_nr_threads(current) > 1))
-+		return -EINVAL;
-+
-+	read_lock(&tasklist_lock);
-+	if ((task_pgrp(current) != pid) || task_session(current) != pid)
-+		ret = -EPERM;
-+	read_unlock(&tasklist_lock);
-+	if (ret)
-+		return ret;
-+
-+	ret = expand_pid(pid, ns);
-+	if (ret)
-+		return ret;
-+
- 	put_pid_ns(nsproxy->pid_ns);
- 	nsproxy->pid_ns = get_pid_ns(ns);
- 	return 0;
--- 
-1.7.10.2
-
-
---------------030509020909040506050907--
