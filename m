@@ -1,109 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761474Ab2FEDnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:43:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43604 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761428Ab2FEDlQ (ORCPT
+	id S1761511Ab2FEDnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:43:12 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40588 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761428Ab2FEDnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:41:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
-        fengguang.wu@intel.com, hughd@google.com, akpm@linux-foundation.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 03/10] mempool: add @gfp_mask to mempool_create_node()
-Date: Mon,  4 Jun 2012 20:40:53 -0700
-Message-Id: <1338867660-4689-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1338867660-4689-1-git-send-email-tj@kernel.org>
-References: <1338867660-4689-1-git-send-email-tj@kernel.org>
+	Mon, 4 Jun 2012 23:43:07 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <4FCD7FBB.1000304@jp.fujitsu.com>
+Date: Tue, 05 Jun 2012 12:40:43 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V7 07/14] mm/page_cgroup: Make page_cgroup point to the
+ cgroup rather than the mem_cgroup
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FCD648E.90709@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu) <87ehpu8o5z.fsf@skywalker.in.ibm.com>
+In-Reply-To: <87ehpu8o5z.fsf@skywalker.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mempool_create_node() currently assumes %GFP_KERNEL.  Its only user,
-blk_init_free_list(), is about to be updated to use other allocation
-flags - add @gfp_mask argument to the function.
+(2012/06/05 11:53), Aneesh Kumar K.V wrote:
+> Kamezawa Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>  writes:
+>
+>> (2012/05/30 23:38), Aneesh Kumar K.V wrote:
+>>> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+>>>
+>>> We will use it later to make page_cgroup track the hugetlb cgroup information.
+>>>
+>>> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+>>> ---
+>>>    include/linux/mmzone.h      |    2 +-
+>>>    include/linux/page_cgroup.h |    8 ++++----
+>>>    init/Kconfig                |    4 ++++
+>>>    mm/Makefile                 |    3 ++-
+>>>    mm/memcontrol.c             |   42 +++++++++++++++++++++++++-----------------
+>>>    5 files changed, 36 insertions(+), 23 deletions(-)
+>>>
+>>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>>> index 2427706..2483cc5 100644
+>>> --- a/include/linux/mmzone.h
+>>> +++ b/include/linux/mmzone.h
+>>> @@ -1052,7 +1052,7 @@ struct mem_section {
+>>>
+>>>    	/* See declaration of similar field in struct zone */
+>>>    	unsigned long *pageblock_flags;
+>>> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>>> +#ifdef CONFIG_PAGE_CGROUP
+>>>    	/*
+>>>    	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
+>>>    	 * section. (see memcontrol.h/page_cgroup.h about this.)
+>>> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+>>> index a88cdba..7bbfe37 100644
+>>> --- a/include/linux/page_cgroup.h
+>>> +++ b/include/linux/page_cgroup.h
+>>> @@ -12,7 +12,7 @@ enum {
+>>>    #ifndef __GENERATING_BOUNDS_H
+>>>    #include<generated/bounds.h>
+>>>
+>>> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>>> +#ifdef CONFIG_PAGE_CGROUP
+>>>    #include<linux/bit_spinlock.h>
+>>>
+>>>    /*
+>>> @@ -24,7 +24,7 @@ enum {
+>>>     */
+>>>    struct page_cgroup {
+>>>    	unsigned long flags;
+>>> -	struct mem_cgroup *mem_cgroup;
+>>> +	struct cgroup *cgroup;
+>>>    };
+>>>
+>>
+>> This patch seems very bad.
+>
+> I had to change that to
+>
+> struct page_cgroup {
+> 	unsigned long flags;
+> 	struct cgroup_subsys_state *css;
+> };
+>
+> to get memcg to work. We end up changing css.cgroup on cgroupfs mount/umount.
+>
+Hmm, then pointer to memcg can be calculated by this *css.
+Ok to this.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>
----
- block/blk-core.c        |    4 ++--
- include/linux/mempool.h |    3 ++-
- mm/mempool.c            |   12 +++++++-----
- 3 files changed, 11 insertions(+), 8 deletions(-)
+>>
+>>    - What is the performance impact to memcg ? Doesn't this add extra overheads
+>>      to memcg lookup ?
+>
+> Considering that we are stashing cgroup_subsys_state, it should be a
+> simple addition. I haven't measured the exact numbers. Do you have any
+> suggestion on the tests I can run ?
+>
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3c923a7..7465d89 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -518,8 +518,8 @@ static int blk_init_free_list(struct request_queue *q)
- 	init_waitqueue_head(&rl->wait[BLK_RW_ASYNC]);
- 
- 	rl->rq_pool = mempool_create_node(BLKDEV_MIN_RQ, mempool_alloc_slab,
--				mempool_free_slab, request_cachep, q->node);
--
-+					  mempool_free_slab, request_cachep,
-+					  GFP_KERNEL, q->node);
- 	if (!rl->rq_pool)
- 		return -ENOMEM;
- 
-diff --git a/include/linux/mempool.h b/include/linux/mempool.h
-index 7c08052..39ed62a 100644
---- a/include/linux/mempool.h
-+++ b/include/linux/mempool.h
-@@ -26,7 +26,8 @@ typedef struct mempool_s {
- extern mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
- 			mempool_free_t *free_fn, void *pool_data);
- extern mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
--			mempool_free_t *free_fn, void *pool_data, int nid);
-+			mempool_free_t *free_fn, void *pool_data,
-+			gfp_t gfp_mask, int nid);
- 
- extern int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask);
- extern void mempool_destroy(mempool_t *pool);
-diff --git a/mm/mempool.c b/mm/mempool.c
-index d904981..5499047 100644
---- a/mm/mempool.c
-+++ b/mm/mempool.c
-@@ -63,19 +63,21 @@ EXPORT_SYMBOL(mempool_destroy);
- mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
- 				mempool_free_t *free_fn, void *pool_data)
- {
--	return  mempool_create_node(min_nr,alloc_fn,free_fn, pool_data,-1);
-+	return mempool_create_node(min_nr,alloc_fn,free_fn, pool_data,
-+				   GFP_KERNEL, NUMA_NO_NODE);
- }
- EXPORT_SYMBOL(mempool_create);
- 
- mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
--			mempool_free_t *free_fn, void *pool_data, int node_id)
-+			       mempool_free_t *free_fn, void *pool_data,
-+			       gfp_t gfp_mask, int node_id)
- {
- 	mempool_t *pool;
--	pool = kmalloc_node(sizeof(*pool), GFP_KERNEL | __GFP_ZERO, node_id);
-+	pool = kmalloc_node(sizeof(*pool), gfp_mask | __GFP_ZERO, node_id);
- 	if (!pool)
- 		return NULL;
- 	pool->elements = kmalloc_node(min_nr * sizeof(void *),
--					GFP_KERNEL, node_id);
-+				      gfp_mask, node_id);
- 	if (!pool->elements) {
- 		kfree(pool);
- 		return NULL;
-@@ -93,7 +95,7 @@ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
- 	while (pool->curr_nr < pool->min_nr) {
- 		void *element;
- 
--		element = pool->alloc(GFP_KERNEL, pool->pool_data);
-+		element = pool->alloc(gfp_mask, pool->pool_data);
- 		if (unlikely(!element)) {
- 			mempool_destroy(pool);
- 			return NULL;
--- 
-1.7.7.3
+copy-on-write, parallel page fault, file creation/deletion etc..
+
+
+>>    - Hugetlb reuquires much more smaller number of tracking information rather
+>>      than memcg requires. I guess you can record the information into page->private
+>>      if you want.
+>
+> So If we end up tracking page cgroup in struct page all these extra over
+> head will go away. And in most case we would have both memcg and hugetlb
+> enabled by default.
+>
+>>    - This may prevent us from the work 'reducing size of page_cgroup'
+>>
+>
+> by reducing you mean moving struct page_cgroup info to struct page
+> itself ? If so this should not have any impact right ?
+
+I'm not sure but....doesn't this change bring impact to rules around
+(un)lock_page_cgroup() and pc->memcg overwriting algorithm ?
+Let me think....but maybe discussing without patch was wrong. sorry.
+
+>Most of the requirement of hugetlb should be similar to memcg.
+>
+Yes and No. hugetlb just requires 1/HUGEPAGE_SIZE of tracking information.
+So, as Michal pointed out, if the user _really_ want to avoid
+overheads of memcg, the effect cgroup_disable=memory should be kept.
+If you use page_cgroup, you cannot save memory by the boot option.
+
+This makes the points 'creating hugetlb only subsys for avoiding memcg overheads'
+unclear. You don't need tracking information per page and it can be dynamically
+allocated. Or please range-tracking as Michal proposed.
+
+>> So, strong Nack to this. I guess you can use page->private or some entries in
+>> struct page, you have many pages per accounting units. Please make an effort
+>> to avoid using page_cgroup.
+>>
+>
+> HugeTLB already use page->private of compound page head to track subpool
+> pointer. So we won't be able to use page->private.
+>
+
+You can use other pages than head/tails.
+For example,I think you have 512 pages per 2M pages.
+
+
+Thanks,
+-Kame
+
+
 
