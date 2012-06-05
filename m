@@ -1,153 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761262Ab2FEI7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 04:59:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38854 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757838Ab2FEI7a (ORCPT
+	id S1761418Ab2FEJDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:03:17 -0400
+Received: from mail-gg0-f174.google.com ([209.85.161.174]:54826 "EHLO
+	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759059Ab2FEJDP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 04:59:30 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH] driver core: fix shutdown races with probe/remove
-Date: Tue,  5 Jun 2012 16:59:07 +0800
-Message-Id: <1338886747-28088-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 5 Jun 2012 05:03:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120604133509.GA11010@quack.suse.cz>
+References: <1338644416-11417-1-git-send-email-akinobu.mita@gmail.com>
+	<20120604101237.GD7670@quack.suse.cz>
+	<CAC5umyjP0Pov1a3b7N3VzNVHc1uhan2tLmy2_bOzWeY0u7h2FA@mail.gmail.com>
+	<20120604133509.GA11010@quack.suse.cz>
+Date: Tue, 5 Jun 2012 18:03:14 +0900
+Message-ID: <CAC5umyiLojOEuE6wyMk-Duf8C2skMhF2G4zw+3_qO_s2-F_nKg@mail.gmail.com>
+Subject: Re: [PATCH v2 01/10] string: introduce memweight
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Anders Larsen <al@alarsen.net>, Alasdair Kergon <agk@redhat.com>,
+        dm-devel@redhat.com, linux-fsdevel@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-media@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>, ocfs2-devel@oss.oracle.com,
+        linux-ext4@vger.kernel.org, Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>, Matthew Wilcox <matthew@wil.cx>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Firstly, .shutdown callback may touch a uninitialized hardware
-if dev->driver is set and .probe is not completed.
+2012/6/4 Jan Kara <jack@suse.cz>:
+> On Mon 04-06-12 20:46:14, Akinobu Mita wrote:
+>> 2012/6/4 Jan Kara <jack@suse.cz>:
+>> > On Sat 02-06-12 22:40:07, Akinobu Mita wrote:
+>> >> memweight() is the function that counts the total number of bits set
+>> >> in memory area. áUnlike bitmap_weight(), memweight() takes pointer
+>> >> and size in bytes to specify a memory area which does not need to be
+>> >> aligned to long-word boundary.
+>> >>
+>> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> >> Cc: Anders Larsen <al@alarsen.net>
+>> >> Cc: Alasdair Kergon <agk@redhat.com>
+>> >> Cc: dm-devel@redhat.com
+>> >> Cc: linux-fsdevel@vger.kernel.org
+>> >> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> >> Cc: linux-media@vger.kernel.org
+>> >> Cc: Mark Fasheh <mfasheh@suse.com>
+>> >> Cc: Joel Becker <jlbec@evilplan.org>
+>> >> Cc: ocfs2-devel@oss.oracle.com
+>> >> Cc: Jan Kara <jack@suse.cz>
+>> >> Cc: linux-ext4@vger.kernel.org
+>> >> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> >> Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+>> >> Cc: "Theodore Ts'o" <tytso@mit.edu>
+>> >> Cc: Matthew Wilcox <matthew@wil.cx>
+>> >> ---
+>> >>
+>> >> v2: simplify memweight(), adviced by Jan Kara
+>> >>
+>> >> áinclude/linux/string.h | á á3 +++
+>> >> álib/string.c á á á á á | á 32 ++++++++++++++++++++++++++++++++
+>> >> á2 files changed, 35 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/include/linux/string.h b/include/linux/string.h
+>> >> index e033564..ffe0442 100644
+>> >> --- a/include/linux/string.h
+>> >> +++ b/include/linux/string.h
+>> >> @@ -145,4 +145,7 @@ static inline bool strstarts(const char *str, const char *prefix)
+>> >> á á á return strncmp(str, prefix, strlen(prefix)) == 0;
+>> >> á}
+>> >> á#endif
+>> >> +
+>> >> +extern size_t memweight(const void *ptr, size_t bytes);
+>> >> +
+>> >> á#endif /* _LINUX_STRING_H_ */
+>> >> diff --git a/lib/string.c b/lib/string.c
+>> >> index e5878de..bf4d5a8 100644
+>> >> --- a/lib/string.c
+>> >> +++ b/lib/string.c
+>> >> @@ -26,6 +26,7 @@
+>> >> á#include <linux/export.h>
+>> >> á#include <linux/bug.h>
+>> >> á#include <linux/errno.h>
+>> >> +#include <linux/bitmap.h>
+>> >>
+>> >> á#ifndef __HAVE_ARCH_STRNICMP
+>> >> á/**
+>> >> @@ -824,3 +825,34 @@ void *memchr_inv(const void *start, int c, size_t bytes)
+>> >> á á á return check_bytes8(start, value, bytes % 8);
+>> >> á}
+>> >> áEXPORT_SYMBOL(memchr_inv);
+>> >> +
+>> >> +/**
+>> >> + * memweight - count the total number of bits set in memory area
+>> >> + * @ptr: pointer to the start of the area
+>> >> + * @bytes: the size of the area
+>> >> + */
+>> >> +size_t memweight(const void *ptr, size_t bytes)
+>> >> +{
+>> >> + á á size_t w = 0;
+>> >> + á á size_t longs;
+>> >> + á á const unsigned char *bitmap = ptr;
+>> >> +
+>> >> + á á for (; bytes > 0 && ((unsigned long)bitmap) % sizeof(long);
+>> >> + á á á á á á á á á á bytes--, bitmap++)
+>> >> + á á á á á á w += hweight8(*bitmap);
+>> >> +
+>> >> + á á longs = bytes / sizeof(long);
+>> >> + á á if (longs) {
+>> >> + á á á á á á BUG_ON(longs >= INT_MAX / BITS_PER_LONG);
+>> >> + á á á á á á w += bitmap_weight((unsigned long *)bitmap,
+>> >> + á á á á á á á á á á á á á á longs * BITS_PER_LONG);
+>> >> + á á á á á á bytes -= longs * sizeof(long);
+>> >> + á á á á á á bitmap += longs * sizeof(long);
+>> >> + á á }
+>> >> +
+>> >> + á á for (; bytes > 0; bytes--, bitmap++)
+>> >> + á á á á á á w += hweight8(*bitmap);
+>> > áLooking at bitmap_weight() it seems this last loop is not needed. Just
+>> > pass to bitmap_weight() bytes*BITS_PER_BYTE. Also generally this function
+>> > doesn't seem necessary at all at least for ext2 & ext3 (sorry for not
+>> > noticing this earlier...).
+>>
+>> This last loop is necessary for big-endian architecture.
+>> if bytes % sizeof(long) != 0, bitmap_weight() counts one-bits in wrong
+>> byte-field
+>> of the last long word.
+>  Ah, right. OK. Add this to the comment before the loop please. You save
+> yourself some explanations :)
 
-Secondly, device_shutdown() may dereference a null pointer to cause
-oops when dev->driver is cleared after it is checked in device_shutdown().
-
-This patch uses SRCU and ACCESS_ONCE to avoid the races:
-- don't start .shutdown until .probe in progess is completed
-- avoid running .probe and .remove once shutdown is started
-
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
-
-Thanks Paul for helpping me on using SRCU and ACCESS_ONCE to solve
-the problem.
-
- drivers/base/base.h |    4 ++++
- drivers/base/core.c |    6 ++++++
- drivers/base/dd.c   |   14 ++++++++++++++
- drivers/base/init.c |    3 +++
- 4 files changed, 27 insertions(+)
-
-diff --git a/drivers/base/base.h b/drivers/base/base.h
-index 6ee17bb..06f9dc1 100644
---- a/drivers/base/base.h
-+++ b/drivers/base/base.h
-@@ -1,4 +1,5 @@
- #include <linux/notifier.h>
-+#include <linux/srcu.h>
- 
- /**
-  * struct subsys_private - structure to hold the private to the driver core portions of the bus_type/class structure.
-@@ -138,3 +139,6 @@ extern int devtmpfs_init(void);
- #else
- static inline int devtmpfs_init(void) { return 0; }
- #endif
-+
-+extern struct srcu_struct driver_srcu;
-+extern int device_shutdown_started;
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 346be8b..c3d597b 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -49,6 +49,9 @@ static struct kobject *dev_kobj;
- struct kobject *sysfs_dev_char_kobj;
- struct kobject *sysfs_dev_block_kobj;
- 
-+struct srcu_struct driver_srcu;
-+int device_shutdown_started;
-+
- #ifdef CONFIG_BLOCK
- static inline int device_is_not_partition(struct device *dev)
- {
-@@ -1803,6 +1806,9 @@ void device_shutdown(void)
- {
- 	struct device *dev;
- 
-+	ACCESS_ONCE(device_shutdown_started) = 1;
-+	synchronize_srcu(&driver_srcu);
-+
- 	spin_lock(&devices_kset->list_lock);
- 	/*
- 	 * Walk the devices list backward, shutting down each in turn.
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 1b1cbb5..5587037 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -250,8 +250,13 @@ static DECLARE_WAIT_QUEUE_HEAD(probe_waitqueue);
- static int really_probe(struct device *dev, struct device_driver *drv)
- {
- 	int ret = 0;
-+	int idx;
- 
-+	idx = srcu_read_lock(&driver_srcu);
- 	atomic_inc(&probe_count);
-+	if (ACCESS_ONCE(device_shutdown_started))
-+		goto done;
-+
- 	pr_debug("bus: '%s': %s: probing driver %s with device %s\n",
- 		 drv->bus->name, __func__, drv->name, dev_name(dev));
- 	WARN_ON(!list_empty(&dev->devres_head));
-@@ -305,6 +310,7 @@ probe_failed:
- done:
- 	atomic_dec(&probe_count);
- 	wake_up(&probe_waitqueue);
-+	srcu_read_unlock(&driver_srcu, idx);
- 	return ret;
- }
- 
-@@ -467,6 +473,12 @@ EXPORT_SYMBOL_GPL(driver_attach);
- static void __device_release_driver(struct device *dev)
- {
- 	struct device_driver *drv;
-+	int idx;
-+
-+	idx = srcu_read_lock(&driver_srcu);
-+
-+	if (ACCESS_ONCE(device_shutdown_started))
-+		goto exit;
- 
- 	drv = dev->driver;
- 	if (drv) {
-@@ -494,6 +506,8 @@ static void __device_release_driver(struct device *dev)
- 						     dev);
- 
- 	}
-+exit:
-+	srcu_read_unlock(&driver_srcu, idx);
- }
- 
- /**
-diff --git a/drivers/base/init.c b/drivers/base/init.c
-index c16f0b8..1b7dae6 100644
---- a/drivers/base/init.c
-+++ b/drivers/base/init.c
-@@ -27,6 +27,9 @@ void __init driver_init(void)
- 	firmware_init();
- 	hypervisor_init();
- 
-+	/* sync shutdown with probe/release */
-+	init_srcu_struct(&driver_srcu);
-+
- 	/* These are also core pieces, but must come after the
- 	 * core core pieces.
- 	 */
--- 
-1.7.9.5
-
+OK.  Thanks for your advice again.
