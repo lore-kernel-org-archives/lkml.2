@@ -1,47 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2FEQUL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:20:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48855 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751727Ab2FEQUJ convert rfc822-to-8bit (ORCPT
+	id S1754173Ab2FEQWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:22:19 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56220 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753262Ab2FEQWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:20:09 -0400
-Message-ID: <1338913190.2749.10.camel@twins>
-Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 05 Jun 2012 18:19:50 +0200
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
-	 <alpine.LFD.2.02.1206042203590.3086@ionos>
-	 <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
-	 <1338881971.28282.150.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
-	 <1338912565.2749.9.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 12:22:17 -0400
+Date: Tue, 5 Jun 2012 17:22:14 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Collins <collinsd@codeaurora.org>
+Cc: Rajendra Nayak <rnayak@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Supporting non-device tree consumers with device tree regulator
+ drivers
+Message-ID: <20120605162214.GA14958@opensource.wolfsonmicro.com>
+References: <4FCE30D6.7060102@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
+In-Reply-To: <4FCE30D6.7060102@codeaurora.org>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 16:18 +0000, Yu, Fenghua wrote:
-> Actually some Linux people are adjusting online/offline CPU's based on
-> workload to save power in their business. There are some advantages
-> for online/offline CPU's than idling CPU's.
 
-Like what? Offline is nothing more than a C state on x86. 
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Jun 05, 2012 at 09:16:22AM -0700, David Collins wrote:
+
+>  Therefore, we are left with a situation currently where some regulator
+> consumer drivers are being probed via device tree and some are being
+> probed via board file devices within a single platform.  If the regulator
+> driver supporting the consumer drivers is converted to use device tree and
+> probed via device tree, then the non-device tree consumer drivers will not
+> be able to make use of the regulator devices.
+
+This isn't something anyone else seems to be running into - most of the
+world is converting entire boards to device tree in one fell swoop and
+sticking with normal style until that works.
+
+> Would it be possible to add a new binding that is handled inside of
+> of_get_regulator_init_data() or of_get_regulation_constraints() that
+> provides a means to directly specify regulator_init_data.consumer_supplies
+> entries?  Is there some other mechanism that could be used instead to
+> handle the mapping?
+
+> One potentially binding could be:
+> regulator-consumer-supplies = "supply_name1", "device_name1",
+> "supply_name2", "device_name2", ...
+
+Well, we certainly shouldn't be putting this in the device tree as that
+rather defeats the point...  Some sort of auxdata style thing would be
+possible I guess but I'm not sure it's worth bothering.
+
+--BOKacYhQ+x31HxR3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPzjIqAAoJEBus8iNuMP3dphcP/iDwIfk3Dx9OSqi2+fC8lwAe
+MNo05DbLBwzdZLe8gakVYVdmArIEYLnq+yk/ZF+nFHOYy6Wt0gpOtrt1iRcYmyKq
+USo1Spter6TknXXOftjyw99tXX6nxvLD2/pbgDlVqfZYKMCqHEk3VPvGceS4qA0S
+xOdM4aQkHIHZlS6BDbTR0LW9V0exU72Ikx2wedfp2ChwyAxf59pDFoBpK+foRg0L
+00j6pfjDFHXLH7uxpY/gu01U+fK5OIs9x3ddae8G0J93s/YWHgtLzOwCwQUOFWcZ
+1xZuXc+e180/WPF50aXBTUgeJ9WHNIGFmNTz5HiMIOGZhcvJW1GJvoGqKCmJNNvX
+chlGsqV2jJX4oGSJiP0kgFZCCnhvds0NrpTYr77gvnkCUHhTXzhqpr9wNvwKOfqx
+lVT/fXzEm4+YJ9X+zHyEMj5N8N72dX1p5rd2R+fRW77avf21XfG0mGIjd5YEtqGk
+goPSo9EvEReuvzC3Aq2kn37IqpJGp9z7OUlvU1iES0Y45QjUahh0+u0Dw087uZlM
+fm/VoqewsGrZlQ4z48U+HB8Q5oVq6GCOhBJIkmO3vTln6KPjH+be1wGRIIKPBWb/
+K9G4cIlh6KqXZFmB8nw3TO9om+pOSWUlTIAxG8WVuVo/GI8uNQgnUbtlSlQtJIWg
+BUzYy5wtuay99h5ePRMQ
+=4tzb
+-----END PGP SIGNATURE-----
+
+--BOKacYhQ+x31HxR3--
