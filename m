@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab2FEQqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:46:17 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:43054 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754285Ab2FEQqP (ORCPT
+	id S1754489Ab2FEQrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:47:12 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45133 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752160Ab2FEQrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:46:15 -0400
-Message-ID: <4FCE37CF.90902@xenotime.net>
-Date: Tue, 05 Jun 2012 09:46:07 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 5 Jun 2012 12:47:10 -0400
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
-CC: Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: serial: fix serial_txx9.c build warning/typo
+In-Reply-To: <20120605110541.GC13495@aftab.osrc.amd.com>
+References: <20120531153512.GK14515@aftab.osrc.amd.com> <20120531154224.GL14515@aftab.osrc.amd.com>
+ <20120601110647.2c446aa7@rockpopper> <20120605110541.GC13495@aftab.osrc.amd.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 5 Jun 2012 09:46:49 -0700
+X-Google-Sender-Auth: U-iKGh_rHIZWwemn1TGnQA1TMpc
+Message-ID: <CA+55aFxu9ZfbKuWdhmADreRS9wxzMyW9buoVkd=B4Yqi=bxbiw@mail.gmail.com>
+Subject: Re: [PATCH] CMA: Do no enable it by default
+To: Borislav Petkov <bp@amd64.org>
+Cc: Christopher Yeoh <cyeoh@au1.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Tue, Jun 5, 2012 at 4:05 AM, Borislav Petkov <bp@amd64.org> wrote:
+>
+> Besides, in the config option it says "... which allow a process with
+> the correct privileges to directly read from or write to to another
+> process's address space.", which, if the reading process has somehow
+> gained privileges (as that never happens) is your security issue right
+> there.
 
-Fix kconfig symbol test to use "defined":
+What?
 
-drivers/tty/serial/serial_txx9.c: warning: "CONFIG_CONSOLE_POLL" is not defined [-Wundef]
+It's using the same privileges as ptrace. If you are allowed to ptrace
+somebody, there's no security issue.
 
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
----
- drivers/tty/serial/serial_txx9.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Also, the reason it's "default y" is that the feature actually made it
+in earlier (with no config option at all). Now, I certainly agree that
+we could turn it off by default since it's not that common, but at the
+same time none of your actual commit comments make sense, so that
+would have to be fixed first.
 
---- lnx-35-rc1.orig/drivers/tty/serial/serial_txx9.c
-+++ lnx-35-rc1/drivers/tty/serial/serial_txx9.c
-@@ -466,7 +466,7 @@ static void serial_txx9_break_ctl(struct
- 	spin_unlock_irqrestore(&up->port.lock, flags);
- }
- 
--#if defined(CONFIG_SERIAL_TXX9_CONSOLE) || (CONFIG_CONSOLE_POLL)
-+#if defined(CONFIG_SERIAL_TXX9_CONSOLE) || defined(CONFIG_CONSOLE_POLL)
- /*
-  *	Wait for transmitter & holding register to empty
-  */
+            Linus
