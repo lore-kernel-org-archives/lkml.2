@@ -1,61 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab2FET4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 15:56:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:51615 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab2FET43 convert rfc822-to-8bit (ORCPT
+	id S1752465Ab2FEUAk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 16:00:40 -0400
+Received: from mail-lb0-f202.google.com ([209.85.217.202]:63031 "EHLO
+	mail-lb0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab2FEUAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 15:56:29 -0400
-Message-ID: <1338926175.2749.41.camel@twins>
-Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 05 Jun 2012 21:56:15 +0200
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19301A16@ORSMSX104.amr.corp.intel.com>
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
-	 <alpine.LFD.2.02.1206042203590.3086@ionos>
-	 <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
-	 <1338881971.28282.150.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
-	 <1338912565.2749.9.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
-	 <1338913190.2749.10.camel@twins>
-	 <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
-	 <1338919647.2749.30.camel@twins>
-	 <3908561D78D1C84285E8C5FCA982C28F19301A16@ORSMSX104.amr.corp.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 16:00:38 -0400
+From: Bryan Freed <bfreed@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: keescook@chromium.org, marco.stornelli@gmail.com,
+        grant.likely@secretlab.ca, anton.vorontsov@linaro.org,
+        Bryan Freed <bfreed@chromium.org>
+Subject: [PATCH] pstore/ram: Add ramoops support for the Flattened Device Tree.
+Date: Tue,  5 Jun 2012 12:59:55 -0700
+Message-Id: <1338926395-26298-1-git-send-email-bfreed@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 19:54 +0000, Luck, Tony wrote:
+When called with a non-zero of_node, fill out a new ramoops_platform_data
+with data from the specified Flattened Device Tree node.
+Update ramoops documentation with the new FDT interface.
 
-> My need is for RAS reasons to take a cpu offline - and since
-> it is broken, I'm not going to bring it back again (at least not anytime
-> soon - perhaps a service engineer will drive by in a few hours, pull out
-> the broken cpu, put in a new one, and then bring that online ... but
-> saving a few milli-seconds in this use case it pointless).
+Change-Id: Id8f9f0abc5b564375c1b6d5d30c92d57d76520b7
+Signed-off-by: Bryan Freed <bfreed@chromium.org>
+---
+ Documentation/ramoops.txt |   19 +++++++++++++++++--
+ fs/pstore/ram.c           |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 60 insertions(+), 2 deletions(-)
 
-Right, performance is completely irrelevant in this case. In fact, the
-current code should work perfectly fine for you -- except for the whole
-BSP nightmare x86 has.
+diff --git a/Documentation/ramoops.txt b/Documentation/ramoops.txt
+index 4ba7db2..9ed3ab7 100644
+--- a/Documentation/ramoops.txt
++++ b/Documentation/ramoops.txt
+@@ -3,7 +3,7 @@ Ramoops oops/panic logger
+ 
+ Sergiu Iordache <sergiu@chromium.org>
+ 
+-Updated: 17 November 2011
++Updated: 5 June 2012
+ 
+ 0. Introduction
+ 
+@@ -37,7 +37,7 @@ corrupt, but usually it is restorable.
+ 
+ 2. Setting the parameters
+ 
+-Setting the ramoops parameters can be done in 2 different manners:
++Setting the ramoops parameters can be done in 3 different manners:
+  1. Use the module parameters (which have the names of the variables described
+  as before).
+  2. Use a platform device and set the platform data. The parameters can then
+@@ -70,6 +70,21 @@ if (ret) {
+ 	return ret;
+ }
+ 
++ 3. Use the Flattened Device Tree to set the platform data.  For example:
++  arch/arm/boot/dts/$BOARD.dts:
++        ramoops {
++                compatible = "ramoops";
++                reg = <0x41f00000 0x00100000>;
++                record-size = <0x00020000>;
++                dump-oops = <1>;
++                ecc = <0>;
++        };
++ The "reg = <0x41f00000 0x00100000>" line specifies a mem_size of 1MB at
++  mem_address 0x41f00000.
++ The "record-size = <0x00020000>" line specifies a record size of 128KB.
++ The "dump-oops = <1>" line tells us to dump oopses as well as panics.
++ The "ecc = <0>" line tells us to turn off ECC protection.
++
+ 3. Dump format
+ 
+ The data dump begins with a header, currently defined as "====" followed by a
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 9123cce..bf0f882 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -32,6 +32,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <linux/pstore_ram.h>
++#include <linux/of_address.h>
+ 
+ #define RAMOOPS_KERNMSG_HDR "===="
+ #define MIN_MEM_SIZE 4096UL
+@@ -199,10 +200,44 @@ static struct ramoops_context oops_cxt = {
+ 	},
+ };
+ 
++static int __init of_ramoops_platform_data(struct device_node *node,
++					struct ramoops_platform_data *pdata)
++{
++	const __be32 *addrp;
++	const __be32 *prop;
++	u64 size;
++
++	addrp = of_get_address(node, 0, &size, NULL);
++	if (addrp == NULL)
++		return -EINVAL;
++	pdata->mem_address = of_translate_address(node, addrp);
++	pdata->mem_size = size;
++
++	prop = of_get_property(node, "record-size", NULL);
++	if (!prop)
++		return -EINVAL;
++	pdata->record_size = be32_to_cpup(prop);
++
++	prop = of_get_property(node, "dump-oops", NULL);
++	if (!prop)
++		pdata->dump_oops = 0;
++	else
++		pdata->dump_oops = be32_to_cpup(prop);
++
++	prop = of_get_property(node, "ecc", NULL);
++	if (!prop)
++		pdata->ecc = 0;
++	else
++		pdata->ecc = be32_to_cpup(prop);
++
++	return 0;
++}
++
+ static int __init ramoops_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
++	struct ramoops_platform_data of_pdata;
+ 	struct ramoops_context *cxt = &oops_cxt;
+ 	int err = -EINVAL;
+ 	int i;
+@@ -213,6 +248,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 	if (cxt->max_count)
+ 		goto fail_out;
+ 
++	if (pdev->dev.of_node) {
++		if (of_ramoops_platform_data(pdev->dev.of_node, &of_pdata)) {
++			pr_err("Invalid ramoops device tree data\n");
++			goto fail_out;
++		}
++		pdata = &of_pdata;
++	}
++
+ 	if (!pdata->mem_size || !pdata->record_size) {
+ 		pr_err("The memory size and the record size must be "
+ 			"non-zero\n");
+-- 
+1.7.7.3
 
-> Other people want to do this for power saving. They probably do care
-> how fast the processor can be brought back. 
-
-They're bloody insane, or working with broken hardware.
