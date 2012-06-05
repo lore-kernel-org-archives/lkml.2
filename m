@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab2FELkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 07:40:41 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:52369 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab2FELki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 07:40:38 -0400
-Message-ID: <1338896342.4044.117.camel@falcor>
-Subject: Re: [PATCH 00/23] Crypto keys and module signing
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: David Howells <dhowells@redhat.com>, kyle@mcmartin.ca,
-        dmitry.kasatkin@intel.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        Tim Abbott <tabbott@ksplice.com>
-Date: Tue, 05 Jun 2012 07:39:02 -0400
-In-Reply-To: <87wr3min4b.fsf@rustcorp.com.au>
-References: <20120522230218.24007.3556.stgit@warthog.procyon.org.uk>
-	 <26029.1337960539@redhat.com> <87ipf73lsi.fsf@rustcorp.com.au>
-	 <1338814071.4044.19.camel@falcor> <87wr3min4b.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12060511-3270-0000-0000-000006E98CA3
+	id S1754558Ab2FELrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 07:47:24 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53545 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155Ab2FELrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 07:47:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="153100744"
+Message-ID: <4FCDF1C8.9020007@linux.intel.com>
+Date: Tue, 05 Jun 2012 19:47:20 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, tony.luck@intel.com, bp@amd64.org,
+        x86@kernel.org, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 2/2] x86: mce: Implement cmci poll mode for intel machines
+References: <20120524174943.989990966@linutronix.de> <20120524175056.478167482@linutronix.de> <4FCC1F7C.5000008@linux.intel.com> <alpine.LFD.2.02.1206042158200.3086@ionos>
+In-Reply-To: <alpine.LFD.2.02.1206042158200.3086@ionos>
+X-Enigmail-Version: 1.4.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 10:35 +0930, Rusty Russell wrote:
-> On Mon, 04 Jun 2012 08:47:51 -0400, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > On Mon, 2012-06-04 at 11:01 +0930, Rusty Russell wrote:
-> > > On Fri, 25 May 2012 16:42:19 +0100, David Howells <dhowells@redhat.com> wrote:
-> > > > 
-> > > > Hi Rusty,
-> > > > 
-> > > > If you prefer to have userspace extract the module signature and pass it in
-> > > > uargs, here's a tree that will do that:
-> > > > 
-> > > > 	http://git.kernel.org/?p=linux/kernel/git/dhowells/linux-modsign.git;a=shortlog;h=refs/heads/modsign-uarg
-> > > 
-> > > OK, there's merit in this approach: it certainly moves the argument
-> > > about how to encode the signature out of my backyard :)
-> > > 
-> > > Should we just bite the bullet and create a new syscall:
-> > > 
-> > > SYSCALL_DEFINE5(init_module2, void __user *, umod,
-> > > 		unsigned long, len, const char __user *, uargs,
-> > >                 unsigned int, siglen, const char __user *, sig)
-> > > 
-> > > But I'm easily swayed if you prefer the current approach.
-> > > 
-> > > Thanks,
-> > > Rusty.
-> > 
-> > If you're really considering creating a new syscall, then perhaps this
-> > discussion should include passing the file descriptor instead of a
-> > buffer and signature.  As I said https://lkml.org/lkml/2012/5/25/261, I
-> > don't know the historical reasons for passing a buffer instead of the
-> > file descriptor itself.  If the file descriptor was passed, it would
-> > allow IMA-appraisal, which is in the process of being upstreamed, to
-> > verify and enforce file data and metadata integrity like on the other
-> > hooks open, execve, and mmap.
+于 2012/6/5 4:01, Thomas Gleixner 写道:
+> On Mon, 4 Jun 2012, Chen Gong wrote:
+>>> +/*
+>>> + * Ensure that the timer is firing in @interval from now.
+>>> + */
+>>> +void mce_timer_kick(unsigned long interval)
+>>> +{
+>>> +	struct timer_list *t = &__get_cpu_var(mce_timer);
+>>> +	unsigned long when = jiffies + interval;
+>>> +	unsigned long iv = __this_cpu_read(mce_next_interval);
+>>> +
+>>> +	if (time_before(when, t->expires) && timer_pending(t)) {
+>>> +		mod_timer(t, when);
+>>> +	} else if (!mce_next_interval) {
+>>
+>> Why using mce_next_interval, it is a per_cpu var, should be non-NULL
+>> definitely, right? How about using *iv* here?
 > 
-> It's flexible.  Compressed modules, for example.  And who knew if we
-> would be runtime generating modules?  But I don't think even the ksplice
-> guys generate modules on the fly for insertion.
+> iv is the thing to use. No idea why I typoed mce_next_interval into
+> that.
+>  
+>>> +		t->expires = round_jiffies(jiffies + iv);
+>>> +		add_timer_on(t, smp_processor_id());
+>>> +	}
+>>> +	if (interval < iv)
+>>> +		__this_cpu_write(mce_next_interval, iv);
+>>>  }
+>>
+>> This code should be __this_cpu_write(mce_next_interval, interval);?
 > 
-> modprobe has --force-vermagic and --force-modversion, but frankly that
-> could be replaced by a single "force" flag handed to the kernel.
+> Duh, yes.
 > 
-> If there's real benefit, it could be done.  Do we still want a separate
-> signature blob?
+> Thanks,
 > 
-> SYSCALL_DEFINE5(init_module_fd,
->                 int, fd,
->                 unsigned int, flags,
->                 const char *__user *, uargs,
->                 unsigned int, siglen,
->                 const char __user *, sig);
+> 	tglx
+> 
+Hi, Thomas
 
-As the signature would be stored as an extended attribute, we wouldn't
-need to pass it.  Unfortunately not all filesystems have xattr support,
-nor do all of the package installation mechanims.  The benefit of
-storing the signature as an extended attribute, however, is that there
-is a consistent mechanism for verifying file data integrity for all
-files, not only ELF.
+Besides above issues, I still have some other questions as below:
 
-Mimi
+>  static void mce_timer_fn(unsigned long data)
+>  {
+> ...
+> +	/* Might have become 0 after CMCI storm subsided */
+> +	if (iv) {
+> +		t->expires = jiffies + iv;
+> +		add_timer_on(t, smp_processor_id());
+> +	}
+> +}
 
+I've found under some conditions, *t* is pending on the timer tree, so
+add_timer_on will crash the whole system. Furthermore, if this timer
+function triggers "WARN_ON(smp_processor_id() != data);", this timer
+will be added on the other CPU, which means it loses the chance to
+decrement *cmci_storm_on_cpus* to zero to reenable the CMCI. Maybe
+this situation happens seldomly, but once it happens, CMCI will never
+be actived again after it is disabled.
+
+
+> +void mce_timer_kick(unsigned long interval)
+> +{
+> +	struct timer_list *t = &__get_cpu_var(mce_timer);
+> +	unsigned long when = jiffies + interval;
+> +	unsigned long iv = __this_cpu_read(mce_next_interval);
+> +
+> +	if (time_before(when, t->expires) && timer_pending(t)) {
+> +		mod_timer(t, when);
+> +	} else if (!mce_next_interval) {
+> +		t->expires = round_jiffies(jiffies + iv);
+> +		add_timer_on(t, smp_processor_id());
+
+I've changed "else if (!mce_next_interval)" to "else if (iv)", but
+I still think it is not right. Imaging *when* is after t->expires and
+this timer is pending on the timer tree, so it will hit *else if*
+if iv is not zero(common situations), again, add_timer_on will trigger
+BUG_ON because this timer is pending.
+
+
+>  static void intel_threshold_interrupt(void)
+>  {
+> +	if (cmci_storm_detect())
+> +		return;
+>  	machine_check_poll(MCP_TIMESTAMP, &__get_cpu_var(mce_banks_owned));
+>  	mce_notify_irq();
+>  }
+
+I think cmci_storm_detect should be placed in the machine_check_poll,
+not out of it. Because machine_check_poll it the core execution logic
+for CMCI handling, in the meanwhile, poll timer and mce-inject module
+call machine_check_poll at any time. If poll timer or mce-inject run
+too quickly, the CMCI handler has trouble. Whereas, if
+cmci_storm_detect is in the machine_check_poll, this kind of possibility
+can be avoid.
