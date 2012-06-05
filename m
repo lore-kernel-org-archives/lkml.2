@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab2FERPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:15:20 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7968 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab2FERPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:15:18 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 05 Jun 2012 10:13:15 -0700
-Message-ID: <4FCE3CD8.8060502@nvidia.com>
-Date: Tue, 5 Jun 2012 22:37:36 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	id S1754998Ab2FERPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:15:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20308 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754775Ab2FERPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 13:15:45 -0400
+Date: Tue, 5 Jun 2012 19:13:54 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hillf Danton <dhillf@gmail.com>, Dan Smith <danms@us.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Paul Turner <pjt@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Mike Galbraith <efault@gmx.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Bharata B Rao <bharata.rao@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 04/35] autonuma: define _PAGE_NUMA_PTE and _PAGE_NUMA_PMD
+Message-ID: <20120605171354.GJ21339@redhat.com>
+References: <1337965359-29725-1-git-send-email-aarcange@redhat.com>
+ <1337965359-29725-5-git-send-email-aarcange@redhat.com>
+ <20120530182247.GA28341@localhost.localdomain>
+ <20120530183406.GH21339@redhat.com>
+ <20120530200150.GA30148@localhost.localdomain>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "w.sang@pengutronix.de" <w.sang@pengutronix.de>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 0/4] i2c: tegra: Bug fixes, cleanups and M_NOSTART support
-References: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com> <4FCE3078.1030008@wwwdotorg.org>
-In-Reply-To: <4FCE3078.1030008@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120530200150.GA30148@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 June 2012 09:44 PM, Stephen Warren wrote:
-> On 06/05/2012 07:09 AM, Laxman Dewangan wrote:
->> This patch series having the:
->> - Handling of late register write due to Tegra PPSB design.
->> - support for I2C_M_NOSTART
->> - Use devm_* for all allocation.
-> The series,
->
-> Acked-by: Stephen Warren<swarren@wwwdotorg.org>
->
-> Note that patch 4 touches context adjacent to Prashant's "i2c: tegra:
-> Add clk_prepare/clk_unprepare" patch, which I hope to take through the
-> Tegra tree since it's a requirement for the Tegra common clock
-> conversion. I don't think this will cause any significant conflict, but
-> perhaps it's worth resolving it explicitly.
->
-> Wolfram, perhaps we should put these 4 patches and Prashan'ts into their
-> own topic branch so that you can merge it into the I2C tree, and I can
-> merge it into the Tegra tree too? Or, I can take everything through
-> Tegra if you want, and ack it.
->
-> Laxman, do you expect any more I2C-related changes this kernel cycle?
-I have two more changes in plan:
--I2c controller require two clock source and the fixes towards that. 
-This can go on Tegra tree as changes are require in 
-mach-tegra/tegra30_clock.c, tegra20_clock.c files also.
+On Wed, May 30, 2012 at 04:01:51PM -0400, Konrad Rzeszutek Wilk wrote:
+> The only time the _PAGE_PSE (_PAGE_PAT) is set is when
+> _PAGE_PCD | _PAGE_PWT are set. It is this ugly transformation
+> of doing:
+> 
+>  if (pat_enabled && _PAGE_PWT | _PAGE_PCD)
+> 	pte = ~(_PAGE_PWT | _PAGE_PCD) | _PAGE_PAT;
+> 
+> and then writting the pte with the 7th bit set instead of the
+> 2nd and 3rd to mark it as WC. There is a corresponding reverse too
+> (to read the pte - so the pte_val calls) - so if _PAGE_PAT is
+> detected it will remove the _PAGE_PAT and return the PTE as
+> if it had _PAGE_PWT | _PAGE_PCD.
+> 
+> So that little bit of code will need some tweaking - as it does
+> that even if _PAGE_PRESENT is not set. Meaning it would
+> transform your _PAGE_PAT to _PAGE_PWT | _PAGE_PCD. Gah!
 
-- Run time PM support but can be done later.
+It looks like this is disabled in current upstream?
+8eaffa67b43e99ae581622c5133e20b0f48bcef1
 
+> OK. I can whip up a patch to deal with the 'Gah!' case easily if needed.
 
+That would help! But again it looks disabled in Xen?
 
+About linux host (no xen) when I decided to use PSE I checked this part:
 
+	/* Set PWT to Write-Combining. All other bits stay the same */
+	/*
+	 * PTE encoding used in Linux:
+	 *      PAT
+	 *      |PCD
+	 *      ||PWT
+	 *      |||
+	 *      000 WB		_PAGE_CACHE_WB
+	 *      001 WC		_PAGE_CACHE_WC
+	 *      010 UC-		_PAGE_CACHE_UC_MINUS
+	 *      011 UC		_PAGE_CACHE_UC
+	 * PAT bit unused
+	 */
 
+I need to go read the specs pdf and audit the code against the specs
+to be sure but if my interpretation correct, PAT is never set on linux
+host (novirt) the way the relevant msr are programmed.
 
+If I couldn't use the PSE (/PAT) it'd screw with 32bit because I need
+to poke a bit between _PAGE_BIT_DIRTY and _PAGE_BIT_GLOBAL to avoid
+losing space on the swap entry, and there's just one bit in that range
+(PSE).
 
+_PAGE_UNUSED1 (besides it's used by Xen) wouldn't work unless I change
+the swp entry format for 32bit x86 reducing the max amount of swap
+(conditional to CONFIG_AUTONUMA so it wouldn't be the end of the
+world, plus the amount of swap on 32bit NUMA may not be so important)
