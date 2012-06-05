@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab2FESMe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:12:34 -0400
-Received: from mail160.messagelabs.com ([216.82.253.99]:50601 "EHLO
-	mail160.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab2FESMc (ORCPT
+	id S1755936Ab2FESNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:13:13 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:46365 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755744Ab2FESNI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:12:32 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-14.tower-160.messagelabs.com!1338919912!8574808!81
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Version: 6.5.10; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging: comedi: ni_labpc: unlock spinlock on command error
-Date: Tue, 5 Jun 2012 11:12:18 -0700
-User-Agent: KMail/1.9.9
-CC: <devel@driverdev.osuosl.org>, <abbotti@mev.co.uk>,
-        <fmhess@users.sourceforge.net>, <gregkh@linuxfoundation.org>
+	Tue, 5 Jun 2012 14:13:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201206051112.19276.hartleys@visionengravers.com>
+In-Reply-To: <CAGXu5jLc6UW85TxA7ccA4e1u78hkTbSrWeBJE+oTXXQECPvtjg@mail.gmail.com>
+References: <4FCE3C18.4080302@amacapital.net>
+	<CAGXu5jLc6UW85TxA7ccA4e1u78hkTbSrWeBJE+oTXXQECPvtjg@mail.gmail.com>
+Date: Tue, 5 Jun 2012 13:13:05 -0500
+Message-ID: <CABqD9hYXKhX1=064DpbaBTAVd8-g43jKAPvtsbxEUTbgC1MPxg@mail.gmail.com>
+Subject: Re: Docs for PR_SET_NO_NEW_PRIVS
+From: Will Drewry <wad@chromium.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, eparis@redhat.com, serge.hallyn@canonical.com,
+        djm@mindrot.org, scarybeasts@gmail.com, indan@nul.nu,
+        pmoore@redhat.com, corbet@lwn.net, eric.dumazet@gmail.com,
+        markus@chromium.org, coreyb@linux.vnet.ibm.com, jmorris@namei.org,
+        linux-man@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When starting the acquisition the labpc_ai_cmd function was
-exiting without unlocking the spinlock. This results in a
-sparse warning:
+On Tue, Jun 5, 2012 at 12:33 PM, Kees Cook <keescook@chromium.org> wrote:
+> Hi,
+>
+> As-is, this could probably live in
+> Documentation/security/no-new-privs.txt (maybe with some examples
+> added).
 
-warning: context imbalance in 'labpc_ai_cmd' - different lock contexts for basic block
+Or Documentation/prctl/no-new-privs.txt
 
-Add the missing spin_unlock_irqrestore calls.
+Just a decision between what it does and how you get to it, but I'd
+think either would make sense!
 
-Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>
-Cc: Mori Hess <fmhess@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> As for a manpage section, I think Michael Kerrisk would happily add a
+> section for PR_[SG]ET_NO_NEW_PRIVS to prctl if this could be
+> summarized into a paragraph or two.
+>
+> (And this reminds me I should send an update for the seccomp section
+> in the prctl manpage too.)
 
----
+Faster on the draw than me - thanks!
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 5334977..1d739b2 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -1386,6 +1386,7 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		break;
- 	default:
- 		comedi_error(dev, "bug with start_src");
-+		spin_unlock_irqrestore(&dev->spinlock, flags);
- 		return -1;
- 		break;
- 	}
-@@ -1398,6 +1399,7 @@ static int labpc_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 		break;
- 	default:
- 		comedi_error(dev, "bug with stop_src");
-+		spin_unlock_irqrestore(&dev->spinlock, flags);
- 		return -1;
- 	}
- 	devpriv->write_byte(devpriv->command2_bits, dev->iobase + COMMAND2_REG);
+>
+> On Tue, Jun 5, 2012 at 10:04 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> Hi all-
+>>
+>> As promised (although belatedly), I wrote up some proposed documentation
+>> for the no_new_privs feature.  What should I do with it?  I don't speak
+>> groff/troff/whatever man pages are written in.
+>>
+>> I would be happy to license this text appropriately for whatever tree
+>> it might end up in.  In the mean time, it's GPLv2+.
+>>
+>> --- cut here ---
+>>
+>> The execve system call can grant a newly-started program privileges
+>> that its parent did not have.  The most obvious examples are
+>> setuid/setgid programs and file capabilities.  To prevent the parent
+>> program from gaining these privileges as well, the kernel and user
+>> code must be careful to prevent the parent from doing anything that
+>> could subvert the child.  For example:
+>>
+>>  - The dynamic loader handles LD_* environment variables differently
+>> if a program is setuid.
+>>  - chroot is disallowed to unprivileged processes, since it would
+>> allow /etc/passwd to be replaced from the point of view of a process
+>> that inherited chroot.
+>>  - The exec code has special handling for ptrace.
+>>
+>> These are all ad-hoc fixes.  The no_new_privs bit (since Linux 3.5) is
+>> a new, generic mechanism to make it safe for a process to modify its
+>> execution environment in a manner that persists across execve.  Any
+>> task can set no_new_privs.  Once the bit is set, it is inherited
+>> across fork, clone, and execve and cannot be unset.  With no_new_privs
+>> set, execve promises not to grant the privilege to do anything that
+>> could not have been done without the execve call.  For example, the
+>> setuid and setgid bits will no longer change the uid or gid; file
+>> capabilities will not add to the permitted set, and LSMs will not
+>> relax constraints after execve.
+>>
+>> Note that no_new_privs does not prevent privilege changes that do not
+>> involve execve.  An appropriately privileged task can still call
+>> setuid(2) and receive SCM_RIGHTS datagrams.
+>>
+>> There are two main use cases for no_new_privs so far:
+>>
+>>  - Filters installed for the seccomp mode 2 sandbox persist across
+>> execve and can change the behavior of newly-executed programs.
+>> Unprivileged users are therefore only allowed to install such filters
+>> if no_new_privs is set.
+>>
+>>  - By itself, no_new_privs can be used to reduce the attack surface
+>> available to an unprivileged user.  If everything running with a given
+>> uid has no_new_privs set, then that uid will be unable to escalate its
+>> privileges by directly attacking setuid, setgid, and fcap-using
+>> binaries; it will need to compromise something without the
+>> no_new_privs bit set first.
+>>
+>> In the future, other potentially dangerous kernel features could
+>> become available to unprivileged tasks if no_new_privs is set.  In
+>> principle, several options to unshare(2) and clone(2) would be safe
+>> when no_new_privs is set, and no_new_privs + chroot is considerable
+>> less dangerous than chroot by itself.
+>>
+>> --- cut here ---
+>>
+>> --Andy
+>
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
