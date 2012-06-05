@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761503Ab2FEJes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 05:34:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43865 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753371Ab2FEJeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 05:34:46 -0400
-Date: Tue, 5 Jun 2012 11:34:39 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Austin Hendrix <ahendrix@willowgarage.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add Support for Novatek Touchscreen
-In-Reply-To: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1206051134020.5478@pobox.suse.cz>
-References: <CAOY97VZN2a36OBsacQS21P8G70L2tbtbWK5OMWhZYa=D74XO+w@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1761463Ab2FEJgP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 05:36:15 -0400
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37776 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754202Ab2FEJgN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 05:36:13 -0400
+Message-ID: <4FCDD308.8070204@gmail.com>
+Date: Tue, 05 Jun 2012 13:36:08 +0400
+From: George Shuklin <george.shuklin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120530 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Casey Schaufler <casey@schaufler-ca.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Why minor is still 8 bit?
+References: <4FCC0E6D.9000206@gmail.com>  <20120604013504.GU30000@ZenIV.linux.org.uk> <4FCC3151.1040503@gmail.com>  <4FCCDE2B.3020306@schaufler-ca.com> <4FCD0591.2050504@gmail.com>  <4FCD5869.8000306@zytor.com> <4FCD5BF3.30707@gmail.com> <1338888208.4971.30.camel@x61.thuisdomein>
+In-Reply-To: <1338888208.4971.30.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jun 2012, Austin Hendrix wrote:
-
-> Add support for a Novatek touchscreen panel as a generic HID multitouch
-> panel.
-> 
-> Signed-off-by: Austin Hendrix <ahendrix@willowgarage.com>
-> ---
->  hid-core.c       |    1 +
->  hid-ids.h        |    3 +++
->  hid-multitouch.c |    5 +++++
->  3 files changed, 9 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index 8e3a6b2..0d6dde1 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1605,6 +1605,7 @@ static const struct hid_device_id
-> hid_have_special_driver[] = {
-
-Austin,
-
-thanks for the patch. Your mail client is corrupting (line-wrapping) 
-patches. Please fix that for your future submissions.
-
-I have now fixed that up manually and applied.
-
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_16) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_17) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_18) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_PCT) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_PKB1700) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ORTEK, USB_DEVICE_ID_ORTEK_WKB2000) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
-> USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 9373f53..734a2b9 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -564,6 +564,9 @@
->  #define USB_VENDOR_ID_NINTENDO		0x057e
->  #define USB_DEVICE_ID_NINTENDO_WIIMOTE	0x0306
-> 
-> +#define USB_VENDOR_ID_NOVATEK		0x0603
-> +#define USB_DEVICE_ID_NOVATEK_PCT	0x0600
-> +
->  #define USB_VENDOR_ID_NTRIG		0x1b96
->  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
->  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1   0x0003
-> diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-> index 6e3332a..fae08df 100644
-> --- a/drivers/hid/hid-multitouch.c
-> +++ b/drivers/hid/hid-multitouch.c
-> @@ -951,6 +951,11 @@ static const struct hid_device_id mt_devices[] = {
->  		MT_USB_DEVICE(USB_VENDOR_ID_PANASONIC,
->  			USB_DEVICE_ID_PANABOARD_UBT880) },
-> 
-> +	/* Novatek Panel */
-> +	{ .driver_data = MT_CLS_DEFAULT,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_NOVATEK,
-> +			USB_DEVICE_ID_NOVATEK_PCT) },
-> +
->  	/* PenMount panels */
->  	{ .driver_data = MT_CLS_CONFIDENCE,
->  		MT_USB_DEVICE(USB_VENDOR_ID_PENMOUNT,
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
+On 05.06.2012 13:23, Paul Bolle wrote:
+> On Tue, 2012-06-05 at 05:08 +0400, George Shuklin wrote:
+>> Anyway, using LVM to provide logical volumes to customers seems be fine
+>> (at least by name). But that limitation for minor is breaking whole idea.
+> man 8 vgcreate reads (in part):
+>      -l, --maxlogicalvolumes MaxLogicalVolumes
+>          Sets the maximum number of logical volumes allowed in this
+>          volume group. The setting can be changed with vgchange. For
+>          volume groups with metadata in lvm1 format, the limit and
+>          default value is 255. If the metadata uses lvm2 format, the
+>          default value is 0 which removes this restriction: there is then
+>          no limit.
+>
+> Doesn't that option work for you (assuming you're not stuck on lvm1
+> format)? If not, where do things go wrong?
+>
+> (Note that I never worry about this limit, since I never use more than a
+> handful of logical volumes per volume group.)
+>
+This is a limitaiton of LMV itself. I'm talking about making those LV 
+active (visible in system). When you trying to activate too much LV, you 
+will get 'device io ctl failed' message.
