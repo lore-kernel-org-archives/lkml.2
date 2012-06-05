@@ -1,103 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab2FEG4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 02:56:37 -0400
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:57234
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab2FEG4f (ORCPT
+	id S1752885Ab2FEHCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 03:02:52 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:60881 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751847Ab2FEHCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 02:56:35 -0400
-Date: Tue, 5 Jun 2012 08:56:26 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <17610689248.20120605085626@eikelenboom.it>
-To: "Ted Ts'o" <tytso@mit.edu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
-        <linux-ext4@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1904, 32254 clusters in bitmap, 32258 in gd
-In-Reply-To: <20120604230404.GB6525@thunk.org>
-References: <17610219749.20120604192048@eikelenboom.it> <20120604230404.GB6525@thunk.org>
+	Tue, 5 Jun 2012 03:02:51 -0400
+Date: Tue, 5 Jun 2012 00:02:51 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andy King <acking@vmware.com>, linux-kernel@vger.kernel.org,
+        dsouders@vmware.com, cschamp@vmware.com, akpm@linux-foundation.org,
+        virtualization@lists.linux-foundation.org,
+        "Andrew Stiegmann (stieg)" <astiegmann@vmware.com>
+Subject: Re: [vmw_vmci RFC 00/11] VMCI for Linux
+Message-ID: <20120605070251.GA28032@dtor-ws.eng.vmware.com>
+References: <20120515235024.GB1758@kroah.com>
+ <552579991.43606.1338564781979.JavaMail.root@vmware.com>
+ <20120604225757.GC7041@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20120604225757.GC7041@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tuesday, June 5, 2012, 1:04:04 AM, you wrote:
+Hi Greg,
 
-> On Mon, Jun 04, 2012 at 07:20:48PM +0200, Sander Eikelenboom wrote:
->> Hello Ted,
->> 
->> I have a problem back that occured , but didn't receive much respons in debugging:
->> 
->> [ 4688.270789] EXT4-fs error (device dm-42): ext4_mb_generate_buddy:741: group 1904, 32254 clusters in bitmap, 32258 in gd
->> [ 4688.279172] Aborting journal on device dm-42-8.
->> [ 4688.288634] EXT4-fs (dm-42): Remounting filesystem read-only
->> [ 4688.299011] EXT4-fs (dm-42): ext4_da_writepages: jbd2_start: 6144 pages, ino 15597569; err -30
+On Mon, Jun 04, 2012 at 03:57:57PM -0700, Greg KH wrote:
+> On Fri, Jun 01, 2012 at 08:33:02AM -0700, Andy King wrote:
+> > Greg,
+> > 
+> > Thanks so much for the comments and apologies for the delayed response.
+> > 
+> > > Don't we have something like this already for KVM and maybe Xen?
+> > > virtio?  Can't you use that code instead of a new block of code that
+> > > is only used by vmware users?  It has virtual pci devices which
+> > > should give you what you want/need here, right?
+> > >
+> > > If not, why doesn't that work for you?  Would it be easier to just
+> > > extend it?
+> > 
+> > The VMCI virtual device for which this driver is intended has been
+> > around a lot longer than this submission might suggest.  The virtual
+> > hardware was released in a product before Rusty sent his RFC and
+> > quite a bit before it made it to mainline; there was, regrettably,
+> > no virtio then.
+> > 
+> > As such, it was designed to be its own transport, and it's something
+> > that is now very much fixed at the hardware level (enhancements
+> > not withstanding), and which we have to support all the way back.
+> 
+> What "hardware" are you refering to here?
 
-> Ah, sorry, I didn't see this message when I responded to your earlier
-> message (you didn't mail thread it).  I also didn't recall your
-> earlier complaint until I did an search of my mail archives.
+The virtual hardware that is currently shipping and has been shipping
+for a few years.
 
-> The main problem is that we don't have an easy reproduction case.
-> It's not a problem which has been showing up on any of my testing.
-> Earlier you had said that this happened after a read-only snapshot, so
-> I had assumed it was an DM issue.
+> 
+> > In addition to that, our hypervisor endpoints are written using
+> > the existing device backend; virtio doesn't currently make a lot of
+> > sense for them, and would require a lot of additional work.
+> > 
+> > All of this is unfortunate.  While I agree that virtio is certainly
+> > the right approach, and we need to avoid this proliferation, I think
+> > at this point we'd really like to try and upstream this in its current
+> > form.  There's certainly the possibility going forwards that we could
+> > add a glue layer, such that other clients could use virtio if they're
+> > willing to write their own hypervisor endpoints.
+> > 
+> > Does that sound reasonable?
+> 
+> Not really, why should we take an interface that is tied to something
+> that you are saying isn't something we should be using?
 
-Since it doesn't seem to reported much, it is perhaps related to DM, but where the actual cause is I can't say, and the symptoms are in ext4, so that seems where to start.
-Especially since it's odd that e2fsck doesn't report and fix anything (apart from the journal).
+That is not what Andy said. If virtio was available when we started
+shipping VMCI then we certainly could have used that, but since it
+wasn't there we invented something else.
 
-> But you say this time it's not happening without a snapshot.  OK, how
-> frequently does this happen?  How easily can you reproduce it?  Can
-> you do it pretty much on demand?  And are the numbers *always* the same?
+> Don't you also
+> have control over the hypervisor side of things in order to properly
+> design this type of thing?
 
-This time it IS happening WITHOUT a snapshot of this particular lvm-partition.
-The numbers are currently always the same, so it's completely reproducible, just by copying say about 10-50 Mb of data to the filesystem.
+We do not have a time machine to go back and change products that we
+already shipped to the customers. It is probably the same story as with
+Hyper-V's vmbus which is not virtio.
 
->> 
->> Running: Fsck -D -f -v -p, results in:
->> 
+Besides, virtio is not available on non-Linux guests with we have to
+support as well, and than affected the design decisions in hypervisor
+layer that have been made several years ago.
 
-> Can you run this command instead? e2fsck -f /dev/XXXX
-> And send me the output?  The -p overrides the -f option, so it wasn't
-> doing a full fsck check.  It should have done a full check if the file
-> system was marked as containing an error, regardless of the -p, but
-> there was a bug that was fixed in 3.5-rc1 which prevented that.  I'm
-> at a loss to explain why you were still seeing problem in 3.5-rc1 ---
-> was the fsck log from after running a kernel running 3.5-rc1?  In any
-> case, please do a full fsck using "e2fsck -f /dev/XXX" and send me the
-> output from that command.
-
-serveerstertje:~# e2fsck -f /dev/serveerstertje/media
-e2fsck 1.41.12 (17-May-2010)
-/dev/serveerstertje/media: recovering journal
-Pass 1: Checking inodes, blocks, and sizes
-Pass 2: Checking directory structure
-Pass 3: Checking directory connectivity
-Pass 4: Checking reference counts
-Pass 5: Checking group summary information
-
-/dev/serveerstertje/media: ***** FILE SYSTEM WAS MODIFIED *****
-/dev/serveerstertje/media: 19122/16384000 files (8.1% non-contiguous), 55602577/65536000 blocks
-
-It didn't prompt for any error and yes this is with running 3.5-rc1.
-Perhaps fsck gets the correct numbers and matching numbers for the clusters in the bitmap and gd, and it only differs when actually writing something to the partition, due to some bug ?
-
-I also saw a report from Kees Cook, he has slightly different numbers, 32258 clusters in bitmap, 32262 in gd, although the 32258 seems to match.
-
-
-
-> Regards,
-
->                                                 - Ted
-
-
-
-
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
+Thanks,
+Dmitry
 
