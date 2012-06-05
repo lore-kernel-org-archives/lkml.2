@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934219Ab2FENTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:19:43 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16323 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934133Ab2FENS2 (ORCPT
+	id S1760805Ab2FENV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:21:59 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:47301 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754630Ab2FENV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:18:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 05 Jun 2012 06:17:47 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <khali@linux-fr.org>, <w.sang@pengutronix.de>, <ben-linux@fluff.org>,
-        <swarren@wwwdotorg.org>, <olof@lixom.net>
-CC: <linux-i2c@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/4] i2c: tegra: make sure register writes completes
-Date: Tue, 5 Jun 2012 18:39:57 +0530
-Message-ID: <1338901800-23968-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com>
-References: <1338901800-23968-1-git-send-email-ldewangan@nvidia.com>
+	Tue, 5 Jun 2012 09:21:57 -0400
+X-IronPort-AV: E=Sophos;i="4.75,718,1330905600"; 
+   d="scan'208";a="12839992"
+Date: Tue, 5 Jun 2012 14:21:50 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "mtosatti@redhat.com" <mtosatti@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "raghukt@linux.vnet.ibm.com" <raghukt@linux.vnet.ibm.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "jeremy@goop.org" <jeremy@goop.org>,
+        "vatsa@linux.vnet.ibm.com" <vatsa@linux.vnet.ibm.com>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH v2 6/7] kvm,x86: RCU based table free
+In-Reply-To: <878vg1rjts.fsf@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1206051418170.6030@kaball.uk.xensource.com>
+References: <20120604050223.4560.2874.stgit@abhimanyu.in.ibm.com> <20120604050822.4560.54662.stgit@abhimanyu.in.ibm.com> <alpine.DEB.2.02.1206051137270.6030@kaball.uk.xensource.com> <87ehpuqam8.fsf@linux.vnet.ibm.com> <alpine.DEB.2.02.1206051232270.6030@kaball.uk.xensource.com>
+ <878vg1rjts.fsf@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Tegra PPSB (an peripheral bus) queues writes transactions.
-In order to guarantee that writes have completed before a
-certain time, a read transaction to a register on the same
-bus must be executed.
-This is necessary in situations such as when clearing an
-interrupt status or enable, so that when returning from an
-interrupt handler, the HW has already de-asserted its
-interrupt status output, which will avoid spurious interrupts.
+On Tue, 5 Jun 2012, Nikunj A Dadhania wrote:
+> On Tue, 5 Jun 2012 12:58:32 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > On Tue, 5 Jun 2012, Nikunj A Dadhania wrote:
+> > > On Tue, 5 Jun 2012 11:48:02 +0100, Stefano Stabellini <stefano.stabellini@eu.citrix.com> wrote:
+> > > > 
+> > > > I am also interested in introducing HAVE_RCU_TABLE_FREE on x86 for Xen.
+> > > > Maybe we can pull our efforts together :-)
+> > > > 
+> > > > Giving a look at this patch, it doesn't look like it is introducing
+> > > > CONFIG_HAVE_RCU_TABLE_FREE anywhere under arch/x86.
+> > > > How is the user supposed to set it?
+> > > >
+> > > I am doing that in the next patch only for KVM-ParavirtTLB flush, as
+> > > there is a bug in this implementation that patch [7/7] fixes.
+> > > 
+> > > Refer following thread for details:
+> > > http://mid.gmane.org/1337254086.4281.26.camel@twins
+> > > http://mid.gmane.org/1337273959.4281.62.camel@twins
+> > 
+> > Thanks, somehow I missed the 7/7 patch.
+> > 
+> > From the Xen POV, your patch is fine because we'll just select
+> > PARAVIRT_TLB_FLUSH on CONFIG_XEN (see appended patch for completeness).
+> > 
+> Selecting ARCH_HW_WALKS_PAGE_TABLE in place of PARAVIRT_TLB_FLUSH should
+> suffice.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/i2c/busses/i2c-tegra.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 8b2e555..fa92396 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -430,6 +430,13 @@ static irqreturn_t tegra_i2c_isr(int irq, void *dev_id)
- 	if (i2c_dev->is_dvc)
- 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
- 
-+	/*
-+	 * Register write get queued in the PPSB bus and write can
-+	 * happen later. Read back register to make sure that register
-+	 * write is completed.
-+	 */
-+	i2c_readl(i2c_dev, I2C_INT_STATUS);
-+
- 	if (status & I2C_INT_PACKET_XFER_COMPLETE) {
- 		BUG_ON(i2c_dev->msg_buf_remaining);
- 		complete(&i2c_dev->msg_complete);
-@@ -444,6 +451,9 @@ err:
- 	if (i2c_dev->is_dvc)
- 		dvc_writel(i2c_dev, DVC_STATUS_I2C_DONE_INTR, DVC_STATUS);
- 
-+	/* Read back register to make sure that register writes completed */
-+	i2c_readl(i2c_dev, I2C_INT_STATUS);
-+
- 	complete(&i2c_dev->msg_complete);
- 	return IRQ_HANDLED;
- }
-@@ -505,6 +515,9 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 	ret = wait_for_completion_timeout(&i2c_dev->msg_complete, TEGRA_I2C_TIMEOUT);
- 	tegra_i2c_mask_irq(i2c_dev, int_mask);
- 
-+	/* Read back register to make sure that register writes completed */
-+	i2c_readl(i2c_dev, I2C_INT_MASK);
-+
- 	if (WARN_ON(ret == 0)) {
- 		dev_err(i2c_dev->dev, "i2c transfer timed out\n");
- 
--- 
-1.7.1.1
+We would also need to select HAVE_RCU_TABLE_FREE, but it could be a good
+idea, not go through PARAVIRT_TLB_FLUSH.
 
