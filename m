@@ -1,193 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934188Ab2FENOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 09:14:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48161 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934093Ab2FENLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 09:11:03 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hch@infradead.org, torvalds@linux-foundation.org, dhowells@redhat.com,
-        mszeredi@suse.cz
-Subject: [PATCH 11/21] fuse: implement i_op->atomic_open()
-Date: Tue,  5 Jun 2012 15:10:22 +0200
-Message-Id: <1338901832-14049-12-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
-References: <1338901832-14049-1-git-send-email-miklos@szeredi.hu>
+	id S934199Ab2FENOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 09:14:18 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:57528 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934093Ab2FENOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 09:14:15 -0400
+Date: Tue, 5 Jun 2012 15:13:37 +0200
+From: Alessandro Rubini <rubini@gnudd.com>
+To: bhupesh.sharma@st.com
+Cc: federico.vaga@gmail.com, alan@lxorguk.ukuu.org.uk, wg@grandegger.com,
+        mkl@pengutronix.de, giancarlo.asnaghi@st.com, alan@linux.intel.com,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] c_can_pci: generic module for c_can on PCI
+Message-ID: <20120605131337.GA15432@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4DFC@EAPEX1MAIL1.st.com>
+References: <D5ECB3C7A6F99444980976A8C6D896384FA5EC4DFC@EAPEX1MAIL1.st.com>
+  <4FC135C6.5030206@grandegger.com> <1677842.Pq7naXsvrI@harkonnen>
+  <D5ECB3C7A6F99444980976A8C6D896384FA5EC4B37@EAPEX1MAIL1.st.com>
+  <3650428.HarNR9HfNF@harkonnen>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+>> My implementation is align to 32, but I'm trying to make a generic PCI
+>> wrapper (some other could be aligned to 16)
+ 
+> So it means your implementation is also flaky and you are probably
+> wasting HW memory space while integrating the Bosch C_CAN module in
+> your SoC :)
 
-Add an ->atomic_open implementation which replaces the atomic open+create
-operation implemented via ->create.  No functionality is changed.
+Then I may say _your_ implementation is flaky because it wastes one
+bit in the address decoder and a lot of logic gates in the data
+bus. It's normal to align registers at 32 bits, as it's simpler and
+faster.  Most SoCs have only 32-bit aligned registers, for a reason.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/fuse/dir.c |   94 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 67 insertions(+), 27 deletions(-)
+> I am not a big fan of adding platform specific flakes in any core
+> file, that why we keep the platform file separate from the core
+> ones.
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index df5ac04..b0063d3 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -369,8 +369,9 @@ static struct dentry *fuse_lookup(struct inode *dir, struct dentry *entry,
-  * If the filesystem doesn't support this, then fall back to separate
-  * 'mknod' + 'open' requests.
-  */
--static int fuse_create_open(struct inode *dir, struct dentry *entry,
--			    umode_t mode, struct nameidata *nd)
-+static struct file *fuse_create_open(struct inode *dir, struct dentry *entry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode)
- {
- 	int err;
- 	struct inode *inode;
-@@ -382,14 +383,11 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	struct fuse_entry_out outentry;
- 	struct fuse_file *ff;
- 	struct file *file;
--	int flags = nd->intent.open.flags;
--
--	if (fc->no_create)
--		return -ENOSYS;
- 
- 	forget = fuse_alloc_forget();
-+	err = -ENOMEM;
- 	if (!forget)
--		return -ENOMEM;
-+		goto out_err;
- 
- 	req = fuse_get_req(fc);
- 	err = PTR_ERR(req);
-@@ -428,11 +426,8 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 	req->out.args[1].value = &outopen;
- 	fuse_request_send(fc, req);
- 	err = req->out.h.error;
--	if (err) {
--		if (err == -ENOSYS)
--			fc->no_create = 1;
-+	if (err)
- 		goto out_free_ff;
--	}
- 
- 	err = -EIO;
- 	if (!S_ISREG(outentry.attr.mode) || invalid_nodeid(outentry.nodeid))
-@@ -448,28 +443,78 @@ static int fuse_create_open(struct inode *dir, struct dentry *entry,
- 		flags &= ~(O_CREAT | O_EXCL | O_TRUNC);
- 		fuse_sync_release(ff, flags);
- 		fuse_queue_forget(fc, forget, outentry.nodeid, 1);
--		return -ENOMEM;
-+		err = -ENOMEM;
-+		goto out_err;
- 	}
- 	kfree(forget);
- 	d_instantiate(entry, inode);
- 	fuse_change_entry_timeout(entry, &outentry);
- 	fuse_invalidate_attr(dir);
--	file = lookup_instantiate_filp(nd, entry, generic_file_open);
-+	file = finish_open(od, entry, generic_file_open);
- 	if (IS_ERR(file)) {
- 		fuse_sync_release(ff, flags);
--		return PTR_ERR(file);
-+	} else {
-+		file->private_data = fuse_file_get(ff);
-+		fuse_finish_open(inode, file);
- 	}
--	file->private_data = fuse_file_get(ff);
--	fuse_finish_open(inode, file);
--	return 0;
-+	return file;
- 
-- out_free_ff:
-+out_free_ff:
- 	fuse_file_free(ff);
-- out_put_request:
-+out_put_request:
- 	fuse_put_request(fc, req);
-- out_put_forget_req:
-+out_put_forget_req:
- 	kfree(forget);
--	return err;
-+out_err:
-+	return ERR_PTR(err);
-+}
-+
-+static int fuse_mknod(struct inode *, struct dentry *, umode_t, dev_t);
-+static struct file *fuse_atomic_open(struct inode *dir, struct dentry *entry,
-+				     struct opendata *od, unsigned flags,
-+				     umode_t mode, bool *created)
-+{
-+	int err;
-+	struct fuse_conn *fc = get_fuse_conn(dir);
-+	struct file *file;
-+	struct dentry *res = NULL;
-+
-+	if (d_unhashed(entry)) {
-+		res = fuse_lookup(dir, entry, NULL);
-+		if (IS_ERR(res))
-+			return ERR_CAST(res);
-+
-+		if (res)
-+			entry = res;
-+	}
-+
-+	if (!(flags & O_CREAT) || entry->d_inode)
-+		goto no_open;
-+
-+	/* Only creates */
-+	*created = true;
-+
-+	if (fc->no_create)
-+		goto mknod;
-+
-+	file = fuse_create_open(dir, entry, od, flags, mode);
-+	if (PTR_ERR(file) == -ENOSYS) {
-+		fc->no_create = 1;
-+		goto mknod;
-+	}
-+out_dput:
-+	dput(res);
-+	return file;
-+
-+mknod:
-+	err = fuse_mknod(dir, entry, mode, 0);
-+	if (err) {
-+		file = ERR_PTR(err);
-+		goto out_dput;
-+	}
-+no_open:
-+	finish_no_open(od, res);
-+	return NULL;
- }
- 
- /*
-@@ -573,12 +618,6 @@ static int fuse_mknod(struct inode *dir, struct dentry *entry, umode_t mode,
- static int fuse_create(struct inode *dir, struct dentry *entry, umode_t mode,
- 		       struct nameidata *nd)
- {
--	if (nd) {
--		int err = fuse_create_open(dir, entry, mode, nd);
--		if (err != -ENOSYS)
--			return err;
--		/* Fall back on mknod */
--	}
- 	return fuse_mknod(dir, entry, mode, 0);
- }
- 
-@@ -1637,6 +1676,7 @@ static const struct inode_operations fuse_dir_inode_operations = {
- 	.link		= fuse_link,
- 	.setattr	= fuse_setattr,
- 	.create		= fuse_create,
-+	.atomic_open	= fuse_atomic_open,
- 	.mknod		= fuse_mknod,
- 	.permission	= fuse_permission,
- 	.getattr	= fuse_getattr,
--- 
-1.7.7
+A number of other drivers have a shift parameter, because it's very
+common for the hardware integrator to feel free to choose the easiest
+wiring for the device.  The choice to keep the platform driver
+separate from the core driver only adds complication in my opinion:
+you need to export 4 symbols and yhen every user must duplicate code
+(like federico is replicating theplatform driver in the pci driver).
 
+I'd really prefer to have the core driver be a platform driver, and
+the others just add platform data to describe how it is wired. That's
+actually the reason why the platform bus exists.
+
+> But I will left Marc and Wolfgang to further comment on the same.
+
+I agree: let them decide.
+
+/alessandro
