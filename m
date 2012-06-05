@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab2FEXcE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:32:04 -0400
-Received: from smtp10.mail.sp.isp-net.nl ([217.149.192.65]:60082 "EHLO
-	smtp10.mail.sp.isp-net.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab2FEXcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:32:03 -0400
-X-Greylist: delayed 3664 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jun 2012 19:32:02 EDT
-Message-ID: <4FCE888F.8050605@xmsnet.nl>
-Date: Wed, 06 Jun 2012 00:30:39 +0200
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Hugh Dickins <hughd@google.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        =?ISO-8859-1?Q?Toralf_F=F6r?= =?ISO-8859-1?Q?ster?= 
-	<toralf.foerster@gmx.de>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>
-Subject: Re: [bisected commit 0fc9d10] NFS-server corruption with 3.4
-References: <201206051116.17711.linux@rainbow-software.org> <4FCE0A83.4050502@openvz.org> <201206051620.47925.linux@rainbow-software.org> <4FCE1D17.1080904@openvz.org> <87zk8h23wn.fsf@devron.myhome.or.jp> <4FCE2256.7010804@openvz.org> <4FCE2CCE.9000900@openvz.org> <87pq9d20lx.fsf@devron.myhome.or.jp> <4FCE3631.9020407@openvz.org>
-In-Reply-To: <4FCE3631.9020407@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753740Ab2FEXfV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:35:21 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59218 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753632Ab2FEXfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 19:35:20 -0400
+Message-ID: <1338939316.11962.3.camel@joe2Laptop>
+Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, alsa-devel@alsa-project.org,
+        Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 05 Jun 2012 16:35:16 -0700
+In-Reply-To: <20120605162910.caccb0d4.akpm@linux-foundation.org>
+References: <cover.1338889066.git.joe@perches.com>
+	 <20120605142826.d92316a0.akpm@linux-foundation.org>
+	 <1338934303.5780.8.camel@joe2Laptop>
+	 <20120605151754.a794ac7c.akpm@linux-foundation.org>
+	 <1338936572.5780.29.camel@joe2Laptop>
+	 <20120605162910.caccb0d4.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
-X-Language-Detected: en
-X-Spam-Scanned: InterNLnet Mail Scan System V2.03
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 06:39 PM, Konstantin Khlebnikov wrote:
-> OGAWA Hirofumi wrote:
->> Konstantin Khlebnikov<khlebnikov@openvz.org> writes:
->>
->>> Proper fix in attachment.
->>
->> Maybe, you are going to add the stable tag for next stable?
->>
->> Thanks.
->
-> Yes, this definitely must be in next stable 3.4.x , but first I'll wait
-> for confirmation.
->
-> Guys, who can reproduce this, please check patch "radix-tree: fix
-> contiguous iterator"
-> from my previous mail in this thread.
->
->>
->>> radix-tree: fix contiguous iterator
->>>
->>> From: Konstantin Khlebnikov<khlebnikov@openvz.org>
->>>
->>> This patch fixes bug in macro radix_tree_for_each_contig().
->>> If radix_tree_next_slot() sees NULL in next slot it returns NULL, but
->>> following
->>> radix_tree_next_chunk() switches iterating into next chunk. As result
->>> iterating
->>> becomes non-contiguous and breaks vfs "splice" and all its users.
->>
->
+On Tue, 2012-06-05 at 16:29 -0700, Andrew Morton wrote:
+> What about writes starting with \001n?  AFACIT, that will be stripped
+> away and the printk level will be altered.  This is new behavior.
 
-I patched on to off v3.4 and Firefox an Thunderbird do not segfault 
-anymore. The do not start either. This was de feature on my 'production' 
-server I could not reproduce on my test server. Maybe it has something 
-to with the different type of nic's.
+Nope.
 
-For the second attempt I branched of at 0fc9d1040313047edf6a39fd and 
-applied your patch on top of it. Firefox an Thunderbird where back 
-again. So your patch works.
+# echo "\001Hello Andrew" > /dev/kmsg
+/dev/kmsg has
+12,774,2462339252;\001Hello Andrew
 
-Now I need some git-instructions. Apparently something else is broken. I 
-branched of with:
+12 is 8 + KERN_DEFAULT
 
-git branch debug 0fc9d1040313047edf6a3
-git checkout debug
-applied the patch.
-git commit -a (got commit 5c09c685ba2d36c3b905220d43ad1b47354e456eed back)
-
-Now I want all commits in my master branch up until ref v3.4 added to my 
-debug branch so I can bisect between 5c09 and v3.4
-
--- 
-Hans
-
-
-
-
-
-
-
-
+# echo "<1>Hello Andrew" > /dev/kmsg
+/dev/kmsg has:
+9,775,2516023444;Hello Andrew
 
