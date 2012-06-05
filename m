@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab2FEXJh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 19:09:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35500 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab2FEXJe (ORCPT
+	id S1753579Ab2FEXN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 19:13:59 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54029 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2FEXN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 19:09:34 -0400
-Date: Tue, 5 Jun 2012 16:09:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        alsa-devel@alsa-project.org, Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 0/8] Rework KERN_<LEVEL>
-Message-Id: <20120605160933.6fd5bc90.akpm@linux-foundation.org>
-In-Reply-To: <1338936900.1157.3.camel@mop>
-References: <cover.1338889066.git.joe@perches.com>
-	<20120605142826.d92316a0.akpm@linux-foundation.org>
-	<1338936900.1157.3.camel@mop>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 5 Jun 2012 19:13:57 -0400
+Date: Wed, 6 Jun 2012 01:13:52 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <peterz@infradead.org>,
+        "Luck\\, Tony" <tony.luck@intel.com>,
+        "Yu\\, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha\\, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick\\, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or nmi
+Message-ID: <20120605231352.GF27374@one.firstfloor.org>
+References: <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com> <1338912565.2749.9.camel@twins> <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com> <1338913190.2749.10.camel@twins> <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com> <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos> <m2ipf5jx27.fsf@firstfloor.org> <alpine.LFD.2.02.1206052305370.3086@ionos> <alpine.LFD.2.02.1206052318420.3086@ionos>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1206052318420.3086@ionos>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Jun 2012 00:55:00 +0200
-Kay Sievers <kay@vrfy.org> wrote:
+> And aside of the above requirements it should add the ability to deal
+> with the fact that aside of server workloads this needs to be able to
+> cope with appplications in the embedded/mobile space which know more
+> about the future system state than the scheduler itself.
 
-> On Tue, 2012-06-05 at 14:28 -0700, Andrew Morton wrote:
-> 
-> > devkmsg_writev() does weird and wonderful things with
-> > facilities/levels.  That function incorrectly returns "success" when
-> > copy_from_user() faults, btw.
-> 
-> Oh. Better?
-> 
-> Thanks,
-> Kay
-> 
-> 
-> From: Kay Sievers <kay@vrfy.org>
-> Subject: kmsg: /dev/kmsg - properly return possible copy_from_user() failure
-> 
-> Reported-By: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Kay Sievers <kay@vrfy.org
-> ---
->  printk.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 32462d2..6bdacab 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -365,8 +365,10 @@ static ssize_t devkmsg_writev(struct kiocb *iocb, const struct iovec *iv,
->  
->  	line = buf;
->  	for (i = 0; i < count; i++) {
-> -		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len))
-> +		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len)) {
-> +			ret = -EFAULT;
->  			goto out;
-> +		}
->  		line += iv[i].iov_len;
->  	}
+Well solving world hunger in one try is hard. Baby steps are easier.
 
-Strictly speaking, when write() encounters an error it should return
-number-of-bytes-written, or an errno if it wrote zero bytes.  So
-something like
+What I think would be useful short term is a clean mechanism for drivers
+to lock a interrupt onto a CPU, without irqbalanced touching it. 
+This would be mainly for MSI-X drivers to spread their interrupts properly
+and give better performance out of the box.
 
---- a/kernel/printk.c~a
-+++ a/kernel/printk.c
-@@ -355,7 +355,7 @@ static ssize_t devkmsg_writev(struct kio
- 	int level = default_message_loglevel;
- 	int facility = 1;	/* LOG_USER */
- 	size_t len = iov_length(iv, count);
--	ssize_t ret = len;
-+	ssize_t ret;
- 
- 	if (len > LOG_LINE_MAX)
- 		return -EINVAL;
-@@ -365,8 +365,12 @@ static ssize_t devkmsg_writev(struct kio
- 
- 	line = buf;
- 	for (i = 0; i < count; i++) {
--		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len))
-+		if (copy_from_user(line, iv[i].iov_base, iv[i].iov_len)) {
-+			ret = line - buf;
-+			if (!ret)
-+				ret = -EFAULT;
- 			goto out;
-+		}
- 		line += iv[i].iov_len;
- 	}
- 
-@@ -396,6 +400,7 @@ static ssize_t devkmsg_writev(struct kio
- 	line[len] = '\0';
- 
- 	printk_emit(facility, level, NULL, 0, "%s", line);
-+	ret = 0;
- out:
- 	kfree(buf);
- 	return ret;
-_
+Another short term case is the power aware interrupt routing now on recent 
+Intel CPUs.  In this case the interrupt needs logical focus to multiple CPUs 
+and the hardware makes the decision (essentially it does power aware load 
+balancing in hardware). Again nobody else should touch it.
 
+Then maybe this mechanism could be extended with a power aware 
+software solution with some input from the load balancer like you suggested. 
+I don't have a firm picture on how exactly it should work.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
