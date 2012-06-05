@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab2FEFM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 01:12:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37604 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756266Ab2FEFMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 01:12:43 -0400
-Date: Tue, 5 Jun 2012 01:12:39 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Fix sel_netnode_insert suspicious rcu dereference.
-Message-ID: <20120605051238.GA30614@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1755479Ab2FEFMJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 01:12:09 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63759 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab2FEFMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 01:12:07 -0400
+Date: Tue, 5 Jun 2012 13:11:44 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Sam Ravnborg <sam@ravnborg.org>,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        vatsa@linux.vnet.ibm.com, rjw@sisk.pl, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nikunj@linux.vnet.ibm.com,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Re: [PATCH 01/27] smpboot: Provide a generic method to boot
+ secondary processors
+Message-ID: <20120605051144.GA4064@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com>
+ <20120601091008.31979.93586.stgit@srivatsabhat.in.ibm.com>
+ <20120601165113.GA18870@merkur.ravnborg.org>
+ <4FC9424E.9060009@linux.vnet.ibm.com>
+ <alpine.LFD.2.02.1206041228330.3086@ionos>
+ <4FCCB31B.6060302@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <4FCCB31B.6060302@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I reported this a year ago (https://lkml.org/lkml/2011/4/20/308).
-It's still a problem apparently ...
+On Mon, Jun 04, 2012 at 06:37:39PM +0530, Srivatsa S. Bhat wrote:
+> On 06/04/2012 04:02 PM, Thomas Gleixner wrote:
+> >> However, I do want to emphasize that this isn't generic code. So how about
+> >> an "arch_" prefix instead? Something like:
+> >> arch_cpu_pre_starting(), arch_cpu_pre_online() and arch_cpu_post_online()?
+> > 
+> > Yes, please.
+> 
+> 
+> Sure, queued up for v2. (Atm, figuring out how to deal with xen (patch 5). Once
+> that gets done, will post a v2.)
 
-===============================
-[ INFO: suspicious RCU usage. ]
-3.5.0-rc1+ #63 Not tainted
--------------------------------
-security/selinux/netnode.c:178 suspicious rcu_dereference_check() usage!
+Since there is dependency on ipi_call_lock cleanup patches
+http://marc.info/?l=linux-kernel&m=133827595625509&w=2
 
-other info that might help us debug this:
+So please feel free to include the patches into yours.
 
+And It will be better that Thomas could pick them up :)
 
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by trinity-child1/8750:
- #0:  (sel_netnode_lock){+.....}, at: [<ffffffff812d8f8a>] sel_netnode_sid+0x16a/0x3e0
+Thanks,
+Yong
 
-stack backtrace:
-Pid: 8750, comm: trinity-child1 Not tainted 3.5.0-rc1+ #63
-Call Trace:
- [<ffffffff810cec2d>] lockdep_rcu_suspicious+0xfd/0x130
- [<ffffffff812d91d1>] sel_netnode_sid+0x3b1/0x3e0
- [<ffffffff812d8e20>] ? sel_netnode_find+0x1a0/0x1a0
- [<ffffffff812d24a6>] selinux_socket_bind+0xf6/0x2c0
- [<ffffffff810cd1dd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff810cdb55>] ? lock_release_holdtime.part.9+0x15/0x1a0
- [<ffffffff81093841>] ? lock_hrtimer_base+0x31/0x60
- [<ffffffff812c9536>] security_socket_bind+0x16/0x20
- [<ffffffff815550ca>] sys_bind+0x7a/0x100
- [<ffffffff816c03d5>] ? sysret_check+0x22/0x5d
- [<ffffffff810d392d>] ? trace_hardirqs_on_caller+0x10d/0x1a0
- [<ffffffff8133b09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff816c03a9>] system_call_fastpath+0x16/0x1b
+> 
+> > 
+> > Otherwise, thanks for that work!
+> 
+> 
+> We are glad that it helps :-)
+> 
+> > From the first glance, it's not
+> > colliding much with the changes I have in the pipeline, but I will
+> > have a closer look.
+> > 
+> 
+> 
+> Great! Thanks a lot for your time, Thomas!
+>  
+> Regards,
+> Srivatsa S. Bhat
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-This patch below does what Paul McKenney suggested in the previous thread.
-
-Signed-off-by: Dave Jones <davej@redhat.com>
-
-diff --git a/security/selinux/netnode.c b/security/selinux/netnode.c
-index 28f911c..c5454c0 100644
---- a/security/selinux/netnode.c
-+++ b/security/selinux/netnode.c
-@@ -174,7 +174,8 @@ static void sel_netnode_insert(struct sel_netnode *node)
- 	if (sel_netnode_hash[idx].size == SEL_NETNODE_HASH_BKT_LIMIT) {
- 		struct sel_netnode *tail;
- 		tail = list_entry(
--			rcu_dereference(sel_netnode_hash[idx].list.prev),
-+			rcu_dereference_protected(sel_netnode_hash[idx].list.prev,
-+						  lockdep_is_held(&sel_netnode_lock)),
- 			struct sel_netnode, list);
- 		list_del_rcu(&tail->list);
- 		kfree_rcu(tail, rcu);
+-- 
+Only stand for myself
