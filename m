@@ -1,68 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab2FERuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:50:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58548 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab2FERut convert rfc822-to-8bit (ORCPT
+	id S1755732Ab2FESBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:01:30 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:56956 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755665Ab2FESB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:50:49 -0400
-Message-ID: <1338918625.2749.29.camel@twins>
-Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
- nmi
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Arjan Dan De Ven <arjan@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Date: Tue, 05 Jun 2012 19:50:25 +0200
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
-References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>
-	 <alpine.LFD.2.02.1206042203590.3086@ionos>
-	 <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>
-	 <1338881971.28282.150.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>
-	 <1338912565.2749.9.camel@twins>
-	 <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>
-	 <1338913190.2749.10.camel@twins>
-	 <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.2- 
-Mime-Version: 1.0
+	Tue, 5 Jun 2012 14:01:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <20120605062603.GA21952@richard>
+References: <20120514015536.GA3331@richard>
+	<CAE9FiQUjxH+LWy2zbbL6TVQSMZ44i9grFBZf0ZZQFPEWRKANMw@mail.gmail.com>
+	<20120514064615.GB26605@richard>
+	<CAE9FiQUuHFoEXMz_Va+FOGnqEbi9=cnnoSB+h7Ug2e4Y2sFTGQ@mail.gmail.com>
+	<20120516011833.GA6599@richard>
+	<CAE9FiQVUcYu-KM8fBs3zO5ZnL9jxHmJSN6-Ue5-kdC-niM6=Jw@mail.gmail.com>
+	<20120529115900.GA31679@richard>
+	<CAE9FiQWO1C76ppjZF4Lm4FVpQYPRv5ZirGp9iOM3pm-xrm3Epg@mail.gmail.com>
+	<20120604133457.GA2969@richard>
+	<CAE9FiQWw=dMBajvGQy_1KoPbGa1wvER5U81oULbkXCjBzQDRpQ@mail.gmail.com>
+	<20120605062603.GA21952@richard>
+Date: Tue, 5 Jun 2012 11:01:25 -0700
+X-Google-Sender-Auth: 8N4IyKHpMsBn36VHmasfRiR7GWE
+Message-ID: <CAE9FiQX+HFy65EiYkwerwJ-tGynwjVfpVWcJZjctpeWjhLD7eA@mail.gmail.com>
+Subject: Re: One problem in reassign pci bus number?
+From: Yinghai Lu <yinghai@kernel.org>
+To: Richard Yang <weiyang@linux.vnet.ibm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=047d7b2ee18b8b4c1804c1bd701f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-06-05 at 17:44 +0000, Luck, Tony wrote:
-> > Like what? Offline is nothing more than a C state on x86. 
-> 
-> Offline is a bigger hammer than idle.
-> 
-> When a core is idle it may take an interrupt which wakes it up to use power.
-> The scheduler may assign a process to run on it, which will wake it up to use power.
-> 
-> When a core is offline we take extra steps (re-routing interrupts, telling the
-> scheduler it is not available for work) to make sure it STAYS in that low
-> power state.
+--047d7b2ee18b8b4c1804c1bd701f
+Content-Type: text/plain; charset=ISO-8859-1
 
-You also wreck cpusets, cpu affinity and you need some userspace crap to
-poll state trying to figure out when to wake up again.
+On Mon, Jun 4, 2012 at 11:26 PM, Richard Yang
+<weiyang@linux.vnet.ibm.com> wrote:
+> On Mon, Jun 04, 2012 at 04:36:33PM -0700, Yinghai Lu wrote:
+>>
+>>kernel will try to probe in [1,15] at first, and could extend B1 range
+>>to [1, 31] if needed.
+> Hmm... when do you think this branch will be merged to the mainstream?
+>>
 
-(And yes, I've heard stories about userspace hotplug daemons that cause
-machine wakeups themselves and were a main source of power usage at some
-point).
+not sure. could be 3.7
 
-All the timer/interrupt nonsense needs to be fixed anyhow, the HPC and
-RT people want isolation anyway.
+Bjorn still think that probe_resource is too complicated.
 
-So shouldn't we all start by fixing the entire
-load-balancer/timer/interrupt madness before we start swinging stupid
-big hammers around that break half the interfaces we have?
+So i still need to find some time to simplify it.
+or need to route that attached patch through Andrew or get Ack from
+Andrew or Linus.
+
+Thanks
+
+Yinghai
+
+--047d7b2ee18b8b4c1804c1bd701f
+Content-Type: application/octet-stream; name="probe_resource_2.patch"
+Content-Disposition: attachment; filename="probe_resource_2.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_h339ybjz0
+
+U3ViamVjdDogW1BBVENIXSByZXNvdXJjZXM6IEFkZCBwcm9iZV9yZXNvdXJjZSgpCgpJdCBpcyBj
+aGFuZ2VkIGZyb20gYnVzbl9yZXMgb25seSB2ZXJzaW9uLCBiZWNhdXNlIEJqb3JuIGZvdW5kIHRo
+YXQgdmVyc2lvbgp3YXMgbm90IGhvbGRpbmcgcmVzb3VyY2VfbG9jay4KRXZlbiBpdCBtYXkgYmUg
+b2sgZm9yIGJ1c25fcmVzIG5vdCBob2xkaW5nIHJlc291cmNlX2xvY2suCkl0IHdvdWxkIGJlIGJl
+dHRlciB0byBoYXZlIGl0IHRvIGJlIGdlbmVyaWMgYW5kIHVzZSBsb2NrIGFuZCB3ZSB3b3VsZAp1
+c2UgaXQgZm9yIG90aGVyIHJlc291cmNlcy4KCnByb2JlX3Jlc291cmNlKCkgd2lsbCB0cnkgdG8g
+ZmluZCBzcGVjaWZpZWQgc2l6ZSBvciBtb3JlIGluIHBhcmVudCBidXMuCklmIGNhbiBub3QgZmlu
+ZCBjdXJyZW50IHBhcmVudCByZXNvdXJjZSwgYW5kIGl0IHdpbGwgdHJ5IHRvIGV4cGFuZCBwYXJl
+bnRzCnRvcC4KSWYgc3RpbGwgY2FuIG5vdCBmaW5kIHRoYXQgc3BlY2lmaWVkIG9uIHRvcCwgaXQg
+d2lsbCB0cnkgdG8gcmVkdWNlIHRhcmdldCBzaXplCnVudGlsIGZpbmQgb25lLgoKSXQgd2lsbCBy
+ZXR1cm4gMCwgaWYgaXQgZmluZCBhbnkgcmVzb3VyY2UgdGhhdCBpdCBjb3VsZCB1c2UuCgpSZXR1
+cm5lZCByZXNvdXJjZSBpcyBhbHJlYWR5IHJlZ2lzdGVyZWQgaW4gdGhlIHRyZWUuClNvIGNhbGxl
+ciBzdGlsbCBuZWVkIGNhbGwgcmVwbGFjZV9yZXNvdXJjZSB0byBwdXQgcmVhbCByZXNvdXJjZSBp
+biByZXNvdXJjZSB0cmVlLgoKLXYzOiByZW1vdmUgdHdvIHBhcmFtZXRlcnMgdGhhdCBpcyBmb3Ig
+ZGVidWcgcHVycG9zZS4KLXY0OiBmaXggc3RvcF9mbGFncyBjaGVja2luZy4KClNpZ25lZC1vZmYt
+Ynk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KQ2M6IEFuZHJldyBNb3J0b24gPGFr
+cG1AbGludXgtZm91bmRhdGlvbi5vcmc+CgoKLS0tCiBpbmNsdWRlL2xpbnV4L2lvcG9ydC5oIHwg
+ICAgNyArKwoga2VybmVsL3Jlc291cmNlLmMgICAgICB8ICAxNDcgKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwogMiBmaWxlcyBjaGFuZ2VkLCAxNTQgaW5z
+ZXJ0aW9ucygrKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4L2lvcG9ydC5oCj09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2luY2x1ZGUvbGludXgvaW9wb3J0LmgKKysrIGxpbnV4
+LTIuNi9pbmNsdWRlL2xpbnV4L2lvcG9ydC5oCkBAIC0xNjQsNiArMTY0LDEzIEBAIGV4dGVybiBp
+bnQgYWxsb2NhdGVfcmVzb3VyY2Uoc3RydWN0IHJlc28KIAkJCQkJCSAgICAgICByZXNvdXJjZV9z
+aXplX3QsCiAJCQkJCQkgICAgICAgcmVzb3VyY2Vfc2l6ZV90KSwKIAkJCSAgICAgdm9pZCAqYWxp
+Z25mX2RhdGEpOwordm9pZCByZXNvdXJjZV9zaHJpbmtfcGFyZW50c190b3Aoc3RydWN0IHJlc291
+cmNlICpiX3JlcywKKwkJCQkgbG9uZyBzaXplLCBzdHJ1Y3QgcmVzb3VyY2UgKnBhcmVudF9yZXMp
+Oworc3RydWN0IGRldmljZTsKK2ludCBwcm9iZV9yZXNvdXJjZShzdHJ1Y3QgcmVzb3VyY2UgKmJf
+cmVzLAorCQkJc3RydWN0IHJlc291cmNlICpidXNuX3JlcywKKwkJCXJlc291cmNlX3NpemVfdCBu
+ZWVkZWRfc2l6ZSwgc3RydWN0IHJlc291cmNlICoqcCwKKwkJCWludCBza2lwX25yLCBpbnQgbGlt
+aXQsIGludCBmbGFncyk7CiBzdHJ1Y3QgcmVzb3VyY2UgKmxvb2t1cF9yZXNvdXJjZShzdHJ1Y3Qg
+cmVzb3VyY2UgKnJvb3QsIHJlc291cmNlX3NpemVfdCBzdGFydCk7CiBpbnQgYWRqdXN0X3Jlc291
+cmNlKHN0cnVjdCByZXNvdXJjZSAqcmVzLCByZXNvdXJjZV9zaXplX3Qgc3RhcnQsCiAJCSAgICBy
+ZXNvdXJjZV9zaXplX3Qgc2l6ZSk7CkluZGV4OiBsaW51eC0yLjYva2VybmVsL3Jlc291cmNlLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcva2VybmVsL3Jlc291cmNlLmMKKysrIGxpbnV4
+LTIuNi9rZXJuZWwvcmVzb3VyY2UuYwpAQCAtMTA2MCw2ICsxMDYwLDE1MyBAQCB2b2lkIF9fcmVs
+ZWFzZV9yZWdpb24oc3RydWN0IHJlc291cmNlICpwCiB9CiBFWFBPUlRfU1lNQk9MKF9fcmVsZWFz
+ZV9yZWdpb24pOwogCitzdGF0aWMgdm9pZCBfX3Jlc291cmNlX2V4dGVuZF9wYXJlbnRzX3RvcChz
+dHJ1Y3QgcmVzb3VyY2UgKmJfcmVzLAorCQkgbG9uZyBzaXplLCBzdHJ1Y3QgcmVzb3VyY2UgKnBh
+cmVudF9yZXMpCit7CisJc3RydWN0IHJlc291cmNlICpyZXMgPSBiX3JlczsKKworCWlmICghc2l6
+ZSkKKwkJcmV0dXJuOworCisJd2hpbGUgKHJlcyAmJiByZXMgIT0gcGFyZW50X3JlcykgeworCQly
+ZXMtPmVuZCArPSBzaXplOworCQlyZXMgPSByZXMtPnBhcmVudDsKKwl9Cit9CisKK3ZvaWQgcmVz
+b3VyY2Vfc2hyaW5rX3BhcmVudHNfdG9wKHN0cnVjdCByZXNvdXJjZSAqYl9yZXMsCisJCSBsb25n
+IHNpemUsIHN0cnVjdCByZXNvdXJjZSAqcGFyZW50X3JlcykKK3sKKwl3cml0ZV9sb2NrKCZyZXNv
+dXJjZV9sb2NrKTsKKwlfX3Jlc291cmNlX2V4dGVuZF9wYXJlbnRzX3RvcChiX3JlcywgLXNpemUs
+IHBhcmVudF9yZXMpOworCXdyaXRlX3VubG9jaygmcmVzb3VyY2VfbG9jayk7Cit9CisKK3N0YXRp
+YyByZXNvdXJjZV9zaXplX3QgX19maW5kX3Jlc190b3BfZnJlZV9zaXplKHN0cnVjdCByZXNvdXJj
+ZSAqcmVzLAorCQkJCQkJIGludCBza2lwX25yKQoreworCXJlc291cmNlX3NpemVfdCBuX3NpemU7
+CisJc3RydWN0IHJlc291cmNlIHRtcF9yZXM7CisKKwkvKgorCSAqICAgZmluZCBvdXQgZnJlZSBu
+dW1iZXIgYmVsb3cgcmVzLT5lbmQgdGhhdCB3ZSBjYW4gdXNlLgorCSAqCXJlcy0+c3RhcnQgdG8g
+cmVzLT5zdGFydCArIHNraXBfbnIgLSAxIGNhbiBub3QgYmUgdXNlZC4KKwkgKi8KKwluX3NpemUg
+PSByZXNvdXJjZV9zaXplKHJlcyk7CisJaWYgKG5fc2l6ZSA8PSBza2lwX25yKQorCQlyZXR1cm4g
+MDsKKworCW5fc2l6ZSAtPSBza2lwX25yOworCW1lbXNldCgmdG1wX3JlcywgMCwgc2l6ZW9mKHN0
+cnVjdCByZXNvdXJjZSkpOworCXdoaWxlIChuX3NpemUgPiAwKSB7CisJCWludCByZXQ7CisKKwkJ
+cmV0ID0gX19hbGxvY2F0ZV9yZXNvdXJjZShyZXMsICZ0bXBfcmVzLCBuX3NpemUsCisJCQlyZXMt
+PmVuZCAtIG5fc2l6ZSArIHNraXBfbnIsIHJlcy0+ZW5kLAorCQkJMSwgTlVMTCwgTlVMTCwgZmFs
+c2UsIGZhbHNlKTsKKwkJaWYgKHJldCA9PSAwKSB7CisJCQlfX3JlbGVhc2VfcmVzb3VyY2UoJnRt
+cF9yZXMpOworCQkJYnJlYWs7CisJCX0KKwkJbl9zaXplLS07CisJfQorCisJcmV0dXJuIG5fc2l6
+ZTsKK30KKworLyoqCisgKiBwcm9iZV9yZXNvdXJjZSAtIFByb2JlIHJlc291cmNlIGluIHBhcmVu
+dCByZXNvdXJjZS4KKyAqIEBiX3JlczogcGFyZW50IHJlc291cmNlIGRlc2NyaXB0b3IKKyAqIEBi
+dXNuX3JlczogcmV0dXJuIHByb2JlZCByZXNvdXJjZQorICogQG5lZWRlZF9zaXplOiB0YXJnZXQg
+c2l6ZQorICogQHA6IHBvaW50ZXIgdG8gZmFyZXN0IHBhcmVudCB0aGF0IHdlIGV4dGVuZCB0aGUg
+dG9wCisgKiBAc2tpcF9ucjogbnVtYmVyIGluIGJfcmVzIHN0YXJ0IHRoYXQgd2UgbmVlZCB0byBz
+a2lwLgorICogQGxpbWl0OiBsb2NhbCBib3VuZGFyeQorICogQHN0b3BfZmxhZ3M6IGZsYWdzIGZv
+ciBzdG9wcGluZyBleHRlbmQgcGFyZW50IHJlcworICoKKyAqIHdpbGwgdHJ5IHRvIGFsbG9jYXRl
+IHJlc291cmNlIGluIGJfcmVzLCBpZiBjYW4gbm90IGZpbmQgdGhlIHJhbmdlCisgKiAgd2lsbCB0
+cnkgdG8gZXh0ZW5kIHBhcmVudCByZXNvdXJjZXMnIHRvcC4KKyAqIGlmIHN0aWxsIGNhbiBub3Qg
+bWFrZSBpdCwgd2lsbCByZWR1Y2UgbmVlZGVkX3NpemUuCisgKi8KK2ludCBwcm9iZV9yZXNvdXJj
+ZShzdHJ1Y3QgcmVzb3VyY2UgKmJfcmVzLAorCQkJIHN0cnVjdCByZXNvdXJjZSAqYnVzbl9yZXMs
+CisJCQkgcmVzb3VyY2Vfc2l6ZV90IG5lZWRlZF9zaXplLCBzdHJ1Y3QgcmVzb3VyY2UgKipwLAor
+CQkJIGludCBza2lwX25yLCBpbnQgbGltaXQsIGludCBzdG9wX2ZsYWdzKQoreworCWludCByZXQg
+PSAtRU5PTUVNOworCXJlc291cmNlX3NpemVfdCBuX3NpemU7CisJc3RydWN0IHJlc291cmNlICpw
+YXJlbnRfcmVzID0gTlVMTDsKKwlyZXNvdXJjZV9zaXplX3QgdG1wID0gYl9yZXMtPmVuZCArIDE7
+CisKK2FnYWluOgorCS8qCisJICogV2UgZmlyc3QgdHJ5IHRvIGFsbG9jYXRlIGJpZ2dlc3QgcmFu
+Z2UgaW4gYl9yZXMgdGhhdAorCSAqICB3ZSBjYW4gdXNlIGluIGJfcmVzIGRpcmVjdGx5LgorCSAq
+ICB3ZSBjYW4gbm90IHVzZSBza2lwX25yIGZyb20gc3RhcnQgb2YgYl9yZXMuCisJICovCisJbl9z
+aXplID0gcmVzb3VyY2Vfc2l6ZShiX3Jlcyk7CisJaWYgKG5fc2l6ZSA+IHNraXBfbnIpCisJCW5f
+c2l6ZSAtPSBza2lwX25yOworCWVsc2UKKwkJbl9zaXplID0gMDsKKwltZW1zZXQoYnVzbl9yZXMs
+IDAsIHNpemVvZihzdHJ1Y3QgcmVzb3VyY2UpKTsKKwl3aGlsZSAobl9zaXplID49IG5lZWRlZF9z
+aXplKSB7CisJCXJldCA9IGFsbG9jYXRlX3Jlc291cmNlKGJfcmVzLCBidXNuX3Jlcywgbl9zaXpl
+LAorCQkJCWJfcmVzLT5zdGFydCArIHNraXBfbnIsIGJfcmVzLT5lbmQsCisJCQkJMSwgTlVMTCwg
+TlVMTCk7CisJCWlmICghcmV0KQorCQkJcmV0dXJuIHJldDsKKwkJbl9zaXplLS07CisJfQorCisJ
+LyogV2UgbmVlZCB0byBleHRlbmQgdGhlIHRvcCBvZiBwYXJlbnQgcmVzb3VyY2VzIHRvIG1lZXQg
+bmVlZGVkX3NpemUgKi8KKworCS8qIGZpbmQgb3V0IGZyZWUgcmFuZ2UgdW5kZXIgdG9wIGF0IGZp
+cnN0ICovCisJd3JpdGVfbG9jaygmcmVzb3VyY2VfbG9jayk7CisJbl9zaXplID0gX19maW5kX3Jl
+c190b3BfZnJlZV9zaXplKGJfcmVzLCBza2lwX25yKTsKKwkvKiBjYW4gbm90IGV4dGVuZCBjcm9z
+cyBsb2NhbCBib3VuZGFyeSAqLworCWlmICgobGltaXQgLSBiX3Jlcy0+ZW5kKSA8IChuZWVkZWRf
+c2l6ZSAtIG5fc2l6ZSkpCisJCWdvdG8gcmVkdWNlX25lZWRlZF9zaXplOworCisJLyogUHJvYmUg
+ZXh0ZW5kZWQgcmFuZ2UgYWJvdmUgdG9wICovCisJbWVtc2V0KGJ1c25fcmVzLCAwLCBzaXplb2Yo
+c3RydWN0IHJlc291cmNlKSk7CisJcGFyZW50X3JlcyA9IGJfcmVzOworCXdoaWxlIChwYXJlbnRf
+cmVzKSB7CisJCXJldCA9IF9fYWxsb2NhdGVfcmVzb3VyY2UocGFyZW50X3JlcywgYnVzbl9yZXMs
+CisJCQkgbmVlZGVkX3NpemUgLSBuX3NpemUsCisJCQkgdG1wLCB0bXAgKyBuZWVkZWRfc2l6ZSAt
+IG5fc2l6ZSAtIDEsCisJCQkgMSwgTlVMTCwgTlVMTCwgZmFsc2UsIGZhbHNlKTsKKwkJaWYgKCFy
+ZXQpIHsKKwkJCS8qIHNhdmUgcGFyZW50X3Jlcywgd2UgbmVlZCBpdCBhcyBzdG9wcGVyIGxhdGVy
+ICovCisJCQkqcCA9IHBhcmVudF9yZXM7CisKKwkJCS8qIHByZXBhcmUgYnVzbl9yZXMgZm9yIHJl
+dHVybiAqLworCQkJX19yZWxlYXNlX3Jlc291cmNlKGJ1c25fcmVzKTsKKwkJCWJ1c25fcmVzLT5z
+dGFydCAtPSBuX3NpemU7CisKKwkJCS8qIGV4dGVuZCBwYXJlbnQgcmVzb3VyY2VzIHRvcCovCisJ
+CQlfX3Jlc291cmNlX2V4dGVuZF9wYXJlbnRzX3RvcChiX3JlcywKKwkJCQkJIG5lZWRlZF9zaXpl
+IC0gbl9zaXplLCBwYXJlbnRfcmVzKTsKKwkJCV9fcmVxdWVzdF9yZXNvdXJjZShiX3JlcywgYnVz
+bl9yZXMpOworCisJCQl3cml0ZV91bmxvY2soJnJlc291cmNlX2xvY2spOworCQkJcmV0dXJuIHJl
+dDsKKwkJfQorCQlpZiAocGFyZW50X3Jlcy0+ZmxhZ3MgJiBzdG9wX2ZsYWdzKQorCQkJYnJlYWs7
+CisJCXBhcmVudF9yZXMgPSBwYXJlbnRfcmVzLT5wYXJlbnQ7CisJfQorCityZWR1Y2VfbmVlZGVk
+X3NpemU6CisJd3JpdGVfdW5sb2NrKCZyZXNvdXJjZV9sb2NrKTsKKwkvKiByZXQgbXVzdCBub3Qg
+YmUgMCBoZXJlICovCisJbmVlZGVkX3NpemUtLTsKKwlpZiAobmVlZGVkX3NpemUpCisJCWdvdG8g
+YWdhaW47CisKKwlyZXR1cm4gcmV0OworfQorCiAvKgogICogTWFuYWdlZCByZWdpb24gcmVzb3Vy
+Y2UKICAqLwo=
+--047d7b2ee18b8b4c1804c1bd701f--
