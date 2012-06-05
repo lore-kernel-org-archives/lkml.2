@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab2FESoj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 14:44:39 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:51005 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755980Ab2FESoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 14:44:38 -0400
-Date: Tue, 5 Jun 2012 13:44:36 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix relax_domain_level interface
-Message-ID: <20120605184436.GA15668@sgi.com>
-References: <20120601210348.GA22471@sgi.com>
- <1338824262.28282.87.camel@twins>
- <20120604181614.GA22172@sgi.com>
- <20120605183439.GA16819@sgi.com>
- <1338921419.2749.31.camel@twins>
+	id S1751457Ab2FEStB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 14:49:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55154 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849Ab2FESs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 14:48:58 -0400
+Date: Tue, 5 Jun 2012 14:48:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120605184853.GD28556@redhat.com>
+References: <20120528114124.GA6813@localhost>
+ <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
+ <20120529155759.GA11326@localhost>
+ <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
+ <20120530032129.GA7479@localhost>
+ <20120605172302.GB28556@redhat.com>
+ <20120605174157.GC28556@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1338921419.2749.31.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120605174157.GC28556@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 05, 2012 at 08:36:59PM +0200, Peter Zijlstra wrote:
-> On Tue, 2012-06-05 at 13:34 -0500, Dimitri Sivanich wrote:
+On Tue, Jun 05, 2012 at 01:41:57PM -0400, Vivek Goyal wrote:
+> On Tue, Jun 05, 2012 at 01:23:02PM -0400, Vivek Goyal wrote:
+> > On Wed, May 30, 2012 at 11:21:29AM +0800, Fengguang Wu wrote:
 > > 
-> > I'll submit a patch shortly that should return these back to what appears to
-> > be their intended functionality. 
+> > [..]
+> > > (2) comes from the use of _WAIT_ flags in
+> > > 
+> > >         sync_file_range(..., SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+> > > 
+> > > Each sync_file_range() syscall will submit 8MB write IO and wait for
+> > > completion. That means the async write IO queue constantly swing
+> > > between 0 and 8MB fillness at the frequency (100MBps / 8MB = 12.5ms).
+> > > So on every 12.5ms, the async IO queue runs empty, which gives any
+> > > pending read IO (from firefox etc.) a chance to be serviced. Nice
+> > > and sweet breaks!
+> > 
+> > I doubt that async IO queue is empty for 12.5ms. We wait for previous
+> > range to finish (index-1) and have already started the IO on next 8MB
+> > of pages. So effectively that should keep 8MB of async IO in
+> > queue (until and unless there are delays from user space side). So reason
+> > for latency improvement might be something else and not because async
+> > IO queue is empty for some time.
 > 
-> I guess removing the max check in the paramater parsing is the easiest
-> thing.
-My thoughts exactly.
+> With sync_file_range() test, we can have 8MB of IO in flight. Without that
+> I think we can have more at times and that might be the reason for latency
+> improvement.
+> 
+> I see that CFQ has code to allow deeper NCQ depth if there is only a single
+> writer. So once a reader comes along it might find tons of async IO
+> already in flight. sync_file_range() will limit that in flight IO hence
+> the latency improvement. So if we have multiple dd doing sync_file_range()
+> then probably this latency improvement should go away.
+> 
+> I will run some tests to verify if my understanding about deeper queue
+> depths in case of single writer is correct or not.
 
+So I did run some tests and can confirm that on an average there seem to
+be more in flight requests *without* sync_file_range() and that's probably
+the reason that why sync_file_range() test is showing better latency. 
 
+I can see that with "dd if=/dev/zero of=zerofile bs=1M count=1024", we are
+driving deeper queue depths (upto 32) and in later stages in flight
+requests are constantly high.
 
-Fix the relax_domain_level boot parameter. It does not get processed because
-sched_domain_level_max is 0 at the time that setup_relax_domain_level()
-is run.  Simply accept the value as it is, as we don't know the value
-of sched_domain_level_max until sched domain construction is completed.
+With sync_file_range(), in flight requests number of requests fluctuate a
+lot between 1 and 32. Many a times it is just 1 or up to 16 and few times
+went up to 32.
 
-Fix sched_relax_domain_level in cpuset.  The build_sched_domain() routine calls
-the set_domain_attribute() routine prior to setting the sd->level, however,
-the set_domain_attribute() routine relies on the sd->level to decide whether
-idle load balancing will be off/on.
+So sync_file_range() test keeps less in flight requests on on average
+hence better latencies. It might not produce throughput drop on SATA
+disks but might have some effect on storage array luns. Will give it
+a try.
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- kernel/sched/core.c |    9 +++------
- 1 file changed, 3 insertions(+), 6 deletions(-)
-
-Index: linux/kernel/sched/core.c
-===================================================================
---- linux.orig/kernel/sched/core.c
-+++ linux/kernel/sched/core.c
-@@ -6165,11 +6165,8 @@ int sched_domain_level_max;
- 
- static int __init setup_relax_domain_level(char *str)
- {
--	unsigned long val;
--
--	val = simple_strtoul(str, NULL, 0);
--	if (val < sched_domain_level_max)
--		default_relax_domain_level = val;
-+	if (kstrtoint(str, 0, &default_relax_domain_level))
-+		pr_warn("Unable to set relax_domain_level\n");
- 
- 	return 1;
- }
-@@ -6543,7 +6540,6 @@ struct sched_domain *build_sched_domain(
- 	if (!sd)
- 		return child;
- 
--	set_domain_attribute(sd, attr);
- 	cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
- 	if (child) {
- 		sd->level = child->level + 1;
-@@ -6551,6 +6547,7 @@ struct sched_domain *build_sched_domain(
- 		child->parent = sd;
- 	}
- 	sd->child = child;
-+	set_domain_attribute(sd, attr);
- 
- 	return sd;
- }
+Thanks
+Vivek
