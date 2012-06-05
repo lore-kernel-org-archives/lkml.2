@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752912Ab2FEU5Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 16:57:24 -0400
-Received: from li158-162.members.linode.com ([173.230.148.162]:52093 "EHLO
-	strelka.plastictigers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab2FEU5W (ORCPT
+	id S1753003Ab2FEU5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 16:57:33 -0400
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:56420 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752924Ab2FEU5a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 16:57:22 -0400
-Date: Tue, 5 Jun 2012 16:57:21 -0400
-From: Marc Butler <marc@plastictigers.com>
-To: Sagar Dharia <sdharia@codeaurora.org>
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org, kheitke@codeaurora.org,
-        gclemson@audience.com, broonie@opensource.wolfsonmicro.com,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rob@landley.net, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        ohad@wizery.com, gregkh@linuxfoundation.org, linus.walleij@linaro.org,
-        rusty@rustcorp.com.au, joerg.roedel@amd.com, trenn@suse.de,
-        ak@linux.intel.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] slimbus: Linux driver framework for SLIMbus.
-Message-ID: <20120605205721.GA20560@plastictigers.com>
-References: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
+	Tue, 5 Jun 2012 16:57:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338340310-4473-1-git-send-email-sdharia@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120530140444.GA10543@frolo.macqel>
+References: <1338327216-15309-1-git-send-email-geert@linux-m68k.org>
+	<20120530102226.GA28628@frolo.macqel>
+	<CAMuHMdV5GVZR1BvGD3EncDFfPt=Bt9ndkKE8Mp7euE9KoSaGNQ@mail.gmail.com>
+	<20120530140444.GA10543@frolo.macqel>
+Date: Tue, 5 Jun 2012 22:57:29 +0200
+X-Google-Sender-Auth: lTgex80yLmK_O041XXmKWjZbLds
+Message-ID: <CAMuHMdW29QYN6XpBb9F3GGoJ-9frrD-00Wx=FchT9ALqW1LcPg@mail.gmail.com>
+Subject: Re: [PATCH] m68k: Use generic strncpy_from_user(), strlen_user(), and strnlen_user()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Philippe De Muyter <phdm@macqel.be>, Greg Ungerer <gerg@uclinux.org>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes an bug where devices that have not be matched
-to a driver will result in a segv when the bus is shutdown.
+On Wed, May 30, 2012 at 4:04 PM, Philippe De Muyter <phdm@macqel.be> wrote:
+> On Wed, May 30, 2012 at 01:20:02PM +0200, Geert Uytterhoeven wrote:
+>> On Wed, May 30, 2012 at 12:22 PM, Philippe De Muyter <phdm@macqel.be> wrote:
+>> > On Tue, May 29, 2012 at 11:33:36PM +0200, Geert Uytterhoeven wrote:
+>> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> >> ---
+>> >> Do we also want
+>> >>
+>> >>     select HAVE_EFFICIENT_UNALIGNED_ACCESS if (!COLDFIRE && !M68000)
+>> >
+>> > Sorry, I did not follow what happened to unaligned accesses, but
+>> > CPU32 family (at least 68340) crashes on unaligned accesses.
+>>
+>> We don't seem to have CONFIG_M68340 in arch/m68k/Kconfig.cpu?
+>
+> I have a local port here (but based on an ancient linux kernel, 2.6.2 IIRC)
+>
+>> But Freescale's website confirms both 68340 and 68360 are CPU32.
+>>
+>> arch/m68k/include/asm/unaligned.h assumes CPU32 (CONFIG_MCPU32)
+>> can do unaligned accesses:
+>
+> That's not true.  Accessing a 16- or 32-bit word at an odd address
+> with a 68340 generates an Address Error Exception.  I remember
+> discovering a bug in the ppp kernel code because of that.
+>
+>>
+>> #if defined(CONFIG_COLDFIRE) || defined(CONFIG_M68000)
+>> #include <linux/unaligned/be_struct.h>
+>> #include <linux/unaligned/le_byteshift.h>
+>> #include <linux/unaligned/generic.h>
+>>
+>> #define get_unaligned   __get_unaligned_be
+>> #define put_unaligned   __put_unaligned_be
+>>
+>> #else
+>> /*
+>>  * The m68k can do unaligned accesses itself.
+>>  */
+>> #include <linux/unaligned/access_ok.h>
+>> #include <linux/unaligned/generic.h>
+>>
+>> #define get_unaligned   __get_unaligned_be
+>> #define put_unaligned   __put_unaligned_be
+>>
+>> #endif
+>>
+>> Is this wrong?
+>
+> I can't tell from reading just the lines above, but I think one should add
+> "|| defined(CONFIG_MCPU32)" at the end of the if condition.
 
-I am not sure what the policy on patches-on-patches is, it just
-doesn't seem workable. So I this will be the first and last. Instead I
-am maintaing a git repository that tracks Linus's tree:
+Greg?
 
-git://git.plastictigers.com/slimbus.git
+If more CPUs cannot handle unaligned accesses, I propose to add
+CONFIG_CPU_HAS_NO_UNALIGNED.
 
-or it can be browsed via the web:
+> I also think that the Coldfire 5272 can do unaligned accesses, but I
+> cannot test that at the moment.
 
-http://git.plastictigers.com/
+Gr{oetje,eeting}s,
 
-Currently there are 3 branches:
+                        Geert
 
-slimbus-rfc-patch   : the original rfc patch (for reference)
-slimbus-patch       : the current patch (as posted by Sagar)
-slimbus-patch-fixes : slimbus-patch + fixes (like the one below)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-There will likely be a couple of new branches in the future.
-
-If anyone has a suggestion on a better way of doing this I am all
-ears.
-
----
- drivers/slimbus/slimbus.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/slimbus/slimbus.c b/drivers/slimbus/slimbus.c
-index 6d20241..673222c 100644
---- a/drivers/slimbus/slimbus.c
-+++ b/drivers/slimbus/slimbus.c
-@@ -125,6 +125,9 @@ static void slim_device_shutdown(struct device *dev)
- 	struct slim_device *slim_dev;
- 	struct slim_driver *driver;
- 
-+	if (!dev->driver)
-+		return;
-+
- 	if (dev->type == &slim_dev_type)
- 		slim_dev = to_slim_device(dev);
- 	else
--- 
-1.7.7
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
