@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761441Ab2FEDlS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 23:41:18 -0400
+	id S1761474Ab2FEDnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 23:43:07 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:43604 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2FEDlO (ORCPT
+	with ESMTP id S1761428Ab2FEDlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 23:41:14 -0400
+	Mon, 4 Jun 2012 23:41:16 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org
 Cc: vgoyal@redhat.com, ctalbott@google.com, rni@google.com,
         fengguang.wu@intel.com, hughd@google.com, akpm@linux-foundation.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 02/10] blkcg: make root blkcg allocation use %GFP_KERNEL
-Date: Mon,  4 Jun 2012 20:40:52 -0700
-Message-Id: <1338867660-4689-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/10] mempool: add @gfp_mask to mempool_create_node()
+Date: Mon,  4 Jun 2012 20:40:53 -0700
+Message-Id: <1338867660-4689-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1338867660-4689-1-git-send-email-tj@kernel.org>
 References: <1338867660-4689-1-git-send-email-tj@kernel.org>
@@ -23,163 +23,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, blkcg_activate_policy() depends on %GFP_ATOMIC allocation
-from __blkg_lookup_create() for root blkcg creation.  This could make
-policy fail unnecessarily.
-
-Make blkg_alloc() take @gfp_mask, __blkg_lookup_create() take an
-optional @new_blkg for preallocated blkg, and blkcg_activate_policy()
-preload radix tree and preallocate blkg with %GFP_KERNEL before trying
-to create the root blkg.
-
-v2: __blkg_lookup_create() was returning %NULL on blkg alloc failure
-   instead of ERR_PTR() value.  Fixed.
+mempool_create_node() currently assumes %GFP_KERNEL.  Its only user,
+blk_init_free_list(), is about to be updated to use other allocation
+flags - add @gfp_mask argument to the function.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>
 ---
- block/blk-cgroup.c |   59 +++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 43 insertions(+), 16 deletions(-)
+ block/blk-core.c        |    4 ++--
+ include/linux/mempool.h |    3 ++-
+ mm/mempool.c            |   12 +++++++-----
+ 3 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index af61db0..cbeeb54 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -91,16 +91,18 @@ static void blkg_free(struct blkcg_gq *blkg)
-  * blkg_alloc - allocate a blkg
-  * @blkcg: block cgroup the new blkg is associated with
-  * @q: request_queue the new blkg is associated with
-+ * @gfp_mask: allocation mask to use
-  *
-  * Allocate a new blkg assocating @blkcg and @q.
-  */
--static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q)
-+static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
-+				   gfp_t gfp_mask)
- {
- 	struct blkcg_gq *blkg;
- 	int i;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 3c923a7..7465d89 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -518,8 +518,8 @@ static int blk_init_free_list(struct request_queue *q)
+ 	init_waitqueue_head(&rl->wait[BLK_RW_ASYNC]);
  
- 	/* alloc and init base part */
--	blkg = kzalloc_node(sizeof(*blkg), GFP_ATOMIC, q->node);
-+	blkg = kzalloc_node(sizeof(*blkg), gfp_mask, q->node);
- 	if (!blkg)
+ 	rl->rq_pool = mempool_create_node(BLKDEV_MIN_RQ, mempool_alloc_slab,
+-				mempool_free_slab, request_cachep, q->node);
+-
++					  mempool_free_slab, request_cachep,
++					  GFP_KERNEL, q->node);
+ 	if (!rl->rq_pool)
+ 		return -ENOMEM;
+ 
+diff --git a/include/linux/mempool.h b/include/linux/mempool.h
+index 7c08052..39ed62a 100644
+--- a/include/linux/mempool.h
++++ b/include/linux/mempool.h
+@@ -26,7 +26,8 @@ typedef struct mempool_s {
+ extern mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
+ 			mempool_free_t *free_fn, void *pool_data);
+ extern mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+-			mempool_free_t *free_fn, void *pool_data, int nid);
++			mempool_free_t *free_fn, void *pool_data,
++			gfp_t gfp_mask, int nid);
+ 
+ extern int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask);
+ extern void mempool_destroy(mempool_t *pool);
+diff --git a/mm/mempool.c b/mm/mempool.c
+index d904981..5499047 100644
+--- a/mm/mempool.c
++++ b/mm/mempool.c
+@@ -63,19 +63,21 @@ EXPORT_SYMBOL(mempool_destroy);
+ mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
+ 				mempool_free_t *free_fn, void *pool_data)
+ {
+-	return  mempool_create_node(min_nr,alloc_fn,free_fn, pool_data,-1);
++	return mempool_create_node(min_nr,alloc_fn,free_fn, pool_data,
++				   GFP_KERNEL, NUMA_NO_NODE);
+ }
+ EXPORT_SYMBOL(mempool_create);
+ 
+ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+-			mempool_free_t *free_fn, void *pool_data, int node_id)
++			       mempool_free_t *free_fn, void *pool_data,
++			       gfp_t gfp_mask, int node_id)
+ {
+ 	mempool_t *pool;
+-	pool = kmalloc_node(sizeof(*pool), GFP_KERNEL | __GFP_ZERO, node_id);
++	pool = kmalloc_node(sizeof(*pool), gfp_mask | __GFP_ZERO, node_id);
+ 	if (!pool)
  		return NULL;
+ 	pool->elements = kmalloc_node(min_nr * sizeof(void *),
+-					GFP_KERNEL, node_id);
++				      gfp_mask, node_id);
+ 	if (!pool->elements) {
+ 		kfree(pool);
+ 		return NULL;
+@@ -93,7 +95,7 @@ mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+ 	while (pool->curr_nr < pool->min_nr) {
+ 		void *element;
  
-@@ -117,7 +119,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q)
- 			continue;
- 
- 		/* alloc per-policy data and attach it to blkg */
--		pd = kzalloc_node(pol->pd_size, GFP_ATOMIC, q->node);
-+		pd = kzalloc_node(pol->pd_size, gfp_mask, q->node);
- 		if (!pd) {
- 			blkg_free(blkg);
+-		element = pool->alloc(GFP_KERNEL, pool->pool_data);
++		element = pool->alloc(gfp_mask, pool->pool_data);
+ 		if (unlikely(!element)) {
+ 			mempool_destroy(pool);
  			return NULL;
-@@ -175,8 +177,13 @@ struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, struct request_queue *q)
- }
- EXPORT_SYMBOL_GPL(blkg_lookup);
- 
-+/*
-+ * If @new_blkg is %NULL, this function tries to allocate a new one as
-+ * necessary using %GFP_ATOMIC.  @new_blkg is always consumed on return.
-+ */
- static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
--					     struct request_queue *q)
-+					     struct request_queue *q,
-+					     struct blkcg_gq *new_blkg)
- {
- 	struct blkcg_gq *blkg;
- 	int ret;
-@@ -188,18 +195,24 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
- 	blkg = __blkg_lookup(blkcg, q);
- 	if (blkg) {
- 		rcu_assign_pointer(blkcg->blkg_hint, blkg);
--		return blkg;
-+		goto out_free;
- 	}
- 
- 	/* blkg holds a reference to blkcg */
--	if (!css_tryget(&blkcg->css))
--		return ERR_PTR(-EINVAL);
-+	if (!css_tryget(&blkcg->css)) {
-+		blkg = ERR_PTR(-EINVAL);
-+		goto out_free;
-+	}
- 
- 	/* allocate */
--	ret = -ENOMEM;
--	blkg = blkg_alloc(blkcg, q);
--	if (unlikely(!blkg))
--		goto err_put;
-+	if (!new_blkg) {
-+		new_blkg = blkg_alloc(blkcg, q, GFP_ATOMIC);
-+		if (unlikely(!new_blkg)) {
-+			blkg = ERR_PTR(-ENOMEM);
-+			goto out_put;
-+		}
-+	}
-+	blkg = new_blkg;
- 
- 	/* insert */
- 	spin_lock(&blkcg->lock);
-@@ -212,10 +225,13 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
- 
- 	if (!ret)
- 		return blkg;
--err_put:
-+
-+	blkg = ERR_PTR(ret);
-+out_put:
- 	css_put(&blkcg->css);
--	blkg_free(blkg);
--	return ERR_PTR(ret);
-+out_free:
-+	blkg_free(new_blkg);
-+	return blkg;
- }
- 
- struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
-@@ -227,7 +243,7 @@ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
- 	 */
- 	if (unlikely(blk_queue_bypass(q)))
- 		return ERR_PTR(blk_queue_dead(q) ? -EINVAL : -EBUSY);
--	return __blkg_lookup_create(blkcg, q);
-+	return __blkg_lookup_create(blkcg, q, NULL);
- }
- EXPORT_SYMBOL_GPL(blkg_lookup_create);
- 
-@@ -727,19 +743,30 @@ int blkcg_activate_policy(struct request_queue *q,
- 	struct blkcg_gq *blkg;
- 	struct blkg_policy_data *pd, *n;
- 	int cnt = 0, ret;
-+	bool preloaded;
- 
- 	if (blkcg_policy_enabled(q, pol))
- 		return 0;
- 
-+	/* preallocations for root blkg */
-+	blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
-+	if (!blkg)
-+		return -ENOMEM;
-+
-+	preloaded = !radix_tree_preload(GFP_KERNEL);
-+
- 	blk_queue_bypass_start(q);
- 
- 	/* make sure the root blkg exists and count the existing blkgs */
- 	spin_lock_irq(q->queue_lock);
- 
- 	rcu_read_lock();
--	blkg = __blkg_lookup_create(&blkcg_root, q);
-+	blkg = __blkg_lookup_create(&blkcg_root, q, blkg);
- 	rcu_read_unlock();
- 
-+	if (preloaded)
-+		radix_tree_preload_end();
-+
- 	if (IS_ERR(blkg)) {
- 		ret = PTR_ERR(blkg);
- 		goto out_unlock;
 -- 
 1.7.7.3
 
