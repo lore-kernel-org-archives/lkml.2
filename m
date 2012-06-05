@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755612Ab2FERpD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 13:45:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20238 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755500Ab2FERpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 13:45:01 -0400
-Date: Tue, 5 Jun 2012 13:44:54 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: oomkillers gone wild.
-Message-ID: <20120605174454.GA23867@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-References: <20120604152710.GA1710@redhat.com>
- <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
+	id S1755622Ab2FERt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 13:49:26 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:41933 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab2FERtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 13:49:24 -0400
+Message-ID: <4FCE466A.3050202@linux.vnet.ibm.com>
+Date: Tue, 05 Jun 2012 23:18:26 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120424 Thunderbird/12.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1206041629500.7769@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jan Beulich <JBeulich@suse.com>, Russell King <linux@arm.linux.org.uk>,
+        yong.zhang0@gmail.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+        peterz@infradead.org, mingo@kernel.org, x86@kernel.org,
+        akpm@linux-foundation.org, nikunj@linux.vnet.ibm.com,
+        paulmck@linux.vnet.ibm.com, vatsa@linux.vnet.ibm.com,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@redhat.com>, rusty@rustcorp.com.au, rjw@sisk.pl,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Keir Fraser <keir@xen.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH 05/27] xen, cpu hotplug: Don't call cpu_bringup()
+ in xen_play_dead()
+References: <20120601090952.31979.24799.stgit@srivatsabhat.in.ibm.com> <20120601091124.31979.91984.stgit@srivatsabhat.in.ibm.com> <4FC8D8E30200007800087D2B@nat28.tlf.novell.com> <4FC8DC19.4000007@linux.vnet.ibm.com> <4FC8FD9C0200007800087DF5@nat28.tlf.novell.com> <4FCA5608.2010404@linux.vnet.ibm.com> <alpine.LFD.2.02.1206051921320.3086@ionos>
+In-Reply-To: <alpine.LFD.2.02.1206051921320.3086@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12060517-9574-0000-0000-0000030E7E83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 04, 2012 at 04:30:57PM -0700, David Rientjes wrote:
- > On Mon, 4 Jun 2012, Dave Jones wrote:
- > 
- > > we picked this..
- > > 
- > > [21623.066911] [  588]     0   588    22206        1   2       0             0 dhclient
- > > 
- > > over say..
- > > 
- > > [21623.116597] [ 7092]  1000  7092  1051124    31660   3       0             0 trinity-child3
- > > 
- > > What went wrong here ?
- > > 
- > > And why does that score look so.. weird.
- > > 
- > 
- > It sounds like it's because pid 588 has uid=0 and the adjustment for root 
- > processes is causing an overflow.  I assume this fixes it?
+On 06/05/2012 11:10 PM, Thomas Gleixner wrote:
 
-Still doesn't seem right..
+> On Sat, 2 Jun 2012, Srivatsa S. Bhat wrote:
+>> Ok.. So, I would love to hear a confirmation about whether this patch (which
+>> removes cpu_bringup() in xen_play_dead()) will break things or it is good as is.
+>>
+>> If its not correct, then we can probably make __cpu_post_online() return an int,
+>> with the meaning:
+>>
+>> 0 => success, go ahead and call cpu_idle()
+>> non-zero => stop here, thanks for your services so far.. now leave the rest to me.
+>>
+>> So all other archs will return 0, Xen will return non-zero, and it will handle
+>> when to call cpu_idle() and when not to do so.
+>>
+>> Might sound a bit ugly, but I don't see much other option. Suggestions are
+>> appreciated!
+> 
+> Yes, it's butt ugly. 
+> 
+> You are tripping over the main misconception of the current hotplug
+> code: It's asymetric.
+> 
+> So people added warts and workarounds like the xen one. What you are
+> proposing is another wart and workaround.
+> 
+> The real way to avoid it, is to have the symetric state machine in
+> place first and then convert everything to that instead of introducing
+> an intermediate state which resembles the existing state.
+> 
+> One of the main things we need to do to make it symetric is to kill
+> the play_dead() thing in the idle loop and make idle a function which
+> returns on cpu_should_die().
+> 
+> Give me a day or two and I get you a working version of that. (Up is
+> functional, just down refuses to play along)
+> 
 
-eg..
 
-[42309.542776] [ pid ]   uid  tgid total_vm      rss cpu oom_adj oom_score_adj name
-..
-[42309.553933] [  500]    81   500     5435        1   4     -13          -900 dbus-daemon
-..
-[42309.597531] [ 9054]  1000  9054   528677    14540   3       0             0 trinity-child3
-..
+Oh great! So, then I'll wait for your patches and then adapt this patchset
+to your model then. Let me know if I can help out with something..
 
-[42309.643057] Out of memory: Kill process 500 (dbus-daemon) score 511952 or sacrifice child
-[42309.643620] Killed process 500 (dbus-daemon) total-vm:21740kB, anon-rss:0kB, file-rss:4kB
-
-and a slew of similar 'wrong process' death spiral kills follows..
-
-
-	Dave
+Regards,
+Srivatsa S. Bhat
 
