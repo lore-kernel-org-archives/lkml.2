@@ -1,109 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab2FEWIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 18:08:15 -0400
-Received: from mga14.intel.com ([143.182.124.37]:33708 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117Ab2FEWIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 18:08:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="108256707"
-Message-ID: <4FCE8307.3050901@linux.intel.com>
-Date: Tue, 05 Jun 2012 15:07:03 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753307Ab2FEWJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 18:09:26 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47834 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2FEWJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 18:09:24 -0400
+Date: Wed, 6 Jun 2012 00:09:07 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Luck, Tony" <tony.luck@intel.com>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Arjan Dan De Ven <arjan@linux.intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: RE: [PATCH 0/6] x86/cpu hotplug: Wake up offline CPU via mwait or
+ nmi
+In-Reply-To: <1338931856.2749.57.camel@twins>
+Message-ID: <alpine.LFD.2.02.1206052337300.3086@ionos>
+References: <1338833876-29721-1-git-send-email-fenghua.yu@intel.com>    <alpine.LFD.2.02.1206042203590.3086@ionos>    <1338842001.28282.135.camel@twins> <87zk8iioam.fsf@rustcorp.com.au>    <1338881971.28282.150.camel@twins>   
+ <3E5A0FA7E9CA944F9D5414FEC6C7122007727023@ORSMSX105.amr.corp.intel.com>   <1338912565.2749.9.camel@twins>    <3E5A0FA7E9CA944F9D5414FEC6C7122007728081@ORSMSX105.amr.corp.intel.com>    <1338913190.2749.10.camel@twins>   
+ <3908561D78D1C84285E8C5FCA982C28F19300965@ORSMSX104.amr.corp.intel.com>  <1338918625.2749.29.camel@twins> <alpine.LFD.2.02.1206052106440.3086@ionos>  <1338925756.2749.36.camel@twins> <alpine.LFD.2.02.1206052153200.3086@ionos>
+ <1338931856.2749.57.camel@twins>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Feng Tang <feng.tang@intel.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org
-Subject: Re: [RFC PATCH] pch_uart: Add eg20t_port lock field, avoid recursive
- spinlocks
-References: <8854635ac5471f8671b93c65e3663eb1cb204c9d.1338454156.git.dvhart@linux.intel.com> <CANKRQnhZErpvcsRW3ukNzY0_zv4x=5OzQ-sr+aeuxL63=tQ=4A@mail.gmail.com> <4FC90BAD.3080606@linux.intel.com>
-In-Reply-To: <4FC90BAD.3080606@linux.intel.com>
-X-Enigmail-Version: 1.4.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> On Tue, 2012-06-05 at 22:47 +0200, Thomas Gleixner wrote:
+> > On Tue, 5 Jun 2012, Peter Zijlstra wrote:
+> > > On Tue, 2012-06-05 at 21:43 +0200, Thomas Gleixner wrote:
+> > > > Vs. the interrupt/timer/other crap madness:
+> > > > 
+> > > >  - We really don't want to have an interrupt balancer in the kernel
+> > > >    again, but we need a mechanism to prevent the user space balancer
+> > > >    trainwreck from ruining the power saving party.
+> > > 
+> > > What's wrong with having an interrupt balancer tied to the scheduler
+> > > which optimistically tries to avoid interrupting nohz/isolated/idle
+> > > cpus?
+> > 
+> > You want to run through a boatload of interrupts and change their
+> > affinity from the load balancer or something related? Not really.
+> 
+> Well, no not like that, but I think we could do with some coupling
+> there. Like steer active interrupts away when they keep hitting idle
+> state.
+
+That's possible, but that wants a well coordinated mechanism which
+takes the user space steering into account.
+
+I'm not saying it's impossible, I'm just trying to imagine the extra
+user space interfaces needed for that.
+ 
+> > > >  - The other details (silly IPIs) and cross CPU timer arming) are way
+> > > >    easier to solve by a proper prohibitive state than by chasing that
+> > > >    nonsense all over the tree forever. 
+> > > 
+> > > But we need to solve all that without a prohibitibe state anyway for the
+> > > isolation stuff to be useful.
+> > 
+> > And what is preventing us to use a prohibitive state for that purpose?
+> > The isolation stuff Frederic is working on is nothing else than
+> > dynamically switching in and out of a prohibitive state.
+> 
+> I don't think so. Its perfectly fine to get TLB invalidate IPIs or
+
+No it's not. It's silly. I've observed the very issue more than once
+and others have done as well. 
+
+If you have a process which has N threads where each thread is pinned
+to a core. Only one of them is doing file operations, which result in
+mmap/munmap and therefor in TLB shoot down IPIs even if it's ensured
+that the other pinned threads will never ever touch that
+mapping. That's a PITA as the workaround is to use NFS (how
+performant) or split the process into separate processes with shared
+memory to avoid the sane design of a single process where the
+housekeeping thread just writes to disk.
+
+This is exactly one of the issues where the application has more
+knowlegde than the kernel and there is no way to deal with it.
+
+I know, it's a hen and egg problem, but a very real one.
+
+> resched-IPIs or any other kind of kernel work that needs doing. Its even
+
+resched IPIs are a different issue. They cause a real state transition
+as does any other kind of work which needs to be scheduled on that
+CPU. What I'm talking about is stuff which should not happen on an
+isolated cpu. We have no mechanism to exclude those cpus from general
+"oh you should do X and Y" tasks which are not really necessary at all.
+
+> I just don't see a way to hard-wall interrupt sources, esp. when they
+> might be perfectly fine or even required for the correct operation of
+> the machine and desired workload.
+
+You can't steer away interrupts which are willingly targeted at an
+isolated CPU. So yes, we need mechanisms for that as well. I don;t
+claim that hotplug states are the cure of all problems.
+
+> kstopmachine -- however much we all love that thing -- will need to stop
+> all cpus and violate isolation barriers.
+
+Yup. Though we really should sit down and figure out how much we need
+it really. If code patching needs it on a given architecture, then
+this particular arch has to cope with it, but all others which can
+deal with other mechanisms should not care about it. Yes, that's not
+how the kernel looks like ATM, but that's how it should look like in
+the near future.
+
+> RCU has similar nasties.
+
+Why?
+ 
+> > What's wrong with making a 'hotplug' model which provides the
+> > following states:
+> 
+> For one calling it hotplug ;-)
+
+Bah. Call it what you want. We can put it on top of the hotplug
+mechanism as a separate facility, but that does not change the
+semantics at all. Neither does it change the fact that the real
+hotplug stuff needs these transitions as well.
+ 
+> >   Fully functional
+> > 
+> >   Isolated functional
+> > 
+> >   Isolated idle
+> 
+> I can see the isolated idle, but we can implement that as an idle state
+> and have smp_send_reschedule() do the magic wakeup. This should even
+> work for crippled hardware.
+> 
+> What I can't see is the isolated functional, aside from the above
+> mentioned things, that's not strictly a per-cpu property, we can have a
+> group that's isolated from the rest but not from each other.
+
+That's an implementation detail, really.
+
+> > Note, that these upper states are not 'hotplug' by definition, but
+> > they have to be traversed by hot(un)plug as well. So why not making
+> > them explicit states which we can exploit for the other problems we
+> > want to solve?
+> 
+> I think I can agree with what you call isolated-idle, as long as we
+> expose that as a generic idle state and put some magic in
+> smp_send_reschedule(). But ideally we'd conceive a better name than
+> hotplug for all this and only call the transition to down to 'physical
+> hotplug mess' hotplug.
+
+Agreed for the naming convention part.
+ 
+> > That puts the burden on the core facility design, but it removes the
+> > maintainence burden to chase a gazillion of instances doing IPIs,
+> > cross cpu function calls, add_timer_on, add_work_on and whatever
+> > nonsense.
+> 
+> I'd love for something like that to exist and work, I'm just not seeing
+> how it could.
+
+Think harder :)
+
+      tglx
 
 
-On 06/01/2012 11:36 AM, Darren Hart wrote:
-> 
-> 
-> On 06/01/2012 01:30 AM, Tomoya MORINAGA wrote:
->> On Thu, May 31, 2012 at 5:54 PM, Darren Hart <dvhart@linux.intel.com> wrote:
->>> @@ -1376,7 +1379,8 @@ static void pch_uart_set_termios(struct uart_port *port,
->>>
->>>        baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
->>>
->>> -       spin_lock_irqsave(&port->lock, flags);
->>> +       spin_lock_irqsave(&priv->lock, flags);
->>> +       spin_lock(&port->lock);
->>>
->>>        uart_update_timeout(port, termios->c_cflag, baud);
->>>        rtn = pch_uart_hal_set_line(priv, baud, parity, bits, stb);
->>> @@ -1389,7 +1393,8 @@ static void pch_uart_set_termios(struct uart_port *port,
->>>                tty_termios_encode_baud_rate(termios, baud, baud);
->>>
->>>  out:
->>> -       spin_unlock_irqrestore(&port->lock, flags);
->>> +       spin_unlock(&port->lock);
->>> +       spin_unlock_irqrestore(&priv->lock, flags);
->>>  }
->>
->> Are both port->lock and priv->lock really necessary ?
-> 
-> The priv lock protects the pch_uart_hal* calls and the io access.
-> 
-> The port lock protects the uart_update_timeout call. I'm assuming the
-> 8250.c driver is correct in holding the port lock before making this
-> call and making other modifcations to the port struct.
-> 
-> So yes, I believe both are required. The port->lock was used as the lock
-> to protect the private data in the interrupt handler,
-> pch_uart_interrupt. If we could avoid holding that lock across the
-> entire function, limiting it to just around the pch_uart_hal calls
-> (perhaps by adding it to the hal calls and adding lockless __pch_uart*
-> calls) we could avoid the recursive lock that occurs with handle_rx. I
-> still think a priv-lock is a good idea though, even if just to clarify
-> what is being protected.
-> 
-> Thoughts?
 
-Are there still concerns about the additional lock? I'll resend V2
-tomorrow with the single whitespace fix if I don't hear anything back today.
-
-Thanks,
-
-Darren
-
-> 
->>
->>
->>> @@ -1572,7 +1578,9 @@ pch_console_write(struct console *co, const char *s, unsigned int count)
->>>
->>>        if (locked)
->>>                spin_unlock(&priv->port.lock);
->>> +       spin_unlock(&priv->lock);
->>>        local_irq_restore(flags);
->>> +
->>>  }
->>
->> Looks spare blank line.
-> 
-> Thanks, will fix for V2 after this discussion wraps up.
-> 
->>
->> thanks.
-> 
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
