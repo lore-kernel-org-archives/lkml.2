@@ -1,167 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761384Ab2FECmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jun 2012 22:42:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65147 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757696Ab2FECmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jun 2012 22:42:19 -0400
-Message-ID: <1338864128.17933.2.camel@localhost>
-Subject: Re: linux-next: Tree for Apr 12
-From: Eric Paris <eparis@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>
-Date: Mon, 04 Jun 2012 22:42:08 -0400
-In-Reply-To: <1338849977.2860.9.camel@localhost>
-References: <20120412145931.9ec6f2b51655071795d60d1d@canb.auug.org.au>
-	 <20120412142415.564710b8.akpm@linux-foundation.org>
-	 <20120604150455.7a80b311.akpm@linux-foundation.org>
-	 <1338849977.2860.9.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1761390Ab2FECxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jun 2012 22:53:47 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57057 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757866Ab2FECxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jun 2012 22:53:45 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, dhillf@gmail.com, rientjes@google.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, hannes@cmpxchg.org,
+        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH -V7 07/14] mm/page_cgroup: Make page_cgroup point to the cgroup rather than the mem_cgroup
+In-Reply-To: <4FCD648E.90709@jp.fujitsu.com>
+References: <1338388739-22919-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1338388739-22919-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <4FCD648E.90709@jp.fujitsu.com>User-Agent: Notmuch/0.11.1+346~g13d19c3 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 05 Jun 2012 08:23:28 +0530
+Message-ID: <87ehpu8o5z.fsf@skywalker.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12060502-9574-0000-0000-0000030BEE28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-06-04 at 18:46 -0400, Eric Paris wrote:
-> On Mon, 2012-06-04 at 15:04 -0700, Andrew Morton wrote:
-> > On Thu, 12 Apr 2012 14:24:15 -0700
-> > Andrew Morton <akpm@linux-foundation.org> wrote:
-> > 
-> > > On Thu, 12 Apr 2012 14:59:31 +1000
-> > > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > > 
-> > > > I have created today's linux-next tree at
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> > > 
-> > > This isn't working for me.  Some time between April 3 and April 12
-> > > someone merged something into the non-mm part of linux-next which broke
-> > > ssh.
-> > > 
-> > > I boot the box and everything seems to come up OK, but attemtps to ssh
-> > > into the machine fail with
-> > > 
-> > > X11 forwarding request failed on channel 0
-> > > Last login: Thu Apr 12 13:04:35 2012 from akpm.corp.google.com
-> > > Connection to akpm2 closed.
-> > > 
-> > > I took a peek in the `strace ssh' output.
-> > > 
-> > > Good:
-> > > 
-> > > 17815 write(5, "Last login: Thu Apr 12 13:27:23 "..., 65) = 65
-> > > 17815 select(7, [3 4], [], NULL, {120, 0}) = 1 (in [3], left {119, 770798})
-> > > 17815 read(3, "\21O\200\366Mv\343\222\332\251\2403L\376Y18\2047\336\244\226p-+X\2%\2119\314\255"..., 8192) = 80
-> > > 17815 select(7, [3 4], [5], NULL, {120, 0}) = 1 (out [5], left {119, 999987})
-> > > 17815 write(5, "\r\33[m\17\33[27m\33[24m\33[Jakpm2:/home/ak"..., 39) = 39
-> > > 17815 select(7, [3 4], [], NULL, {120, 0}) = 1 (in [4], left {118, 801111})
-> > > 17815 read(4, "\4", 16384)              = 1
-> > > 17815 select(7, [3 4], [3], NULL, {120, 0}) = 1 (out [3], left {119, 999991})
-> > > 17815 write(3, "\235J\5\340\234\21\266\207\26e\362\327\2\332\1\267\272\200\364\267?/\320L\341\35\350{+M:\222"..., 48) = 48
-> > > 
-> > > 
-> > > Bad:
-> > > 
-> > > 9305  write(5, "Last login: Thu Apr 12 13:02:54 "..., 65) = 65
-> > > 9305  select(7, [3 4], [], NULL, {120, 0}) = 1 (in [3], left {119, 945541})
-> > > 9305  read(3, "f\357\250~\260i\2259\320\3258\262)O\364;_\251\360-\314\31\374]\326\300\356\364\370S\3105"..., 8192) = 128
-> > > 9305  close(5)                          = 0
-> > > 9305  close(4)                          = 0
-> > > 
-> > > That read() is returning a lot more data.
-> > > 
-> > > It appears that we've done something which breaks X forwarding.  I
-> > > won't be able to look any further into this until Monday.
-> > 
-> > This regression is now in mainline.  I've bisected it to an SELinux
-> > patch, below.  I have confirmed that reverting just that patch from
-> > current mainline fixes the regression.
-> > 
-> > Using openssh-server-4.3p2-14.fc6 on FC6.
-> > 
-> > 
-> > commit 95dbf739313f09c8d859bde1373bc264ef979337
-> > Author:     Eric Paris <eparis@redhat.com>
-> > AuthorDate: Wed Apr 4 13:45:34 2012 -0400
-> > Commit:     Eric Paris <eparis@redhat.com>
-> > CommitDate: Mon Apr 9 12:22:49 2012 -0400
-> > 
-> >     SELinux: check OPEN on truncate calls
-> >     
-> >     In RH BZ 578841 we realized that the SELinux sandbox program was allowed to
-> >     truncate files outside of the sandbox.  The reason is because sandbox
-> >     confinement is determined almost entirely by the 'open' permission.  The idea
-> >     was that if the sandbox was unable to open() files it would be unable to do
-> >     harm to those files.  This turns out to be false in light of syscalls like
-> >     truncate() and chmod() which don't require a previous open() call.  I looked
-> >     at the syscalls that did not have an associated 'open' check and found that
-> >     truncate(), did not have a seperate permission and even if it did have a
-> >     separate permission such a permission owuld be inadequate for use by
-> >     sandbox (since it owuld have to be granted so liberally as to be useless).
-> >     This patch checks the OPEN permission on truncate.  I think a better solution
-> >     for sandbox is a whole new permission, but at least this fixes what we have
-> >     today.
-> >     
-> >     Signed-off-by: Eric Paris <eparis@redhat.com>
-> > 
-> > diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> > index d85b793..f7d7e77 100644
-> > --- a/security/selinux/hooks.c
-> > +++ b/security/selinux/hooks.c
-> > @@ -2708,6 +2708,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
-> >  {
-> >  	const struct cred *cred = current_cred();
-> >  	unsigned int ia_valid = iattr->ia_valid;
-> > +	__u32 av = FILE__WRITE;
-> >  
-> >  	/* ATTR_FORCE is just used for ATTR_KILL_S[UG]ID. */
-> >  	if (ia_valid & ATTR_FORCE) {
-> > @@ -2721,7 +2722,10 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
-> >  			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
-> >  		return dentry_has_perm(cred, dentry, FILE__SETATTR);
-> >  
-> > -	return dentry_has_perm(cred, dentry, FILE__WRITE);
-> > +	if (ia_valid & ATTR_SIZE)
-> > +		av |= FILE__OPEN;
-> > +
-> > +	return dentry_has_perm(cred, dentry, av);
-> >  }
-> >  
-> >  static int selinux_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
-> 
-> Very odd indeed...  I can only assume you are SELinux enforcing and have
-> a denial every time this fails.  Can you send me that denial?
-> 
-> I really do not want to revert this and feel that the only right fix is
-> going to be to update your selinux policy to allow this new check.  I'd
-> rather not allow (whatever program) to truncate() files willy-nilly (in
-> violation of the intentions of selinux policy)
-> 
-> I'm sorry I never saw it sooner.  We've had it in RHEL for even longer
-> than the 3 months it's been in -next.  I think the 'right' fix is going
-> to have to be an update to SELinux policy (for your long dead system, if
-> you give me the denial I can build you a new policy) rather than leaving
-> the potential security hole in mainline...
+Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-Andrew sent me his audit log and it didn't show anything.  But it got me
-thinking.  Now I think this actually is a code bug.  Andrew, can you
-test this?
+> (2012/05/30 23:38), Aneesh Kumar K.V wrote:
+>> From: "Aneesh Kumar K.V"<aneesh.kumar@linux.vnet.ibm.com>
+>> 
+>> We will use it later to make page_cgroup track the hugetlb cgroup information.
+>> 
+>> Signed-off-by: Aneesh Kumar K.V<aneesh.kumar@linux.vnet.ibm.com>
+>> ---
+>>   include/linux/mmzone.h      |    2 +-
+>>   include/linux/page_cgroup.h |    8 ++++----
+>>   init/Kconfig                |    4 ++++
+>>   mm/Makefile                 |    3 ++-
+>>   mm/memcontrol.c             |   42 +++++++++++++++++++++++++-----------------
+>>   5 files changed, 36 insertions(+), 23 deletions(-)
+>> 
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index 2427706..2483cc5 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -1052,7 +1052,7 @@ struct mem_section {
+>> 
+>>   	/* See declaration of similar field in struct zone */
+>>   	unsigned long *pageblock_flags;
+>> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>> +#ifdef CONFIG_PAGE_CGROUP
+>>   	/*
+>>   	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
+>>   	 * section. (see memcontrol.h/page_cgroup.h about this.)
+>> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+>> index a88cdba..7bbfe37 100644
+>> --- a/include/linux/page_cgroup.h
+>> +++ b/include/linux/page_cgroup.h
+>> @@ -12,7 +12,7 @@ enum {
+>>   #ifndef __GENERATING_BOUNDS_H
+>>   #include<generated/bounds.h>
+>> 
+>> -#ifdef CONFIG_CGROUP_MEM_RES_CTLR
+>> +#ifdef CONFIG_PAGE_CGROUP
+>>   #include<linux/bit_spinlock.h>
+>> 
+>>   /*
+>> @@ -24,7 +24,7 @@ enum {
+>>    */
+>>   struct page_cgroup {
+>>   	unsigned long flags;
+>> -	struct mem_cgroup *mem_cgroup;
+>> +	struct cgroup *cgroup;
+>>   };
+>> 
+>
+> This patch seems very bad.
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 2e7bd67..20a4315 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2758,7 +2758,7 @@ static int selinux_inode_setattr(struct dentry *dentry, struct iattr *iattr)
- 			ATTR_ATIME_SET | ATTR_MTIME_SET | ATTR_TIMES_SET))
- 		return dentry_has_perm(cred, dentry, FILE__SETATTR);
- 
--	if (ia_valid & ATTR_SIZE)
-+	if ((ia_valid & ATTR_SIZE) && selinux_policycap_openperm)
- 		av |= FILE__OPEN;
- 
- 	return dentry_has_perm(cred, dentry, av);
+I had to change that to 
 
+struct page_cgroup {
+	unsigned long flags;
+	struct cgroup_subsys_state *css;
+};
+
+to get memcg to work. We end up changing css.cgroup on cgroupfs mount/umount.
+
+>
+>   - What is the performance impact to memcg ? Doesn't this add extra overheads 
+>     to memcg lookup ?
+
+Considering that we are stashing cgroup_subsys_state, it should be a
+simple addition. I haven't measured the exact numbers. Do you have any
+suggestion on the tests I can run ?
+
+>   - Hugetlb reuquires much more smaller number of tracking information rather
+>     than memcg requires. I guess you can record the information into page->private
+>     if you want.
+
+So If we end up tracking page cgroup in struct page all these extra over
+head will go away. And in most case we would have both memcg and hugetlb
+enabled by default.
+
+>   - This may prevent us from the work 'reducing size of page_cgroup'
+>
+
+by reducing you mean moving struct page_cgroup info to struct page
+itself ? If so this should not have any impact right ? Most of the
+requirement of hugetlb should be similar to memcg. 
+
+> So, strong Nack to this. I guess you can use page->private or some entries in
+> struct page, you have many pages per accounting units. Please make an effort
+> to avoid using page_cgroup.
+>
+
+HugeTLB already use page->private of compound page head to track subpool
+pointer. So we won't be able to use page->private.
+
+-aneesh
 
