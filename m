@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab2FEQQe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 12:16:34 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3427 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab2FEQQc (ORCPT
+	id S1754134Ab2FEQQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 12:16:44 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:52479 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754004Ab2FEQQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 12:16:32 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6733"; a="195619875"
-Message-ID: <4FCE30D6.7060102@codeaurora.org>
-Date: Tue, 05 Jun 2012 09:16:22 -0700
-From: David Collins <collinsd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Tue, 5 Jun 2012 12:16:41 -0400
+Message-ID: <4FCE30DE.6090903@xenotime.net>
+Date: Tue, 05 Jun 2012 09:16:30 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Rajendra Nayak <rnayak@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Supporting non-device tree consumers with device tree regulator drivers
+To: Martin Pitt <martin.pitt@ubuntu.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Zeuthen <zeuthen@gmail.com>, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH 1/1] [SCSI] scsi_debug: Add "removable" parameter
+References: <20120605072528.GE3043@piware.de> <20120605072737.GF3043@piware.de>
+In-Reply-To: <20120605072737.GF3043@piware.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 06/05/2012 12:27 AM, Martin Pitt wrote:
 
-I was wondering if a mechanism currently exists which allows regulator
-devices which have probed via device tree to support regulator consumer
-drivers which have probed via a board file (and thus have no associated
-device tree device_node).  It seems that the current setup is such that if
-a regulator driver probes via a board file device, then it will be passed
-a struct regulator_init_data pointer containing a consumer_supplies list
-via platform_data.  This allows the regulator driver to support consumers
-that are probed via device tree nodes or via a board file.  However, if a
-regulator driver probes via a device tree node, then it will only be
-accessible to consumer drivers which have nodes in device tree and which
-specify their own foo-supply=<&regulator_phandle>; mappings.  When a
-regulator device is probed via device tree, the consumer_supplies pointer
-is left null by of_get_regulator_init_data().  This seems to make
-regulators probed via device tree nodes inaccessible to non-device tree
-consumers.
+> Add "removable" module parameter to set the "removable" attribute of any
+> subsequently created debug block device. It is a writable driver option, so
+> that you can switch between removable and "fixed" media block devices in
+> between the add_host calls.
+> 
+> This is useful for being able to test the different behaviour/required
+> privileges in e. g. the udisks test suite.
+> 
+> Signed-off-by: Martin Pitt <martin.pitt@ubuntu.com>
+> Signed-off-by: David Zeuthen <zeuthen@gmail.com>
+> ---
+>  drivers/scsi/scsi_debug.c |   35 ++++++++++++++++++++++++++++++++---
+>  1 files changed, 32 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+> index 182d5a5..6eaa95e 100644
+> --- a/drivers/scsi/scsi_debug.c
+> +++ b/drivers/scsi/scsi_debug.c
+> @@ -109,6 +109,7 @@ static const char * scsi_debug_version_date = "20100324";
+>  #define DEF_OPT_BLKS 64
+>  #define DEF_PHYSBLK_EXP 0
+>  #define DEF_PTYPE   0
+> +#define DEF_REMOVABLE 0
+>  #define DEF_SCSI_LEVEL   5    /* INQUIRY, byte2 [5->SPC-3] */
+>  #define DEF_SECTOR_SIZE 512
+>  #define DEF_UNMAP_ALIGNMENT 0
+> @@ -180,6 +181,7 @@ static int scsi_debug_opt_blks = DEF_OPT_BLKS;
+>  static int scsi_debug_opts = DEF_OPTS;
+>  static int scsi_debug_physblk_exp = DEF_PHYSBLK_EXP;
+>  static int scsi_debug_ptype = DEF_PTYPE; /* SCSI peripheral type (0==disk) */
+> +static int scsi_debug_removable = DEF_REMOVABLE;
+>  static int scsi_debug_scsi_level = DEF_SCSI_LEVEL;
+>  static int scsi_debug_sector_size = DEF_SECTOR_SIZE;
+>  static int scsi_debug_virtual_gb = DEF_VIRTUAL_GB;
+> @@ -2754,6 +2755,7 @@ module_param_named(opt_blks, scsi_debug_opt_blks, int, S_IRUGO);
+>  module_param_named(opts, scsi_debug_opts, int, S_IRUGO | S_IWUSR);
+>  module_param_named(physblk_exp, scsi_debug_physblk_exp, int, S_IRUGO);
+>  module_param_named(ptype, scsi_debug_ptype, int, S_IRUGO | S_IWUSR);
+> +module_param_named(removable, scsi_debug_removable, int, S_IRUGO | S_IWUSR);
+>  module_param_named(scsi_level, scsi_debug_scsi_level, int, S_IRUGO);
+>  module_param_named(sector_size, scsi_debug_sector_size, int, S_IRUGO);
+>  module_param_named(unmap_alignment, scsi_debug_unmap_alignment, int, S_IRUGO);
+> @@ -2796,6 +2798,7 @@ MODULE_PARM_DESC(opt_blks, "optimal transfer length in block (def=64)");
+>  MODULE_PARM_DESC(opts, "1->noise, 2->medium_err, 4->timeout, 8->recovered_err... (def=0)");
+>  MODULE_PARM_DESC(physblk_exp, "physical block exponent (def=0)");
+>  MODULE_PARM_DESC(ptype, "SCSI peripheral type(def=0[disk])");
+> +MODULE_PARM_DESC(removable, "claim to have removable media (def=0)");
+>  MODULE_PARM_DESC(scsi_level, "SCSI level to simulate(def=5[SPC-3])");
+>  MODULE_PARM_DESC(sector_size, "logical block size in bytes (def=512)");
+>  MODULE_PARM_DESC(unmap_alignment, "lowest aligned thin provisioning lba (def=0)");
+> @@ -3205,6 +3208,25 @@ static ssize_t sdebug_map_show(struct device_driver *ddp, char *buf)
+>  }
+>  DRIVER_ATTR(map, S_IRUGO, sdebug_map_show, NULL);
+>  
+> +static ssize_t sdebug_removable_show(struct device_driver *ddp,
+> +				     char *buf)
+> +{
+> +	return scnprintf(buf, PAGE_SIZE, "%d\n", scsi_debug_removable);
+> +}
+> +static ssize_t sdebug_removable_store(struct device_driver *ddp,
+> +				      const char *buf, size_t count)
+> +{
+> +	int n;
+> +
+> +	if ((count > 0) && (1 == sscanf(buf, "%d", &n)) && (n >= 0)) {
+> +		scsi_debug_removable = n;
+> +		return count;
+> +	}
+> +	return -EINVAL;
+> +}
+> +DRIVER_ATTR(removable, S_IRUGO | S_IWUSR, sdebug_removable_show,
+> +	    sdebug_removable_store);
+> +
+>  
+>  /* Note: The following function creates attribute files in the
+>     /sys/bus/pseudo/drivers/scsi_debug directory. The advantage of these
+> @@ -3325,6 +3349,11 @@ static int __init scsi_debug_init(void)
+>  		return -EINVAL;
+>  	}
+>  
+> +	if (scsi_debug_removable > 1) {
+> +		printk(KERN_ERR "scsi_debug_init: removable must be 0 or 1\n");
+> +		return -EINVAL;
+> +	}
+> +
 
-In the long term, this problem should go away of its own accord.  However,
-in the short term, many systems are converting over to using device tree.
- Therefore, we are left with a situation currently where some regulator
-consumer drivers are being probed via device tree and some are being
-probed via board file devices within a single platform.  If the regulator
-driver supporting the consumer drivers is converted to use device tree and
-probed via device tree, then the non-device tree consumer drivers will not
-be able to make use of the regulator devices.
 
-Would it be possible to add a new binding that is handled inside of
-of_get_regulator_init_data() or of_get_regulation_constraints() that
-provides a means to directly specify regulator_init_data.consumer_supplies
-entries?  Is there some other mechanism that could be used instead to
-handle the mapping?
+so why not make it a bool instead of an int value?
 
-One potentially binding could be:
-regulator-consumer-supplies = "supply_name1", "device_name1",
-"supply_name2", "device_name2", ...
 
-Thank you,
-David Collins
+>  	if (scsi_debug_dev_size_mb < 1)
+>  		scsi_debug_dev_size_mb = 1;  /* force minimum 1 MB ramdisk */
+>  	sz = (unsigned long)scsi_debug_dev_size_mb * 1048576;
+
+
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+~Randy
