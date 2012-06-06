@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2FFMab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 08:30:31 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:39793 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520Ab2FFMa3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 08:30:29 -0400
-Date: Wed, 6 Jun 2012 09:30:23 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>, Hitoshi Mitake <h.mitake@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Michel Lespinasse <walken@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] perf bench: add new benchmark subsystem and suite "futex
- wait"
-Message-ID: <20120606123023.GB2423@infradead.org>
-References: <1337268092-6765-1-git-send-email-h.mitake@gmail.com>
- <4FB52636.3040604@linux.intel.com>
- <CAMO-S2g9fkg_KH0CPOsB_7GQTN2mu8zir+UZDp6=VC+7XDrfrg@mail.gmail.com>
- <CAMO-S2gyzK3VTQcTRw+FAO9ui_gy=1z=MVxUYM9sPN51KrDgkg@mail.gmail.com>
- <4FCE4D24.5040307@linux.intel.com>
- <20120606073909.GI17808@gmail.com>
+	id S1754307Ab2FFMhD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 08:37:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753008Ab2FFMhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 08:37:02 -0400
+Message-ID: <4FCF4F2C.5020707@redhat.com>
+Date: Wed, 06 Jun 2012 20:38:04 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120606073909.GI17808@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        jeffm@suse.com
+Subject: Re: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
+References: <1337915422-24988-1-git-send-email-asias@redhat.com> <20120528134159.GT24394@twin.jikos.cz> <4FCEBDB8.800@redhat.com> <20120606092427.GD32402@twin.jikos.cz>
+In-Reply-To: <20120606092427.GD32402@twin.jikos.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jun 06, 2012 at 09:39:09AM +0200, Ingo Molnar escreveu:
-> I'd rather not split it from the main perf binary, if embedded 
-> wants a small static binary (do they really?) we could add 
-> support for minimal builds of perf, with just a few [even one] 
-> subcommand activated or so.
+On 06/06/2012 05:24 PM, David Sterba wrote:
+> On Wed, Jun 06, 2012 at 10:17:28AM +0800, Asias He wrote:
+>> Hello, Jeff
+>>> This was added in 49b25e0540904be0bf558b84475c69d72e4de66e adding a
+>>> transaction abort infrastructure.  I'm not sure if Jeff had some
+>>> intentions with it or whether it got obsolete during the patchset long
+>>> evolution, CCed.
+>>
+>> Any comments?
+>
+> Has been merged via the 3.5 -rc1 pull, commit
+> d07eb9117050c9ed3f78296ebcc06128b52693be
 
-The plan is to be able to do a:
+Great.
 
-make -C tools/perf menuconfig
-
-And all the other *config make targets as the kernel, using Kconfig
-files, etc.
-
-So that we can pick and choose which subset of tools and features one
-wants.
-
-- Arnaldo
+-- 
+Asias
