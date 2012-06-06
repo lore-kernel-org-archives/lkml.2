@@ -1,224 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab2FFEAd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 00:00:33 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56611 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab2FFEA3 (ORCPT
+	id S1753615Ab2FFEAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 00:00:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36569 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab2FFEAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 00:00:29 -0400
-Message-ID: <4FCED5D2.60502@vflare.org>
-Date: Tue, 05 Jun 2012 21:00:18 -0700
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/2] zsmalloc: zsmalloc: use unsigned long instead of
- void *
-References: <1338881031-19662-1-git-send-email-minchan@kernel.org>
-In-Reply-To: <1338881031-19662-1-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Jun 2012 00:00:48 -0400
+Date: Tue, 5 Jun 2012 21:01:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanpeng Li <liwp.linux@gmail.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>, Rob Landley <rob@landley.net>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "David S. Miller" <davem@davemloft.net>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan.kim@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        James Morris <james.l.morris@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Michel Lespinasse <walken@google.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Gavin Shan <shangw@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] remove no longer use of pdflush interface
+Message-Id: <20120605210118.aa161171.akpm@linux-foundation.org>
+In-Reply-To: <20120606032127.GA11121@kernel>
+References: <1338888372-3555-1-git-send-email-liwp.linux@gmail.com>
+	<20120605152845.8b633881.akpm@linux-foundation.org>
+	<20120606032127.GA11121@kernel>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2012 12:23 AM, Minchan Kim wrote:
+On Wed, 6 Jun 2012 11:21:27 +0800 Wanpeng Li <liwp.linux@gmail.com> wrote:
 
-> We should use unsigned long as handle instead of void * to avoid any
-> confusion. Without this, users may just treat zs_malloc return value as
-> a pointer and try to deference it.
+> >Secondly, this code will permit unprivileged users to flood the logs,
+> >by repeatedly reading /proc/sys/vm/nr_pdflush_threads.  We try to avoid
+> >this, as it is a form of denial-of-service attack.
+> >
+> >This is a bit hard to fix.  The typical way of addressing this is to
+> >use printk_once(), so the message only appears once per boot.  But that
+> >doesn't work for a generic function - we'd need to add one bit of state
+> >to the ctl_table to do this.  We can of course do that, but it's not
+> >obvious that it's _worth_ doing that just for handling obsolete
+> >entries.
+> >
+> >So perhaps the solution is to give up on the generic proc_obsolete()
+> >idea, and just add a handler specifically for nr_pdflush_threads, whcih
+> >uses printk_once().
 > 
-> This patch passed compile test(zram, zcache and ramster) and zram is
-> tested on qemu.
-> 
-> changelog
->   * from v1
->  	- change zcache's zv_create return value
->         - baesd on next-20120604
-> 
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zcache/zcache-main.c     |   12 ++++++------
->  drivers/staging/zram/zram_drv.c          |   16 ++++++++--------
->  drivers/staging/zram/zram_drv.h          |    2 +-
->  drivers/staging/zsmalloc/zsmalloc-main.c |   24 ++++++++++++------------
->  drivers/staging/zsmalloc/zsmalloc.h      |    8 ++++----
->  5 files changed, 31 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-> index 2734dac..d0141fbc 100644
-> --- a/drivers/staging/zcache/zcache-main.c
-> +++ b/drivers/staging/zcache/zcache-main.c
-> @@ -693,14 +693,14 @@ static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
->  static atomic_t zv_curr_dist_counts[NCHUNKS];
->  static atomic_t zv_cumul_dist_counts[NCHUNKS];
->  
-> -static struct zv_hdr *zv_create(struct zs_pool *pool, uint32_t pool_id,
-> +static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
->  				struct tmem_oid *oid, uint32_t index,
->  				void *cdata, unsigned clen)
->  {
->  	struct zv_hdr *zv;
->  	u32 size = clen + sizeof(struct zv_hdr);
->  	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
-> -	void *handle = NULL;
-> +	unsigned long handle = 0;
->  
->  	BUG_ON(!irqs_disabled());
->  	BUG_ON(chunks >= NCHUNKS);
-> @@ -721,7 +721,7 @@ out:
->  	return handle;
->  }
->  
-> -static void zv_free(struct zs_pool *pool, void *handle)
-> +static void zv_free(struct zs_pool *pool, unsigned long handle)
->  {
->  	unsigned long flags;
->  	struct zv_hdr *zv;
-> @@ -743,7 +743,7 @@ static void zv_free(struct zs_pool *pool, void *handle)
->  	local_irq_restore(flags);
->  }
->  
-> -static void zv_decompress(struct page *page, void *handle)
-> +static void zv_decompress(struct page *page, unsigned long handle)
->  {
->  	unsigned int clen = PAGE_SIZE;
->  	char *to_va;
-> @@ -1247,7 +1247,7 @@ static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
->  	int ret = 0;
->  
->  	BUG_ON(is_ephemeral(pool));
-> -	zv_decompress((struct page *)(data), pampd);
-> +	zv_decompress((struct page *)(data), (unsigned long)pampd);
->  	return ret;
->  }
->  
-> @@ -1282,7 +1282,7 @@ static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
->  		atomic_dec(&zcache_curr_eph_pampd_count);
->  		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
->  	} else {
-> -		zv_free(cli->zspool, pampd);
-> +		zv_free(cli->zspool, (unsigned long)pampd);
->  		atomic_dec(&zcache_curr_pers_pampd_count);
->  		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
->  	}
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index 685d612..abd69d1 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -135,7 +135,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
->  
->  static void zram_free_page(struct zram *zram, size_t index)
->  {
-> -	void *handle = zram->table[index].handle;
-> +	unsigned long handle = zram->table[index].handle;
->  
->  	if (unlikely(!handle)) {
->  		/*
-> @@ -150,7 +150,7 @@ static void zram_free_page(struct zram *zram, size_t index)
->  	}
->  
->  	if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED))) {
-> -		__free_page(handle);
-> +		__free_page((struct page *)handle);
->  		zram_clear_flag(zram, index, ZRAM_UNCOMPRESSED);
->  		zram_stat_dec(&zram->stats.pages_expand);
->  		goto out;
-> @@ -166,7 +166,7 @@ out:
->  			zram->table[index].size);
->  	zram_stat_dec(&zram->stats.pages_stored);
->  
-> -	zram->table[index].handle = NULL;
-> +	zram->table[index].handle = 0;
->  	zram->table[index].size = 0;
->  }
->  
-> @@ -189,7 +189,7 @@ static void handle_uncompressed_page(struct zram *zram, struct bio_vec *bvec,
->  	unsigned char *user_mem, *cmem;
->  
->  	user_mem = kmap_atomic(page);
-> -	cmem = kmap_atomic(zram->table[index].handle);
-> +	cmem = kmap_atomic((struct page *)zram->table[index].handle);
->  
->  	memcpy(user_mem + bvec->bv_offset, cmem + offset, bvec->bv_len);
->  	kunmap_atomic(cmem);
-> @@ -317,7 +317,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	int ret;
->  	u32 store_offset;
->  	size_t clen;
-> -	void *handle;
-> +	unsigned long handle;
->  	struct zobj_header *zheader;
->  	struct page *page, *page_store;
->  	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
-> @@ -399,7 +399,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  		store_offset = 0;
->  		zram_set_flag(zram, index, ZRAM_UNCOMPRESSED);
->  		zram_stat_inc(&zram->stats.pages_expand);
-> -		handle = page_store;
-> +		handle = (unsigned long)page_store;
->  		src = kmap_atomic(page);
->  		cmem = kmap_atomic(page_store);
->  		goto memstore;
-> @@ -592,12 +592,12 @@ void __zram_reset_device(struct zram *zram)
->  
->  	/* Free all pages that are still in this zram device */
->  	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
-> -		void *handle = zram->table[index].handle;
-> +		unsigned long handle = zram->table[index].handle;
->  		if (!handle)
->  			continue;
->  
->  		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
-> -			__free_page(handle);
-> +			__free_page((struct page *)handle);
->  		else
->  			zs_free(zram->mem_pool, handle);
->  	}
-> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-> index fbe8ac9..7a7e256 100644
-> --- a/drivers/staging/zram/zram_drv.h
-> +++ b/drivers/staging/zram/zram_drv.h
-> @@ -81,7 +81,7 @@ enum zram_pageflags {
->  
->  /* Allocated for each disk page */
->  struct table {
-> -	void *handle;
-> +	unsigned long handle;
->  	u16 size;	/* object size (excluding header) */
->  	u8 count;	/* object ref count (not yet used) */
->  	u8 flags;
-> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
-> index 4496737..fcbe83d 100644
-> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
-> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
-> @@ -247,10 +247,10 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
->  }
->  
->  /* Decode <page, obj_idx> pair from the given object handle */
-> -static void obj_handle_to_location(void *handle, struct page **page,
-> +static void obj_handle_to_location(unsigned long handle, struct page **page,
->  				unsigned long *obj_idx)
->  {
-> -	unsigned long hval = (unsigned long)handle;
-> +	unsigned long hval = handle;
->  
->  	*page = pfn_to_page(hval >> OBJ_INDEX_BITS);
->  	*obj_idx = hval & OBJ_INDEX_MASK;
+> What about modify the generic proc_obsolete just to put the warning message into
+> the buffer, then transfer to userspace, in order to users can see this warning.Do
+> you think this is a better idea?
 
-
-hval looks redundant now.
-
-Rest of the changes look good to me. Thanks!
-
-Nitin
+err, no.  That's deliberately corrupting the output of an existing
+interface.  In response to this change userspace might crash, hand over
+root privileges or tune to a porn channel.  Instead we should yield
+a well-formed response such as "0" (or maybe non-zero, if a zero
+response might be unexpected) and inform the system operator via
+conventional means.  ie: syslog.  
