@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab2FFPC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:02:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39623 "EHLO
+	id S1756509Ab2FFPDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:03:34 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39635 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755253Ab2FFPCY (ORCPT
+	with ESMTP id S1754057Ab2FFPDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:02:24 -0400
-Date: Wed, 6 Jun 2012 08:02:13 -0700
-From: tip-bot for Ravikiran Thirumalai <kiran.thirumalai@gmail.com>
-Message-ID: <tip-3aabb53ce5849605cee731bbc32f37120b4c4ceb@git.kernel.org>
+	Wed, 6 Jun 2012 11:03:30 -0400
+Date: Wed, 6 Jun 2012 08:03:05 -0700
+From: tip-bot for Joe Perches <joe@perches.com>
+Message-ID: <tip-c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        shai@scalemp.com, kiran.thirumalai@gmail.com, ido@wizery.com,
-        tglx@linutronix.de
+        joe@perches.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        shai@scalemp.com, kiran.thirumalai@gmail.com, tglx@linutronix.de,
-        ido@wizery.com
-In-Reply-To: <1338675095-27260-2-git-send-email-ido@wizery.com>
-References: <1338675095-27260-2-git-send-email-ido@wizery.com>
+        joe@perches.com, tglx@linutronix.de
+In-Reply-To: <1337655007.24226.10.camel@joe2Laptop>
+References: <1337655007.24226.10.camel@joe2Laptop>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/vsmp:
-  Ignore IOAPIC IRQ affinity if possible
-Git-Commit-ID: 3aabb53ce5849605cee731bbc32f37120b4c4ceb
+Subject: [tip:x86/debug] x86/debug: Add KERN_<LEVEL> to bare printks,
+  convert printks to pr_<level>
+Git-Commit-ID: c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,98 +28,1976 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:02:19 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:03:15 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3aabb53ce5849605cee731bbc32f37120b4c4ceb
-Gitweb:     http://git.kernel.org/tip/3aabb53ce5849605cee731bbc32f37120b4c4ceb
-Author:     Ravikiran Thirumalai <kiran.thirumalai@gmail.com>
-AuthorDate: Sun, 3 Jun 2012 01:11:35 +0300
+Commit-ID:  c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
+Gitweb:     http://git.kernel.org/tip/c767a54ba0657e52e6edaa97cbe0b0a8bf1c1655
+Author:     Joe Perches <joe@perches.com>
+AuthorDate: Mon, 21 May 2012 19:50:07 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 09:06:20 +0200
+CommitDate: Wed, 6 Jun 2012 09:17:22 +0200
 
-x86/vsmp: Ignore IOAPIC IRQ affinity if possible
+x86/debug: Add KERN_<LEVEL> to bare printks, convert printks to pr_<level>
 
-vSMP can route interrupts more optimally based on internal
-knowledge the OS does not have. In order to support this
-optimization, all CPUs must be able to handle all possible
-IOAPIC interrupts.
+Use a more current logging style:
 
-Fix this by setting the vector allocation domain for all CPUs
-and by enabling this feature in vSMP.
+ - Bare printks should have a KERN_<LEVEL> for consistency's sake
+ - Add pr_fmt where appropriate
+ - Neaten some macro definitions
+ - Convert some Ok output to OK
+ - Use "%s: ", __func__ in pr_fmt for summit
+ - Convert some printks to pr_<level>
 
-Signed-off-by: Ravikiran Thirumalai <kiran.thirumalai@gmail.com>
-Signed-off-by: Shai Fultheim <shai@scalemp.com>
-[ rebased, simplified, and reworded the commit message ]
-Signed-off-by: Ido Yariv <ido@wizery.com>
-Link: http://lkml.kernel.org/r/1338675095-27260-2-git-send-email-ido@wizery.com
+Message output is not identical in all cases.
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Cc: levinsasha928@gmail.com
+Link: http://lkml.kernel.org/r/1337655007.24226.10.camel@joe2Laptop
+[ merged two similar patches, tidied up the changelog ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/vsmp_64.c |   25 +++++++++++++++++++++----
- 1 files changed, 21 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/floppy.h          |    2 +-
+ arch/x86/include/asm/pci_x86.h         |    8 ++-
+ arch/x86/include/asm/pgtable-2level.h  |    4 +-
+ arch/x86/include/asm/pgtable-3level.h  |    6 +-
+ arch/x86/include/asm/pgtable_64.h      |    8 +-
+ arch/x86/kernel/alternative.c          |   17 ++++--
+ arch/x86/kernel/amd_nb.c               |   10 ++-
+ arch/x86/kernel/apic/io_apic.c         |   38 ++++++------
+ arch/x86/kernel/apic/summit_32.c       |   22 ++++---
+ arch/x86/kernel/apm_32.c               |   29 +++++-----
+ arch/x86/kernel/cpu/bugs.c             |   20 +++---
+ arch/x86/kernel/cpu/mcheck/mce.c       |   22 ++++---
+ arch/x86/kernel/cpu/perf_event_intel.c |   14 +++--
+ arch/x86/kernel/dumpstack.c            |    4 +-
+ arch/x86/kernel/dumpstack_32.c         |   24 ++++----
+ arch/x86/kernel/dumpstack_64.c         |   20 +++---
+ arch/x86/kernel/irq.c                  |    4 +-
+ arch/x86/kernel/module.c               |   32 +++++++----
+ arch/x86/kernel/pci-calgary_64.c       |   34 +++++------
+ arch/x86/kernel/process.c              |   34 +++++------
+ arch/x86/kernel/process_64.c           |    8 +-
+ arch/x86/kernel/reboot.c               |   14 +++--
+ arch/x86/kernel/signal.c               |    5 +-
+ arch/x86/kernel/smpboot.c              |   97 +++++++++++++++-----------------
+ arch/x86/kernel/traps.c                |   19 +++---
+ arch/x86/kernel/tsc.c                  |   50 ++++++++---------
+ arch/x86/kernel/vm86_32.c              |    6 +-
+ arch/x86/kernel/vsyscall_64.c          |   17 ++---
+ arch/x86/kernel/xsave.c                |   12 ++--
+ 29 files changed, 301 insertions(+), 279 deletions(-)
 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index 59eea85..c72c0d3 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -16,6 +16,7 @@
- #include <linux/pci_ids.h>
- #include <linux/pci_regs.h>
- #include <linux/smp.h>
-+#include <linux/irq.h>
+diff --git a/arch/x86/include/asm/floppy.h b/arch/x86/include/asm/floppy.h
+index dbe82a5..d3d7469 100644
+--- a/arch/x86/include/asm/floppy.h
++++ b/arch/x86/include/asm/floppy.h
+@@ -99,7 +99,7 @@ static irqreturn_t floppy_hardint(int irq, void *dev_id)
+ 		virtual_dma_residue += virtual_dma_count;
+ 		virtual_dma_count = 0;
+ #ifdef TRACE_FLPY_INT
+-		printk("count=%x, residue=%x calls=%d bytes=%d dma_wait=%d\n",
++		printk(KERN_DEBUG "count=%x, residue=%x calls=%d bytes=%d dma_wait=%d\n",
+ 		       virtual_dma_count, virtual_dma_residue, calls, bytes,
+ 		       dma_wait);
+ 		calls = 0;
+diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
+index b3a5317..5ad24a8 100644
+--- a/arch/x86/include/asm/pci_x86.h
++++ b/arch/x86/include/asm/pci_x86.h
+@@ -7,9 +7,13 @@
+ #undef DEBUG
  
- #include <asm/apic.h>
- #include <asm/pci-direct.h>
-@@ -95,6 +96,13 @@ static void __init set_vsmp_pv_ops(void)
- 	ctl = readl(address + 4);
- 	printk(KERN_INFO "vSMP CTL: capabilities:0x%08x  control:0x%08x\n",
- 	       cap, ctl);
+ #ifdef DEBUG
+-#define DBG(x...) printk(x)
++#define DBG(fmt, ...) printk(fmt, ##__VA_ARGS__)
+ #else
+-#define DBG(x...)
++#define DBG(fmt, ...)				\
++do {						\
++	if (0)					\
++		printk(fmt, ##__VA_ARGS__);	\
++} while (0)
+ #endif
+ 
+ #define PCI_PROBE_BIOS		0x0001
+diff --git a/arch/x86/include/asm/pgtable-2level.h b/arch/x86/include/asm/pgtable-2level.h
+index 98391db..f2b489c 100644
+--- a/arch/x86/include/asm/pgtable-2level.h
++++ b/arch/x86/include/asm/pgtable-2level.h
+@@ -2,9 +2,9 @@
+ #define _ASM_X86_PGTABLE_2LEVEL_H
+ 
+ #define pte_ERROR(e) \
+-	printk("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, (e).pte_low)
++	pr_err("%s:%d: bad pte %08lx\n", __FILE__, __LINE__, (e).pte_low)
+ #define pgd_ERROR(e) \
+-	printk("%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__, pgd_val(e))
++	pr_err("%s:%d: bad pgd %08lx\n", __FILE__, __LINE__, pgd_val(e))
+ 
+ /*
+  * Certain architectures need to do special things when PTEs
+diff --git a/arch/x86/include/asm/pgtable-3level.h b/arch/x86/include/asm/pgtable-3level.h
+index 43876f1..f824cfb 100644
+--- a/arch/x86/include/asm/pgtable-3level.h
++++ b/arch/x86/include/asm/pgtable-3level.h
+@@ -9,13 +9,13 @@
+  */
+ 
+ #define pte_ERROR(e)							\
+-	printk("%s:%d: bad pte %p(%08lx%08lx).\n",			\
++	pr_err("%s:%d: bad pte %p(%08lx%08lx)\n",			\
+ 	       __FILE__, __LINE__, &(e), (e).pte_high, (e).pte_low)
+ #define pmd_ERROR(e)							\
+-	printk("%s:%d: bad pmd %p(%016Lx).\n",				\
++	pr_err("%s:%d: bad pmd %p(%016Lx)\n",				\
+ 	       __FILE__, __LINE__, &(e), pmd_val(e))
+ #define pgd_ERROR(e)							\
+-	printk("%s:%d: bad pgd %p(%016Lx).\n",				\
++	pr_err("%s:%d: bad pgd %p(%016Lx)\n",				\
+ 	       __FILE__, __LINE__, &(e), pgd_val(e))
+ 
+ /* Rules for using set_pte: the pte being assigned *must* be
+diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+index 975f709..8251be0 100644
+--- a/arch/x86/include/asm/pgtable_64.h
++++ b/arch/x86/include/asm/pgtable_64.h
+@@ -26,16 +26,16 @@ extern pgd_t init_level4_pgt[];
+ extern void paging_init(void);
+ 
+ #define pte_ERROR(e)					\
+-	printk("%s:%d: bad pte %p(%016lx).\n",		\
++	pr_err("%s:%d: bad pte %p(%016lx)\n",		\
+ 	       __FILE__, __LINE__, &(e), pte_val(e))
+ #define pmd_ERROR(e)					\
+-	printk("%s:%d: bad pmd %p(%016lx).\n",		\
++	pr_err("%s:%d: bad pmd %p(%016lx)\n",		\
+ 	       __FILE__, __LINE__, &(e), pmd_val(e))
+ #define pud_ERROR(e)					\
+-	printk("%s:%d: bad pud %p(%016lx).\n",		\
++	pr_err("%s:%d: bad pud %p(%016lx)\n",		\
+ 	       __FILE__, __LINE__, &(e), pud_val(e))
+ #define pgd_ERROR(e)					\
+-	printk("%s:%d: bad pgd %p(%016lx).\n",		\
++	pr_err("%s:%d: bad pgd %p(%016lx)\n",		\
+ 	       __FILE__, __LINE__, &(e), pgd_val(e))
+ 
+ struct mm_struct;
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 1f84794..1729d72 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -1,3 +1,5 @@
++#define pr_fmt(fmt) "SMP alternatives: " fmt
 +
-+	/* If possible, let the vSMP foundation route the interrupt optimally */
-+	if (cap & ctl & BIT(8)) {
-+		ctl &= ~BIT(8);
-+		no_irq_affinity = 1;
-+	}
+ #include <linux/module.h>
+ #include <linux/sched.h>
+ #include <linux/mutex.h>
+@@ -63,8 +65,11 @@ static int __init setup_noreplace_paravirt(char *str)
+ __setup("noreplace-paravirt", setup_noreplace_paravirt);
+ #endif
+ 
+-#define DPRINTK(fmt, args...) if (debug_alternative) \
+-	printk(KERN_DEBUG fmt, args)
++#define DPRINTK(fmt, ...)				\
++do {							\
++	if (debug_alternative)				\
++		printk(KERN_DEBUG fmt, ##__VA_ARGS__);	\
++} while (0)
+ 
+ /*
+  * Each GENERIC_NOPX is of X bytes, and defined as an array of bytes
+@@ -428,7 +433,7 @@ void alternatives_smp_switch(int smp)
+ 	 * If this still occurs then you should see a hang
+ 	 * or crash shortly after this line:
+ 	 */
+-	printk("lockdep: fixing up alternatives.\n");
++	pr_info("lockdep: fixing up alternatives\n");
+ #endif
+ 
+ 	if (noreplace_smp || smp_alt_once || skip_smp_alternatives)
+@@ -444,14 +449,14 @@ void alternatives_smp_switch(int smp)
+ 	if (smp == smp_mode) {
+ 		/* nothing */
+ 	} else if (smp) {
+-		printk(KERN_INFO "SMP alternatives: switching to SMP code\n");
++		pr_info("switching to SMP code\n");
+ 		clear_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+ 		clear_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+ 		list_for_each_entry(mod, &smp_alt_modules, next)
+ 			alternatives_smp_lock(mod->locks, mod->locks_end,
+ 					      mod->text, mod->text_end);
+ 	} else {
+-		printk(KERN_INFO "SMP alternatives: switching to UP code\n");
++		pr_info("switching to UP code\n");
+ 		set_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+ 		set_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+ 		list_for_each_entry(mod, &smp_alt_modules, next)
+@@ -546,7 +551,7 @@ void __init alternative_instructions(void)
+ #ifdef CONFIG_SMP
+ 	if (smp_alt_once) {
+ 		if (1 == num_possible_cpus()) {
+-			printk(KERN_INFO "SMP alternatives: switching to UP code\n");
++			pr_info("switching to UP code\n");
+ 			set_cpu_cap(&boot_cpu_data, X86_FEATURE_UP);
+ 			set_cpu_cap(&cpu_data(0), X86_FEATURE_UP);
+ 
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index be16854..f29f6dd 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -2,6 +2,9 @@
+  * Shared support code for AMD K8 northbridges and derivates.
+  * Copyright 2006 Andi Kleen, SUSE Labs. Subject to GPLv2.
+  */
 +
- 	if (cap & ctl & (1 << 4)) {
- 		/* Setup irq ops and turn on vSMP  IRQ fastpath handling */
- 		pv_irq_ops.irq_disable = PV_CALLEE_SAVE(vsmp_irq_disable);
-@@ -102,12 +110,11 @@ static void __init set_vsmp_pv_ops(void)
- 		pv_irq_ops.save_fl  = PV_CALLEE_SAVE(vsmp_save_fl);
- 		pv_irq_ops.restore_fl  = PV_CALLEE_SAVE(vsmp_restore_fl);
- 		pv_init_ops.patch = vsmp_patch;
--
- 		ctl &= ~(1 << 4);
--		writel(ctl, address + 4);
--		ctl = readl(address + 4);
--		printk(KERN_INFO "vSMP CTL: control set to:0x%08x\n", ctl);
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/types.h>
+ #include <linux/slab.h>
+ #include <linux/init.h>
+@@ -258,7 +261,7 @@ void amd_flush_garts(void)
  	}
-+	writel(ctl, address + 4);
-+	ctl = readl(address + 4);
-+	pr_info("vSMP CTL: control set to:0x%08x\n", ctl);
- 
- 	early_iounmap(address, 8);
+ 	spin_unlock_irqrestore(&gart_lock, flags);
+ 	if (!flushed)
+-		printk("nothing to flush?\n");
++		pr_notice("nothing to flush?\n");
  }
-@@ -192,10 +199,20 @@ static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
- 	return hard_smp_processor_id() >> index_msb;
+ EXPORT_SYMBOL_GPL(amd_flush_garts);
+ 
+@@ -269,11 +272,10 @@ static __init int init_amd_nbs(void)
+ 	err = amd_cache_northbridges();
+ 
+ 	if (err < 0)
+-		printk(KERN_NOTICE "AMD NB: Cannot enumerate AMD northbridges.\n");
++		pr_notice("Cannot enumerate AMD northbridges\n");
+ 
+ 	if (amd_cache_gart() < 0)
+-		printk(KERN_NOTICE "AMD NB: Cannot initialize GART flush words, "
+-		       "GART support disabled.\n");
++		pr_notice("Cannot initialize GART flush words, GART support disabled\n");
+ 
+ 	return err;
+ }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index ac96561..5155d6f 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -448,8 +448,8 @@ static int __add_pin_to_irq_node(struct irq_cfg *cfg, int node, int apic, int pi
+ 
+ 	entry = alloc_irq_pin_list(node);
+ 	if (!entry) {
+-		printk(KERN_ERR "can not alloc irq_pin_list (%d,%d,%d)\n",
+-				node, apic, pin);
++		pr_err("can not alloc irq_pin_list (%d,%d,%d)\n",
++		       node, apic, pin);
+ 		return -ENOMEM;
+ 	}
+ 	entry->apic = apic;
+@@ -661,7 +661,7 @@ static void clear_IO_APIC_pin(unsigned int apic, unsigned int pin)
+ 	ioapic_mask_entry(apic, pin);
+ 	entry = ioapic_read_entry(apic, pin);
+ 	if (entry.irr)
+-		printk(KERN_ERR "Unable to reset IRR for apic: %d, pin :%d\n",
++		pr_err("Unable to reset IRR for apic: %d, pin :%d\n",
+ 		       mpc_ioapic_id(apic), pin);
  }
  
-+/*
-+ * In vSMP, all cpus should be capable of handling interrupts, regardless of
-+ * the APIC used.
-+ */
-+static void fill_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+{
-+	cpumask_setall(retmask);
-+}
+@@ -895,7 +895,7 @@ static int irq_polarity(int idx)
+ 		}
+ 		case 2: /* reserved */
+ 		{
+-			printk(KERN_WARNING "broken BIOS!!\n");
++			pr_warn("broken BIOS!!\n");
+ 			polarity = 1;
+ 			break;
+ 		}
+@@ -906,7 +906,7 @@ static int irq_polarity(int idx)
+ 		}
+ 		default: /* invalid */
+ 		{
+-			printk(KERN_WARNING "broken BIOS!!\n");
++			pr_warn("broken BIOS!!\n");
+ 			polarity = 1;
+ 			break;
+ 		}
+@@ -948,7 +948,7 @@ static int irq_trigger(int idx)
+ 				}
+ 				default:
+ 				{
+-					printk(KERN_WARNING "broken BIOS!!\n");
++					pr_warn("broken BIOS!!\n");
+ 					trigger = 1;
+ 					break;
+ 				}
+@@ -962,7 +962,7 @@ static int irq_trigger(int idx)
+ 		}
+ 		case 2: /* reserved */
+ 		{
+-			printk(KERN_WARNING "broken BIOS!!\n");
++			pr_warn("broken BIOS!!\n");
+ 			trigger = 1;
+ 			break;
+ 		}
+@@ -973,7 +973,7 @@ static int irq_trigger(int idx)
+ 		}
+ 		default: /* invalid */
+ 		{
+-			printk(KERN_WARNING "broken BIOS!!\n");
++			pr_warn("broken BIOS!!\n");
+ 			trigger = 0;
+ 			break;
+ 		}
+@@ -991,7 +991,7 @@ static int pin_2_irq(int idx, int apic, int pin)
+ 	 * Debugging check, we are in big trouble if this message pops up!
+ 	 */
+ 	if (mp_irqs[idx].dstirq != pin)
+-		printk(KERN_ERR "broken BIOS or MPTABLE parser, ayiee!!\n");
++		pr_err("broken BIOS or MPTABLE parser, ayiee!!\n");
+ 
+ 	if (test_bit(bus, mp_bus_not_pci)) {
+ 		irq = mp_irqs[idx].srcbusirq;
+@@ -1521,7 +1521,6 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
+ 		reg_03.raw = io_apic_read(ioapic_idx, 3);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+-	printk("\n");
+ 	printk(KERN_DEBUG "IO APIC #%d......\n", mpc_ioapic_id(ioapic_idx));
+ 	printk(KERN_DEBUG ".... register #00: %08X\n", reg_00.raw);
+ 	printk(KERN_DEBUG ".......    : physical APIC id: %02X\n", reg_00.bits.ID);
+@@ -1578,7 +1577,7 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
+ 				i,
+ 				ir_entry->index
+ 			);
+-			printk("%1d   %1d    %1d    %1d   %1d   "
++			pr_cont("%1d   %1d    %1d    %1d   %1d   "
+ 				"%1d    %1d     %X    %02X\n",
+ 				ir_entry->format,
+ 				ir_entry->mask,
+@@ -1598,7 +1597,7 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
+ 				i,
+ 				entry.dest
+ 			);
+-			printk("%1d    %1d    %1d   %1d   %1d    "
++			pr_cont("%1d    %1d    %1d   %1d   %1d    "
+ 				"%1d    %1d    %02X\n",
+ 				entry.mask,
+ 				entry.trigger,
+@@ -1651,8 +1650,8 @@ __apicdebuginit(void) print_IO_APICs(void)
+ 			continue;
+ 		printk(KERN_DEBUG "IRQ%d ", irq);
+ 		for_each_irq_pin(entry, cfg->irq_2_pin)
+-			printk("-> %d:%d", entry->apic, entry->pin);
+-		printk("\n");
++			pr_cont("-> %d:%d", entry->apic, entry->pin);
++		pr_cont("\n");
+ 	}
+ 
+ 	printk(KERN_INFO ".................................... done.\n");
+@@ -1665,9 +1664,9 @@ __apicdebuginit(void) print_APIC_field(int base)
+ 	printk(KERN_DEBUG);
+ 
+ 	for (i = 0; i < 8; i++)
+-		printk(KERN_CONT "%08x", apic_read(base + i*0x10));
++		pr_cont("%08x", apic_read(base + i*0x10));
+ 
+-	printk(KERN_CONT "\n");
++	pr_cont("\n");
+ }
+ 
+ __apicdebuginit(void) print_local_APIC(void *dummy)
+@@ -1769,7 +1768,7 @@ __apicdebuginit(void) print_local_APIC(void *dummy)
+ 			printk(KERN_DEBUG "... APIC EILVT%d: %08x\n", i, v);
+ 		}
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ }
+ 
+ __apicdebuginit(void) print_local_APICs(int maxcpu)
+@@ -2065,7 +2064,7 @@ void __init setup_ioapic_ids_from_mpc_nocheck(void)
+ 		reg_00.raw = io_apic_read(ioapic_idx, 0);
+ 		raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 		if (reg_00.bits.ID != mpc_ioapic_id(ioapic_idx))
+-			printk("could not set ID!\n");
++			pr_cont("could not set ID!\n");
+ 		else
+ 			apic_printk(APIC_VERBOSE, " ok.\n");
+ 	}
+@@ -3563,7 +3562,8 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+ 
+ 		/* Sanity check */
+ 		if (reg_00.bits.ID != apic_id) {
+-			printk("IOAPIC[%d]: Unable to change apic_id!\n", ioapic);
++			pr_err("IOAPIC[%d]: Unable to change apic_id!\n",
++			       ioapic);
+ 			return -1;
+ 		}
+ 	}
+diff --git a/arch/x86/kernel/apic/summit_32.c b/arch/x86/kernel/apic/summit_32.c
+index 659897c..e97d542 100644
+--- a/arch/x86/kernel/apic/summit_32.c
++++ b/arch/x86/kernel/apic/summit_32.c
+@@ -26,6 +26,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) "summit: %s: " fmt, __func__
 +
- static void vsmp_apic_post_init(void)
+ #include <linux/mm.h>
+ #include <linux/init.h>
+ #include <asm/io.h>
+@@ -235,8 +237,8 @@ static int summit_apic_id_registered(void)
+ 
+ static void summit_setup_apic_routing(void)
  {
- 	/* need to update phys_pkg_id */
- 	apic->phys_pkg_id = apicid_phys_pkg_id;
-+	apic->vector_allocation_domain = fill_vector_allocation_domain;
+-	printk("Enabling APIC mode:  Summit.  Using %d I/O APICs\n",
+-						nr_ioapics);
++	pr_info("Enabling APIC mode:  Summit.  Using %d I/O APICs\n",
++		nr_ioapics);
  }
  
- void __init vsmp_init(void)
+ static int summit_cpu_present_to_apicid(int mps_cpu)
+@@ -275,7 +277,7 @@ static unsigned int summit_cpu_mask_to_apicid(const struct cpumask *cpumask)
+ 		int new_apicid = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+ 
+ 		if (round && APIC_CLUSTER(apicid) != APIC_CLUSTER(new_apicid)) {
+-			printk("%s: Not a valid mask!\n", __func__);
++			pr_err("Not a valid mask!\n");
+ 			return BAD_APICID;
+ 		}
+ 		apicid |= new_apicid;
+@@ -355,7 +357,7 @@ static int setup_pci_node_map_for_wpeg(int wpeg_num, int last_bus)
+ 		}
+ 	}
+ 	if (i == rio_table_hdr->num_rio_dev) {
+-		printk(KERN_ERR "%s: Couldn't find owner Cyclone for Winnipeg!\n", __func__);
++		pr_err("Couldn't find owner Cyclone for Winnipeg!\n");
+ 		return last_bus;
+ 	}
+ 
+@@ -366,7 +368,7 @@ static int setup_pci_node_map_for_wpeg(int wpeg_num, int last_bus)
+ 		}
+ 	}
+ 	if (i == rio_table_hdr->num_scal_dev) {
+-		printk(KERN_ERR "%s: Couldn't find owner Twister for Cyclone!\n", __func__);
++		pr_err("Couldn't find owner Twister for Cyclone!\n");
+ 		return last_bus;
+ 	}
+ 
+@@ -396,7 +398,7 @@ static int setup_pci_node_map_for_wpeg(int wpeg_num, int last_bus)
+ 		num_buses = 9;
+ 		break;
+ 	default:
+-		printk(KERN_INFO "%s: Unsupported Winnipeg type!\n", __func__);
++		pr_info("Unsupported Winnipeg type!\n");
+ 		return last_bus;
+ 	}
+ 
+@@ -411,13 +413,15 @@ static int build_detail_arrays(void)
+ 	int i, scal_detail_size, rio_detail_size;
+ 
+ 	if (rio_table_hdr->num_scal_dev > MAX_NUMNODES) {
+-		printk(KERN_WARNING "%s: MAX_NUMNODES too low!  Defined as %d, but system has %d nodes.\n", __func__, MAX_NUMNODES, rio_table_hdr->num_scal_dev);
++		pr_warn("MAX_NUMNODES too low!  Defined as %d, but system has %d nodes\n",
++			MAX_NUMNODES, rio_table_hdr->num_scal_dev);
+ 		return 0;
+ 	}
+ 
+ 	switch (rio_table_hdr->version) {
+ 	default:
+-		printk(KERN_WARNING "%s: Invalid Rio Grande Table Version: %d\n", __func__, rio_table_hdr->version);
++		pr_warn("Invalid Rio Grande Table Version: %d\n",
++			rio_table_hdr->version);
+ 		return 0;
+ 	case 2:
+ 		scal_detail_size = 11;
+@@ -462,7 +466,7 @@ void setup_summit(void)
+ 		offset = *((unsigned short *)(ptr + offset));
+ 	}
+ 	if (!rio_table_hdr) {
+-		printk(KERN_ERR "%s: Unable to locate Rio Grande Table in EBDA - bailing!\n", __func__);
++		pr_err("Unable to locate Rio Grande Table in EBDA - bailing!\n");
+ 		return;
+ 	}
+ 
+diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
+index 07b0c0d..d65464e 100644
+--- a/arch/x86/kernel/apm_32.c
++++ b/arch/x86/kernel/apm_32.c
+@@ -201,6 +201,8 @@
+  *    http://www.microsoft.com/whdc/archive/amp_12.mspx]
+  */
+ 
++#define pr_fmt(fmt) "apm: " fmt
++
+ #include <linux/module.h>
+ 
+ #include <linux/poll.h>
+@@ -485,11 +487,11 @@ static void apm_error(char *str, int err)
+ 		if (error_table[i].key == err)
+ 			break;
+ 	if (i < ERROR_COUNT)
+-		printk(KERN_NOTICE "apm: %s: %s\n", str, error_table[i].msg);
++		pr_notice("%s: %s\n", str, error_table[i].msg);
+ 	else if (err < 0)
+-		printk(KERN_NOTICE "apm: %s: linux error code %i\n", str, err);
++		pr_notice("%s: linux error code %i\n", str, err);
+ 	else
+-		printk(KERN_NOTICE "apm: %s: unknown error code %#2.2x\n",
++		pr_notice("%s: unknown error code %#2.2x\n",
+ 		       str, err);
+ }
+ 
+@@ -1184,7 +1186,7 @@ static void queue_event(apm_event_t event, struct apm_user *sender)
+ 			static int notified;
+ 
+ 			if (notified++ == 0)
+-			    printk(KERN_ERR "apm: an event queue overflowed\n");
++				pr_err("an event queue overflowed\n");
+ 			if (++as->event_tail >= APM_MAX_EVENTS)
+ 				as->event_tail = 0;
+ 		}
+@@ -1447,7 +1449,7 @@ static void apm_mainloop(void)
+ static int check_apm_user(struct apm_user *as, const char *func)
+ {
+ 	if (as == NULL || as->magic != APM_BIOS_MAGIC) {
+-		printk(KERN_ERR "apm: %s passed bad filp\n", func);
++		pr_err("%s passed bad filp\n", func);
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -1586,7 +1588,7 @@ static int do_release(struct inode *inode, struct file *filp)
+ 		     as1 = as1->next)
+ 			;
+ 		if (as1 == NULL)
+-			printk(KERN_ERR "apm: filp not in user list\n");
++			pr_err("filp not in user list\n");
+ 		else
+ 			as1->next = as->next;
+ 	}
+@@ -1600,11 +1602,9 @@ static int do_open(struct inode *inode, struct file *filp)
+ 	struct apm_user *as;
+ 
+ 	as = kmalloc(sizeof(*as), GFP_KERNEL);
+-	if (as == NULL) {
+-		printk(KERN_ERR "apm: cannot allocate struct of size %d bytes\n",
+-		       sizeof(*as));
++	if (as == NULL)
+ 		return -ENOMEM;
+-	}
++
+ 	as->magic = APM_BIOS_MAGIC;
+ 	as->event_tail = as->event_head = 0;
+ 	as->suspends_pending = as->standbys_pending = 0;
+@@ -2313,16 +2313,16 @@ static int __init apm_init(void)
+ 	}
+ 
+ 	if (apm_info.disabled) {
+-		printk(KERN_NOTICE "apm: disabled on user request.\n");
++		pr_notice("disabled on user request.\n");
+ 		return -ENODEV;
+ 	}
+ 	if ((num_online_cpus() > 1) && !power_off && !smp) {
+-		printk(KERN_NOTICE "apm: disabled - APM is not SMP safe.\n");
++		pr_notice("disabled - APM is not SMP safe.\n");
+ 		apm_info.disabled = 1;
+ 		return -ENODEV;
+ 	}
+ 	if (!acpi_disabled) {
+-		printk(KERN_NOTICE "apm: overridden by ACPI.\n");
++		pr_notice("overridden by ACPI.\n");
+ 		apm_info.disabled = 1;
+ 		return -ENODEV;
+ 	}
+@@ -2356,8 +2356,7 @@ static int __init apm_init(void)
+ 
+ 	kapmd_task = kthread_create(apm, NULL, "kapmd");
+ 	if (IS_ERR(kapmd_task)) {
+-		printk(KERN_ERR "apm: disabled - Unable to start kernel "
+-				"thread.\n");
++		pr_err("disabled - Unable to start kernel thread\n");
+ 		err = PTR_ERR(kapmd_task);
+ 		kapmd_task = NULL;
+ 		remove_proc_entry("apm", NULL);
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 46674fb..c97bb7b 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -55,8 +55,8 @@ static void __init check_fpu(void)
+ 
+ 	if (!boot_cpu_data.hard_math) {
+ #ifndef CONFIG_MATH_EMULATION
+-		printk(KERN_EMERG "No coprocessor found and no math emulation present.\n");
+-		printk(KERN_EMERG "Giving up.\n");
++		pr_emerg("No coprocessor found and no math emulation present\n");
++		pr_emerg("Giving up\n");
+ 		for (;;) ;
+ #endif
+ 		return;
+@@ -86,7 +86,7 @@ static void __init check_fpu(void)
+ 
+ 	boot_cpu_data.fdiv_bug = fdiv_bug;
+ 	if (boot_cpu_data.fdiv_bug)
+-		printk(KERN_WARNING "Hmm, FPU with FDIV bug.\n");
++		pr_warn("Hmm, FPU with FDIV bug\n");
+ }
+ 
+ static void __init check_hlt(void)
+@@ -94,16 +94,16 @@ static void __init check_hlt(void)
+ 	if (boot_cpu_data.x86 >= 5 || paravirt_enabled())
+ 		return;
+ 
+-	printk(KERN_INFO "Checking 'hlt' instruction... ");
++	pr_info("Checking 'hlt' instruction... ");
+ 	if (!boot_cpu_data.hlt_works_ok) {
+-		printk("disabled\n");
++		pr_cont("disabled\n");
+ 		return;
+ 	}
+ 	halt();
+ 	halt();
+ 	halt();
+ 	halt();
+-	printk(KERN_CONT "OK.\n");
++	pr_cont("OK\n");
+ }
+ 
+ /*
+@@ -116,7 +116,7 @@ static void __init check_popad(void)
+ #ifndef CONFIG_X86_POPAD_OK
+ 	int res, inp = (int) &res;
+ 
+-	printk(KERN_INFO "Checking for popad bug... ");
++	pr_info("Checking for popad bug... ");
+ 	__asm__ __volatile__(
+ 	  "movl $12345678,%%eax; movl $0,%%edi; pusha; popa; movl (%%edx,%%edi),%%ecx "
+ 	  : "=&a" (res)
+@@ -127,9 +127,9 @@ static void __init check_popad(void)
+ 	 * CPU hard. Too bad.
+ 	 */
+ 	if (res != 12345678)
+-		printk(KERN_CONT "Buggy.\n");
++		pr_cont("Buggy\n");
+ 	else
+-		printk(KERN_CONT "OK.\n");
++		pr_cont("OK\n");
+ #endif
+ }
+ 
+@@ -161,7 +161,7 @@ void __init check_bugs(void)
+ {
+ 	identify_boot_cpu();
+ #ifndef CONFIG_SMP
+-	printk(KERN_INFO "CPU: ");
++	pr_info("CPU: ");
+ 	print_cpu_info(&boot_cpu_data);
+ #endif
+ 	check_config();
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 0a687fd..5623b4b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -7,6 +7,9 @@
+  * Copyright 2008 Intel Corporation
+  * Author: Andi Kleen
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/thread_info.h>
+ #include <linux/capability.h>
+ #include <linux/miscdevice.h>
+@@ -210,7 +213,7 @@ static void drain_mcelog_buffer(void)
+ 				cpu_relax();
+ 
+ 				if (!m->finished && retries >= 4) {
+-					pr_err("MCE: skipping error being logged currently!\n");
++					pr_err("skipping error being logged currently!\n");
+ 					break;
+ 				}
+ 			}
+@@ -1167,8 +1170,9 @@ int memory_failure(unsigned long pfn, int vector, int flags)
+ {
+ 	/* mce_severity() should not hand us an ACTION_REQUIRED error */
+ 	BUG_ON(flags & MF_ACTION_REQUIRED);
+-	printk(KERN_ERR "Uncorrected memory error in page 0x%lx ignored\n"
+-		"Rebuild kernel with CONFIG_MEMORY_FAILURE=y for smarter handling\n", pfn);
++	pr_err("Uncorrected memory error in page 0x%lx ignored\n"
++	       "Rebuild kernel with CONFIG_MEMORY_FAILURE=y for smarter handling\n",
++	       pfn);
+ 
+ 	return 0;
+ }
+@@ -1358,11 +1362,10 @@ static int __cpuinit __mcheck_cpu_cap_init(void)
+ 
+ 	b = cap & MCG_BANKCNT_MASK;
+ 	if (!banks)
+-		printk(KERN_INFO "mce: CPU supports %d MCE banks\n", b);
++		pr_info("CPU supports %d MCE banks\n", b);
+ 
+ 	if (b > MAX_NR_BANKS) {
+-		printk(KERN_WARNING
+-		       "MCE: Using only %u machine check banks out of %u\n",
++		pr_warn("Using only %u machine check banks out of %u\n",
+ 			MAX_NR_BANKS, b);
+ 		b = MAX_NR_BANKS;
+ 	}
+@@ -1419,7 +1422,7 @@ static void __mcheck_cpu_init_generic(void)
+ static int __cpuinit __mcheck_cpu_apply_quirks(struct cpuinfo_x86 *c)
+ {
+ 	if (c->x86_vendor == X86_VENDOR_UNKNOWN) {
+-		pr_info("MCE: unknown CPU type - not enabling MCE support.\n");
++		pr_info("unknown CPU type - not enabling MCE support\n");
+ 		return -EOPNOTSUPP;
+ 	}
+ 
+@@ -1574,7 +1577,7 @@ static void __mcheck_cpu_init_timer(void)
+ /* Handle unconfigured int18 (should never happen) */
+ static void unexpected_machine_check(struct pt_regs *regs, long error_code)
+ {
+-	printk(KERN_ERR "CPU#%d: Unexpected int18 (Machine Check).\n",
++	pr_err("CPU#%d: Unexpected int18 (Machine Check)\n",
+ 	       smp_processor_id());
+ }
+ 
+@@ -1893,8 +1896,7 @@ static int __init mcheck_enable(char *str)
+ 			get_option(&str, &monarch_timeout);
+ 		}
+ 	} else {
+-		printk(KERN_INFO "mce argument %s ignored. Please use /sys\n",
+-		       str);
++		pr_info("mce argument %s ignored. Please use /sys\n", str);
+ 		return 0;
+ 	}
+ 	return 1;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 166546e..9e3f5d6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -5,6 +5,8 @@
+  * among events on a single PMU.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/stddef.h>
+ #include <linux/types.h>
+ #include <linux/init.h>
+@@ -1000,7 +1002,7 @@ static void intel_pmu_reset(void)
+ 
+ 	local_irq_save(flags);
+ 
+-	printk("clearing PMU state on CPU#%d\n", smp_processor_id());
++	pr_info("clearing PMU state on CPU#%d\n", smp_processor_id());
+ 
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		checking_wrmsrl(x86_pmu_config_addr(idx), 0ull);
+@@ -1638,14 +1640,14 @@ static __init void intel_clovertown_quirk(void)
+ 	 * But taken together it might just make sense to not enable PEBS on
+ 	 * these chips.
+ 	 */
+-	printk(KERN_WARNING "PEBS disabled due to CPU errata.\n");
++	pr_warn("PEBS disabled due to CPU errata\n");
+ 	x86_pmu.pebs = 0;
+ 	x86_pmu.pebs_constraints = NULL;
+ }
+ 
+ static __init void intel_sandybridge_quirk(void)
+ {
+-	printk(KERN_WARNING "PEBS disabled due to CPU errata.\n");
++	pr_warn("PEBS disabled due to CPU errata\n");
+ 	x86_pmu.pebs = 0;
+ 	x86_pmu.pebs_constraints = NULL;
+ }
+@@ -1667,8 +1669,8 @@ static __init void intel_arch_events_quirk(void)
+ 	/* disable event that reported as not presend by cpuid */
+ 	for_each_set_bit(bit, x86_pmu.events_mask, ARRAY_SIZE(intel_arch_events_map)) {
+ 		intel_perfmon_event_map[intel_arch_events_map[bit].id] = 0;
+-		printk(KERN_WARNING "CPUID marked event: \'%s\' unavailable\n",
+-				intel_arch_events_map[bit].name);
++		pr_warn("CPUID marked event: \'%s\' unavailable\n",
++			intel_arch_events_map[bit].name);
+ 	}
+ }
+ 
+@@ -1687,7 +1689,7 @@ static __init void intel_nehalem_quirk(void)
+ 		intel_perfmon_event_map[PERF_COUNT_HW_BRANCH_MISSES] = 0x7f89;
+ 		ebx.split.no_branch_misses_retired = 0;
+ 		x86_pmu.events_maskl = ebx.full;
+-		printk(KERN_INFO "CPU erratum AAJ80 worked around\n");
++		pr_info("CPU erratum AAJ80 worked around\n");
+ 	}
+ }
+ 
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index 571246d..87d3b5d 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -27,8 +27,8 @@ static int die_counter;
+ 
+ void printk_address(unsigned long address, int reliable)
+ {
+-	printk(" [<%p>] %s%pB\n", (void *) address,
+-			reliable ? "" : "? ", (void *) address);
++	pr_cont(" [<%p>] %s%pB\n",
++		(void *)address, reliable ? "" : "? ", (void *)address);
+ }
+ 
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index e0b1d78..3a8aced 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -73,11 +73,11 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		if (kstack_end(stack))
+ 			break;
+ 		if (i && ((i % STACKSLOTS_PER_LINE) == 0))
+-			printk(KERN_CONT "\n");
+-		printk(KERN_CONT " %08lx", *stack++);
++			pr_cont("\n");
++		pr_cont(" %08lx", *stack++);
+ 		touch_nmi_watchdog();
+ 	}
+-	printk(KERN_CONT "\n");
++	pr_cont("\n");
+ 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+@@ -89,9 +89,9 @@ void show_regs(struct pt_regs *regs)
+ 	print_modules();
+ 	__show_regs(regs, !user_mode_vm(regs));
+ 
+-	printk(KERN_EMERG "Process %.*s (pid: %d, ti=%p task=%p task.ti=%p)\n",
+-		TASK_COMM_LEN, current->comm, task_pid_nr(current),
+-		current_thread_info(), current, task_thread_info(current));
++	pr_emerg("Process %.*s (pid: %d, ti=%p task=%p task.ti=%p)\n",
++		 TASK_COMM_LEN, current->comm, task_pid_nr(current),
++		 current_thread_info(), current, task_thread_info(current));
+ 	/*
+ 	 * When in-kernel, we also print out the stack and code at the
+ 	 * time of the fault..
+@@ -102,10 +102,10 @@ void show_regs(struct pt_regs *regs)
+ 		unsigned char c;
+ 		u8 *ip;
+ 
+-		printk(KERN_EMERG "Stack:\n");
++		pr_emerg("Stack:\n");
+ 		show_stack_log_lvl(NULL, regs, &regs->sp, 0, KERN_EMERG);
+ 
+-		printk(KERN_EMERG "Code: ");
++		pr_emerg("Code:");
+ 
+ 		ip = (u8 *)regs->ip - code_prologue;
+ 		if (ip < (u8 *)PAGE_OFFSET || probe_kernel_address(ip, c)) {
+@@ -116,16 +116,16 @@ void show_regs(struct pt_regs *regs)
+ 		for (i = 0; i < code_len; i++, ip++) {
+ 			if (ip < (u8 *)PAGE_OFFSET ||
+ 					probe_kernel_address(ip, c)) {
+-				printk(KERN_CONT " Bad EIP value.");
++				pr_cont("  Bad EIP value.");
+ 				break;
+ 			}
+ 			if (ip == (u8 *)regs->ip)
+-				printk(KERN_CONT "<%02x> ", c);
++				pr_cont(" <%02x>", c);
+ 			else
+-				printk(KERN_CONT "%02x ", c);
++				pr_cont(" %02x", c);
+ 		}
+ 	}
+-	printk(KERN_CONT "\n");
++	pr_cont("\n");
+ }
+ 
+ int is_valid_bugaddr(unsigned long ip)
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 791b761..c582e9c 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -228,20 +228,20 @@ show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		if (stack >= irq_stack && stack <= irq_stack_end) {
+ 			if (stack == irq_stack_end) {
+ 				stack = (unsigned long *) (irq_stack_end[-1]);
+-				printk(KERN_CONT " <EOI> ");
++				pr_cont(" <EOI> ");
+ 			}
+ 		} else {
+ 		if (((long) stack & (THREAD_SIZE-1)) == 0)
+ 			break;
+ 		}
+ 		if (i && ((i % STACKSLOTS_PER_LINE) == 0))
+-			printk(KERN_CONT "\n");
+-		printk(KERN_CONT " %016lx", *stack++);
++			pr_cont("\n");
++		pr_cont(" %016lx", *stack++);
+ 		touch_nmi_watchdog();
+ 	}
+ 	preempt_enable();
+ 
+-	printk(KERN_CONT "\n");
++	pr_cont("\n");
+ 	show_trace_log_lvl(task, regs, sp, bp, log_lvl);
+ }
+ 
+@@ -256,8 +256,8 @@ void show_regs(struct pt_regs *regs)
+ 	printk("CPU %d ", cpu);
+ 	print_modules();
+ 	__show_regs(regs, 1);
+-	printk("Process %s (pid: %d, threadinfo %p, task %p)\n",
+-		cur->comm, cur->pid, task_thread_info(cur), cur);
++	printk(KERN_DEFAULT "Process %s (pid: %d, threadinfo %p, task %p)\n",
++	       cur->comm, cur->pid, task_thread_info(cur), cur);
+ 
+ 	/*
+ 	 * When in-kernel, we also print out the stack and code at the
+@@ -284,16 +284,16 @@ void show_regs(struct pt_regs *regs)
+ 		for (i = 0; i < code_len; i++, ip++) {
+ 			if (ip < (u8 *)PAGE_OFFSET ||
+ 					probe_kernel_address(ip, c)) {
+-				printk(KERN_CONT " Bad RIP value.");
++				pr_cont(" Bad RIP value.");
+ 				break;
+ 			}
+ 			if (ip == (u8 *)regs->ip)
+-				printk(KERN_CONT "<%02x> ", c);
++				pr_cont("<%02x> ", c);
+ 			else
+-				printk(KERN_CONT "%02x ", c);
++				pr_cont("%02x ", c);
+ 		}
+ 	}
+-	printk(KERN_CONT "\n");
++	pr_cont("\n");
+ }
+ 
+ int is_valid_bugaddr(unsigned long ip)
+diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+index 3dafc60..1f5f1d5 100644
+--- a/arch/x86/kernel/irq.c
++++ b/arch/x86/kernel/irq.c
+@@ -294,9 +294,9 @@ void fixup_irqs(void)
+ 		raw_spin_unlock(&desc->lock);
+ 
+ 		if (break_affinity && set_affinity)
+-			printk("Broke affinity for irq %i\n", irq);
++			pr_notice("Broke affinity for irq %i\n", irq);
+ 		else if (!set_affinity)
+-			printk("Cannot set affinity for irq %i\n", irq);
++			pr_notice("Cannot set affinity for irq %i\n", irq);
+ 	}
+ 
+ 	/*
+diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+index f21fd94..202494d 100644
+--- a/arch/x86/kernel/module.c
++++ b/arch/x86/kernel/module.c
+@@ -15,6 +15,9 @@
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/moduleloader.h>
+ #include <linux/elf.h>
+ #include <linux/vmalloc.h>
+@@ -30,9 +33,14 @@
+ #include <asm/pgtable.h>
+ 
+ #if 0
+-#define DEBUGP printk
++#define DEBUGP(fmt, ...)				\
++	printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+ #else
+-#define DEBUGP(fmt...)
++#define DEBUGP(fmt, ...)				\
++do {							\
++	if (0)						\
++		printk(KERN_DEBUG fmt, ##__VA_ARGS__);	\
++} while (0)
+ #endif
+ 
+ void *module_alloc(unsigned long size)
+@@ -56,8 +64,8 @@ int apply_relocate(Elf32_Shdr *sechdrs,
+ 	Elf32_Sym *sym;
+ 	uint32_t *location;
+ 
+-	DEBUGP("Applying relocate section %u to %u\n", relsec,
+-	       sechdrs[relsec].sh_info);
++	DEBUGP("Applying relocate section %u to %u\n",
++	       relsec, sechdrs[relsec].sh_info);
+ 	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
+ 		/* This is where to make the change */
+ 		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
+@@ -77,7 +85,7 @@ int apply_relocate(Elf32_Shdr *sechdrs,
+ 			*location += sym->st_value - (uint32_t)location;
+ 			break;
+ 		default:
+-			printk(KERN_ERR "module %s: Unknown relocation: %u\n",
++			pr_err("%s: Unknown relocation: %u\n",
+ 			       me->name, ELF32_R_TYPE(rel[i].r_info));
+ 			return -ENOEXEC;
+ 		}
+@@ -97,8 +105,8 @@ int apply_relocate_add(Elf64_Shdr *sechdrs,
+ 	void *loc;
+ 	u64 val;
+ 
+-	DEBUGP("Applying relocate section %u to %u\n", relsec,
+-	       sechdrs[relsec].sh_info);
++	DEBUGP("Applying relocate section %u to %u\n",
++	       relsec, sechdrs[relsec].sh_info);
+ 	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
+ 		/* This is where to make the change */
+ 		loc = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
+@@ -110,8 +118,8 @@ int apply_relocate_add(Elf64_Shdr *sechdrs,
+ 			+ ELF64_R_SYM(rel[i].r_info);
+ 
+ 		DEBUGP("type %d st_value %Lx r_addend %Lx loc %Lx\n",
+-			(int)ELF64_R_TYPE(rel[i].r_info),
+-			sym->st_value, rel[i].r_addend, (u64)loc);
++		       (int)ELF64_R_TYPE(rel[i].r_info),
++		       sym->st_value, rel[i].r_addend, (u64)loc);
+ 
+ 		val = sym->st_value + rel[i].r_addend;
+ 
+@@ -140,7 +148,7 @@ int apply_relocate_add(Elf64_Shdr *sechdrs,
+ #endif
+ 			break;
+ 		default:
+-			printk(KERN_ERR "module %s: Unknown rela relocation: %llu\n",
++			pr_err("%s: Unknown rela relocation: %llu\n",
+ 			       me->name, ELF64_R_TYPE(rel[i].r_info));
+ 			return -ENOEXEC;
+ 		}
+@@ -148,9 +156,9 @@ int apply_relocate_add(Elf64_Shdr *sechdrs,
+ 	return 0;
+ 
+ overflow:
+-	printk(KERN_ERR "overflow in relocation type %d val %Lx\n",
++	pr_err("overflow in relocation type %d val %Lx\n",
+ 	       (int)ELF64_R_TYPE(rel[i].r_info), val);
+-	printk(KERN_ERR "`%s' likely not compiled with -mcmodel=kernel\n",
++	pr_err("`%s' likely not compiled with -mcmodel=kernel\n",
+ 	       me->name);
+ 	return -ENOEXEC;
+ }
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index b72838b..299d493 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -22,6 +22,8 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  */
+ 
++#define pr_fmt(fmt) "Calgary: " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+@@ -245,7 +247,7 @@ static unsigned long iommu_range_alloc(struct device *dev,
+ 		offset = iommu_area_alloc(tbl->it_map, tbl->it_size, 0,
+ 					  npages, 0, boundary_size, 0);
+ 		if (offset == ~0UL) {
+-			printk(KERN_WARNING "Calgary: IOMMU full.\n");
++			pr_warn("IOMMU full\n");
+ 			spin_unlock_irqrestore(&tbl->it_lock, flags);
+ 			if (panic_on_overflow)
+ 				panic("Calgary: fix the allocator.\n");
+@@ -271,8 +273,8 @@ static dma_addr_t iommu_alloc(struct device *dev, struct iommu_table *tbl,
+ 	entry = iommu_range_alloc(dev, tbl, npages);
+ 
+ 	if (unlikely(entry == DMA_ERROR_CODE)) {
+-		printk(KERN_WARNING "Calgary: failed to allocate %u pages in "
+-		       "iommu %p\n", npages, tbl);
++		pr_warn("failed to allocate %u pages in iommu %p\n",
++			npages, tbl);
+ 		return DMA_ERROR_CODE;
+ 	}
+ 
+@@ -561,8 +563,7 @@ static void calgary_tce_cache_blast(struct iommu_table *tbl)
+ 		i++;
+ 	} while ((val & 0xff) != 0xff && i < 100);
+ 	if (i == 100)
+-		printk(KERN_WARNING "Calgary: PCI bus not quiesced, "
+-		       "continuing anyway\n");
++		pr_warn("PCI bus not quiesced, continuing anyway\n");
+ 
+ 	/* invalidate TCE cache */
+ 	target = calgary_reg(bbar, tar_offset(tbl->it_busno));
+@@ -604,8 +605,7 @@ begin:
+ 		i++;
+ 	} while ((val64 & 0xff) != 0xff && i < 100);
+ 	if (i == 100)
+-		printk(KERN_WARNING "CalIOC2: PCI bus not quiesced, "
+-		       "continuing anyway\n");
++		pr_warn("CalIOC2: PCI bus not quiesced, continuing anyway\n");
+ 
+ 	/* 3. poll Page Migration DEBUG for SoftStopFault */
+ 	target = calgary_reg(bbar, phb_offset(bus) | PHB_PAGE_MIG_DEBUG);
+@@ -617,8 +617,7 @@ begin:
+ 		if (++count < 100)
+ 			goto begin;
+ 		else {
+-			printk(KERN_WARNING "CalIOC2: too many SoftStopFaults, "
+-			       "aborting TCE cache flush sequence!\n");
++			pr_warn("CalIOC2: too many SoftStopFaults, aborting TCE cache flush sequence!\n");
+ 			return; /* pray for the best */
+ 		}
+ 	}
+@@ -840,8 +839,8 @@ static void calgary_dump_error_regs(struct iommu_table *tbl)
+ 	plssr = be32_to_cpu(readl(target));
+ 
+ 	/* If no error, the agent ID in the CSR is not valid */
+-	printk(KERN_EMERG "Calgary: DMA error on Calgary PHB 0x%x, "
+-	       "0x%08x@CSR 0x%08x@PLSSR\n", tbl->it_busno, csr, plssr);
++	pr_emerg("DMA error on Calgary PHB 0x%x, 0x%08x@CSR 0x%08x@PLSSR\n",
++		 tbl->it_busno, csr, plssr);
+ }
+ 
+ static void calioc2_dump_error_regs(struct iommu_table *tbl)
+@@ -867,22 +866,21 @@ static void calioc2_dump_error_regs(struct iommu_table *tbl)
+ 	target = calgary_reg(bbar, phboff | 0x800);
+ 	mck = be32_to_cpu(readl(target));
+ 
+-	printk(KERN_EMERG "Calgary: DMA error on CalIOC2 PHB 0x%x\n",
+-	       tbl->it_busno);
++	pr_emerg("DMA error on CalIOC2 PHB 0x%x\n", tbl->it_busno);
+ 
+-	printk(KERN_EMERG "Calgary: 0x%08x@CSR 0x%08x@PLSSR 0x%08x@CSMR 0x%08x@MCK\n",
+-	       csr, plssr, csmr, mck);
++	pr_emerg("0x%08x@CSR 0x%08x@PLSSR 0x%08x@CSMR 0x%08x@MCK\n",
++		 csr, plssr, csmr, mck);
+ 
+ 	/* dump rest of error regs */
+-	printk(KERN_EMERG "Calgary: ");
++	pr_emerg("");
+ 	for (i = 0; i < ARRAY_SIZE(errregs); i++) {
+ 		/* err regs are at 0x810 - 0x870 */
+ 		erroff = (0x810 + (i * 0x10));
+ 		target = calgary_reg(bbar, phboff | erroff);
+ 		errregs[i] = be32_to_cpu(readl(target));
+-		printk("0x%08x@0x%lx ", errregs[i], erroff);
++		pr_cont("0x%08x@0x%lx ", errregs[i], erroff);
+ 	}
+-	printk("\n");
++	pr_cont("\n");
+ 
+ 	/* root complex status */
+ 	target = calgary_reg(bbar, phboff | PHB_ROOT_COMPLEX_STATUS);
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index 735279e..ef6a845 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -1,3 +1,5 @@
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+@@ -145,16 +147,14 @@ void show_regs_common(void)
+ 	/* Board Name is optional */
+ 	board = dmi_get_system_info(DMI_BOARD_NAME);
+ 
+-	printk(KERN_CONT "\n");
+-	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s",
+-		current->pid, current->comm, print_tainted(),
+-		init_utsname()->release,
+-		(int)strcspn(init_utsname()->version, " "),
+-		init_utsname()->version);
+-	printk(KERN_CONT " %s %s", vendor, product);
+-	if (board)
+-		printk(KERN_CONT "/%s", board);
+-	printk(KERN_CONT "\n");
++	printk(KERN_DEFAULT "Pid: %d, comm: %.20s %s %s %.*s %s %s%s%s\n",
++	       current->pid, current->comm, print_tainted(),
++	       init_utsname()->release,
++	       (int)strcspn(init_utsname()->version, " "),
++	       init_utsname()->version,
++	       vendor, product,
++	       board ? "/" : "",
++	       board ? board : "");
+ }
+ 
+ void flush_thread(void)
+@@ -645,7 +645,7 @@ static void amd_e400_idle(void)
+ 			amd_e400_c1e_detected = true;
+ 			if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
+ 				mark_tsc_unstable("TSC halt in AMD C1E");
+-			printk(KERN_INFO "System has AMD C1E enabled\n");
++			pr_info("System has AMD C1E enabled\n");
+ 		}
+ 	}
+ 
+@@ -659,8 +659,7 @@ static void amd_e400_idle(void)
+ 			 */
+ 			clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_FORCE,
+ 					   &cpu);
+-			printk(KERN_INFO "Switch to broadcast mode on CPU%d\n",
+-			       cpu);
++			pr_info("Switch to broadcast mode on CPU%d\n", cpu);
+ 		}
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
+ 
+@@ -681,8 +680,7 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_SMP
+ 	if (pm_idle == poll_idle && smp_num_siblings > 1) {
+-		printk_once(KERN_WARNING "WARNING: polling idle and HT enabled,"
+-			" performance may degrade.\n");
++		pr_warn_once("WARNING: polling idle and HT enabled, performance may degrade\n");
+ 	}
+ #endif
+ 	if (pm_idle)
+@@ -692,11 +690,11 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+ 		/*
+ 		 * One CPU supports mwait => All CPUs supports mwait
+ 		 */
+-		printk(KERN_INFO "using mwait in idle threads.\n");
++		pr_info("using mwait in idle threads\n");
+ 		pm_idle = mwait_idle;
+ 	} else if (cpu_has_amd_erratum(amd_erratum_400)) {
+ 		/* E400: APIC timer interrupt does not wake up CPU from C1e */
+-		printk(KERN_INFO "using AMD E400 aware idle routine\n");
++		pr_info("using AMD E400 aware idle routine\n");
+ 		pm_idle = amd_e400_idle;
+ 	} else
+ 		pm_idle = default_idle;
+@@ -715,7 +713,7 @@ static int __init idle_setup(char *str)
+ 		return -EINVAL;
+ 
+ 	if (!strcmp(str, "poll")) {
+-		printk("using polling idle threads.\n");
++		pr_info("using polling idle threads\n");
+ 		pm_idle = poll_idle;
+ 		boot_option_idle_override = IDLE_POLL;
+ 	} else if (!strcmp(str, "mwait")) {
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 61cdf7f..85151f3 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -117,10 +117,10 @@ void release_thread(struct task_struct *dead_task)
+ {
+ 	if (dead_task->mm) {
+ 		if (dead_task->mm->context.size) {
+-			printk("WARNING: dead process %8s still has LDT? <%p/%d>\n",
+-					dead_task->comm,
+-					dead_task->mm->context.ldt,
+-					dead_task->mm->context.size);
++			pr_warn("WARNING: dead process %8s still has LDT? <%p/%d>\n",
++				dead_task->comm,
++				dead_task->mm->context.ldt,
++				dead_task->mm->context.size);
+ 			BUG();
+ 		}
+ 	}
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 79c45af..ab3f062 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -1,3 +1,5 @@
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/reboot.h>
+ #include <linux/init.h>
+@@ -152,7 +154,8 @@ static int __init set_bios_reboot(const struct dmi_system_id *d)
+ {
+ 	if (reboot_type != BOOT_BIOS) {
+ 		reboot_type = BOOT_BIOS;
+-		printk(KERN_INFO "%s series board detected. Selecting BIOS-method for reboots.\n", d->ident);
++		pr_info("%s series board detected. Selecting %s-method for reboots.\n",
++			"BIOS", d->ident);
+ 	}
+ 	return 0;
+ }
+@@ -207,8 +210,8 @@ static int __init set_pci_reboot(const struct dmi_system_id *d)
+ {
+ 	if (reboot_type != BOOT_CF9) {
+ 		reboot_type = BOOT_CF9;
+-		printk(KERN_INFO "%s series board detected. "
+-		       "Selecting PCI-method for reboots.\n", d->ident);
++		pr_info("%s series board detected. Selecting %s-method for reboots.\n",
++			"PCI", d->ident);
+ 	}
+ 	return 0;
+ }
+@@ -217,7 +220,8 @@ static int __init set_kbd_reboot(const struct dmi_system_id *d)
+ {
+ 	if (reboot_type != BOOT_KBD) {
+ 		reboot_type = BOOT_KBD;
+-		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboot.\n", d->ident);
++		pr_info("%s series board detected. Selecting %s-method for reboot.\n",
++			"KBD", d->ident);
+ 	}
+ 	return 0;
+ }
+@@ -668,7 +672,7 @@ static void __machine_emergency_restart(int emergency)
+ 
+ static void native_machine_restart(char *__unused)
+ {
+-	printk("machine restart\n");
++	pr_notice("machine restart\n");
+ 
+ 	if (!reboot_force)
+ 		machine_shutdown();
+diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
+index 21af737..b280908 100644
+--- a/arch/x86/kernel/signal.c
++++ b/arch/x86/kernel/signal.c
+@@ -6,6 +6,9 @@
+  *  2000-06-20  Pentium III FXSR, SSE support by Gareth Hughes
+  *  2000-2002   x86-64 support by Andi Kleen
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/sched.h>
+ #include <linux/mm.h>
+ #include <linux/smp.h>
+@@ -814,7 +817,7 @@ void signal_fault(struct pt_regs *regs, void __user *frame, char *where)
+ 		       me->comm, me->pid, where, frame,
+ 		       regs->ip, regs->sp, regs->orig_ax);
+ 		print_vma_addr(" in ", regs->ip);
+-		printk(KERN_CONT "\n");
++		pr_cont("\n");
+ 	}
+ 
+ 	force_sig(SIGSEGV, me);
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index fd019d7..456d648 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1,4 +1,4 @@
+-/*
++ /*
+  *	x86 SMP booting functions
+  *
+  *	(c) 1995 Alan Cox, Building #3 <alan@lxorguk.ukuu.org.uk>
+@@ -39,6 +39,8 @@
+  *	Glauber Costa		:	i386 and x86_64 integration
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/init.h>
+ #include <linux/smp.h>
+ #include <linux/module.h>
+@@ -184,7 +186,7 @@ static void __cpuinit smp_callin(void)
+ 	 * boards)
+ 	 */
+ 
+-	pr_debug("CALLIN, before setup_local_APIC().\n");
++	pr_debug("CALLIN, before setup_local_APIC()\n");
+ 	if (apic->smp_callin_clear_local_apic)
+ 		apic->smp_callin_clear_local_apic();
+ 	setup_local_APIC();
+@@ -420,17 +422,16 @@ static void impress_friends(void)
+ 	/*
+ 	 * Allow the user to impress friends.
+ 	 */
+-	pr_debug("Before bogomips.\n");
++	pr_debug("Before bogomips\n");
+ 	for_each_possible_cpu(cpu)
+ 		if (cpumask_test_cpu(cpu, cpu_callout_mask))
+ 			bogosum += cpu_data(cpu).loops_per_jiffy;
+-	printk(KERN_INFO
+-		"Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
++	pr_info("Total of %d processors activated (%lu.%02lu BogoMIPS)\n",
+ 		num_online_cpus(),
+ 		bogosum/(500000/HZ),
+ 		(bogosum/(5000/HZ))%100);
+ 
+-	pr_debug("Before bogocount - setting activated=1.\n");
++	pr_debug("Before bogocount - setting activated=1\n");
+ }
+ 
+ void __inquire_remote_apic(int apicid)
+@@ -440,18 +441,17 @@ void __inquire_remote_apic(int apicid)
+ 	int timeout;
+ 	u32 status;
+ 
+-	printk(KERN_INFO "Inquiring remote APIC 0x%x...\n", apicid);
++	pr_info("Inquiring remote APIC 0x%x...\n", apicid);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(regs); i++) {
+-		printk(KERN_INFO "... APIC 0x%x %s: ", apicid, names[i]);
++		pr_info("... APIC 0x%x %s: ", apicid, names[i]);
+ 
+ 		/*
+ 		 * Wait for idle.
+ 		 */
+ 		status = safe_apic_wait_icr_idle();
+ 		if (status)
+-			printk(KERN_CONT
+-			       "a previous APIC delivery may have failed\n");
++			pr_cont("a previous APIC delivery may have failed\n");
+ 
+ 		apic_icr_write(APIC_DM_REMRD | regs[i], apicid);
+ 
+@@ -464,10 +464,10 @@ void __inquire_remote_apic(int apicid)
+ 		switch (status) {
+ 		case APIC_ICR_RR_VALID:
+ 			status = apic_read(APIC_RRR);
+-			printk(KERN_CONT "%08x\n", status);
++			pr_cont("%08x\n", status);
+ 			break;
+ 		default:
+-			printk(KERN_CONT "failed\n");
++			pr_cont("failed\n");
+ 		}
+ 	}
+ }
+@@ -501,12 +501,12 @@ wakeup_secondary_cpu_via_nmi(int logical_apicid, unsigned long start_eip)
+ 			apic_write(APIC_ESR, 0);
+ 		accept_status = (apic_read(APIC_ESR) & 0xEF);
+ 	}
+-	pr_debug("NMI sent.\n");
++	pr_debug("NMI sent\n");
+ 
+ 	if (send_status)
+-		printk(KERN_ERR "APIC never delivered???\n");
++		pr_err("APIC never delivered???\n");
+ 	if (accept_status)
+-		printk(KERN_ERR "APIC delivery error (%lx).\n", accept_status);
++		pr_err("APIC delivery error (%lx)\n", accept_status);
+ 
+ 	return (send_status | accept_status);
+ }
+@@ -528,7 +528,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 		apic_read(APIC_ESR);
+ 	}
+ 
+-	pr_debug("Asserting INIT.\n");
++	pr_debug("Asserting INIT\n");
+ 
+ 	/*
+ 	 * Turn INIT on target chip
+@@ -544,7 +544,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 
+ 	mdelay(10);
+ 
+-	pr_debug("Deasserting INIT.\n");
++	pr_debug("Deasserting INIT\n");
+ 
+ 	/* Target chip */
+ 	/* Send IPI */
+@@ -577,14 +577,14 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 	/*
+ 	 * Run STARTUP IPI loop.
+ 	 */
+-	pr_debug("#startup loops: %d.\n", num_starts);
++	pr_debug("#startup loops: %d\n", num_starts);
+ 
+ 	for (j = 1; j <= num_starts; j++) {
+-		pr_debug("Sending STARTUP #%d.\n", j);
++		pr_debug("Sending STARTUP #%d\n", j);
+ 		if (maxlvt > 3)		/* Due to the Pentium erratum 3AP.  */
+ 			apic_write(APIC_ESR, 0);
+ 		apic_read(APIC_ESR);
+-		pr_debug("After apic_write.\n");
++		pr_debug("After apic_write\n");
+ 
+ 		/*
+ 		 * STARTUP IPI
+@@ -601,7 +601,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 		 */
+ 		udelay(300);
+ 
+-		pr_debug("Startup point 1.\n");
++		pr_debug("Startup point 1\n");
+ 
+ 		pr_debug("Waiting for send to finish...\n");
+ 		send_status = safe_apic_wait_icr_idle();
+@@ -616,12 +616,12 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 		if (send_status || accept_status)
+ 			break;
+ 	}
+-	pr_debug("After Startup.\n");
++	pr_debug("After Startup\n");
+ 
+ 	if (send_status)
+-		printk(KERN_ERR "APIC never delivered???\n");
++		pr_err("APIC never delivered???\n");
+ 	if (accept_status)
+-		printk(KERN_ERR "APIC delivery error (%lx).\n", accept_status);
++		pr_err("APIC delivery error (%lx)\n", accept_status);
+ 
+ 	return (send_status | accept_status);
+ }
+@@ -635,11 +635,11 @@ static void __cpuinit announce_cpu(int cpu, int apicid)
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		if (node != current_node) {
+ 			if (current_node > (-1))
+-				pr_cont(" Ok.\n");
++				pr_cont(" OK\n");
+ 			current_node = node;
+ 			pr_info("Booting Node %3d, Processors ", node);
+ 		}
+-		pr_cont(" #%d%s", cpu, cpu == (nr_cpu_ids - 1) ? " Ok.\n" : "");
++		pr_cont(" #%d%s", cpu, cpu == (nr_cpu_ids - 1) ? " OK\n" : "");
+ 		return;
+ 	} else
+ 		pr_info("Booting Node %d Processor %d APIC 0x%x\n",
+@@ -719,9 +719,9 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		/*
+ 		 * allow APs to start initializing.
+ 		 */
+-		pr_debug("Before Callout %d.\n", cpu);
++		pr_debug("Before Callout %d\n", cpu);
+ 		cpumask_set_cpu(cpu, cpu_callout_mask);
+-		pr_debug("After Callout %d.\n", cpu);
++		pr_debug("After Callout %d\n", cpu);
+ 
+ 		/*
+ 		 * Wait 5s total for a response
+@@ -749,7 +749,7 @@ static int __cpuinit do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 				pr_err("CPU%d: Stuck ??\n", cpu);
+ 			else
+ 				/* trampoline code not run */
+-				pr_err("CPU%d: Not responding.\n", cpu);
++				pr_err("CPU%d: Not responding\n", cpu);
+ 			if (apic->inquire_remote_apic)
+ 				apic->inquire_remote_apic(apicid);
+ 		}
+@@ -794,7 +794,7 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+ 	if (apicid == BAD_APICID || apicid == boot_cpu_physical_apicid ||
+ 	    !physid_isset(apicid, phys_cpu_present_map) ||
+ 	    !apic->apic_id_valid(apicid)) {
+-		printk(KERN_ERR "%s: bad cpu %d\n", __func__, cpu);
++		pr_err("%s: bad cpu %d\n", __func__, cpu);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -875,9 +875,8 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ 		unsigned int cpu;
+ 		unsigned nr;
+ 
+-		printk(KERN_WARNING
+-		       "More than 8 CPUs detected - skipping them.\n"
+-		       "Use CONFIG_X86_BIGSMP.\n");
++		pr_warn("More than 8 CPUs detected - skipping them\n"
++			"Use CONFIG_X86_BIGSMP\n");
+ 
+ 		nr = 0;
+ 		for_each_present_cpu(cpu) {
+@@ -898,8 +897,7 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ #endif
+ 
+ 	if (!physid_isset(hard_smp_processor_id(), phys_cpu_present_map)) {
+-		printk(KERN_WARNING
+-			"weird, boot CPU (#%d) not listed by the BIOS.\n",
++		pr_warn("weird, boot CPU (#%d) not listed by the BIOS\n",
+ 			hard_smp_processor_id());
+ 
+ 		physid_set(hard_smp_processor_id(), phys_cpu_present_map);
+@@ -911,11 +909,10 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ 	 */
+ 	if (!smp_found_config && !acpi_lapic) {
+ 		preempt_enable();
+-		printk(KERN_NOTICE "SMP motherboard not detected.\n");
++		pr_notice("SMP motherboard not detected\n");
+ 		disable_smp();
+ 		if (APIC_init_uniprocessor())
+-			printk(KERN_NOTICE "Local APIC not detected."
+-					   " Using dummy APIC emulation.\n");
++			pr_notice("Local APIC not detected. Using dummy APIC emulation.\n");
+ 		return -1;
+ 	}
+ 
+@@ -924,9 +921,8 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ 	 * CPU too, but we do it for the sake of robustness anyway.
+ 	 */
+ 	if (!apic->check_phys_apicid_present(boot_cpu_physical_apicid)) {
+-		printk(KERN_NOTICE
+-			"weird, boot CPU (#%d) not listed by the BIOS.\n",
+-			boot_cpu_physical_apicid);
++		pr_notice("weird, boot CPU (#%d) not listed by the BIOS\n",
++			  boot_cpu_physical_apicid);
+ 		physid_set(hard_smp_processor_id(), phys_cpu_present_map);
+ 	}
+ 	preempt_enable();
+@@ -939,8 +935,7 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ 		if (!disable_apic) {
+ 			pr_err("BIOS bug, local APIC #%d not detected!...\n",
+ 				boot_cpu_physical_apicid);
+-			pr_err("... forcing use of dummy APIC emulation."
+-				"(tell your hw vendor)\n");
++			pr_err("... forcing use of dummy APIC emulation (tell your hw vendor)\n");
+ 		}
+ 		smpboot_clear_io_apic();
+ 		disable_ioapic_support();
+@@ -953,7 +948,7 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ 	 * If SMP should be disabled, then really disable it!
+ 	 */
+ 	if (!max_cpus) {
+-		printk(KERN_INFO "SMP mode deactivated.\n");
++		pr_info("SMP mode deactivated\n");
+ 		smpboot_clear_io_apic();
+ 
+ 		connect_bsp_APIC();
+@@ -1005,7 +1000,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 
+ 
+ 	if (smp_sanity_check(max_cpus) < 0) {
+-		printk(KERN_INFO "SMP disabled\n");
++		pr_info("SMP disabled\n");
+ 		disable_smp();
+ 		goto out;
+ 	}
+@@ -1043,7 +1038,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	 * Set up local APIC timer on boot CPU.
+ 	 */
+ 
+-	printk(KERN_INFO "CPU%d: ", 0);
++	pr_info("CPU%d: ", 0);
+ 	print_cpu_info(&cpu_data(0));
+ 	x86_init.timers.setup_percpu_clockev();
+ 
+@@ -1093,7 +1088,7 @@ void __init native_smp_prepare_boot_cpu(void)
+ 
+ void __init native_smp_cpus_done(unsigned int max_cpus)
+ {
+-	pr_debug("Boot done.\n");
++	pr_debug("Boot done\n");
+ 
+ 	nmi_selftest();
+ 	impress_friends();
+@@ -1154,8 +1149,7 @@ __init void prefill_possible_map(void)
+ 
+ 	/* nr_cpu_ids could be reduced via nr_cpus= */
+ 	if (possible > nr_cpu_ids) {
+-		printk(KERN_WARNING
+-			"%d Processors exceeds NR_CPUS limit of %d\n",
++		pr_warn("%d Processors exceeds NR_CPUS limit of %d\n",
+ 			possible, nr_cpu_ids);
+ 		possible = nr_cpu_ids;
+ 	}
+@@ -1164,13 +1158,12 @@ __init void prefill_possible_map(void)
+ 	if (!setup_max_cpus)
+ #endif
+ 	if (possible > i) {
+-		printk(KERN_WARNING
+-			"%d Processors exceeds max_cpus limit of %u\n",
++		pr_warn("%d Processors exceeds max_cpus limit of %u\n",
+ 			possible, setup_max_cpus);
+ 		possible = i;
+ 	}
+ 
+-	printk(KERN_INFO "SMP: Allowing %d CPUs, %d hotplug CPUs\n",
++	pr_info("Allowing %d CPUs, %d hotplug CPUs\n",
+ 		possible, max_t(int, possible - num_processors, 0));
+ 
+ 	for (i = 0; i < possible; i++)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 05b31d9..b481341 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -9,6 +9,9 @@
+ /*
+  * Handle hardware traps and faults.
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/interrupt.h>
+ #include <linux/kallsyms.h>
+ #include <linux/spinlock.h>
+@@ -143,12 +146,11 @@ trap_signal:
+ #ifdef CONFIG_X86_64
+ 	if (show_unhandled_signals && unhandled_signal(tsk, signr) &&
+ 	    printk_ratelimit()) {
+-		printk(KERN_INFO
+-		       "%s[%d] trap %s ip:%lx sp:%lx error:%lx",
+-		       tsk->comm, tsk->pid, str,
+-		       regs->ip, regs->sp, error_code);
++		pr_info("%s[%d] trap %s ip:%lx sp:%lx error:%lx",
++			tsk->comm, tsk->pid, str,
++			regs->ip, regs->sp, error_code);
+ 		print_vma_addr(" in ", regs->ip);
+-		printk("\n");
++		pr_cont("\n");
+ 	}
+ #endif
+ 
+@@ -269,12 +271,11 @@ do_general_protection(struct pt_regs *regs, long error_code)
+ 
+ 	if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
+ 			printk_ratelimit()) {
+-		printk(KERN_INFO
+-			"%s[%d] general protection ip:%lx sp:%lx error:%lx",
++		pr_info("%s[%d] general protection ip:%lx sp:%lx error:%lx",
+ 			tsk->comm, task_pid_nr(tsk),
+ 			regs->ip, regs->sp, error_code);
+ 		print_vma_addr(" in ", regs->ip);
+-		printk("\n");
++		pr_cont("\n");
+ 	}
+ 
+ 	force_sig(SIGSEGV, tsk);
+@@ -570,7 +571,7 @@ do_spurious_interrupt_bug(struct pt_regs *regs, long error_code)
+ 	conditional_sti(regs);
+ #if 0
+ 	/* No need to warn about this any longer. */
+-	printk(KERN_INFO "Ignoring P6 Local APIC Spurious Interrupt Bug...\n");
++	pr_info("Ignoring P6 Local APIC Spurious Interrupt Bug...\n");
+ #endif
+ }
+ 
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index fc0a147..cfa5d4f 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -1,3 +1,5 @@
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/init.h>
+@@ -84,8 +86,7 @@ EXPORT_SYMBOL_GPL(check_tsc_unstable);
+ #ifdef CONFIG_X86_TSC
+ int __init notsc_setup(char *str)
+ {
+-	printk(KERN_WARNING "notsc: Kernel compiled with CONFIG_X86_TSC, "
+-			"cannot disable TSC completely.\n");
++	pr_warn("Kernel compiled with CONFIG_X86_TSC, cannot disable TSC completely\n");
+ 	tsc_disabled = 1;
+ 	return 1;
+ }
+@@ -373,7 +374,7 @@ static unsigned long quick_pit_calibrate(void)
+ 			goto success;
+ 		}
+ 	}
+-	printk("Fast TSC calibration failed\n");
++	pr_err("Fast TSC calibration failed\n");
+ 	return 0;
+ 
+ success:
+@@ -392,7 +393,7 @@ success:
+ 	 */
+ 	delta *= PIT_TICK_RATE;
+ 	do_div(delta, i*256*1000);
+-	printk("Fast TSC calibration using PIT\n");
++	pr_info("Fast TSC calibration using PIT\n");
+ 	return delta;
+ }
+ 
+@@ -487,9 +488,8 @@ unsigned long native_calibrate_tsc(void)
+ 		 * use the reference value, as it is more precise.
+ 		 */
+ 		if (delta >= 90 && delta <= 110) {
+-			printk(KERN_INFO
+-			       "TSC: PIT calibration matches %s. %d loops\n",
+-			       hpet ? "HPET" : "PMTIMER", i + 1);
++			pr_info("PIT calibration matches %s. %d loops\n",
++				hpet ? "HPET" : "PMTIMER", i + 1);
+ 			return tsc_ref_min;
+ 		}
+ 
+@@ -511,38 +511,36 @@ unsigned long native_calibrate_tsc(void)
+ 	 */
+ 	if (tsc_pit_min == ULONG_MAX) {
+ 		/* PIT gave no useful value */
+-		printk(KERN_WARNING "TSC: Unable to calibrate against PIT\n");
++		pr_warn("Unable to calibrate against PIT\n");
+ 
+ 		/* We don't have an alternative source, disable TSC */
+ 		if (!hpet && !ref1 && !ref2) {
+-			printk("TSC: No reference (HPET/PMTIMER) available\n");
++			pr_notice("No reference (HPET/PMTIMER) available\n");
+ 			return 0;
+ 		}
+ 
+ 		/* The alternative source failed as well, disable TSC */
+ 		if (tsc_ref_min == ULONG_MAX) {
+-			printk(KERN_WARNING "TSC: HPET/PMTIMER calibration "
+-			       "failed.\n");
++			pr_warn("HPET/PMTIMER calibration failed\n");
+ 			return 0;
+ 		}
+ 
+ 		/* Use the alternative source */
+-		printk(KERN_INFO "TSC: using %s reference calibration\n",
+-		       hpet ? "HPET" : "PMTIMER");
++		pr_info("using %s reference calibration\n",
++			hpet ? "HPET" : "PMTIMER");
+ 
+ 		return tsc_ref_min;
+ 	}
+ 
+ 	/* We don't have an alternative source, use the PIT calibration value */
+ 	if (!hpet && !ref1 && !ref2) {
+-		printk(KERN_INFO "TSC: Using PIT calibration value\n");
++		pr_info("Using PIT calibration value\n");
+ 		return tsc_pit_min;
+ 	}
+ 
+ 	/* The alternative source failed, use the PIT calibration value */
+ 	if (tsc_ref_min == ULONG_MAX) {
+-		printk(KERN_WARNING "TSC: HPET/PMTIMER calibration failed. "
+-		       "Using PIT calibration\n");
++		pr_warn("HPET/PMTIMER calibration failed. Using PIT calibration.\n");
+ 		return tsc_pit_min;
+ 	}
+ 
+@@ -551,9 +549,9 @@ unsigned long native_calibrate_tsc(void)
+ 	 * the PIT value as we know that there are PMTIMERs around
+ 	 * running at double speed. At least we let the user know:
+ 	 */
+-	printk(KERN_WARNING "TSC: PIT calibration deviates from %s: %lu %lu.\n",
+-	       hpet ? "HPET" : "PMTIMER", tsc_pit_min, tsc_ref_min);
+-	printk(KERN_INFO "TSC: Using PIT calibration value\n");
++	pr_warn("PIT calibration deviates from %s: %lu %lu\n",
++		hpet ? "HPET" : "PMTIMER", tsc_pit_min, tsc_ref_min);
++	pr_info("Using PIT calibration value\n");
+ 	return tsc_pit_min;
+ }
+ 
+@@ -785,7 +783,7 @@ void mark_tsc_unstable(char *reason)
+ 		tsc_unstable = 1;
+ 		sched_clock_stable = 0;
+ 		disable_sched_clock_irqtime();
+-		printk(KERN_INFO "Marking TSC unstable due to %s\n", reason);
++		pr_info("Marking TSC unstable due to %s\n", reason);
+ 		/* Change only the rating, when not registered */
+ 		if (clocksource_tsc.mult)
+ 			clocksource_mark_unstable(&clocksource_tsc);
+@@ -912,9 +910,9 @@ static void tsc_refine_calibration_work(struct work_struct *work)
+ 		goto out;
+ 
+ 	tsc_khz = freq;
+-	printk(KERN_INFO "Refined TSC clocksource calibration: "
+-		"%lu.%03lu MHz.\n", (unsigned long)tsc_khz / 1000,
+-					(unsigned long)tsc_khz % 1000);
++	pr_info("Refined TSC clocksource calibration: %lu.%03lu MHz\n",
++		(unsigned long)tsc_khz / 1000,
++		(unsigned long)tsc_khz % 1000);
+ 
+ out:
+ 	clocksource_register_khz(&clocksource_tsc, tsc_khz);
+@@ -970,9 +968,9 @@ void __init tsc_init(void)
+ 		return;
+ 	}
+ 
+-	printk("Detected %lu.%03lu MHz processor.\n",
+-			(unsigned long)cpu_khz / 1000,
+-			(unsigned long)cpu_khz % 1000);
++	pr_info("Detected %lu.%03lu MHz processor\n",
++		(unsigned long)cpu_khz / 1000,
++		(unsigned long)cpu_khz % 1000);
+ 
+ 	/*
+ 	 * Secondary CPUs do not run through tsc_init(), so set up
+diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
+index 255f58a..54abcc0 100644
+--- a/arch/x86/kernel/vm86_32.c
++++ b/arch/x86/kernel/vm86_32.c
+@@ -28,6 +28,8 @@
+  *
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/capability.h>
+ #include <linux/errno.h>
+ #include <linux/interrupt.h>
+@@ -137,14 +139,14 @@ struct pt_regs *save_v86_state(struct kernel_vm86_regs *regs)
+ 	local_irq_enable();
+ 
+ 	if (!current->thread.vm86_info) {
+-		printk("no vm86_info: BAD\n");
++		pr_alert("no vm86_info: BAD\n");
+ 		do_exit(SIGSEGV);
+ 	}
+ 	set_flags(regs->pt.flags, VEFLAGS, X86_EFLAGS_VIF | current->thread.v86mask);
+ 	tmp = copy_vm86_regs_to_user(&current->thread.vm86_info->regs, regs);
+ 	tmp += put_user(current->thread.screen_bitmap, &current->thread.vm86_info->screen_bitmap);
+ 	if (tmp) {
+-		printk("vm86: could not access userspace vm86_info\n");
++		pr_alert("could not access userspace vm86_info\n");
+ 		do_exit(SIGSEGV);
+ 	}
+ 
+diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+index 7515cf0..acdc125 100644
+--- a/arch/x86/kernel/vsyscall_64.c
++++ b/arch/x86/kernel/vsyscall_64.c
+@@ -18,6 +18,8 @@
+  *  use the vDSO.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/time.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+@@ -111,18 +113,13 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
+ static void warn_bad_vsyscall(const char *level, struct pt_regs *regs,
+ 			      const char *message)
+ {
+-	static DEFINE_RATELIMIT_STATE(rs, DEFAULT_RATELIMIT_INTERVAL, DEFAULT_RATELIMIT_BURST);
+-	struct task_struct *tsk;
+-
+-	if (!show_unhandled_signals || !__ratelimit(&rs))
++	if (!show_unhandled_signals)
+ 		return;
+ 
+-	tsk = current;
+-
+-	printk("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
+-	       level, tsk->comm, task_pid_nr(tsk),
+-	       message, regs->ip, regs->cs,
+-	       regs->sp, regs->ax, regs->si, regs->di);
++	pr_notice_ratelimited("%s%s[%d] %s ip:%lx cs:%lx sp:%lx ax:%lx si:%lx di:%lx\n",
++			      level, current->comm, task_pid_nr(current),
++			      message, regs->ip, regs->cs,
++			      regs->sp, regs->ax, regs->si, regs->di);
+ }
+ 
+ static int addr_to_vsyscall_nr(unsigned long addr)
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index bd18149..3d3e207 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -3,6 +3,9 @@
+  *
+  * Author: Suresh Siddha <suresh.b.siddha@intel.com>
+  */
++
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/bootmem.h>
+ #include <linux/compat.h>
+ #include <asm/i387.h>
+@@ -162,7 +165,7 @@ int save_i387_xstate(void __user *buf)
+ 	BUG_ON(sig_xstate_size < xstate_size);
+ 
+ 	if ((unsigned long)buf % 64)
+-		printk("save_i387_xstate: bad fpstate %p\n", buf);
++		pr_err("%s: bad fpstate %p\n", __func__, buf);
+ 
+ 	if (!used_math())
+ 		return 0;
+@@ -422,7 +425,7 @@ static void __init xstate_enable_boot_cpu(void)
+ 	pcntxt_mask = eax + ((u64)edx << 32);
+ 
+ 	if ((pcntxt_mask & XSTATE_FPSSE) != XSTATE_FPSSE) {
+-		printk(KERN_ERR "FP/SSE not shown under xsave features 0x%llx\n",
++		pr_err("FP/SSE not shown under xsave features 0x%llx\n",
+ 		       pcntxt_mask);
+ 		BUG();
+ 	}
+@@ -445,9 +448,8 @@ static void __init xstate_enable_boot_cpu(void)
+ 
+ 	setup_xstate_init();
+ 
+-	printk(KERN_INFO "xsave/xrstor: enabled xstate_bv 0x%llx, "
+-	       "cntxt size 0x%x\n",
+-	       pcntxt_mask, xstate_size);
++	pr_info("enabled xstate_bv 0x%llx, cntxt size 0x%x\n",
++		pcntxt_mask, xstate_size);
+ }
+ 
+ /*
