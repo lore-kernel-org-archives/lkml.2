@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758899Ab2FFVww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:52:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53350 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab2FFVwv (ORCPT
+	id S1758979Ab2FFVxG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:53:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:52262 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab2FFVxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:52:51 -0400
-Message-ID: <4FCFD112.1070106@pengutronix.de>
-Date: Wed, 06 Jun 2012 23:52:18 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix e.K.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
+	Wed, 6 Jun 2012 17:53:03 -0400
+Date: Wed, 6 Jun 2012 23:52:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@amd64.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch 1/6] x86: mce: Create devices in CPU_UP_PREPARE
+In-Reply-To: <20120606214219.GC6841@aftab.osrc.amd.com>
+Message-ID: <alpine.LFD.2.02.1206062351460.3086@ionos>
+References: <20120606211746.693649684@linutronix.de> <20120606212334.513459224@linutronix.de> <alpine.LFD.2.02.1206062337310.3086@ionos> <20120606214219.GC6841@aftab.osrc.amd.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-CC: Wolfgang Grandegger <wg@grandegger.com>, kernel-janitors@vger.kernel.org,
-        linux-can@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joe@perches.com,
-        Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 7/7] drivers/net/can/cc770/cc770_platform.c: adjust suspicious
- bit operation
-References: <1339018901-28439-1-git-send-email-Julia.Lawall@lip6.fr> <1339018901-28439-8-git-send-email-Julia.Lawall@lip6.fr>
-In-Reply-To: <1339018901-28439-8-git-send-email-Julia.Lawall@lip6.fr>
-X-Enigmail-Version: 1.4.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigF0B5B7A6CB9E6AD33DD9FC5D"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigF0B5B7A6CB9E6AD33DD9FC5D
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, 6 Jun 2012, Borislav Petkov wrote:
 
-On 06/06/2012 11:41 PM, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
->=20
-> CPUIF_DSC is 0x40, so it would seem that & is wanted rather than |.
->=20
-> This problem was found using Coccinelle (http://coccinelle.lip6.fr/).
->=20
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> On Wed, Jun 06, 2012 at 11:38:11PM +0200, Thomas Gleixner wrote:
+> > On Wed, 6 Jun 2012, Thomas Gleixner wrote:
+> > 
+> > > This makes the treshold_cpu_callback for AMD actually work and makes
+> > > the code symetric vs. teardown.
+> > 
+> > Ignore that. I sent out the wrong version of this lot. Sorry for the noise
+> 
+> By this you mean the chunk at the end of 5/6, right?
+> 
+> There's a chunk touching amd_64_threshold_cpu_callback...
 
-Good catch, Joe Perches has already found and fixed that problem. It has
-been fixed in:
+Both 1/6 and 5/6 are wrong. That's a leftover from a previous
+iteration. About to send the fixed version.
 
-    dc605db can: cc770: Fix likely misuse of | for &
-
-The commit is currently in David's net/master, and scheduled for the
-v3.5 release.
-
-Regards, Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enigF0B5B7A6CB9E6AD33DD9FC5D
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk/P0RUACgkQjTAFq1RaXHMcbQCgi/Wo716GQYPqfXM9K/0YXMeZ
-84gAoIvJmxcoGBuSuklIYpbxP0e2zPyn
-=8dej
------END PGP SIGNATURE-----
-
---------------enigF0B5B7A6CB9E6AD33DD9FC5D--
