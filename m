@@ -1,58 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab2FFGBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 02:01:44 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46262 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab2FFGBn convert rfc822-to-8bit (ORCPT
+	id S1753899Ab2FFGDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 02:03:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36839 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab2FFGDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 02:01:43 -0400
+	Wed, 6 Jun 2012 02:03:02 -0400
+Date: Wed, 6 Jun 2012 08:04:38 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: shuahkhan@gmail.com, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH v2 1/2] led: add oneshot trigger
+Message-ID: <20120606060438.GA1371@gmail.com>
+References: <1338932339-1660-1-git-send-email-fabio.baltieri@gmail.com>
+ <1338943907.3216.13.camel@lorien2>
+ <CAK5ve-K0m0h-9vNj4DTk2P=isQPU7tuxWWaX5mcWTXpO-FU2Dg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1338961426-31470-1-git-send-email-sachin.kamat@linaro.org>
-References: <1338961426-31470-1-git-send-email-sachin.kamat@linaro.org>
-From: Rahul Bedarkar <rpal143@gmail.com>
-Date: Wed, 6 Jun 2012 11:31:18 +0530
-Message-ID: <CA+NV+Vkdd_yVnbNgeW4Tr7fRqEyQc=1gD2=5LY_pSsvF89AW0g@mail.gmail.com>
-Subject: Re: [PATCH 1/1] PM: devfreq: Add missing static storage class
- specifier in devfreq.c file
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAK5ve-K0m0h-9vNj4DTk2P=isQPU7tuxWWaX5mcWTXpO-FU2Dg@mail.gmail.com>
+X-Operating-System: Linux balto-eee 3.5.0-rc1-balto-eee-00008-g4a25fe7-dirty
+ GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It could be static.
+On Wed, Jun 06, 2012 at 10:56:44AM +0800, Bryan Wu wrote:
+> On Wed, Jun 6, 2012 at 8:51 AM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> > On Tue, 2012-06-05 at 23:38 +0200, Fabio Baltieri wrote:
+> >> Add oneshot trigger to blink a led with configurable parameters via
+> >> sysfs.
+> >
+> > Fabio,
+> >
+> > What are the use-cases for this trigger. Please see comments inline:
+> >
+> >
+> >>
+> >> Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+> >> Cc: Shuah Khan <shuahkhan@gmail.com>
+> >> Cc: Bryan Wu <bryan.wu@canonical.com>
+> >> ---
+> >> Hi all,
+> >>
+> >> that's my v2 of the ledtrig-oneshot trigger, with the correction suggested from
+> >> Shuah in the original thread.  These include some unnecessary initialization
+> >> and use of the new "activated" flag.
+> >>
+> >> I've kept the name to "oneshot" as I think it suits the role of the trigger as
+> >> example/test for the led_blink_set_oneshot function but I have expanded a bit
+> >> the Kconfig description to better identify the trigger's usage.
+> >>
+> >> About the namespace question, I think that naming the parameters delay_on and
+> >> delay_off is ok as they have the same meaning as timer's ones (they also
+> >> uses the same internal fields after all...).
+> >>
+> >> Also, I added a default set of delay_{on,off} to 100ms on activation, so that
+> >> the trigger starts with a valid configuration, like ledtrig-timer does.
+> >>
+> >> Anything else that should be changed?
+> >>
+> >> Fabio
+> >>
+> >>  drivers/leds/Kconfig           |  14 +++
+> >>  drivers/leds/Makefile          |   1 +
+> >>  drivers/leds/ledtrig-oneshot.c | 198 +++++++++++++++++++++++++++++++++++++++++
+> >>  3 files changed, 213 insertions(+)
+> >>  create mode 100644 drivers/leds/ledtrig-oneshot.c
+> >>
+> >> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> >> index 04cb8c8..1f151fb 100644
+> >> --- a/drivers/leds/Kconfig
+> >> +++ b/drivers/leds/Kconfig
+> >> @@ -443,6 +443,20 @@ config LEDS_TRIGGER_TIMER
+> >>
+> >>         If unsure, say Y.
+> >>
+> >> +config LEDS_TRIGGER_ONESHOT
+> >> +     tristate "LED One-shot Trigger"
+> >> +     depends on LEDS_TRIGGERS
+> >> +     help
+> >> +       This allows LEDs to blink in one-shot pulses with parameters
+> >> +       controlled via sysfs.  It's useful to notify the user on
+> >> +       sporadic events, when there are no clear begin and end trap points,
+> >> +       or on dense events, where this blinks the LED at constant rate if
+> >> +       rearmed continuously.
+> >> +
+> >> +       It also shows how to use the led_blink_set_oneshot() function.
+> >> +
+> >> +       If unsure, say Y.
+> >> +
+> >>  config LEDS_TRIGGER_IDE_DISK
+> >>       bool "LED IDE Disk Trigger"
+> >>       depends on IDE_GD_ATA
+> >> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> >> index f8958cd..9112d51 100644
+> >> --- a/drivers/leds/Makefile
+> >> +++ b/drivers/leds/Makefile
+> >> @@ -53,6 +53,7 @@ obj-$(CONFIG_LEDS_DAC124S085)               += leds-dac124s085.o
+> >>
+> >>  # LED Triggers
+> >>  obj-$(CONFIG_LEDS_TRIGGER_TIMER)     += ledtrig-timer.o
+> >> +obj-$(CONFIG_LEDS_TRIGGER_ONESHOT)   += ledtrig-oneshot.o
+> >>  obj-$(CONFIG_LEDS_TRIGGER_IDE_DISK)  += ledtrig-ide-disk.o
+> >>  obj-$(CONFIG_LEDS_TRIGGER_HEARTBEAT) += ledtrig-heartbeat.o
+> >>  obj-$(CONFIG_LEDS_TRIGGER_BACKLIGHT) += ledtrig-backlight.o
+> >> diff --git a/drivers/leds/ledtrig-oneshot.c b/drivers/leds/ledtrig-oneshot.c
+> >> new file mode 100644
+> >> index 0000000..1aacdfe
+> >> --- /dev/null
+> >> +++ b/drivers/leds/ledtrig-oneshot.c
+> >> @@ -0,0 +1,198 @@
+> >> +/*
+> >> + * One-shot LED Trigger
+> >> + *
+> >> + * Copyright 2012, Fabio Baltieri <fabio.baltieri@gmail.com>
+> >> + *
+> >> + * Based on ledtrig-timer.c by Richard Purdie <rpurdie@openedhand.com>
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or modify
+> >> + * it under the terms of the GNU General Public License version 2 as
+> >> + * published by the Free Software Foundation.
+> >> + *
+> >> + */
+> >> +
+> >> +#include <linux/module.h>
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/init.h>
+> >> +#include <linux/device.h>
+> >> +#include <linux/ctype.h>
+> >> +#include <linux/slab.h>
+> >> +#include <linux/leds.h>
+> >> +
+> >> +#define DEFAULT_DELAY 100
+> >> +
+> >> +struct oneshot_trig_data {
+> >> +     unsigned int invert;
+> >> +};
+> >> +
+> >> +static ssize_t led_shot(struct device *dev,
+> >> +             struct device_attribute *attr, const char *buf, size_t size)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +     struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
+> >> +
+> >> +     led_blink_set_oneshot(led_cdev,
+> >> +                     &led_cdev->blink_delay_on, &led_cdev->blink_delay_off,
+> >> +                     oneshot_data->invert);
+> >
+> > Here when shot is set
+> >
+> > echo n > shot
+> >
+> > What are the values for blink_delay_on and blink_delay_off. Does user
+> > need to set delay_on and delay_off first? If user doesn't set these then
+> > what values are used?
+> >
+> > What about invert? Does user need to do echo 1 > invert and then
+> > activate shot?
+> >
+> >
+> 
+> Exactly, Fabio, what about adding a document for the use case and
+> sysfs interface?
 
-On Wed, Jun 6, 2012 at 11:13 AM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Fixes the following sparse warning:
-> drivers/devfreq/devfreq.c:30:14: warning: symbol 'devfreq_class' was not declared. Should it be static?
->
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  drivers/devfreq/devfreq.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> index 70c31d4..9eb6805 100644
-> --- a/drivers/devfreq/devfreq.c
-> +++ b/drivers/devfreq/devfreq.c
-> @@ -27,7 +27,7 @@
->  #include <linux/hrtimer.h>
->  #include "governor.h"
->
-> -struct class *devfreq_class;
-> +static struct class *devfreq_class;
->
->  /*
->  * devfreq_work periodically monitors every registered device.
-> --
-> 1.7.4.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Ok, I'll post a v3 with an additional document for the trigger then.
+
+Fabio
+
+> 
+> -Bryan
+> 
+> >> +
+> >> +     /* content is ignored */
+> >> +     return size;
+> >> +}
+> >> +static ssize_t led_invert_show(struct device *dev,
+> >> +             struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +     struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
+> >> +
+> >> +     return sprintf(buf, "%u\n", oneshot_data->invert);
+> >> +}
+> >> +
+> >> +static ssize_t led_invert_store(struct device *dev,
+> >> +             struct device_attribute *attr, const char *buf, size_t size)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +     struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
+> >> +     unsigned long state;
+> >> +     int ret;
+> >> +
+> >> +     ret = kstrtoul(buf, 0, &state);
+> >> +     if (ret)
+> >> +             return ret;
+> >> +
+> >> +     oneshot_data->invert = !!state;
+> >> +
+> >> +     return size;
+> >> +}
+> >> +
+> >> +static ssize_t led_delay_on_show(struct device *dev,
+> >> +             struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +
+> >> +     return sprintf(buf, "%lu\n", led_cdev->blink_delay_on);
+> >> +}
+> >> +
+> >> +static ssize_t led_delay_on_store(struct device *dev,
+> >> +             struct device_attribute *attr, const char *buf, size_t size)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +     unsigned long state;
+> >> +     int ret;
+> >> +
+> >> +     ret = kstrtoul(buf, 0, &state);
+> >> +     if (ret)
+> >> +             return ret;
+> >> +
+> >> +     led_cdev->blink_delay_on = state;
+> >> +
+> >> +     return size;
+> >> +}
+> >> +static ssize_t led_delay_off_show(struct device *dev,
+> >> +             struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +
+> >> +     return sprintf(buf, "%lu\n", led_cdev->blink_delay_off);
+> >> +}
+> >> +
+> >> +static ssize_t led_delay_off_store(struct device *dev,
+> >> +             struct device_attribute *attr, const char *buf, size_t size)
+> >> +{
+> >> +     struct led_classdev *led_cdev = dev_get_drvdata(dev);
+> >> +     unsigned long state;
+> >> +     int ret;
+> >> +
+> >> +     ret = kstrtoul(buf, 0, &state);
+> >> +     if (ret)
+> >> +             return ret;
+> >> +
+> >> +     led_cdev->blink_delay_off = state;
+> >> +
+> >> +     return size;
+> >> +}
+> >> +
+> >> +static DEVICE_ATTR(delay_on, 0644, led_delay_on_show, led_delay_on_store);
+> >> +static DEVICE_ATTR(delay_off, 0644, led_delay_off_show, led_delay_off_store);
+> >> +static DEVICE_ATTR(invert, 0644, led_invert_show, led_invert_store);
+> >> +static DEVICE_ATTR(shot, 0200, NULL, led_shot);
+> >> +
+> >> +static void oneshot_trig_activate(struct led_classdev *led_cdev)
+> >> +{
+> >> +     struct oneshot_trig_data *oneshot_data;
+> >> +     int rc;
+> >> +
+> >> +     oneshot_data = kzalloc(sizeof(*oneshot_data), GFP_KERNEL);
+> >> +     if (!oneshot_data)
+> >> +             return;
+> >> +
+> >> +     led_cdev->trigger_data = oneshot_data;
+> >> +
+> >> +     rc = device_create_file(led_cdev->dev, &dev_attr_delay_on);
+> >> +     if (rc)
+> >> +             goto err_out_trig_data;
+> >> +     rc = device_create_file(led_cdev->dev, &dev_attr_delay_off);
+> >> +     if (rc)
+> >> +             goto err_out_delayon;
+> >> +     rc = device_create_file(led_cdev->dev, &dev_attr_invert);
+> >> +     if (rc)
+> >> +             goto err_out_delayoff;
+> >> +     rc = device_create_file(led_cdev->dev, &dev_attr_shot);
+> >> +     if (rc)
+> >> +             goto err_out_invert;
+> >> +
+> >> +     led_cdev->blink_delay_on = DEFAULT_DELAY;
+> >> +     led_cdev->blink_delay_off = DEFAULT_DELAY;
+> >> +
+> >> +     led_cdev->activated = true;
+> >> +
+> >> +     return;
+> >> +
+> >> +err_out_invert:
+> >> +     device_remove_file(led_cdev->dev, &dev_attr_invert);
+> >> +err_out_delayoff:
+> >> +     device_remove_file(led_cdev->dev, &dev_attr_delay_off);
+> >> +err_out_delayon:
+> >> +     device_remove_file(led_cdev->dev, &dev_attr_delay_on);
+> >> +err_out_trig_data:
+> >> +     kfree(led_cdev->trigger_data);
+> >> +}
+> >> +
+> >> +static void oneshot_trig_deactivate(struct led_classdev *led_cdev)
+> >> +{
+> >> +     struct oneshot_trig_data *oneshot_data = led_cdev->trigger_data;
+> >> +
+> >> +     if (led_cdev->activated) {
+> >> +             device_remove_file(led_cdev->dev, &dev_attr_delay_on);
+> >> +             device_remove_file(led_cdev->dev, &dev_attr_delay_off);
+> >> +             device_remove_file(led_cdev->dev, &dev_attr_invert);
+> >> +             device_remove_file(led_cdev->dev, &dev_attr_shot);
+> >> +             kfree(oneshot_data);
+> >> +             led_cdev->activated = false;
+> >> +     }
+> >> +
+> >> +     /* Stop blinking */
+> >> +     led_brightness_set(led_cdev, LED_OFF);
+> >> +}
+> >> +
+> >> +static struct led_trigger oneshot_led_trigger = {
+> >> +     .name     = "oneshot",
+> >> +     .activate = oneshot_trig_activate,
+> >> +     .deactivate = oneshot_trig_deactivate,
+> >> +};
+> >> +
+> >> +static int __init oneshot_trig_init(void)
+> >> +{
+> >> +     return led_trigger_register(&oneshot_led_trigger);
+> >> +}
+> >> +
+> >> +static void __exit oneshot_trig_exit(void)
+> >> +{
+> >> +     led_trigger_unregister(&oneshot_led_trigger);
+> >> +}
+> >> +
+> >> +module_init(oneshot_trig_init);
+> >> +module_exit(oneshot_trig_exit);
+> >> +
+> >> +MODULE_AUTHOR("Fabio Baltieri <fabio.baltieri@gmail.com>");
+> >> +MODULE_DESCRIPTION("One-shot LED trigger");
+> >> +MODULE_LICENSE("GPL");
