@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2FFCQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 22:16:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38205 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab2FFCQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 22:16:24 -0400
-Message-ID: <4FCEBDB8.800@redhat.com>
-Date: Wed, 06 Jun 2012 10:17:28 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752062Ab2FFC1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 22:27:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55541 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab2FFC1I convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 22:27:08 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        jeffm@suse.com
-Subject: Re: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
-References: <1337915422-24988-1-git-send-email-asias@redhat.com> <20120528134159.GT24394@twin.jikos.cz>
-In-Reply-To: <20120528134159.GT24394@twin.jikos.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <Pine.LNX.4.44L0.1206051256130.1542-100000@iolanthe.rowland.org>
+References: <CACVXFVMdidqhFE1AhenUi8VXbYhac492YdxsvPmVqcwmo=TrcA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1206051256130.1542-100000@iolanthe.rowland.org>
+Date: Wed, 6 Jun 2012 10:27:04 +0800
+Message-ID: <CACVXFVPjQmvmXnYNm4sSjJXq83qe-Xg8=YjRppSNMpUQYLokjQ@mail.gmail.com>
+Subject: Re: [PATCH] driver core: fix shutdown races with probe/remove
+From: Ming Lei <ming.lei@canonical.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jeff
+On Wed, Jun 6, 2012 at 1:09 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-On 05/28/2012 09:41 PM, David Sterba wrote:
-> On Fri, May 25, 2012 at 11:10:21AM +0800, Asias He wrote:
->> 1) This function is not used anywhere.
+>> After device_shutdown() has been called, the whole system will enter power down
+>> or reset later, so it doesn't matter if who should manage the device.
 >
-> This was added in 49b25e0540904be0bf558b84475c69d72e4de66e adding a
-> transaction abort infrastructure.  I'm not sure if Jeff had some
-> intentions with it or whether it got obsolete during the patchset long
-> evolution, CCed.
+> Maybe.  But there might be quite some time between the shutdown call
+> and the eventual power-off or reboot.
 
-Any comments?
+Between device_shutdown and machine_halt, there is only syscore_shutdown left
+to complete, so no much time is involved.
 
 >
+> On the whole, it might be easier just to hold the device lock during
+> the shutdown call.
+
+Yes, it is easier, but it is not efficient because there are very less
+drivers which implemented .shutdown callback. Suppose there are some
+drivers which have no .shutdown but are holding device lock,  extra
+time will be consumed in the lock acquiring, which may slow down 'power
+down'.
+
 >
-> david
->
->
->> 2) Using the blk_abort_queue() to abort the queue seems not correct.
->> blk_abort_queue() is used for timeout handling (block/blk-timeout.c).
+>> >> @@ -1803,6 +1806,9 @@ void device_shutdown(void)
+>> >>  {
+>> >>       struct device *dev;
+>> >>
+>> >> +     ACCESS_ONCE(device_shutdown_started) = 1;
+>> >
+>> > This does not need to be ACCESS_ONCE.  ACCESS_ONCE is needed only in
+>> > situations where the compiler might insert multiple reads or writes.
 >>
->> Cc: Chris Mason<chris.mason@oracle.com>
->> Cc: linux-btrfs@vger.kernel.org
->> Cc: Jens Axboe<axboe@kernel.dk>
->> Cc: linux-kernel@vger.kernel.org
->> Signed-off-by: Asias He<asias@redhat.com>
->> ---
->>   fs/btrfs/disk-io.c |   13 -------------
->>   fs/btrfs/disk-io.h |    1 -
->>   2 files changed, 14 deletions(-)
+>> I have talked with Paul about the ACCESS_ONCE, and Paul thought it is needed
+>> to prevent the compiler from doing byte-at-a-time stores.
+>
+> Why on earth would a compiler change this into a byte-at-a-time store?
+> And even if it did, what problem would that cause?  Only one of the
+> bytes would be different from the original value.
+
+Maybe Paul can answer the question...
+
+>
+>> Maybe Paul has a detailed explanation about it.
+>
+>> >>  static int really_probe(struct device *dev, struct device_driver *drv)
+>> >>  {
+>> >>       int ret = 0;
+>> >> +     int idx;
+>> >>
+>> >> +     idx = srcu_read_lock(&driver_srcu);
+>> >>       atomic_inc(&probe_count);
+>> >> +     if (ACCESS_ONCE(device_shutdown_started))
+>> >
+>> > This doesn't need to be ACCESS_ONCE either.  If it would make you feel
 >>
->> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
->> index e1fe74a..3521866 100644
->> --- a/fs/btrfs/disk-io.c
->> +++ b/fs/btrfs/disk-io.c
->> @@ -2902,19 +2902,6 @@ int write_ctree_super(struct btrfs_trans_handle *trans,
->>   	return ret;
->>   }
->>
->> -/* Kill all outstanding I/O */
->> -void btrfs_abort_devices(struct btrfs_root *root)
->> -{
->> -	struct list_head *head;
->> -	struct btrfs_device *dev;
->> -	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
->> -	head =&root->fs_info->fs_devices->devices;
->> -	list_for_each_entry_rcu(dev, head, dev_list) {
->> -		blk_abort_queue(dev->bdev->bd_disk->queue);
->> -	}
->> -	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
->> -}
->> -
->>   void btrfs_free_fs_root(struct btrfs_fs_info *fs_info, struct btrfs_root *root)
->>   {
->>   	spin_lock(&fs_info->fs_roots_radix_lock);
->> diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
->> index ab1830a..05b3fab 100644
->> --- a/fs/btrfs/disk-io.h
->> +++ b/fs/btrfs/disk-io.h
->> @@ -89,7 +89,6 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
->>   int btrfs_cleanup_transaction(struct btrfs_root *root);
->>   void btrfs_cleanup_one_transaction(struct btrfs_transaction *trans,
->>   				  struct btrfs_root *root);
->> -void btrfs_abort_devices(struct btrfs_root *root);
->>
->>   #ifdef CONFIG_DEBUG_LOCK_ALLOC
->>   void btrfs_init_lockdep(void);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> Because the global variable of device_shutdown_started is not changed inside
+>> the function, the compiler may put the above line after the line of
+>> 'dev->driver = drv',
+>
+> No, it can't do that.  If the compiler moved this read farther down,
+> and as a result the CPU wrote to dev->driver when it shouldn't have,
+> the result would be incorrect (i.e., different from what would have
+> happened if the statement hadn't been moved).  Hence the compiler is
+> prohibited from making such an optimization.
+
+There are some similar examples(check on global variable is moved) with
+ACCESS_ONCE usage in Documentation/atomic_ops.txt. (from line 88)
 
 
--- 
-Asias
+Thanks,
+--
+Ming Lei
