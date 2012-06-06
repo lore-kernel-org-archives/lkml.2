@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811Ab2FFLgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 07:36:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33167 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab2FFLgM (ORCPT
+	id S1752177Ab2FFLnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 07:43:53 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:64004 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801Ab2FFLnw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 07:36:12 -0400
-Message-ID: <1338982637.3292.63.camel@lappy>
-Subject: Re: [PATCH 05/11] mm: frontswap: split frontswap_shrink further to
- eliminate locking games
-From: Sasha Levin <levinsasha928@gmail.com>
-To: konrad@darnok.org
-Cc: linux-mm@kvack.org, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, dan.magenheimer@oracle.com
-Date: Wed, 06 Jun 2012 13:37:17 +0200
-In-Reply-To: <CAPbh3ruJVJkemK4WqjxQYbXYtD9zdDB3dqrRF916cpw3Ub66ug@mail.gmail.com>
-References: <1338980115-2394-1-git-send-email-levinsasha928@gmail.com>
-	 <1338980115-2394-5-git-send-email-levinsasha928@gmail.com>
-	 <CAPbh3ruJVJkemK4WqjxQYbXYtD9zdDB3dqrRF916cpw3Ub66ug@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 6 Jun 2012 07:43:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <1338980038.2749.97.camel@twins>
+References: <20120605213527.GA5019@quad>
+	<CABPqkBQkgSeRMtP9F61ckCaikFd_rUTQvF1NxB_DDQRugRRv3g@mail.gmail.com>
+	<1338979012.2749.90.camel@twins>
+	<1338980038.2749.97.camel@twins>
+Date: Wed, 6 Jun 2012 13:43:50 +0200
+Message-ID: <CABPqkBRZaT-+7DA7B53h=pLW=X5zqvgK0xt2vfz9iXh5grP+NA@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Fix Intel shared extra MSR allocation
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, zheng.z.yan@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 07:30 -0400, Konrad Rzeszutek Wilk wrote:
-> 
-> On Jun 6, 2012 6:55 AM, "Sasha Levin" <levinsasha928@gmail.com> wrote:
-> >
-> > Split frontswap_shrink to eliminate the locking issues in the
-> original code.
-> 
-> Can you describe the locking issue please?
+On Wed, Jun 6, 2012 at 12:53 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-06-06 at 12:36 +0200, Peter Zijlstra wrote:
+>> On Wed, 2012-06-06 at 12:35 +0200, Stephane Eranian wrote:
+>> > Ok, I found the problem. It was in intel_fixup_er().
+>> > Unlike in the original code, this routine must update
+>> > the event->extra_reg.idx to the idx parameter instead
+>> > of trying to swap out from it.
+>>
+>> Ah indeed. Thanks!
+>
+>
+> static void intel_fixup_er(struct perf_event *event, int idx)
+> {
+>        event->hw.extra_reg.idx = idx;
+>
+>        if (idx == EXTRA_REG_RSP_0) {
+>                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+>                event->hw.config |= 0x01b7;
+>                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
+>        } else if (idx == EXTRA_REG_RSP_1) {
+>                event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
+>                event->hw.config |= 0x01bb;
+>                event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
+>        }
+> }
+>
+> Like that then?
 
-I may have worded that wrong, it's less of an "issue" and more of a
-complicated code to deal with locking, specifically the extra local
-variable to keep track whether we are locking or not.
-
+Yes.
