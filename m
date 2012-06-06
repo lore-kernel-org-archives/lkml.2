@@ -1,210 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab2FFPFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:05:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39666 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab2FFPFJ (ORCPT
+	id S1756547Ab2FFPFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:05:31 -0400
+Received: from www84.your-server.de ([213.133.104.84]:57876 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756524Ab2FFPFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:05:09 -0400
-Date: Wed, 6 Jun 2012 08:04:50 -0700
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de
-In-Reply-To: <1337644682-19854-2-git-send-email-suresh.b.siddha@intel.com>
-References: <1337644682-19854-2-git-send-email-suresh.b.siddha@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/apic] x86/x2apic/cluster:
-  Use all the members of one cluster specified in the smp_affinity mask for the interrupt destination
-Git-Commit-ID: 0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:04:55 -0700 (PDT)
+	Wed, 6 Jun 2012 11:05:30 -0400
+Message-ID: <1338995150.9281.7.camel@wall-e>
+Subject: Re: [PATCH] fix usb skeleton driver
+From: Stefani Seibold <stefani@seibold.net>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
+        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
+Date: Wed, 06 Jun 2012 17:05:50 +0200
+In-Reply-To: <CACVXFVPX-F820rgusEiC9F9XQNqYybi29Cd_hSyiN95c2OAWHg@mail.gmail.com>
+References: <1338988998-9061-1-git-send-email-stefani@seibold.net>
+	 <CACVXFVPX-F820rgusEiC9F9XQNqYybi29Cd_hSyiN95c2OAWHg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0
-Gitweb:     http://git.kernel.org/tip/0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 21 May 2012 16:58:02 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 09:51:22 +0200
+Am Mittwoch, den 06.06.2012, 22:28 +0800 schrieb Ming Lei:
+> On Wed, Jun 6, 2012 at 9:23 PM,  <stefani@seibold.net> wrote:
+> > From: Stefani Seibold <stefani@seibold.net>
+> >
+> > This is a fix for the USB skeleton driver to bring it in shape.
+> >
+> > - The usb_interface structure pointer will be no longer stored
+> > - Every access to the USB will be handled trought the usb_interface pointer
+> > - Add a new bool 'connected' for signaling a disconnect (== false)
+> > - Handle a non blocking read without blocking
+> > - Code cleanup
+> > - Synchronize disconnect() handler with open() and release(), to fix races
+> > - Introduced fsync
+> > - Single user mode
+> > - More code cleanup :-)
+> > - Save some bytes in the dev structure
+> 
+> So many purposes, you need to split your patches for review easily, :-)
+> 
 
-x86/x2apic/cluster: Use all the members of one cluster specified in the smp_affinity mask for the interrupt destination
+This is the next step :-)
 
-If the HW implements round-robin interrupt delivery, this
-enables multiple cpu's (which are part of the user specified
-interrupt smp_affinity mask and belong to the same x2apic
-cluster) to service the interrupt.
+> >  static void skel_delete(struct kref *kref)
+> >  {
+> > @@ -86,15 +90,13 @@ static int skel_open(struct inode *inode, struct file *file)
+> >  {
+> >        struct usb_skel *dev;
+> >        struct usb_interface *interface;
+> > -       int subminor;
+> > -       int retval = 0;
+> > +       int retval;
+> >
+> > -       subminor = iminor(inode);
+> > +       /* lock against skel_disconnect() */
+> > +       mutex_lock(&sync_mutex);
+> 
+> This one is not needed since we have minor_rwsem(drivers/usb/core/file.c)
+> to avoid the race.
+> 
 
-Also if the platform supports Power Aware Interrupt Routing,
-then this enables the interrupt to be routed to an idle cpu or a
-busy cpu depending on the perf/power bias tunable.
+The mutex is not for the minor handling, it is for the disconnect(). As
+mentioned in the previous posting, there is a race betwenn open() and
+connect().
 
-We are now grouping all the cpu's in a cluster to one vector
-domain. So that will limit the total number of interrupt sources
-handled by Linux. Previously we support "cpu-count *
-available-vectors-per-cpu" interrupt sources but this will now
-reduce to "cpu-count/16 * available-vectors-per-cpu".
+Oliver told me that a interface pointer can be already used by an other
+driver when the disconnect() was called. 
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: yinghai@kernel.org
-Cc: gorcunov@openvz.org
-Cc: agordeev@redhat.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1337644682-19854-2-git-send-email-suresh.b.siddha@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/include/asm/x2apic.h         |    9 -----
- arch/x86/kernel/apic/x2apic_cluster.c |   56 +++++++++++++++++++++++----------
- arch/x86/kernel/apic/x2apic_phys.c    |    9 +++++
- 3 files changed, 48 insertions(+), 26 deletions(-)
+So the interface will be used to determinate the dev pointer, which can
+at this time also owned by an other driver.
 
-diff --git a/arch/x86/include/asm/x2apic.h b/arch/x86/include/asm/x2apic.h
-index 92e54ab..7a5a832 100644
---- a/arch/x86/include/asm/x2apic.h
-+++ b/arch/x86/include/asm/x2apic.h
-@@ -28,15 +28,6 @@ static int x2apic_apic_id_registered(void)
- 	return 1;
- }
- 
--/*
-- * For now each logical cpu is in its own vector allocation domain.
-- */
--static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
--{
--	cpumask_clear(retmask);
--	cpumask_set_cpu(cpu, retmask);
--}
--
- static void
- __x2apic_send_IPI_dest(unsigned int apicid, int vector, unsigned int dest)
- {
-diff --git a/arch/x86/kernel/apic/x2apic_cluster.c b/arch/x86/kernel/apic/x2apic_cluster.c
-index ff35cff..90d999c 100644
---- a/arch/x86/kernel/apic/x2apic_cluster.c
-+++ b/arch/x86/kernel/apic/x2apic_cluster.c
-@@ -98,34 +98,47 @@ static void x2apic_send_IPI_all(int vector)
- 
- static unsigned int x2apic_cpu_mask_to_apicid(const struct cpumask *cpumask)
- {
--	/*
--	 * We're using fixed IRQ delivery, can only return one logical APIC ID.
--	 * May as well be the first.
--	 */
- 	int cpu = cpumask_first(cpumask);
-+	u32 dest = 0;
-+	int i;
- 
--	if ((unsigned)cpu < nr_cpu_ids)
--		return per_cpu(x86_cpu_to_logical_apicid, cpu);
--	else
-+	if (cpu > nr_cpu_ids)
- 		return BAD_APICID;
-+
-+	for_each_cpu_and(i, cpumask, per_cpu(cpus_in_cluster, cpu))
-+		dest |= per_cpu(x86_cpu_to_logical_apicid, i);
-+
-+	return dest;
- }
- 
- static unsigned int
- x2apic_cpu_mask_to_apicid_and(const struct cpumask *cpumask,
- 			      const struct cpumask *andmask)
- {
--	int cpu;
-+	u32 dest = 0;
-+	u16 cluster;
-+	int i;
- 
--	/*
--	 * We're using fixed IRQ delivery, can only return one logical APIC ID.
--	 * May as well be the first.
--	 */
--	for_each_cpu_and(cpu, cpumask, andmask) {
--		if (cpumask_test_cpu(cpu, cpu_online_mask))
--			break;
-+	for_each_cpu_and(i, cpumask, andmask) {
-+		if (!cpumask_test_cpu(i, cpu_online_mask))
-+			continue;
-+		dest = per_cpu(x86_cpu_to_logical_apicid, i);
-+		cluster = x2apic_cluster(i);
-+		break;
- 	}
- 
--	return per_cpu(x86_cpu_to_logical_apicid, cpu);
-+	if (!dest)
-+		return BAD_APICID;
-+
-+	for_each_cpu_and(i, cpumask, andmask) {
-+		if (!cpumask_test_cpu(i, cpu_online_mask))
-+			continue;
-+		if (cluster != x2apic_cluster(i))
-+			continue;
-+		dest |= per_cpu(x86_cpu_to_logical_apicid, i);
-+	}
-+
-+	return dest;
- }
- 
- static void init_x2apic_ldr(void)
-@@ -208,6 +221,15 @@ static int x2apic_cluster_probe(void)
- 		return 0;
- }
- 
-+/*
-+ * Each x2apic cluster is an allocation domain.
-+ */
-+static void cluster_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+{
-+	cpumask_clear(retmask);
-+	cpumask_copy(retmask, per_cpu(cpus_in_cluster, cpu));
-+}
-+
- static struct apic apic_x2apic_cluster = {
- 
- 	.name				= "cluster x2apic",
-@@ -225,7 +247,7 @@ static struct apic apic_x2apic_cluster = {
- 	.check_apicid_used		= NULL,
- 	.check_apicid_present		= NULL,
- 
--	.vector_allocation_domain	= x2apic_vector_allocation_domain,
-+	.vector_allocation_domain	= cluster_vector_allocation_domain,
- 	.init_apic_ldr			= init_x2apic_ldr,
- 
- 	.ioapic_phys_id_map		= NULL,
-diff --git a/arch/x86/kernel/apic/x2apic_phys.c b/arch/x86/kernel/apic/x2apic_phys.c
-index c17e982..93b2570 100644
---- a/arch/x86/kernel/apic/x2apic_phys.c
-+++ b/arch/x86/kernel/apic/x2apic_phys.c
-@@ -120,6 +120,15 @@ static int x2apic_phys_probe(void)
- 	return apic == &apic_x2apic_phys;
- }
- 
-+/*
-+ * Each logical cpu is in its own vector allocation domain.
-+ */
-+static void x2apic_vector_allocation_domain(int cpu, struct cpumask *retmask)
-+{
-+	cpumask_clear(retmask);
-+	cpumask_set_cpu(cpu, retmask);
-+}
-+
- static struct apic apic_x2apic_phys = {
- 
- 	.name				= "physical x2apic",
+And at last the dev pointer could be point to an already released
+memory.
+
+So it is IMHO needed.
+
+> >
+> >  static int skel_release(struct inode *inode, struct file *file)
+> >  {
+> > -       struct usb_skel *dev;
+> > -
+> > -       dev = file->private_data;
+> > -       if (dev == NULL)
+> > -               return -ENODEV;
+> > +       struct usb_skel *dev = file->private_data;
+> >
+> > +       /* lock against skel_disconnect() */
+> > +       mutex_lock(&sync_mutex);
+> 
+> Since the reference count is held now, so is there any race between
+> release and disconnect?
+> 
+
+Same as above, the interface could be owned by an other driver.
+
+Thanks,
+Stefani
+
+
