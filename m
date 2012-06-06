@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759199Ab2FFXRc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 19:17:32 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895Ab2FFXRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 19:17:31 -0400
-Message-ID: <4FCFE504.2020100@nod.at>
-Date: Thu, 07 Jun 2012 01:17:24 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+	id S1759284Ab2FFXST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 19:18:19 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63046 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757317Ab2FFXSR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 19:18:17 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: jslaby@suse.cz, user-mode-linux-devel@lists.sourceforge.net,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, alan@linux.intel.com
-Subject: Re: um: TTY fixes (?)
-References: <1338841657-30358-1-git-send-email-richard@nod.at> <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
-In-Reply-To: <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig46D237879C2261C99606B318"
+In-Reply-To: <1339023839.25761.764.camel@lyra>
+References: <20120427190033.GA17588@ldl.usa.hp.com>
+	<20120606135009.GB1517@srcf.ucam.org>
+	<1338999463.25761.630.camel@lyra>
+	<20120606162703.GA6779@srcf.ucam.org>
+	<1339003956.25761.667.camel@lyra>
+	<20120606174202.GA8750@srcf.ucam.org>
+	<1339006060.25761.689.camel@lyra>
+	<CAL-B5D3Wda7TV_NBJWEbzJm=0eCs=b-wgGLdJUFRTwP_ewXGGg@mail.gmail.com>
+	<1339023839.25761.764.camel@lyra>
+Date: Wed, 6 Jun 2012 17:18:16 -0600
+Message-ID: <CAL-B5D3_MvP8PG_=4vh9oxgBPbpaoDscw3b5PK5Hr5s0Qk9xrg@mail.gmail.com>
+Subject: Re: [PATCH] Disable Bus Master on PCI device shutdown
+From: Myron Stowe <myron.stowe@gmail.com>
+To: Khalid Aziz <khalid.aziz@hp.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, linux-pci@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig46D237879C2261C99606B318
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jun 6, 2012 at 5:03 PM, Khalid Aziz <khalid.aziz@hp.com> wrote:
+> On Wed, 2012-06-06 at 14:16 -0600, Myron Stowe wrote:
+>> Hay Khalid,
+>>
+>> I've been following this discussion but still do not understand what the
+>> perceived correct fix is for the situation you were originally trying to
+>> circumvent - namely, stopping NIC devices from triggering DMA activity
+>> upon receipt of an incoming packet.
+>>
+>> From the discussion it sounds like a driver, upon shutdown, can end
+>> all active I/O
+>> clearing the I/O queue, and also (?) shut down its DMA engine, and may
+>> also go as far as disabling the Bus Master bit.
+>>
+>> What was occurring in the original issue - was the driver in question not
+>> shutting down its DMA engine for some, possibly valid, reason?
+>>
+>> Thanks,
+>>  Myron
+>
+> Hi Myron,
+>
+> The last driver issue with kexec was reported on kexec mailing list in
+> July of last year and that was with qla driver. From what H Peter Anvin
+> described, the driver left DMA engine running.
+>
+> For the issue I found on an ia64 platform, it was so many years ago that
+> you are now taxing my old and decrepit memory :)
 
-Am 04.06.2012 23:17, schrieb Alan Cox:
-> We can half ignore it on console for the simple reason that you don't
-> "dial in" to the console. I suspect it may be abusable but I've not fou=
-nd
-> a way to do so.
->=20
+Yeah, if it was more than a couple of weeks ago then I'm likely to have
+forgotten myself.
 
-BTW: Can't we add such a mode to tty_port?
-E.g. tty_port->non_dialin_console. 8)
+If you can find it great but don't spend too much time digging.  I just wanted
+some validation of my understanding -
+  o  That drivers must consider both "active I/O" and "DMA" (when
+shutting down),
+  o  That the Bus Master disablement was trying to compensate for a driver not
+quiescing "DMA" as it probably should have (I wasn't sure if these were separate
+capabilities and/or if there was possibly a valid reason for a driver
+leaving "DMA"
+in an enabled state upon shutdown - i.e. Wake on LAN or something similar).
 
-Nobody dials-in on a UML console...
+Myron
 
-Thanks,
-//richard
-
-
---------------enig46D237879C2261C99606B318
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPz+UFAAoJEN9758yqZn9ehHAIAKZchZPEFb5/8JBuGQaazgCU
-t4xH+C34UCPb4aaVvfrCZ/aOtJ20eRBvxmyqq52qUUgan5RsVMuqmyiPmLG6D1NL
-d+3ExQusYBtUHXpxen5ijudDjigN5bDBByNmfWrj8JoqiwfTC06eIyUe/Z9IkiwF
-G1qZc+QbQWXNwRhP7YIKAUSLL7WWN3DCc7LdUMlhokgMYwtxP1Qf0j4XyPz2yqIb
-YSQjxK1tJWvnpYmpdEyTdTUzv8o9chM7j+e7pr9qzghtSH6+EQtVLznbYdDI7ZgQ
-/EeQN5bY7yRgq7CKjXKoUzYzaZL1Prw0Ax8eAZ1upvUbiRopOm+fsAfcyvFOlaQ=
-=2qVf
------END PGP SIGNATURE-----
-
---------------enig46D237879C2261C99606B318--
+> I am digging through
+> old internal bug reports and will let you know once I find that original
+> bug report.
+>
+> ====================================================================
+> Khalid Aziz                                         Unix Systems Lab
+> (970)898-9214                                        Hewlett-Packard
+> khalid.aziz@hp.com                                  Fort Collins, CO
+>
