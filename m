@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab2FFSQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 14:16:09 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:51350 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757903Ab2FFSQH (ORCPT
+	id S1758032Ab2FFSRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 14:17:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38033 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757898Ab2FFSRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 14:16:07 -0400
-Date: Wed, 6 Jun 2012 14:16:05 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stefani Seibold <stefani@seibold.net>
-cc: linux-kernel@vger.kernel.org, <gregkh@linuxfoundation.org>,
-        <oneukum@suse.de>, <alan@lxorguk.ukuu.org.uk>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] fix usb skeleton driver
-In-Reply-To: <1339005186.11678.3.camel@wall-e>
-Message-ID: <Pine.LNX.4.44L0.1206061406500.1788-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 6 Jun 2012 14:17:47 -0400
+Date: Wed, 06 Jun 2012 11:17:46 -0700 (PDT)
+Message-Id: <20120606.111746.576942199242363352.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: cmetcalf@tilera.com, bhutchings@solarflare.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH v9] tilegx network driver: initial support
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1339006223.26966.36.camel@edumazet-glaptop>
+References: <201205251853.q4PIrE7T000723@lab-41.internal.tilera.com>
+	<201206042023.q54KNEZp003834@farm-0002.internal.tilera.com>
+	<1339006223.26966.36.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jun 2012, Stefani Seibold wrote:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 06 Jun 2012 20:10:23 +0200
 
-> Am Mittwoch, den 06.06.2012, 12:55 -0400 schrieb Alan Stern:
-> > On Wed, 6 Jun 2012 stefani@seibold.net wrote:
-> > 
-> > > From: Stefani Seibold <stefani@seibold.net>
-> > > 
-> > > This is a fix for the USB skeleton driver to bring it in shape.
-> > > 
-> > > - The usb_interface structure pointer will be no longer stored 
-> > > - Every access to the USB will be handled trought the usb_interface pointer
-> > 
+> I am pretty sure this performance problem should be solved in net/{core|
+> ipv4|ipv6} instead
 > 
-> Sorry, missed to fix. Should be:
-> 
-> Every access to the USB will be handled through the usb_device pointer
+> What TCP performance do you get with TSO/GSO and SG off ?
 
-But that's wrong -- the accesses should go through the interface 
-pointer.  After all, the driver is bound to the interface, not to the 
-device.
+We have other drivers already doing this.
 
-> > Those two changes sound contradictory.
-> > 
-> > > - Add a new bool 'connected' for signaling a disconnect (== false)
-> > > - Handle a non blocking read without blocking
-> > > - Code cleanup
-> > > - Synchronize disconnect() handler with open() and release(), to fix races
-> > > - Introduced fsync
-> > > - Single user mode
-> > > - Eliminated dead code
-> > > - Save some bytes in the dev structure
-> > 
-> > How about simplifying the code so that it can be read by somebody who's 
-> > not already an expert?
-> > 
-> > Alan Stern
-> > 
-> 
-> Hey, i thought i get a little thank you for the voluntary work, what a
-> nice job. Not a demand for more work to do.
+I tried a few years ago to make this generic, because NIU could
+benefit from it as well, but I couldn't figure out a clean enough
+way to abstract this.
 
-Have you submitted many kernel patches in the past?  :-)  This is the 
-way it usually works out...
+Therefore it is absolutely reasonable to continue to let drivers
+do this locally until we actually have a reasonable solution.
 
-Seriously, what seems like an improvement to one person might not seem 
-so great to somebody else.  Often even the most trivial changes can't 
-get accepted without a lot of back-and-forth arguing^Wdiscussion.
-
-In this case, I really think it's worthwhile to look for ways to
-simplify usb-skeleton.c.  For example, does supporting fsync really
-help somebody who's trying to learn how to write a USB device driver?  
-I suspect it doesn't.
-
-Going even farther, I'm not so sure it's a good idea for usb-skeleton
-to try supporting both synchronous and asynchronous accesses.  This
-adds a layer of complexity that people just don't need.  IMO it would 
-be better to have two separate example drivers, an easy one that is 
-purely synchronous and a more advanced one that is purely async.
-
-Now, things like the race between disconnect and open are good for
-teaching, because they crop up in every driver and have to be handled.  
-Other things aren't so clear (such as the autosuspend support).
-
-Alan Stern
-
+The gains are definitely significant for chips that lack real TSO
+hardware, I absolutely do not require "proof" of this, it is clearly
+evident to anyone who considers the issue.
