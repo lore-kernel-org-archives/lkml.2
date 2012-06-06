@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab2FFXPP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 19:15:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14851 "EHLO mga11.intel.com"
+	id S1759199Ab2FFXRc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 19:17:32 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab2FFXPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 19:15:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="161905465"
-Subject: Re: [tip:x86/apic] x86/x2apic/cluster: Use all the members of one
- cluster specified in the smp_affinity mask for the interrupt destination
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Date: Wed, 06 Jun 2012 16:14:40 -0700
-In-Reply-To: <CAE9FiQUzHGPvYMMhBQrzOCFex-xWDPN-SWw0WgHhUM9H-MDN3w@mail.gmail.com>
-References: <1337644682-19854-2-git-send-email-suresh.b.siddha@intel.com>
-	 <tip-0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0@git.kernel.org>
-	 <CAE9FiQUzHGPvYMMhBQrzOCFex-xWDPN-SWw0WgHhUM9H-MDN3w@mail.gmail.com>
-Organization: Intel Corp
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1339024480.28766.63.camel@sbsiddha-desk.sc.intel.com>
-Mime-Version: 1.0
+	id S1751895Ab2FFXRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 19:17:31 -0400
+Message-ID: <4FCFE504.2020100@nod.at>
+Date: Thu, 07 Jun 2012 01:17:24 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120427 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: jslaby@suse.cz, user-mode-linux-devel@lists.sourceforge.net,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, alan@linux.intel.com
+Subject: Re: um: TTY fixes (?)
+References: <1338841657-30358-1-git-send-email-richard@nod.at> <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
+In-Reply-To: <20120604221731.5e378fc2@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig46D237879C2261C99606B318"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-06-06 at 15:21 -0700, Yinghai Lu wrote:
-> On Wed, Jun 6, 2012 at 8:04 AM, tip-bot for Suresh Siddha
-> <suresh.b.siddha@intel.com> wrote:
-> > Commit-ID:  0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0
-> > Gitweb:     http://git.kernel.org/tip/0b8255e660a0c229ebfe8f9fde12a8d4d34c50e0
-> > Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-> > AuthorDate: Mon, 21 May 2012 16:58:02 -0700
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Wed, 6 Jun 2012 09:51:22 +0200
-> >
-> > x86/x2apic/cluster: Use all the members of one cluster specified in the smp_affinity mask for the interrupt destination
-> >
-> > If the HW implements round-robin interrupt delivery, this
-> > enables multiple cpu's (which are part of the user specified
-> > interrupt smp_affinity mask and belong to the same x2apic
-> > cluster) to service the interrupt.
-> >
-> > Also if the platform supports Power Aware Interrupt Routing,
-> > then this enables the interrupt to be routed to an idle cpu or a
-> > busy cpu depending on the perf/power bias tunable.
-> >
-> > We are now grouping all the cpu's in a cluster to one vector
-> > domain. So that will limit the total number of interrupt sources
-> > handled by Linux. Previously we support "cpu-count *
-> > available-vectors-per-cpu" interrupt sources but this will now
-> > reduce to "cpu-count/16 * available-vectors-per-cpu".
-> 
-> with this patch, will waste/hide several irq vector on some cpus.
-> 
-> for example:
-> very beginning after boot, one irq will have vector from 16 cpus of
-> same cluster.
-> later if user using irq affinity change to one cpu only.
-> cfg->domain will be not changed, but ioapic or irte will be confined to one cpu.
-> because mask is used for new dest_id.
->  *dest_id = apic->cpu_mask_to_apicid_and(mask, cfg->domain);
-> 
-> all other 15 cpu vector are wasted or hided.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig46D237879C2261C99606B318
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Yinghai, As I mentioned in the other thread, we should be able to
-restrict the vector allocation to only the cpu's specified in the mask
-and cleanup the allocation for the others in the same cluster domain. We
-didn't do this for legacy xapic in the past mainly because of some
-platform bugs which sent interrupts to different logical cpu's ignoring
-what has been specified in IO-APIC RTE. But x2apic mode doesn't have
-those HW errata, so we should be able to address this.
+Am 04.06.2012 23:17, schrieb Alan Cox:
+> We can half ignore it on console for the simple reason that you don't
+> "dial in" to the console. I suspect it may be abusable but I've not fou=
+nd
+> a way to do so.
+>=20
 
-Will get back with a patch which does this.
+BTW: Can't we add such a mode to tty_port?
+E.g. tty_port->non_dialin_console. 8)
 
-thanks,
-suresh
+Nobody dials-in on a UML console...
 
+Thanks,
+//richard
+
+
+--------------enig46D237879C2261C99606B318
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPz+UFAAoJEN9758yqZn9ehHAIAKZchZPEFb5/8JBuGQaazgCU
+t4xH+C34UCPb4aaVvfrCZ/aOtJ20eRBvxmyqq52qUUgan5RsVMuqmyiPmLG6D1NL
+d+3ExQusYBtUHXpxen5ijudDjigN5bDBByNmfWrj8JoqiwfTC06eIyUe/Z9IkiwF
+G1qZc+QbQWXNwRhP7YIKAUSLL7WWN3DCc7LdUMlhokgMYwtxP1Qf0j4XyPz2yqIb
+YSQjxK1tJWvnpYmpdEyTdTUzv8o9chM7j+e7pr9qzghtSH6+EQtVLznbYdDI7ZgQ
+/EeQN5bY7yRgq7CKjXKoUzYzaZL1Prw0Ax8eAZ1upvUbiRopOm+fsAfcyvFOlaQ=
+=2qVf
+-----END PGP SIGNATURE-----
+
+--------------enig46D237879C2261C99606B318--
