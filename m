@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab2FFIQP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:16:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:5537 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab2FFIPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:15:25 -0400
-X-IronPort-AV: E=Sophos;i="4.75,722,1330876800"; 
-   d="scan'208";a="5122730"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 7/7] highmem: avoid page_address() in flush_all_zero_pkmaps()
-Date: Wed, 6 Jun 2012 16:15:01 +0800
-Message-Id: <1338970501-5098-7-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1338970501-5098-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1338970501-5098-1-git-send-email-laijs@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/06 16:15:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/06/06 16:16:05,
-	Serialize complete at 2012/06/06 16:16:05
-To: unlisted-recipients:; (no To-header on input)
+	id S1754881Ab2FFIQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:16:13 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:45025 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab2FFIQF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 04:16:05 -0400
+Date: Wed, 6 Jun 2012 10:16:00 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Don Dutile <ddutile@redhat.com>, iommu@lists.linux-foundation.org,
+        mingo@elte.hu, linux-kernel@vger.kernel.org, chrisw@redhat.com,
+        suresh.b.siddha@intel.com
+Subject: Re: [PATCH 2/2] iommu: dmar -- reserve mmio space used by IOMMU
+Message-ID: <20120606081600.GB5991@gmail.com>
+References: <1338845342-12464-1-git-send-email-ddutile@redhat.com>
+ <1338845342-12464-3-git-send-email-ddutile@redhat.com>
+ <1338849430.10884.288.camel@shinybook.infradead.org>
+ <4FCD401D.9000304@redhat.com>
+ <1338852196.26785.10.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1338852196.26785.10.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can get the virtual address from PKMAP_ADDR(i),
-we don't need to call page_address() here.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- mm/highmem.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+* David Woodhouse <dwmw2@infradead.org> wrote:
 
-diff --git a/mm/highmem.c b/mm/highmem.c
-index 6f028cb..994fd68 100644
---- a/mm/highmem.c
-+++ b/mm/highmem.c
-@@ -103,8 +103,6 @@ static void flush_all_zero_pkmaps(void)
- 	flush_cache_kmaps();
- 
- 	for (i = 0; i < LAST_PKMAP; i++) {
--		struct page *page;
--
- 		/*
- 		 * zero means we don't have anything to do,
- 		 * >1 means that it is still in use. Only
-@@ -125,9 +123,7 @@ static void flush_all_zero_pkmaps(void)
- 		 * getting the kmap_lock (which is held here).
- 		 * So no dangers, even with speculative execution.
- 		 */
--		page = pte_page(pkmap_page_table[i]);
--		pte_clear(&init_mm, (unsigned long)page_address(page),
--			  &pkmap_page_table[i]);
-+		pte_clear(&init_mm, PKMAP_ADDR(i), &pkmap_page_table[i]);
- 
- 		clear_high_page_map(i);
- 		need_flush = 1;
--- 
-1.7.7
+> > well, one could argue it may be easier to claim the space 
+> > reserved in the OS then making yet another hole in the 
+> > available IO address space in the ACPI tables.
+> 
+> But how? It's got to work with operating systems that predate 
+> the IOMMU. The registers *have* to be in a marked hole. If 
+> *not*, then we should give a clear "YOUR BIOS IS BROKEN" 
+> output like all the similar breakages, and do our best to work 
+> around it.
+> 
+> Working around it is fine; I'm not suggesting that we should 
+> WARN() *instead* of working around it.
 
+So basically the patch-set is fine as-is, we just want a 
+sufficiently nasty sounding warning message about the BIOS bug, 
+with actionable output, something like:
+
+     ... the kernel is sad because a buggy BIOS has not 
+         marked IOMMU area xxx-yyy as reserved, working
+         it around. You get to keep all the pieces and
+         be more careful with remaining eye.
+
+(or a functional equivalent thereof.)
+
+this patch could be added as a third patch in the series, right?
+
+> >   The BIOS's are getting better, but I've seen turtles run 
+> >   faster... ;-) .
+> 
+> Thankfully, there are now some modern Intel systems on which 
+> you can run Coreboot. This should be a huge benefit — you 
+> should be able to build an up-to-date Tianocore and deploy it 
+> as your Coreboot payload, rather than having to put up with 
+> the crap that's on the system when you receive it.
+
+If we could integrate Coreboot into the kernel and could build a 
+bzImage that one could write into the BIOS flash image and thus 
+have an updated and functional BIOS, that would be awesome.
+
+People could actually write systems with proper 'every pixel is 
+perfect' boot output and low latency behavior from the moment 
+power is turned on to the first desktop GUI frame and such.
+
+(With some fail safe mechanism for bugs.)
+
+And ponies.
+
+Thanks,
+
+	Ingo
