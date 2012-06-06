@@ -1,293 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab2FFNyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:54:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48328 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752529Ab2FFNyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:54:09 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: stefani@seibold.net
-Subject: Re: [PATCH] fix usb skeleton driver
-Date: Wed, 6 Jun 2012 15:50:51 +0200
-User-Agent: KMail/1.13.5 (Linux/3.3.0-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        alan@lxorguk.ukuu.org.uk, linux-usb@vger.kernel.org
-References: <1338988998-9061-1-git-send-email-stefani@seibold.net>
-In-Reply-To: <1338988998-9061-1-git-send-email-stefani@seibold.net>
+	id S1754762Ab2FFN4h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 09:56:37 -0400
+Received: from 8bytes.org ([85.214.48.195]:54196 "EHLO
+	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789Ab2FFN4g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 09:56:36 -0400
+Date: Wed, 6 Jun 2012 15:56:32 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU fixes for Linux 3.5-rc1
+Message-ID: <20120606135632.GA4196@8bytes.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201206061550.51264.oneukum@suse.de>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Jun  6 15:56:34 2012
+X-DSPAM-Confidence: 0.9988
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4fcf619228382056420405
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 6. Juni 2012, 15:23:18 schrieb stefani@seibold.net:
 
-> Grek ask me to do this in more pieces, but i will post it for a first RFC.
+--0F1p//8PRICkK4MW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I've put comments into the code.
+Hi Linus,
 
-> @@ -48,8 +49,7 @@ MODULE_DEVICE_TABLE(usb, skel_table);
->  
->  /* Structure to hold all of our device specific stuff */
->  struct usb_skel {
-> -	struct usb_device	*udev;			/* the usb device for this device */
-> -	struct usb_interface	*interface;		/* the interface for this device */
-> +	struct usb_device	*udev;			/* the usb device */
+The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
 
-???
+  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
 
->  	struct semaphore	limit_sem;		/* limiting the number of writes in progress */
->  	struct usb_anchor	submitted;		/* in case we need to retract our submissions */
->  	struct urb		*bulk_in_urb;		/* the urb to read data with */
-> @@ -62,15 +62,19 @@ struct usb_skel {
->  	int			errors;			/* the last request tanked */
->  	bool			ongoing_read;		/* a read is going on */
->  	bool			processed_urb;		/* indicates we haven't processed the urb */
-> +	bool			connected;		/* connected flag */
-> +	bool			in_use;			/* in use flag */
->  	spinlock_t		err_lock;		/* lock for errors */
->  	struct kref		kref;
-> -	struct mutex		io_mutex;		/* synchronize I/O with disconnect */
-> +	struct mutex		io_mutex;		/* synchronize I/O */
->  	struct completion	bulk_in_completion;	/* to wait for an ongoing read */
->  };
->  #define to_skel_dev(d) container_of(d, struct usb_skel, kref)
->  
->  static struct usb_driver skel_driver;
-> -static void skel_draw_down(struct usb_skel *dev);
-> +
-> +/* synchronize open/release with disconnect */
-> +static DEFINE_MUTEX(sync_mutex);
->  
->  static void skel_delete(struct kref *kref)
->  {
-> @@ -86,15 +90,13 @@ static int skel_open(struct inode *inode, struct file *file)
->  {
->  	struct usb_skel *dev;
->  	struct usb_interface *interface;
-> -	int subminor;
-> -	int retval = 0;
-> +	int retval;
->  
-> -	subminor = iminor(inode);
-> +	/* lock against skel_disconnect() */
-> +	mutex_lock(&sync_mutex);
->  
-> -	interface = usb_find_interface(&skel_driver, subminor);
-> +	interface = usb_find_interface(&skel_driver, iminor(inode));
->  	if (!interface) {
-> -		pr_err("%s - error, can't find device for minor %d\n",
-> -			__func__, subminor);
->  		retval = -ENODEV;
->  		goto exit;
->  	}
-> @@ -105,52 +107,61 @@ static int skel_open(struct inode *inode, struct file *file)
->  		goto exit;
->  	}
->  
-> -	/* increment our usage count for the device */
-> -	kref_get(&dev->kref);
-> -
-> -	/* lock the device to allow correctly handling errors
-> -	 * in resumption */
-> -	mutex_lock(&dev->io_mutex);
-> +	if (dev->in_use) {
-> +		retval = -EBUSY;
-> +		goto exit;
-> +	}
+are available in the git repository at:
 
-For an example driver we don't want exclusive open by default.
->
->  	retval = usb_autopm_get_interface(interface);
->  	if (retval)
-> -		goto out_err;
-> +		goto exit;
-> +
-> +	/* increment our usage count for the device */
-> +	kref_get(&dev->kref);
-> +
-> +	dev->in_use = true;
-> +	mutex_unlock(&sync_mutex);
->  
->  	/* save our object in the file's private structure */
->  	file->private_data = dev;
-> -	mutex_unlock(&dev->io_mutex);
-> -
-> +	return 0;
->  exit:
-> +	mutex_unlock(&sync_mutex);
->  	return retval;
->  }
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-3.5-rc1
+
+for you to fetch changes up to eee53537c476c947bf7faa1c916d2f5a0ae8ec93:
+
+  iommu/amd: Fix deadlock in ppr-handling error path (2012-06-04 12:47:44 +0200)
+
+----------------------------------------------------------------
+IOMMU fixes for v3.5-rc1
+
+Two patches are in here which fix AMD IOMMU specific issues. One patch
+fixes a long-standing warning on resume because the amd_iommu_resume
+function enabled interrupts. The other patch fixes a deadlock in an
+error-path of the page-fault request handling code of the IOMMU driver.
+
+----------------------------------------------------------------
+Joerg Roedel (2):
+      iommu/amd: Cache pdev pointer to root-bridge
+      iommu/amd: Fix deadlock in ppr-handling error path
+
+ drivers/iommu/amd_iommu.c       |   71 ++++++++++++++++++++++++---------------
+ drivers/iommu/amd_iommu_init.c  |   13 +++----
+ drivers/iommu/amd_iommu_types.h |    3 ++
+ 3 files changed, 52 insertions(+), 35 deletions(-)
+
+Please pull.
+
+Regards,
+
+	Joerg
 
 
->  static void skel_read_bulk_callback(struct urb *urb)
->  {
->  	struct usb_skel *dev;
-> @@ -179,7 +195,7 @@ static void skel_read_bulk_callback(struct urb *urb)
->  		if (!(urb->status == -ENOENT ||
->  		    urb->status == -ECONNRESET ||
->  		    urb->status == -ESHUTDOWN))
-> -			dev_err(&dev->interface->dev,
-> +			dev_err(&urb->dev->dev,
->  				"%s - nonzero write bulk status received: %d\n",
->  				__func__, urb->status);
->  
-> @@ -187,7 +203,7 @@ static void skel_read_bulk_callback(struct urb *urb)
->  	} else {
->  		dev->bulk_in_filled = urb->actual_length;
->  	}
-> -	dev->ongoing_read = 0;
-> +	dev->ongoing_read = false;
+--0F1p//8PRICkK4MW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-And here we have a very subtle SMP race
-which can be seen only in another place.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
->  	spin_unlock(&dev->err_lock);
->  
->  	complete(&dev->bulk_in_completion);
-> @@ -195,7 +211,7 @@ static void skel_read_bulk_callback(struct urb *urb)
->  
+iQIbBAEBAgAGBQJPz2GQAAoJECvwRC2XARrjQm4P+K/JukEgCkjwgSzelTOjOOZa
+WH4tLMEYYFHRLU17wC5X/e4mXr8WmmvBenU7hLPeMXoWUe1DQkPyz6L3Cx7DAcWB
+B81A0N0QhWu3tqSKhp0K+RrC39F2o+p2cpwnv12lSqA/BfhSd2feDQ/7GTjw2t55
+5X7vn5ilnk8AwyXVjqdTfTw0uyDyHOhYta4iRIcVYy8KByv0YBQbvwWkbXQ8iPGw
+AnFicllEIS1F4cjkU3Q0ROLoaN5mgmWvuNkipfELkeiKuoXfbEh5YpHrvIIgaBv/
+FlHAvarn8eQwYtRWfBSq9FOzmV9R4IShV9SEjVjAk5NCw5I48M2aXoHDtc5ckpnf
+/e1IvOjibt0uHv4yRokw/gHKLJFnh20LulVFwE/EYykLF3XopJFXaLir2IVDYT2/
+m9S7f5va9vU+vggg6mNsMm9tNPeZyaizYY4UnSADLkYWi7gmYETvhsDuPBOQqVSS
+pjRRIV+rj4vZw4VGJ1nCOd2Ddz13YDkg+rXhiWHC7BxC1a2tNCbg93HLBVFruIjv
+mknyRZUFzymYUrxMB8NY0tG/WJjAAb5TXPacxSjG2XZx71kn29M9VK8+yxZe8/V7
+Ogo1f1rb5St/3WXHDqkbAKvNLpeiez9jYC7jWmQQV+J/PyaQ3cZbe17YUhIfSn1e
+7sDuO7B6nhYsYGnSkqU=
+=sQYu
+-----END PGP SIGNATURE-----
 
->  static ssize_t skel_read(struct file *file, char *buffer, size_t count,
->  			 loff_t *ppos)
->  {
-> -	struct usb_skel *dev;
-> -	int rv;
-> -	bool ongoing_io;
-> -
-> -	dev = file->private_data;
-> +	struct usb_skel *dev = file->private_data;
-> +	int retval;
->  
->  	/* if we cannot read at all, return EOF */
->  	if (!dev->bulk_in_urb || !count)
->  		return 0;
->  
->  	/* no concurrent readers */
-> -	rv = mutex_lock_interruptible(&dev->io_mutex);
-> -	if (rv < 0)
-> -		return rv;
-> +	if (file->f_flags & O_NONBLOCK) {
-> +		if (!mutex_trylock(&dev->io_mutex))
-> +			return -EAGAIN;
-> +	} else {
-> +		retval = mutex_lock_interruptible(&dev->io_mutex);
-> +		if (retval < 0)
-> +			return retval;
-> +	}
->  
-> -	if (!dev->interface) {		/* disconnect() was called */
-> -		rv = -ENODEV;
-> +	if (!dev->connected) {		/* disconnect() was called */
-> +		retval = -ENODEV;
->  		goto exit;
->  	}
->  
->  	/* if IO is under way, we must not touch things */
->  retry:
-> -	spin_lock_irq(&dev->err_lock);
-> -	ongoing_io = dev->ongoing_read;
-> -	spin_unlock_irq(&dev->err_lock);
-> -
-> -	if (ongoing_io) {
-> +	if (dev->ongoing_read) {
->  		/* nonblocking IO shall not wait */
->  		if (file->f_flags & O_NONBLOCK) {
-> -			rv = -EAGAIN;
-> +			retval = -EAGAIN;
->  			goto exit;
->  		}
->  		/*
->  		 * IO may take forever
->  		 * hence wait in an interruptible state
->  		 */
-> -		rv = wait_for_completion_interruptible(&dev->bulk_in_completion);
-> -		if (rv < 0)
-> +		retval = wait_for_completion_interruptible(&dev->bulk_in_completion);
-> +		if (retval < 0)
->  			goto exit;
->  		/*
->  		 * by waiting we also semiprocessed the urb
-> @@ -288,12 +298,12 @@ retry:
->  	}
->  
->  	/* errors must be reported */
-> -	rv = dev->errors;
-> -	if (rv < 0) {
-> +	retval = dev->errors;
+--0F1p//8PRICkK4MW--
 
-And here we hit the race pointed out above. And this one is for the
-gourmets of races. On some architectures we are hitting a memory
-ordering race here.
 
-You cannot be sure that dev->errors is valid if ongoing_read == false
-because there is no locking involved. The CPU on which the interrupt handler
-has run may have scheduled the write to ongoing_read before the write
-to dev->error and you can run into the window.
-
-You must use smp_wmb() between the writes and smp_rmb() between
-the reads.
-
-(And Greg will come after me for this suggestion and wield his canoo as a cudgel)
-
-> +	if (retval < 0) {
->  		/* any error is reported once */
->  		dev->errors = 0;
-> -		/* to preserve notifications about reset */
-> -		rv = (rv == -EPIPE) ? rv : -EIO;
-> +		/* to preseretvale notifications about reset */
-> +		retval = (retval == -EPIPE) ? retval : -EIO;
->  		/* no data to deliver */
->  		dev->bulk_in_filled = 0;
->  		/* report it */
-> @@ -315,8 +325,8 @@ retry:
->  			 * all data has been used
->  			 * actual IO needs to be done
->  			 */
-> -			rv = skel_do_read_io(dev, count);
-> -			if (rv < 0)
-> +			retval = skel_do_read_io(dev, count);
-> +			if (retval < 0)
->  				goto exit;
->  			else
->  				goto retry;
-> @@ -329,9 +339,9 @@ retry:
->  		if (copy_to_user(buffer,
->  				 dev->bulk_in_buffer + dev->bulk_in_copied,
->  				 chunk))
-> -			rv = -EFAULT;
-> +			retval = -EFAULT;
->  		else
-> -			rv = chunk;
-> +			retval = chunk;
->  
->  		dev->bulk_in_copied += chunk;
->  
-> @@ -343,16 +353,16 @@ retry:
->  			skel_do_read_io(dev, count - chunk);
->  	} else {
->  		/* no data in the buffer */
-> -		rv = skel_do_read_io(dev, count);
-> -		if (rv < 0)
-> +		retval = skel_do_read_io(dev, count);
-> +		if (retval < 0)
->  			goto exit;
->  		else if (!(file->f_flags & O_NONBLOCK))
->  			goto retry;
-> -		rv = -EAGAIN;
-> +		retval = -EAGAIN;
->  	}
->  exit:
->  	mutex_unlock(&dev->io_mutex);
-> -	return rv;
-> +	return retval;
->  }
->  
-
-	Regards
-		Oliver
