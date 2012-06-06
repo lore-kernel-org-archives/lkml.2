@@ -1,98 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2FFMw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 08:52:57 -0400
-Received: from s15943758.onlinehome-server.info ([217.160.130.188]:42321 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab2FFMw4 (ORCPT
+	id S1752478Ab2FFM4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 08:56:31 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:55373 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab2FFM4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 08:52:56 -0400
-Date: Wed, 6 Jun 2012 14:53:20 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Doug Thompson <norsk5@yahoo.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH v29] RAS: Add a tracepoint for reporting memory
- controller events
-Message-ID: <20120606125320.GC1644@aftab.osrc.amd.com>
-References: <1338563258-13322-1-git-send-email-mchehab@redhat.com>
- <20120601152151.GC28216@aftab.osrc.amd.com>
- <4FC8E5C4.4080008@redhat.com>
- <20120605130752.GE13495@aftab.osrc.amd.com>
- <4FCF31EF.1090405@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4FCF31EF.1090405@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Jun 2012 08:56:30 -0400
+X-AuditID: cbfee61b-b7f8f6d000005ca4-b0-4fcf537cc339
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH v9] mm: compaction: handle incorrect MIGRATE_UNMOVABLE type
+ pageblocks
+Date: Wed, 06 Jun 2012 14:55:28 +0200
+User-Agent: KMail/1.13.2 (Linux/3.2.6; KDE/4.4.5; i686; ; )
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Cong Wang <amwang@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+References: <201206041543.56917.b.zolnierkie@samsung.com>
+ <op.wfdt8dh53l0zgt@mpn-glaptop>
+In-reply-to: <op.wfdt8dh53l0zgt@mpn-glaptop>
+MIME-version: 1.0
+Message-id: <201206061455.28980.b.zolnierkie@samsung.com>
+Content-type: Text/Plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJLMWRmVeSWpSXmKPExsVy+t9jQd2a4PP+Bje65C0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGtcelBecUKrqPf2FtYFwt2cXIwSEhYCJx+Hh4FyMnkCkmceHe
+	erYuRi4OIYHpjBLLF01ggXBWM0ksX/mODaSKTcBKYmL7KkYQW0RAU2LRq81MILawQIzE++7F
+	YDUsAqoSfWefsoDYogLWEkcv3GMEGcQs8IhZ4vKUPawgCSGBaImNC9rAbE4BHYnJne3sIDav
+	gKDEj8n3WCBsS4mnbYvAhjILaEk0v9nECGHLS2xe85Z5AqPALCQts5CUzUJStoCReRWjaGpB
+	ckFxUnqukV5xYm5xaV66XnJ+7iZGcAA+k97BuKrB4hCjAAejEg/vAv/z/kKsiWXFlbmHGCU4
+	mJVEeOOcgUK8KYmVValF+fFFpTmpxYcYpTlYlMR5+46d8xcSSE8sSc1OTS1ILYLJMnFwSjUw
+	aiz49nnCpM3cta/6vjnviAp/6i5SYPVTTGpe29KAZesC9NOFrLqOXQne9pFntdsW/vtdWj6J
+	4j87qnmkAzoY/Rf88+Mt+5K7wcz6mejJFMZORT+dmkNsm+YncAg0r2tQSfZJWVD2pDaB5xST
+	WmoH79EPQR7vHzHNTf3s9eqRSL9PkreF7AUlluKMREMt5qLiRAB11wIEPAIAAA==
+X-TM-AS-MML: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 07:33:19AM -0300, Mauro Carvalho Chehab wrote:
-> RAS: Add a tracepoint for reporting memory controller events
+On Monday 04 June 2012 16:22:51 Michal Nazarewicz wrote:
+> On Mon, 04 Jun 2012 15:43:56 +0200, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
+> > +/*
+> > + * Returns true if MIGRATE_UNMOVABLE pageblock can be successfully
+> > + * converted to MIGRATE_MOVABLE type, false otherwise.
+> > + */
+> > +static bool can_rescue_unmovable_pageblock(struct page *page, bool locked)
+> > +{
+> > +	unsigned long pfn, start_pfn, end_pfn;
+> > +	struct page *start_page, *end_page, *cursor_page;
+> > +
+> > +	pfn = page_to_pfn(page);
+> > +	start_pfn = pfn & ~(pageblock_nr_pages - 1);
+> > +	end_pfn = start_pfn + pageblock_nr_pages - 1;
+> > +
+> > +	start_page = pfn_to_page(start_pfn);
+> > +	end_page = pfn_to_page(end_pfn);
+> > +
+> > +	for (cursor_page = start_page, pfn = start_pfn; cursor_page <= end_page;
+> > +		pfn++, cursor_page++) {
+> > +		struct zone *zone = page_zone(start_page);
+> > +		unsigned long flags;
+> > +
+> > +		if (!pfn_valid_within(pfn))
+> > +			continue;
+> > +
+> > +		/* Do not deal with pageblocks that overlap zones */
+> > +		if (page_zone(cursor_page) != zone)
+> > +			return false;
+> > +
+> > +		if (!locked)
+> > +			spin_lock_irqsave(&zone->lock, flags);
+> > +
+> > +		if (PageBuddy(cursor_page)) {
+> > +			int order = page_order(cursor_page);
+> >-/* Returns true if the page is within a block suitable for migration to */
+> > -static bool suitable_migration_target(struct page *page)
+> > +			pfn += (1 << order) - 1;
+> > +			cursor_page += (1 << order) - 1;
+> > +
+> > +			if (!locked)
+> > +				spin_unlock_irqrestore(&zone->lock, flags);
+> > +			continue;
+> > +		} else if (page_count(cursor_page) == 0 ||
+> > +			   PageLRU(cursor_page)) {
+> > +			if (!locked)
+> > +				spin_unlock_irqrestore(&zone->lock, flags);
+> > +			continue;
+> > +		}
+> > +
+> > +		if (!locked)
+> > +			spin_unlock_irqrestore(&zone->lock, flags);
 > 
-> From: Mauro Carvalho Chehab <mchehab@redhat.com>
+> spin_unlock in three spaces is ugly.  How about adding a flag that holds the
+> result of the function which you use as for loop condition and you set it to
+> false inside an additional else clause?  Eg.:
+> 
+> 	bool result = true;
+> 	for (...; result && cursor_page <= end_page; ...) {
+> 		...
+> 		if (!pfn_valid_within(pfn)) continue;
+> 		if (page_zone(cursor_page) != zone) return false;
+> 		if (!locked) spin_lock_irqsave(...);
+> 		
+> 		if (PageBuddy(...)) {
+> 			...
+> 		} else if (page_count(cursor_page) == 0 ||
+> 			   PageLRU(cursor_page)) {
+> 			...
+> 		} else {
+> 			result = false;
+> 		}
+> 		if (!locked) spin_unlock_irqsave(...);
+> 	}
+> 	return result;
 
-[ … ]
+Thanks, I'll use the hint (if still applicable) in the next patch version.
 
-> The tracepoint printk will be displayed like:
+> > +		return false;
+> > +	}
+> > +
+> > +	return true;
+> > +}
 > 
-> mc_event: [quant] (Corrected|Uncorrected|Fatal) error:[error msg] on memory stick [label] ([location] [edac_mc detail] [driver_d$
-> 
-> Where:
->        	[quant] is the quantity of errors
-> 	[error msg] is the driver-specific error message
-> 		    (e. g. "memory read", "bus error", ...);
-> 	[location] is the location in terms of memory controller and
-> 		   branch/channel/slot, channel/slot or csrow/channel;
-> 	[label] is the memory stick label;
-> 	[edac_mc detail] describes the address location of the error
-> 			 and the syndrome;
-> 	[driver detail] is driver-specifig error message details,
-> 			when needed/provided (e. g. "area:DMA", ...)
-> 
-> For example:
-> 
-> mc_event: 1 Corrected error:memory read on memory stick DIMM_1A (mc:0 location:0:0:0 page:0x586b6e offset:0xa66 grain:32 syndrome:0x0 area:DMA)
-> 
-> Of course, any userspace tools meant to handle errors should not parse
-> the above data. They should, instead, use the binary fields provided by
-> the tracepoint, mapping them directly into their Management Information
-> Base.
-> 
-> NOTE: The original patch was providing an additional mechanism for
-> MCA-based trace events that also contained MCA error register data.
-> However, as no agreement was reached so far for the MCA-based trace
-> events, for now, let's add events only for memory errors.
-> A latter patch is planned to change the tracepoint, for those types
-> of event.
-> 
-> Cc: Aristeu Rozanski <arozansk@redhat.com>
-> Cc: Doug Thompson <norsk5@yahoo.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> How do you make sure that a page is not allocated while this runs?  Or you just
+> don't care?  Not that even with zone lock, page may be allocated from pcp list
+> on (another) CPU.
 
-Ok, this is starting to shape up, here's the output on my box here:
+Ok, I see the issue (i.e. pcp page can be returned by rmqueue_bulk() in
+buffered_rmqueue() and its page count will be increased in prep_new_page()
+a bit later with zone lock dropped so while we may not see the page as
+"bad" one in can_rescue_unmovable_pageblock() it may end up as unmovable
+one in a pageblock that was just changed to MIGRATE_MOVABLE type).
 
-       mcegen.py-3009  [008] .N..   144.149649: mc_event: 1 Corrected error: amd64_edac on unknown memory (mc:0 location:3:1:-1 address:0x000007ba grain:2 syndrome:0x0000ac71)
+It is basically similar problem to page allocation vs alloc_contig_range()
+races present in CMA [*] so we may deal with it in a similar manner as
+CMA: isolate pageblock so no new allocations will be allowed from it,
+check if we can do pageblock transition to MIGRATE_MOVABLE type and do
+it if so, drain pcp lists, check if the transition was successful and
+if there are some pages that slipped through just revert the operation..
 
-Tony, any objections?
+However I worry that this still won't cover all races as we can have
+some page in "transient state" (no longer on pcp list but not yet used,
+simply still being processed by buffered_rmqueue() while we count it
+as "good" one in the pageblock transition verification code)?
 
--- 
-Regards/Gruss,
-Boris.
+[*] BTW please see http://marc.info/?l=linux-mm&m=133775797022645&w=2
+for CMA related fixes
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung Poland R&D Center
