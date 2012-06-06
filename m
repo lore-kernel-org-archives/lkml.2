@@ -1,80 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab2FFWNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 18:13:19 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:48763 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab2FFWNS (ORCPT
+	id S1758868Ab2FFWSR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 18:18:17 -0400
+Received: from relay.ihostexchange.net ([66.46.182.52]:23644 "EHLO
+	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab2FFWSQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 18:13:18 -0400
-Date: Wed, 6 Jun 2012 15:11:23 -0700
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kees Cook <keescook@chromium.org>, Arnd Bergmann <arnd@arndb.de>,
-        John Stultz <john.stultz@linaro.org>, arve@android.com,
-        Rebecca Schultz Zavin <rebecca@android.com>,
-        Jesper Juhl <jj@chaosbits.net>, Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Boyd <sboyd@codeaurora.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        WANG Cong <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 06/11] persistent_ram: Make it possible to use memory
- outside of bootmem
-Message-ID: <20120606221122.GB4010@lizard>
-References: <20120512001506.GA8653@lizard>
- <20120512001754.GF14782@lizard>
- <CAMbhsRTi2Gkk+CgRdcuQRU6f3SO51bqPt8o_+JDpTuXjkDf64Q@mail.gmail.com>
+	Wed, 6 Jun 2012 18:18:16 -0400
+From: "Shai Fultheim (Shai@ScaleMP.com)" <Shai@ScaleMP.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "ido@wizery.com" <ido@wizery.com>
+CC: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Date: Wed, 6 Jun 2012 18:18:12 -0400
+Subject: RE: [tip:x86/mm] x86/pat: Avoid contention on cpa_lock if possible
+Thread-Topic: [tip:x86/mm] x86/pat: Avoid contention on cpa_lock if possible
+Thread-Index: Ac1ECTOquSzc4insTfKVBsH9sAtFdwAKF2KQ
+Message-ID: <9B14D1490DDECA4E974F6B9FC9EBAB317EEFC74FD0@VMBX108.ihostexchange.net>
+References: <1334873492-31255-1-git-send-email-ido@wizery.com>
+	 <tip-d2956406fb61e15ad2b47eda823288db4996acf1@git.kernel.org>
+ <1339003443.23343.6.camel@twins>
+In-Reply-To: <1339003443.23343.6.camel@twins>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMbhsRTi2Gkk+CgRdcuQRU6f3SO51bqPt8o_+JDpTuXjkDf64Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 02:10:34PM -0700, Colin Cross wrote:
-> On Fri, May 11, 2012 at 5:17 PM, Anton Vorontsov
-> <anton.vorontsov@linaro.org> wrote:
-> > This includes devices' memory (e.g. framebuffers or memory mapped
-> > EEPROMs on a local bus), as well as the normal RAM that we don't use
-> > for the main memory.
-> >
-> > For the normal (but unused) ram we could use kmaps, but this assumes
-> > highmem support, so we don't bother and just use the memory via
-> > ioremap.
-> >
-> > As a side effect, the following hack is possible: when used together
-> > with pstore_ram (new ramoops) module, we can limit the normal RAM region
-> > with mem= and then point ramoops to use the rest of the memory, e.g.
-> >
-> >        mem=128M ramoops.mem_address=0x8000000
-> >
-> > Sure, we could just reserve the region with memblock_reserve() early in
-> > the arch/ code, and then register a pstore_ram platform device pointing
-> > to the reserved region. It's still a viable option if platform wants
-> > to do so.
-> >
-> > Also, we might want to use IO accessors in case of a real device,
-> > but for now we don't bother (the old ramoops wasn't using it either, so
-> > at least we don't make things worse).
+Peter Zijlstra [mailto:a.p.zijlstra@chello.nl] wrote
+> On Wed, 2012-06-06 at 09:18 -0700, tip-bot for Shai Fultheim wrote:
 > 
-> This is long merged, but I remembered why I moved away from using
-> ioremap.  The current code uses atomics to track the ringbuffer
-> positions, which results in ldrex and strex instructions on ARM.
-> ldrex and strex on memory that is mapped as Device memory (which is
-> what ioremap maps as) is implementation defined, and is unpredictable
-> at the architecture level.
+> > [ I absolutely hate these locking patterns ... yet I have no better idea.  Maybe the gents on Cc: ... ]
+> > Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
+> Oh yuck, this is vile..
+> 
+> static struct static_key scale_mp_trainwreck = STATIC_KEY_INIT_FALSE;
+> 
+> static DEFINE_SPINLOCK(_cpa_lock);
+> 
+> static inline void cpa_lock(void)
+> {
+> 	if (static_key_false(&scale_mp_trainwreck))
+> 		return;
+> 
+> 	spin_lock(&_cpa_lock);
+> }
+> 
+> static inline void cpa_unlock(void)
+> {
+> 	if (static_key_false(&scale_mp_trainwreck))
+> 		return;
+> 
+> 	spin_lock(&_cpa_lock);
+> }
+> 
+> And then use cpa_{,un}lock(), and the scale-mp guys can
+> static_key_slow_inc(&scale_mp_trainwreck).
+> 
+> [ and yes I hate those jump_label names ... but I'm not wanting
+>   to go through another round of bike-shed painting. ]
 
-Makes sense, thanks for sharing! Fortunately, we still map things
-w/ vmap if pfn appears to be valid. :-)
+Looks pretty straight forward to do.  
+We will try this route, as I'm concerned that synthetic CPUID bit will be kind of a global change for a pretty local consideration.
 
-Thanks,
+Comments?
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+(and we will also fix the other error pointed by Ingo - we are missing an include in this patch)
+
+Regards,
+Shai.
