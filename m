@@ -1,98 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab2FFN4h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 09:56:37 -0400
-Received: from 8bytes.org ([85.214.48.195]:54196 "EHLO
-	h2027444.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab2FFN4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 09:56:36 -0400
-Date: Wed, 6 Jun 2012 15:56:32 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [git pull] IOMMU fixes for Linux 3.5-rc1
-Message-ID: <20120606135632.GA4196@8bytes.org>
+	id S1754530Ab2FFOBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:01:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7006 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752529Ab2FFOBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:01:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="161713676"
+Date: Wed, 6 Jun 2012 22:00:58 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120606140058.GA8098@localhost>
+References: <20120529155759.GA11326@localhost>
+ <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
+ <20120530032129.GA7479@localhost>
+ <20120605172302.GB28556@redhat.com>
+ <20120605174157.GC28556@redhat.com>
+ <20120605184853.GD28556@redhat.com>
+ <20120605201045.GE28556@redhat.com>
+ <20120606025729.GA1197@redhat.com>
+ <CA+55aFyxucvhYhbk0yyNa1WSeYXgHHAyWRHPNWDwODQhyAWGww@mail.gmail.com>
+ <20120606121408.GB4934@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0F1p//8PRICkK4MW"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120606121408.GB4934@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Jun  6 15:56:34 2012
-X-DSPAM-Confidence: 0.9988
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4fcf619228382056420405
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 06, 2012 at 08:14:08AM -0400, Vivek Goyal wrote:
+> On Tue, Jun 05, 2012 at 08:14:08PM -0700, Linus Torvalds wrote:
+> > On Tue, Jun 5, 2012 at 7:57 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > >
+> > > I had expected a bigger difference as sync_file_range() is just driving
+> > > max queue depth of 32 (total 16MB IO in flight), while flushers are
+> > > driving queue depths up to 140 or so. So in this paritcular test, driving
+> > > much deeper queue depths is not really helping much. (I have seen higher
+> > > throughputs with higher queue depths in the past. Now sure why don't we
+> > > see it here).
+> > 
+> > How did interactivity feel?
+> > 
+> > Because quite frankly, if the throughput difference is 12.5 vs 12
+> > seconds, I suspect the interactivity thing is what dominates.
+> > 
+> > And from my memory of the interactivity different was absolutely
+> > *huge*. Even back when I used rotational media, I basically couldn't
+> > even notice the background write with the sync_file_range() approach.
+> > While the regular writeback without the writebehind had absolutely
+> > *huge* pauses if you used something like firefox that uses fsync()
+> > etc. And starting new applications that weren't cached was noticeably
+> > worse too - and then with sync_file_range it wasn't even all that
+> > noticeable.
+> > 
+> > NOTE! For the real "firefox + fsync" test, I suspect you'd need to do
+> > the writeback on the same filesystem (and obviously disk) as your home
+> > directory is. If the big write is to another filesystem and another
+> > disk, I think you won't see the same issues.
+> 
+> Ok, I did following test on my single SATA disk and my root filesystem
+> is on this disk.
+> 
+> I dropped caches and launched firefox and monitored the time it takes
+> for firefox to start. (cache cold).
+> 
+> And my results are reverse of what you have been seeing. With
+> sync_file_range() running, firefox takes roughly 30 seconds to start and
+> with flusher in operation, it takes roughly 20 seconds to start. (I have
+> approximated the average of 3 runs for simplicity).
+> 
+> I think it is happening because sync_file_range() will send all
+> the writes as SYNC and it will compete with firefox IO. On the other
+> hand, flusher's IO will show up as ASYNC and CFQ  will be penalize it
+> heavily and firefox's IO will be prioritized. And this effect should
+> just get worse as more processes do sync_file_range().
+> 
+> So write-behind should provide better interactivity if writes submitted
+> are ASYNC and not SYNC.
 
---0F1p//8PRICkK4MW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Vivek, thanks for testing all of these out! The result is
+definitely interesting and a surprise: we overlooked the SYNC nature
+of sync_file_range().
 
-Hi Linus,
+I'd suggest to use these calls to achieve the write-and-drop-behind
+behavior, *with* WB_SYNC_NONE:
 
-The following changes since commit f8f5701bdaf9134b1f90e5044a82c66324d2073f:
+        posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
+        sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_AFTER);
 
-  Linux 3.5-rc1 (2012-06-02 18:29:26 -0700)
+The caveat is, the below bdi_write_congested() will never evaluate to
+true since we are only filling the request queue with 8MB data.
 
-are available in the git repository at:
+SYSCALL_DEFINE(fadvise64_64):
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-fixes-3.5-rc1
+        case POSIX_FADV_DONTNEED:
+                if (!bdi_write_congested(mapping->backing_dev_info))
+                        __filemap_fdatawrite_range(mapping, offset, endbyte,
+                                                   WB_SYNC_NONE);
 
-for you to fetch changes up to eee53537c476c947bf7faa1c916d2f5a0ae8ec93:
-
-  iommu/amd: Fix deadlock in ppr-handling error path (2012-06-04 12:47:44 +0200)
-
-----------------------------------------------------------------
-IOMMU fixes for v3.5-rc1
-
-Two patches are in here which fix AMD IOMMU specific issues. One patch
-fixes a long-standing warning on resume because the amd_iommu_resume
-function enabled interrupts. The other patch fixes a deadlock in an
-error-path of the page-fault request handling code of the IOMMU driver.
-
-----------------------------------------------------------------
-Joerg Roedel (2):
-      iommu/amd: Cache pdev pointer to root-bridge
-      iommu/amd: Fix deadlock in ppr-handling error path
-
- drivers/iommu/amd_iommu.c       |   71 ++++++++++++++++++++++++---------------
- drivers/iommu/amd_iommu_init.c  |   13 +++----
- drivers/iommu/amd_iommu_types.h |    3 ++
- 3 files changed, 52 insertions(+), 35 deletions(-)
-
-Please pull.
-
-Regards,
-
-	Joerg
-
-
---0F1p//8PRICkK4MW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIbBAEBAgAGBQJPz2GQAAoJECvwRC2XARrjQm4P+K/JukEgCkjwgSzelTOjOOZa
-WH4tLMEYYFHRLU17wC5X/e4mXr8WmmvBenU7hLPeMXoWUe1DQkPyz6L3Cx7DAcWB
-B81A0N0QhWu3tqSKhp0K+RrC39F2o+p2cpwnv12lSqA/BfhSd2feDQ/7GTjw2t55
-5X7vn5ilnk8AwyXVjqdTfTw0uyDyHOhYta4iRIcVYy8KByv0YBQbvwWkbXQ8iPGw
-AnFicllEIS1F4cjkU3Q0ROLoaN5mgmWvuNkipfELkeiKuoXfbEh5YpHrvIIgaBv/
-FlHAvarn8eQwYtRWfBSq9FOzmV9R4IShV9SEjVjAk5NCw5I48M2aXoHDtc5ckpnf
-/e1IvOjibt0uHv4yRokw/gHKLJFnh20LulVFwE/EYykLF3XopJFXaLir2IVDYT2/
-m9S7f5va9vU+vggg6mNsMm9tNPeZyaizYY4UnSADLkYWi7gmYETvhsDuPBOQqVSS
-pjRRIV+rj4vZw4VGJ1nCOd2Ddz13YDkg+rXhiWHC7BxC1a2tNCbg93HLBVFruIjv
-mknyRZUFzymYUrxMB8NY0tG/WJjAAb5TXPacxSjG2XZx71kn29M9VK8+yxZe8/V7
-Ogo1f1rb5St/3WXHDqkbAKvNLpeiez9jYC7jWmQQV+J/PyaQ3cZbe17YUhIfSn1e
-7sDuO7B6nhYsYGnSkqU=
-=sQYu
------END PGP SIGNATURE-----
-
---0F1p//8PRICkK4MW--
-
-
+Thanks,
+Fengguang
