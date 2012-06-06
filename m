@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755154Ab2FFIdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:33:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59314 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754864Ab2FFIds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:33:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="153586326"
-Message-ID: <4FCF155B.3090705@intel.com>
-Date: Wed, 06 Jun 2012 16:31:23 +0800
-From: ShuoX Liu <shuox.liu@intel.com>
-Reply-To: shuox.liu@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH v6 1/2] printk: add interface for disabling recursion check
-References: <4FBF3295.7090608@intel.com>  <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com>  <1338165058.14538.209.camel@ymzhang.sh.intel.com>  <4FC2E8CF.2040109@intel.com> <4FC2E944.6060903@intel.com>  <20120604171202.GA8533@x1.osrc.amd.com>  <1338856360.14538.220.camel@ymzhang.sh.intel.com>  <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com>  <4FCDD78A.3070106@intel.com> <20120605151542.GA10669@x1.osrc.amd.com> <1338942965.14538.233.camel@ymzhang.sh.intel.com>
-In-Reply-To: <1338942965.14538.233.camel@ymzhang.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1755189Ab2FFIff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:35:35 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49891 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab2FFIfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 04:35:32 -0400
+Subject: [PATCH] virtio-net: fix a race on 32bit arches
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, mst@redhat.com,
+        Stephen Hemminger <shemminger@vyatta.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jun 2012 10:35:24 +0200
+Message-ID: <1338971724.2760.3913.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ShuoX Liu <shuox.liu@intel.com>
+From: Eric Dumazet <edumazet@google.com>
 
-With some special scenario, such as Machine Check Exception happened
-in printk, we want to bypass printk recursion check to printk some
-important information. So we add these interfaces of printk.
+commit 3fa2a1df909 (virtio-net: per cpu 64 bit stats (v2)) added a race
+on 32bit arches.
 
-1) printk_recursion_check_disable() for disabling recursion check
-2) printk_recursion_check_enable() for enabling recursion check
+We must use separate syncp for rx and tx path as they can be run at the
+same time on different cpus. Thus one sequence increment can be lost and
+readers spin forever.
 
-Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>
 ---
- include/linux/printk.h |    3 +++
- kernel/printk.c        |   17 ++++++++++++++++-
- 2 files changed, 19 insertions(+), 1 deletions(-)
+ drivers/net/virtio_net.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 1bec2f7..da48ec7 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -42,6 +42,9 @@ static inline void console_verbose(void)
- 		console_loglevel = 15;
- }
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 5214b1e..f18149a 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -42,7 +42,8 @@ module_param(gso, bool, 0444);
+ #define VIRTNET_DRIVER_VERSION "1.0.0"
  
-+void printk_recursion_check_disable(void);
-+void printk_recursion_check_enable(void);
-+
- struct va_format {
- 	const char *fmt;
- 	va_list *va;
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 32462d2..0580f67 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -78,6 +78,19 @@ int console_printk[4] = {
- int oops_in_progress;
- EXPORT_SYMBOL(oops_in_progress);
+ struct virtnet_stats {
+-	struct u64_stats_sync syncp;
++	struct u64_stats_sync tx_syncp;
++	struct u64_stats_sync rx_syncp;
+ 	u64 tx_bytes;
+ 	u64 tx_packets;
  
-+static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
+@@ -300,10 +301,10 @@ static void receive_buf(struct net_device *dev, void *buf, unsigned int len)
+ 
+ 	hdr = skb_vnet_hdr(skb);
+ 
+-	u64_stats_update_begin(&stats->syncp);
++	u64_stats_update_begin(&stats->rx_syncp);
+ 	stats->rx_bytes += skb->len;
+ 	stats->rx_packets++;
+-	u64_stats_update_end(&stats->syncp);
++	u64_stats_update_end(&stats->rx_syncp);
+ 
+ 	if (hdr->hdr.flags & VIRTIO_NET_HDR_F_NEEDS_CSUM) {
+ 		pr_debug("Needs csum!\n");
+@@ -565,10 +566,10 @@ static unsigned int free_old_xmit_skbs(struct virtnet_info *vi)
+ 	while ((skb = virtqueue_get_buf(vi->svq, &len)) != NULL) {
+ 		pr_debug("Sent skb %p\n", skb);
+ 
+-		u64_stats_update_begin(&stats->syncp);
++		u64_stats_update_begin(&stats->tx_syncp);
+ 		stats->tx_bytes += skb->len;
+ 		stats->tx_packets++;
+-		u64_stats_update_end(&stats->syncp);
++		u64_stats_update_end(&stats->tx_syncp);
+ 
+ 		tot_sgs += skb_vnet_hdr(skb)->num_sg;
+ 		dev_kfree_skb_any(skb);
+@@ -703,12 +704,16 @@ static struct rtnl_link_stats64 *virtnet_stats(struct net_device *dev,
+ 		u64 tpackets, tbytes, rpackets, rbytes;
+ 
+ 		do {
+-			start = u64_stats_fetch_begin(&stats->syncp);
++			start = u64_stats_fetch_begin(&stats->tx_syncp);
+ 			tpackets = stats->tx_packets;
+ 			tbytes   = stats->tx_bytes;
++		} while (u64_stats_fetch_retry(&stats->tx_syncp, start));
 +
-+void printk_recursion_check_disable(void)
-+{
-+	atomic_inc(&recursion_check_disabled);
-+}
-+
-+void printk_recursion_check_enable(void)
-+{
-+	WARN_ON(atomic_read(&recursion_check_disabled) < 1);
-+	atomic_dec(&recursion_check_disabled);
-+}
-+
- /*
-  * console_sem protects the console_drivers list, and also
-  * provides serialisation for access to the entire console
-@@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 * recursion and return - but flag the recursion so that
- 		 * it can be printed at the next appropriate moment:
- 		 */
--		if (!oops_in_progress && !lockdep_recursing(current)) {
-+		if (!atomic_read(&recursion_check_disabled)
-+			&& !oops_in_progress
-+			&& !lockdep_recursing(current)) {
- 			recursion_bug = 1;
- 			goto out_restore_irqs;
- 		}
--- 
-1.7.1
++		do {
++			start = u64_stats_fetch_begin(&stats->rx_syncp);
+ 			rpackets = stats->rx_packets;
+ 			rbytes   = stats->rx_bytes;
+-		} while (u64_stats_fetch_retry(&stats->syncp, start));
++		} while (u64_stats_fetch_retry(&stats->rx_syncp, start));
+ 
+ 		tot->rx_packets += rpackets;
+ 		tot->tx_packets += tpackets;
+
 
