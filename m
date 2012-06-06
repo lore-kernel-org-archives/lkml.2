@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab2FFOhe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:37:34 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46904 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab2FFOhd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:37:33 -0400
-X-AuditID: b753bd60-9fe84ba000000655-f6-4fcf6b2adb49
-X-AuditID: b753bd60-9fe84ba000000655-f6-4fcf6b2adb49
-Message-ID: <4FCF6B27.2020008@hitachi.com>
-Date: Wed, 06 Jun 2012 23:37:27 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756133Ab2FFOhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:37:46 -0400
+Received: from mga03.intel.com ([143.182.124.21]:11641 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755849Ab2FFOho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:37:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="108542074"
+Date: Wed, 6 Jun 2012 07:37:43 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        eranian@google.com
+Subject: Re: [PATCH 3/5] perf, x86: Check LBR format capability
+Message-ID: <20120606143743.GI28225@tassilo.jf.intel.com>
+References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
+ <1338944211-28275-3-git-send-email-andi@firstfloor.org>
+ <1338979224.2749.93.camel@twins>
+ <20120606141419.GE28225@tassilo.jf.intel.com>
+ <1338992556.2749.118.camel@twins>
 MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip v2 3/9] ftrace/x86: Support SAVE_REGS feature on
- i386
-References: <20120605102734.27845.43401.stgit@localhost.localdomain> <20120605102802.27845.49309.stgit@localhost.localdomain> <1338928666.13348.538.camel@gandalf.stny.rr.com> <20120605212411.GC11575@redhat.com> <1338939470.13348.541.camel@gandalf.stny.rr.com> <20120605234133.GD11575@redhat.com>
-In-Reply-To: <20120605234133.GD11575@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1338992556.2749.118.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/06/06 8:41), Frank Ch. Eigler wrote:
-> Hi -
+On Wed, Jun 06, 2012 at 04:22:36PM +0200, Peter Zijlstra wrote:
+> On Wed, 2012-06-06 at 07:14 -0700, Andi Kleen wrote:
+> > On Wed, Jun 06, 2012 at 12:40:24PM +0200, Peter Zijlstra wrote:
+> > > On Tue, 2012-06-05 at 17:56 -0700, Andi Kleen wrote:
+> > > > From: Andi Kleen <ak@linux.intel.com>
+> > > > 
+> > > > Double check the CPU has a LBR format we support before using it.
+> > > > 
+> > > > Also I made the init functions __init while I was on it. 
+> > > 
+> > > Why? Its all after a model test anyway.
+> > 
+> > Because the spec says we should check it.
 > 
->>> That would be the way for a kprobe to modify variables/values that
->>> happen to be in the registers.  In systemtap, for example:
->>> # stap -g -e 'probe kernel.function("foo") { $bar = 1 }'
->>
->> And why would we want to allow this?
->> Modifying variables with probes is another way to lead to disaster. [...]
->> What real world example leads to external sources modifying internal
->> core variables? With the obvious exception of rootkits.
+> The spec says lots of things.. but being that LBR is very much model
+> specific I really can't be bothered.
+
+Well you don't need to be, I did it already :-)
+
 > 
-> Among others, systemtap has been successfully used for fault injection
-> for development/testing, as well as band-aids for kernel security
-> vulnerabilities, where a small change of state can improve the state
-> of the system.  Obviously, this functionality is restricted to highly
-> privileged users.
+> > It could catch bad VMs and other inconsistencies and it's the right thing
+> > to do.
+> 
+> That might be a reason, but does it?, and why wasn't that in the
+> changelog?
 
-I agree with Frank. Register restoring should be done as far as the
-ftrace is used for kprobes. Of course, one reason is for the fault
-injection, which is very useful for debugging system failure. And
-another technical reason is that we should do "optimization"
-transparently. IMHO, kprobes works normally doing something,
-optimized kprobes also should do so.
+No it will not catch KVM because zero is a valid version :-/
+That would still need the MISC_ENABLE re-read I think.
 
-But if you introduce FTRACE_OPS_FL_RSTR_REGS flag for restoring
-registers, it could be possible to provide corresponding flag
-from kprobes side. (perhaps KPROBE_FLAG_NOMODREGS? :))
+Still it's the right thing to do I believe.
 
-Thank you,
+-andi
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+ak@linux.intel.com -- Speaking for myself only
