@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab2FFQMI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 12:12:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40587 "EHLO
+	id S1757213Ab2FFQNA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 12:13:00 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40597 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757220Ab2FFQMF (ORCPT
+	with ESMTP id S1756533Ab2FFQM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 12:12:05 -0400
-Date: Wed, 6 Jun 2012 09:11:48 -0700
+	Wed, 6 Jun 2012 12:12:58 -0400
+Date: Wed, 6 Jun 2012 09:12:41 -0700
 From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Message-ID: <tip-5a425294ee7d4ab5a374248e85838dfd450caf75@git.kernel.org>
+Message-ID: <tip-0780c927a02492f917a74f51f3c801c76a637c57@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, peterz@infradead.org,
-        zheng.z.yan@linux.intel.com, tglx@linutronix.de
+        mingo@kernel.org, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        peterz@infradead.org, zheng.z.yan@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1338903031.28282.175.camel@twins>
-References: <1338903031.28282.175.camel@twins>
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1338884803.28282.153.camel@twins>
+References: <1338884803.28282.153.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86: Fix Intel shared extra MSR allocation
-Git-Commit-ID: 5a425294ee7d4ab5a374248e85838dfd450caf75
+Subject: [tip:perf/core] perf/x86: Implement cycles:p for SNB/IVB
+Git-Commit-ID: 0780c927a02492f917a74f51f3c801c76a637c57
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,209 +30,129 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:11:54 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 09:12:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5a425294ee7d4ab5a374248e85838dfd450caf75
-Gitweb:     http://git.kernel.org/tip/5a425294ee7d4ab5a374248e85838dfd450caf75
+Commit-ID:  0780c927a02492f917a74f51f3c801c76a637c57
+Gitweb:     http://git.kernel.org/tip/0780c927a02492f917a74f51f3c801c76a637c57
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 5 Jun 2012 15:30:31 +0200
+AuthorDate: Tue, 5 Jun 2012 10:26:43 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 17:22:26 +0200
+CommitDate: Wed, 6 Jun 2012 17:22:34 +0200
 
-perf/x86: Fix Intel shared extra MSR allocation
+perf/x86: Implement cycles:p for SNB/IVB
 
-Zheng Yan reported that event group validation can wreck event state
-when Intel extra_reg allocation changes event state.
+Now that there's finally a chip with working PEBS (IvyBridge), we can
+enable the hardware and implement cycles:p for SNB/IVB.
 
-Validation shouldn't change any persistent state. Cloning events in
-validate_{event,group}() isn't really pretty either, so add a few
-special cases to avoid modifying the event state.
-
-The code is restructured to minimize the special case impact.
-
-Reported-by: Zheng Yan <zheng.z.yan@linux.intel.com>
-Acked-by: Stephane Eranian <eranian@google.com>
+Cc: Stephane Eranian <eranian@google.com>
+Requested-and-tested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1338903031.28282.175.camel@twins
+Link: http://lkml.kernel.org/r/1338884803.28282.153.camel@twins
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event.c       |    1 +
  arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |   92 ++++++++++++++++++++++----------
- 3 files changed, 66 insertions(+), 28 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   50 ++++++++++++++++++++++++++-----
+ 2 files changed, 43 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e049d6d..cb60838 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1496,6 +1496,7 @@ static struct cpu_hw_events *allocate_fake_cpuc(void)
- 		if (!cpuc->shared_regs)
- 			goto error;
- 	}
-+	cpuc->is_fake = 1;
- 	return cpuc;
- error:
- 	free_fake_cpuc(cpuc);
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 6638aaf..83794d8 100644
+index 83794d8..7241e2f 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -117,6 +117,7 @@ struct cpu_hw_events {
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
- 
- 	unsigned int		group_flag;
-+	int			is_fake;
+@@ -365,6 +365,7 @@ struct x86_pmu {
+ 	int		pebs_record_size;
+ 	void		(*drain_pebs)(struct pt_regs *regs);
+ 	struct event_constraint *pebs_constraints;
++	void		(*pebs_aliases)(struct perf_event *event);
  
  	/*
- 	 * Intel DebugStore bits
+ 	 * Intel LBR
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 166546e..965baa2 100644
+index 965baa2..2312c1f 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1119,27 +1119,33 @@ intel_bts_constraints(struct perf_event *event)
- 	return NULL;
+@@ -1336,15 +1336,9 @@ static void intel_put_event_constraints(struct cpu_hw_events *cpuc,
+ 	intel_put_shared_regs_event_constraints(cpuc, event);
  }
  
--static bool intel_try_alt_er(struct perf_event *event, int orig_idx)
-+static int intel_alt_er(int idx)
+-static int intel_pmu_hw_config(struct perf_event *event)
++static void intel_pebs_aliases_core2(struct perf_event *event)
  {
- 	if (!(x86_pmu.er_flags & ERF_HAS_RSP_1))
--		return false;
-+		return idx;
+-	int ret = x86_pmu_hw_config(event);
+-
+-	if (ret)
+-		return ret;
+-
+-	if (event->attr.precise_ip &&
+-	    (event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
++	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
+ 		/*
+ 		 * Use an alternative encoding for CPU_CLK_UNHALTED.THREAD_P
+ 		 * (0x003c) so that we can use it with PEBS.
+@@ -1365,10 +1359,48 @@ static int intel_pmu_hw_config(struct perf_event *event)
+ 		 */
+ 		u64 alt_config = X86_CONFIG(.event=0xc0, .inv=1, .cmask=16);
  
--	if (event->hw.extra_reg.idx == EXTRA_REG_RSP_0) {
--		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
--		event->hw.config |= 0x01bb;
--		event->hw.extra_reg.idx = EXTRA_REG_RSP_1;
--		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
--	} else if (event->hw.extra_reg.idx == EXTRA_REG_RSP_1) {
-+	if (idx == EXTRA_REG_RSP_0)
-+		return EXTRA_REG_RSP_1;
-+
-+	if (idx == EXTRA_REG_RSP_1)
-+		return EXTRA_REG_RSP_0;
-+
-+	return idx;
++		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
++		event->hw.config = alt_config;
++	}
 +}
 +
-+static void intel_fixup_er(struct perf_event *event, int idx)
++static void intel_pebs_aliases_snb(struct perf_event *event)
 +{
-+	event->hw.extra_reg.idx = idx;
-+
-+	if (idx == EXTRA_REG_RSP_0) {
- 		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
- 		event->hw.config |= 0x01b7;
--		event->hw.extra_reg.idx = EXTRA_REG_RSP_0;
- 		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_0;
-+	} else if (idx == EXTRA_REG_RSP_1) {
-+		event->hw.config &= ~INTEL_ARCH_EVENT_MASK;
-+		event->hw.config |= 0x01bb;
-+		event->hw.extra_reg.reg = MSR_OFFCORE_RSP_1;
- 	}
--
--	if (event->hw.extra_reg.idx == orig_idx)
--		return false;
--
--	return true;
- }
- 
- /*
-@@ -1157,14 +1163,18 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 	struct event_constraint *c = &emptyconstraint;
- 	struct er_account *era;
- 	unsigned long flags;
--	int orig_idx = reg->idx;
-+	int idx = reg->idx;
- 
--	/* already allocated shared msr */
--	if (reg->alloc)
-+	/*
-+	 * reg->alloc can be set due to existing state, so for fake cpuc we
-+	 * need to ignore this, otherwise we might fail to allocate proper fake
-+	 * state for this extra reg constraint. Also see the comment below.
-+	 */
-+	if (reg->alloc && !cpuc->is_fake)
- 		return NULL; /* call x86_get_event_constraint() */
- 
- again:
--	era = &cpuc->shared_regs->regs[reg->idx];
-+	era = &cpuc->shared_regs->regs[idx];
- 	/*
- 	 * we use spin_lock_irqsave() to avoid lockdep issues when
- 	 * passing a fake cpuc
-@@ -1173,6 +1183,29 @@ again:
- 
- 	if (!atomic_read(&era->ref) || era->config == reg->config) {
- 
++	if ((event->hw.config & X86_RAW_EVENT_MASK) == 0x003c) {
 +		/*
-+		 * If its a fake cpuc -- as per validate_{group,event}() we
-+		 * shouldn't touch event state and we can avoid doing so
-+		 * since both will only call get_event_constraints() once
-+		 * on each event, this avoids the need for reg->alloc.
++		 * Use an alternative encoding for CPU_CLK_UNHALTED.THREAD_P
++		 * (0x003c) so that we can use it with PEBS.
 +		 *
-+		 * Not doing the ER fixup will only result in era->reg being
-+		 * wrong, but since we won't actually try and program hardware
-+		 * this isn't a problem either.
++		 * The regular CPU_CLK_UNHALTED.THREAD_P event (0x003c) isn't
++		 * PEBS capable. However we can use UOPS_RETIRED.ALL
++		 * (0x01c2), which is a PEBS capable event, to get the same
++		 * count.
++		 *
++		 * UOPS_RETIRED.ALL counts the number of cycles that retires
++		 * CNTMASK micro-ops. By setting CNTMASK to a value (16)
++		 * larger than the maximum number of micro-ops that can be
++		 * retired per cycle (4) and then inverting the condition, we
++		 * count all cycles that retire 16 or less micro-ops, which
++		 * is every cycle.
++		 *
++		 * Thereby we gain a PEBS capable cycle counter.
 +		 */
-+		if (!cpuc->is_fake) {
-+			if (idx != reg->idx)
-+				intel_fixup_er(event, idx);
-+
-+			/*
-+			 * x86_schedule_events() can call get_event_constraints()
-+			 * multiple times on events in the case of incremental
-+			 * scheduling(). reg->alloc ensures we only do the ER
-+			 * allocation once.
-+			 */
-+			reg->alloc = 1;
-+		}
-+
- 		/* lock in msr value */
- 		era->config = reg->config;
- 		era->reg = reg->reg;
-@@ -1180,17 +1213,17 @@ again:
- 		/* one more user */
- 		atomic_inc(&era->ref);
++		u64 alt_config = X86_CONFIG(.event=0xc2, .umask=0x01, .inv=1, .cmask=16);
  
--		/* no need to reallocate during incremental event scheduling */
--		reg->alloc = 1;
--
- 		/*
- 		 * need to call x86_get_event_constraint()
- 		 * to check if associated event has constraints
- 		 */
- 		c = NULL;
--	} else if (intel_try_alt_er(event, orig_idx)) {
--		raw_spin_unlock_irqrestore(&era->lock, flags);
--		goto again;
-+	} else {
-+		idx = intel_alt_er(idx);
-+		if (idx != reg->idx) {
-+			raw_spin_unlock_irqrestore(&era->lock, flags);
-+			goto again;
-+		}
+ 		alt_config |= (event->hw.config & ~X86_RAW_EVENT_MASK);
+ 		event->hw.config = alt_config;
  	}
- 	raw_spin_unlock_irqrestore(&era->lock, flags);
++}
++
++static int intel_pmu_hw_config(struct perf_event *event)
++{
++	int ret = x86_pmu_hw_config(event);
++
++	if (ret)
++		return ret;
++
++	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
++		x86_pmu.pebs_aliases(event);
  
-@@ -1204,11 +1237,14 @@ __intel_shared_reg_put_constraints(struct cpu_hw_events *cpuc,
- 	struct er_account *era;
+ 	if (intel_pmu_needs_lbr_smpl(event)) {
+ 		ret = intel_pmu_setup_lbr_filter(event);
+@@ -1643,6 +1675,7 @@ static __initconst const struct x86_pmu intel_pmu = {
+ 	.max_period		= (1ULL << 31) - 1,
+ 	.get_event_constraints	= intel_get_event_constraints,
+ 	.put_event_constraints	= intel_put_event_constraints,
++	.pebs_aliases		= intel_pebs_aliases_core2,
  
- 	/*
--	 * only put constraint if extra reg was actually
--	 * allocated. Also takes care of event which do
--	 * not use an extra shared reg
-+	 * Only put constraint if extra reg was actually allocated. Also takes
-+	 * care of event which do not use an extra shared reg.
-+	 *
-+	 * Also, if this is a fake cpuc we shouldn't touch any event state
-+	 * (reg->alloc) and we don't care about leaving inconsistent cpuc state
-+	 * either since it'll be thrown out.
- 	 */
--	if (!reg->alloc)
-+	if (!reg->alloc || cpuc->is_fake)
- 		return;
+ 	.format_attrs		= intel_arch3_formats_attr,
  
- 	era = &cpuc->shared_regs->regs[reg->idx];
+@@ -1885,6 +1918,7 @@ __init int intel_pmu_init(void)
+ 
+ 		x86_pmu.event_constraints = intel_snb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_snb_pebs_event_constraints;
++		x86_pmu.pebs_aliases = intel_pebs_aliases_snb;
+ 		x86_pmu.extra_regs = intel_snb_extra_regs;
+ 		/* all extra regs are per-cpu when HT is on */
+ 		x86_pmu.er_flags |= ERF_HAS_RSP_1;
