@@ -1,346 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab2FFHA2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:00:28 -0400
-Received: from www84.your-server.de ([213.133.104.84]:42057 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab2FFHAZ (ORCPT
+	id S1753931Ab2FFHBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:01:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35800 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab2FFHBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:00:25 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, oneukum@suse.de,
-        alan@lxorguk.ukuu.org.uk
-Cc: Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH] fix usb skeleton driver
-Date: Wed,  6 Jun 2012 09:00:36 +0200
-Message-Id: <1338966036-30443-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.8.6
-X-Authenticated-Sender: stefani@seibold.net
+	Wed, 6 Jun 2012 03:01:23 -0400
+Date: Wed, 6 Jun 2012 00:00:56 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-472606458f3e1ced5fe3cc5f04e90a6b5a4732cf@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, acme@ghostprotocols.net, namhyung.kim@lge.com,
+        namhyung@gmail.com, fan4326@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, namhyung.kim@lge.com, namhyung@gmail.com,
+        fan4326@gmail.com, tglx@linutronix.de
+In-Reply-To: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
+References: <1338443007-24857-1-git-send-email-namhyung.kim@lge.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf callchain: Make callchain cursors TLS
+Git-Commit-ID: 472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:01:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+Commit-ID:  472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
+Gitweb:     http://git.kernel.org/tip/472606458f3e1ced5fe3cc5f04e90a6b5a4732cf
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 31 May 2012 14:43:26 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Thu, 31 May 2012 10:47:12 -0300
 
-This is a fix for the USB skeleton driver to bring it in shape.
+perf callchain: Make callchain cursors TLS
 
-- The usb_device structure pointer will no longer stored 
-- Every access to the USB will be handled trought the usb_interface pointer
-- No longer assign a NULL to usb_interface pointer in the disconnect() handler
-- Add a new bool 'connected' for signaling a disconnect (== false)
-- Handle a non blocking read without blocking
-- Code clean up
+perf top -G has a race on callchain cursor between main thread and
+display thread. Since the callchain cursors are used locally make them
+thread-local data would solve the problem.
 
-The patch is against linux 3.5.0 commit eea5b5510fc5545d15b69da8e485a7424ae388cf
-
-Hope this helps
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Reported-by: Sunjin Yang <fan4326@gmail.com>
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sunjin Yang <fan4326@gmail.com>
+Link: http://lkml.kernel.org/r/1338443007-24857-1-git-send-email-namhyung.kim@lge.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- drivers/usb/usb-skeleton.c |  107 ++++++++++++++++++--------------------------
- 1 files changed, 44 insertions(+), 63 deletions(-)
+ tools/perf/builtin-report.c |    2 +-
+ tools/perf/builtin-top.c    |    2 +-
+ tools/perf/util/callchain.c |    2 ++
+ tools/perf/util/callchain.h |    2 ++
+ tools/perf/util/hist.c      |    7 ++++---
+ tools/perf/util/hist.h      |    2 --
+ tools/perf/util/session.c   |   14 +++++++-------
+ 7 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
-index 0616f23..01f7ca5 100644
---- a/drivers/usb/usb-skeleton.c
-+++ b/drivers/usb/usb-skeleton.c
-@@ -1,7 +1,8 @@
- /*
-- * USB Skeleton driver - 2.2
-+ * USB Skeleton driver - 2.3
-  *
-  * Copyright (C) 2001-2004 Greg Kroah-Hartman (greg@kroah.com)
-+ * fixes by Stefan Seibold <stefani@seibold.net>
-  *
-  *	This program is free software; you can redistribute it and/or
-  *	modify it under the terms of the GNU General Public License as
-@@ -48,7 +49,6 @@ MODULE_DEVICE_TABLE(usb, skel_table);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2400e00..25249f7 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -152,7 +152,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
  
- /* Structure to hold all of our device specific stuff */
- struct usb_skel {
--	struct usb_device	*udev;			/* the usb device for this device */
- 	struct usb_interface	*interface;		/* the interface for this device */
- 	struct semaphore	limit_sem;		/* limiting the number of writes in progress */
- 	struct usb_anchor	submitted;		/* in case we need to retract our submissions */
-@@ -62,9 +62,10 @@ struct usb_skel {
- 	int			errors;			/* the last request tanked */
- 	bool			ongoing_read;		/* a read is going on */
- 	bool			processed_urb;		/* indicates we haven't processed the urb */
-+	bool			connected;		/* connected flag */
- 	spinlock_t		err_lock;		/* lock for errors */
- 	struct kref		kref;
--	struct mutex		io_mutex;		/* synchronize I/O with disconnect */
-+	struct mutex		io_mutex;		/* synchronize I/O */
- 	struct completion	bulk_in_completion;	/* to wait for an ongoing read */
- };
- #define to_skel_dev(d) container_of(d, struct usb_skel, kref)
-@@ -77,7 +78,7 @@ static void skel_delete(struct kref *kref)
- 	struct usb_skel *dev = to_skel_dev(kref);
+ 	if (symbol_conf.use_callchain) {
+ 		err = callchain_append(he->callchain,
+-				       &evsel->hists.callchain_cursor,
++				       &callchain_cursor,
+ 				       sample->period);
+ 		if (err)
+ 			return err;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 871b540..6bb0277 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -787,7 +787,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 		}
  
- 	usb_free_urb(dev->bulk_in_urb);
--	usb_put_dev(dev->udev);
-+	usb_put_dev(interface_to_usbdev(dev->interface));
- 	kfree(dev->bulk_in_buffer);
- 	kfree(dev);
- }
-@@ -100,7 +101,7 @@ static int skel_open(struct inode *inode, struct file *file)
- 	}
+ 		if (symbol_conf.use_callchain) {
+-			err = callchain_append(he->callchain, &evsel->hists.callchain_cursor,
++			err = callchain_append(he->callchain, &callchain_cursor,
+ 					       sample->period);
+ 			if (err)
+ 				return;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 9f7106a..3a6bff4 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -18,6 +18,8 @@
+ #include "util.h"
+ #include "callchain.h"
  
- 	dev = usb_get_intfdata(interface);
--	if (!dev) {
-+	if (!dev || !dev->connected) {
- 		retval = -ENODEV;
- 		goto exit;
- 	}
-@@ -108,17 +109,12 @@ static int skel_open(struct inode *inode, struct file *file)
- 	/* increment our usage count for the device */
- 	kref_get(&dev->kref);
- 
--	/* lock the device to allow correctly handling errors
--	 * in resumption */
--	mutex_lock(&dev->io_mutex);
--
- 	retval = usb_autopm_get_interface(interface);
- 	if (retval)
--		goto out_err;
-+		goto exit;
- 
- 	/* save our object in the file's private structure */
- 	file->private_data = dev;
--	mutex_unlock(&dev->io_mutex);
- 
- exit:
- 	return retval;
-@@ -126,32 +122,21 @@ exit:
- 
- static int skel_release(struct inode *inode, struct file *file)
- {
--	struct usb_skel *dev;
--
--	dev = file->private_data;
--	if (dev == NULL)
--		return -ENODEV;
-+	struct usb_skel *dev = file->private_data;
- 
- 	/* allow the device to be autosuspended */
--	mutex_lock(&dev->io_mutex);
--	if (dev->interface)
--		usb_autopm_put_interface(dev->interface);
--	mutex_unlock(&dev->io_mutex);
-+	usb_autopm_put_interface(dev->interface);
- 
- 	/* decrement the count on our device */
- 	kref_put(&dev->kref, skel_delete);
- 	return 0;
- }
- 
--static int skel_flush(struct file *file, fl_owner_t id)
-+static int skel_fsync(struct file *file, loff_t start, loff_t end, int datasync)
- {
--	struct usb_skel *dev;
-+	struct usb_skel *dev = file->private_data;
- 	int res;
- 
--	dev = file->private_data;
--	if (dev == NULL)
--		return -ENODEV;
--
- 	/* wait for io to stop */
- 	mutex_lock(&dev->io_mutex);
- 	skel_draw_down(dev);
-@@ -167,6 +152,11 @@ static int skel_flush(struct file *file, fl_owner_t id)
- 	return res;
- }
- 
-+static int skel_flush(struct file *file, fl_owner_t id)
-+{
-+	return skel_fsync(file, 0, LLONG_MAX, 0);
-+}
++__thread struct callchain_cursor callchain_cursor;
 +
- static void skel_read_bulk_callback(struct urb *urb)
+ bool ip_callchain__valid(struct ip_callchain *chain,
+ 			 const union perf_event *event)
  {
- 	struct usb_skel *dev;
-@@ -187,7 +177,7 @@ static void skel_read_bulk_callback(struct urb *urb)
- 	} else {
- 		dev->bulk_in_filled = urb->actual_length;
- 	}
--	dev->ongoing_read = 0;
-+	dev->ongoing_read = false;
- 	spin_unlock(&dev->err_lock);
- 
- 	complete(&dev->bulk_in_completion);
-@@ -196,20 +186,19 @@ static void skel_read_bulk_callback(struct urb *urb)
- static int skel_do_read_io(struct usb_skel *dev, size_t count)
- {
- 	int rv;
-+	struct usb_device *udev = interface_to_usbdev(dev->interface);
- 
- 	/* prepare a read */
- 	usb_fill_bulk_urb(dev->bulk_in_urb,
--			dev->udev,
--			usb_rcvbulkpipe(dev->udev,
-+			udev,
-+			usb_rcvbulkpipe(udev,
- 				dev->bulk_in_endpointAddr),
- 			dev->bulk_in_buffer,
- 			min(dev->bulk_in_size, count),
- 			skel_read_bulk_callback,
- 			dev);
- 	/* tell everybody to leave the URB alone */
--	spin_lock_irq(&dev->err_lock);
--	dev->ongoing_read = 1;
--	spin_unlock_irq(&dev->err_lock);
-+	dev->ongoing_read = true;
- 
- 	/* do it */
- 	rv = usb_submit_urb(dev->bulk_in_urb, GFP_KERNEL);
-@@ -219,9 +208,7 @@ static int skel_do_read_io(struct usb_skel *dev, size_t count)
- 			__func__, rv);
- 		dev->bulk_in_filled = 0;
- 		rv = (rv == -ENOMEM) ? rv : -EIO;
--		spin_lock_irq(&dev->err_lock);
--		dev->ongoing_read = 0;
--		spin_unlock_irq(&dev->err_lock);
-+		dev->ongoing_read = false;
- 	}
- 
- 	return rv;
-@@ -230,33 +217,31 @@ static int skel_do_read_io(struct usb_skel *dev, size_t count)
- static ssize_t skel_read(struct file *file, char *buffer, size_t count,
- 			 loff_t *ppos)
- {
--	struct usb_skel *dev;
-+	struct usb_skel *dev = file->private_data;
- 	int rv;
--	bool ongoing_io;
--
--	dev = file->private_data;
- 
- 	/* if we cannot read at all, return EOF */
- 	if (!dev->bulk_in_urb || !count)
- 		return 0;
- 
- 	/* no concurrent readers */
--	rv = mutex_lock_interruptible(&dev->io_mutex);
--	if (rv < 0)
--		return rv;
-+	if (file->f_flags & O_NONBLOCK) {
-+		if (!mutex_trylock(&dev->io_mutex))
-+			return -EAGAIN;
-+	} else {
-+		rv = mutex_lock_interruptible(&dev->io_mutex);
-+		if (rv < 0)
-+			return rv;
-+	}
- 
--	if (!dev->interface) {		/* disconnect() was called */
-+	if (!dev->connected) {		/* disconnect() was called */
- 		rv = -ENODEV;
- 		goto exit;
- 	}
- 
- 	/* if IO is under way, we must not touch things */
- retry:
--	spin_lock_irq(&dev->err_lock);
--	ongoing_io = dev->ongoing_read;
--	spin_unlock_irq(&dev->err_lock);
--
--	if (ongoing_io) {
-+	if (dev->ongoing_read) {
- 		/* nonblocking IO shall not wait */
- 		if (file->f_flags & O_NONBLOCK) {
- 			rv = -EAGAIN;
-@@ -384,13 +369,12 @@ static void skel_write_bulk_callback(struct urb *urb)
- static ssize_t skel_write(struct file *file, const char *user_buffer,
- 			  size_t count, loff_t *ppos)
- {
--	struct usb_skel *dev;
-+	struct usb_skel *dev = file->private_data;
- 	int retval = 0;
- 	struct urb *urb = NULL;
- 	char *buf = NULL;
- 	size_t writesize = min(count, (size_t)MAX_TRANSFER);
--
--	dev = file->private_data;
-+	struct usb_device *udev = interface_to_usbdev(dev->interface);
- 
- 	/* verify that we actually have some data to write */
- 	if (count == 0)
-@@ -431,7 +415,7 @@ static ssize_t skel_write(struct file *file, const char *user_buffer,
- 		goto error;
- 	}
- 
--	buf = usb_alloc_coherent(dev->udev, writesize, GFP_KERNEL,
-+	buf = usb_alloc_coherent(udev, writesize, GFP_KERNEL,
- 				 &urb->transfer_dma);
- 	if (!buf) {
- 		retval = -ENOMEM;
-@@ -444,23 +428,20 @@ static ssize_t skel_write(struct file *file, const char *user_buffer,
- 	}
- 
- 	/* this lock makes sure we don't submit URBs to gone devices */
--	mutex_lock(&dev->io_mutex);
--	if (!dev->interface) {		/* disconnect() was called */
--		mutex_unlock(&dev->io_mutex);
-+	if (!dev->connected) {		/* disconnect() was called */
- 		retval = -ENODEV;
- 		goto error;
- 	}
- 
- 	/* initialize the urb properly */
--	usb_fill_bulk_urb(urb, dev->udev,
--			  usb_sndbulkpipe(dev->udev, dev->bulk_out_endpointAddr),
-+	usb_fill_bulk_urb(urb, udev,
-+			  usb_sndbulkpipe(udev, dev->bulk_out_endpointAddr),
- 			  buf, writesize, skel_write_bulk_callback, dev);
- 	urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
- 	usb_anchor_urb(urb, &dev->submitted);
- 
- 	/* send the data out the bulk port */
- 	retval = usb_submit_urb(urb, GFP_KERNEL);
--	mutex_unlock(&dev->io_mutex);
- 	if (retval) {
- 		dev_err(&dev->interface->dev,
- 			"%s - failed submitting write urb, error %d\n",
-@@ -481,7 +462,7 @@ error_unanchor:
- 	usb_unanchor_urb(urb);
- error:
- 	if (urb) {
--		usb_free_coherent(dev->udev, writesize, buf, urb->transfer_dma);
-+		usb_free_coherent(udev, writesize, buf, urb->transfer_dma);
- 		usb_free_urb(urb);
- 	}
- 	up(&dev->limit_sem);
-@@ -496,6 +477,7 @@ static const struct file_operations skel_fops = {
- 	.write =	skel_write,
- 	.open =		skel_open,
- 	.release =	skel_release,
-+	.fsync =	skel_fsync,
- 	.flush =	skel_flush,
- 	.llseek =	noop_llseek,
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 7f9c0f1..3bdb407 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -76,6 +76,8 @@ struct callchain_cursor {
+ 	struct callchain_cursor_node	*curr;
  };
-@@ -533,8 +515,9 @@ static int skel_probe(struct usb_interface *interface,
- 	init_usb_anchor(&dev->submitted);
- 	init_completion(&dev->bulk_in_completion);
  
--	dev->udev = usb_get_dev(interface_to_usbdev(interface));
-+	usb_get_dev(interface_to_usbdev(interface));
- 	dev->interface = interface;
-+	dev->connected = true;
++extern __thread struct callchain_cursor callchain_cursor;
++
+ static inline void callchain_init(struct callchain_root *root)
+ {
+ 	INIT_LIST_HEAD(&root->node.siblings);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 1293b5e..514e2a4 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -378,7 +378,7 @@ void hist_entry__free(struct hist_entry *he)
+  * collapse the histogram
+  */
  
- 	/* set up the endpoint information */
- 	/* use only the first bulk-in and bulk-out endpoints */
-@@ -612,9 +595,7 @@ static void skel_disconnect(struct usb_interface *interface)
- 	usb_deregister_dev(interface, &skel_class);
+-static bool hists__collapse_insert_entry(struct hists *hists,
++static bool hists__collapse_insert_entry(struct hists *hists __used,
+ 					 struct rb_root *root,
+ 					 struct hist_entry *he)
+ {
+@@ -397,8 +397,9 @@ static bool hists__collapse_insert_entry(struct hists *hists,
+ 			iter->period += he->period;
+ 			iter->nr_events += he->nr_events;
+ 			if (symbol_conf.use_callchain) {
+-				callchain_cursor_reset(&hists->callchain_cursor);
+-				callchain_merge(&hists->callchain_cursor, iter->callchain,
++				callchain_cursor_reset(&callchain_cursor);
++				callchain_merge(&callchain_cursor,
++						iter->callchain,
+ 						he->callchain);
+ 			}
+ 			hist_entry__free(he);
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index cfc64e2..34bb556 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -67,8 +67,6 @@ struct hists {
+ 	struct events_stats	stats;
+ 	u64			event_stream;
+ 	u16			col_len[HISTC_NR_COLS];
+-	/* Best would be to reuse the session callchain cursor */
+-	struct callchain_cursor	callchain_cursor;
+ };
  
- 	/* prevent more I/O from starting */
--	mutex_lock(&dev->io_mutex);
--	dev->interface = NULL;
--	mutex_unlock(&dev->io_mutex);
-+	dev->connected = false;
+ struct hist_entry *__hists__add_entry(struct hists *self,
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 4820614..3b6f8e4 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -288,7 +288,8 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
+ 	return bi;
+ }
  
- 	usb_kill_anchored_urbs(&dev->submitted);
+-int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
++int machine__resolve_callchain(struct machine *self,
++			       struct perf_evsel *evsel __used,
+ 			       struct thread *thread,
+ 			       struct ip_callchain *chain,
+ 			       struct symbol **parent)
+@@ -297,7 +298,7 @@ int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
+ 	unsigned int i;
+ 	int err;
  
--- 
-1.7.8.6
-
+-	callchain_cursor_reset(&evsel->hists.callchain_cursor);
++	callchain_cursor_reset(&callchain_cursor);
+ 
+ 	for (i = 0; i < chain->nr; i++) {
+ 		u64 ip;
+@@ -333,7 +334,7 @@ int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
+ 				break;
+ 		}
+ 
+-		err = callchain_cursor_append(&evsel->hists.callchain_cursor,
++		err = callchain_cursor_append(&callchain_cursor,
+ 					      ip, al.map, al.sym);
+ 		if (err)
+ 			return err;
+@@ -1428,7 +1429,6 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 			  int print_sym, int print_dso, int print_symoffset)
+ {
+ 	struct addr_location al;
+-	struct callchain_cursor *cursor = &evsel->hists.callchain_cursor;
+ 	struct callchain_cursor_node *node;
+ 
+ 	if (perf_event__preprocess_sample(event, machine, &al, sample,
+@@ -1446,10 +1446,10 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 				error("Failed to resolve callchain. Skipping\n");
+ 			return;
+ 		}
+-		callchain_cursor_commit(cursor);
++		callchain_cursor_commit(&callchain_cursor);
+ 
+ 		while (1) {
+-			node = callchain_cursor_current(cursor);
++			node = callchain_cursor_current(&callchain_cursor);
+ 			if (!node)
+ 				break;
+ 
+@@ -1465,7 +1465,7 @@ void perf_event__print_ip(union perf_event *event, struct perf_sample *sample,
+ 			}
+ 			printf("\n");
+ 
+-			callchain_cursor_advance(cursor);
++			callchain_cursor_advance(&callchain_cursor);
+ 		}
+ 
+ 	} else {
