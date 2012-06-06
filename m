@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab2FFPAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:00:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39575 "EHLO
+	id S1756438Ab2FFPBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:01:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39608 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755612Ab2FFPAp (ORCPT
+	with ESMTP id S1751439Ab2FFPBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:00:45 -0400
-Date: Wed, 6 Jun 2012 08:00:28 -0700
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-436d03faf6961b30e13b2d0967aea9d772d6cf44@git.kernel.org>
+	Wed, 6 Jun 2012 11:01:38 -0400
+Date: Wed, 6 Jun 2012 08:01:21 -0700
+From: tip-bot for Ido Yariv <ido@wizery.com>
+Message-ID: <tip-7db971b235480849aa5b9209b67b62e987b3181b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, penberg@kernel.org,
-        yrl.pp-manager.tt@hitachi.com, masami.hiramatsu.pt@hitachi.com,
-        tglx@linutronix.de
+        shai@scalemp.com, ido@wizery.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, torvalds@linux-foundation.org,
-        penberg@kernel.org, tglx@linutronix.de, yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <20120604150911.22338.43296.stgit@localhost.localdomain>
-References: <20120604150911.22338.43296.stgit@localhost.localdomain>
+        shai@scalemp.com, tglx@linutronix.de, ido@wizery.com
+In-Reply-To: <1338675095-27260-1-git-send-email-ido@wizery.com>
+References: <1338675095-27260-1-git-send-email-ido@wizery.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86/decoder: Fix bsr/bsf/
- jmpe decoding with operand-size prefix
-Git-Commit-ID: 436d03faf6961b30e13b2d0967aea9d772d6cf44
+Subject: [tip:x86/platform] x86/platform:
+  Introduce APIC post-initialization callback
+Git-Commit-ID: 7db971b235480849aa5b9209b67b62e987b3181b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,125 +28,126 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:00:34 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:01:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  436d03faf6961b30e13b2d0967aea9d772d6cf44
-Gitweb:     http://git.kernel.org/tip/436d03faf6961b30e13b2d0967aea9d772d6cf44
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Tue, 5 Jun 2012 00:09:11 +0900
+Commit-ID:  7db971b235480849aa5b9209b67b62e987b3181b
+Gitweb:     http://git.kernel.org/tip/7db971b235480849aa5b9209b67b62e987b3181b
+Author:     Ido Yariv <ido@wizery.com>
+AuthorDate: Sun, 3 Jun 2012 01:11:34 +0300
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 08:54:18 +0200
+CommitDate: Wed, 6 Jun 2012 09:06:19 +0200
 
-x86/decoder: Fix bsr/bsf/jmpe decoding with operand-size prefix
+x86/platform: Introduce APIC post-initialization callback
 
-Fix the x86 instruction decoder to decode bsr/bsf/jmpe with
-operand-size prefix (66h). This fixes the test case failure
-reported by Linus, attached below.
+Some subarchitectures (such as vSMP) need to slightly adjust the
+underlying APIC structure. Add an APIC post-initialization callback
+to 'struct x86_platform_ops' for this purpose and use it for
+adjusting the APIC structure on vSMP systems.
 
-bsf/bsr/jmpe have a special encoding. Opcode map in
-Intel Software Developers Manual vol2 says they have
-TZCNT/LZCNT variants if it has F3h prefix. However, there
-is no information if it has other 66h or F2h prefixes.
-Current instruction decoder supposes that those are
-bad instructions, but it actually accepts at least
-operand-size prefixes.
-
-H. Peter Anvin further explains:
-
- " TZCNT/LZCNT are F3 + BSF/BSR exactly because the F2 and
-   F3 prefixes have historically been no-ops with most instructions.
-   This allows software to unconditionally use the prefixed versions
-   and get TZCNT/LZCNT on the processors that have them if they don't
-   care about the difference. "
-
-This fixes errors reported by test_get_len:
-
-  Warning: arch/x86/tools/test_get_len found difference at <em_bsf>:ffffffff81036d87
-  Warning: ffffffff81036de5:	66 0f bc c2          	bsf    %dx,%ax
-  Warning: objdump says 4 bytes, but insn_get_length() says 3
-  Warning: arch/x86/tools/test_get_len found difference at <em_bsr>:ffffffff81036ea6
-  Warning: ffffffff81036f04:	66 0f bd c2          	bsr    %dx,%ax
-  Warning: objdump says 4 bytes, but insn_get_length() says 3
-  Warning: decoded and checked 13298882 instructions with 2 warnings
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reported-by: Pekka Enberg <penberg@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: <yrl.pp-manager.tt@hitachi.com>
-Link: http://lkml.kernel.org/r/20120604150911.22338.43296.stgit@localhost.localdomain
+Signed-off-by: Ido Yariv <ido@wizery.com>
+Acked-by: Shai Fultheim <shai@scalemp.com>
+Link: http://lkml.kernel.org/r/1338675095-27260-1-git-send-email-ido@wizery.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/lib/x86-opcode-map.txt      |    8 ++++----
- arch/x86/tools/gen-insn-attr-x86.awk |   14 +++++++++-----
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/x86_init.h |    2 ++
+ arch/x86/kernel/apic/probe_32.c |    3 +++
+ arch/x86/kernel/apic/probe_64.c |   11 ++---------
+ arch/x86/kernel/vsmp_64.c       |   13 +++++++++++++
+ 4 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
-index 8191379..5d7e51f 100644
---- a/arch/x86/lib/x86-opcode-map.txt
-+++ b/arch/x86/lib/x86-opcode-map.txt
-@@ -28,7 +28,7 @@
- #  - (66): the last prefix is 0x66
- #  - (F3): the last prefix is 0xF3
- #  - (F2): the last prefix is 0xF2
--#
-+#  - (!F3) : the last prefix is not 0xF3 (including non-last prefix case)
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index c090af1..c377d9c 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -164,6 +164,7 @@ struct x86_cpuinit_ops {
+  * @i8042_detect		pre-detect if i8042 controller exists
+  * @save_sched_clock_state:	save state for sched_clock() on suspend
+  * @restore_sched_clock_state:	restore state for sched_clock() on resume
++ * @apic_post_init:		adjust apic if neeeded
+  */
+ struct x86_platform_ops {
+ 	unsigned long (*calibrate_tsc)(void);
+@@ -177,6 +178,7 @@ struct x86_platform_ops {
+ 	int (*i8042_detect)(void);
+ 	void (*save_sched_clock_state)(void);
+ 	void (*restore_sched_clock_state)(void);
++	void (*apic_post_init)(void);
+ };
  
- Table: one byte opcode
- Referrer:
-@@ -515,12 +515,12 @@ b4: LFS Gv,Mp
- b5: LGS Gv,Mp
- b6: MOVZX Gv,Eb
- b7: MOVZX Gv,Ew
--b8: JMPE | POPCNT Gv,Ev (F3)
-+b8: JMPE (!F3) | POPCNT Gv,Ev (F3)
- b9: Grp10 (1A)
- ba: Grp8 Ev,Ib (1A)
- bb: BTC Ev,Gv
--bc: BSF Gv,Ev | TZCNT Gv,Ev (F3)
--bd: BSR Gv,Ev | LZCNT Gv,Ev (F3)
-+bc: BSF Gv,Ev (!F3) | TZCNT Gv,Ev (F3)
-+bd: BSR Gv,Ev (!F3) | LZCNT Gv,Ev (F3)
- be: MOVSX Gv,Eb
- bf: MOVSX Gv,Ew
- # 0x0f 0xc0-0xcf
-diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
-index 5f6a5b6..ddcf39b 100644
---- a/arch/x86/tools/gen-insn-attr-x86.awk
-+++ b/arch/x86/tools/gen-insn-attr-x86.awk
-@@ -66,9 +66,10 @@ BEGIN {
- 	rex_expr = "^REX(\\.[XRWB]+)*"
- 	fpu_expr = "^ESC" # TODO
+ struct pci_dev;
+diff --git a/arch/x86/kernel/apic/probe_32.c b/arch/x86/kernel/apic/probe_32.c
+index 1b291da..8616d51 100644
+--- a/arch/x86/kernel/apic/probe_32.c
++++ b/arch/x86/kernel/apic/probe_32.c
+@@ -208,6 +208,9 @@ void __init default_setup_apic_routing(void)
  
--	lprefix1_expr = "\\(66\\)"
-+	lprefix1_expr = "\\((66|!F3)\\)"
- 	lprefix2_expr = "\\(F3\\)"
--	lprefix3_expr = "\\(F2\\)"
-+	lprefix3_expr = "\\((F2|!F3)\\)"
-+	lprefix_expr = "\\((66|F2|F3)\\)"
- 	max_lprefix = 4
+ 	if (apic->setup_apic_routing)
+ 		apic->setup_apic_routing();
++
++	if (x86_platform.apic_post_init)
++		x86_platform.apic_post_init();
+ }
  
- 	# All opcodes starting with lower-case 'v' or with (v1) superscript
-@@ -333,13 +334,16 @@ function convert_operands(count,opnd,       i,j,imm,mod)
- 		if (match(ext, lprefix1_expr)) {
- 			lptable1[idx] = add_flags(lptable1[idx],flags)
- 			variant = "INAT_VARIANT"
--		} else if (match(ext, lprefix2_expr)) {
-+		}
-+		if (match(ext, lprefix2_expr)) {
- 			lptable2[idx] = add_flags(lptable2[idx],flags)
- 			variant = "INAT_VARIANT"
--		} else if (match(ext, lprefix3_expr)) {
-+		}
-+		if (match(ext, lprefix3_expr)) {
- 			lptable3[idx] = add_flags(lptable3[idx],flags)
- 			variant = "INAT_VARIANT"
--		} else {
-+		}
-+		if (!match(ext, lprefix_expr)){
- 			table[idx] = add_flags(table[idx],flags)
+ void __init generic_apic_probe(void)
+diff --git a/arch/x86/kernel/apic/probe_64.c b/arch/x86/kernel/apic/probe_64.c
+index 3fe9866..1793dba 100644
+--- a/arch/x86/kernel/apic/probe_64.c
++++ b/arch/x86/kernel/apic/probe_64.c
+@@ -23,11 +23,6 @@
+ #include <asm/ipi.h>
+ #include <asm/setup.h>
+ 
+-static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
+-{
+-	return hard_smp_processor_id() >> index_msb;
+-}
+-
+ /*
+  * Check the APIC IDs in bios_cpu_apicid and choose the APIC mode.
+  */
+@@ -48,10 +43,8 @@ void __init default_setup_apic_routing(void)
  		}
  	}
+ 
+-	if (is_vsmp_box()) {
+-		/* need to update phys_pkg_id */
+-		apic->phys_pkg_id = apicid_phys_pkg_id;
+-	}
++	if (x86_platform.apic_post_init)
++		x86_platform.apic_post_init();
+ }
+ 
+ /* Same for both flat and physical. */
+diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
+index 8eeb55a..59eea85 100644
+--- a/arch/x86/kernel/vsmp_64.c
++++ b/arch/x86/kernel/vsmp_64.c
+@@ -187,12 +187,25 @@ static void __init vsmp_cap_cpus(void)
+ #endif
+ }
+ 
++static int apicid_phys_pkg_id(int initial_apic_id, int index_msb)
++{
++	return hard_smp_processor_id() >> index_msb;
++}
++
++static void vsmp_apic_post_init(void)
++{
++	/* need to update phys_pkg_id */
++	apic->phys_pkg_id = apicid_phys_pkg_id;
++}
++
+ void __init vsmp_init(void)
+ {
+ 	detect_vsmp_box();
+ 	if (!is_vsmp_box())
+ 		return;
+ 
++	x86_platform.apic_post_init = vsmp_apic_post_init;
++
+ 	vsmp_cap_cpus();
+ 
+ 	set_vsmp_pv_ops();
