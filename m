@@ -1,159 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab2FFW6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 18:58:33 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:38812 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758729Ab2FFW5s (ORCPT
+	id S1759212Ab2FFW7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 18:59:37 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:38797 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab2FFW7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 18:57:48 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: [PATCH v8 0/4] MIPS: OCTEON: Use Device Tree.
-Date: Wed,  6 Jun 2012 15:57:39 -0700
-Message-Id: <1339023463-20267-1-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	Wed, 6 Jun 2012 18:59:36 -0400
+MIME-Version: 1.0
+X-Originating-IP: [197.179.0.64]
+In-Reply-To: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+References: <CAHVUoiQywo=iHKsXQbsVE7coc1FL9A9qy_a71SK94MKNV0GrKA@mail.gmail.com>
+From: Brian Gitonga Marete <marete@toshnix.com>
+Date: Thu, 7 Jun 2012 01:59:15 +0300
+Message-ID: <CAHVUoiTZmzT3vquaDC65AJfCFZX-qS5GjgjP2-+=0R7skurW5g@mail.gmail.com>
+Subject: Re: [Regression] [Radeon] Stream command failures and render problems
+ in Evergreen (Radeon HD 5600) in kernel 3.4
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: David Airlie <airlied@linux.ie>, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Sun, Jun 3, 2012 at 8:26 PM, Brian Gitonga Marete <marete@toshnix.com> wrote:
+> Hello,
+>
+> 3.4 breaks rendering on my Radeon evergreen card. Immediately after
+> logging in into the desktop, I get the following errors in the kernel
+> log:
+>
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+> small (layer size 147456, offset 0, max layer 1, bo size 143360, slice
+> 575)
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+> surf: (192 192) (0 4 1 0 0 0 0)
+> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+> small (layer size 147456, offset 0, max layer 1, bo size 143360, slice
+> 575)
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+> surf: (192 192) (0 4 1 0 0 0 0)
+> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+> small (layer size 798720, offset 0, max layer 1, bo size 794624, slice
+> 3119)
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+> surf: (384 520) (0 4 1 0 0 0 0)
+> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+> small (layer size 458752, offset 0, max layer 1, bo size 446464, slice
+> 1791)
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+> surf: (512 224) (0 4 1 0 0 0 0)
+> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 7170
+> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:439 cb[0] bo too
+> small (layer size 798720, offset 0, max layer 1, bo size 790528, slice
+> 3119)
+> radeon 0000:01:00.0: evergreen_cs_track_validate_cb:443 problematic
+> surf: (384 520) (0 4 1 0 0 0 0)
+> radeon 0000:01:00.0: evergreen_packet3_check:2055 invalid cmd stream 461
+> [drm:radeon_cs_ib_chunk] *ERROR* Invalid command stream !
+>
+> Meanwhile, windows on the desktop are rendered incorrectly (with
+> certain regions covered by strange patterns or smudged) or not at all.
+> This makes the desktop unusable.
+>
+> I can always reproduce this problem on 3.4
+>
+> Kernels prior to 3.4 work fine.
+>
+> I will try and find the time to bisect this issue but meanwhile here
+> are some further details:
+>
 
-This code has now had extensive testing, it is running on more
-than 10 different boards and SOC combinations.
+I have git-bisected this to find that the first bad commit is:
+285484e2d55 - drm/radeon: add support for evergreen/ni tiling
+informations v11.
 
-The patches in this set are all in the arch/mips tree and should
-probably be merged by Ralf.
+So I have also added Jerome to the CC list. Please see the attached
+bisect.log for the git-bisect log.
 
-They do depend on this libfdt patch:
+Once again, my card is:
 
-http://patchwork.linux-mips.org/patch/3933/
+01:00.0 VGA compatible controller: ATI Technologies Inc Redwood
+[Radeon HD 5600 Series] (prog-if 00 [VGA controller])
+        Subsystem: Dell Device 0447
+        Flags: bus master, fast devsel, latency 0, IRQ 47
+        Memory at c0000000 (64-bit, prefetchable) [size=256M]
+        Memory at fbe20000 (64-bit, non-prefetchable) [size=128K]
+        I/O ports at e000 [size=256]
+        Expansion ROM at fbe00000 [disabled] [size=128K]
+        Capabilities: <access denied>
+        Kernel driver in use: radeon
+        Kernel modules: radeon
 
-As well as thses MIPS patches:
+To reproduce, simply:
 
-http://patchwork.linux-mips.org/patch/3932/
-http://patchwork.linux-mips.org/patch/3930/
-http://patchwork.linux-mips.org/patch/3931/
+1. Install Ubuntu 11.04 on a system with the above Radeon card (In
+order to get the version of Xorg and DRM libs that I have)
+2. Boot and login.
 
-New in v8:
-
-o Reordered to maintain bisectability.
-
-o Rebased to avoid merge conflicts.
-
-New in v7:
-
-o irq_domain support revised based on feedback from Grant and Rob.
-
-New in v6:
-
-o Device Tree bindings updated based on feedback and more actual use.
-
-o Use of irq_domain support added to recent kernels.
-
-New in v5:
-
-o New irq triggering mode constants.
-
-o Boot protocol to pass flattened device tree from bootloader.  This
-  protocol may change based on attempts to arrive at a common protocol
-  for all MIPS boards.
-
-New in v4:
-
-o Cleanup and error checking suggested by Sergei Shtylyov.
-
-o Use device tree passed by bootloader if present.
-
-New in v3:
-
-o More updates to device tree bindings, and perhaps more importantly
-  descriptions/definitions of the bindings
-
-o Cleanup and style improvements as suggested by Grant Likley.
-
-o Omitted all the driver changes, as they are unchanged from the last
-  set, and at this stage the patches are just an RFC.
-
-New in v2:
-
-o Changed many device tree bindings.  They should be closer to the
-  standard naming scheme now.
-
-o Editing of the template device tree is done in the flattened form
-  using libfdt.
-
-o Standard platform driver functions used in preference to the
-  of_platform variety.
-
-v1:
-
-Background: The Octeon family of SOCs has a variety of on-chip
-controllers for Ethernet, MDIO, I2C, and several other I/O devices.
-These chips are used on boards with a great variety of different
-configurations.  To date, the configuration and bus topology
-information has been hard coded in the drivers and support code.
-
-To facilitate supporting new chips and boards, we are using the Device
-Tree to encode the configuration information.  The migration from the
-legacy approach to the device tree is as follows:
-
-o A device tree template is statically linked into the kernel image.
-  Based on SOC type and board type, legacy configuration probing code
-  is used to prune and patch the device tree template.
-
-o New SOCs and boards will directly use a device tree passed by the
-  bootloader.
-
-David Daney (4):
-  MIPS: Don't define early_init_devtree() and device_tree_init() in
-    prom.c for CPU_CAVIUM_OCTEON
-  MIPS: Octeon: Add device tree source files.
-  MIPS: Octeon: Initialize and fixup device tree.
-  MIPS: Octeon: Setup irq_domains for interrupts.
-
- .../bindings/ata/cavium-compact-flash.txt          |   30 +
- .../bindings/gpio/cavium-octeon-gpio.txt           |   49 ++
- .../devicetree/bindings/i2c/cavium-i2c.txt         |   34 ++
- .../devicetree/bindings/mips/cavium/bootbus.txt    |  126 ++++
- .../devicetree/bindings/mips/cavium/ciu.txt        |   26 +
- .../devicetree/bindings/mips/cavium/ciu2.txt       |   27 +
- .../devicetree/bindings/mips/cavium/dma-engine.txt |   21 +
- .../devicetree/bindings/mips/cavium/uctl.txt       |   47 ++
- .../devicetree/bindings/net/cavium-mdio.txt        |   27 +
- .../devicetree/bindings/net/cavium-mix.txt         |   40 ++
- .../devicetree/bindings/net/cavium-pip.txt         |   98 +++
- .../devicetree/bindings/serial/cavium-uart.txt     |   19 +
- arch/mips/Kconfig                                  |    2 +
- arch/mips/cavium-octeon/.gitignore                 |    2 +
- arch/mips/cavium-octeon/Makefile                   |   16 +
- arch/mips/cavium-octeon/octeon-irq.c               |  215 +++++++-
- arch/mips/cavium-octeon/octeon-platform.c          |  523 ++++++++++++++++-
- arch/mips/cavium-octeon/octeon_3xxx.dts            |  571 ++++++++++++++++++
- arch/mips/cavium-octeon/octeon_68xx.dts            |  625 ++++++++++++++++++++
- arch/mips/cavium-octeon/setup.c                    |   45 ++
- arch/mips/kernel/prom.c                            |    2 +
- 21 files changed, 2535 insertions(+), 10 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/cavium-compact-flash.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/cavium-octeon-gpio.txt
- create mode 100644 Documentation/devicetree/bindings/i2c/cavium-i2c.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/bootbus.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/ciu2.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/dma-engine.txt
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/uctl.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-mdio.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-mix.txt
- create mode 100644 Documentation/devicetree/bindings/net/cavium-pip.txt
- create mode 100644 Documentation/devicetree/bindings/serial/cavium-uart.txt
- create mode 100644 arch/mips/cavium-octeon/.gitignore
- create mode 100644 arch/mips/cavium-octeon/octeon_3xxx.dts
- create mode 100644 arch/mips/cavium-octeon/octeon_68xx.dts
+The problem manifests upon login, presumably on that start of Compiz
+but I am not sure.
 
 -- 
-1.7.2.3
-
+Brian Gitonga Marete
+Toshnix Systems - http://toshnix.com
