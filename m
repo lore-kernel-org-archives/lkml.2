@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755044Ab2FFOHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:07:20 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55265 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752529Ab2FFOHS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:07:18 -0400
-Message-ID: <1338991625.21665.72.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [3.0.y, 3.2.y, 3.4.y] Re: [PATCH 1/1] bluetooth: Add support
- for Foxconn/Hon Hai AR5BBU22 0489:E03C
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Michael =?ISO-8859-1?Q?Gr=FCtzner?= <mgruetzn@gmx.de>,
-        stable@vger.kernel.org, marcel@holtmann.org, gustavo@padovan.org,
-        johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>
-Date: Wed, 06 Jun 2012 15:07:05 +0100
-In-Reply-To: <20120529122749.GA16706@burratino>
-References: <1769868.QZY8sEHkp9@dagobah> <20120529122749.GA16706@burratino>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-FSfmffRKhKguJCL/6gsZ"
-X-Mailer: Evolution 3.2.2-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1755090Ab2FFOJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:09:05 -0400
+Received: from mga11.intel.com ([192.55.52.93]:38118 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753553Ab2FFOJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:09:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="161717011"
+Date: Wed, 6 Jun 2012 22:08:59 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: write-behind on streaming writes
+Message-ID: <20120606140859.GA8234@localhost>
+References: <20120528114124.GA6813@localhost>
+ <CA+55aFxHt8q8+jQDuoaK=hObX+73iSBTa4bBWodCX3s-y4Q1GQ@mail.gmail.com>
+ <20120529155759.GA11326@localhost>
+ <CA+55aFykFaBhzzEyRYWRS9Qoy_q_R65Cuth7=XvfOZEMqjn6=w@mail.gmail.com>
+ <20120530032129.GA7479@localhost>
+ <20120605172302.GB28556@redhat.com>
+ <20120605174157.GC28556@redhat.com>
+ <20120605184853.GD28556@redhat.com>
+ <20120605201045.GE28556@redhat.com>
+ <20120606025729.GA1197@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120606025729.GA1197@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 05, 2012 at 10:57:30PM -0400, Vivek Goyal wrote:
+> On Tue, Jun 05, 2012 at 04:10:45PM -0400, Vivek Goyal wrote:
+> > On Tue, Jun 05, 2012 at 02:48:53PM -0400, Vivek Goyal wrote:
+> > 
+> > [..]
+> > > So sync_file_range() test keeps less in flight requests on on average
+> > > hence better latencies. It might not produce throughput drop on SATA
+> > > disks but might have some effect on storage array luns. Will give it
+> > > a try.
+> > 
+> > Well, I ran dd and syn_file_range test on a storage array Lun. Wrote a
+> > file of size 4G on ext4. Got about 300MB/s write speed. In fact when I
+> > measured time using "time", sync_file_range test finished little faster.
+> > 
+> > Then I started looking at blktrace output. sync_file_range() test
+> > initially (for about 8 seconds), drives shallow queue depth (about 16),
+> > but after 8 seconds somehow flusher gets involved and starts submitting
+> > lots of requests and we start driving much higher queue depth (upto more than
+> > 100). Not sure why flusher should get involved. Is everything working as
+> > expected. I thought that as we wait for last 8MB IO to finish before we
+> > start new one, we should have at max 16MB of IO in flight. Fengguang?
+> 
+> Ok, found it. I am using "int index" which in turn caused signed integer
+> extension of (i*BUFSIZE). Once "i" crosses 255, integer overflow happens
+> and 64bit offset is sign extended and offsets are screwed. So after 2G
+> file size, sync_file_range() effectively stops working leaving dirty
+> pages which are cleaned up by flusher. So that explains why flusher
+> was kicking during my tests. Change "int" to "unsigned int" and problem
+> if fixed.
 
---=-FSfmffRKhKguJCL/6gsZ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Good catch! Besides that, I do see a small chance for the flusher
+thread to kick in: at the time when the inode dirty expires after 30s.
+Just a kind reminder, because I don't see how it can impact this
+workload in some noticeable way.
 
-On Tue, 2012-05-29 at 07:27 -0500, Jonathan Nieder wrote:
-> Hi Ben and Greg,
->=20
-> Please consider
->=20
->   85d59726c5c6 Bluetooth: Add support for Foxconn/Hon Hai AR5BBU22 0489:E=
-03C
->=20
-> for inclusion if appropriate in the 3.0.y, 3.2.y, and 3.4.y trees.
-[...]
-
-I've queued up this and the various other bluetooth device ID updates
-you requested for 3.2.y.
-
-Ben.
-
---=20
-Ben Hutchings
-I haven't lost my mind; it's backed up on tape somewhere.
-
-
---=-FSfmffRKhKguJCL/6gsZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAT89kCee/yOyVhhEJAQoPSRAAkL7LucGhpkwOzMaPTsaGaHkYE6jvy8Zi
-uOiAVP4uJhcSDM/h3o9tWPnsX+TK26WTs4e94Va8ocGNDC/+0W/0iOG9oDsv5OpM
-ZNBP0jMBjwZIOttjZPOsJ8gD1bZ3A3ZFHEd2jp8ial8AOvqgcuxIV5lV9OzlduGo
-8SidpsD0VQ1pwi15hNh3+F4GfqKXN+KsrFMoBjn6OtCPnk27CV2scVaz4SDE7ixt
-PnwynkatGYg8Ya1djWCAg1hClaDbP4h4AMT5KynMg96ioeApaOh3/VeUOi24SGgf
-ZASIgLjEw6QRinoebBYqhjzSfnb72/WX+gFGjYxxfj76JSIFil1lTdmXmUrIKnVF
-5V5tGHK3pZBwYV9ebBY7QskX+Nd4mXOXStKPmU3/Y0MHI/KrDCLgoutucmtgAxvH
-mexeNN0ykO0j0ns+thJRPxLcjI+QDCTOoN/8SqExdl9T04cDNJTNvMuxisDOZKfr
-10RNYMfmV2WsmemHZcMSsWBhOHrQtiiaI/j5zTAqxn3o/CVW479GLgcRbiU0n68+
-C6LhSoXix6li813FA2LXYfBJK4pqM8vZbajxumcGUlTtOvrQ0UJZX474NmnqmIAS
-/Nj2m4CkMpQV9O8syXOWRhPXiOc/zYNtYHieRLVV0mhtQgQMBGPk3sqJAwiORuHA
-MrVlvrU43bA=
-=mamS
------END PGP SIGNATURE-----
-
---=-FSfmffRKhKguJCL/6gsZ--
+Thanks,
+Fengguang
