@@ -1,42 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab2FFIcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 04:32:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47070 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab2FFIcl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 04:32:41 -0400
-Date: Wed, 6 Jun 2012 10:32:35 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Vagin <avagin@openvz.org>, Arun Sharma <asharma@fb.com>,
-        Oleg Strikov <OSTRIKOV@nvidia.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 0/5] Teach perf tool to profile sleep times (V4)
-Message-ID: <20120606083235.GG5991@gmail.com>
-References: <1338797382-287275-1-git-send-email-avagin@openvz.org>
- <1338813658.28282.43.camel@twins>
+	id S1755154Ab2FFIdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 04:33:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:59314 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754864Ab2FFIds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 04:33:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="153586326"
+Message-ID: <4FCF155B.3090705@intel.com>
+Date: Wed, 06 Jun 2012 16:31:23 +0800
+From: ShuoX Liu <shuox.liu@intel.com>
+Reply-To: shuox.liu@intel.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338813658.28282.43.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, "Luck, Tony" <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH v6 1/2] printk: add interface for disabling recursion check
+References: <4FBF3295.7090608@intel.com>  <3908561D78D1C84285E8C5FCA982C28F192F4D39@ORSMSX104.amr.corp.intel.com>  <1338165058.14538.209.camel@ymzhang.sh.intel.com>  <4FC2E8CF.2040109@intel.com> <4FC2E944.6060903@intel.com>  <20120604171202.GA8533@x1.osrc.amd.com>  <1338856360.14538.220.camel@ymzhang.sh.intel.com>  <20120605081448.GA7097@liondog.tnic> <4FCDD72A.9030701@intel.com>  <4FCDD78A.3070106@intel.com> <20120605151542.GA10669@x1.osrc.amd.com> <1338942965.14538.233.camel@ymzhang.sh.intel.com>
+In-Reply-To: <1338942965.14538.233.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: ShuoX Liu <shuox.liu@intel.com>
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+With some special scenario, such as Machine Check Exception happened
+in printk, we want to bypass printk recursion check to printk some
+important information. So we add these interfaces of printk.
 
-> The one thing I'm not entirely sure of is if this is a 
-> sekjoerity issue or not.. anybody? I would think a task was 
-> entitled to know who woke it and wherefrom etc..
+1) printk_recursion_check_disable() for disabling recursion check
+2) printk_recursion_check_enable() for enabling recursion check
 
-I wouldn't worry about that really in the first approximation. 
-/proc already gives out much of that information already.
+Signed-off-by: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Signed-off-by: ShuoX Liu <shuox.liu@intel.com>
+---
+ include/linux/printk.h |    3 +++
+ kernel/printk.c        |   17 ++++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 1bec2f7..da48ec7 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -42,6 +42,9 @@ static inline void console_verbose(void)
+ 		console_loglevel = 15;
+ }
+ 
++void printk_recursion_check_disable(void);
++void printk_recursion_check_enable(void);
++
+ struct va_format {
+ 	const char *fmt;
+ 	va_list *va;
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 32462d2..0580f67 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -78,6 +78,19 @@ int console_printk[4] = {
+ int oops_in_progress;
+ EXPORT_SYMBOL(oops_in_progress);
+ 
++static atomic_t recursion_check_disabled = ATOMIC_INIT(0);
++
++void printk_recursion_check_disable(void)
++{
++	atomic_inc(&recursion_check_disabled);
++}
++
++void printk_recursion_check_enable(void)
++{
++	WARN_ON(atomic_read(&recursion_check_disabled) < 1);
++	atomic_dec(&recursion_check_disabled);
++}
++
+ /*
+  * console_sem protects the console_drivers list, and also
+  * provides serialisation for access to the entire console
+@@ -1295,7 +1308,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * recursion and return - but flag the recursion so that
+ 		 * it can be printed at the next appropriate moment:
+ 		 */
+-		if (!oops_in_progress && !lockdep_recursing(current)) {
++		if (!atomic_read(&recursion_check_disabled)
++			&& !oops_in_progress
++			&& !lockdep_recursing(current)) {
+ 			recursion_bug = 1;
+ 			goto out_restore_irqs;
+ 		}
+-- 
+1.7.1
 
-	Ingo
