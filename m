@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab2FFKUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 06:20:09 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25779 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752548Ab2FFKUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 06:20:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="161643508"
-Message-ID: <1338978235.6875.33.camel@sauron.fi.intel.com>
-Subject: Re: [PATCH] MTD: add JEDEC ID for w25q32dw to chip table
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Federico Fuga <fuga@studiofuga.com>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Wed, 06 Jun 2012 13:23:55 +0300
-In-Reply-To: <1338910621-3843-1-git-send-email-fuga@studiofuga.com>
-References: <1338900917.2507.50.camel@sauron.fi.intel.com>
-	 <1338910621-3843-1-git-send-email-fuga@studiofuga.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-6zYvqiU7G5lf7HW+OiFG"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Mime-Version: 1.0
+	id S1755725Ab2FFKXb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 06:23:31 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48559 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755664Ab2FFKXa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 06:23:30 -0400
+Date: Wed, 6 Jun 2012 15:52:31 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linuxppc-dev@lists.ozlabs.org,
+        lkml <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+        benh@kernel.crashing.org,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        oleg@redhat.com
+Subject: Re: [PATCH 1/2] uprobes: Pass probed vaddr to
+	arch_uprobe_analyze_insn()
+Message-ID: <20120606102230.GC29580@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20120606091950.GB6745@in.ibm.com> <1338974632.2749.87.camel@twins> <20120606093744.GB29580@in.ibm.com> <20120606094014.GD9495@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120606094014.GD9495@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12060610-3270-0000-0000-000006F11A2E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 06, 2012 at 11:40:15AM +0200, Ingo Molnar wrote:
+> 
+> * Ananth N Mavinakayanahalli <ananth@in.ibm.com> wrote:
+> 
+> > On Wed, Jun 06, 2012 at 11:23:52AM +0200, Peter Zijlstra wrote:
+> > > On Wed, 2012-06-06 at 14:49 +0530, Ananth N Mavinakayanahalli wrote:
+> > > > +int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, loff_t vaddr)
+> > > 
+> > > Don't we traditionally use unsigned long to pass vaddrs?
+> > 
+> > Right. But the vaddr we pass here is vma_info->vaddr which is loff_t.
+> > I guess I should've made that clear in the patch description.
+> 
+> Why not fix struct vma_info's vaddr type?
 
---=-6zYvqiU7G5lf7HW+OiFG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Agreed. Will fix and send v2.
 
-On Tue, 2012-06-05 at 17:37 +0200, Federico Fuga wrote:
-> From: "ing. Federico Fuga" <fuga@studiofuga.com>
->=20
-> Adds JEDEC ID for the 1.8V version of WinBond w25q32
->=20
-> Signed-off-by: Federico Fuga <fuga@studiofuga.com>
-
-Pushed to l2-mtd.git, thanks!
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-6zYvqiU7G5lf7HW+OiFG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABAgAGBQJPzy+7AAoJECmIfjd9wqK0QbMQAK9da8bvYQ8MxjjMSyfjyjhD
-AWC79u0wCDSFXC5ivCtrHQF0HwdlHvAQisksHOtT1heLQo4rgrp9sPxzMjNORbPW
-U4db5OwpxVmlot98ASbpMlOluzS0b3mTrgJSEIcM2Utd7htV0UEy9/YjkWcQYD99
-HU00oHzVY4ALAXwgfU5rWi7m9IVDmejwKxqeYKk3miAcbm6HWCBuzJSME7oz6WoC
-rXtJeT11DXxR1AOnT4XfX99y21wsl8wG+kYcXRwCmrSjzCfGgxXz91zmcpf9M8lW
-jtB8U+5VRxMKboDDIZX4oalUCG/mExyJYY1iHJM6LfwMMbBuxbbmCeKzx3NvSSI5
-iSXBzn5lYpIplxbqJpbuWGMlSi2r+97IxYV0FA2+XxUw6TlnzfCaOhcV7Wn72EQp
-hxyCL/8OcaskcG4SnnYWVTszYxlCpjq81tRGMSCkGcq7pe2ez+W0ZWeZXsWZWNnF
-pGhkC+R/QZokYiG55kbHQKxeIoo7RnO3E7PH+yAMTwz9kGWq8Jeer2++Sz6TAu6n
-Q/tRlK+PMoYCyXS4ZA++GQJYE5AUzCURgzsjXtRAfRQeqQ8ZG3927/+CTu83Rcr4
-dtYwDXtAxMDPmhRTtsnfGcJu1h5HJwNEgTHuaGPYtwBXMalGe3ypuDjdEm0G5U/g
-MJua4nta42VBzcPsBmDO
-=igL2
------END PGP SIGNATURE-----
-
---=-6zYvqiU7G5lf7HW+OiFG--
+Ananth
 
