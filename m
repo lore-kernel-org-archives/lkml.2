@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2FFHLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:11:24 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:40612 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330Ab2FFHLX (ORCPT
+	id S1753694Ab2FFHR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:17:29 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:42302 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab2FFHR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:11:23 -0400
-Date: Wed, 6 Jun 2012 09:11:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: David Rientjes <rientjes@google.com>
-Cc: a.p.zijlstra@chello.nl, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tj@kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] x86/numa: Allow specifying node_distance() for
- numa=fake
-Message-ID: <20120606071117.GE17808@gmail.com>
-References: <tip-e1136ef7kdffj7yf9tjhydln@git.kernel.org>
- <alpine.DEB.2.00.1205311346490.2764@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1205311346490.2764@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Jun 2012 03:17:27 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Bryan Wu <bryan.wu@canonical.com>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH v2] leds: fix led_brightness_set when soft-blinking
+Date: Wed,  6 Jun 2012 09:19:02 +0200
+Message-Id: <1338967142-6249-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.7.10.3
+In-Reply-To: <20120606070008.GA1494@gmail.com>
+References: <20120606070008.GA1494@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Put del_timer_sync() back into led_stop_software_blink() and move the
+call earlier into led_blink_set() to ensure software blink timer is
+stopped when changing trigger.  Also use led_set_brightness() instead of
+calling led_cdev->brightness_set() directly to ensure
+led_cdev->brightness is always consistent with current LED status.
 
-* David Rientjes <rientjes@google.com> wrote:
+This ensure proper cleaning when changing triggers, as without this fix
+a LED may be turned off while leaving it's led_cdev->brightness = 1,
+leading to an erratic software-blink behaviour.
 
-> On Wed, 9 May 2012, tip-bot for Peter Zijlstra wrote:
-> 
-> > Commit-ID:  94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
-> > Gitweb:     http://git.kernel.org/tip/94c0dd3278dd3eae52eabf0fb77d472d0dd3e373
-> > Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > AuthorDate: Wed, 18 Apr 2012 19:04:17 +0200
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Wed, 9 May 2012 13:28:59 +0200
-> > 
-> > x86/numa: Allow specifying node_distance() for numa=fake
-> > 
-> > Allows emulating more interesting NUMA configurations like a quad
-> > socket AMD Magny-Cour:
-> > 
-> >  "numa=fake=8:10,16,16,22,16,22,16,22,
-> >               16,10,22,16,22,16,22,16,
-> >               16,22,10,16,16,22,16,22,
-> >               22,16,16,10,22,16,22,16,
-> >               16,22,16,22,10,16,16,22,
-> >               22,16,22,16,16,10,22,16,
-> >               16,22,16,22,16,22,10,16,
-> >               22,16,22,16,22,16,16,10"
-> > 
-> > Which has a non-fully-connected topology.
-> > 
-> 
-> I like this support and I'm pretty sure you used it to 
-> reproduce my problems with sched/numa locally, but I think it 
-> would be better to seperate it out as a different parameter 
-> such as slit=fake so that we can still use it to fake the SLIT 
-> of our NUMA machines without requiring numa=fake which 
-> provides no guarantees to break the nodes along physical 
-> boundaries.
-> 
-> So without seperating it out into slit=fake, we can't change 
-> this information without changing the SLIT itself and that 
-> makes debugging harder.
+The problem was easy to reproduce by changing the trigger from "timer"
+to "oneshot".
 
-Makes sense - wanna send a patch?
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: Bryan Wu <bryan.wu@canonical.com>
+---
 
-Thanks,
+...maybe that version makes more sense.
 
-	Ingo
+Fabio
+
+ drivers/leds/led-core.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 579eb78..2477109 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -27,6 +27,7 @@ EXPORT_SYMBOL_GPL(leds_list);
+ static void led_stop_software_blink(struct led_classdev *led_cdev)
+ {
+ 	/* deactivate previous settings */
++	del_timer_sync(&led_cdev->blink_timer);
+ 	led_cdev->blink_delay_on = 0;
+ 	led_cdev->blink_delay_off = 0;
+ }
+@@ -43,8 +44,6 @@ static void led_set_software_blink(struct led_classdev *led_cdev,
+ 	if (!led_cdev->blink_brightness)
+ 		led_cdev->blink_brightness = led_cdev->max_brightness;
+ 
+-	led_stop_software_blink(led_cdev);
+-
+ 	led_cdev->blink_delay_on = delay_on;
+ 	led_cdev->blink_delay_off = delay_off;
+ 
+@@ -82,7 +81,7 @@ void led_blink_set(struct led_classdev *led_cdev,
+ 		   unsigned long *delay_on,
+ 		   unsigned long *delay_off)
+ {
+-	del_timer_sync(&led_cdev->blink_timer);
++	led_stop_software_blink(led_cdev);
+ 
+ 	led_cdev->flags &= ~LED_BLINK_ONESHOT;
+ 	led_cdev->flags &= ~LED_BLINK_ONESHOT_STOP;
+@@ -116,6 +115,6 @@ void led_brightness_set(struct led_classdev *led_cdev,
+ 			enum led_brightness brightness)
+ {
+ 	led_stop_software_blink(led_cdev);
+-	led_cdev->brightness_set(led_cdev, brightness);
++	led_set_brightness(led_cdev, brightness);
+ }
+ EXPORT_SYMBOL(led_brightness_set);
+-- 
+1.7.11.rc1.9.gf623ca1.dirty
+
