@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab2FFPTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 11:19:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39916 "EHLO
+	id S1756703Ab2FFPT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 11:19:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39926 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756668Ab2FFPTR (ORCPT
+	with ESMTP id S1756560Ab2FFPT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 11:19:17 -0400
-Date: Wed, 6 Jun 2012 08:18:48 -0700
-From: tip-bot for Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Message-ID: <tip-7071f6b2889bb41bea61891d8a3e6e70517ef5e6@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
-        mingo@kernel.org, kirill.shutemov@linux.intel.com,
-        mika.westerberg@linux.intel.com, tglx@linutronix.de,
-        sebastian@breakpoint.cc, sameo@linux.intel.com, feng.tang@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org, kirill.shutemov@linux.intel.com,
-        mika.westerberg@linux.intel.com, sameo@linux.intel.com,
-        tglx@linutronix.de, sebastian@breakpoint.cc, feng.tang@intel.com
-In-Reply-To: <20120531212025.GA8519@breakpoint.cc>
-References: <20120531212025.GA8519@breakpoint.cc>
+	Wed, 6 Jun 2012 11:19:56 -0400
+Date: Wed, 6 Jun 2012 08:19:40 -0700
+From: tip-bot for Feng Tang <feng.tang@intel.com>
+Message-ID: <tip-55c844a4dd16a4d1fdc0cf2a283ec631a02ec448@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, feng.tang@intel.com,
+        dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, feng.tang@intel.com,
+        dzickus@redhat.com
+In-Reply-To: <20120530231541.4c13433a@feng-i7>
+References: <20120530231541.4c13433a@feng-i7>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/intel/moorestown:
-  Change intel_scu_devices_create() to __devinit
-Git-Commit-ID: 7071f6b2889bb41bea61891d8a3e6e70517ef5e6
+Subject: [tip:x86/urgent] x86/reboot:
+  Fix a warning message triggered by stop_other_cpus()
+Git-Commit-ID: 55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,52 +30,100 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:18:55 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 08:19:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7071f6b2889bb41bea61891d8a3e6e70517ef5e6
-Gitweb:     http://git.kernel.org/tip/7071f6b2889bb41bea61891d8a3e6e70517ef5e6
-Author:     Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-AuthorDate: Thu, 31 May 2012 23:20:25 +0200
+Commit-ID:  55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
+Gitweb:     http://git.kernel.org/tip/55c844a4dd16a4d1fdc0cf2a283ec631a02ec448
+Author:     Feng Tang <feng.tang@intel.com>
+AuthorDate: Wed, 30 May 2012 23:15:41 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 6 Jun 2012 11:58:40 +0200
+CommitDate: Wed, 6 Jun 2012 12:03:23 +0200
 
-x86/intel/moorestown: Change intel_scu_devices_create() to __devinit
+x86/reboot: Fix a warning message triggered by stop_other_cpus()
 
-The allmodconfig hits:
+When rebooting our 24 CPU Westmere servers with 3.4-rc6, we
+always see this warning msg:
 
- WARNING: vmlinux.o(.text+0x6553d): Section mismatch in
-          reference from the function intel_scu_devices_create() to the
-          function .devinit.text: spi_register_board_info()
-	  [...]
+Restarting system.
+machine restart
+------------[ cut here ]------------
+WARNING: at arch/x86/kernel/smp.c:125
+native_smp_send_reschedule+0x74/0xa7() Hardware name: X8DTN
+Modules linked in: igb [last unloaded: scsi_wait_scan]
+Pid: 1, comm: systemd-shutdow Not tainted 3.4.0-rc6+ #22
+Call Trace:
+ <IRQ>  [<ffffffff8102a41f>] warn_slowpath_common+0x7e/0x96
+ [<ffffffff8102a44c>] warn_slowpath_null+0x15/0x17
+ [<ffffffff81018cf7>] native_smp_send_reschedule+0x74/0xa7
+ [<ffffffff810561c1>] trigger_load_balance+0x279/0x2a6
+ [<ffffffff81050112>] scheduler_tick+0xe0/0xe9
+ [<ffffffff81036768>] update_process_times+0x60/0x70
+ [<ffffffff81062f2f>] tick_sched_timer+0x68/0x92
+ [<ffffffff81046e33>] __run_hrtimer+0xb3/0x13c
+ [<ffffffff81062ec7>] ? tick_nohz_handler+0xd0/0xd0
+ [<ffffffff810474f2>] hrtimer_interrupt+0xdb/0x198
+ [<ffffffff81019a35>] smp_apic_timer_interrupt+0x81/0x94
+ [<ffffffff81655187>] apic_timer_interrupt+0x67/0x70
+ <EOI>  [<ffffffff8101a3c4>] ? default_send_IPI_mask_allbutself_phys+0xb4/0xc4
+ [<ffffffff8101c680>] physflat_send_IPI_allbutself+0x12/0x14
+ [<ffffffff81018db4>] native_nmi_stop_other_cpus+0x8a/0xd6
+ [<ffffffff810188ba>] native_machine_shutdown+0x50/0x67
+ [<ffffffff81018926>] machine_shutdown+0xa/0xc
+ [<ffffffff8101897e>] native_machine_restart+0x20/0x32
+ [<ffffffff810189b0>] machine_restart+0xa/0xc
+ [<ffffffff8103b196>] kernel_restart+0x47/0x4c
+ [<ffffffff8103b2e6>] sys_reboot+0x13e/0x17c
+ [<ffffffff8164e436>] ? _raw_spin_unlock_bh+0x10/0x12
+ [<ffffffff810fcac9>] ? bdi_queue_work+0xcf/0xd8
+ [<ffffffff810fe82f>] ? __bdi_start_writeback+0xae/0xb7
+ [<ffffffff810e0d64>] ? iterate_supers+0xa3/0xb7
+ [<ffffffff816547a2>] system_call_fastpath+0x16/0x1b
+---[ end trace 320af5cb1cb60c5b ]---
 
-This patch marks intel_scu_devices_create() as devinit because
-it only calls a devinit function, spi_register_board_info().
+The root cause seems to be the
+default_send_IPI_mask_allbutself_phys() takes quite some time (I
+measured it could be several ms) to complete sending NMIs to all
+the other 23 CPUs, and for HZ=250/1000 system, the time is long
+enough for a timer interrupt to happen, which will in turn
+trigger to kick load balance to a stopped CPU and cause this
+warning in native_smp_send_reschedule().
 
-Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Feng Tang <feng.tang@intel.com>
-Link: http://lkml.kernel.org/r/20120531212025.GA8519@breakpoint.cc
+So disabling the local irq before stop_other_cpu() can fix this
+problem (tested 25 times reboot ok), and it is fine as there
+should be nobody caring the timer interrupt in such reboot
+stage.
+
+The latest 3.4 kernel slightly changes this behavior by sending
+REBOOT_VECTOR first and only send NMI_VECTOR if the REBOOT_VCTOR
+fails, and this patch is still needed to prevent the problem.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20120530231541.4c13433a@feng-i7
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/platform/mrst/mrst.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/reboot.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index e31bcd8..fd41a92 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -782,7 +782,7 @@ BLOCKING_NOTIFIER_HEAD(intel_scu_notifier);
- EXPORT_SYMBOL_GPL(intel_scu_notifier);
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 79c45af..25b48ed 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -639,9 +639,11 @@ void native_machine_shutdown(void)
+ 	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
  
- /* Called by IPC driver */
--void intel_scu_devices_create(void)
-+void __devinit intel_scu_devices_create(void)
- {
- 	int i;
+ 	/*
+-	 * O.K Now that I'm on the appropriate processor,
+-	 * stop all of the others.
++	 * O.K Now that I'm on the appropriate processor, stop all of the
++	 * others. Also disable the local irq to not receive the per-cpu
++	 * timer interrupt which may trigger scheduler's load balance.
+ 	 */
++	local_irq_disable();
+ 	stop_other_cpus();
+ #endif
  
