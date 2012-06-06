@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab2FFCQA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jun 2012 22:16:00 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:2409 "EHLO MMS3.broadcom.com"
+	id S1752857Ab2FFCQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jun 2012 22:16:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38205 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab2FFCP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jun 2012 22:15:58 -0400
-X-Server-Uuid: B730DE51-FC43-4C83-941F-F1F78A914BDD
-Date: Tue, 5 Jun 2012 19:14:36 -0700
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "ethan zhao" <ethan.kernel@gmail.com>
-cc: "Matt Carlson" <mcarlson@broadcom.com>,
-        "Christian Kujau" <lists@nerdbynature.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: tg3: transmit timed out, resetting
-Message-ID: <20120606021436.GA10714@mcarlson.broadcom.com>
-References: <alpine.DEB.2.01.1206041546070.5568@trent.utfs.org>
- <20120606010255.GA9991@mcarlson.broadcom.com>
- <CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
+	id S1752450Ab2FFCQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jun 2012 22:16:24 -0400
+Message-ID: <4FCEBDB8.800@redhat.com>
+Date: Wed, 06 Jun 2012 10:17:28 +0800
+From: Asias He <asias@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CABawtvPE_xuamH2ysL8x0WsJMXdFV5oXPrWjMT-EC-DF_kCxxw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-WSS-ID: 63D0620F3E043179347-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
+To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        jeffm@suse.com
+Subject: Re: [PATCH 1/2] btrfs: Drop unused function btrfs_abort_devices()
+References: <1337915422-24988-1-git-send-email-asias@redhat.com> <20120528134159.GT24394@twin.jikos.cz>
+In-Reply-To: <20120528134159.GT24394@twin.jikos.cz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ethan.  This device does not have any special firmware (beyond
-bootcode).  It shouldn't be necessary to disable any of the device's
-features if it is working correctly.
+Hello, Jeff
 
-Thanks for the debugging output.  The tg3_stop_block() timeouts mean
-that (a portion of) the chip is stuck somehow.  Later drivers output a lot
-more information than this.  The additional information can help answer a
-lot of questions in a short period of time.  I was hoping I could
-accomplish a lot more in fewer emails if I have more data available. :)
+On 05/28/2012 09:41 PM, David Sterba wrote:
+> On Fri, May 25, 2012 at 11:10:21AM +0800, Asias He wrote:
+>> 1) This function is not used anywhere.
+>
+> This was added in 49b25e0540904be0bf558b84475c69d72e4de66e adding a
+> transaction abort infrastructure.  I'm not sure if Jeff had some
+> intentions with it or whether it got obsolete during the patchset long
+> evolution, CCed.
 
-On Wed, Jun 06, 2012 at 09:58:42AM +0800, ethan zhao wrote:
-> Saw many similar bugs report by simply google,
-> The root cause of this issue may be related to  Broadcom tg3 firmware
-> and the version of tg3 hardware, so I think it is hard to get fix in
-> Linux driver. better way is get another NIC, or disable some its
-> feature to workaround if we got what feature block it (tso ? sg ? ).
-> 
-> Some debugging messages from other guys:
-> 
-> [ 3538.223529] tg3 0000:01:08.0: eth1: transmit timed out, resetting
-> [ 3538.229698] tg3 0000:01:08.0: eth1: DEBUG: MAC_TX_STATUS[00000008]
-> MAC_RX_STATUS[00000008]
-> [ 3538.236001] tg3 0000:01:08.0: eth1: DEBUG: RDMAC_STATUS[00000000]
-> WDMAC_STATUS[00000000]
-> [ 3538.343602] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=1800 enable_bit=2
-> [ 3538.449609] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=c00 enable_bit=2
-> [ 3538.555402] tg3 0000:01:08.0: tg3_stop_block timed out, ofs=4800 enable_bit=2
-> [ 3538.692079] tg3 0000:01:08.0: eth1: Link is down
-> 
-> We could see tg3_reset_hw()-->tg3_stop_fw()--> tg3_stop_block() timeout,
-> so the response of firmware is not right.
-> 
-> Just my 2 cents.
-> 
-> Ethan
-> 
-> 
-> On Wed, Jun 6, 2012 at 9:02 AM, Matt Carlson <mcarlson@broadcom.com> wrote:
-> > I'm attempting to reproduce this in our lab. ?In the meantime,
-> > the latest revisions of the driver output a register dump and some
-> > additional information when transmit timeouts happen. ?It would be
-> > useful to see that data. ?Would it be possible to try a the latest
-> > kernels and get this information?
-> >
-> > On Mon, Jun 04, 2012 at 04:14:30PM -0700, Christian Kujau wrote:
-> >> Hi,
-> >>
-> >> on this Ideapad S10 the onboard Broadcom BCM5906M prints the warning
-> >> below, once. From then on, the "transmit timed out, resetting" message
-> >> repeats, every now and then.
-> >>
-> >> This laptop is mounting 2 readonly NFS shares from a box in the same LAN
-> >> and when scanning lots of files on these NFS shares, the transmit timeouts
-> >> occur more often, I think. When there's sequential traffic (i.e. reading
-> >> larger files from the NFS shares), fewer warnings occur. But this is just
-> >> manual observation, I haven't been able to reproduce this reliably.
-> >> However, there's constant traffic on the device (maybe ~700KB/s both tx
-> >> and rx), so the messages occur pretty regularly.
-> >>
-> >> I have reported the error against the Fedora 17 kernel [0] but it happens
-> >> with a vanilla 3.4.0 too[1] - check out for full dmesg, .config and more.
-> >>
-> >> I had a similar issue a while ago[2] and almost forgot about them. The
-> >> laptop ran Ubuntu 10.04 (2.6.32) since then and the problem was gone, so
-> >> I'd say 2.6.32 fixed it. Now the same laptop switched to Fedora, kernel
-> >> 3.3.4 and the problem seems to be back again.
-> >>
-> >> I'll try running with sg=off, as Matt suggested in [3] and report back.
-> >>
-> >> Thanks,
-> >> Christian.
-> >>
-> >> [0] https://bugzilla.redhat.com/show_bug.cgi?id=825123
-> >> [1] http://nerdbynature.de/bits/3.4.0/tg3/
-> >> [2] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00004.html
-> >> [3] http://lkml.indiana.edu/hypermail/linux/kernel/0906.1/00317.html
-> >>
-> >> ------------[ cut here ]------------
-> >> WARNING: at /opt/home/chrisk/dev/linux-2.6-git/net/sched/sch_generic.c:255
-> >> dev_watchdog+0x1cc/0x1e0()
-> >> Hardware name: Lenovo
-> >> NETDEV WATCHDOG: p2p1 (tg3): transmit queue 0 timed out
-> >> Modules linked in: acpi_cpufreq mperf freq_table nfs lockd sunrpc b43
-> >> mac80211 cfg80211 ssb coretemp hwmon usb_storage [last unloaded: scsi_wait_scan]
-> >> Pid: 685, comm: FahCore_78 Not tainted 3.4.0-10151-g4fc3acf #8
-> >> Call Trace:
-> >> ?[<c102b299>] ? warn_slowpath_common+0x79/0xb0
-> >> ?[<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
-> >> ?[<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
-> >> ?[<c102b374>] ? warn_slowpath_fmt+0x34/0x40
-> >> ?[<c12d54ec>] ? dev_watchdog+0x1cc/0x1e0
-> >> ?[<c12d5320>] ? pfifo_fast_dequeue+0xe0/0xe0
-> >> ?[<c1035cf1>] ? run_timer_softirq+0xd1/0x1d0
-> >> ?[<c1031615>] ? __do_softirq+0x75/0x100
-> >> ?[<c10315a0>] ? remote_softirq_receive+0x20/0x20
-> >> ?<IRQ> ?[<c10318a6>] ? irq_exit+0x66/0x90
-> >> ?[<c101b8d9>] ? smp_apic_timer_interrupt+0x59/0x90
-> >> ?[<c1360b35>] ? apic_timer_interrupt+0x31/0x38
-> >> ?[<c1360000>] ? rt_mutex_trylock+0x70/0x70
-> >> ---[ end trace 9de668a859ee5d6c ]---
-> >> tg3 0000:02:00.0: p2p1: transmit timed out, resetting
-> >>
-> >>
-> >> --
-> >> BOFH excuse #438:
-> >>
-> >> sticky bit has come loose
-> >>
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at ?http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at ?http://www.tux.org/lkml/
-> 
+Any comments?
 
+>
+>
+> david
+>
+>
+>> 2) Using the blk_abort_queue() to abort the queue seems not correct.
+>> blk_abort_queue() is used for timeout handling (block/blk-timeout.c).
+>>
+>> Cc: Chris Mason<chris.mason@oracle.com>
+>> Cc: linux-btrfs@vger.kernel.org
+>> Cc: Jens Axboe<axboe@kernel.dk>
+>> Cc: linux-kernel@vger.kernel.org
+>> Signed-off-by: Asias He<asias@redhat.com>
+>> ---
+>>   fs/btrfs/disk-io.c |   13 -------------
+>>   fs/btrfs/disk-io.h |    1 -
+>>   2 files changed, 14 deletions(-)
+>>
+>> diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+>> index e1fe74a..3521866 100644
+>> --- a/fs/btrfs/disk-io.c
+>> +++ b/fs/btrfs/disk-io.c
+>> @@ -2902,19 +2902,6 @@ int write_ctree_super(struct btrfs_trans_handle *trans,
+>>   	return ret;
+>>   }
+>>
+>> -/* Kill all outstanding I/O */
+>> -void btrfs_abort_devices(struct btrfs_root *root)
+>> -{
+>> -	struct list_head *head;
+>> -	struct btrfs_device *dev;
+>> -	mutex_lock(&root->fs_info->fs_devices->device_list_mutex);
+>> -	head =&root->fs_info->fs_devices->devices;
+>> -	list_for_each_entry_rcu(dev, head, dev_list) {
+>> -		blk_abort_queue(dev->bdev->bd_disk->queue);
+>> -	}
+>> -	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
+>> -}
+>> -
+>>   void btrfs_free_fs_root(struct btrfs_fs_info *fs_info, struct btrfs_root *root)
+>>   {
+>>   	spin_lock(&fs_info->fs_roots_radix_lock);
+>> diff --git a/fs/btrfs/disk-io.h b/fs/btrfs/disk-io.h
+>> index ab1830a..05b3fab 100644
+>> --- a/fs/btrfs/disk-io.h
+>> +++ b/fs/btrfs/disk-io.h
+>> @@ -89,7 +89,6 @@ int btrfs_add_log_tree(struct btrfs_trans_handle *trans,
+>>   int btrfs_cleanup_transaction(struct btrfs_root *root);
+>>   void btrfs_cleanup_one_transaction(struct btrfs_transaction *trans,
+>>   				  struct btrfs_root *root);
+>> -void btrfs_abort_devices(struct btrfs_root *root);
+>>
+>>   #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>>   void btrfs_init_lockdep(void);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+Asias
