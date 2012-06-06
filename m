@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758810Ab2FFVrN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 17:47:13 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:40325 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756307Ab2FFVrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 17:47:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <4FCE2EC5.2000403@wwwdotorg.org>
-References: <Pine.LNX.4.64.1205230020210.11851@axis700.grange>
-	<4FBCF9F0.1010901@wwwdotorg.org>
-	<Pine.LNX.4.64.1205231659310.21980@axis700.grange>
-	<4FBD01A6.4080807@wwwdotorg.org>
-	<CACRpkdbPe5jOmekPJBwryL5vkgUXsGyPijqDGqtYvK8AE6bCtw@mail.gmail.com>
-	<4FCE2EC5.2000403@wwwdotorg.org>
-Date: Wed, 6 Jun 2012 23:47:10 +0200
-Message-ID: <CACRpkdbsUp+zPpvMAp1=CxMDn3dn2kP-m7t0QpNJnpnDYAqAow@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: add a pinctrl_mux_group_selected() function
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758813Ab2FFVsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 17:48:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60904 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753826Ab2FFVsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 17:48:05 -0400
+Message-ID: <1339019274.23475.333.camel@bling.home>
+Subject: Re: [PATCH] PCI: Add Ralink RT2800 broken INTx masking quirk
+From: Alex Williamson <alex.williamson@redhat.com>
+To: bhelgaas@google.com
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, jan.kiszka@siemens.com,
+        andihartmann@01019freenet.de
+Date: Wed, 06 Jun 2012 15:47:54 -0600
+In-Reply-To: <20120606212241.6627.98371.stgit@bling.home>
+References: <20120606212241.6627.98371.stgit@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 5, 2012 at 6:07 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
 
-> Well, you can't really have different "default" modes - "default" should
-> be used when there truly is a single state that the device/driver just
-> wants to get programmed. When the device/driver itself can support
-> multiple different configurations, "default" isn't the right answer if
-> the driver needs to derive information from the selected pinctrl state;
-> there should be different pinctrl states for each possible configuration.
+D'oh, stale email for Bjorn.
 
-This is true...
+On Wed, 2012-06-06 at 15:23 -0600, Alex Williamson wrote:
+> Passes pci_intx_mask_supported but continues to send interrupts
+> as discovered through VFIO-based device assignment.
+> 
+> http://www.spinics.net/lists/kvm/msg73738.html
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+> Depends on Jan's base patch for this quirk:
+> http://www.spinics.net/lists/linux-pci/msg15516.html
+> 
+>  drivers/pci/quirks.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index cbb4358..178f494 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -2940,6 +2940,8 @@ static void __devinit quirk_broken_intx_masking(struct pci_dev *dev)
+>  }
+>  DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_CHELSIO, 0x0010,
+>  			quirk_broken_intx_masking);
+> +DECLARE_PCI_FIXUP_FINAL(0x1814, 0x0601, /* Ralink RT2800 802.11n PCI */
+> +			quirk_broken_intx_masking);
+>  
+>  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
+>  			  struct pci_fixup *end)
+> 
 
-> It's quite unlikely you'd ever want to switch between different states
-> at runtime, or program the HW to be anything other than what the board
-> supports, right?
 
-I think so too, but I'm not sure if I once heard an argument to the
-contrary. Anyway, let's assume so.
 
-Yours,
-Linus Walleij
