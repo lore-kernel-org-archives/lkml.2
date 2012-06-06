@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab2FFOfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 10:35:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31344 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752941Ab2FFOfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 10:35:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="148897206"
-Date: Wed, 6 Jun 2012 07:35:36 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        eranian@google.com
-Subject: Re: [PATCH 1/5] perf, x86: Don't assume the alternative cycles
- encoding is architectural
-Message-ID: <20120606143536.GH28225@tassilo.jf.intel.com>
-References: <1338944211-28275-1-git-send-email-andi@firstfloor.org>
- <1338979188.2749.92.camel@twins>
- <20120606141247.GD28225@tassilo.jf.intel.com>
- <1338992061.2749.111.camel@twins>
- <20120606142323.GG28225@tassilo.jf.intel.com>
- <1338992910.2749.121.camel@twins>
+	id S1754230Ab2FFOhe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 10:37:34 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:46904 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab2FFOhd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jun 2012 10:37:33 -0400
+X-AuditID: b753bd60-9fe84ba000000655-f6-4fcf6b2adb49
+X-AuditID: b753bd60-9fe84ba000000655-f6-4fcf6b2adb49
+Message-ID: <4FCF6B27.2020008@hitachi.com>
+Date: Wed, 06 Jun 2012 23:37:27 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1338992910.2749.121.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip v2 3/9] ftrace/x86: Support SAVE_REGS feature on
+ i386
+References: <20120605102734.27845.43401.stgit@localhost.localdomain> <20120605102802.27845.49309.stgit@localhost.localdomain> <1338928666.13348.538.camel@gandalf.stny.rr.com> <20120605212411.GC11575@redhat.com> <1338939470.13348.541.camel@gandalf.stny.rr.com> <20120605234133.GD11575@redhat.com>
+In-Reply-To: <20120605234133.GD11575@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 06, 2012 at 04:28:30PM +0200, Peter Zijlstra wrote:
-> On Wed, 2012-06-06 at 07:23 -0700, Andi Kleen wrote:
-> > 
-> > But it's very clear this cannot be done without a model check.
-> > I don't understand how you can even argue against that. 
+(2012/06/06 8:41), Frank Ch. Eigler wrote:
+> Hi -
 > 
-> Who said I fixed it without a model check?
-
-Do you mean the explicit PEBS disable?
-That's only for one model, but it did not address the underlying
-problem that Linux did non architecturally guaranteed things
-just based on ArchPerfmon.
-
-The PEBS disable still is needed even with my patch of course.
-
+>>> That would be the way for a kprobe to modify variables/values that
+>>> happen to be in the registers.  In systemtap, for example:
+>>> # stap -g -e 'probe kernel.function("foo") { $bar = 1 }'
+>>
+>> And why would we want to allow this?
+>> Modifying variables with probes is another way to lead to disaster. [...]
+>> What real world example leads to external sources modifying internal
+>> core variables? With the obvious exception of rootkits.
 > 
-> But simply disabling it for a model isn't how you do things. 
+> Among others, systemtap has been successfully used for fault injection
+> for development/testing, as well as band-aids for kernel security
+> vulnerabilities, where a small change of state can improve the state
+> of the system.  Obviously, this functionality is restricted to highly
+> privileged users.
 
-Do you want it enabled per model?  I can turn the flag around.
-Anything else?
+I agree with Frank. Register restoring should be done as far as the
+ftrace is used for kprobes. Of course, one reason is for the fault
+injection, which is very useful for debugging system failure. And
+another technical reason is that we should do "optimization"
+transparently. IMHO, kprobes works normally doing something,
+optimized kprobes also should do so.
 
--Andi
+But if you introduce FTRACE_OPS_FL_RSTR_REGS flag for restoring
+registers, it could be possible to provide corresponding flag
+from kprobes side. (perhaps KPROBE_FLAG_NOMODREGS? :))
+
+Thank you,
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
