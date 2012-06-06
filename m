@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab2FFHJK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jun 2012 03:09:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35959 "EHLO
+	id S1754643Ab2FFHJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jun 2012 03:09:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35977 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab2FFHJI (ORCPT
+	with ESMTP id S1751330Ab2FFHJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jun 2012 03:09:08 -0400
-Date: Wed, 6 Jun 2012 00:08:45 -0700
-From: tip-bot for Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Message-ID: <tip-a23c4dc422cff7bd30f40f5dc7c9ac4a6339005a@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        ananth@in.ibm.com, anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, acme@infradead.org, srikar@linux.vnet.ibm.com,
-        oleg@redhat.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, torvalds@linux-foundation.org, peterz@infradead.org,
-        ananth@in.ibm.com, anton@redhat.com, masami.hiramatsu.pt@hitachi.com,
-        acme@infradead.org, rostedt@goodmis.org, srikar@linux.vnet.ibm.com,
-        tglx@linutronix.de, oleg@redhat.com
-In-Reply-To: <20120531114643.23691.38666.sendpatchset@srdronam.in.ibm.com>
-References: <20120531114643.23691.38666.sendpatchset@srdronam.in.ibm.com>
+	Wed, 6 Jun 2012 03:09:58 -0400
+Date: Wed, 6 Jun 2012 00:09:36 -0700
+From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
+Message-ID: <tip-cb7225feec627e91d598198996429e9ee6804f8d@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@gmail.com
+In-Reply-To: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
+References: <1338443506-25009-1-git-send-email-namhyung.kim@lge.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf uprobes:
-  Remove unnecessary check before strlist__delete
-Git-Commit-ID: a23c4dc422cff7bd30f40f5dc7c9ac4a6339005a
+Subject: [tip:perf/urgent] perf:
+  Remove duplicate invocation on perf_event_for_each
+Git-Commit-ID: cb7225feec627e91d598198996429e9ee6804f8d
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,60 +30,45 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:08:50 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 06 Jun 2012 00:09:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a23c4dc422cff7bd30f40f5dc7c9ac4a6339005a
-Gitweb:     http://git.kernel.org/tip/a23c4dc422cff7bd30f40f5dc7c9ac4a6339005a
-Author:     Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-AuthorDate: Thu, 31 May 2012 17:16:43 +0530
+Commit-ID:  cb7225feec627e91d598198996429e9ee6804f8d
+Gitweb:     http://git.kernel.org/tip/cb7225feec627e91d598198996429e9ee6804f8d
+Author:     Namhyung Kim <namhyung.kim@lge.com>
+AuthorDate: Thu, 31 May 2012 14:51:44 +0900
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 31 May 2012 12:08:49 -0300
+CommitDate: Thu, 31 May 2012 14:01:00 -0300
 
-perf uprobes: Remove unnecessary check before strlist__delete
+perf: Remove duplicate invocation on perf_event_for_each
 
-Since strlist__delete() itself checks, the additional check before
-calling strlist__delete() is redundant.
+The @func callback was invoked twice for group leader when
+perf_event_for_each() called. It seems the commit 75f937f24bd9
+("perf_counter: Fix ctx->mutex vs counter ->mutex inversion") made the
+mistake during the change.
 
-No Functional change.
-
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Suggested-by: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Anton Arapov <anton@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20120531114643.23691.38666.sendpatchset@srdronam.in.ibm.com
+Signed-off-by: Namhyung Kim <namhyung.kim@lge.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1338443506-25009-1-git-send-email-namhyung.kim@lge.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-event.c |    8 ++------
- 1 files changed, 2 insertions(+), 6 deletions(-)
+ kernel/events/core.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 59dccc9..0dda25d 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -2164,16 +2164,12 @@ int del_perf_probe_events(struct strlist *dellist)
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5b06cbb..f85c015 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3181,7 +3181,6 @@ static void perf_event_for_each(struct perf_event *event,
+ 	event = event->group_leader;
  
- error:
- 	if (kfd >= 0) {
--		if (namelist)
--			strlist__delete(namelist);
--
-+		strlist__delete(namelist);
- 		close(kfd);
- 	}
- 
- 	if (ufd >= 0) {
--		if (unamelist)
--			strlist__delete(unamelist);
--
-+		strlist__delete(unamelist);
- 		close(ufd);
- 	}
- 
+ 	perf_event_for_each_child(event, func);
+-	func(event);
+ 	list_for_each_entry(sibling, &event->sibling_list, group_entry)
+ 		perf_event_for_each_child(sibling, func);
+ 	mutex_unlock(&ctx->mutex);
